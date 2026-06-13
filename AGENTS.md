@@ -61,6 +61,32 @@ The developer may run multiple agents in parallel in the same worktree.
 - Prefer code changes and concise chat summaries over new documentation artifacts.
 - Keep edits scoped to the requested work.
 
+### File Size And Splitting
+
+- Avoid letting Swift files grow into broad catch-all files.
+- There is no hard line limit, but treat large files as a design signal.
+- When a file becomes substantial, actively look for natural split points before adding more code:
+  - feature subviews
+  - button/card/style definitions
+  - repository protocols and implementations
+  - pure date/calculation logic
+  - sync or persistence helpers
+  - preview/test fixtures
+- Split only when it improves readability, ownership, or testability. Do not fragment code into tiny files just to satisfy a number.
+- The pre-commit hook runs SwiftLint and prints an advisory for large staged Swift files. Treat that advisory as a prompt to think, not as an automatic mandate.
+
+### Product Copy Clarity
+
+- All user-facing copy must be understandable to an ordinary 16-year-old.
+- Avoid technical implementation wording in the UI.
+- Do not expose internal terms like sync coordinator, entitlement, RLS, cron, JWT, pending mutation, backend, payload, tombstone, or migration to users.
+- Translate technical state into human outcomes:
+  - "Saved on this phone. We'll send it when you're online." instead of "Pending sync mutation."
+  - "Your partner will see this when it finishes sending." instead of "Upload queued."
+  - "You no longer have access to this relationship." instead of "Entitlement removed."
+- Error messages must say what happened and what the user can do next.
+- If a phrase sounds correct to an engineer but awkward for a normal teenager, rewrite it.
+
 ### Git
 
 - Do not include `Co-Authored-By` lines in commit messages.
@@ -78,6 +104,7 @@ The developer may run multiple agents in parallel in the same worktree.
 - Prefer existing project patterns over introducing new abstractions.
 - Keep business logic out of SwiftUI view bodies.
 - Use Tidex's project setup as the default template. Do not introduce a generated Xcode project, alternative build system, different package manager, or different deployment workflow without first discussing the tradeoff with the user.
+- Install local hooks with `./scripts/install-git-hooks.sh` after cloning if they are not already active.
 
 ## Marketing Site Guidelines
 
@@ -181,6 +208,7 @@ Start with English and Norwegian Bokmal. The setup must make later languages str
 - If a key has no generated symbol, add or rename the catalog entry so a symbol is generated.
 - Prefer `FormatStyle` for dates, numbers, percentages, and countdowns.
 - Use the system locale. Do not override locale globally unless there is a specific product requirement.
+- Keep source copy simple enough to translate naturally. Avoid idioms, jokes, technical shorthand, and nested clauses.
 
 ### Key Naming
 

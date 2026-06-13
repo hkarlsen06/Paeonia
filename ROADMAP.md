@@ -209,6 +209,8 @@ ios/PaeoniaApp/
 
 ## Phase 2: Brand And Design Foundation
 
+**Status: foundation complete; icon and final colors deferred.** Design foundation docs live in `docs/phase-2-design/`. Locked direction: premium calm, slightly custom native components, tactile key moments, and SF/system typography across app and marketing. Color decisions are intentionally deferred until the designer returns logo direction and the peony color reference is chosen.
+
 ### Brand
 
 - Lock name: `Paeonia`.
