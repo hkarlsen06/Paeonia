@@ -93,7 +93,7 @@ The first release should be reliable, emotionally clear, and narrow. Cut feature
   - no public discovery
   - no random matching
   - no searchable profiles
-  - invite code or magic-link pairing
+  - invite code or invite-link pairing
   - explicit accept flow
   - report/contact support path
   - leave/disconnect path
@@ -124,10 +124,12 @@ The first release should be reliable, emotionally clear, and narrow. Cut feature
 
 ## Phase 1: Repository And Project Foundation
 
+**Status: complete.** The repo, pnpm workspace, marketing shell, Cloudflare static files, CI smoke workflow, Xcode-managed iOS targets, build/test wrappers, app and widget entitlements, initial symbol-based localization, root app state, local store placeholder, and sync coordinator placeholder are in place.
+
 ### Repo Setup
 
-- Initialize git.
-- Add `.gitignore`.
+- Initialize git. Completed.
+- Add `.gitignore`. Completed.
 - Add signed initial commit.
 - Create GitHub repository when ready.
 - Use `paeonia.no` as the canonical public domain.
@@ -142,8 +144,8 @@ The first release should be reliable, emotionally clear, and narrow. Cut feature
 
 ### Marketing Site
 
-- Create `marketing/` as a static Next.js app, matching Tidex's marketing-site structure where practical.
-- Configure static export for Cloudflare Pages.
+- Create `marketing/` as a static Next.js app, matching Tidex's marketing-site structure where practical. Completed.
+- Configure static export for Cloudflare Pages. Completed.
 - Use `paeonia.no` as the production domain.
 - Add the core public routes needed for App Store readiness:
   - `/`
@@ -157,16 +159,24 @@ The first release should be reliable, emotionally clear, and narrow. Cut feature
 
 ### iOS Project
 
-- Create native iOS app in `ios/`.
+- Create native iOS app in `ios/`. App target completed.
+- Use an Xcode-managed `.xcodeproj`, matching Tidex. Completed for the app target.
+- Keep the setup nearly identical to Tidex unless a deviation is discussed first.
 - Use SwiftUI.
-- Set bundle identifier.
-- Add app display name: `Paeonia`.
-- Add unit and UI test targets.
-- Add SwiftLint or equivalent static checks.
-- Add scripts for build/test once stable:
+- Minimum deployment target: iOS 26.6. Completed for the app target.
+- Set bundle identifier. Completed for the app target.
+- Add app display name: `Paeonia`. Completed for the app target.
+- Create app, widget, notification service extension, unit test, and UI test targets from day one. Completed.
+- Treat the widget as central to the product experience, not as a later add-on.
+- Include App Group support for app/widget shared local state. Completed for the app and widget targets.
+- Configure Associated Domains immediately for `applinks:paeonia.no`. Completed for the app target.
+- Create String Catalog localization from day one with generated symbols. Completed for the app target.
+- Start with English and Norwegian Bokmal. Completed for the seed catalog.
+- Add SwiftLint or equivalent static checks. Completed.
+- Add scripts for build/test once stable. Completed:
   - `./scripts/xcode-build-agent.sh`
   - `./scripts/xcode-test-agent.sh`
-- Add app-wide folders:
+- Add app-wide folders. Completed locally:
 
 ```text
 ios/PaeoniaApp/
@@ -179,6 +189,10 @@ ios/PaeoniaApp/
 └── Resources/
 ```
 
+- Preserve the feature-first structure as a maintainability rule.
+- Keep feature-specific views, view models, models, components, and utilities inside their feature folder.
+- Move code into `Shared/` only when it is genuinely reusable across features.
+
 ### Architecture Foundation
 
 - Create app coordinator/root state:
@@ -189,8 +203,7 @@ ios/PaeoniaApp/
   - paired
   - paywalled, if needed
 - Create local store.
-- Create repository protocols and local implementations.
-- Create semantic design tokens.
+- Create first sync coordinator placeholder.
 - Create localization catalog.
 - Add generated localization-symbol workflow.
 
@@ -295,14 +308,19 @@ Use Supabase. Design the backend before UI implementation goes too far.
 
 ### Authentication
 
-- Support email auth or Sign in with Apple.
-- If Google or another third-party/social login is added, include an equivalent privacy-preserving login option such as Sign in with Apple.
+- Support only:
+  - Sign in with Apple
+  - Google Sign-In
+  - passkeys
+- Do not support email/password or email magic-link auth in the MVP.
+- Keep Sign in with Apple available because Google Sign-In is offered.
+- Implement all three auth surfaces as first-class MVP requirements.
 - Do not require unnecessary profile fields.
 - Add account deletion inside the app before App Store submission.
 
 ### Pairing
 
-- Create invite code or magic-link pairing.
+- Create invite code or invite-link pairing.
 - One active couple per user for MVP.
 - Show clear states:
   - not paired

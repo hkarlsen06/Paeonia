@@ -1,0 +1,10 @@
+parent_config: ../.swiftlint.yml
+
+included:
+  - .
+
+excluded:
+  - Pods
+  - DerivedData
+  - .build
+  - vendor

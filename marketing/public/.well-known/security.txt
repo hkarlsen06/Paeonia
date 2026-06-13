@@ -1,0 +1,3 @@
+Contact: mailto:support@paeonia.no
+Preferred-Languages: en, no
+Canonical: https://paeonia.no/.well-known/security.txt

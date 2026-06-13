@@ -1,0 +1,21 @@
+{
+  "name": "marketing",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev --webpack -p 3001",
+    "build": "next build",
+    "start": "npx serve@latest out -p 3001"
+  },
+  "dependencies": {
+    "next": "^16.2.6",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "typescript": "^5.4.4"
+  }
+}

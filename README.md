@@ -36,15 +36,16 @@ The app should help couples create small, reliable daily rituals that make dista
 ## MVP
 
 1. Couple pairing
-2. Daily prompt or check-in
+2. Daily check-in questions
 3. Private answers with reveal after both partners respond
-4. Shared streaks with forgiving repair rules
-5. Photo and note memory timeline
-6. Partner widget for a recent note, drawing, photo, or status
-7. Countdown to next visit, anniversary, or important date
+4. Shared streaks with forgiving repair rules and expiry reminders
+5. Memory timeline with notes, up to 5 images, and voice notes
+6. Partner widget with stroke-based drawing support
+7. Relationship milestone countdowns
 8. Respectful push notifications
-9. Local-first offline support
-10. Privacy, export, delete, and notification settings
+9. Hard paywall where one paying partner unlocks access for both
+10. Local-first offline support
+11. Privacy, export, delete, and notification settings
 
 ## Lessons To Carry From Tidex
 

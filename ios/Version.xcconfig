@@ -1,0 +1,13 @@
+// Version Configuration
+// Change these values to update version across all targets.
+//
+// MARKETING_VERSION = User-visible version (e.g., 1.0.0)
+// CURRENT_PROJECT_VERSION = Generated at build time from BuildNumber.xcconfig.
+
+MARKETING_VERSION = 1.0.0
+
+// Build number should be generated at build time by a "Generate BuildNumber.xcconfig"
+// Run Script phase. BuildNumber.xcconfig is git-ignored and never committed.
+// Placeholder — overridden at build time by BuildNumber.xcconfig.
+CURRENT_PROJECT_VERSION = 00000000.0000
+#include? "BuildNumber.xcconfig"

@@ -1,0 +1,8 @@
+{
+  "name": "Paeonia",
+  "short_name": "Paeonia",
+  "start_url": "/en/",
+  "display": "standalone",
+  "background_color": "#fbf7f5",
+  "theme_color": "#fbf7f5"
+}

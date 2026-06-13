@@ -1,0 +1,40 @@
+# dependencies
+node_modules
+.pnpm-store
+
+# Next.js/static export
+marketing/.next/
+marketing/out/
+marketing/next-env.d.ts
+
+# testing
+coverage
+playwright-report
+test-results
+
+# local env files
+.env
+.env.*
+!.env.local.example
+
+# TypeScript
+*.tsbuildinfo
+
+# macOS/editor
+.DS_Store
+*.log
+
+# build outputs
+ios/build/
+.build/
+
+# Xcode user state
+*.xcuserstate
+*.xcuserdata/
+xcuserdata/
+*.xcstrings.lock
+
+# secrets/certificates
+*.pem
+certificates/
+.npmrc

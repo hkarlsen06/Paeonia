@@ -1,0 +1,916 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 90;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2A2D03462FDD045E00A7BE1A /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A2D03452FDD045E00A7BE1A /* WidgetKit.framework */; };
+		2A2D03482FDD045E00A7BE1A /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A2D03472FDD045E00A7BE1A /* SwiftUI.framework */; };
+		2A2D03532FDD045F00A7BE1A /* PaeoniaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2A2D03432FDD045E00A7BE1A /* PaeoniaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		2A2D03652FDD04D100A7BE1A /* PaeoniaNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2A2D035E2FDD04D100A7BE1A /* PaeoniaNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2A2D03512FDD045F00A7BE1A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2A2D03422FDD045E00A7BE1A;
+			remoteInfo = PaeoniaWidgetExtension;
+		};
+		2A2D03632FDD04D100A7BE1A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2A2D035D2FDD04D100A7BE1A;
+			remoteInfo = PaeoniaNotificationService;
+		};
+		2A2D03722FDD055F00A7BE1A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 000000000000000100000000;
+			remoteInfo = PaeoniaApp;
+		};
+		2A2D037F2FDD058B00A7BE1A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 000000000000000100000000;
+			remoteInfo = PaeoniaApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2A2D03542FDD045F00A7BE1A /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				2A2D03652FDD04D100A7BE1A /* PaeoniaNotificationService.appex in Embed Foundation Extensions */,
+				2A2D03532FDD045F00A7BE1A /* PaeoniaWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		000000000000000000000120 /* PaeoniaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PaeoniaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A2D03432FDD045E00A7BE1A /* PaeoniaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PaeoniaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A2D03452FDD045E00A7BE1A /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		2A2D03472FDD045E00A7BE1A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		2A2D03592FDD048D00A7BE1A /* PaeoniaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PaeoniaWidgetExtension.entitlements; sourceTree = "<group>"; };
+		2A2D035E2FDD04D100A7BE1A /* PaeoniaNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PaeoniaNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A2D036E2FDD055E00A7BE1A /* PaeoniaAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PaeoniaAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A2D037B2FDD058B00A7BE1A /* PaeoniaAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PaeoniaAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		2A2D03572FDD045F00A7BE1A /* Exceptions for "PaeoniaWidget" folder in "PaeoniaWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 2A2D03422FDD045E00A7BE1A /* PaeoniaWidgetExtension */;
+		};
+		2A2D03662FDD04D100A7BE1A /* Exceptions for "PaeoniaNotificationService" folder in "PaeoniaNotificationService" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 2A2D035D2FDD04D100A7BE1A /* PaeoniaNotificationService */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		000000000000000000000010 /* PaeoniaApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PaeoniaApp;
+			sourceTree = "<group>";
+		};
+		2A2D03492FDD045E00A7BE1A /* PaeoniaWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2A2D03572FDD045F00A7BE1A /* Exceptions for "PaeoniaWidget" folder in "PaeoniaWidgetExtension" target */,
+			);
+			path = PaeoniaWidget;
+			sourceTree = "<group>";
+		};
+		2A2D035F2FDD04D100A7BE1A /* PaeoniaNotificationService */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2A2D03662FDD04D100A7BE1A /* Exceptions for "PaeoniaNotificationService" folder in "PaeoniaNotificationService" target */,
+			);
+			path = PaeoniaNotificationService;
+			sourceTree = "<group>";
+		};
+		2A2D036F2FDD055F00A7BE1A /* PaeoniaAppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PaeoniaAppTests;
+			sourceTree = "<group>";
+		};
+		2A2D037C2FDD058B00A7BE1A /* PaeoniaAppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PaeoniaAppUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		000000000000000130000000 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		2A2D03402FDD045E00A7BE1A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				2A2D03482FDD045E00A7BE1A /* SwiftUI.framework in Frameworks */,
+				2A2D03462FDD045E00A7BE1A /* WidgetKit.framework in Frameworks */,
+			);
+		};
+		2A2D035B2FDD04D100A7BE1A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		2A2D036B2FDD055E00A7BE1A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		2A2D03782FDD058B00A7BE1A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		000000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				2A2D03592FDD048D00A7BE1A /* PaeoniaWidgetExtension.entitlements */,
+				000000000000000000000010 /* PaeoniaApp */,
+				2A2D03492FDD045E00A7BE1A /* PaeoniaWidget */,
+				2A2D035F2FDD04D100A7BE1A /* PaeoniaNotificationService */,
+				2A2D036F2FDD055F00A7BE1A /* PaeoniaAppTests */,
+				2A2D037C2FDD058B00A7BE1A /* PaeoniaAppUITests */,
+				2A2D03442FDD045E00A7BE1A /* Frameworks */,
+				000000000000000000000020 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		000000000000000000000020 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				000000000000000000000120 /* PaeoniaApp.app */,
+				2A2D03432FDD045E00A7BE1A /* PaeoniaWidgetExtension.appex */,
+				2A2D035E2FDD04D100A7BE1A /* PaeoniaNotificationService.appex */,
+				2A2D036E2FDD055E00A7BE1A /* PaeoniaAppTests.xctest */,
+				2A2D037B2FDD058B00A7BE1A /* PaeoniaAppUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2A2D03442FDD045E00A7BE1A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				2A2D03452FDD045E00A7BE1A /* WidgetKit.framework */,
+				2A2D03472FDD045E00A7BE1A /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		000000000000000100000000 /* PaeoniaApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 000000000000000110000000 /* Build configuration list for PBXNativeTarget "PaeoniaApp" */;
+			buildPhases = (
+				000000000000000120000000 /* Sources */,
+				000000000000000130000000 /* Frameworks */,
+				000000000000000140000000 /* Resources */,
+				2A2D03542FDD045F00A7BE1A /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2A2D03522FDD045F00A7BE1A /* PBXTargetDependency */,
+				2A2D03642FDD04D100A7BE1A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				000000000000000000000010 /* PaeoniaApp */,
+			);
+			name = PaeoniaApp;
+			productName = PaeoniaApp;
+			productReference = 000000000000000000000120 /* PaeoniaApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		2A2D03422FDD045E00A7BE1A /* PaeoniaWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2A2D03582FDD045F00A7BE1A /* Build configuration list for PBXNativeTarget "PaeoniaWidgetExtension" */;
+			buildPhases = (
+				2A2D033F2FDD045E00A7BE1A /* Sources */,
+				2A2D03402FDD045E00A7BE1A /* Frameworks */,
+				2A2D03412FDD045E00A7BE1A /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				2A2D03492FDD045E00A7BE1A /* PaeoniaWidget */,
+			);
+			name = PaeoniaWidgetExtension;
+			productName = PaeoniaWidgetExtension;
+			productReference = 2A2D03432FDD045E00A7BE1A /* PaeoniaWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		2A2D035D2FDD04D100A7BE1A /* PaeoniaNotificationService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2A2D03672FDD04D100A7BE1A /* Build configuration list for PBXNativeTarget "PaeoniaNotificationService" */;
+			buildPhases = (
+				2A2D035A2FDD04D100A7BE1A /* Sources */,
+				2A2D035B2FDD04D100A7BE1A /* Frameworks */,
+				2A2D035C2FDD04D100A7BE1A /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				2A2D035F2FDD04D100A7BE1A /* PaeoniaNotificationService */,
+			);
+			name = PaeoniaNotificationService;
+			productName = PaeoniaNotificationService;
+			productReference = 2A2D035E2FDD04D100A7BE1A /* PaeoniaNotificationService.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		2A2D036D2FDD055E00A7BE1A /* PaeoniaAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2A2D03742FDD055F00A7BE1A /* Build configuration list for PBXNativeTarget "PaeoniaAppTests" */;
+			buildPhases = (
+				2A2D036A2FDD055E00A7BE1A /* Sources */,
+				2A2D036B2FDD055E00A7BE1A /* Frameworks */,
+				2A2D036C2FDD055E00A7BE1A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2A2D03732FDD055F00A7BE1A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2A2D036F2FDD055F00A7BE1A /* PaeoniaAppTests */,
+			);
+			name = PaeoniaAppTests;
+			productName = PaeoniaAppTests;
+			productReference = 2A2D036E2FDD055E00A7BE1A /* PaeoniaAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		2A2D037A2FDD058B00A7BE1A /* PaeoniaAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2A2D03812FDD058B00A7BE1A /* Build configuration list for PBXNativeTarget "PaeoniaAppUITests" */;
+			buildPhases = (
+				2A2D03772FDD058B00A7BE1A /* Sources */,
+				2A2D03782FDD058B00A7BE1A /* Frameworks */,
+				2A2D03792FDD058B00A7BE1A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2A2D03802FDD058B00A7BE1A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2A2D037C2FDD058B00A7BE1A /* PaeoniaAppUITests */,
+			);
+			name = PaeoniaAppUITests;
+			productName = PaeoniaAppUITests;
+			productReference = 2A2D037B2FDD058B00A7BE1A /* PaeoniaAppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		000000000000000000000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					000000000000000100000000 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					2A2D03422FDD045E00A7BE1A = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					2A2D035D2FDD04D100A7BE1A = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					2A2D036D2FDD055E00A7BE1A = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 000000000000000100000000;
+					};
+					2A2D037A2FDD058B00A7BE1A = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 000000000000000100000000;
+					};
+				};
+			};
+			buildConfigurationList = 000000000000000010000000 /* Build configuration list for PBXProject "Paeonia" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 000000000000000000000001;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 90;
+			productRefGroup = 000000000000000000000020 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				000000000000000100000000 /* PaeoniaApp */,
+				2A2D03422FDD045E00A7BE1A /* PaeoniaWidgetExtension */,
+				2A2D035D2FDD04D100A7BE1A /* PaeoniaNotificationService */,
+				2A2D036D2FDD055E00A7BE1A /* PaeoniaAppTests */,
+				2A2D037A2FDD058B00A7BE1A /* PaeoniaAppUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		000000000000000140000000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		2A2D03412FDD045E00A7BE1A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		2A2D035C2FDD04D100A7BE1A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		2A2D036C2FDD055E00A7BE1A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		2A2D03792FDD058B00A7BE1A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		000000000000000120000000 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		2A2D033F2FDD045E00A7BE1A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		2A2D035A2FDD04D100A7BE1A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		2A2D036A2FDD055E00A7BE1A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		2A2D03772FDD058B00A7BE1A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2A2D03522FDD045F00A7BE1A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2A2D03422FDD045E00A7BE1A /* PaeoniaWidgetExtension */;
+			targetProxy = 2A2D03512FDD045F00A7BE1A /* PBXContainerItemProxy */;
+		};
+		2A2D03642FDD04D100A7BE1A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2A2D035D2FDD04D100A7BE1A /* PaeoniaNotificationService */;
+			targetProxy = 2A2D03632FDD04D100A7BE1A /* PBXContainerItemProxy */;
+		};
+		2A2D03732FDD055F00A7BE1A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 000000000000000100000000 /* PaeoniaApp */;
+			targetProxy = 2A2D03722FDD055F00A7BE1A /* PBXContainerItemProxy */;
+		};
+		2A2D03802FDD058B00A7BE1A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 000000000000000100000000 /* PaeoniaApp */;
+			targetProxy = 2A2D037F2FDD058B00A7BE1A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		000000000000000011000000 /* Debug configuration for PBXProject "Paeonia" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				APPLETVOS_DEPLOYMENT_TARGET = 27.0;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DRIVERKIT_DEPLOYMENT_TARGET = 27.0;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PROJECT_UNIQUE_VALUE = RNWU8TQD;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				WATCHOS_DEPLOYMENT_TARGET = 27.0;
+				XROS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Debug;
+		};
+		000000000000000012000000 /* Release configuration for PBXProject "Paeonia" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				APPLETVOS_DEPLOYMENT_TARGET = 27.0;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DRIVERKIT_DEPLOYMENT_TARGET = 27.0;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PROJECT_UNIQUE_VALUE = RNWU8TQD;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				WATCHOS_DEPLOYMENT_TARGET = 27.0;
+				XROS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Release;
+		};
+		000000000000000111000000 /* Debug configuration for PBXNativeTarget "PaeoniaApp" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PaeoniaApp/Supporting/PaeoniaApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 48ZSLD4RMP;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Paeonia;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		000000000000000112000000 /* Release configuration for PBXNativeTarget "PaeoniaApp" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PaeoniaApp/Supporting/PaeoniaApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 48ZSLD4RMP;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Paeonia;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		2A2D03552FDD045F00A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaWidgetExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = PaeoniaWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 48ZSLD4RMP;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PaeoniaWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PaeoniaWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		2A2D03562FDD045F00A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaWidgetExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = PaeoniaWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 48ZSLD4RMP;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PaeoniaWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PaeoniaWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		2A2D03682FDD04D100A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaNotificationService" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 48ZSLD4RMP;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PaeoniaNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PaeoniaNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "no.paeonia.app.notification-service";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		2A2D03692FDD04D100A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaNotificationService" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 48ZSLD4RMP;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PaeoniaNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PaeoniaNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "no.paeonia.app.notification-service";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		2A2D03752FDD055F00A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaAppTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 48ZSLD4RMP;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.PaeoniaAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PaeoniaApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PaeoniaApp";
+			};
+			name = Debug;
+		};
+		2A2D03762FDD055F00A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaAppTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 48ZSLD4RMP;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.PaeoniaAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PaeoniaApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PaeoniaApp";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		2A2D03822FDD058B00A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaAppUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 48ZSLD4RMP;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.PaeoniaAppUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PaeoniaApp;
+			};
+			name = Debug;
+		};
+		2A2D03832FDD058B00A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaAppUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 48ZSLD4RMP;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.PaeoniaAppUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PaeoniaApp;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		000000000000000010000000 /* Build configuration list for PBXProject "Paeonia" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				000000000000000011000000 /* Debug configuration for PBXProject "Paeonia" */,
+				000000000000000012000000 /* Release configuration for PBXProject "Paeonia" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		000000000000000110000000 /* Build configuration list for PBXNativeTarget "PaeoniaApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				000000000000000111000000 /* Debug configuration for PBXNativeTarget "PaeoniaApp" */,
+				000000000000000112000000 /* Release configuration for PBXNativeTarget "PaeoniaApp" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		2A2D03582FDD045F00A7BE1A /* Build configuration list for PBXNativeTarget "PaeoniaWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A2D03552FDD045F00A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaWidgetExtension" */,
+				2A2D03562FDD045F00A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaWidgetExtension" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		2A2D03672FDD04D100A7BE1A /* Build configuration list for PBXNativeTarget "PaeoniaNotificationService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A2D03682FDD04D100A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaNotificationService" */,
+				2A2D03692FDD04D100A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaNotificationService" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		2A2D03742FDD055F00A7BE1A /* Build configuration list for PBXNativeTarget "PaeoniaAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A2D03752FDD055F00A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaAppTests" */,
+				2A2D03762FDD055F00A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaAppTests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		2A2D03812FDD058B00A7BE1A /* Build configuration list for PBXNativeTarget "PaeoniaAppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A2D03822FDD058B00A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaAppUITests" */,
+				2A2D03832FDD058B00A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaAppUITests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 000000000000000000000000 /* Project object */;
+}

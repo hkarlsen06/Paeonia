@@ -1,0 +1,15 @@
+{
+  "name": "paeonia",
+  "private": true,
+  "packageManager": "pnpm@10.33.2",
+  "description": "Paeonia monorepo - iOS app, marketing site, and backend infrastructure",
+  "scripts": {
+    "dev": "pnpm --filter marketing dev",
+    "build": "pnpm --filter marketing build",
+    "start": "pnpm --filter marketing start",
+    "lint": "pnpm --filter marketing exec tsc --noEmit",
+    "test": "pnpm --filter marketing build",
+    "open-ios": "open ios/Paeonia.xcodeproj",
+    "swiftlint": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; for arg in \"$@\"; do if [ \"$arg\" = \"--fix\" ] || [ \"$arg\" = \"autocorrect\" ]; then echo \"swiftlint autocorrect is disabled in this repo. Use swift-format once configured.\"; exit 1; fi; done; swiftlint lint \"$@\"' --"
+  }
+}

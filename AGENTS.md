@@ -14,6 +14,12 @@ Initial direction:
 - Clear MVVM boundaries.
 - Type-safe localization from the beginning.
 - Shared daily prompts, memories, countdowns, widgets, respectful notifications, and couple pairing.
+- Minimum deployment target is iOS 26.6.
+- Initial iOS targets include app, widget, notification service extension, unit tests, and UI tests.
+- Auth uses Sign in with Apple, Google Sign-In, and passkeys only; no email/password or email magic-link auth for MVP.
+- Project setup should stay nearly identical to Tidex. Discuss deviations with the user before making them.
+- Associated Domains should be configured from the start for `applinks:paeonia.no`.
+- Localization must use Xcode String Catalog generated symbols from day one. Start with English and Norwegian Bokmal.
 
 ## Repository Structure
 
@@ -71,6 +77,7 @@ The developer may run multiple agents in parallel in the same worktree.
 - Use `rg` for searching text or files when available.
 - Prefer existing project patterns over introducing new abstractions.
 - Keep business logic out of SwiftUI view bodies.
+- Use Tidex's project setup as the default template. Do not introduce a generated Xcode project, alternative build system, different package manager, or different deployment workflow without first discussing the tradeoff with the user.
 
 ## Marketing Site Guidelines
 
@@ -107,6 +114,8 @@ ios/PaeoniaApp/
 ├── Shared/               # Reusable components, extensions, design system
 └── Resources/            # Assets, localization, sounds
 ```
+
+Keep this feature-first structure as a hard maintainability rule. Do not flatten screens into one folder or mix feature implementation details into shared/global modules unless they are genuinely reusable.
 
 ### MVVM Boundaries
 
@@ -156,6 +165,8 @@ Default to local-first behavior:
 ## Localization
 
 Localization is required for all user-facing strings.
+
+Start with English and Norwegian Bokmal. The setup must make later languages straightforward.
 
 ### Rules
 
