@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Locale } from '@/lib/i18n/config';
-import { getDictionary } from '@/lib/i18n/dictionaries';
+import { getMarketingDictionary } from '@/lib/i18n/dictionaries';
 import { buildLocalizedPath } from '@/lib/paths';
 import { SiteShell } from './SiteShell';
 
@@ -9,20 +9,22 @@ interface SupportPageProps {
 }
 
 export function SupportPage({ locale }: SupportPageProps) {
-  const dictionary = getDictionary(locale);
+  const dictionary = getMarketingDictionary(locale);
+  const content = dictionary.marketing.support;
+  const email = dictionary.legal.contactEmail;
 
   return (
     <SiteShell locale={locale}>
       <main className="page-shell narrow">
-        <p className="kicker">{dictionary.support.kicker}</p>
-        <h1>{dictionary.support.title}</h1>
-        <p className="lede">{dictionary.support.description}</p>
+        <h1>{content.title}</h1>
+        <p className="lede">{content.description}</p>
+        <p className="label">{content.emailLabel}</p>
         <div className="actions">
-          <a className="button" href="mailto:support@paeonia.no">
-            support@paeonia.no
+          <a className="button" href={`mailto:${email}`}>
+            {email}
           </a>
           <Link className="button secondary" href={buildLocalizedPath(locale)}>
-            {dictionary.support.back}
+            {content.back}
           </Link>
         </div>
       </main>

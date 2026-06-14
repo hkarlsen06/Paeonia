@@ -7,10 +7,17 @@ export const metadata: Metadata = {
     default: 'Paeonia',
     template: '%s - Paeonia',
   },
-  description: 'A private place for the two of you.',
+  description: 'Paeonia is being built.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
   openGraph: {
     title: 'Paeonia',
-    description: 'A private place for the two of you.',
+    description: 'Paeonia is being built.',
     url: 'https://paeonia.no',
     siteName: 'Paeonia',
     type: 'website',

@@ -3,17 +3,15 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Join Paeonia',
-  description: 'Open a Paeonia invitation.',
+  description: 'Paeonia invite links will open the app later.',
 };
 
 export default function JoinPage() {
   return (
     <main className="page-shell narrow">
-      <p className="kicker">Paeonia invite</p>
-      <h1>Open your invitation in the app.</h1>
+      <h1>Paeonia is not ready yet.</h1>
       <p className="lede">
-        This page is reserved for invite links. Once the iOS app is ready, links that start with
-        paeonia.no/join will open Paeonia directly.
+        This invite link will open Paeonia later. For now, the app is still being built.
       </p>
       <div className="actions">
         <Link className="button" href="/en/">

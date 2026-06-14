@@ -1,15 +1,16 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { LandingPage } from '@/components/LandingPage';
-import { getDictionary } from '@/lib/i18n/dictionaries';
+import { getMarketingDictionary } from '@/lib/i18n/dictionaries';
 import { locales, type Locale } from '@/lib/i18n/config';
+import { generateLocaleStaticParams } from '@/lib/i18n/static-params';
 
 interface LocalePageProps {
   params: Promise<{ locale: string }>;
 }
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return generateLocaleStaticParams();
 }
 
 export async function generateMetadata({ params }: LocalePageProps): Promise<Metadata> {
@@ -19,18 +20,20 @@ export async function generateMetadata({ params }: LocalePageProps): Promise<Met
     return {};
   }
 
-  const dictionary = getDictionary(locale as Locale);
+  const dictionary = getMarketingDictionary(locale as Locale);
   const url = `https://paeonia.no/${locale}`;
 
   return {
-    title: dictionary.meta.title,
-    description: dictionary.meta.description,
+    title: {
+      absolute: dictionary.marketing.meta.title,
+    },
+    description: dictionary.marketing.meta.description,
     alternates: {
       canonical: url,
     },
     openGraph: {
-      title: dictionary.meta.title,
-      description: dictionary.meta.description,
+      title: dictionary.marketing.meta.title,
+      description: dictionary.marketing.meta.description,
       url,
       type: 'website',
     },
@@ -44,5 +47,5 @@ export default async function LocaleLandingPage({ params }: LocalePageProps) {
     notFound();
   }
 
-  return <LandingPage locale={locale as Locale} dictionary={getDictionary(locale as Locale)} />;
+  return <LandingPage locale={locale as Locale} dictionary={getMarketingDictionary(locale as Locale)} />;
 }

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Paeonia">
+  <rect width="64" height="64" rx="14" fill="#fbf7f5"/>
+  <path d="M32 18c8 0 14 6 14 14s-6 14-14 14-14-6-14-14 6-14 14-14Z" fill="#9d4f63"/>
+  <path d="M32 14c5 7 5 29 0 36-5-7-5-29 0-36Z" fill="#c97b8e"/>
+  <path d="M14 32c7-5 29-5 36 0-7 5-29 5-36 0Z" fill="#b76578"/>
+  <circle cx="32" cy="32" r="7" fill="#fffdfb"/>
+</svg>

@@ -1,15 +1,16 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SupportPage } from '@/components/SupportPage';
-import { getDictionary } from '@/lib/i18n/dictionaries';
+import { getMarketingDictionary } from '@/lib/i18n/dictionaries';
 import { locales, type Locale } from '@/lib/i18n/config';
+import { generateLocaleStaticParams } from '@/lib/i18n/static-params';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return generateLocaleStaticParams();
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -19,11 +20,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {};
   }
 
-  const dictionary = getDictionary(locale as Locale);
+  const dictionary = getMarketingDictionary(locale as Locale);
 
   return {
-    title: dictionary.support.title,
-    description: dictionary.support.description,
+    title: dictionary.marketing.support.title,
+    description: dictionary.marketing.support.description,
   };
 }
 

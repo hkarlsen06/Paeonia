@@ -1,5 +1,5 @@
 import type { Locale } from '@/lib/i18n/config';
-import { getDictionary } from '@/lib/i18n/dictionaries';
+import { getMarketingDictionary } from '@/lib/i18n/dictionaries';
 import { SiteShell } from './SiteShell';
 
 interface LegalPageProps {
@@ -8,21 +8,21 @@ interface LegalPageProps {
 }
 
 export function LegalPage({ locale, variant }: LegalPageProps) {
-  const dictionary = getDictionary(locale);
-  const content = dictionary[variant];
+  const dictionary = getMarketingDictionary(locale);
+  const content = dictionary.legal[variant];
 
   return (
     <SiteShell locale={locale}>
       <main className="page-shell narrow">
-        <p className="kicker">{content.updated}</p>
+        <p className="label">{content.updated}</p>
         <h1>{content.title}</h1>
-        <p className="lede">{content.description}</p>
+        <p className="lede">{content.meta.description}</p>
 
         <div className="legal-content">
           {content.sections.map((section) => (
-            <section key={section.title}>
-              <h2>{section.title}</h2>
-              {section.body.map((paragraph) => (
+            <section key={section.heading}>
+              <h2>{section.heading}</h2>
+              {section.paragraphs.map((paragraph) => (
                 <p key={paragraph}>{paragraph}</p>
               ))}
             </section>

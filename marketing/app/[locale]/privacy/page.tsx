@@ -1,15 +1,16 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { LegalPage } from '@/components/LegalPage';
-import { getDictionary } from '@/lib/i18n/dictionaries';
+import { getMarketingDictionary } from '@/lib/i18n/dictionaries';
 import { locales, type Locale } from '@/lib/i18n/config';
+import { generateLocaleStaticParams } from '@/lib/i18n/static-params';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return generateLocaleStaticParams();
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -19,11 +20,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {};
   }
 
-  const dictionary = getDictionary(locale as Locale);
+  const dictionary = getMarketingDictionary(locale as Locale);
 
   return {
-    title: dictionary.privacy.title,
-    description: dictionary.privacy.description,
+    title: dictionary.legal.privacy.meta.title,
+    description: dictionary.legal.privacy.meta.description,
   };
 }
 
