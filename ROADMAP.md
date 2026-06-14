@@ -25,12 +25,13 @@ The first release should be reliable, emotionally clear, and narrow. Cut feature
   - private answers revealed after both partners respond
   - shared streak with reminder before expiry
   - memory timeline
-  - up to 5 images per memory entry
+  - up to 5 images per partner per memory entry
   - one text note from either partner to create a memory entry
   - optional second partner note added later
   - voice notes in V1
   - countdown based on relationship milestones
   - widget with partner drawing support
+  - opt-in partner location map
   - push notifications for streak reminders, new drawings, and partner answers
   - hard paywall with shared couple entitlement
   - settings, privacy, export/delete account, and leave relationship controls
@@ -49,6 +50,8 @@ The first release should be reliable, emotionally clear, and narrow. Cut feature
 - The MVP uses a hard paywall.
 - Only one partner needs to pay; both partners receive access through the couple entitlement.
 - Subscription entitlement must be enforced server-side, not only locally.
+- Authenticated users without entitlement must still have a limited state where they can subscribe, restore purchases, accept an invite, sign out, or delete the account.
+- Sign in with Apple private relay accounts must be supported as normal accounts.
 - The paywall must still be clear, honest, and App Review-safe:
   - price
   - billing period
@@ -96,7 +99,7 @@ The first release should be reliable, emotionally clear, and narrow. Cut feature
   - invite code or invite-link pairing
   - explicit accept flow
   - report/contact support path
-  - leave/disconnect path
+  - block/leave/disconnect path
   - delete own account/content
 - Data retention:
   - account deletion removes or anonymizes profile, devices, relationship membership, private content, and media
@@ -154,6 +157,7 @@ The first release should be reliable, emotionally clear, and narrow. Cut feature
   - `/support`
 - Reserve a universal-link route for invite pairing, for example:
   - `/join/[inviteCode]`
+- Add `/.well-known/apple-app-site-association` for invite universal links. Completed with Apple Developer Team ID `48ZSLD4RMP`.
 - Keep the site simple in Phase 1. The immediate goal is deployable structure, not finished copy/design.
 - Later, use the marketing site as the canonical source for App Store privacy policy, terms, support URL, and universal links.
 
@@ -199,9 +203,16 @@ ios/PaeoniaApp/
   - launching
   - unauthenticated
   - onboarding
+  - limited authenticated
+  - review access
   - unpaired
+  - invite pending
   - paired
-  - paywalled, if needed
+  - paired but paywalled
+  - entitlement lost
+  - entitlement restored
+  - relationship ended notice
+  - deleting account
 - Create local store.
 - Create first sync coordinator placeholder.
 - Create localization catalog.
@@ -262,26 +273,55 @@ ios/PaeoniaApp/
 
 Use Supabase. Design the backend before UI implementation goes too far.
 
+Data-contract decisions are tracked in `docs/phase-3-data-contract.md`. Migration implementation order and checklist gates are tracked in `docs/phase-3-migration-checklist.md`.
+
+Do not write migrations until the current implementation slice has been checked against both documents.
+
 ### Core Tables
 
 - `profiles`
+- `relationship_pairs`
 - `couples`
 - `couple_members`
 - `pairing_invites`
-- `daily_prompts`
-- `prompt_responses`
+- `media_assets`
+- `question_collections`
+- `questions`
+- `question_versions`
+- `question_version_localizations`
+- `question_answer_kinds`
+- `couple_days`
+- `daily_challenges`
+- `daily_question_instances`
+- `daily_question_shuffles`
+- `daily_question_answers`
+- answer detail tables
+- `conversation_threads`
+- `daily_question_threads`
+- `memory_threads`
+- `thread_messages`
+- `thread_message_media`
+- `widget_canvases`
+- `widget_drawing_revisions`
+- `location_sharing_preferences`
+- `latest_partner_locations`
+- `relationship_sync_events`
+- `content_reports`
+- `content_report_targets`
+- `privacy_requests`
+- entitlement tables
+- internal invite secret table
+- internal invite attempt/rate-limit table
+- internal pair safety warning flags
 - `streak_states`
+- `couple_activity_events`
 - `memories`
 - `memory_notes`
-- `media_assets`
-- `voice_notes`
-- `widget_drawings`
-- `widget_drawing_strokes`
-- `countdowns`
+- `memory_media`
+- derived countdowns from `couples.started_on`
 - `notification_preferences`
 - `user_devices`
-- `subscription_entitlements`
-- `relationship_leave_events`
+- internal notification outbox
 
 ### Security
 
@@ -291,9 +331,14 @@ Use Supabase. Design the backend before UI implementation goes too far.
 - Add indexes for common couple and user queries.
 - Add soft delete fields where needed.
 - Store media with private buckets and signed URLs.
+- Centralize upload/finalize/delete-retry state in `media_assets` for upload-backed media and drawing payloads.
+- Store upload reservation context in `media_assets` from the first migration so finalize RPCs can prove the reserved path belongs to the expected user, couple, parent content, media type, bucket, and client operation.
+- Include moderation/visibility state for reportable UGC from the first migrations.
 - Avoid storing notification-sensitive content in push payloads unless the user explicitly opts in.
 - Enforce shared couple subscription access in the database.
 - Removing relationship access must be server-side, not only a local UI state.
+- Admin/moderation operations may be SQL/service-role runbooks for MVP; do not add a custom admin UI before it is needed.
+- Paeonia is not end-to-end encrypted for MVP. Private content is protected by RLS, private Storage, access checks, and operational controls, but trusted server-side systems can read content for sync, reports, support, legal, and safety handling.
 
 ### Sync Model
 
@@ -301,7 +346,12 @@ Use Supabase. Design the backend before UI implementation goes too far.
 - Dirty records for pending uploads.
 - Soft deletes.
 - Relationship-leave cleanup cron for content deletion after roughly one month.
-- Server revisions or timestamps.
+- Use server-managed `updated_at` cursors with ID tie-breakers for pull sync, matching the mature Tidex direction.
+- Keep server revisions on mutable local models for optimistic conflict detection and safe push handling.
+- Use explicit tombstones/read-model payloads where direct table pulls cannot safely express deletes, reveal state, or relationship access changes.
+- Add explicit relationship access-loss sync events so local-first clients hide stale relationship content when RLS stops returning rows.
+- Classify each table as direct-sync, RPC/read-model, or internal-only before writing SQL migrations.
+- Persist sync cursors only after a full page succeeds.
 - Conflict policy:
   - last-write-wins only for low-risk settings
   - explicit merge or conflict state for memories and partner-submitted content
@@ -344,25 +394,35 @@ Use Supabase. Design the backend before UI implementation goes too far.
 
 ## Phase 5: Daily Ritual Core
 
-### Daily Prompt
+### Daily Challenge
 
-- Show one daily check-in question/prompt.
-- Let each partner answer privately.
-- Reveal both answers only after both have responded.
+- Give each partner three daily candidate questions.
+- Let users shuffle unanswered candidate questions.
+- Limit each user to 5 shuffles per daily challenge across all three assigned questions.
+- Exclude shuffled questions from that user's candidate pool for 14 days.
+- The two partners do not have to receive the same three questions.
+- A user's daily challenge is complete when they answer their own three questions.
+- Show partner-answered questions in a separate screen so the other partner can answer them too.
+- Reveal answer content only after both partners have answered the same question instance.
+- Show that the partner answered, including when they answered, before revealing content.
+- Create a conversation thread only when someone sends the first follow-up message.
 - Use push notifications to remind users before the streak expires, for example when there is about one hour left.
-- Notify a user when their partner has answered a question that the user already answered.
+- Notify a user when their partner completes the daily challenge.
+- Notification copy should explain that answering is required to reveal what the partner wrote.
 - Handle missed days gracefully.
 - Add time-zone rules:
-  - decide if the daily prompt uses each user local day or a shared couple day
-  - make the rule explicit in code and tests
+  - compose the couple day when the daily challenge is started, anchored to the earliest partner timezone
+  - do not expire the streak before midnight for the latest partner timezone
+  - freeze each started couple day's timezone window
 
 ### Streaks
 
-- Use forgiving rules.
+- Use couple-level streaks only.
+- Continue the streak when a qualifying couple activity happens during the couple day.
+- Qualifying activity includes completing the daily challenge or updating the shared widget.
 - Do not make streaks punitive.
 - Add repair logic:
-  - timezone grace window
-  - optional one-day repair
+  - graceful restore button
   - no manipulative purchase-to-repair mechanic for MVP
 
 ### Tests
@@ -381,7 +441,7 @@ Use Supabase. Design the backend before UI implementation goes too far.
 
 - Add shared timeline.
 - Support memory entries with:
-  - up to 5 images
+  - up to 5 images per partner
   - one text note from either partner to create the entry
   - optional second partner note added later
   - optional voice notes in V1
@@ -395,10 +455,15 @@ Use Supabase. Design the backend before UI implementation goes too far.
 Even if Paeonia is private one-to-one, user-generated content still needs safety controls.
 
 - Add report/contact path.
-- Add block or disconnect path.
+- Add block/leave/disconnect path as the MVP safety cutoff.
+- The report-and-leave flow should be labeled as blocking where that is the user's intent.
+- Blocking closes the current relationship and prevents future pairing between the same two users unless the blocking user explicitly unblocks later.
 - Add support contact information.
 - Add content deletion.
-- Add internal admin/removal process for reported content if backend moderation is required.
+- Add internal SQL/service-role moderation process for reported content before public launch.
+- Use manual/service-role quarantine for MVP moderation. Do not add an external media scanning vendor unless explicitly revisited later.
+- Defer scanner-specific backend fields until an external scanning integration is actually selected.
+- A custom admin UI is not required for MVP.
 - Publish terms/community standards before submission.
 
 ### Tests
@@ -412,7 +477,7 @@ Even if Paeonia is private one-to-one, user-generated content still needs safety
 - Offline draft recovery.
 - Partner visibility.
 
-## Phase 7: Countdown, Notifications, And Widget
+## Phase 7: Countdown, Notifications, Partner Location, And Widget
 
 ### Countdown
 
@@ -434,16 +499,33 @@ Even if Paeonia is private one-to-one, user-generated content still needs safety
   - new drawing
   - countdown reminders
 - Avoid sensitive lock-screen content by default.
+- Store typed, redacted push payloads by default; do not put answer text, note text, precise location, media URLs, invite codes, or report details in pushes.
+- Track APNs environment, delivery attempts, provider message id, and failure reasons in the notification outbox.
 - Provide in-app settings to disable categories.
+
+### Partner Location
+
+- Partner location is part of the MVP.
+- Show the map only after both partners explicitly opt in.
+- Use foreground/manual location updates only in MVP. Do not request background location access.
+- Store latest location only, not location history.
+- Show when the location was last updated.
+- Show the partner avatar on the map and dim stale location markers after 24 hours.
+- Store consent audit fields for the current location-sharing preference, including enable/disable timestamps and consent copy version.
+- Reject or ignore stale offline location retries that are older than the currently stored latest location.
+- Delete location rows when sharing is disabled, the relationship ends, or account deletion begins.
+- Make App Store privacy labels and the privacy policy account for precise location collection.
 
 ### Widget
 
 - The widget is a crucial MVP surface.
-- Support drawing on the widget experience.
-- Store drawings as vectorized, stroke-based data.
+- Support a widget-driven drawing experience: tap widget, draw in app, widget updates.
+- Use PencilKit for the in-app drawing canvas.
+- Store canonical drawings as editable `PKDrawing` vector/stroke payloads.
 - Do not store drawings as canonical PNGs.
 - Rasterize drawings on-device for display and network efficiency.
-- Send compact drawing payloads to reduce egress cost.
+- Store canonical `.pkdrawing` payloads in private Storage and metadata in Postgres.
+- Keep raster previews as derived cache only.
 - Consider widget modes:
   - latest partner drawing
   - countdown/milestone
@@ -457,8 +539,10 @@ Even if Paeonia is private one-to-one, user-generated content still needs safety
 - Notification planner.
 - Permission-denied behavior.
 - Notification preference persistence.
+- Partner location opt-in and opt-out.
+- Location visibility only when both partners share.
 - Widget payload generation.
-- Drawing stroke encoding/decoding.
+- PencilKit drawing save/load.
 - Drawing rasterization.
 - Countdown boundary dates.
 
@@ -484,10 +568,11 @@ Paeonia launches paid in 1.0 with a hard paywall. This increases implementation 
 - If either partner has an active subscription, the couple is entitled.
 - Entitlement should survive normal sign-out/sign-in.
 - Entitlement should be revoked when neither partner has an active subscription.
+- Review/test grants must be scoped, auditable, revocable, and expiring unless deliberately marked as lifetime grants.
 - Leaving a relationship removes shared access for the departing/disconnected user.
 - StoreKit restore must recover access for the paying account.
 
-The paywall can be hard, but the review build must still be testable. Provide App Review with credentials/instructions that demonstrate the paid experience.
+The paywall can be hard, but the review build must still be testable. Provide App Review with normal Apple/Google sign-in plus a review code that grants pre-paired review access, plus a screen recording of onboarding and invite pairing.
 
 ## Phase 9: Privacy, Legal, And Account Controls
 
@@ -499,10 +584,12 @@ This is not legal advice. Treat it as an implementation checklist before getting
 - In-app privacy policy link.
 - Terms of service link.
 - In-app account deletion.
-- Data export or access request path.
+- Data export or access request path. MVP may create a support/privacy request for manual fulfillment.
+- Privacy request audit trail for manual fulfillment.
 - Support/contact email.
 - App Store privacy nutrition labels.
-- App Review demo account or clear reviewer instructions.
+- App Review normal sign-in plus pre-paired review code or clear reviewer instructions.
+- Screen recording showing onboarding and invite pairing.
 
 ### Privacy Policy Must Cover
 
@@ -513,6 +600,10 @@ This is not legal advice. Treat it as an implementation checklist before getting
 - Whether it is shared with vendors.
 - Retention and deletion.
 - Media handling.
+- Precise partner location handling.
+- Report snapshots and moderation review handling.
+- Trusted server-side access for support, safety, legal, deletion, export/access requests, and cleanup.
+- Backup retention and cleanup windows.
 - Notifications.
 - Analytics, if any.
 - Contact/support.
@@ -524,9 +615,11 @@ Prepare accurate App Store Connect answers for:
 - contact info
 - identifiers
 - user content, including messages/photos/notes if collected
+- precise location, because partner location ships in MVP
 - diagnostics
 - purchases, if subscriptions exist
 - usage data, if analytics exist
+- support/privacy request data, if collected
 
 Keep third-party SDKs minimal because their data practices must be included too.
 
@@ -568,7 +661,7 @@ Avoid showing real private content in screenshots. Use realistic sample content.
 - Do not claim features that are not in the build.
 - If subscriptions exist, indicate what requires payment.
 - Make review notes specific.
-- Include credentials/test pairing instructions.
+- Include normal sign-in, pre-paired review code, and optional test pairing instructions.
 - Ensure all in-app purchases are visible and reviewable.
 
 ## Phase 11: Quality Gate Before TestFlight
@@ -579,12 +672,13 @@ Avoid showing real private content in screenshots. Use realistic sample content.
 - Sign up.
 - Sign in.
 - Pair with partner.
-- Answer daily prompt.
+- Complete daily challenge.
 - Reveal after both answer.
 - Create memory.
 - Delete memory.
 - Add countdown.
 - Edit countdown.
+- Enable/disable partner location.
 - Notification permission denied.
 - Notification permission granted.
 - Widget privacy on/off.
@@ -636,7 +730,7 @@ Avoid showing real private content in screenshots. Use realistic sample content.
 - Recruit a small set of couples.
 - Track:
   - pairing completion
-  - daily prompt completion
+  - daily challenge completion
   - notification reliability
   - widget refresh behavior
   - memory creation
@@ -670,7 +764,8 @@ Avoid showing real private content in screenshots. Use realistic sample content.
 
 - App feels too empty without a partner.
 - Login is required without clearly account-based functionality.
-- User-generated content lacks reporting/blocking/contact mechanisms.
+- User-generated content lacks reporting/contact/safety-cutoff mechanisms.
+- Blocking/re-pair prevention is unclear.
 - Account deletion missing.
 - Privacy policy missing or incomplete.
 - Privacy labels inaccurate.
@@ -692,15 +787,16 @@ Avoid showing real private content in screenshots. Use realistic sample content.
 7. Add invite-and-accept pairing.
 8. Add daily check-in and reveal.
 9. Add streak logic and expiry reminders.
-10. Add memory timeline with notes, up to 5 images, and voice notes.
+10. Add memory timeline with notes, up to 5 images per partner, and voice notes.
 11. Add relationship milestone countdown.
 12. Add notification preferences and local/push notifications.
-13. Add stroke-based widget drawing flow.
-14. Add privacy/account deletion/export/leave relationship controls.
-15. Add app icon, launch screen, screenshots, and metadata.
-16. Run internal TestFlight.
-17. Run external TestFlight.
-18. Submit 1.0.
+13. Add opt-in partner location.
+14. Add PencilKit-based widget drawing flow.
+15. Add privacy/account deletion/export/leave relationship controls.
+16. Add app icon, launch screen, screenshots, and metadata.
+17. Run internal TestFlight.
+18. Run external TestFlight.
+19. Submit 1.0.
 
 ## Recommended 1.0 Cut Line
 
@@ -713,8 +809,10 @@ Ship 1.0 when these are true:
 - Streak reminders work without exposing sensitive content.
 - A memory with text, images, and voice can be saved and recovered.
 - Relationship milestone countdown works.
+- Partner location works only after both partners opt in and clearly shows when it was updated.
+- Stale partner location markers dim after 24 hours.
 - Notifications are useful but not invasive.
-- The widget drawing flow works with stroke-based storage and no private leakage by default.
+- The widget drawing flow works with PencilKit stroke/vector storage and no private leakage by default.
 - Leaving a relationship hides shared content after sync and schedules backend deletion.
 - Account deletion works.
 - Privacy policy and App Store privacy labels are accurate.

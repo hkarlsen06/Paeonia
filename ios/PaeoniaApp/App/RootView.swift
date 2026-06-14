@@ -119,12 +119,26 @@ struct RootView: View {
             .appStateUnauthenticated
         case .onboarding:
             .appStateOnboarding
+        case .limitedAuthenticated:
+            .appStateLimitedAuthenticated
+        case .reviewAccess:
+            .appStateReviewAccess
         case .unpaired:
             .appStateUnpaired
+        case .invitePending:
+            .appStateInvitePending
         case .paired:
             .appStatePaired
-        case .paywalled:
-            .appStatePaywalled
+        case .pairedPaywalled:
+            .appStatePairedPaywalled
+        case .entitlementLost:
+            .appStateEntitlementLost
+        case .entitlementRestored:
+            .appStateEntitlementRestored
+        case .relationshipEndedNotice:
+            .appStateRelationshipEndedNotice
+        case .deletingAccount:
+            .appStateDeletingAccount
         }
     }
 }

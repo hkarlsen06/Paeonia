@@ -18,6 +18,91 @@
         }
       }
     },
+    "app.state.deletingAccount" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleting account"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sletter konto"
+          }
+        }
+      }
+    },
+    "app.state.entitlementLost" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Access paused"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilgang pauset"
+          }
+        }
+      }
+    },
+    "app.state.entitlementRestored" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Access restored"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilgang gjenopprettet"
+          }
+        }
+      }
+    },
+    "app.state.invitePending" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite pending"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invitasjon venter"
+          }
+        }
+      }
+    },
+    "app.state.limitedAuthenticated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limited access"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begrenset tilgang"
+          }
+        }
+      }
+    },
     "app.state.onboarding" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -52,19 +137,53 @@
         }
       }
     },
-    "app.state.paywalled" : {
+    "app.state.pairedPaywalled" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Subscription required"
+            "value" : "Paired, subscription needed"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abonnement kreves"
+            "value" : "Koblet sammen, abonnement trengs"
+          }
+        }
+      }
+    },
+    "app.state.relationshipEndedNotice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Space closed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rommet er lukket"
+          }
+        }
+      }
+    },
+    "app.state.reviewAccess" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review access"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilgang for App Review"
           }
         }
       }

@@ -3,7 +3,22 @@ import Testing
 
 struct PaeoniaAppTests {
 
+    @MainActor
     @Test func testHarnessIsAvailable() {
-        #expect(AppState.allCases.count == 6)
+        #expect(AppState.allCases == [
+            .launching,
+            .unauthenticated,
+            .onboarding,
+            .limitedAuthenticated,
+            .reviewAccess,
+            .unpaired,
+            .invitePending,
+            .paired,
+            .pairedPaywalled,
+            .entitlementLost,
+            .entitlementRestored,
+            .relationshipEndedNotice,
+            .deletingAccount,
+        ])
     }
 }

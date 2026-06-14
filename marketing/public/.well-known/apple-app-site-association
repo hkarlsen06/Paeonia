@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "48ZSLD4RMP.no.paeonia.app",
+        "paths": [
+          "/join",
+          "/join/*"
+        ]
+      }
+    ]
+  }
+}

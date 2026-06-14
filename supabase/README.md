@@ -1,8 +1,11 @@
 # Paeonia Supabase
 
-Supabase backend placeholder.
+Supabase backend planning surface.
 
-Do not create schema migrations until the core relationship, entitlement, memory, media, widget drawing, and sync model has been reviewed.
+Do not create schema migrations until the implementation slice is checked against:
+
+- `docs/phase-3-data-contract.md`
+- `docs/phase-3-migration-checklist.md`
 
 Current backend decisions:
 
@@ -12,3 +15,6 @@ Current backend decisions:
 - Enable RLS by default.
 - Use the database as the source of truth for couple membership and shared subscription entitlement.
 - Use service-role flows only for privileged work such as cron cleanup, admin deletion, and notification fanout internals.
+- Use the Supabase CLI to create migration files when implementation starts.
+- Start with the migration order listed in `docs/phase-3-migration-checklist.md`.
+- Do not deploy or apply remote migrations until a project is intentionally linked.

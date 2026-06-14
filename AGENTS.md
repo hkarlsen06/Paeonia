@@ -41,6 +41,7 @@ paeonia/
 ```
 
 Use `paeonia.no` as the canonical public domain for marketing, support, legal pages, and universal links.
+Use `api.paeonia.no` as the canonical Supabase API domain for production client configuration, Auth callbacks, Storage, Realtime, and Edge Functions.
 
 Do not create placeholder directories or files unless they are needed for the current task.
 
@@ -321,6 +322,14 @@ If wrappers do not exist yet:
 
 Use this section only if/when Paeonia adds Supabase.
 
+Production Supabase API domain: `api.paeonia.no`.
+
+When configuring OAuth providers, include the Supabase Auth callback on the custom domain:
+
+```text
+https://api.paeonia.no/auth/v1/callback
+```
+
 ### Tool Discovery
 
 Supabase MCP tools may be lazy-loaded in Codex sessions. For any Supabase task, first call `tool_search` for:
@@ -330,6 +339,15 @@ Supabase execute_sql get_project_url list_tables
 ```
 
 Prefer `mcp__supabase__.execute_sql` for database inspection and narrow, targeted data fixes when available. Use ad hoc service-role scripts only as a fallback when MCP tools are unavailable or insufficient, and explain why.
+
+### GitHub Integration Deployments
+
+Paeonia uses Supabase's GitHub integration for remote deploys. On push to the remote branch configured in Supabase:
+
+- New migrations are applied.
+- Edge Functions declared in `config.toml` are deployed.
+- Storage buckets declared in `config.toml` are deployed.
+- All other configurations, including API, Auth, and seed files, are ignored by default.
 
 ### Edge Functions
 
