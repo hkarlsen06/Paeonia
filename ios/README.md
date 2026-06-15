@@ -17,6 +17,9 @@ Locked foundation decisions:
   - passkeys
 - Associated Domains:
   - `applinks:paeonia.no`
+  - `webcredentials:paeonia.no`
+- URL scheme:
+  - `paeonia://`
 - Localization:
   - English
   - Norwegian Bokmal
@@ -36,6 +39,7 @@ Known app configuration:
 - Widget bundle ID: `no.paeonia.app.widget`
 - Notification service bundle ID: `no.paeonia.app.notification-service`
 - App Group: `group.no.paeonia.app`
+- App URL scheme: `paeonia`
 
 Target names:
 

@@ -938,8 +938,8 @@ internal.privacy_request_events
 
 Rules:
 
-- `request_kind` starts with `export`, `access`, `deletion_help`, and `privacy_question`.
-- `status` starts with `submitted`, `verifying`, `in_progress`, `completed`, `cancelled`, and `rejected`.
+- `request_kind` starts with `access`, `export`, `deletion`, and `correction`.
+- `status` starts with `submitted`, `verifying`, `processing`, `completed`, `rejected`, and `cancelled`.
 - The user can submit and read their own request status through a narrow status RPC/view.
 - Ordinary clients cannot edit completion fields.
 - Fulfillment can be manual for MVP.
@@ -2291,10 +2291,19 @@ internal.report_snapshots
 
 internal.report_snapshot_assets
 - report_id
+- source_media_asset_id
+- source_bucket
+- source_storage_path
 - bucket
 - storage_path
 - media_type
 - byte_size
+- sha256
+- copy_status
+- copy_claimed_at
+- copy_attempts
+- copy_completed_at
+- last_copy_error
 - delete_after
 - storage_delete_status
 - storage_deleted_at
@@ -2374,6 +2383,7 @@ Rules:
 - Snapshot reported content internally for review, even if the user later deletes or loses access to the original content.
 - Store text/metadata snapshots in the internal report row and binary media snapshots in the private `report-snapshots` bucket when needed.
 - Track binary report snapshot objects in `internal.report_snapshot_assets`.
+- Binary report snapshots are queued in SQL and copied by a trusted service using the Supabase Storage API. The queue stores the source object, destination object, copy state, retry metadata, and later deletion state; ordinary clients never write or read `report-snapshots` directly.
 - Keep report snapshots while the report is open.
 - After a report is resolved, keep snapshots for 180 days, then delete snapshot rows and `report-snapshots` storage objects.
 - Keep the report row, moderation actions, and pair safety warning flag after snapshot deletion.
