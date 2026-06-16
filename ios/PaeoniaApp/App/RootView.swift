@@ -1,15 +1,20 @@
 import SwiftUI
 
 struct RootView: View {
-    @State private var viewModel = RootViewModel()
+    @State private var viewModel: RootViewModel
+
+    @MainActor
+    init(viewModel: RootViewModel? = nil) {
+        _viewModel = State(initialValue: viewModel ?? RootViewModel())
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: PaeoniaSpacing.sectionSpacing) {
                     header
-                    foundationCard
-                    emptyStateCard
+                    noticeCard
+                    content
                 }
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.top, PaeoniaSpacing.screenTopSpacing)
@@ -48,52 +53,57 @@ struct RootView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var foundationCard: some View {
-        PaeoniaCard {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+    @ViewBuilder
+    private var noticeCard: some View {
+        if let notice = viewModel.notice {
+            PaeoniaCard {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                    Text(.rootFoundationTitle)
+                    Text(notice.title)
                         .font(PaeoniaTypography.sectionTitle)
                         .foregroundStyle(.paeoniaTextPrimary)
 
-                    Text(.rootFoundationMessage)
+                    Text(notice.message)
                         .font(PaeoniaTypography.body)
                         .foregroundStyle(.paeoniaTextSecondary)
                 }
-
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                    Text(.rootPaletteTitle)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextPrimary)
-
-                    Text(.rootPaletteMessage)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextTertiary)
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
 
-    private var emptyStateCard: some View {
-        PaeoniaCard {
-            PaeoniaEmptyStateView(
-                title: .rootEmptyTitle,
-                message: .rootEmptyMessage,
-                systemImage: "heart.text.square"
-            ) {
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    Button {} label: {
-                        Text(.rootPrimaryAction)
-                    }
-                    .buttonStyle(PaeoniaPrimaryButtonStyle())
-                    .disabled(true)
-
-                    Text(.rootPrimaryActionHint)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextTertiary)
-                        .multilineTextAlignment(.center)
-                }
-            }
+    @ViewBuilder
+    private var content: some View {
+        switch viewModel.state {
+        case .launching:
+            AuthLaunchingView()
+        case .unauthenticated:
+            AuthStartView(
+                isWorking: viewModel.isWorking,
+                onDevelopmentSignIn: signInForDevelopment
+            )
+        case .onboarding:
+            AuthOnboardingView(
+                isWorking: viewModel.isWorking,
+                onCompleteOnboarding: completeOnboarding,
+                onSignOut: signOut
+            )
+        case .limitedAuthenticated:
+            AuthenticatedBaselineView(
+                isWorking: viewModel.isWorking,
+                onSignOut: signOut,
+                onDeleteAccount: deleteAccount
+            )
+        case .deletingAccount:
+            AuthDeletingAccountView()
+        case .reviewAccess,
+             .unpaired,
+             .invitePending,
+             .paired,
+             .pairedPaywalled,
+             .entitlementLost,
+             .entitlementRestored,
+             .relationshipEndedNotice:
+            AuthUnavailableRouteView()
         }
     }
 
@@ -141,8 +151,64 @@ struct RootView: View {
             .appStateDeletingAccount
         }
     }
+
+    private func signInForDevelopment() {
+        Task {
+            await viewModel.signInForDevelopment()
+        }
+    }
+
+    private func completeOnboarding() {
+        Task {
+            await viewModel.completeOnboarding()
+        }
+    }
+
+    private func signOut() {
+        Task {
+            await viewModel.signOut()
+        }
+    }
+
+    private func deleteAccount() {
+        Task {
+            await viewModel.deleteAccount()
+        }
+    }
+}
+
+private extension RootNotice {
+    var title: LocalizedStringResource {
+        switch self {
+        case .sessionLoadFailed:
+            .authNoticeSessionLoadFailedTitle
+        case .signInFailed:
+            .authNoticeSignInFailedTitle
+        case .onboardingFailed:
+            .authNoticeOnboardingFailedTitle
+        case .signOutFailed:
+            .authNoticeSignOutFailedTitle
+        case .deleteAccountFailed:
+            .authNoticeDeleteAccountFailedTitle
+        }
+    }
+
+    var message: LocalizedStringResource {
+        switch self {
+        case .sessionLoadFailed:
+            .authNoticeSessionLoadFailedMessage
+        case .signInFailed:
+            .authNoticeSignInFailedMessage
+        case .onboardingFailed:
+            .authNoticeOnboardingFailedMessage
+        case .signOutFailed:
+            .authNoticeSignOutFailedMessage
+        case .deleteAccountFailed:
+            .authNoticeDeleteAccountFailedMessage
+        }
+    }
 }
 
 #Preview {
-  RootView()
+    RootView()
 }
