@@ -2,10 +2,15 @@ import SwiftUI
 
 struct RootView: View {
     @State private var viewModel: RootViewModel
+    private let appleSignInProvider: any AppleSignInProviding
 
     @MainActor
-    init(viewModel: RootViewModel? = nil) {
+    init(
+        viewModel: RootViewModel? = nil,
+        appleSignInProvider: (any AppleSignInProviding)? = nil
+    ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
+        self.appleSignInProvider = appleSignInProvider ?? AppleSignInService()
     }
 
     var body: some View {
@@ -79,10 +84,12 @@ struct RootView: View {
         case .unauthenticated:
             AuthStartView(
                 isWorking: viewModel.isWorking,
+                onAppleSignIn: signInWithApple,
                 onDevelopmentSignIn: signInForDevelopment
             )
         case .onboarding:
             AuthOnboardingView(
+                session: viewModel.currentSession,
                 isWorking: viewModel.isWorking,
                 onCompleteOnboarding: completeOnboarding,
                 onSignOut: signOut
@@ -152,15 +159,24 @@ struct RootView: View {
         }
     }
 
+    private func signInWithApple() {
+        Task {
+            await viewModel.signInWithApple(using: appleSignInProvider)
+        }
+    }
+
     private func signInForDevelopment() {
         Task {
             await viewModel.signInForDevelopment()
         }
     }
 
-    private func completeOnboarding() {
+    private func completeOnboarding(displayName: String) {
         Task {
-            await viewModel.completeOnboarding()
+            await viewModel.completeOnboarding(
+                displayName: displayName,
+                timeZoneID: TimeZone.current.identifier
+            )
         }
     }
 

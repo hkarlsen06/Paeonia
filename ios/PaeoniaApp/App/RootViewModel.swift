@@ -19,6 +19,7 @@ final class RootViewModel {
     private(set) var authRoute: AuthRoute = .signedOut
     private(set) var isWorking = false
     private(set) var notice: RootNotice?
+    private var hasStartedSync = false
 
     var currentSession: AuthSession? {
         authRoute.session
@@ -29,12 +30,21 @@ final class RootViewModel {
         authService: (any AuthServicing)? = nil
     ) {
         self.syncCoordinator = syncCoordinator ?? SyncCoordinator()
-        self.authService = authService ?? DevelopmentAuthService()
+        self.authService = authService ?? AuthServiceFactory.makeDefault()
     }
 
     func start() async {
-        await syncCoordinator.start()
         await refreshAuthRoute()
+        await startSyncIfNeeded()
+    }
+
+    func signInWithApple(using appleSignInProvider: any AppleSignInProviding) async {
+        await performAuthAction(failureNotice: .signInFailed) {
+            let credential = try await appleSignInProvider.signIn()
+            let session = try await authService.signInWithApple(credential)
+            apply(AuthRoute(session: session))
+            await startSyncIfNeeded()
+        }
     }
 
     func signInForDevelopment() async {
@@ -44,10 +54,14 @@ final class RootViewModel {
         }
     }
 
-    func completeOnboarding() async {
+    func completeOnboarding(displayName: String, timeZoneID: String) async {
         await performAuthAction(failureNotice: .onboardingFailed) {
-            let session = try await authService.completeOnboarding()
+            let session = try await authService.completeOnboarding(
+                displayName: displayName,
+                timeZoneID: timeZoneID
+            )
             apply(AuthRoute(session: session))
+            await startSyncIfNeeded()
         }
     }
 
@@ -55,6 +69,7 @@ final class RootViewModel {
         await performAuthAction(failureNotice: .signOutFailed) {
             try await authService.signOut()
             apply(.signedOut)
+            hasStartedSync = false
         }
     }
 
@@ -69,8 +84,9 @@ final class RootViewModel {
         state = .deletingAccount
 
         do {
-            try await authService.deleteAccount()
+            try await authService.requestAccountDeletion()
             apply(.signedOut)
+            hasStartedSync = false
         } catch {
             apply(previousRoute)
             notice = .deleteAccountFailed
@@ -81,7 +97,7 @@ final class RootViewModel {
 
     private func refreshAuthRoute() async {
         do {
-            let session = try await authService.currentSession()
+            let session = try await authService.restoreSession()
             apply(AuthRoute(session: session))
         } catch {
             apply(.signedOut)
@@ -112,5 +128,19 @@ final class RootViewModel {
     private func apply(_ route: AuthRoute) {
         authRoute = route
         state = route.appState
+    }
+
+    private func startSyncIfNeeded() async {
+        guard !hasStartedSync else {
+            return
+        }
+
+        switch authRoute {
+        case .limitedAuthenticated:
+            await syncCoordinator.start()
+            hasStartedSync = true
+        case .signedOut, .onboarding:
+            return
+        }
     }
 }

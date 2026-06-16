@@ -341,6 +341,40 @@
         }
       }
     },
+    "auth.onboarding.displayName.label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your name"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navnet ditt"
+          }
+        }
+      }
+    },
+    "auth.onboarding.displayName.placeholder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your name"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navnet ditt"
+          }
+        }
+      }
+    },
     "auth.onboarding.message" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -426,6 +460,23 @@
         }
       }
     },
+    "auth.signIn.apple.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with Apple"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett med Apple"
+          }
+        }
+      }
+    },
     "auth.signIn.development.button" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -460,6 +511,23 @@
         }
       }
     },
+    "auth.signIn.secure.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sign-in is stored securely on this phone."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Innloggingen din lagres trygt på denne telefonen."
+          }
+        }
+      }
+    },
     "auth.signOut.button" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -490,6 +558,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Neste steg er sammenkobling og delte funksjoner. Foreløpig er kontoen klar."
+          }
+        }
+      }
+    },
+    "auth.signedIn.ready.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account ready"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontoen er klar"
           }
         }
       }
@@ -534,13 +619,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use a local test account while sign-in is being connected."
+            "value" : "Sign in to keep your shared space private."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bruk en lokal testkonto mens innlogging kobles på."
+            "value" : "Logg inn for å holde det delte rommet privat."
           }
         }
       }

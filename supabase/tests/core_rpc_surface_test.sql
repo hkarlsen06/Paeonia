@@ -23,10 +23,11 @@ SELECT is(
         'create_memory',
         'submit_widget_drawing_revision',
         'update_location_sharing_preference',
-        'submit_content_report'
+        'submit_content_report',
+        'request_account_deletion'
       )
   ),
-  15,
+  16,
   'core public RPC wrappers exist'
 );
 
@@ -52,11 +53,12 @@ SELECT is(
         'create_memory',
         'submit_widget_drawing_revision',
         'update_location_sharing_preference',
-        'submit_content_report'
+        'submit_content_report',
+        'request_account_deletion'
       )
       AND p.prosecdef
   ),
-  15,
+  16,
   'core public RPC wrappers are security definer'
 );
 
@@ -82,11 +84,12 @@ SELECT is(
         'create_memory',
         'submit_widget_drawing_revision',
         'update_location_sharing_preference',
-        'submit_content_report'
+        'submit_content_report',
+        'request_account_deletion'
       )
       AND has_function_privilege('authenticated', p.oid, 'execute')
   ),
-  15,
+  16,
   'authenticated can execute core public RPC wrappers'
 );
 
@@ -112,7 +115,8 @@ SELECT is(
         'create_memory',
         'submit_widget_drawing_revision',
         'update_location_sharing_preference',
-        'submit_content_report'
+        'submit_content_report',
+        'request_account_deletion'
       )
       AND has_function_privilege('anon', p.oid, 'execute')
   ),

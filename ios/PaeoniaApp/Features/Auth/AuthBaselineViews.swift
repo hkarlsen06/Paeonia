@@ -26,6 +26,7 @@ struct AuthLaunchingView: View {
 
 struct AuthStartView: View {
     let isWorking: Bool
+    let onAppleSignIn: () -> Void
     let onDevelopmentSignIn: () -> Void
 
     var body: some View {
@@ -35,32 +36,79 @@ struct AuthStartView: View {
                 message: .authStartMessage,
                 systemImage: "lock.heart"
             ) {
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    Button(action: onDevelopmentSignIn) {
-                        Label {
-                            Text(.authSignInDevelopmentButton)
-                        } icon: {
-                            Image(systemName: "person.badge.key.fill")
-                                .accessibilityHidden(true)
-                        }
-                    }
-                    .buttonStyle(PaeoniaPrimaryButtonStyle())
-                    .disabled(isWorking)
-
-                    Text(.authSignInDevelopmentHint)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextTertiary)
-                        .multilineTextAlignment(.center)
-                }
+                actionStack
             }
         }
+    }
+
+    private var actionStack: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            appleSignInButton
+            caption(.authSignInSecureHint)
+
+            #if DEBUG
+            developmentSignInButton
+            caption(.authSignInDevelopmentHint)
+            #endif
+        }
+    }
+
+    private var appleSignInButton: some View {
+        Button(action: onAppleSignIn) {
+            Label {
+                Text(.authSignInAppleButton)
+            } icon: {
+                Image(systemName: "apple.logo")
+                    .accessibilityHidden(true)
+            }
+        }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
+        .disabled(isWorking)
+    }
+
+    #if DEBUG
+    private var developmentSignInButton: some View {
+        Button(action: onDevelopmentSignIn) {
+            Label {
+                Text(.authSignInDevelopmentButton)
+            } icon: {
+                Image(systemName: "person.badge.key.fill")
+                    .accessibilityHidden(true)
+            }
+        }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
+        .disabled(isWorking)
+    }
+    #endif
+
+    private func caption(_ resource: LocalizedStringResource) -> some View {
+        Text(resource)
+            .font(PaeoniaTypography.caption)
+            .foregroundStyle(.paeoniaTextTertiary)
+            .multilineTextAlignment(.center)
     }
 }
 
 struct AuthOnboardingView: View {
+    let session: AuthSession?
     let isWorking: Bool
-    let onCompleteOnboarding: () -> Void
+    let onCompleteOnboarding: (String) -> Void
     let onSignOut: () -> Void
+
+    @State private var displayName: String
+
+    init(
+        session: AuthSession?,
+        isWorking: Bool,
+        onCompleteOnboarding: @escaping (String) -> Void,
+        onSignOut: @escaping () -> Void
+    ) {
+        self.session = session
+        self.isWorking = isWorking
+        self.onCompleteOnboarding = onCompleteOnboarding
+        self.onSignOut = onSignOut
+        _displayName = State(initialValue: session?.displayName ?? "")
+    }
 
     var body: some View {
         PaeoniaCard {
@@ -69,26 +117,56 @@ struct AuthOnboardingView: View {
                 message: .authOnboardingMessage,
                 systemImage: "person.crop.circle.badge.checkmark"
             ) {
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    Button(action: onCompleteOnboarding) {
-                        Label {
-                            Text(.authOnboardingCompleteButton)
-                        } icon: {
-                            Image(systemName: "checkmark.circle.fill")
-                                .accessibilityHidden(true)
-                        }
-                    }
-                    .buttonStyle(PaeoniaPrimaryButtonStyle())
-                    .disabled(isWorking)
-
-                    Button(action: onSignOut) {
-                        Text(.authOnboardingSignOutButton)
-                    }
-                    .buttonStyle(PaeoniaQuietButtonStyle())
-                    .disabled(isWorking)
-                }
+                onboardingActions
             }
         }
+    }
+
+    private var onboardingActions: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            displayNameField
+            completeButton
+            signOutButton
+        }
+    }
+
+    private var displayNameField: some View {
+        TextField(
+            text: $displayName,
+            prompt: Text(.authOnboardingDisplayNamePlaceholder)
+        ) {
+            Text(.authOnboardingDisplayNameLabel)
+        }
+        .textContentType(.name)
+        .textInputAutocapitalization(.words)
+        .autocorrectionDisabled(false)
+        .padding(.horizontal, PaeoniaSpacing.space12)
+        .padding(.vertical, PaeoniaSpacing.space12)
+        .background(.paeoniaSurfaceSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12))
+    }
+
+    private var completeButton: some View {
+        Button {
+            onCompleteOnboarding(displayName)
+        } label: {
+            Label {
+                Text(.authOnboardingCompleteButton)
+            } icon: {
+                Image(systemName: "checkmark.circle.fill")
+                    .accessibilityHidden(true)
+            }
+        }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
+        .disabled(isWorking || displayName.trimmedNonEmpty == nil)
+    }
+
+    private var signOutButton: some View {
+        Button(action: onSignOut) {
+            Text(.authOnboardingSignOutButton)
+        }
+        .buttonStyle(PaeoniaQuietButtonStyle())
+        .disabled(isWorking)
     }
 }
 
@@ -132,7 +210,7 @@ struct AuthenticatedBaselineView: View {
 
     private var actionStack: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            Text(.authSignedInTestAccountCaption)
+            Text(.authSignedInReadyCaption)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextTertiary)
 

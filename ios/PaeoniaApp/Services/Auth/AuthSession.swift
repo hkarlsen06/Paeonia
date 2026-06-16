@@ -1,45 +1,65 @@
-struct AuthSession: Equatable, Identifiable, Sendable {
+nonisolated struct AuthSession: Equatable, Identifiable, Sendable {
     let id: String
     let provider: AuthProvider
-    let displayName: String
+    let displayName: String?
+    let timeZoneID: String?
     let profileStatus: AuthProfileStatus
 
     // swiftlint:disable:next unneeded_synthesized_initializer
     nonisolated init(
         id: String,
         provider: AuthProvider,
-        displayName: String,
+        displayName: String?,
+        timeZoneID: String?,
         profileStatus: AuthProfileStatus
     ) {
         self.id = id
         self.provider = provider
         self.displayName = displayName
+        self.timeZoneID = timeZoneID
         self.profileStatus = profileStatus
     }
 
-    nonisolated func completingOnboarding() -> AuthSession {
+    nonisolated func completingOnboarding(
+        displayName: String,
+        timeZoneID: String
+    ) -> AuthSession {
         AuthSession(
             id: id,
             provider: provider,
             displayName: displayName,
+            timeZoneID: timeZoneID,
             profileStatus: .complete
         )
     }
 }
 
-enum AuthProvider: Equatable, Sendable {
+nonisolated enum AuthProvider: Equatable, Sendable {
     case apple
     case google
     case passkey
     case development
+    case unknown
 }
 
-enum AuthProfileStatus: Equatable, Sendable {
+nonisolated enum AuthProfileStatus: Equatable, Sendable {
     case needsOnboarding
     case complete
 }
 
-enum AuthRoute: Equatable, Sendable {
+nonisolated struct AppleSignInCredential: Equatable, Sendable {
+    let idToken: String
+    let nonce: String
+    let fullName: String?
+}
+
+nonisolated struct AuthRouteResolver: Sendable {
+    func route(for session: AuthSession?) -> AuthRoute {
+        AuthRoute(session: session)
+    }
+}
+
+nonisolated enum AuthRoute: Equatable, Sendable {
     case signedOut
     case onboarding(AuthSession)
     case limitedAuthenticated(AuthSession)

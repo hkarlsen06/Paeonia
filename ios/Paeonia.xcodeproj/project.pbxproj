@@ -11,6 +11,7 @@
 		2A2D03482FDD045E00A7BE1A /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A2D03472FDD045E00A7BE1A /* SwiftUI.framework */; };
 		2A2D03532FDD045F00A7BE1A /* PaeoniaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2A2D03432FDD045E00A7BE1A /* PaeoniaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2A2D03652FDD04D100A7BE1A /* PaeoniaNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2A2D035E2FDD04D100A7BE1A /* PaeoniaNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		2A2D03902FDE000000A7BE1A /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D03932FDE000000A7BE1A /* Supabase */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,13 +70,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2A2D03842FDD060000A7BE1A /* Exceptions for "PaeoniaApp" folder in "PaeoniaApp" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Supporting/Info.plist,
-			);
-			target = 000000000000000100000000 /* PaeoniaApp */;
-		};
 		2A2D03572FDD045F00A7BE1A /* Exceptions for "PaeoniaWidget" folder in "PaeoniaWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -89,6 +83,13 @@
 				Info.plist,
 			);
 			target = 2A2D035D2FDD04D100A7BE1A /* PaeoniaNotificationService */;
+		};
+		2A2D03842FDD060000A7BE1A /* Exceptions for "PaeoniaApp" folder in "PaeoniaApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Supporting/Info.plist,
+			);
+			target = 000000000000000100000000 /* PaeoniaApp */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -133,6 +134,7 @@
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				2A2D03902FDE000000A7BE1A /* Supabase in Frameworks */,
 			);
 		};
 		2A2D03402FDD045E00A7BE1A /* Frameworks */ = {
@@ -217,6 +219,9 @@
 				000000000000000000000010 /* PaeoniaApp */,
 			);
 			name = PaeoniaApp;
+			packageProductDependencies = (
+				2A2D03932FDE000000A7BE1A /* Supabase */,
+			);
 			productName = PaeoniaApp;
 			productReference = 000000000000000000000120 /* PaeoniaApp.app */;
 			productType = "com.apple.product-type.application";
@@ -337,6 +342,9 @@
 			);
 			mainGroup = 000000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2A2D03922FDE000000A7BE1A /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
 			projectDirPath = "";
@@ -579,6 +587,9 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MARKETING_VERSION = 1.0;
+				PAEONIA_AUTH_REDIRECT_URL = "paeonia://auth/callback";
+				PAEONIA_SUPABASE_PUBLISHABLE_KEY = sb_publishable_8uBdIagCGucwBYNyvoznyw_8BoEVrPy;
+				PAEONIA_SUPABASE_URL = "https://api.paeonia.no";
 				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -611,6 +622,9 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MARKETING_VERSION = 1.0;
+				PAEONIA_AUTH_REDIRECT_URL = "paeonia://auth/callback";
+				PAEONIA_SUPABASE_PUBLISHABLE_KEY = sb_publishable_8uBdIagCGucwBYNyvoznyw_8BoEVrPy;
+				PAEONIA_SUPABASE_URL = "https://api.paeonia.no";
 				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -901,6 +915,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2A2D03922FDE000000A7BE1A /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.47.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2A2D03932FDE000000A7BE1A /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2A2D03922FDE000000A7BE1A /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 000000000000000000000000 /* Project object */;
 }

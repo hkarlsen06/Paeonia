@@ -342,7 +342,7 @@ Prefer `mcp__supabase__.execute_sql` for database inspection and narrow, targete
 
 ### GitHub Integration Deployments
 
-Paeonia uses Supabase's GitHub integration for remote deploys. On push to the remote branch configured in Supabase:
+Paeonia uses Supabase's GitHub integration for remote deploys. On push to `origin` for the remote branch configured in Supabase, the Git integration automatically handles the Supabase deploy steps:
 
 - New migrations are applied.
 - Edge Functions declared in `config.toml` are deployed.
@@ -358,7 +358,9 @@ Paeonia uses Supabase's GitHub integration for remote deploys. On push to the re
 
 ### SQL And Migrations
 
-- Write CLI-applied migrations to `supabase/migrations/`.
+- Always create new migration files with `supabase migration new <migration_name>`, then edit the generated file.
+- Keep migration files in `supabase/migrations/`.
+- Do not push remote migrations with the Supabase CLI. Commit the migration files and let Supabase's Git integration apply them when the configured branch is pushed to `origin`.
 - Keep SQL source files in `supabase/sql/functions/` in sync with actual database definitions if that structure is added.
 - Use `supabase db pull` only when intentionally baselining or reconciling remote-first schema changes.
 

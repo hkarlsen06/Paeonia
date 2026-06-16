@@ -4,11 +4,12 @@
 
 actor AuthServiceSpy: AuthServicing {
     enum Operation: Hashable {
-        case currentSession
+        case restoreSession
+        case signInWithApple
         case signInForDevelopment
         case completeOnboarding
         case signOut
-        case deleteAccount
+        case requestAccountDeletion
     }
 
     private var session: AuthSession?
@@ -22,8 +23,22 @@ actor AuthServiceSpy: AuthServicing {
         self.failingOperations = failingOperations
     }
 
-    func currentSession() async throws -> AuthSession? {
-        try failIfNeeded(.currentSession)
+    func restoreSession() async throws -> AuthSession? {
+        try failIfNeeded(.restoreSession)
+        return session
+    }
+
+    func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession {
+        try failIfNeeded(.signInWithApple)
+
+        let session = AuthSession(
+            id: "apple-test-user",
+            provider: .apple,
+            displayName: credential.fullName,
+            timeZoneID: nil,
+            profileStatus: .needsOnboarding
+        )
+        self.session = session
         return session
     }
 
@@ -35,14 +50,17 @@ actor AuthServiceSpy: AuthServicing {
         return session
     }
 
-    func completeOnboarding() async throws -> AuthSession {
+    func completeOnboarding(displayName: String, timeZoneID: String) async throws -> AuthSession {
         try failIfNeeded(.completeOnboarding)
 
         guard let session else {
             throw AuthServiceError.noActiveSession
         }
 
-        let completedSession = session.completingOnboarding()
+        let completedSession = session.completingOnboarding(
+            displayName: displayName,
+            timeZoneID: timeZoneID
+        )
         self.session = completedSession
         return completedSession
     }
@@ -52,8 +70,8 @@ actor AuthServiceSpy: AuthServicing {
         session = nil
     }
 
-    func deleteAccount() async throws {
-        try failIfNeeded(.deleteAccount)
+    func requestAccountDeletion() async throws {
+        try failIfNeeded(.requestAccountDeletion)
         session = nil
     }
 
@@ -85,8 +103,20 @@ actor BlockingDeleteAuthService: AuthServicing {
         deleteReleaseContinuation = nil
     }
 
-    func currentSession() async throws -> AuthSession? {
+    func restoreSession() async throws -> AuthSession? {
         session
+    }
+
+    func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession {
+        let session = AuthSession(
+            id: "apple-test-user",
+            provider: .apple,
+            displayName: credential.fullName,
+            timeZoneID: nil,
+            profileStatus: .needsOnboarding
+        )
+        self.session = session
+        return session
     }
 
     func signInForDevelopment() async throws -> AuthSession {
@@ -95,12 +125,15 @@ actor BlockingDeleteAuthService: AuthServicing {
         return session
     }
 
-    func completeOnboarding() async throws -> AuthSession {
+    func completeOnboarding(displayName: String, timeZoneID: String) async throws -> AuthSession {
         guard let session else {
             throw AuthServiceError.noActiveSession
         }
 
-        let completedSession = session.completingOnboarding()
+        let completedSession = session.completingOnboarding(
+            displayName: displayName,
+            timeZoneID: timeZoneID
+        )
         self.session = completedSession
         return completedSession
     }
@@ -109,7 +142,7 @@ actor BlockingDeleteAuthService: AuthServicing {
         session = nil
     }
 
-    func deleteAccount() async throws {
+    func requestAccountDeletion() async throws {
         deleteStarted = true
         deleteStartedContinuation?.resume()
         deleteStartedContinuation = nil
@@ -128,6 +161,7 @@ extension AuthSession {
             id: "test-user",
             provider: .development,
             displayName: "Test account",
+            timeZoneID: profileStatus == .complete ? "Europe/Oslo" : nil,
             profileStatus: profileStatus
         )
     }

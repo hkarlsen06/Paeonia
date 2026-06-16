@@ -35,6 +35,12 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>PaeoniaAuthRedirectURL</key>
+	<string>$(PAEONIA_AUTH_REDIRECT_URL)</string>
+	<key>PaeoniaSupabasePublishableKey</key>
+	<string>$(PAEONIA_SUPABASE_PUBLISHABLE_KEY)</string>
+	<key>PaeoniaSupabaseURL</key>
+	<string>$(PAEONIA_SUPABASE_URL)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
