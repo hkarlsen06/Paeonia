@@ -1,6 +1,7 @@
 # dependencies
 node_modules
 .pnpm-store
+package-lock.json
 
 # Next.js/static export
 marketing/.next/
