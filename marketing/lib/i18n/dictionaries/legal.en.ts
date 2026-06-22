@@ -1,5 +1,6 @@
 export const legalEn = {
-  contactEmail: 'contact@tidex.no',
+  contactEmail: 'contact@paeonia.no',
+  supportEmail: 'support@paeonia.no',
   privacy: {
     meta: {
       title: 'Privacy Policy',
@@ -17,7 +18,7 @@ export const legalEn = {
       },
       {
         heading: 'Need help',
-        paragraphs: ['If you have a privacy question, email contact@tidex.no.'],
+        paragraphs: ['If you have a privacy question, email contact@paeonia.no.'],
       },
     ],
   },
@@ -38,7 +39,7 @@ export const legalEn = {
       },
       {
         heading: 'Need help',
-        paragraphs: ['If you have a question about Paeonia, email contact@tidex.no.'],
+        paragraphs: ['If you have a question about Paeonia, email contact@paeonia.no.'],
       },
     ],
   },

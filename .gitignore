@@ -28,6 +28,11 @@ test-results
 ios/build/
 .build/
 
+# generated/design archive outputs
+design/app-icon/exports/png/
+design/brand/originals/
+design/brand/previews/
+
 # Xcode user state
 *.xcuserstate
 *.xcuserdata/

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     default: 'Paeonia',
     template: '%s - Paeonia',
   },
-  description: 'Paeonia is being built.',
+  description: 'A private place for couples who want to feel close through distance.',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: '32x32' },
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Paeonia',
-    description: 'Paeonia is being built.',
+    description: 'A private place for couples who want to feel close through distance.',
     url: 'https://paeonia.no',
     siteName: 'Paeonia',
     type: 'website',
@@ -27,7 +27,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#fbf7f5',
+  viewportFit: 'cover',
+  themeColor: '#2A0B1E',
+  colorScheme: 'dark',
 };
 
 export default function RootLayout({
@@ -36,8 +38,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className="dark">
+      <body className="bg-background text-foreground">{children}</body>
     </html>
   );
 }

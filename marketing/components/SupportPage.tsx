@@ -11,7 +11,7 @@ interface SupportPageProps {
 export function SupportPage({ locale }: SupportPageProps) {
   const dictionary = getMarketingDictionary(locale);
   const content = dictionary.marketing.support;
-  const email = dictionary.legal.contactEmail;
+  const email = dictionary.legal.supportEmail;
 
   return (
     <SiteShell locale={locale}>

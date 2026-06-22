@@ -9,7 +9,7 @@ The goal is not to freeze every visual detail. The goal is to make the app easie
 | Area | Status | Notes |
 | --- | --- | --- |
 | App icon | In progress | Designer order placed. Source must be layered/vector for Apple Icon Composer. |
-| Color system | Deferred | Waiting for peony photo/reference and logo direction. |
+| Color system | Partly decided | Marketing brand colors now follow the delivered logo assets. Native app token values can still be finalized during implementation. |
 | Typography | Decided | Use SF/system typography across native app and marketing for MVP. |
 | Spacing/radius tokens | Decided | Use a small semantic scale, not ad hoc values. |
 | Component primitives | Decided | Buttons, cards, sheets, fields, empty states, alerts, paywall cards. |
@@ -27,6 +27,7 @@ The goal is not to freeze every visual detail. The goal is to make the app easie
 - [Widget Visual Language](./06-widget-visual-language.md)
 - [Voice And Copy](./07-voice-and-copy.md)
 - [Accessibility](./08-accessibility.md)
+- [Marketing Brand Guidelines](./09-marketing-brand-guidelines.md)
 
 ## Hard Rules
 
@@ -50,7 +51,6 @@ The goal is not to freeze every visual detail. The goal is to make the app easie
 
 These decisions are intentionally not locked yet:
 
-- final app icon mark
-- final color palette
-- app accent color
 - icon material/depth treatment in Apple Icon Composer
+
+The delivered logo and app-icon mark are now the canonical visual baseline for marketing. Native app accent values and final icon material/depth treatment can still be tuned during implementation.

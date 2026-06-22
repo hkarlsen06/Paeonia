@@ -2,11 +2,13 @@
 
 Tokens are the shared visual language for Paeonia. Feature views should use semantic tokens rather than raw values.
 
-Color values are intentionally deferred until the logo and peony reference are ready. Token names and usage can be decided now.
+Marketing color values now follow the delivered logo and app-icon assets. See [Marketing Brand Guidelines](./09-marketing-brand-guidelines.md) for the public website palette and usage rules.
+
+Native app color implementation can still finalize exact adaptive token values during build-out. Token names and usage can be decided now.
 
 ## Color Tokens
 
-Do not commit final values yet. Define semantic roles first.
+Use semantic roles first. Do not scatter raw brand hex values through feature views.
 
 ### Background
 

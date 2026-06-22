@@ -26,7 +26,14 @@ design/app-icon/
 
 ## Direction
 
-The leading concept is an abstract peony mark made from two interwoven petals. It should feel intimate and premium without becoming childish or generic.
+The selected concept is the delivered RM-02 app-icon mark, copied to `source/concepts/paeonia-app-icon-mark.svg`. It should feel intimate and premium without becoming childish or generic.
+
+## Source Files
+
+- `source/concepts/paeonia-app-icon-mark.svg`: original delivered SVG, including the plum rounded-square background.
+- `source/concepts/paeonia-app-icon-mark-content.svg`: content-only SVG with the background removed, but still using the original full icon canvas.
+- `source/concepts/paeonia-app-icon-mark-content-tight.svg`: content-only SVG cropped to the visible mark bounds. This is useful when an importer should see only the artwork.
+- `source/concepts/paeonia-app-icon-mark-content-tight-square.svg`: content-only SVG on a tighter square canvas. Prefer this for Icon Composer if the tight non-square crop behaves awkwardly.
 
 Design constraints:
 

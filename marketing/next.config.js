@@ -6,7 +6,9 @@ module.exports = (phase) => {
 
   /** @type {import('next').NextConfig} */
   const nextConfig = {
-    ...(isDevelopment ? {} : { output: 'export' }),
+    ...(isDevelopment
+      ? { allowedDevOrigins: ['192.168.10.235'] }
+      : { output: 'export' }),
     images: { unoptimized: true },
     trailingSlash: true,
     outputFileTracingRoot: path.join(__dirname, '..'),

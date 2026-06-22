@@ -1,0 +1,100 @@
+{
+  "fill" : {
+    "solid" : "srgb:0.21961,0.05882,0.15294,1.00000"
+  },
+  "groups" : [
+    {
+      "hidden" : false,
+      "layers" : [
+        {
+          "image-name" : "light-float.svg",
+          "name" : "light-float",
+          "opacity" : 1,
+          "position" : {
+            "scale" : 2.5,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "name" : "Overlay Petals",
+      "shadow" : {
+        "kind" : "none",
+        "opacity" : 0
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    },
+    {
+      "blend-mode" : "normal",
+      "blur-material" : null,
+      "hidden" : false,
+      "layers" : [
+        {
+          "image-name" : "base-darkened.svg",
+          "name" : "base-darkened",
+          "opacity" : 1
+        }
+      ],
+      "lighting" : "individual",
+      "name" : "Base flower",
+      "position" : {
+        "scale" : 2.5,
+        "translation-in-points" : [
+          0,
+          0
+        ]
+      },
+      "shadow" : {
+        "kind" : "layer-color",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    },
+    {
+      "blur-material" : null,
+      "hidden" : true,
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "fill" : "automatic",
+          "glass" : true,
+          "image-name" : "paeonia-app-icon-mark-content-tight-square.svg",
+          "name" : "paeonia_logo.svg",
+          "opacity" : 1
+        }
+      ],
+      "lighting" : "individual",
+      "name" : "Flat",
+      "position" : {
+        "scale" : 2.5,
+        "translation-in-points" : [
+          0,
+          0
+        ]
+      },
+      "shadow" : {
+        "kind" : "layer-color",
+        "opacity" : 0.27
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
