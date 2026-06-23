@@ -2,9 +2,9 @@
 
 Tokens are the shared visual language for Paeonia. Feature views should use semantic tokens rather than raw values.
 
-Marketing color values now follow the delivered logo and app-icon assets. See [Marketing Brand Guidelines](./09-marketing-brand-guidelines.md) for the public website palette and usage rules.
+Marketing and native app color direction now follow the delivered logo and app-icon assets. See [Marketing Brand Guidelines](./09-marketing-brand-guidelines.md) for the canonical palette values.
 
-Native app color implementation can still finalize exact adaptive token values during build-out. Token names and usage can be decided now.
+Native app implementation should use a single plum-led brand theme for MVP. Do not build separate light and dark theme palettes unless the product decision is explicitly reopened.
 
 ## Color Tokens
 
@@ -12,13 +12,13 @@ Use semantic roles first. Do not scatter raw brand hex values through feature vi
 
 ### Background
 
-- `paeoniaBackgroundPrimary`: app root background
-- `paeoniaBackgroundSecondary`: grouped/list background
+- `paeoniaBackgroundPrimary`: app root background, based on `paeoniaPlum` (`#380F27`)
+- `paeoniaBackgroundSecondary`: deeper grouped/list background, based on `paeoniaPlumDeep` (`#2A0B1E`)
 - `paeoniaBackgroundElevated`: sheets, popovers, elevated cards
 
 ### Surface
 
-- `paeoniaSurfacePrimary`: main cards
+- `paeoniaSurfacePrimary`: main cards, based on `paeoniaPlumRaised` (`#4F203A`) or a materialized variant
 - `paeoniaSurfaceSecondary`: secondary cards and grouped rows
 - `paeoniaSurfacePressed`: pressed/highlighted surface state
 - `paeoniaSurfaceDisabled`: unavailable controls
@@ -32,8 +32,8 @@ Use semantic roles first. Do not scatter raw brand hex values through feature vi
 
 ### Accent And State
 
-- `paeoniaAccentPrimary`: primary action/accent
-- `paeoniaAccentSecondary`: softer accent
+- `paeoniaAccentPrimary`: primary action/accent, based on `paeoniaPetalLight` (`#F27EB2`)
+- `paeoniaAccentSecondary`: stronger pink accent, based on `paeoniaPink` (`#EF5094`)
 - `paeoniaSuccess`: success/continued streak/saved
 - `paeoniaWarning`: destructive-adjacent or expiring streak warning
 - `paeoniaError`: destructive/error
@@ -135,4 +135,4 @@ Expected files:
 - `PaeoniaMotion.swift`
 - `PaeoniaHaptics.swift`
 
-Do not create token files for decisions that are still unknown. For example, `PaeoniaColors.swift` can define semantic names with temporary system-backed values, but final brand color values should wait for the logo and peony reference.
+Do not create parallel light/dark token sets for MVP. `PaeoniaColors.swift` should expose semantic names backed by the canonical plum palette, with accessibility variants only where needed for contrast or system settings.

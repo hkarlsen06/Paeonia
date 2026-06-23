@@ -9,7 +9,7 @@ Accessibility is part of the design foundation. Paeonia handles private emotiona
 - Support Reduce Motion.
 - Do not rely on color alone to communicate state.
 - Keep tap targets at least 44x44pt.
-- Maintain sufficient contrast in light, dark, and tinted contexts.
+- Maintain sufficient contrast in the canonical plum theme and any platform-driven tinted contexts.
 - Provide text alternatives for icon-only controls.
 
 ## VoiceOver
@@ -29,7 +29,7 @@ Avoid exposing decorative layout details to VoiceOver.
 
 ## Color And Contrast
 
-Final colors are deferred, but contrast rules are not.
+The app uses one plum-led brand theme for MVP, but contrast rules still apply.
 
 When the palette is chosen:
 
@@ -81,6 +81,6 @@ Before TestFlight:
 - Dynamic Type large accessibility size pass
 - VoiceOver smoke pass
 - Reduce Motion pass
-- light/dark mode contrast pass
+- plum theme contrast pass
 - widget tint/contrast pass
 - paywall/legal readability pass

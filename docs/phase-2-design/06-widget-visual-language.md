@@ -23,8 +23,9 @@ The widget should be:
 - intimate
 - drawing-first
 - readable at a glance
-- beautiful in tinted, dark, and light contexts
-- consistent with the app icon and app palette once final colors exist
+- beautiful in Paeonia's plum-led brand theme
+- resilient when iOS applies widget tinting or accessibility appearance changes
+- consistent with the app icon and app palette
 
 ## Drawing Model
 
@@ -86,10 +87,8 @@ Do not turn the widget into a dashboard.
 
 ## Appearance Modes
 
-The widget must be checked in:
+The app does not define separate light and dark product themes for MVP. The widget should still be checked in platform-driven contexts:
 
-- light mode
-- dark mode
 - tinted mode
 - small widget size
 - medium widget size, if supported
@@ -97,4 +96,4 @@ The widget must be checked in:
 
 ## Future Design Dependency
 
-Final widget colors should follow the app icon palette. Until then, use semantic tokens only.
+Widget colors should follow the app icon palette through semantic tokens.

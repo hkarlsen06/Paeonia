@@ -53,13 +53,19 @@ Avoid:
 The app should feel deeply iOS-native:
 
 - use SwiftUI idioms where they help
-- support light/dark/tinted contexts
+- use Paeonia's single plum-led brand theme instead of separate light and dark appearances
 - respect Dynamic Type
 - use system gestures and sheet patterns
 - prefer platform accessibility over custom behavior
 - keep performance and offline responsiveness visible in the feel of the app
 
 Native does not mean bland. It means Paeonia should feel like it belongs on the phone.
+
+## Theme Direction
+
+Paeonia should ship with one canonical app theme for MVP: a plum-led brand surface with pink/petal accents from the logo. Do not design a light mode and dark mode split for native app screens unless that decision is explicitly reopened.
+
+This is a product feeling decision, not just a color preference. The app should feel like a private evening space for two people: calm, warm, and contained. System settings such as Dynamic Type, Reduce Motion, contrast, and accessibility still apply, but the visual identity remains Paeonia's plum theme.
 
 Component styling should be slightly more custom than default iOS controls, but still native in behavior. Customization should show up through spacing, shape, material, haptics, and semantic color, not through alien controls.
 

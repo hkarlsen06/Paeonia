@@ -9,7 +9,7 @@ The goal is not to freeze every visual detail. The goal is to make the app easie
 | Area | Status | Notes |
 | --- | --- | --- |
 | App icon | In progress | Designer order placed. Source must be layered/vector for Apple Icon Composer. |
-| Color system | Partly decided | Marketing brand colors now follow the delivered logo assets. Native app token values can still be finalized during implementation. |
+| Color system | Decided | Paeonia uses a single plum-led brand theme. No separate light/dark app themes for MVP. |
 | Typography | Decided | Use SF/system typography across native app and marketing for MVP. |
 | Spacing/radius tokens | Decided | Use a small semantic scale, not ad hoc values. |
 | Component primitives | Decided | Buttons, cards, sheets, fields, empty states, alerts, paywall cards. |
@@ -43,6 +43,7 @@ The goal is not to freeze every visual detail. The goal is to make the app easie
 ## Locked Direction
 
 - Overall feel: premium calm.
+- Theme: one canonical plum-led brand theme. Do not design separate light and dark app appearances for MVP.
 - Component feel: slightly custom on top of native iOS, not fully stock controls.
 - Haptics: subtle in normal use, tactile for key relationship moments.
 - Typography: SF/system typography everywhere, including marketing. No separate brand font for MVP.
@@ -53,4 +54,4 @@ These decisions are intentionally not locked yet:
 
 - icon material/depth treatment in Apple Icon Composer
 
-The delivered logo and app-icon mark are now the canonical visual baseline for marketing. Native app accent values and final icon material/depth treatment can still be tuned during implementation.
+The delivered logo and app-icon mark are now the canonical visual baseline for marketing and native app color direction. Final icon material/depth treatment can still be tuned during implementation.

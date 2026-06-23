@@ -239,6 +239,8 @@ String(localized: .countdownDaysRemaining(Int32(days)))
 
 Use semantic colors and design tokens. Do not scatter hardcoded colors, spacing, or typography values through feature views.
 
+Paeonia uses one canonical plum-led brand theme for MVP. Do not design or implement separate light and dark native app appearances unless the user explicitly reopens that product decision. Accessibility settings still matter: preserve Dynamic Type, Reduce Motion, contrast, and VoiceOver behavior within the plum theme.
+
 Suggested semantic colors:
 
 - `paeoniaBackground`
