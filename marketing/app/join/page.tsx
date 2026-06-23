@@ -3,15 +3,16 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Join Paeonia',
-  description: 'Paeonia invite links will open the app later.',
+  description: 'Paeonia partner invite links will open the shared space for a couple.',
 };
 
 export default function JoinPage() {
   return (
     <main className="page-shell narrow">
-      <h1>Paeonia is not ready yet.</h1>
+      <h1>Partner invites will open Paeonia.</h1>
       <p className="lede">
-        This invite link will open Paeonia later. For now, the app is still being built.
+        When Paeonia launches, this link will connect you with your partner inside your shared space.
+        There are no public profiles, people search, or suggested matches in the app.
       </p>
       <div className="actions">
         <Link className="button" href="/en/">

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     default: 'Paeonia',
     template: '%s - Paeonia',
   },
-  description: 'A private place for couples who want to feel close through distance.',
+  description: 'A private place for couples who want to feel close between visits.',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: '32x32' },
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Paeonia',
-    description: 'A private place for couples who want to feel close through distance.',
+    description: 'A private place for couples who want to feel close between visits.',
     url: 'https://paeonia.no',
     siteName: 'Paeonia',
     type: 'website',

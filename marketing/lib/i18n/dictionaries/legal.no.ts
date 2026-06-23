@@ -4,7 +4,7 @@ export const legalNo = {
   privacy: {
     meta: {
       title: 'Personvern',
-      description: 'Den fullstendige personvernteksten er ikke klar ennå.',
+      description: 'Personvern for Paeonia før lansering.',
     },
     title: 'Personvern',
     updated: 'Utkast',
@@ -12,8 +12,8 @@ export const legalNo = {
       {
         heading: 'Hva denne siden vil forklare',
         paragraphs: [
-          'Paeonia bygges som en privat app for par.',
-          'Før appen er klar, blir denne siden erstattet med en tydelig personverntekst.',
+          'Paeonia bygges som en privat app for par som deler ett sted sammen.',
+          'Før den første versjonen lanseres, får denne siden en tydelig personverntekst skrevet i vanlig språk.',
         ],
       },
       {
@@ -25,7 +25,7 @@ export const legalNo = {
   terms: {
     meta: {
       title: 'Vilkår',
-      description: 'De fullstendige vilkårene er ikke klare ennå.',
+      description: 'Vilkår for Paeonia før lansering.',
     },
     title: 'Vilkår',
     updated: 'Utkast',
@@ -33,8 +33,8 @@ export const legalNo = {
       {
         heading: 'Hva denne siden vil forklare',
         paragraphs: [
-          'Paeonia er ikke åpen for alle ennå.',
-          'Før appen er klar, blir denne siden erstattet med tydelige vilkår.',
+          'Paeonia gjør klar sin første versjon.',
+          'Før folk kan bruke appen, får denne siden tydelige vilkår skrevet i vanlig språk.',
         ],
       },
       {

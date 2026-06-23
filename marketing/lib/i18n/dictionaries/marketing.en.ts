@@ -1,22 +1,22 @@
 export const marketingEn = {
   meta: {
-    title: 'Paeonia - A private place for the two of you',
-    description: 'Paeonia is a private app for couples who want to feel close through distance.',
-    ogTitle: 'Paeonia - A private place for the two of you',
-    ogDescription: 'Keep small notes, shared moments, drawings and milestones in one calm space.',
-    ogImageAlt: 'Paeonia — a private place for the two of you',
+    title: 'Paeonia - Feel close between visits',
+    description: 'Paeonia is a private app for couples who want to feel close between visits.',
+    ogTitle: 'Paeonia - Feel close between visits',
+    ogDescription: 'Keep small notes, shared moments, drawings, and countdowns in one private place.',
+    ogImageAlt: 'Paeonia, a private place for the two of you',
   },
   hero: {
     brandName: 'Paeonia',
     navPrivacy: 'Privacy',
     navSupport: 'Support',
-    eyebrow: 'Made for one couple',
-    title: 'A private place for the two of you',
+    eyebrow: 'Made for the days between visits',
+    title: 'Feel close between visits',
     description:
-      'Keep small notes, shared drawings, and the days you are counting down to — together in one calm space, just for the two of you.',
-    primaryCta: 'Contact us',
+      'Keep the small notes, drawings, memories, and countdowns that make distance feel lighter. One private place, just for the two of you.',
+    primaryCta: "I'm interested",
     secondaryCta: 'FAQ',
-    trustNote: 'Invite-only. Built for one couple, never a feed.',
+    trustNote: 'One partner sends a link to the other. There is no people search, browsing, or public profile.',
     screenshotAlt: 'Paeonia app showing a private shared space for a couple.',
     preview: {
       appLabel: 'Today',
@@ -27,27 +27,34 @@ export const marketingEn = {
       memoryDate: '47 days apart',
       memoryTitle: 'Next visit in March',
       widgetLabel: 'Home screen widget',
-      widgetText: 'A quiet sign that your partner was here.',
+      widgetText: 'A small sign they thought of you.',
     },
   },
   faq: {
     eyebrow: 'FAQ',
-    heading: 'Questions before launch',
+    heading: 'Before launch',
     description:
-      'A few simple answers about what Paeonia is and how it keeps your relationship private.',
+      'A few simple answers about what Paeonia is, how pairing works, and how it keeps your relationship private.',
     items: [
       {
-        question: 'Is Paeonia available now?',
+        question: 'Can we use Paeonia now?',
         answers: [
-          'Not yet. The first version is still being built.',
-          'When it is ready, this is where you will be able to find it.',
+          'The first release is being prepared now.',
+          'When it is ready, this page will show you how to get started.',
         ],
       },
       {
         question: 'Is Paeonia private?',
         answers: [
-          'Yes — that is the whole point. It is made for one couple, not a public profile or a social feed.',
-          'There are no followers, no audience, and nothing to perform for.',
+          'Yes. Each shared space belongs to one couple.',
+          'There are no followers, public profiles, or ways to browse for people inside the app.',
+        ],
+      },
+      {
+        question: 'How do invites work?',
+        answers: [
+          'An invite is only for pairing with your partner.',
+          'One person creates the shared space, then invites the other. Paeonia does not have people search, public profiles, or suggested people.',
         ],
       },
       {
@@ -60,7 +67,7 @@ export const marketingEn = {
       {
         question: 'Who is Paeonia for?',
         answers: [
-          'Couples who want a calm, shared place to stay close — especially when they spend time apart.',
+          'Couples who want a shared place to feel close, especially when they spend time apart.',
         ],
       },
       {
@@ -75,17 +82,17 @@ export const marketingEn = {
     eyebrow: 'Built for two',
     heading: 'Why it feels different',
     description:
-      'Paeonia is shaped around one relationship — calm, private, and easy to return to.',
+      'Paeonia is shaped around one relationship: private, personal, and easy to return to.',
     items: [
       {
         title: 'Just the two of you',
         description:
-          'No followers, no feed, no audience. The space belongs only to your relationship.',
+          'No public profiles, no people search, no audience. The space belongs only to your relationship.',
       },
       {
-        title: 'Calm, not noisy',
+        title: 'Small rituals, no pressure',
         description:
-          'Small rituals help distance feel lighter — without streaks, pressure, or guilt.',
+          'Check-ins and shared moments help distance feel lighter, without streaks, pressure, or guilt.',
       },
       {
         title: 'Yours to keep',
@@ -95,23 +102,23 @@ export const marketingEn = {
     ],
   },
   ctaPrimary: {
-    heading: 'A calmer way to stay close',
+    heading: 'Built carefully for private relationships',
     description:
-      'Paeonia is still being built, and privacy is part of the product from the very start. Read how it works.',
+      'Privacy is part of Paeonia from the first release. See what the policy will cover and how to reach us with questions.',
     button: 'Read how privacy works',
   },
   contact: {
-    heading: 'Have a question?',
-    description: 'Reach out if anything is unclear, or if you just want to say hello.',
-    button: 'Contact us',
-    emailSubject: 'Hello from Paeonia',
-    emailBody: 'Hi!\n\nI have a question about ...',
+    heading: 'Interested in Paeonia?',
+    description: 'Send us a note if you want launch updates or have a question.',
+    button: 'Send a note',
+    emailSubject: 'Interested in Paeonia',
+    emailBody: 'Hi!\n\nI am interested in Paeonia and would like to know more.',
   },
   footer: {
     copyright: '© 2026 Paeonia',
     logoAlt: 'Paeonia, a private place for the two of you.',
-    tagline: 'A quiet, private place for two people who are apart.',
-    note: 'Made with care. Not yet public.',
+    tagline: 'A private place for two people between visits.',
+    note: 'Made with care for private relationships.',
     headerNavigationLabel: 'Main navigation',
     footerNavigationLabel: 'Footer navigation',
     privacy: 'Privacy',
@@ -120,7 +127,7 @@ export const marketingEn = {
   },
   support: {
     title: 'Support',
-    description: 'Paeonia is not ready yet. For questions, email us and we will help when we can.',
+    description: 'Paeonia is preparing its first release. For questions, email us and we will help when we can.',
     emailLabel: 'Email',
     back: 'Back to Paeonia',
   },

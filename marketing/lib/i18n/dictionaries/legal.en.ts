@@ -4,7 +4,7 @@ export const legalEn = {
   privacy: {
     meta: {
       title: 'Privacy Policy',
-      description: 'The full privacy policy is not ready yet.',
+      description: 'Privacy details for Paeonia before launch.',
     },
     title: 'Privacy Policy',
     updated: 'Draft',
@@ -12,8 +12,8 @@ export const legalEn = {
       {
         heading: 'What this page will cover',
         paragraphs: [
-          'Paeonia is being built as a private app for couples.',
-          'Before the app is ready, this page will be replaced with a clear privacy policy.',
+          'Paeonia is being built as a private app for couples who share one space together.',
+          'Before the first release, this page will include a clear privacy policy written in plain language.',
         ],
       },
       {
@@ -25,7 +25,7 @@ export const legalEn = {
   terms: {
     meta: {
       title: 'Terms of Service',
-      description: 'The full terms are not ready yet.',
+      description: 'Terms details for Paeonia before launch.',
     },
     title: 'Terms of Service',
     updated: 'Draft',
@@ -33,8 +33,8 @@ export const legalEn = {
       {
         heading: 'What this page will cover',
         paragraphs: [
-          'Paeonia is not open to the public yet.',
-          'Before the app is ready, this page will be replaced with clear terms of service.',
+          'Paeonia is preparing its first release.',
+          'Before people can use the app, this page will include clear terms of service written in plain language.',
         ],
       },
       {
