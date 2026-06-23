@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(28);
+SELECT plan(29);
 
 SELECT is(
   (
@@ -122,6 +122,12 @@ SELECT is(
   ),
   0,
   'anon cannot execute core public RPC wrappers'
+);
+
+SELECT ok(
+  pg_get_functiondef('internal.request_account_deletion()'::regprocedure)
+    LIKE '%#variable_conflict use_column%',
+  'account deletion RPC resolves privacy request status as a table column'
 );
 
 SELECT is(
