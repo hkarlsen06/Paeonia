@@ -28,8 +28,8 @@ protocol SupabaseAuthGateway: Actor {
     func signInWithApple(idToken: String, nonce: String) async throws -> SupabaseRemoteSession
     func signInWithGoogle(idToken: String, accessToken: String?) async throws -> SupabaseRemoteSession
     func loadProfile(userID: String) async throws -> SupabaseProfile
-    func updateProfileDisplayName(userID: String, displayName: String) async throws -> SupabaseProfile
-    func updateProfile(userID: String, displayName: String, timeZoneID: String) async throws -> SupabaseProfile
+    func updateAuthDisplayName(_ displayName: String) async throws
+    func completeProfileOnboarding(userID: String, timeZoneID: String) async throws -> SupabaseProfile
     func requestAccountDeletion() async throws
     func signOut() async throws
 }
@@ -93,30 +93,26 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
             .value
     }
 
-    func updateProfileDisplayName(
-        userID: String,
-        displayName: String
-    ) async throws -> SupabaseProfile {
-        try await client
-            .from("profiles")
-            .update(UpdateProfileDisplayNameRequest(displayName: displayName))
-            .eq("user_id", value: userID)
-            .select(profileColumns)
-            .single()
-            .execute()
-            .value
+    func updateAuthDisplayName(_ displayName: String) async throws {
+        try await client.auth.update(
+            user: UserAttributes(
+                data: [
+                    "name": .string(displayName),
+                    "full_name": .string(displayName),
+                    "display_name": .string(displayName),
+                ]
+            )
+        )
     }
 
-    func updateProfile(
+    func completeProfileOnboarding(
         userID: String,
-        displayName: String,
         timeZoneID: String
     ) async throws -> SupabaseProfile {
         try await client
             .from("profiles")
             .update(
-                UpdateProfileRequest(
-                    displayName: displayName,
+                CompleteProfileOnboardingRequest(
                     timeZoneID: timeZoneID,
                     timeZoneUpdatedAt: Date(),
                     onboardingCompletedAt: Date()
@@ -176,22 +172,12 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
     }
 }
 
-nonisolated private struct UpdateProfileDisplayNameRequest: Encodable {
-    let displayName: String
-
-    enum CodingKeys: String, CodingKey {
-        case displayName = "display_name"
-    }
-}
-
-nonisolated private struct UpdateProfileRequest: Encodable {
-    let displayName: String
+nonisolated private struct CompleteProfileOnboardingRequest: Encodable {
     let timeZoneID: String
     let timeZoneUpdatedAt: Date
     let onboardingCompletedAt: Date
 
     enum CodingKeys: String, CodingKey {
-        case displayName = "display_name"
         case timeZoneID = "time_zone_id"
         case timeZoneUpdatedAt = "time_zone_updated_at"
         case onboardingCompletedAt = "onboarding_completed_at"

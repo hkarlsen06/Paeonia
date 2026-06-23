@@ -20,7 +20,7 @@ struct SupabaseAuthServiceTests {
 
     @Test func restoreSessionUsesCompletedProfile() async throws {
         let gateway = FakeSupabaseAuthGateway(
-            remoteSession: .test(provider: .apple),
+            remoteSession: .test(provider: .apple, displayName: nil),
             profile: .test(onboardingCompletedAt: Date())
         )
         let service = SupabaseAuthService(gateway: gateway)
@@ -29,6 +29,20 @@ struct SupabaseAuthServiceTests {
 
         #expect(session?.profileStatus == .complete)
         #expect(session?.timeZoneID == "Europe/Oslo")
+        #expect(await gateway.updatedAuthDisplayName == nil)
+    }
+
+    @Test func restoreSessionPrefersAuthDisplayName() async throws {
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .apple, displayName: "Auth name"),
+            profile: .test(displayName: "Profile name", onboardingCompletedAt: Date())
+        )
+        let service = SupabaseAuthService(gateway: gateway)
+
+        let session = try await service.restoreSession()
+
+        #expect(session?.displayName == "Auth name")
+        #expect(await gateway.updatedAuthDisplayName == nil)
     }
 
     @Test func appleSignInPassesTokenAndNonceToGateway() async throws {
@@ -50,11 +64,11 @@ struct SupabaseAuthServiceTests {
         #expect(await gateway.appleNonce == "nonce")
         #expect(session.provider == .apple)
         #expect(session.displayName == "Taylor")
-        #expect(await gateway.updatedOAuthDisplayName == "Taylor")
+        #expect(await gateway.updatedAuthDisplayName == "Taylor")
         #expect(session.profileStatus == .needsOnboarding)
     }
 
-    @Test func appleSignInKeepsExistingProfileDisplayName() async throws {
+    @Test func appleSignInUsesOneTimeCredentialNameOverExistingProfileName() async throws {
         let gateway = FakeSupabaseAuthGateway(
             remoteSession: .test(provider: .unknown, displayName: nil),
             profile: .test(displayName: "Existing", onboardingCompletedAt: nil)
@@ -69,8 +83,8 @@ struct SupabaseAuthServiceTests {
             )
         )
 
-        #expect(session.displayName == "Existing")
-        #expect(await gateway.updatedOAuthDisplayName == nil)
+        #expect(session.displayName == "Taylor")
+        #expect(await gateway.updatedAuthDisplayName == "Taylor")
     }
 
     @Test func googleSignInUsesOAuthGatewaySession() async throws {
@@ -92,7 +106,7 @@ struct SupabaseAuthServiceTests {
         #expect(await gateway.googleAccessToken == "google-access-token")
         #expect(session.provider == .google)
         #expect(session.displayName == "Riley")
-        #expect(await gateway.updatedOAuthDisplayName == "Riley")
+        #expect(await gateway.updatedAuthDisplayName == nil)
         #expect(session.profileStatus == .needsOnboarding)
     }
 
@@ -108,8 +122,9 @@ struct SupabaseAuthServiceTests {
             timeZoneID: "Europe/Oslo"
         )
 
-        #expect(await gateway.updatedDisplayName == "Jamie")
+        #expect(await gateway.updatedAuthDisplayName == "Jamie")
         #expect(await gateway.updatedTimeZoneID == "Europe/Oslo")
+        #expect(session.displayName == "Jamie")
         #expect(session.profileStatus == .complete)
     }
 
@@ -150,8 +165,7 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
     private(set) var googleSignInCallCount = 0
     private(set) var googleIDToken: String?
     private(set) var googleAccessToken: String?
-    private(set) var updatedOAuthDisplayName: String?
-    private(set) var updatedDisplayName: String?
+    private(set) var updatedAuthDisplayName: String?
     private(set) var updatedTimeZoneID: String?
     private(set) var requestAccountDeletionCallCount = 0
     private(set) var signOutCallCount = 0
@@ -185,31 +199,25 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
         profile
     }
 
-    func updateProfileDisplayName(
-        userID: String,
-        displayName: String
-    ) async throws -> SupabaseProfile {
-        updatedOAuthDisplayName = displayName
+    func updateAuthDisplayName(_ displayName: String) async throws {
+        updatedAuthDisplayName = displayName
         profile = SupabaseProfile(
-            userID: userID,
+            userID: profile.userID,
             displayName: displayName,
             timeZoneID: profile.timeZoneID,
             timeZoneUpdatedAt: profile.timeZoneUpdatedAt,
             onboardingCompletedAt: profile.onboardingCompletedAt
         )
-        return profile
     }
 
-    func updateProfile(
+    func completeProfileOnboarding(
         userID: String,
-        displayName: String,
         timeZoneID: String
     ) async throws -> SupabaseProfile {
-        updatedDisplayName = displayName
         updatedTimeZoneID = timeZoneID
         profile = SupabaseProfile(
             userID: userID,
-            displayName: displayName,
+            displayName: profile.displayName,
             timeZoneID: timeZoneID,
             timeZoneUpdatedAt: Date(),
             onboardingCompletedAt: Date()

@@ -28,20 +28,19 @@ actor SupabaseAuthService: AuthServicing {
             idToken: credential.idToken,
             nonce: credential.nonce
         )
-        let profile = try await gateway.loadProfile(userID: remoteSession.userID)
         let oauthDisplayName = remoteSession.displayName ?? credential.fullName
-        let resolvedProfile = try await profileByPersistingOAuthDisplayNameIfNeeded(
-            profile,
-            userID: remoteSession.userID,
-            oauthDisplayName: oauthDisplayName
-        )
+        if remoteSession.displayName?.trimmedNonEmpty == nil,
+           let displayName = normalizedOptionalDisplayName(credential.fullName) {
+            try await gateway.updateAuthDisplayName(displayName)
+        }
+        let profile = try await gateway.loadProfile(userID: remoteSession.userID)
         return makeSession(
             remoteSession: SupabaseRemoteSession(
                 userID: remoteSession.userID,
                 provider: .apple,
                 displayName: oauthDisplayName
             ),
-            profile: resolvedProfile
+            profile: profile
         )
     }
 
@@ -51,18 +50,13 @@ actor SupabaseAuthService: AuthServicing {
             accessToken: credential.accessToken
         )
         let profile = try await gateway.loadProfile(userID: remoteSession.userID)
-        let resolvedProfile = try await profileByPersistingOAuthDisplayNameIfNeeded(
-            profile,
-            userID: remoteSession.userID,
-            oauthDisplayName: remoteSession.displayName
-        )
         return makeSession(
             remoteSession: SupabaseRemoteSession(
                 userID: remoteSession.userID,
                 provider: .google,
                 displayName: remoteSession.displayName
             ),
-            profile: resolvedProfile
+            profile: profile
         )
     }
 
@@ -77,12 +71,19 @@ actor SupabaseAuthService: AuthServicing {
             throw AuthServiceError.noActiveSession
         }
 
-        let profile = try await gateway.updateProfile(
+        try await gateway.updateAuthDisplayName(trimmedDisplayName)
+        let profile = try await gateway.completeProfileOnboarding(
             userID: remoteSession.userID,
-            displayName: trimmedDisplayName,
             timeZoneID: timeZoneID
         )
-        return makeSession(remoteSession: remoteSession, profile: profile)
+        return makeSession(
+            remoteSession: SupabaseRemoteSession(
+                userID: remoteSession.userID,
+                provider: remoteSession.provider,
+                displayName: trimmedDisplayName
+            ),
+            profile: profile
+        )
     }
 
     func signOut() async throws {
@@ -102,8 +103,8 @@ actor SupabaseAuthService: AuthServicing {
         remoteSession: SupabaseRemoteSession,
         profile: SupabaseProfile
     ) -> AuthSession {
-        let displayName = profile.displayName?.trimmedNonEmpty
-            ?? remoteSession.displayName?.trimmedNonEmpty
+        let displayName = remoteSession.displayName?.trimmedNonEmpty
+            ?? profile.displayName?.trimmedNonEmpty
         let profileStatus = Self.profileStatus(for: profile)
 
         return AuthSession(
@@ -112,22 +113,6 @@ actor SupabaseAuthService: AuthServicing {
             displayName: displayName,
             timeZoneID: profile.timeZoneID?.trimmedNonEmpty,
             profileStatus: profileStatus
-        )
-    }
-
-    private func profileByPersistingOAuthDisplayNameIfNeeded(
-        _ profile: SupabaseProfile,
-        userID: String,
-        oauthDisplayName: String?
-    ) async throws -> SupabaseProfile {
-        guard profile.displayName?.trimmedNonEmpty == nil,
-              let displayName = normalizedOptionalDisplayName(oauthDisplayName) else {
-            return profile
-        }
-
-        return try await gateway.updateProfileDisplayName(
-            userID: userID,
-            displayName: displayName
         )
     }
 

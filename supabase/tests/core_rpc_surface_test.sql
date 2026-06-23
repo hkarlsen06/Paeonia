@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(30);
+SELECT plan(33);
 
 SELECT is(
   (
@@ -149,6 +149,64 @@ SELECT is(
   ),
   2,
   'auth user hard deletion removes automatic self-owned identity rows'
+);
+
+SELECT is(
+  (
+    SELECT count(*)::integer
+    FROM pg_constraint constraint_row
+    JOIN pg_class table_row
+      ON table_row.oid = constraint_row.conrelid
+    JOIN pg_namespace schema_row
+      ON schema_row.oid = table_row.relnamespace
+    WHERE schema_row.nspname IN ('public', 'internal')
+      AND constraint_row.confrelid = 'auth.users'::regclass
+      AND constraint_row.confdeltype IN ('a', 'r')
+  ),
+  0,
+  'app schemas do not block Auth user deletion with restrictive user foreign keys'
+);
+
+SELECT is(
+  (
+    SELECT count(*)::integer
+    FROM pg_constraint constraint_row
+    JOIN pg_class table_row
+      ON table_row.oid = constraint_row.conrelid
+    JOIN pg_namespace schema_row
+      ON schema_row.oid = table_row.relnamespace
+    WHERE schema_row.nspname IN ('public', 'internal')
+      AND constraint_row.conname IN (
+        'client_operations_user_id_fkey',
+        'daily_question_shuffles_user_id_fkey',
+        'latest_partner_locations_user_id_fkey',
+        'location_sharing_preferences_user_id_fkey',
+        'notification_outbox_recipient_user_id_fkey',
+        'notification_preferences_user_id_fkey',
+        'profiles_user_id_fkey',
+        'user_devices_user_id_fkey'
+      )
+      AND constraint_row.confdeltype = 'c'
+  ),
+  8,
+  'short-lived user-owned rows cascade when an Auth user is deleted'
+);
+
+SELECT is(
+  (
+    SELECT count(*)::integer
+    FROM pg_constraint constraint_row
+    JOIN pg_class table_row
+      ON table_row.oid = constraint_row.conrelid
+    JOIN pg_namespace schema_row
+      ON schema_row.oid = table_row.relnamespace
+    WHERE schema_row.nspname = 'internal'
+      AND table_row.relname = 'notification_outbox'
+      AND constraint_row.conname = 'notification_outbox_target_device_id_fkey'
+      AND constraint_row.confdeltype = 'c'
+  ),
+  1,
+  'notification outbox rows do not block deleted device cleanup'
 );
 
 SELECT is(
@@ -311,8 +369,8 @@ SELECT is(
 
 SELECT ok(
   has_column_privilege('authenticated', 'public.profiles', 'display_name', 'select')
-    AND has_column_privilege('authenticated', 'public.profiles', 'display_name', 'update'),
-  'authenticated may read and update allowed own profile columns through RLS'
+    AND NOT has_column_privilege('authenticated', 'public.profiles', 'display_name', 'update'),
+  'authenticated may read profile display names but must update names through auth metadata'
 );
 
 SELECT ok(
