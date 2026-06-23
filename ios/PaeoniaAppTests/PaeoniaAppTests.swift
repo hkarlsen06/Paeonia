@@ -82,6 +82,20 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
+    @Test func googleSignInRoutesToOnboarding() async {
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy()
+        )
+
+        await viewModel.signInWithGoogle(using: GoogleSignInProviderSpy())
+
+        #expect(viewModel.state == .onboarding)
+        #expect(viewModel.currentSession?.provider == .google)
+        #expect(viewModel.currentSession?.profileStatus == .needsOnboarding)
+    }
+
+    @MainActor
     @Test func signOutClearsSession() async throws {
         let authService = AuthServiceSpy(session: .test(profileStatus: .complete))
         let viewModel = RootViewModel(
@@ -243,6 +257,16 @@ private actor OrderedAuthService: AuthServicing {
 
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession {
         .test(profileStatus: .needsOnboarding)
+    }
+
+    func signInWithGoogle(_ credential: GoogleSignInCredential) async throws -> AuthSession {
+        AuthSession(
+            id: "ordered-google-user",
+            provider: .google,
+            displayName: nil,
+            timeZoneID: nil,
+            profileStatus: .needsOnboarding
+        )
     }
 
     func signInForDevelopment() async throws -> AuthSession {

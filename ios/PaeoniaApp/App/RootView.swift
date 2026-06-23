@@ -3,14 +3,17 @@ import SwiftUI
 struct RootView: View {
     @State private var viewModel: RootViewModel
     private let appleSignInProvider: any AppleSignInProviding
+    private let googleSignInProvider: any GoogleSignInProviding
 
     @MainActor
     init(
         viewModel: RootViewModel? = nil,
-        appleSignInProvider: (any AppleSignInProviding)? = nil
+        appleSignInProvider: (any AppleSignInProviding)? = nil,
+        googleSignInProvider: (any GoogleSignInProviding)? = nil
     ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
         self.appleSignInProvider = appleSignInProvider ?? AppleSignInService()
+        self.googleSignInProvider = googleSignInProvider ?? GoogleSignInService()
     }
 
     var body: some View {
@@ -35,12 +38,10 @@ struct RootView: View {
     }
 
     private var signInScreen: some View {
-        // Apple is wired up; the other actions are intentionally inert for now
-        // while the MVP sign-in screen is the focus.
         SignInView(
             isWorking: viewModel.isWorking,
             onAppleSignIn: signInWithApple,
-            onGoogleSignIn: {},
+            onGoogleSignIn: signInWithGoogle,
             onPasskeySignIn: {},
             onSignUp: {}
         )
@@ -178,6 +179,12 @@ struct RootView: View {
     private func signInWithApple() {
         Task {
             await viewModel.signInWithApple(using: appleSignInProvider)
+        }
+    }
+
+    private func signInWithGoogle() {
+        Task {
+            await viewModel.signInWithGoogle(using: googleSignInProvider)
         }
     }
 

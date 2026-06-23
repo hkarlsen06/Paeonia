@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(29);
+SELECT plan(30);
 
 SELECT is(
   (
@@ -128,6 +128,27 @@ SELECT ok(
   pg_get_functiondef('internal.request_account_deletion()'::regprocedure)
     LIKE '%#variable_conflict use_column%',
   'account deletion RPC resolves privacy request status as a table column'
+);
+
+SELECT is(
+  (
+    SELECT count(*)::integer
+    FROM pg_constraint constraint_row
+    JOIN pg_class table_row
+      ON table_row.oid = constraint_row.conrelid
+    JOIN pg_namespace schema_row
+      ON schema_row.oid = table_row.relnamespace
+    WHERE schema_row.nspname = 'public'
+      AND table_row.relname IN ('profiles', 'notification_preferences')
+      AND constraint_row.conname IN (
+        'profiles_user_id_fkey',
+        'notification_preferences_user_id_fkey'
+      )
+      AND pg_get_constraintdef(constraint_row.oid) LIKE
+        '%REFERENCES auth.users(id) ON DELETE CASCADE%'
+  ),
+  2,
+  'auth user hard deletion removes automatic self-owned identity rows'
 );
 
 SELECT is(

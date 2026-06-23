@@ -29,13 +29,40 @@ actor SupabaseAuthService: AuthServicing {
             nonce: credential.nonce
         )
         let profile = try await gateway.loadProfile(userID: remoteSession.userID)
+        let oauthDisplayName = remoteSession.displayName ?? credential.fullName
+        let resolvedProfile = try await profileByPersistingOAuthDisplayNameIfNeeded(
+            profile,
+            userID: remoteSession.userID,
+            oauthDisplayName: oauthDisplayName
+        )
         return makeSession(
             remoteSession: SupabaseRemoteSession(
                 userID: remoteSession.userID,
                 provider: .apple,
-                displayName: remoteSession.displayName ?? credential.fullName
+                displayName: oauthDisplayName
             ),
-            profile: profile
+            profile: resolvedProfile
+        )
+    }
+
+    func signInWithGoogle(_ credential: GoogleSignInCredential) async throws -> AuthSession {
+        let remoteSession = try await gateway.signInWithGoogle(
+            idToken: credential.idToken,
+            accessToken: credential.accessToken
+        )
+        let profile = try await gateway.loadProfile(userID: remoteSession.userID)
+        let resolvedProfile = try await profileByPersistingOAuthDisplayNameIfNeeded(
+            profile,
+            userID: remoteSession.userID,
+            oauthDisplayName: remoteSession.displayName
+        )
+        return makeSession(
+            remoteSession: SupabaseRemoteSession(
+                userID: remoteSession.userID,
+                provider: .google,
+                displayName: remoteSession.displayName
+            ),
+            profile: resolvedProfile
         )
     }
 
@@ -88,6 +115,22 @@ actor SupabaseAuthService: AuthServicing {
         )
     }
 
+    private func profileByPersistingOAuthDisplayNameIfNeeded(
+        _ profile: SupabaseProfile,
+        userID: String,
+        oauthDisplayName: String?
+    ) async throws -> SupabaseProfile {
+        guard profile.displayName?.trimmedNonEmpty == nil,
+              let displayName = normalizedOptionalDisplayName(oauthDisplayName) else {
+            return profile
+        }
+
+        return try await gateway.updateProfileDisplayName(
+            userID: userID,
+            displayName: displayName
+        )
+    }
+
     private static func profileStatus(for profile: SupabaseProfile) -> AuthProfileStatus {
         if profile.onboardingCompletedAt != nil,
            profile.displayName?.trimmedNonEmpty != nil,
@@ -101,6 +144,14 @@ actor SupabaseAuthService: AuthServicing {
     private func normalizedDisplayName(_ value: String) throws -> String {
         guard let displayName = value.trimmedNonEmpty else {
             throw AuthServiceError.noActiveSession
+        }
+
+        return String(displayName.prefix(80))
+    }
+
+    private func normalizedOptionalDisplayName(_ value: String?) -> String? {
+        guard let displayName = value?.trimmedNonEmpty else {
+            return nil
         }
 
         return String(displayName.prefix(80))

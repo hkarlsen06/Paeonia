@@ -1,3 +1,4 @@
+import GoogleSignIn
 import SwiftUI
 
 @main
@@ -6,6 +7,10 @@ struct PaeoniaApp: App {
     WindowGroup {
       RootView()
         .onOpenURL { url in
+          if GIDSignIn.sharedInstance.handle(url) {
+            return
+          }
+
           PaeoniaSupabaseClientProvider.shared.handle(url)
         }
     }

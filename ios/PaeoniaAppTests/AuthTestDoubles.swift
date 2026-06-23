@@ -6,6 +6,7 @@ actor AuthServiceSpy: AuthServicing {
     enum Operation: Hashable {
         case restoreSession
         case signInWithApple
+        case signInWithGoogle
         case signInForDevelopment
         case completeOnboarding
         case signOut
@@ -35,6 +36,20 @@ actor AuthServiceSpy: AuthServicing {
             id: "apple-test-user",
             provider: .apple,
             displayName: credential.fullName,
+            timeZoneID: nil,
+            profileStatus: .needsOnboarding
+        )
+        self.session = session
+        return session
+    }
+
+    func signInWithGoogle(_ credential: GoogleSignInCredential) async throws -> AuthSession {
+        try failIfNeeded(.signInWithGoogle)
+
+        let session = AuthSession(
+            id: "google-test-user",
+            provider: .google,
+            displayName: nil,
             timeZoneID: nil,
             profileStatus: .needsOnboarding
         )
@@ -119,6 +134,18 @@ actor BlockingDeleteAuthService: AuthServicing {
         return session
     }
 
+    func signInWithGoogle(_ credential: GoogleSignInCredential) async throws -> AuthSession {
+        let session = AuthSession(
+            id: "google-test-user",
+            provider: .google,
+            displayName: nil,
+            timeZoneID: nil,
+            profileStatus: .needsOnboarding
+        )
+        self.session = session
+        return session
+    }
+
     func signInForDevelopment() async throws -> AuthSession {
         let session = AuthSession.test(profileStatus: .needsOnboarding)
         self.session = session
@@ -152,6 +179,24 @@ actor BlockingDeleteAuthService: AuthServicing {
         }
 
         session = nil
+    }
+}
+
+@MainActor
+final class GoogleSignInProviderSpy: GoogleSignInProviding {
+    private let credential: GoogleSignInCredential
+
+    init(
+        credential: GoogleSignInCredential = GoogleSignInCredential(
+            idToken: "google-id-token",
+            accessToken: "google-access-token"
+        )
+    ) {
+        self.credential = credential
+    }
+
+    func signIn() async throws -> GoogleSignInCredential {
+        credential
     }
 }
 

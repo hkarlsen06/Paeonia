@@ -47,6 +47,15 @@ final class RootViewModel {
         }
     }
 
+    func signInWithGoogle(using googleSignInProvider: any GoogleSignInProviding) async {
+        await performAuthAction(failureNotice: .signInFailed) {
+            let credential = try await googleSignInProvider.signIn()
+            let session = try await authService.signInWithGoogle(credential)
+            apply(AuthRoute(session: session))
+            await startSyncIfNeeded()
+        }
+    }
+
     func signInForDevelopment() async {
         await performAuthAction(failureNotice: .signInFailed) {
             let session = try await authService.signInForDevelopment()

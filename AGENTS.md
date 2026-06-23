@@ -41,7 +41,7 @@ paeonia/
 ```
 
 Use `paeonia.no` as the canonical public domain for marketing, support, legal pages, and universal links.
-Use `api.paeonia.no` as the canonical Supabase API domain for production client configuration, Auth callbacks, Storage, Realtime, and Edge Functions.
+Use `api.paeonia.no` as the canonical Supabase API domain for production client configuration, Auth callbacks, Storage, Realtime, and Edge Functions. Do not use the raw Supabase project URL in production OAuth, app, or web configuration when the custom domain can be used.
 
 Do not create placeholder directories or files unless they are needed for the current task.
 
@@ -331,6 +331,8 @@ When configuring OAuth providers, include the Supabase Auth callback on the cust
 ```text
 https://api.paeonia.no/auth/v1/callback
 ```
+
+For Google OAuth client setup, use `https://paeonia.no` as the web origin and `https://api.paeonia.no/auth/v1/callback` as the authorized redirect URI.
 
 ### Tool Discovery
 

@@ -50,6 +50,49 @@ struct SupabaseAuthServiceTests {
         #expect(await gateway.appleNonce == "nonce")
         #expect(session.provider == .apple)
         #expect(session.displayName == "Taylor")
+        #expect(await gateway.updatedOAuthDisplayName == "Taylor")
+        #expect(session.profileStatus == .needsOnboarding)
+    }
+
+    @Test func appleSignInKeepsExistingProfileDisplayName() async throws {
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .unknown, displayName: nil),
+            profile: .test(displayName: "Existing", onboardingCompletedAt: nil)
+        )
+        let service = SupabaseAuthService(gateway: gateway)
+
+        let session = try await service.signInWithApple(
+            AppleSignInCredential(
+                idToken: "id-token",
+                nonce: "nonce",
+                fullName: "Taylor"
+            )
+        )
+
+        #expect(session.displayName == "Existing")
+        #expect(await gateway.updatedOAuthDisplayName == nil)
+    }
+
+    @Test func googleSignInUsesOAuthGatewaySession() async throws {
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .unknown, displayName: "Riley"),
+            profile: .test(displayName: nil, onboardingCompletedAt: nil)
+        )
+        let service = SupabaseAuthService(gateway: gateway)
+
+        let session = try await service.signInWithGoogle(
+            GoogleSignInCredential(
+                idToken: "google-id-token",
+                accessToken: "google-access-token"
+            )
+        )
+
+        #expect(await gateway.googleSignInCallCount == 1)
+        #expect(await gateway.googleIDToken == "google-id-token")
+        #expect(await gateway.googleAccessToken == "google-access-token")
+        #expect(session.provider == .google)
+        #expect(session.displayName == "Riley")
+        #expect(await gateway.updatedOAuthDisplayName == "Riley")
         #expect(session.profileStatus == .needsOnboarding)
     }
 
@@ -104,6 +147,10 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
     private var profile: SupabaseProfile
     private(set) var appleIDToken: String?
     private(set) var appleNonce: String?
+    private(set) var googleSignInCallCount = 0
+    private(set) var googleIDToken: String?
+    private(set) var googleAccessToken: String?
+    private(set) var updatedOAuthDisplayName: String?
     private(set) var updatedDisplayName: String?
     private(set) var updatedTimeZoneID: String?
     private(set) var requestAccountDeletionCallCount = 0
@@ -124,8 +171,33 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
         return remoteSession ?? .test(provider: .apple)
     }
 
+    func signInWithGoogle(
+        idToken: String,
+        accessToken: String?
+    ) async throws -> SupabaseRemoteSession {
+        googleSignInCallCount += 1
+        googleIDToken = idToken
+        googleAccessToken = accessToken
+        return remoteSession ?? .test(provider: .google)
+    }
+
     func loadProfile(userID: String) async throws -> SupabaseProfile {
         profile
+    }
+
+    func updateProfileDisplayName(
+        userID: String,
+        displayName: String
+    ) async throws -> SupabaseProfile {
+        updatedOAuthDisplayName = displayName
+        profile = SupabaseProfile(
+            userID: userID,
+            displayName: displayName,
+            timeZoneID: profile.timeZoneID,
+            timeZoneUpdatedAt: profile.timeZoneUpdatedAt,
+            onboardingCompletedAt: profile.onboardingCompletedAt
+        )
+        return profile
     }
 
     func updateProfile(

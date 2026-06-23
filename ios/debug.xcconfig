@@ -2,3 +2,7 @@
 // Includes shared version settings
 
 #include "Version.xcconfig"
+
+// Google Sign-In iOS OAuth client values from Google Cloud Console.
+PAEONIA_GOOGLE_IOS_CLIENT_ID = 923427998187-d74jeaklm7r523habqn76614semkp9gl.apps.googleusercontent.com
+PAEONIA_GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.923427998187-d74jeaklm7r523habqn76614semkp9gl

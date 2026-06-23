@@ -12,6 +12,7 @@
 		2A2D03532FDD045F00A7BE1A /* PaeoniaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2A2D03432FDD045E00A7BE1A /* PaeoniaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2A2D03652FDD04D100A7BE1A /* PaeoniaNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2A2D035E2FDD04D100A7BE1A /* PaeoniaNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2A2D03902FDE000000A7BE1A /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D03932FDE000000A7BE1A /* Supabase */; };
+		2A2D04012FDF000000A7BE1A /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D04032FDF000000A7BE1A /* GoogleSignIn */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,9 +61,6 @@
 
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* PaeoniaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PaeoniaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2A2D03A02FDE100000A7BE1A /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = debug.xcconfig; sourceTree = SOURCE_ROOT; };
-		2A2D03A12FDE100000A7BE1A /* release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = release.xcconfig; sourceTree = SOURCE_ROOT; };
-		2A2D03A22FDE100000A7BE1A /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = SOURCE_ROOT; };
 		2A2D03432FDD045E00A7BE1A /* PaeoniaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PaeoniaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A2D03452FDD045E00A7BE1A /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		2A2D03472FDD045E00A7BE1A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -70,6 +68,9 @@
 		2A2D035E2FDD04D100A7BE1A /* PaeoniaNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PaeoniaNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A2D036E2FDD055E00A7BE1A /* PaeoniaAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PaeoniaAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A2D037B2FDD058B00A7BE1A /* PaeoniaAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PaeoniaAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A2D03A02FDE100000A7BE1A /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		2A2D03A12FDE100000A7BE1A /* release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = release.xcconfig; sourceTree = SOURCE_ROOT; };
+		2A2D03A22FDE100000A7BE1A /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -138,6 +139,7 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				2A2D03902FDE000000A7BE1A /* Supabase in Frameworks */,
+				2A2D04012FDF000000A7BE1A /* GoogleSignIn in Frameworks */,
 			);
 		};
 		2A2D03402FDD045E00A7BE1A /* Frameworks */ = {
@@ -228,6 +230,7 @@
 			name = PaeoniaApp;
 			packageProductDependencies = (
 				2A2D03932FDE000000A7BE1A /* Supabase */,
+				2A2D04032FDF000000A7BE1A /* GoogleSignIn */,
 			);
 			productName = PaeoniaApp;
 			productReference = 000000000000000000000120 /* PaeoniaApp.app */;
@@ -351,6 +354,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				2A2D03922FDE000000A7BE1A /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				2A2D04022FDF000000A7BE1A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
@@ -398,21 +402,15 @@
 		2A2D03A32FDE100000A7BE1A /* Generate BuildNumber.xcconfig */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
 			name = "Generate BuildNumber.xcconfig";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "BUILD=\"$(TZ=Europe/Oslo date +%Y%m%d.%H%M)\"\nOUT=\"${SRCROOT}/BuildNumber.xcconfig\"\nprintf 'CURRENT_PROJECT_VERSION = %s\\n' \"$BUILD\" > \"$OUT\"\necho \"Generated CURRENT_PROJECT_VERSION=$BUILD\"\n";
+			shellScript = (
+				"BUILD=\"$(TZ=Europe/Oslo date +%Y%m%d.%H%M)\"",
+				"OUT=\"${SRCROOT}/BuildNumber.xcconfig\"",
+				"printf 'CURRENT_PROJECT_VERSION = %s\\n' \"$BUILD\" > \"$OUT\"",
+				"echo \"Generated CURRENT_PROJECT_VERSION=$BUILD\"",
+				"",
+			);
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -955,6 +953,14 @@
 				minimumVersion = 2.47.1;
 			};
 		};
+		2A2D04022FDF000000A7BE1A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -962,6 +968,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2A2D03922FDE000000A7BE1A /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		2A2D04032FDF000000A7BE1A /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2A2D04022FDF000000A7BE1A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

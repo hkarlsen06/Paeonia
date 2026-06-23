@@ -167,7 +167,7 @@ The first release should be reliable, emotionally clear, and narrow. Cut feature
 - Use an Xcode-managed `.xcodeproj`, matching Tidex. Completed for the app target.
 - Keep the setup nearly identical to Tidex unless a deviation is discussed first.
 - Use SwiftUI.
-- Minimum deployment target: iOS 26.6. Completed for the app target.
+- Minimum deployment target: iOS 26.5. Completed for the app target.
 - Set bundle identifier. Completed for the app target.
 - Add app display name: `Paeonia`. Completed for the app target.
 - Create app, widget, notification service extension, unit test, and UI test targets from day one. Completed.

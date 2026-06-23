@@ -26,7 +26,9 @@ nonisolated struct SupabaseProfile: Codable, Equatable, Sendable {
 protocol SupabaseAuthGateway: Actor {
     func restoreSession() async throws -> SupabaseRemoteSession?
     func signInWithApple(idToken: String, nonce: String) async throws -> SupabaseRemoteSession
+    func signInWithGoogle(idToken: String, accessToken: String?) async throws -> SupabaseRemoteSession
     func loadProfile(userID: String) async throws -> SupabaseProfile
+    func updateProfileDisplayName(userID: String, displayName: String) async throws -> SupabaseProfile
     func updateProfile(userID: String, displayName: String, timeZoneID: String) async throws -> SupabaseProfile
     func requestAccountDeletion() async throws
     func signOut() async throws
@@ -67,11 +69,39 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
         return Self.remoteSession(from: session, fallbackProvider: .apple)
     }
 
+    func signInWithGoogle(
+        idToken: String,
+        accessToken: String?
+    ) async throws -> SupabaseRemoteSession {
+        let session = try await client.auth.signInWithIdToken(
+            credentials: OpenIDConnectCredentials(
+                provider: .google,
+                idToken: idToken,
+                accessToken: accessToken
+            )
+        )
+        return Self.remoteSession(from: session, fallbackProvider: .google)
+    }
+
     func loadProfile(userID: String) async throws -> SupabaseProfile {
         try await client
             .from("profiles")
             .select(profileColumns)
             .eq("user_id", value: userID)
+            .single()
+            .execute()
+            .value
+    }
+
+    func updateProfileDisplayName(
+        userID: String,
+        displayName: String
+    ) async throws -> SupabaseProfile {
+        try await client
+            .from("profiles")
+            .update(UpdateProfileDisplayNameRequest(displayName: displayName))
+            .eq("user_id", value: userID)
+            .select(profileColumns)
             .single()
             .execute()
             .value
@@ -143,6 +173,14 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
         ]
 
         return candidates.compactMap { $0?.trimmedNonEmpty }.first
+    }
+}
+
+nonisolated private struct UpdateProfileDisplayNameRequest: Encodable {
+    let displayName: String
+
+    enum CodingKeys: String, CodingKey {
+        case displayName = "display_name"
     }
 }
 

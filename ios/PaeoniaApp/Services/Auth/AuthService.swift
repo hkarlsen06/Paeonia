@@ -10,6 +10,7 @@ enum AuthServiceError: Error, Equatable {
 protocol AuthServicing: Actor {
     func restoreSession() async throws -> AuthSession?
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession
+    func signInWithGoogle(_ credential: GoogleSignInCredential) async throws -> AuthSession
     func signInForDevelopment() async throws -> AuthSession
     func completeOnboarding(displayName: String, timeZoneID: String) async throws -> AuthSession
     func signOut() async throws
@@ -32,6 +33,18 @@ actor DevelopmentAuthService: AuthServicing {
             id: "development-apple-user",
             provider: .apple,
             displayName: credential.fullName,
+            timeZoneID: nil,
+            profileStatus: .needsOnboarding
+        )
+        self.session = session
+        return session
+    }
+
+    func signInWithGoogle(_ credential: GoogleSignInCredential) async throws -> AuthSession {
+        let session = AuthSession(
+            id: "development-google-user",
+            provider: .google,
+            displayName: nil,
             timeZoneID: nil,
             profileStatus: .needsOnboarding
         )
@@ -85,6 +98,10 @@ actor UnavailableAuthService: AuthServicing {
     }
 
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession {
+        throw error
+    }
+
+    func signInWithGoogle(_ credential: GoogleSignInCredential) async throws -> AuthSession {
         throw error
     }
 
