@@ -14,11 +14,43 @@ struct RootView: View {
     }
 
     var body: some View {
+        rootContent
+            .task {
+                await viewModel.start()
+            }
+            .preferredColorScheme(.dark)
+            .paeoniaErrorAlert(alertContent) {
+                viewModel.dismissNotice()
+            }
+    }
+
+    @ViewBuilder
+    private var rootContent: some View {
+        switch viewModel.state {
+        case .unauthenticated:
+            signInScreen
+        default:
+            scaffold
+        }
+    }
+
+    private var signInScreen: some View {
+        // Apple is wired up; the other actions are intentionally inert for now
+        // while the MVP sign-in screen is the focus.
+        SignInView(
+            isWorking: viewModel.isWorking,
+            onAppleSignIn: signInWithApple,
+            onGoogleSignIn: {},
+            onPasskeySignIn: {},
+            onSignUp: {}
+        )
+    }
+
+    private var scaffold: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: PaeoniaSpacing.sectionSpacing) {
                     header
-                    noticeCard
                     content
                 }
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -27,9 +59,14 @@ struct RootView: View {
             }
             .background(.paeoniaBackgroundPrimary)
         }
-        .task {
-            await viewModel.start()
+    }
+
+    private var alertContent: PaeoniaAlertContent? {
+        guard let notice = viewModel.notice else {
+            return nil
         }
+
+        return PaeoniaAlertContent(title: notice.title, message: notice.message)
     }
 
     private var header: some View {
@@ -59,34 +96,13 @@ struct RootView: View {
     }
 
     @ViewBuilder
-    private var noticeCard: some View {
-        if let notice = viewModel.notice {
-            PaeoniaCard {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                    Text(notice.title)
-                        .font(PaeoniaTypography.sectionTitle)
-                        .foregroundStyle(.paeoniaTextPrimary)
-
-                    Text(notice.message)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
-
-    @ViewBuilder
     private var content: some View {
         switch viewModel.state {
         case .launching:
             AuthLaunchingView()
         case .unauthenticated:
-            AuthStartView(
-                isWorking: viewModel.isWorking,
-                onAppleSignIn: signInWithApple,
-                onDevelopmentSignIn: signInForDevelopment
-            )
+            // Handled at the top level by `signInScreen`; never shown here.
+            EmptyView()
         case .onboarding:
             AuthOnboardingView(
                 session: viewModel.currentSession,
@@ -162,12 +178,6 @@ struct RootView: View {
     private func signInWithApple() {
         Task {
             await viewModel.signInWithApple(using: appleSignInProvider)
-        }
-    }
-
-    private func signInForDevelopment() {
-        Task {
-            await viewModel.signInForDevelopment()
         }
     }
 

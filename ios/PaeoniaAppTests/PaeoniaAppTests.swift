@@ -157,6 +157,20 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
+    @Test func dismissNoticeClearsNotice() async {
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(failingOperations: [.restoreSession])
+        )
+
+        await viewModel.start()
+        #expect(viewModel.notice == .sessionLoadFailed)
+
+        viewModel.dismissNotice()
+        #expect(viewModel.notice == nil)
+    }
+
+    @MainActor
     @Test func startRestoresAuthBeforeStartingSync() async {
         let recorder = StartupOrderRecorder()
         let authService = OrderedAuthService(recorder: recorder)

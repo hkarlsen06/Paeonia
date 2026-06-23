@@ -14,7 +14,7 @@ Created:
 - `PaeoniaAppUITests` target
 - shared `App` scheme
 - `no.paeonia.app` bundle identifier
-- iOS 26.6 minimum deployment target
+- iOS 26.5 minimum deployment target
 - `Paeonia` display name
 - app entitlements for Sign in with Apple, Associated Domains, App Groups, and Push Notifications
 - widget entitlements for App Groups
@@ -31,7 +31,7 @@ Xcode may still show local user schemes for extension targets if they were activ
 - Product name: `Paeonia`
 - Interface: SwiftUI
 - Language: Swift
-- Minimum deployment target: iOS 26.6
+- Minimum deployment target: iOS 26.5
 - Include tests: yes
 - Use automatic signing initially.
 

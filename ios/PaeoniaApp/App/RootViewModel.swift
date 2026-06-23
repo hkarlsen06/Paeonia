@@ -54,6 +54,11 @@ final class RootViewModel {
         }
     }
 
+    /// Clears the current notice. Used when the user dismisses the system alert.
+    func dismissNotice() {
+        notice = nil
+    }
+
     func completeOnboarding(displayName: String, timeZoneID: String) async {
         await performAuthAction(failureNotice: .onboardingFailed) {
             let session = try await authService.completeOnboarding(

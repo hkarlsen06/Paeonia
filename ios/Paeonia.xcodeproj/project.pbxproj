@@ -60,6 +60,9 @@
 
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* PaeoniaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PaeoniaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A2D03A02FDE100000A7BE1A /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		2A2D03A12FDE100000A7BE1A /* release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = release.xcconfig; sourceTree = SOURCE_ROOT; };
+		2A2D03A22FDE100000A7BE1A /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = SOURCE_ROOT; };
 		2A2D03432FDD045E00A7BE1A /* PaeoniaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PaeoniaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A2D03452FDD045E00A7BE1A /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		2A2D03472FDD045E00A7BE1A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -166,6 +169,9 @@
 			isa = PBXGroup;
 			children = (
 				2A2D03592FDD048D00A7BE1A /* PaeoniaWidgetExtension.entitlements */,
+				2A2D03A02FDE100000A7BE1A /* debug.xcconfig */,
+				2A2D03A12FDE100000A7BE1A /* release.xcconfig */,
+				2A2D03A22FDE100000A7BE1A /* Version.xcconfig */,
 				000000000000000000000010 /* PaeoniaApp */,
 				2A2D03492FDD045E00A7BE1A /* PaeoniaWidget */,
 				2A2D035F2FDD04D100A7BE1A /* PaeoniaNotificationService */,
@@ -204,6 +210,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 000000000000000110000000 /* Build configuration list for PBXNativeTarget "PaeoniaApp" */;
 			buildPhases = (
+				2A2D03A32FDE100000A7BE1A /* Generate BuildNumber.xcconfig */,
 				000000000000000120000000 /* Sources */,
 				000000000000000130000000 /* Frameworks */,
 				000000000000000140000000 /* Resources */,
@@ -387,6 +394,29 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		2A2D03A32FDE100000A7BE1A /* Generate BuildNumber.xcconfig */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate BuildNumber.xcconfig";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "BUILD=\"$(TZ=Europe/Oslo date +%Y%m%d.%H%M)\"\nOUT=\"${SRCROOT}/BuildNumber.xcconfig\"\nprintf 'CURRENT_PROJECT_VERSION = %s\\n' \"$BUILD\" > \"$OUT\"\necho \"Generated CURRENT_PROJECT_VERSION=$BUILD\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		000000000000000120000000 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -441,6 +471,7 @@
 /* Begin XCBuildConfiguration section */
 		000000000000000011000000 /* Debug configuration for PBXProject "Paeonia" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A02FDE100000A7BE1A /* debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				APPLETVOS_DEPLOYMENT_TARGET = 27.0;
@@ -494,7 +525,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 27.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -511,6 +542,7 @@
 		};
 		000000000000000012000000 /* Release configuration for PBXProject "Paeonia" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A12FDE100000A7BE1A /* release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				APPLETVOS_DEPLOYMENT_TARGET = 27.0;
@@ -558,7 +590,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 27.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -573,23 +605,23 @@
 		};
 		000000000000000111000000 /* Debug configuration for PBXNativeTarget "PaeoniaApp" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A02FDE100000A7BE1A /* debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = paeonia_app;
 				CODE_SIGN_ENTITLEMENTS = PaeoniaApp/Supporting/PaeoniaApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PaeoniaApp/Supporting/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Paeonia;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0;
 				PAEONIA_AUTH_REDIRECT_URL = "paeonia://auth/callback";
 				PAEONIA_SUPABASE_PUBLISHABLE_KEY = sb_publishable_8uBdIagCGucwBYNyvoznyw_8BoEVrPy;
 				PAEONIA_SUPABASE_URL = "https://api.paeonia.no";
@@ -611,23 +643,23 @@
 		};
 		000000000000000112000000 /* Release configuration for PBXNativeTarget "PaeoniaApp" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A12FDE100000A7BE1A /* release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = paeonia_app;
 				CODE_SIGN_ENTITLEMENTS = PaeoniaApp/Supporting/PaeoniaApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PaeoniaApp/Supporting/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Paeonia;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0;
 				PAEONIA_AUTH_REDIRECT_URL = "paeonia://auth/callback";
 				PAEONIA_SUPABASE_PUBLISHABLE_KEY = sb_publishable_8uBdIagCGucwBYNyvoznyw_8BoEVrPy;
 				PAEONIA_SUPABASE_URL = "https://api.paeonia.no";
@@ -649,24 +681,23 @@
 		};
 		2A2D03552FDD045F00A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaWidgetExtension" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A02FDE100000A7BE1A /* debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = PaeoniaWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PaeoniaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PaeoniaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -683,24 +714,23 @@
 		};
 		2A2D03562FDD045F00A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaWidgetExtension" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A12FDE100000A7BE1A /* release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = PaeoniaWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PaeoniaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PaeoniaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -718,21 +748,20 @@
 		};
 		2A2D03682FDD04D100A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaNotificationService" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A02FDE100000A7BE1A /* debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PaeoniaNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PaeoniaNotificationService;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "no.paeonia.app.notification-service";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -748,21 +777,20 @@
 		};
 		2A2D03692FDD04D100A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaNotificationService" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A12FDE100000A7BE1A /* release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PaeoniaNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PaeoniaNotificationService;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "no.paeonia.app.notification-service";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -779,14 +807,13 @@
 		};
 		2A2D03752FDD055F00A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaAppTests" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A02FDE100000A7BE1A /* debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
-				MARKETING_VERSION = 1.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.PaeoniaAppTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -802,14 +829,13 @@
 		};
 		2A2D03762FDD055F00A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaAppTests" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A12FDE100000A7BE1A /* release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
-				MARKETING_VERSION = 1.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.PaeoniaAppTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -826,13 +852,12 @@
 		};
 		2A2D03822FDD058B00A7BE1A /* Debug configuration for PBXNativeTarget "PaeoniaAppUITests" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A02FDE100000A7BE1A /* debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
-				MARKETING_VERSION = 1.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.PaeoniaAppUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -848,13 +873,12 @@
 		};
 		2A2D03832FDD058B00A7BE1A /* Release configuration for PBXNativeTarget "PaeoniaAppUITests" */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2A2D03A12FDE100000A7BE1A /* release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.6;
-				MARKETING_VERSION = 1.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.PaeoniaAppUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;

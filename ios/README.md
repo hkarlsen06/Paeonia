@@ -4,7 +4,7 @@ Native iOS app workspace placeholder.
 
 Locked foundation decisions:
 
-- Minimum deployment target: iOS 26.6
+- Minimum deployment target: iOS 26.5
 - Initial targets:
   - app
   - widget

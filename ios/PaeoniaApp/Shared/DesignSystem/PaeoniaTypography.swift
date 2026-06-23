@@ -3,6 +3,7 @@ import SwiftUI
 enum PaeoniaTypography {
     static let display = Font.largeTitle.bold()
     static let largeTitle = Font.largeTitle.weight(.semibold)
+    static let heroTitle = Font.title.weight(.semibold)
     static let title = Font.title2.weight(.semibold)
     static let sectionTitle = Font.headline
     static let body = Font.body

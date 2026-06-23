@@ -14,7 +14,7 @@ Initial direction:
 - Clear MVVM boundaries.
 - Type-safe localization from the beginning.
 - Shared daily prompts, memories, countdowns, widgets, respectful notifications, and couple pairing.
-- Minimum deployment target is iOS 26.6.
+- Minimum deployment target is iOS 26.5.
 - Initial iOS targets include app, widget, notification service extension, unit tests, and UI tests.
 - Auth uses Sign in with Apple, Google Sign-In, and passkeys only; no email/password or email magic-link auth for MVP.
 - Project setup should stay nearly identical to Tidex. Discuss deviations with the user before making them.

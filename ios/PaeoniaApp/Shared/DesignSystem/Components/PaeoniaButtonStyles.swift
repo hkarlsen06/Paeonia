@@ -35,7 +35,7 @@ struct PaeoniaSecondaryButtonStyle: ButtonStyle {
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
             .padding(.horizontal, PaeoniaSpacing.space16)
-            .foregroundStyle(isEnabled ? .paeoniaAccentPrimary : .paeoniaTextTertiary)
+            .foregroundStyle(isEnabled ? .paeoniaTextPrimary : .paeoniaTextTertiary)
             .background(backgroundColor(isPressed: configuration.isPressed))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)

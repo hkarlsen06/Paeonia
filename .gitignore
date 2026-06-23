@@ -29,6 +29,9 @@ test-results
 ios/build/
 .build/
 
+# Generated at build time - never commit
+ios/BuildNumber.xcconfig
+
 # generated/design archive outputs
 design/app-icon/exports/png/
 design/brand/originals/
