@@ -721,13 +721,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enter the private space with your partner."
+            "value" : "A place for closeness, sharing,\nand everything that matters."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gå inn i det private rommet med partneren din."
+            "value" : "Et sted for nærhet, deling\nog alt som betyr noe."
           }
         }
       }

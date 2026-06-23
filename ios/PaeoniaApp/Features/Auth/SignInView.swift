@@ -1,3 +1,4 @@
+import SafariServices
 import SwiftUI
 
 /// The pre-auth sign-in screen. A private, plum-led entry point that shows the
@@ -8,6 +9,9 @@ struct SignInView: View {
     let onGoogleSignIn: () -> Void
 
     private let contentMaxWidth: CGFloat = 430
+
+    /// The legal page currently shown in the in-app browser, if any.
+    @State private var activeLegalLink: LegalLink?
 
     var body: some View {
         GeometryReader { proxy in
@@ -37,6 +41,10 @@ struct SignInView: View {
         }
         .background(background)
         .preferredColorScheme(.dark)
+        .sheet(item: $activeLegalLink) { link in
+            SafariView(url: link.url)
+                .ignoresSafeArea()
+        }
     }
 
     // MARK: - Background
@@ -81,12 +89,40 @@ struct SignInView: View {
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
 
+            heartDivider
+
             Text(.authStartMessage)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
         }
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
+    }
+
+    /// A small ornament — a heart flanked by two short rules — that sits between
+    /// the tagline and the supporting line, echoing the intimacy of the brand.
+    private var heartDivider: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            dividerRule(fadingToward: .leading)
+            Image(systemName: "heart.fill")
+                .font(.system(size: 10))
+                .foregroundStyle(.paeoniaAccentPrimary)
+            dividerRule(fadingToward: .trailing)
+        }
+        .frame(width: 96)
+        .accessibilityHidden(true)
+    }
+
+    private func dividerRule(fadingToward edge: UnitPoint) -> some View {
+        Capsule()
+            .fill(
+                LinearGradient(
+                    colors: [.paeoniaAccentPrimary, .clear],
+                    startPoint: edge == .leading ? .trailing : .leading,
+                    endPoint: edge
+                )
+            )
+            .frame(height: 1)
     }
 
     // MARK: - Actions
@@ -132,17 +168,17 @@ struct SignInView: View {
     private var footer: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: PaeoniaSpacing.space12) {
-                legalLink(.authSignInLegalPrivacy, destination: LegalLinks.privacy)
+                legalLink(.authSignInLegalPrivacy, link: .privacy)
                 separator
-                legalLink(.authSignInLegalTerms, destination: LegalLinks.terms)
+                legalLink(.authSignInLegalTerms, link: .terms)
                 separator
-                legalLink(.authSignInSupport, destination: LegalLinks.support)
+                legalLink(.authSignInSupport, link: .support)
             }
 
             VStack(spacing: PaeoniaSpacing.space4) {
-                legalLink(.authSignInLegalPrivacy, destination: LegalLinks.privacy)
-                legalLink(.authSignInLegalTerms, destination: LegalLinks.terms)
-                legalLink(.authSignInSupport, destination: LegalLinks.support)
+                legalLink(.authSignInLegalPrivacy, link: .privacy)
+                legalLink(.authSignInLegalTerms, link: .terms)
+                legalLink(.authSignInSupport, link: .support)
             }
         }
         .font(PaeoniaTypography.caption)
@@ -150,9 +186,11 @@ struct SignInView: View {
 
     private func legalLink(
         _ title: LocalizedStringResource,
-        destination: URL
+        link: LegalLink
     ) -> some View {
-        Link(destination: destination) {
+        Button {
+            activeLegalLink = link
+        } label: {
             Text(title)
                 .frame(minHeight: 44)
         }
@@ -166,18 +204,36 @@ struct SignInView: View {
     }
 }
 
-private enum LegalLinks {
-    static let privacy = url("privacy")
-    static let terms = url("terms")
-    static let support = url("support")
+/// A legal page Paeonia can show in its in-app browser. `Identifiable` so it can
+/// drive a `.sheet(item:)` presentation directly.
+private enum LegalLink: String, Identifiable {
+    case privacy
+    case terms
+    case support
 
-    private static func url(_ path: String) -> URL {
-        guard let url = URL(string: "https://paeonia.no/\(path)") else {
-            preconditionFailure("Invalid Paeonia legal URL path: \(path)")
+    var id: String { rawValue }
+
+    var url: URL {
+        guard let url = URL(string: "https://paeonia.no/\(rawValue)") else {
+            preconditionFailure("Invalid Paeonia legal URL path: \(rawValue)")
         }
 
         return url
     }
+}
+
+/// A thin SwiftUI wrapper around `SFSafariViewController` so legal pages open in
+/// an in-app browser instead of leaving the app for Safari.
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let controller = SFSafariViewController(url: url)
+        controller.dismissButtonStyle = .close
+        return controller
+    }
+
+    func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
 }
 
 #if DEBUG
