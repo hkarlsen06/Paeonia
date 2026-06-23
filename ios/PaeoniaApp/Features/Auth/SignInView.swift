@@ -1,14 +1,11 @@
 import SwiftUI
 
 /// The pre-auth sign-in screen. A private, plum-led entry point that shows the
-/// Paeonia brand and offers the supported ways to get in: Apple, Google, and a
-/// passkey for people who have signed in before, plus a way to sign up.
+/// Paeonia brand and offers the supported ways to get in: Apple and Google.
 struct SignInView: View {
     let isWorking: Bool
     let onAppleSignIn: () -> Void
     let onGoogleSignIn: () -> Void
-    let onPasskeySignIn: () -> Void
-    let onSignUp: () -> Void
 
     private let contentMaxWidth: CGFloat = 430
 
@@ -95,13 +92,9 @@ struct SignInView: View {
     // MARK: - Actions
 
     private var actions: some View {
-        VStack(spacing: PaeoniaSpacing.space20) {
-            VStack(spacing: PaeoniaSpacing.space12) {
-                appleButton
-                googleButton
-            }
-
-            accountLinks
+        VStack(spacing: PaeoniaSpacing.space12) {
+            appleButton
+            googleButton
         }
     }
 
@@ -132,60 +125,6 @@ struct SignInView: View {
         }
         .buttonStyle(PaeoniaSecondaryButtonStyle())
         .disabled(isWorking)
-    }
-
-    private var accountLinks: some View {
-        HStack(spacing: 0) {
-            accountLink(
-                .authAccountPasskey,
-                systemImage: "person.badge.key.fill",
-                action: onPasskeySignIn
-            )
-
-            Rectangle()
-                .fill(.paeoniaSurfacePressed)
-                .frame(width: PaeoniaRadius.strokeDefault, height: 18)
-                .accessibilityHidden(true)
-
-            accountLink(.authAccountSignUp, action: onSignUp)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func accountLink(
-        _ title: LocalizedStringResource,
-        systemImage: String? = nil,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            linkLabel(title, systemImage: systemImage)
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.86)
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(isWorking)
-    }
-
-    @ViewBuilder
-    private func linkLabel(
-        _ title: LocalizedStringResource,
-        systemImage: String?
-    ) -> some View {
-        if let systemImage {
-            Label {
-                Text(title)
-            } icon: {
-                Image(systemName: systemImage)
-                    .accessibilityHidden(true)
-            }
-        } else {
-            Text(title)
-        }
     }
 
     // MARK: - Footer
@@ -246,9 +185,7 @@ private enum LegalLinks {
     SignInView(
         isWorking: false,
         onAppleSignIn: {},
-        onGoogleSignIn: {},
-        onPasskeySignIn: {},
-        onSignUp: {}
+        onGoogleSignIn: {}
     )
 }
 #endif

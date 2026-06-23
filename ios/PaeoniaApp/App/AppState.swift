@@ -1,4 +1,4 @@
-enum AppState: CaseIterable, Equatable {
+nonisolated enum AppState: CaseIterable, Equatable {
     case launching
     case unauthenticated
     case onboarding

@@ -14,7 +14,6 @@ Locked foundation decisions:
 - Auth surfaces:
   - Sign in with Apple
   - Google Sign-In
-  - passkeys
 - Associated Domains:
   - `applinks:paeonia.no`
   - `webcredentials:paeonia.no`

@@ -27,9 +27,8 @@ These decisions should be confirmed before the next foundation step.
 - MVP auth methods are locked to:
   - Sign in with Apple
   - Google Sign-In
-  - passkeys
-- Do not implement email/password or email magic-link auth for MVP.
-- Implement all three as first-class MVP auth surfaces.
+- Do not implement a separate sign-up page, passkey flow, email/password, or email magic-link auth for MVP.
+- Implement Apple and Google as first-class MVP auth surfaces.
 
 ## Dependencies
 

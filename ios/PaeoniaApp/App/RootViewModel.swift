@@ -6,6 +6,7 @@ enum RootNotice: Equatable {
     case onboardingFailed
     case signOutFailed
     case deleteAccountFailed
+    case inviteEntryPending
 }
 
 @MainActor
@@ -14,6 +15,7 @@ final class RootViewModel {
 
     private let syncCoordinator: any SyncCoordinating
     private let authService: any AuthServicing
+    private let accessRouteService: (any AccessRouteServicing)?
 
     private(set) var state: AppState = .launching
     private(set) var authRoute: AuthRoute = .signedOut
@@ -27,10 +29,12 @@ final class RootViewModel {
 
     init(
         syncCoordinator: (any SyncCoordinating)? = nil,
-        authService: (any AuthServicing)? = nil
+        authService: (any AuthServicing)? = nil,
+        accessRouteService: (any AccessRouteServicing)? = nil
     ) {
         self.syncCoordinator = syncCoordinator ?? SyncCoordinator()
         self.authService = authService ?? AuthServiceFactory.makeDefault()
+        self.accessRouteService = accessRouteService ?? (try? SupabaseAccessRouteService.live())
     }
 
     func start() async {
@@ -43,6 +47,7 @@ final class RootViewModel {
             let credential = try await appleSignInProvider.signIn()
             let session = try await authService.signInWithApple(credential)
             apply(AuthRoute(session: session))
+            await refreshAccessRouteIfNeeded()
             await startSyncIfNeeded()
         }
     }
@@ -52,6 +57,7 @@ final class RootViewModel {
             let credential = try await googleSignInProvider.signIn()
             let session = try await authService.signInWithGoogle(credential)
             apply(AuthRoute(session: session))
+            await refreshAccessRouteIfNeeded()
             await startSyncIfNeeded()
         }
     }
@@ -60,12 +66,17 @@ final class RootViewModel {
         await performAuthAction(failureNotice: .signInFailed) {
             let session = try await authService.signInForDevelopment()
             apply(AuthRoute(session: session))
+            await refreshAccessRouteIfNeeded()
         }
     }
 
     /// Clears the current notice. Used when the user dismisses the system alert.
     func dismissNotice() {
         notice = nil
+    }
+
+    func showInviteEntryPending() {
+        notice = .inviteEntryPending
     }
 
     func completeOnboarding(displayName: String, timeZoneID: String) async {
@@ -75,6 +86,7 @@ final class RootViewModel {
                 timeZoneID: timeZoneID
             )
             apply(AuthRoute(session: session))
+            await refreshAccessRouteIfNeeded()
             await startSyncIfNeeded()
         }
     }
@@ -109,10 +121,16 @@ final class RootViewModel {
         isWorking = false
     }
 
+    func refreshAfterSubscriptionChange() async {
+        await refreshAuthRoute()
+        await startSyncIfNeeded()
+    }
+
     private func refreshAuthRoute() async {
         do {
             let session = try await authService.restoreSession()
             apply(AuthRoute(session: session))
+            await refreshAccessRouteIfNeeded()
         } catch {
             apply(.signedOut)
             notice = .sessionLoadFailed
@@ -142,6 +160,20 @@ final class RootViewModel {
     private func apply(_ route: AuthRoute) {
         authRoute = route
         state = route.appState
+    }
+
+    private func refreshAccessRouteIfNeeded() async {
+        guard case .limitedAuthenticated = authRoute,
+              let accessRouteService
+        else {
+            return
+        }
+
+        do {
+            state = try await accessRouteService.resolveRoute(hasPendingInvite: false).appState
+        } catch {
+            state = .limitedAuthenticated
+        }
     }
 
     private func startSyncIfNeeded() async {

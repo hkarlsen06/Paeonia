@@ -16,7 +16,7 @@ Initial direction:
 - Shared daily prompts, memories, countdowns, widgets, respectful notifications, and couple pairing.
 - Minimum deployment target is iOS 26.5.
 - Initial iOS targets include app, widget, notification service extension, unit tests, and UI tests.
-- Auth uses Sign in with Apple, Google Sign-In, and passkeys only; no email/password or email magic-link auth for MVP.
+- Auth uses Sign in with Apple and Google Sign-In only for MVP; no separate sign-up page, passkey flow, email/password, or email magic-link auth for MVP.
 - Project setup should stay nearly identical to Tidex. Discuss deviations with the user before making them.
 - Associated Domains should be configured from the start for `applinks:paeonia.no`.
 - Localization must use Xcode String Catalog generated symbols from day one. Start with English and Norwegian Bokmal.
@@ -358,7 +358,8 @@ Paeonia uses Supabase's GitHub integration for remote deploys. On push to `origi
 - Edit Edge Functions locally in `supabase/functions/`.
 - Deploy via Supabase CLI, not MCP deploy tools.
 - Always include `--no-verify-jwt` when deploying functions that are intended for webhooks, cron, service-role flows, or other non-user JWT callers.
-- Use JWT verification only for direct user-called functions.
+- For direct user-called functions, do not enable Supabase's "Verify JWT with legacy secret" / platform `verify_jwt` gate when the app uses modern publishable keys. Set `verify_jwt = false` in `supabase/config.toml` and perform auth inside the function with the request `Authorization` header and `auth.getUser()`.
+- Edge Functions that need user auth should read modern `SUPABASE_PUBLISHABLE_KEYS` / `SUPABASE_SECRET_KEYS` when available, with legacy key env vars only as local compatibility fallbacks.
 
 ### SQL And Migrations
 

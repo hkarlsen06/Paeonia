@@ -41,9 +41,7 @@ struct RootView: View {
         SignInView(
             isWorking: viewModel.isWorking,
             onAppleSignIn: signInWithApple,
-            onGoogleSignIn: signInWithGoogle,
-            onPasskeySignIn: {},
-            onSignUp: {}
+            onGoogleSignIn: signInWithGoogle
         )
     }
 
@@ -112,8 +110,10 @@ struct RootView: View {
                 onSignOut: signOut
             )
         case .limitedAuthenticated:
-            AuthenticatedBaselineView(
-                isWorking: viewModel.isWorking,
+            PaywallView(
+                session: viewModel.currentSession,
+                onPurchaseConfirmed: subscriptionChanged,
+                onAcceptInvite: viewModel.showInviteEntryPending,
                 onSignOut: signOut,
                 onDeleteAccount: deleteAccount
             )
@@ -208,6 +208,12 @@ struct RootView: View {
             await viewModel.deleteAccount()
         }
     }
+
+    private func subscriptionChanged() {
+        Task {
+            await viewModel.refreshAfterSubscriptionChange()
+        }
+    }
 }
 
 private extension RootNotice {
@@ -223,6 +229,8 @@ private extension RootNotice {
             .authNoticeSignOutFailedTitle
         case .deleteAccountFailed:
             .authNoticeDeleteAccountFailedTitle
+        case .inviteEntryPending:
+            .authNoticeInviteEntryPendingTitle
         }
     }
 
@@ -238,6 +246,8 @@ private extension RootNotice {
             .authNoticeSignOutFailedMessage
         case .deleteAccountFailed:
             .authNoticeDeleteAccountFailedMessage
+        case .inviteEntryPending:
+            .authNoticeInviteEntryPendingMessage
         }
     }
 }

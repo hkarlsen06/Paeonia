@@ -189,7 +189,7 @@ minimum_password_length = 6
 password_requirements = ""
 
 [auth.passkey]
-enabled = true
+enabled = false
 
 [auth.webauthn]
 rp_display_name = "Paeonia"
@@ -399,6 +399,9 @@ deno_version = 2
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
+
+[functions.apple-verify-purchase]
+verify_jwt = false
 
 [analytics]
 enabled = true

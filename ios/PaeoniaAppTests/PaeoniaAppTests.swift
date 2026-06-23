@@ -57,6 +57,22 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
+    @Test func completedProfileUsesAccessRouteForVisibleState() async {
+        let accessRouteService = StaticAccessRouteService(route: .unpaired)
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService
+        )
+
+        await viewModel.start()
+
+        #expect(viewModel.authRoute.appState == .limitedAuthenticated)
+        #expect(viewModel.state == .unpaired)
+        #expect(await accessRouteService.resolveCallCount == 1)
+    }
+
+    @MainActor
     @Test func developmentSignInCanCompleteOnboarding() async {
         let syncCoordinator = TestSyncCoordinator()
         let viewModel = RootViewModel(
@@ -206,6 +222,20 @@ private actor TestSyncCoordinator: SyncCoordinating {
 
     func start() {
         startCallCount += 1
+    }
+}
+
+private actor StaticAccessRouteService: AccessRouteServicing {
+    private let route: AccessRoute
+    private(set) var resolveCallCount = 0
+
+    init(route: AccessRoute) {
+        self.route = route
+    }
+
+    func resolveRoute(hasPendingInvite: Bool) async throws -> AccessRoute {
+        resolveCallCount += 1
+        return route
     }
 }
 

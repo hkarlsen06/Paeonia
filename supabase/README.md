@@ -10,8 +10,8 @@ Do not create schema migrations until the implementation slice is checked agains
 Current backend decisions:
 
 - Use Supabase.
-- Use Supabase Auth with Sign in with Apple, Google Sign-In, and passkeys.
-- Do not support email/password or email magic-link auth for MVP.
+- Use Supabase Auth with Sign in with Apple and Google Sign-In for MVP.
+- Do not support a separate sign-up page, passkey flow, email/password, or email magic-link auth for MVP.
 - Enable RLS by default.
 - Use the database as the source of truth for couple membership and shared subscription entitlement.
 - Use service-role flows only for privileged work such as cron cleanup, admin deletion, and notification fanout internals.
