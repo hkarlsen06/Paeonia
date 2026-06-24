@@ -21,15 +21,32 @@ struct SupabaseAuthServiceTests {
     @Test func restoreSessionUsesCompletedProfile() async throws {
         let gateway = FakeSupabaseAuthGateway(
             remoteSession: .test(provider: .apple, displayName: nil),
-            profile: .test(onboardingCompletedAt: Date())
+            profile: .test(displayName: nil, onboardingCompletedAt: Date())
         )
         let service = SupabaseAuthService(gateway: gateway)
 
         let session = try await service.restoreSession()
 
         #expect(session?.profileStatus == .complete)
+        #expect(session?.displayName == nil)
         #expect(session?.timeZoneID == "Europe/Oslo")
         #expect(await gateway.updatedAuthDisplayName == nil)
+    }
+
+    @Test func restoreSessionRequiresCompletedProfileTimeZoneTimestamp() async throws {
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .apple),
+            profile: .test(
+                displayName: nil,
+                timeZoneUpdatedAt: nil,
+                onboardingCompletedAt: Date()
+            )
+        )
+        let service = SupabaseAuthService(gateway: gateway)
+
+        let session = try await service.restoreSession()
+
+        #expect(session?.profileStatus == .needsOnboarding)
     }
 
     @Test func restoreSessionPrefersAuthDisplayName() async throws {
@@ -113,7 +130,7 @@ struct SupabaseAuthServiceTests {
     @Test func completeOnboardingUpdatesProfileFields() async throws {
         let gateway = FakeSupabaseAuthGateway(
             remoteSession: .test(provider: .apple),
-            profile: .test(onboardingCompletedAt: nil)
+            profile: .test(displayName: nil, onboardingCompletedAt: nil)
         )
         let service = SupabaseAuthService(gateway: gateway)
 
@@ -201,13 +218,6 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
 
     func updateAuthDisplayName(_ displayName: String) async throws {
         updatedAuthDisplayName = displayName
-        profile = SupabaseProfile(
-            userID: profile.userID,
-            displayName: displayName,
-            timeZoneID: profile.timeZoneID,
-            timeZoneUpdatedAt: profile.timeZoneUpdatedAt,
-            onboardingCompletedAt: profile.onboardingCompletedAt
-        )
     }
 
     func completeProfileOnboarding(
@@ -251,13 +261,15 @@ private extension SupabaseRemoteSession {
 private extension SupabaseProfile {
     static func test(
         displayName: String? = "Alex",
+        timeZoneID: String? = "Europe/Oslo",
+        timeZoneUpdatedAt: Date? = Date(),
         onboardingCompletedAt: Date?
     ) -> SupabaseProfile {
         SupabaseProfile(
             userID: "user-id",
             displayName: displayName,
-            timeZoneID: "Europe/Oslo",
-            timeZoneUpdatedAt: Date(),
+            timeZoneID: timeZoneID,
+            timeZoneUpdatedAt: timeZoneUpdatedAt,
             onboardingCompletedAt: onboardingCompletedAt
         )
     }

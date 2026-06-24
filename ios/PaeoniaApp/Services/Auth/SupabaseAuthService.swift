@@ -118,8 +118,8 @@ actor SupabaseAuthService: AuthServicing {
 
     private static func profileStatus(for profile: SupabaseProfile) -> AuthProfileStatus {
         if profile.onboardingCompletedAt != nil,
-           profile.displayName?.trimmedNonEmpty != nil,
-           profile.timeZoneID?.trimmedNonEmpty != nil {
+           profile.timeZoneID?.trimmedNonEmpty != nil,
+           profile.timeZoneUpdatedAt != nil {
             return .complete
         }
 
