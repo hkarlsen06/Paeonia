@@ -28,6 +28,14 @@ final class PaywallViewModel {
         storeKitService.product(for: selectedProductID)
     }
 
+    var currentFreeTrial: PaeoniaFreeTrial? {
+        guard let offer = currentProduct?.subscription?.introductoryOffer else {
+            return nil
+        }
+
+        return PaeoniaFreeTrial(offer: offer)
+    }
+
     var selectedProductID: PaeoniaSubscriptionProductID {
         switch billingPeriod {
         case .monthly:

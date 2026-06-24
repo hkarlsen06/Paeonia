@@ -1,70 +1,257 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "auth.signIn.google.button" : {
+    "app.state.deletingAccount" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Continue with Google"
+            "value" : "Deleting account"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fortsett med Google"
+            "value" : "Sletter konto"
           }
         }
       }
     },
-    "auth.signIn.legal.privacy" : {
+    "app.state.entitlementLost" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Privacy"
+            "value" : "Access paused"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Personvern"
+            "value" : "Tilgang pauset"
           }
         }
       }
     },
-    "auth.signIn.legal.terms" : {
+    "app.state.entitlementRestored" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terms"
+            "value" : "Access restored"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vilkår"
+            "value" : "Tilgang gjenopprettet"
           }
         }
       }
     },
-    "auth.signIn.support" : {
+    "app.state.invitePending" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Support"
+            "value" : "Invite pending"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hjelp"
+            "value" : "Invitasjon venter"
+          }
+        }
+      }
+    },
+    "app.state.launching" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starting"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starter"
+          }
+        }
+      }
+    },
+    "app.state.limitedAuthenticated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limited access"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begrenset tilgang"
+          }
+        }
+      }
+    },
+    "app.state.onboarding" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Onboarding"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Introduksjon"
+          }
+        }
+      }
+    },
+    "app.state.paired" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paired"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koblet sammen"
+          }
+        }
+      }
+    },
+    "app.state.pairedPaywalled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paired, subscription needed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koblet sammen, abonnement trengs"
+          }
+        }
+      }
+    },
+    "app.state.relationshipEndedNotice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Space closed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rommet er lukket"
+          }
+        }
+      }
+    },
+    "app.state.reviewAccess" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review access"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilgang for App Review"
+          }
+        }
+      }
+    },
+    "app.state.unauthenticated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signed out"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logget ut"
+          }
+        }
+      }
+    },
+    "app.state.unpaired" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for pairing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på sammenkobling"
+          }
+        }
+      }
+    },
+    "app.tagline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A private place for the two of you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et privat sted for dere to"
+          }
+        }
+      }
+    },
+    "app.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia"
           }
         }
       }
@@ -562,91 +749,6 @@
         }
       }
     },
-    "auth.signIn.apple.button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continue with Apple"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fortsett med Apple"
-          }
-        }
-      }
-    },
-    "auth.signIn.development.button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continue with test account"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fortsett med testkonto"
-          }
-        }
-      }
-    },
-    "auth.signIn.development.hint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No private data leaves this phone."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingen private data forlater denne telefonen."
-          }
-        }
-      }
-    },
-    "auth.signIn.secure.hint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your sign-in is stored securely on this phone."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Innloggingen din lagres trygt på denne telefonen."
-          }
-        }
-      }
-    },
-    "auth.signOut.button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sign out"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Logg ut"
-          }
-        }
-      }
-    },
     "auth.signedIn.message" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -715,6 +817,159 @@
         }
       }
     },
+    "auth.signIn.apple.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with Apple"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett med Apple"
+          }
+        }
+      }
+    },
+    "auth.signIn.development.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with test account"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett med testkonto"
+          }
+        }
+      }
+    },
+    "auth.signIn.development.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No private data leaves this phone."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen private data forlater denne telefonen."
+          }
+        }
+      }
+    },
+    "auth.signIn.google.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with Google"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett med Google"
+          }
+        }
+      }
+    },
+    "auth.signIn.legal.privacy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personvern"
+          }
+        }
+      }
+    },
+    "auth.signIn.legal.terms" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terms"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vilkår"
+          }
+        }
+      }
+    },
+    "auth.signIn.secure.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your sign-in is stored securely on this phone."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Innloggingen din lagres trygt på denne telefonen."
+          }
+        }
+      }
+    },
+    "auth.signIn.support" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hjelp"
+          }
+        }
+      }
+    },
+    "auth.signOut.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign out"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logg ut"
+          }
+        }
+      }
+    },
     "auth.start.message" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -749,227 +1004,6 @@
         }
       }
     },
-    "app.state.launching" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Starting"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Starter"
-          }
-        }
-      }
-    },
-    "app.state.deletingAccount" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deleting account"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sletter konto"
-          }
-        }
-      }
-    },
-    "app.state.entitlementLost" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Access paused"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tilgang pauset"
-          }
-        }
-      }
-    },
-    "app.state.entitlementRestored" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Access restored"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tilgang gjenopprettet"
-          }
-        }
-      }
-    },
-    "app.state.invitePending" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invite pending"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invitasjon venter"
-          }
-        }
-      }
-    },
-    "app.state.limitedAuthenticated" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Limited access"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Begrenset tilgang"
-          }
-        }
-      }
-    },
-    "app.state.onboarding" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Onboarding"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Introduksjon"
-          }
-        }
-      }
-    },
-    "app.state.paired" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paired"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Koblet sammen"
-          }
-        }
-      }
-    },
-    "app.state.pairedPaywalled" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paired, subscription needed"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Koblet sammen, abonnement trengs"
-          }
-        }
-      }
-    },
-    "app.state.relationshipEndedNotice" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Space closed"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rommet er lukket"
-          }
-        }
-      }
-    },
-    "app.state.reviewAccess" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Review access"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tilgang for App Review"
-          }
-        }
-      }
-    },
-    "app.state.unauthenticated" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Signed out"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Logget ut"
-          }
-        }
-      }
-    },
-    "app.state.unpaired" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Waiting for pairing"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Venter på sammenkobling"
-          }
-        }
-      }
-    },
     "paywall.acceptInvite" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1000,6 +1034,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Paeonia Couple"
+          }
+        }
+      }
+    },
+    "paywall.bestValue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Best value"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Best verdi"
           }
         }
       }
@@ -1051,6 +1102,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Årlig"
+          }
+        }
+      }
+    },
+    "paywall.cancelAnytime" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start in 2 taps, cancel anytime."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start med 2 trykk, avslutt når som helst."
+          }
+        }
+      }
+    },
+    "paywall.cta.freeTrial" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start my free trial"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start min gratise prøveperiode"
           }
         }
       }
@@ -1208,6 +1293,78 @@
         }
       }
     },
+    "paywall.invite.action" : {
+      "comment" : "Bottom button label while redeeming a partner invite code",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bli med partneren din"
+          }
+        }
+      }
+    },
+    "paywall.invite.cta.caption" : {
+      "comment" : "Small caption under the join button reassuring there is no charge to join",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No payment needed to join."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen betaling for å bli med."
+          }
+        }
+      }
+    },
+    "paywall.invite.subtitle" : {
+      "comment" : "Explains what to type into the invite-code field (RECOVERED verbatim)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter the 6-character code your partner shared with you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv inn den 6-tegns koden partneren din delte med deg."
+          }
+        }
+      }
+    },
+    "paywall.invite.title" : {
+      "comment" : "Heading on the invite-code card below the paywall offer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Have an invite code?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Har du en invitasjonskode?"
+          }
+        }
+      }
+    },
     "paywall.manageSubscription" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1231,13 +1388,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "One subscription unlocks Paeonia for both of you. No trial is included right now."
+            "value" : "One subscription unlocks Paeonia for both of you."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ett abonnement låser opp Paeonia for dere begge. Det er ingen prøveperiode akkurat nå."
+            "value" : "Ett abonnement låser opp Paeonia for dere begge."
           }
         }
       }
@@ -1259,6 +1416,23 @@
         }
       }
     },
+    "paywall.period.monthly.compact" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/mo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/mnd"
+          }
+        }
+      }
+    },
     "paywall.period.yearly" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1272,6 +1446,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "per år"
+          }
+        }
+      }
+    },
+    "paywall.period.yearly.compact" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/yr"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/år"
           }
         }
       }
@@ -1344,19 +1535,241 @@
         }
       }
     },
+    "paywall.scrollHint" : {
+      "comment" : "Button that opens the invite-code overlay for users who have been invited by a partner",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invited? Continue here"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invitert? Fortsett her"
+          }
+        }
+      }
+    },
     "paywall.subtitle" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start the shared space, then invite your partner. They do not need to pay again."
+            "value" : "Stay close in a playful way"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start det felles rommet, og inviter partneren din etterpå. De trenger ikke betale igjen."
+            "value" : "Hold kontakten på en leken måte"
+          }
+        }
+      }
+    },
+    "paywall.timeline.charge" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trial ends"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøveperioden slutter"
+          }
+        }
+      }
+    },
+    "paywall.timeline.charge.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel anytime before"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avslutt når som helst før"
+          }
+        }
+      }
+    },
+    "paywall.timeline.dayPrefix" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dag"
+          }
+        }
+      }
+    },
+    "paywall.timeline.manage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You stay in control"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du har kontroll"
+          }
+        }
+      }
+    },
+    "paywall.timeline.manage.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage in App Store"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Administrer i App Store"
+          }
+        }
+      }
+    },
+    "paywall.timeline.reminder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before it ends"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Før den slutter"
+          }
+        }
+      }
+    },
+    "paywall.timeline.reminder.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll remind you — 2 days left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi varsler deg — 2 dager igjen"
+          }
+        }
+      }
+    },
+    "paywall.timeline.renewal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renews automatically"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fornyes automatisk"
+          }
+        }
+      }
+    },
+    "paywall.timeline.renewal.monthly.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renews monthly unless you cancel."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fornyes månedlig med mindre du avslutter."
+          }
+        }
+      }
+    },
+    "paywall.timeline.renewal.yearly.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renews yearly"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fornyes årlig"
+          }
+        }
+      }
+    },
+    "paywall.timeline.today" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I dag"
+          }
+        }
+      }
+    },
+    "paywall.timeline.today.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia opens for both of you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia åpnes for dere begge"
           }
         }
       }
@@ -1367,47 +1780,200 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Create your private place"
+            "value" : "Paeonia for both of you"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lag deres private sted"
+            "value" : "Paeonia for dere to"
           }
         }
       }
     },
-    "app.tagline" : {
+    "paywall.trial.freeWord" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A private place for the two of you"
+            "value" : "free"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Et privat sted for dere to"
+            "value" : "gratis"
           }
         }
       }
     },
-    "app.title" : {
+    "paywall.trial.then" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia"
+            "value" : "Then"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia"
+            "value" : "Deretter"
+          }
+        }
+      }
+    },
+    "paywall.trial.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Paeonia free"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv Paeonia gratis"
+          }
+        }
+      }
+    },
+    "paywall.trial.unit.day" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "day"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dag"
+          }
+        }
+      }
+    },
+    "paywall.trial.unit.days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager"
+          }
+        }
+      }
+    },
+    "paywall.trial.unit.month" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "month"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "måned"
+          }
+        }
+      }
+    },
+    "paywall.trial.unit.months" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "months"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "måneder"
+          }
+        }
+      }
+    },
+    "paywall.trial.unit.week" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "week"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "uke"
+          }
+        }
+      }
+    },
+    "paywall.trial.unit.weeks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "weeks"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "uker"
+          }
+        }
+      }
+    },
+    "paywall.trial.unit.year" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "year"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "år"
+          }
+        }
+      }
+    },
+    "paywall.trial.unit.years" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "years"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "år"
           }
         }
       }
@@ -1632,6 +2198,24 @@
           }
         }
       }
+    },
+    "paywall.invite.dismiss" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss invite code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lukk invitasjonskode"
+          }
+        }
+      },
+      "comment" : "Accessibility label for dismissing the invite-code overlay"
     }
   },
   "version" : "1.0"

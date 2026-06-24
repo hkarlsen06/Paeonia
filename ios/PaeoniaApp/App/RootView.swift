@@ -32,6 +32,8 @@ struct RootView: View {
         switch viewModel.state {
         case .unauthenticated:
             signInScreen
+        case .limitedAuthenticated:
+            paywallScreen
         default:
             scaffold
         }
@@ -42,6 +44,16 @@ struct RootView: View {
             isWorking: viewModel.isWorking,
             onAppleSignIn: signInWithApple,
             onGoogleSignIn: signInWithGoogle
+        )
+    }
+
+    private var paywallScreen: some View {
+        PaywallView(
+            session: viewModel.currentSession,
+            onPurchaseConfirmed: subscriptionChanged,
+            onAcceptInvite: viewModel.showInviteEntryPending,
+            onSignOut: signOut,
+            onDeleteAccount: deleteAccount
         )
     }
 
@@ -110,13 +122,8 @@ struct RootView: View {
                 onSignOut: signOut
             )
         case .limitedAuthenticated:
-            PaywallView(
-                session: viewModel.currentSession,
-                onPurchaseConfirmed: subscriptionChanged,
-                onAcceptInvite: viewModel.showInviteEntryPending,
-                onSignOut: signOut,
-                onDeleteAccount: deleteAccount
-            )
+            // Handled at the top level by `paywallScreen`; never shown here.
+            EmptyView()
         case .deletingAccount:
             AuthDeletingAccountView()
         case .reviewAccess,

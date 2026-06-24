@@ -12,4 +12,15 @@ struct PaeoniaSubscriptionTests {
         #expect(PaeoniaSubscriptionProductID.coupleMonthly.billingPeriod == .monthly)
         #expect(PaeoniaSubscriptionProductID.coupleYearly.billingPeriod == .yearly)
     }
+
+    @Test func freeTrialApproximatesDurationInDays() {
+        #expect(PaeoniaFreeTrial(value: 14, unit: .day).approximateDayCount == 14)
+        #expect(PaeoniaFreeTrial(value: 2, unit: .week).approximateDayCount == 14)
+        #expect(PaeoniaFreeTrial(value: 1, unit: .month).approximateDayCount == 30)
+        #expect(PaeoniaFreeTrial(value: 1, unit: .year).approximateDayCount == 365)
+    }
+
+    @Test func freeTrialClampsEmptyDurationToOneUnit() {
+        #expect(PaeoniaFreeTrial(value: 0, unit: .day).value == 1)
+    }
 }

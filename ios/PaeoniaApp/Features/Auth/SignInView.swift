@@ -89,7 +89,7 @@ struct SignInView: View {
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
 
-            heartDivider
+            PaeoniaHeartDivider()
 
             Text(.authStartMessage)
                 .font(PaeoniaTypography.body)
@@ -97,32 +97,6 @@ struct SignInView: View {
         }
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
-    }
-
-    /// A small ornament — a heart flanked by two short rules — that sits between
-    /// the tagline and the supporting line, echoing the intimacy of the brand.
-    private var heartDivider: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            dividerRule(fadingToward: .leading)
-            Image(systemName: "heart.fill")
-                .font(.system(size: 10))
-                .foregroundStyle(.paeoniaAccentPrimary)
-            dividerRule(fadingToward: .trailing)
-        }
-        .frame(width: 96)
-        .accessibilityHidden(true)
-    }
-
-    private func dividerRule(fadingToward edge: UnitPoint) -> some View {
-        Capsule()
-            .fill(
-                LinearGradient(
-                    colors: [.paeoniaAccentPrimary, .clear],
-                    startPoint: edge == .leading ? .trailing : .leading,
-                    endPoint: edge
-                )
-            )
-            .frame(height: 1)
     }
 
     // MARK: - Actions
