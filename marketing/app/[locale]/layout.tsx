@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from 'next';
-import './globals.css';
+import { notFound } from 'next/navigation';
+import { locales, type Locale } from '@/lib/i18n/config';
+import '../globals.css';
+
+interface LocaleLayoutProps {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://paeonia.no'),
@@ -32,13 +39,19 @@ export const viewport: Viewport = {
   colorScheme: 'dark',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
+
+export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
+  const { locale } = await params;
+
+  if (!locales.includes(locale as Locale)) {
+    notFound();
+  }
+
   return (
-    <html lang="en" className="dark">
+    <html lang={locale} className="dark">
       <body className="bg-background text-foreground">{children}</body>
     </html>
   );

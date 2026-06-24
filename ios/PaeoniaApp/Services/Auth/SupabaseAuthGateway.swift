@@ -152,8 +152,6 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
             .apple
         case "google":
             .google
-        case "webauthn", "passkey":
-            .passkey
         case .some:
             .unknown
         case .none:

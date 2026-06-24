@@ -15,7 +15,6 @@ Required for:
 - public landing page
 - App Store support, privacy, and terms links
 - invite Universal Links
-- passkey web credentials association
 - fallback pages when the app is not installed
 
 ### `api.paeonia.no`
@@ -131,7 +130,6 @@ Purpose: Apple Associated Domains.
 Required for:
 
 - Universal Links for invite links
-- passkey web credentials association
 
 Serving requirements:
 
@@ -155,9 +153,6 @@ Required contents for the current app:
         "paths": ["/join", "/join/*"]
       }
     ]
-  },
-  "webcredentials": {
-    "apps": ["48ZSLD4RMP.no.paeonia.app"]
   }
 }
 ```

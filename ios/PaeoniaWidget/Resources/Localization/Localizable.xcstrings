@@ -16,7 +16,8 @@
             "value" : "En privat widget for dere to."
           }
         }
-      }
+      },
+      "comment" : "Widget gallery description for the Paeonia widget."
     },
     "widget.placeholder.subtitle" : {
       "extractionState" : "manual",
@@ -33,7 +34,8 @@
             "value" : "Tegnestøtte kommer neste."
           }
         }
-      }
+      },
+      "comment" : "Placeholder subtitle before drawing support is implemented."
     },
     "widget.placeholder.title" : {
       "extractionState" : "manual",
@@ -50,7 +52,8 @@
             "value" : "Paeonia"
           }
         }
-      }
+      },
+      "comment" : "Placeholder title shown inside the widget."
     },
     "widget.title" : {
       "extractionState" : "manual",
@@ -67,7 +70,8 @@
             "value" : "Paeonia"
           }
         }
-      }
+      },
+      "comment" : "Widget display name."
     }
   },
   "version" : "1.0"

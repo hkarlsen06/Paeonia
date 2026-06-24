@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
     "app.state.deletingAccount" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -19,7 +16,8 @@
             "value" : "Sletter konto"
           }
         }
-      }
+      },
+      "comment" : "Short status label while account deletion is in progress."
     },
     "app.state.entitlementLost" : {
       "extractionState" : "manual",
@@ -36,7 +34,8 @@
             "value" : "Tilgang pauset"
           }
         }
-      }
+      },
+      "comment" : "Short status label when paid access is no longer active."
     },
     "app.state.entitlementRestored" : {
       "extractionState" : "manual",
@@ -53,7 +52,8 @@
             "value" : "Tilgang gjenopprettet"
           }
         }
-      }
+      },
+      "comment" : "Short status label when paid access has been restored."
     },
     "app.state.invitePending" : {
       "extractionState" : "manual",
@@ -70,7 +70,8 @@
             "value" : "Invitasjon venter"
           }
         }
-      }
+      },
+      "comment" : "Short status label when a partner invite is waiting."
     },
     "app.state.launching" : {
       "extractionState" : "manual",
@@ -87,7 +88,8 @@
             "value" : "Starter"
           }
         }
-      }
+      },
+      "comment" : "Short status label while the app starts."
     },
     "app.state.limitedAuthenticated" : {
       "extractionState" : "manual",
@@ -104,7 +106,8 @@
             "value" : "Begrenset tilgang"
           }
         }
-      }
+      },
+      "comment" : "Short status label for signed-in users without full access."
     },
     "app.state.onboarding" : {
       "extractionState" : "manual",
@@ -121,7 +124,8 @@
             "value" : "Introduksjon"
           }
         }
-      }
+      },
+      "comment" : "Short status label while profile setup is incomplete."
     },
     "app.state.paired" : {
       "extractionState" : "manual",
@@ -138,7 +142,8 @@
             "value" : "Koblet sammen"
           }
         }
-      }
+      },
+      "comment" : "Short status label when both partners are paired and have access."
     },
     "app.state.pairedPaywalled" : {
       "extractionState" : "manual",
@@ -155,7 +160,8 @@
             "value" : "Koblet sammen, abonnement trengs"
           }
         }
-      }
+      },
+      "comment" : "Short status label when partners are paired but still need a subscription."
     },
     "app.state.relationshipEndedNotice" : {
       "extractionState" : "manual",
@@ -172,7 +178,8 @@
             "value" : "Rommet er lukket"
           }
         }
-      }
+      },
+      "comment" : "Short status label when a relationship ended notice must be shown."
     },
     "app.state.reviewAccess" : {
       "extractionState" : "manual",
@@ -189,7 +196,8 @@
             "value" : "Tilgang for App Review"
           }
         }
-      }
+      },
+      "comment" : "Short status label for App Review access mode."
     },
     "app.state.unauthenticated" : {
       "extractionState" : "manual",
@@ -206,7 +214,8 @@
             "value" : "Logget ut"
           }
         }
-      }
+      },
+      "comment" : "Short status label when the user is signed out."
     },
     "app.state.unpaired" : {
       "extractionState" : "manual",
@@ -223,7 +232,8 @@
             "value" : "Venter på sammenkobling"
           }
         }
-      }
+      },
+      "comment" : "Short status label when the user has access but no partner yet."
     },
     "app.tagline" : {
       "extractionState" : "manual",
@@ -240,7 +250,8 @@
             "value" : "Et privat sted for dere to"
           }
         }
-      }
+      },
+      "comment" : "Main Paeonia tagline shown near the brand name."
     },
     "app.title" : {
       "extractionState" : "manual",
@@ -257,7 +268,8 @@
             "value" : "Paeonia"
           }
         }
-      }
+      },
+      "comment" : "App name shown in headers and accessibility labels."
     },
     "auth.deleteAccount.button" : {
       "extractionState" : "manual",
@@ -274,7 +286,8 @@
             "value" : "Slett konto"
           }
         }
-      }
+      },
+      "comment" : "Button that starts the account deletion confirmation flow."
     },
     "auth.deleteAccount.confirm.action" : {
       "extractionState" : "manual",
@@ -291,7 +304,8 @@
             "value" : "Slett konto"
           }
         }
-      }
+      },
+      "comment" : "Destructive confirmation button that deletes the account."
     },
     "auth.deleteAccount.confirm.cancel" : {
       "extractionState" : "manual",
@@ -308,7 +322,8 @@
             "value" : "Behold konto"
           }
         }
-      }
+      },
+      "comment" : "Cancel button that keeps the account."
     },
     "auth.deleteAccount.confirm.message" : {
       "extractionState" : "manual",
@@ -325,7 +340,8 @@
             "value" : "Dette fjerner testkontoen fra denne telefonen."
           }
         }
-      }
+      },
+      "comment" : "Message in the account deletion confirmation dialog."
     },
     "auth.deleteAccount.confirm.title" : {
       "extractionState" : "manual",
@@ -342,7 +358,8 @@
             "value" : "Slette denne kontoen?"
           }
         }
-      }
+      },
+      "comment" : "Title of the account deletion confirmation dialog."
     },
     "auth.deleting.message" : {
       "extractionState" : "manual",
@@ -359,7 +376,8 @@
             "value" : "Dette kan ta litt tid."
           }
         }
-      }
+      },
+      "comment" : "Message shown while account deletion is running."
     },
     "auth.deleting.title" : {
       "extractionState" : "manual",
@@ -376,7 +394,8 @@
             "value" : "Sletter konto"
           }
         }
-      }
+      },
+      "comment" : "Title shown while account deletion is running."
     },
     "auth.launching.message" : {
       "extractionState" : "manual",
@@ -393,7 +412,8 @@
             "value" : "Sjekker innloggingen din."
           }
         }
-      }
+      },
+      "comment" : "Message shown while checking the saved sign-in state."
     },
     "auth.launching.title" : {
       "extractionState" : "manual",
@@ -410,7 +430,8 @@
             "value" : "Starter Paeonia"
           }
         }
-      }
+      },
+      "comment" : "Title shown while the app checks sign-in state."
     },
     "auth.notice.deleteAccountFailed.message" : {
       "extractionState" : "manual",
@@ -427,7 +448,8 @@
             "value" : "Vi kunne ikke slette denne kontoen. Prøv igjen."
           }
         }
-      }
+      },
+      "comment" : "Alert message shown when account deletion fails."
     },
     "auth.notice.deleteAccountFailed.title" : {
       "extractionState" : "manual",
@@ -444,7 +466,8 @@
             "value" : "Kontoen ble ikke slettet"
           }
         }
-      }
+      },
+      "comment" : "Alert title shown when account deletion fails."
     },
     "auth.notice.inviteEntryPending.message" : {
       "extractionState" : "manual",
@@ -461,7 +484,8 @@
             "value" : "Invitasjonslenker åpnes her i neste bygg."
           }
         }
-      }
+      },
+      "comment" : "Alert message for invite entry that is not implemented yet."
     },
     "auth.notice.inviteEntryPending.title" : {
       "extractionState" : "manual",
@@ -478,7 +502,8 @@
             "value" : "Invitasjon kommer snart"
           }
         }
-      }
+      },
+      "comment" : "Alert title for invite entry that is not implemented yet."
     },
     "auth.notice.onboardingFailed.message" : {
       "extractionState" : "manual",
@@ -495,7 +520,8 @@
             "value" : "Prøv igjen før du fortsetter."
           }
         }
-      }
+      },
+      "comment" : "Alert message shown when profile setup cannot be saved."
     },
     "auth.notice.onboardingFailed.title" : {
       "extractionState" : "manual",
@@ -512,7 +538,8 @@
             "value" : "Oppsettet ble ikke lagret"
           }
         }
-      }
+      },
+      "comment" : "Alert title shown when profile setup cannot be saved."
     },
     "auth.notice.sessionLoadFailed.message" : {
       "extractionState" : "manual",
@@ -529,7 +556,8 @@
             "value" : "Vi kunne ikke sjekke om du er logget inn. Prøv igjen."
           }
         }
-      }
+      },
+      "comment" : "Alert message shown when sign-in state cannot be checked."
     },
     "auth.notice.sessionLoadFailed.title" : {
       "extractionState" : "manual",
@@ -546,7 +574,8 @@
             "value" : "Sjekk av innlogging feilet"
           }
         }
-      }
+      },
+      "comment" : "Alert title shown when sign-in state cannot be checked."
     },
     "auth.notice.signInFailed.message" : {
       "extractionState" : "manual",
@@ -563,7 +592,8 @@
             "value" : "Vi kunne ikke logge deg inn. Prøv igjen."
           }
         }
-      }
+      },
+      "comment" : "Alert message shown when Apple or Google sign-in fails."
     },
     "auth.notice.signInFailed.title" : {
       "extractionState" : "manual",
@@ -580,7 +610,8 @@
             "value" : "Innlogging feilet"
           }
         }
-      }
+      },
+      "comment" : "Alert title shown when Apple or Google sign-in fails."
     },
     "auth.notice.signOutFailed.message" : {
       "extractionState" : "manual",
@@ -597,7 +628,8 @@
             "value" : "Vi kunne ikke logge deg ut. Prøv igjen."
           }
         }
-      }
+      },
+      "comment" : "Alert message shown when sign-out fails."
     },
     "auth.notice.signOutFailed.title" : {
       "extractionState" : "manual",
@@ -614,7 +646,8 @@
             "value" : "Utlogging feilet"
           }
         }
-      }
+      },
+      "comment" : "Alert title shown when sign-out fails."
     },
     "auth.onboarding.complete.button" : {
       "extractionState" : "manual",
@@ -631,7 +664,8 @@
             "value" : "Fullfør oppsett"
           }
         }
-      }
+      },
+      "comment" : "Button that finishes required profile setup."
     },
     "auth.onboarding.displayName.label" : {
       "extractionState" : "manual",
@@ -648,7 +682,8 @@
             "value" : "Navnet ditt"
           }
         }
-      }
+      },
+      "comment" : "Label for the display name text field during profile setup."
     },
     "auth.onboarding.displayName.placeholder" : {
       "extractionState" : "manual",
@@ -665,7 +700,8 @@
             "value" : "Navnet ditt"
           }
         }
-      }
+      },
+      "comment" : "Placeholder for the display name field during profile setup."
     },
     "auth.onboarding.message" : {
       "extractionState" : "manual",
@@ -682,7 +718,8 @@
             "value" : "Vi trenger litt profilinfo før delte funksjoner skrus på."
           }
         }
-      }
+      },
+      "comment" : "Message explaining why profile setup is needed."
     },
     "auth.onboarding.signOut.button" : {
       "extractionState" : "manual",
@@ -699,7 +736,8 @@
             "value" : "Logg ut i stedet"
           }
         }
-      }
+      },
+      "comment" : "Button that signs out instead of finishing profile setup."
     },
     "auth.onboarding.title" : {
       "extractionState" : "manual",
@@ -716,7 +754,8 @@
             "value" : "Fullfør oppsettet"
           }
         }
-      }
+      },
+      "comment" : "Title for the required profile setup screen."
     },
     "auth.routeUnavailable.message" : {
       "extractionState" : "manual",
@@ -733,7 +772,8 @@
             "value" : "Appen viser denne skjermen når neste funksjon er klar."
           }
         }
-      }
+      },
+      "comment" : "Message shown for app routes that are not implemented yet."
     },
     "auth.routeUnavailable.title" : {
       "extractionState" : "manual",
@@ -750,7 +790,8 @@
             "value" : "Denne delen er ikke klar ennå"
           }
         }
-      }
+      },
+      "comment" : "Title shown for app routes that are not implemented yet."
     },
     "auth.signedIn.message" : {
       "extractionState" : "manual",
@@ -767,7 +808,8 @@
             "value" : "Neste steg er sammenkobling og delte funksjoner. Foreløpig er kontoen klar."
           }
         }
-      }
+      },
+      "comment" : "Message shown after sign-in before shared features are ready."
     },
     "auth.signedIn.ready.caption" : {
       "extractionState" : "manual",
@@ -784,7 +826,8 @@
             "value" : "Kontoen er klar"
           }
         }
-      }
+      },
+      "comment" : "Small caption confirming the account is ready."
     },
     "auth.signedIn.testAccount.caption" : {
       "extractionState" : "manual",
@@ -801,7 +844,8 @@
             "value" : "Lokal testkonto"
           }
         }
-      }
+      },
+      "comment" : "Small caption for a local test account."
     },
     "auth.signedIn.title" : {
       "extractionState" : "manual",
@@ -818,7 +862,8 @@
             "value" : "Du er logget inn"
           }
         }
-      }
+      },
+      "comment" : "Title shown after the user is signed in."
     },
     "auth.signIn.apple.button" : {
       "extractionState" : "manual",
@@ -835,7 +880,8 @@
             "value" : "Fortsett med Apple"
           }
         }
-      }
+      },
+      "comment" : "Button that starts Sign in with Apple."
     },
     "auth.signIn.development.button" : {
       "extractionState" : "manual",
@@ -852,7 +898,8 @@
             "value" : "Fortsett med testkonto"
           }
         }
-      }
+      },
+      "comment" : "Debug-only button for local development sign-in."
     },
     "auth.signIn.development.hint" : {
       "extractionState" : "manual",
@@ -869,7 +916,8 @@
             "value" : "Ingen private data forlater denne telefonen."
           }
         }
-      }
+      },
+      "comment" : "Debug-only hint explaining local development sign-in."
     },
     "auth.signIn.google.button" : {
       "extractionState" : "manual",
@@ -886,7 +934,8 @@
             "value" : "Fortsett med Google"
           }
         }
-      }
+      },
+      "comment" : "Button that starts Google Sign-In."
     },
     "auth.signIn.legal.privacy" : {
       "extractionState" : "manual",
@@ -903,7 +952,8 @@
             "value" : "Personvern"
           }
         }
-      }
+      },
+      "comment" : "Footer link label for the privacy policy on sign-in screens."
     },
     "auth.signIn.legal.terms" : {
       "extractionState" : "manual",
@@ -920,7 +970,8 @@
             "value" : "Vilkår"
           }
         }
-      }
+      },
+      "comment" : "Footer link label for terms of service on sign-in screens."
     },
     "auth.signIn.secure.hint" : {
       "extractionState" : "manual",
@@ -937,7 +988,8 @@
             "value" : "Innloggingen din lagres trygt på denne telefonen."
           }
         }
-      }
+      },
+      "comment" : "Short reassurance text near the sign-in buttons."
     },
     "auth.signIn.support" : {
       "extractionState" : "manual",
@@ -954,7 +1006,8 @@
             "value" : "Hjelp"
           }
         }
-      }
+      },
+      "comment" : "Footer link label for support on sign-in screens."
     },
     "auth.signOut.button" : {
       "extractionState" : "manual",
@@ -971,7 +1024,8 @@
             "value" : "Logg ut"
           }
         }
-      }
+      },
+      "comment" : "Button that signs the user out."
     },
     "auth.start.message" : {
       "extractionState" : "manual",
@@ -988,7 +1042,8 @@
             "value" : "Et sted for nærhet, deling\nog alt som betyr noe."
           }
         }
-      }
+      },
+      "comment" : "Supporting message on the sign-in screen."
     },
     "auth.start.title" : {
       "extractionState" : "manual",
@@ -1005,7 +1060,8 @@
             "value" : "Logg inn i Paeonia"
           }
         }
-      }
+      },
+      "comment" : "Title on the sign-in screen."
     },
     "paywall.acceptInvite" : {
       "extractionState" : "manual",
@@ -1022,7 +1078,8 @@
             "value" : "Jeg har en invitasjon"
           }
         }
-      }
+      },
+      "comment" : "Button or link for users who already have a partner invite."
     },
     "paywall.badge" : {
       "extractionState" : "manual",
@@ -1039,7 +1096,8 @@
             "value" : "Paeonia Couple"
           }
         }
-      }
+      },
+      "comment" : "Small paywall badge describing the offer."
     },
     "paywall.bestValue" : {
       "extractionState" : "manual",
@@ -1056,7 +1114,8 @@
             "value" : "Best verdi"
           }
         }
-      }
+      },
+      "comment" : "Badge for the better-value billing option."
     },
     "paywall.billing.monthly" : {
       "extractionState" : "manual",
@@ -1073,7 +1132,8 @@
             "value" : "Månedlig"
           }
         }
-      }
+      },
+      "comment" : "Segmented-control label for monthly billing."
     },
     "paywall.billing.picker" : {
       "extractionState" : "manual",
@@ -1090,7 +1150,8 @@
             "value" : "Betalingsperiode"
           }
         }
-      }
+      },
+      "comment" : "Accessibility label for the billing period picker."
     },
     "paywall.billing.yearly" : {
       "extractionState" : "manual",
@@ -1107,7 +1168,8 @@
             "value" : "Årlig"
           }
         }
-      }
+      },
+      "comment" : "Segmented-control label for yearly billing."
     },
     "paywall.cancelAnytime" : {
       "extractionState" : "manual",
@@ -1124,7 +1186,8 @@
             "value" : "Start med 2 trykk, avslutt når som helst."
           }
         }
-      }
+      },
+      "comment" : "Short reassurance below the purchase button."
     },
     "paywall.cta.freeTrial" : {
       "extractionState" : "manual",
@@ -1141,7 +1204,8 @@
             "value" : "Start min gratise prøveperiode"
           }
         }
-      }
+      },
+      "comment" : "Primary purchase button when a free trial is available."
     },
     "paywall.cta.purchasing" : {
       "extractionState" : "manual",
@@ -1158,7 +1222,8 @@
             "value" : "Bekrefter"
           }
         }
-      }
+      },
+      "comment" : "Primary purchase button label while purchase is in progress."
     },
     "paywall.cta.subscribe" : {
       "extractionState" : "manual",
@@ -1175,7 +1240,8 @@
             "value" : "Fortsett"
           }
         }
-      }
+      },
+      "comment" : "Primary purchase button when no trial is available."
     },
     "paywall.error.noPurchases" : {
       "extractionState" : "manual",
@@ -1192,7 +1258,8 @@
             "value" : "Vi fant ikke et abonnement å gjenopprette."
           }
         }
-      }
+      },
+      "comment" : "Error message when restore finds no purchases."
     },
     "paywall.error.productsUnavailable" : {
       "extractionState" : "manual",
@@ -1209,7 +1276,8 @@
             "value" : "Vi kunne ikke laste abonnementet nå. Prøv igjen."
           }
         }
-      }
+      },
+      "comment" : "Error message when subscription products cannot be loaded."
     },
     "paywall.error.purchaseNotConfirmed" : {
       "extractionState" : "manual",
@@ -1226,7 +1294,8 @@
             "value" : "Vi kunne ikke bekrefte kjøpet. Prøv å gjenopprette kjøp."
           }
         }
-      }
+      },
+      "comment" : "Error message when purchase is not confirmed."
     },
     "paywall.error.restoreFailed" : {
       "extractionState" : "manual",
@@ -1243,7 +1312,8 @@
             "value" : "Vi kunne ikke gjenopprette kjøp. Prøv igjen."
           }
         }
-      }
+      },
+      "comment" : "Error message when restoring purchases fails."
     },
     "paywall.feature.daily" : {
       "extractionState" : "manual",
@@ -1260,7 +1330,8 @@
             "value" : "Daglige spørsmål og private svar"
           }
         }
-      }
+      },
+      "comment" : "Short paywall feature label for daily questions."
     },
     "paywall.feature.memories" : {
       "extractionState" : "manual",
@@ -1277,7 +1348,8 @@
             "value" : "Felles minner, notater, bilder og lyd"
           }
         }
-      }
+      },
+      "comment" : "Short paywall feature label for shared memories."
     },
     "paywall.feature.widget" : {
       "extractionState" : "manual",
@@ -1294,10 +1366,11 @@
             "value" : "En partner-widget for små øyeblikk"
           }
         }
-      }
+      },
+      "comment" : "Short paywall feature label for the partner widget."
     },
     "paywall.invite.action" : {
-      "comment" : "Bottom button label while redeeming a partner invite code",
+      "comment" : "Bottom button label while redeeming a partner invite code.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1315,7 +1388,7 @@
       }
     },
     "paywall.invite.cta.caption" : {
-      "comment" : "Small caption under the join button reassuring there is no charge to join",
+      "comment" : "Small caption under the join button reassuring there is no charge to join.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1333,7 +1406,7 @@
       }
     },
     "paywall.invite.dismiss" : {
-      "comment" : "Accessibility label for dismissing the invite-code overlay",
+      "comment" : "Accessibility label for dismissing the invite-code overlay.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1351,7 +1424,7 @@
       }
     },
     "paywall.invite.subtitle" : {
-      "comment" : "Explains what to type into the invite-code field (RECOVERED verbatim)",
+      "comment" : "Instructions for the invite-code field on the paywall.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1369,7 +1442,7 @@
       }
     },
     "paywall.invite.title" : {
-      "comment" : "Heading on the invite-code card below the paywall offer",
+      "comment" : "Heading on the invite-code card below the paywall offer.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1401,7 +1474,8 @@
             "value" : "Administrer abonnement"
           }
         }
-      }
+      },
+      "comment" : "Link label for opening subscription management."
     },
     "paywall.oneSubscription" : {
       "extractionState" : "manual",
@@ -1418,7 +1492,8 @@
             "value" : "Ett abonnement låser opp Paeonia for dere begge."
           }
         }
-      }
+      },
+      "comment" : "Short text explaining that one subscription covers both partners."
     },
     "paywall.period.monthly" : {
       "extractionState" : "manual",
@@ -1435,7 +1510,8 @@
             "value" : "per måned"
           }
         }
-      }
+      },
+      "comment" : "Full monthly billing period label."
     },
     "paywall.period.monthly.compact" : {
       "extractionState" : "manual",
@@ -1452,7 +1528,8 @@
             "value" : "/mnd"
           }
         }
-      }
+      },
+      "comment" : "Compact monthly billing period label shown next to a price."
     },
     "paywall.period.yearly" : {
       "extractionState" : "manual",
@@ -1469,7 +1546,8 @@
             "value" : "per år"
           }
         }
-      }
+      },
+      "comment" : "Full yearly billing period label."
     },
     "paywall.period.yearly.compact" : {
       "extractionState" : "manual",
@@ -1486,7 +1564,8 @@
             "value" : "/år"
           }
         }
-      }
+      },
+      "comment" : "Compact yearly billing period label shown next to a price."
     },
     "paywall.price.loading" : {
       "extractionState" : "manual",
@@ -1503,7 +1582,8 @@
             "value" : "Laster pris"
           }
         }
-      }
+      },
+      "comment" : "Placeholder shown while StoreKit price is loading."
     },
     "paywall.renewal.monthly" : {
       "extractionState" : "manual",
@@ -1520,7 +1600,8 @@
             "value" : "Fornyes månedlig. App Store bekrefter prisen før du betaler."
           }
         }
-      }
+      },
+      "comment" : "Text describing monthly renewal."
     },
     "paywall.renewal.yearly" : {
       "extractionState" : "manual",
@@ -1537,7 +1618,8 @@
             "value" : "Fornyes årlig. App Store bekrefter prisen før du betaler."
           }
         }
-      }
+      },
+      "comment" : "Text describing yearly renewal."
     },
     "paywall.restorePurchases" : {
       "extractionState" : "manual",
@@ -1554,10 +1636,11 @@
             "value" : "Gjenopprett kjøp"
           }
         }
-      }
+      },
+      "comment" : "Button that restores App Store purchases."
     },
     "paywall.scrollHint" : {
-      "comment" : "Button that opens the invite-code overlay for users who have been invited by a partner",
+      "comment" : "Button that opens the invite-code overlay for users invited by a partner.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1589,7 +1672,8 @@
             "value" : "Hold kontakten på en leken måte"
           }
         }
-      }
+      },
+      "comment" : "Paywall subtitle explaining what the subscription unlocks."
     },
     "paywall.timeline.charge" : {
       "extractionState" : "manual",
@@ -1606,7 +1690,8 @@
             "value" : "Prøveperioden slutter"
           }
         }
-      }
+      },
+      "comment" : "Timeline title for the future charge date."
     },
     "paywall.timeline.charge.body" : {
       "extractionState" : "manual",
@@ -1623,7 +1708,8 @@
             "value" : "Avslutt når som helst før"
           }
         }
-      }
+      },
+      "comment" : "Timeline body explaining when billing starts."
     },
     "paywall.timeline.dayPrefix" : {
       "extractionState" : "manual",
@@ -1640,7 +1726,8 @@
             "value" : "Dag"
           }
         }
-      }
+      },
+      "comment" : "Prefix before a trial timeline day number."
     },
     "paywall.timeline.manage" : {
       "extractionState" : "manual",
@@ -1657,7 +1744,8 @@
             "value" : "Du har kontroll"
           }
         }
-      }
+      },
+      "comment" : "Timeline title for subscription management."
     },
     "paywall.timeline.manage.body" : {
       "extractionState" : "manual",
@@ -1674,7 +1762,8 @@
             "value" : "Administrer i App Store"
           }
         }
-      }
+      },
+      "comment" : "Timeline body explaining cancellation controls."
     },
     "paywall.timeline.reminder" : {
       "extractionState" : "manual",
@@ -1691,7 +1780,8 @@
             "value" : "Før den slutter"
           }
         }
-      }
+      },
+      "comment" : "Timeline title for the trial reminder."
     },
     "paywall.timeline.reminder.body" : {
       "extractionState" : "manual",
@@ -1708,7 +1798,8 @@
             "value" : "Vi varsler deg — 2 dager igjen"
           }
         }
-      }
+      },
+      "comment" : "Timeline body explaining the reminder before billing."
     },
     "paywall.timeline.renewal" : {
       "extractionState" : "manual",
@@ -1725,7 +1816,8 @@
             "value" : "Fornyes automatisk"
           }
         }
-      }
+      },
+      "comment" : "Timeline title for subscription renewal."
     },
     "paywall.timeline.renewal.monthly.body" : {
       "extractionState" : "manual",
@@ -1742,7 +1834,8 @@
             "value" : "Fornyes månedlig med mindre du avslutter."
           }
         }
-      }
+      },
+      "comment" : "Timeline body for monthly renewal after the trial."
     },
     "paywall.timeline.renewal.yearly.body" : {
       "extractionState" : "manual",
@@ -1759,7 +1852,8 @@
             "value" : "Fornyes årlig"
           }
         }
-      }
+      },
+      "comment" : "Timeline body for yearly renewal after the trial."
     },
     "paywall.timeline.today" : {
       "extractionState" : "manual",
@@ -1776,7 +1870,8 @@
             "value" : "I dag"
           }
         }
-      }
+      },
+      "comment" : "Timeline title for the current day."
     },
     "paywall.timeline.today.body" : {
       "extractionState" : "manual",
@@ -1793,7 +1888,8 @@
             "value" : "Paeonia åpnes for dere begge"
           }
         }
-      }
+      },
+      "comment" : "Timeline body explaining immediate access today."
     },
     "paywall.title" : {
       "extractionState" : "manual",
@@ -1810,7 +1906,8 @@
             "value" : "Paeonia for dere to"
           }
         }
-      }
+      },
+      "comment" : "Main paywall title."
     },
     "paywall.trial.freeWord" : {
       "extractionState" : "manual",
@@ -1827,7 +1924,8 @@
             "value" : "gratis"
           }
         }
-      }
+      },
+      "comment" : "Word used after a trial duration to say the trial is free."
     },
     "paywall.trial.then" : {
       "extractionState" : "manual",
@@ -1844,7 +1942,8 @@
             "value" : "Deretter"
           }
         }
-      }
+      },
+      "comment" : "Connector word before the post-trial price."
     },
     "paywall.trial.title" : {
       "extractionState" : "manual",
@@ -1861,7 +1960,8 @@
             "value" : "Prøv Paeonia gratis"
           }
         }
-      }
+      },
+      "comment" : "Paywall heading for the free trial offer."
     },
     "paywall.trial.unit.day" : {
       "extractionState" : "manual",
@@ -1878,7 +1978,8 @@
             "value" : "dag"
           }
         }
-      }
+      },
+      "comment" : "Singular day unit for trial duration."
     },
     "paywall.trial.unit.days" : {
       "extractionState" : "manual",
@@ -1895,7 +1996,8 @@
             "value" : "dager"
           }
         }
-      }
+      },
+      "comment" : "Plural day unit for trial duration."
     },
     "paywall.trial.unit.month" : {
       "extractionState" : "manual",
@@ -1912,7 +2014,8 @@
             "value" : "måned"
           }
         }
-      }
+      },
+      "comment" : "Singular month unit for trial duration."
     },
     "paywall.trial.unit.months" : {
       "extractionState" : "manual",
@@ -1929,7 +2032,8 @@
             "value" : "måneder"
           }
         }
-      }
+      },
+      "comment" : "Plural month unit for trial duration."
     },
     "paywall.trial.unit.week" : {
       "extractionState" : "manual",
@@ -1946,7 +2050,8 @@
             "value" : "uke"
           }
         }
-      }
+      },
+      "comment" : "Singular week unit for trial duration."
     },
     "paywall.trial.unit.weeks" : {
       "extractionState" : "manual",
@@ -1963,7 +2068,8 @@
             "value" : "uker"
           }
         }
-      }
+      },
+      "comment" : "Plural week unit for trial duration."
     },
     "paywall.trial.unit.year" : {
       "extractionState" : "manual",
@@ -1980,7 +2086,8 @@
             "value" : "år"
           }
         }
-      }
+      },
+      "comment" : "Singular year unit for trial duration."
     },
     "paywall.trial.unit.years" : {
       "extractionState" : "manual",
@@ -1997,7 +2104,8 @@
             "value" : "år"
           }
         }
-      }
+      },
+      "comment" : "Plural year unit for trial duration."
     },
     "root.empty.message" : {
       "extractionState" : "manual",
@@ -2014,7 +2122,8 @@
             "value" : "Sammenkobling, daglige innsjekker, minner og tegninger vil samles her."
           }
         }
-      }
+      },
+      "comment" : "Message for an early placeholder empty state."
     },
     "root.empty.title" : {
       "extractionState" : "manual",
@@ -2031,7 +2140,8 @@
             "value" : "Det private rommet deres starter her"
           }
         }
-      }
+      },
+      "comment" : "Title for an early placeholder empty state."
     },
     "root.foundation.message" : {
       "extractionState" : "manual",
@@ -2048,7 +2158,8 @@
             "value" : "Vi gjør klart det private rommet før de første ekte funksjonene kommer."
           }
         }
-      }
+      },
+      "comment" : "Message for an early foundation placeholder state."
     },
     "root.foundation.title" : {
       "extractionState" : "manual",
@@ -2065,7 +2176,8 @@
             "value" : "En rolig start"
           }
         }
-      }
+      },
+      "comment" : "Title for an early foundation placeholder state."
     },
     "root.palette.message" : {
       "extractionState" : "manual",
@@ -2082,7 +2194,8 @@
             "value" : "Fargene justeres når appikonet og peonreferansen er klare."
           }
         }
-      }
+      },
+      "comment" : "Message for an early brand palette placeholder state."
     },
     "root.palette.title" : {
       "extractionState" : "manual",
@@ -2099,7 +2212,8 @@
             "value" : "Farger"
           }
         }
-      }
+      },
+      "comment" : "Title for an early brand palette placeholder state."
     },
     "root.primaryAction" : {
       "extractionState" : "manual",
@@ -2116,7 +2230,8 @@
             "value" : "Inviter partneren din"
           }
         }
-      }
+      },
+      "comment" : "Primary action label in the early root placeholder screen."
     },
     "root.primaryAction.hint" : {
       "extractionState" : "manual",
@@ -2133,7 +2248,8 @@
             "value" : "Denne skrus på når sammenkobling er klar."
           }
         }
-      }
+      },
+      "comment" : "Hint below the early root placeholder primary action."
     },
     "sync.status.failed" : {
       "extractionState" : "manual",
@@ -2150,7 +2266,8 @@
             "value" : "Trenger oppmerksomhet"
           }
         }
-      }
+      },
+      "comment" : "Short sync status label for a failed send."
     },
     "sync.status.offline" : {
       "extractionState" : "manual",
@@ -2167,7 +2284,8 @@
             "value" : "Frakoblet"
           }
         }
-      }
+      },
+      "comment" : "Short sync status label when the device is offline."
     },
     "sync.status.savedLocally" : {
       "extractionState" : "manual",
@@ -2184,7 +2302,8 @@
             "value" : "Lagret på denne telefonen"
           }
         }
-      }
+      },
+      "comment" : "Short sync status label for content saved only on this phone."
     },
     "sync.status.synced" : {
       "extractionState" : "manual",
@@ -2201,7 +2320,8 @@
             "value" : "Sendt"
           }
         }
-      }
+      },
+      "comment" : "Short sync status label for content sent successfully."
     },
     "sync.status.syncing" : {
       "extractionState" : "manual",
@@ -2218,7 +2338,8 @@
             "value" : "Sender"
           }
         }
-      }
+      },
+      "comment" : "Short sync status label while content is sending."
     }
   },
   "version" : "1.0"

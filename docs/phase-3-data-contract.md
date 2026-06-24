@@ -14,7 +14,7 @@ Locked so far:
 
 - identity and account creation order
 - profile name and profile photo direction
-- passkey role
+- Apple and Google are the only MVP sign-in methods
 - invite-only relationship discovery
 - core relationship lifecycle
 - one-time relationship ended notice
@@ -516,9 +516,8 @@ MVP auth methods are:
 
 - Sign in with Apple
 - Google Sign-In
-- passkeys
 
-No email/password and no email magic-link auth in MVP.
+No passkeys, email/password, or email magic-link auth in MVP.
 
 Sign in with Apple private relay emails are valid normal accounts.
 
@@ -565,12 +564,6 @@ Limited pre-entitlement state:
 - Full product access unlocks only if the resulting couple has effective entitlement coverage through either partner.
 - If the resulting couple has no effective entitlement coverage, both partners remain paywalled with a leave-relationship action.
 - The limited state must make sign out obvious so users can recover from accidentally creating the wrong Apple/Google account.
-
-### Passkeys
-
-Passkeys are a sign-in method, not a sign-up method.
-
-A user must already have an account before adding a passkey. The app can offer passkey setup after initial Apple or Google sign-in.
 
 ### Identity Linking
 
@@ -1144,7 +1137,7 @@ App Review setup:
 - Provide a short screen recording of onboarding and invite pairing.
 - Do not make App Review success depend on live invite-flow testing, two app instances, or manually switching between two fresh accounts; provide the onboarding/pairing screen recording instead.
 - Keep the seeded demo partner account non-expiring.
-- Because normal auth is OAuth/passkey-only, provide a review-only access code flow after normal Apple/Google sign-in instead of shared credentials.
+- Because normal auth is Apple/Google-only, provide a review-only access code flow after normal sign-in instead of shared credentials.
 - Explain in App Review Notes that one subscription covers one private couple.
 - Explain that review access is a review-only grant and is not a user-facing payment bypass.
 - Do not rely on Apple Family Sharing for the partner entitlement model.
@@ -1166,7 +1159,7 @@ Review-only auth path:
 - The backend applies `internal.entitlement_grants.grant_kind = review` to the signed-in reviewer account when the scenario requires paid access.
 - Review codes must be disabled outside review windows when not needed.
 - Review access must not appear as a normal user-facing payment bypass.
-- Normal users still get only Apple, Google, and passkey sign-in.
+- Normal users still get only Apple and Google sign-in.
 - Email magic-link auth is not used for review access and is not exposed as a normal sign-in method.
 - The review access Edge Function should require a user JWT because the reviewer signs in normally before redeeming the code.
 - The review access Edge Function must implement rate limiting or attempt throttling before validating codes.
@@ -1231,7 +1224,7 @@ Review access sequence:
 10. For purchase-flow review, backend records the session but does not grant entitlement.
 11. App calls authenticated RPC `complete_review_access_session(review_session_id)` if the Edge Function did not complete it in the same transaction.
 12. Backend checks `auth.uid()` matches `internal.review_access_sessions.user_id` before marking the session complete.
-13. App continues through the same post-auth routing used by Apple, Google, and passkey sign-in.
+13. App continues through the same post-auth routing used by Apple and Google sign-in.
 
 Review access migration rules:
 

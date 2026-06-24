@@ -25,6 +25,7 @@ def parse_args() -> argparse.Namespace:
     --nb "Inviter partner"
 
   scripts/xcstrings-set ios/PaeoniaWidget/Resources/Localization/Localizable.xcstrings widget.title \\
+    --comment "Widget display name" \\
     --en "Paeonia" \\
     --nb "Paeonia"
 """,

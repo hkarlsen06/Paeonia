@@ -239,7 +239,7 @@ ios/PaeoniaApp/
 ### Visual System
 
 - Define color palette inspired by peonies, warmth, and privacy.
-- Define light and dark mode from the start.
+- Define the single plum-led app theme and accessibility behavior.
 - Define typography roles.
 - Define spacing scale.
 - Define cards, buttons, sheets, empty states, and alerts.
@@ -363,10 +363,9 @@ Do not write migrations until the current implementation slice has been checked 
 - Support only:
   - Sign in with Apple
   - Google Sign-In
-  - passkeys
-- Do not support email/password or email magic-link auth in the MVP.
+- Do not support passkeys, email/password, or email magic-link auth in the MVP.
 - Keep Sign in with Apple available because Google Sign-In is offered.
-- Implement all three auth surfaces as first-class MVP requirements.
+- Implement both auth surfaces as first-class MVP requirements.
 - Do not require unnecessary profile fields.
 - Add account deletion inside the app before App Store submission.
 

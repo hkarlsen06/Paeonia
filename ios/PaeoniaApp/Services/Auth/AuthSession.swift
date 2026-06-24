@@ -37,7 +37,6 @@ nonisolated struct AuthSession: Equatable, Identifiable, Sendable {
 nonisolated enum AuthProvider: Equatable, Sendable {
     case apple
     case google
-    case passkey
     case development
     case unknown
 }

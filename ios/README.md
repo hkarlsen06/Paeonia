@@ -16,7 +16,6 @@ Locked foundation decisions:
   - Google Sign-In
 - Associated Domains:
   - `applinks:paeonia.no`
-  - `webcredentials:paeonia.no`
 - URL scheme:
   - `paeonia://`
 - Localization:
