@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @State private var viewModel: RootViewModel
+    @State private var bannerCenter = PaeoniaBannerCenter()
     private let appleSignInProvider: any AppleSignInProviding
     private let googleSignInProvider: any GoogleSignInProviding
 
@@ -18,13 +19,15 @@ struct RootView: View {
 
     var body: some View {
         rootContent
+            .environment(bannerCenter)
             .task {
                 await viewModel.start()
             }
             .preferredColorScheme(.dark)
-            .paeoniaErrorAlert(alertContent) {
-                viewModel.dismissNotice()
+            .onChange(of: viewModel.notice) { _, notice in
+                showBanner(for: notice)
             }
+            .paeoniaTopBanner(bannerCenter)
     }
 
     @ViewBuilder
@@ -32,8 +35,12 @@ struct RootView: View {
         switch viewModel.state {
         case .unauthenticated:
             signInScreen
-        case .limitedAuthenticated:
+        case .limitedAuthenticated, .pairedPaywalled, .entitlementLost:
             paywallScreen
+        case .onboarding:
+            onboardingScaffold
+        case .unpaired, .invitePending:
+            pairingScaffold
         default:
             scaffold
         }
@@ -51,7 +58,7 @@ struct RootView: View {
         PaywallView(
             session: viewModel.currentSession,
             onPurchaseConfirmed: subscriptionChanged,
-            onAcceptInvite: viewModel.showInviteEntryPending,
+            allowsInviteEntry: viewModel.state == .limitedAuthenticated,
             onSignOut: signOut,
             onDeleteAccount: deleteAccount
         )
@@ -72,37 +79,52 @@ struct RootView: View {
         }
     }
 
-    private var alertContent: PaeoniaAlertContent? {
-        guard let notice = viewModel.notice else {
-            return nil
-        }
+    private var pairingScaffold: some View {
+        NavigationStack {
+            VStack(spacing: PaeoniaSpacing.sectionSpacing) {
+                header
 
-        return PaeoniaAlertContent(title: notice.title, message: notice.message)
+                PairingInviteView(
+                    session: viewModel.currentSession,
+                    onRefreshAccess: refreshPairing
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            }
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.screenTopSpacing)
+            .padding(.bottom, PaeoniaSpacing.space16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(.paeoniaBackgroundPrimary)
+        }
+    }
+
+    private var onboardingScaffold: some View {
+        NavigationStack {
+            VStack(spacing: PaeoniaSpacing.sectionSpacing) {
+                header
+
+                AuthOnboardingView(
+                    session: viewModel.currentSession,
+                    isWorking: viewModel.isWorking,
+                    onCompleteOnboarding: completeOnboarding,
+                    onSignOut: signOut
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            }
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.screenTopSpacing)
+            .padding(.bottom, PaeoniaSpacing.space16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(.paeoniaBackgroundPrimary)
+        }
     }
 
     private var header: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            Text(.appTitle)
-                .font(PaeoniaTypography.display)
-                .foregroundStyle(.paeoniaTextPrimary)
-
-            Text(.appTagline)
-                .font(PaeoniaTypography.body)
-                .foregroundStyle(.paeoniaTextSecondary)
-
-            ViewThatFits {
-                HStack(spacing: PaeoniaSpacing.space8) {
-                    PaeoniaSyncStatusView(status: syncStatus)
-                    stateLabel
-                }
-
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    PaeoniaSyncStatusView(status: syncStatus)
-                    stateLabel
-                }
-            }
-        }
-        .multilineTextAlignment(.center)
+        PaeoniaBrandLockup(
+            wordmarkSize: 36,
+            taglineSize: 17,
+            taglineColor: .paeoniaTextSecondary
+        )
         .frame(maxWidth: .infinity)
     }
 
@@ -115,71 +137,34 @@ struct RootView: View {
             // Handled at the top level by `signInScreen`; never shown here.
             EmptyView()
         case .onboarding:
-            AuthOnboardingView(
-                session: viewModel.currentSession,
-                isWorking: viewModel.isWorking,
-                onCompleteOnboarding: completeOnboarding,
-                onSignOut: signOut
-            )
+            // Handled by `onboardingScaffold`; never shown here.
+            EmptyView()
         case .limitedAuthenticated:
             // Handled at the top level by `paywallScreen`; never shown here.
+            EmptyView()
+        case .unpaired, .invitePending:
+            // Handled by `pairingScaffold`; never shown here.
             EmptyView()
         case .deletingAccount:
             AuthDeletingAccountView()
         case .reviewAccess,
-             .unpaired,
-             .invitePending,
              .paired,
-             .pairedPaywalled,
+             .entitlementRestored:
+            privateSpacePlaceholder
+        case .pairedPaywalled,
              .entitlementLost,
-             .entitlementRestored,
              .relationshipEndedNotice:
             AuthUnavailableRouteView()
         }
     }
 
-    private var stateLabel: some View {
-        Text(stateDescription)
-            .font(PaeoniaTypography.caption)
-            .foregroundStyle(.paeoniaTextTertiary)
-            .padding(.horizontal, PaeoniaSpacing.space12)
-            .padding(.vertical, PaeoniaSpacing.space8)
-            .background(.paeoniaSurfaceSecondary)
-            .clipShape(Capsule(style: .continuous))
-    }
-
-    private var syncStatus: PaeoniaSyncStatus {
-        viewModel.state == .launching ? .syncing : .savedLocally
-    }
-
-    private var stateDescription: LocalizedStringResource {
-        switch viewModel.state {
-        case .launching:
-            .appStateLaunching
-        case .unauthenticated:
-            .appStateUnauthenticated
-        case .onboarding:
-            .appStateOnboarding
-        case .limitedAuthenticated:
-            .appStateLimitedAuthenticated
-        case .reviewAccess:
-            .appStateReviewAccess
-        case .unpaired:
-            .appStateUnpaired
-        case .invitePending:
-            .appStateInvitePending
-        case .paired:
-            .appStatePaired
-        case .pairedPaywalled:
-            .appStatePairedPaywalled
-        case .entitlementLost:
-            .appStateEntitlementLost
-        case .entitlementRestored:
-            .appStateEntitlementRestored
-        case .relationshipEndedNotice:
-            .appStateRelationshipEndedNotice
-        case .deletingAccount:
-            .appStateDeletingAccount
+    private var privateSpacePlaceholder: some View {
+        PaeoniaCard {
+            PaeoniaEmptyStateView(
+                title: .rootEmptyTitle,
+                message: .rootEmptyMessage,
+                systemImage: "heart.circle.fill"
+            )
         }
     }
 
@@ -221,6 +206,26 @@ struct RootView: View {
             await viewModel.refreshAfterSubscriptionChange()
         }
     }
+
+    private func refreshPairing() {
+        Task {
+            await viewModel.refreshAfterPairingChange()
+        }
+    }
+
+    private func showBanner(for notice: RootNotice?) {
+        guard let notice else {
+            return
+        }
+
+        bannerCenter.show(
+            .error(
+                title: String(localized: notice.title),
+                message: String(localized: notice.message)
+            )
+        )
+        viewModel.dismissNotice()
+    }
 }
 
 private extension RootNotice {
@@ -236,8 +241,6 @@ private extension RootNotice {
             .authNoticeSignOutFailedTitle
         case .deleteAccountFailed:
             .authNoticeDeleteAccountFailedTitle
-        case .inviteEntryPending:
-            .authNoticeInviteEntryPendingTitle
         }
     }
 
@@ -253,8 +256,6 @@ private extension RootNotice {
             .authNoticeSignOutFailedMessage
         case .deleteAccountFailed:
             .authNoticeDeleteAccountFailedMessage
-        case .inviteEntryPending:
-            .authNoticeInviteEntryPendingMessage
         }
     }
 }

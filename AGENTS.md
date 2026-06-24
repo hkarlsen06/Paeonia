@@ -283,6 +283,22 @@ Also centralize:
 - haptic patterns
 - reusable button and card styles
 
+Use cards only when the framed surface has product meaning, such as a distinct repeated item, modal, or tool. Prefer few or no cards, and do not wrap ordinary screen content in cards by default. Place content directly in the screen layout with intentional spacing and hierarchy. Put primary CTA clusters near the bottom of the screen when it improves thumb reach and matches the flow. In bottom button clusters, text-only actions without visible button backgrounds should still occupy button-sized hit targets and be spaced like adjacent buttons, not tucked close to the primary CTA.
+
+### Brand Wordmark
+
+- When `Paeonia` is shown as a standalone single-word app name in the iOS app or widget surfaces, use the shared `PaeoniaWordmark` logo lockup in the app target, or the same mark-left, serif, semibold wordmark treatment in targets that cannot import it.
+- Size may change with layout hierarchy, but the wordmark font treatment should stay consistent.
+- When `app.tagline` is presented as the slogan paired with the stylized wordmark, use `PaeoniaBrandLockup` so the logo-plus-wordmark row is constrained to the same visual width as the tagline. Use the same serif, semibold wordmark family treatment at the appropriate size for that layout.
+- Do not apply the wordmark style automatically when `Paeonia` appears as part of a sentence or longer phrase; use the surrounding copy style in those cases.
+
+### Error Presentation
+
+- Present transient user-facing errors through the app-level top dropdown banner.
+- Mount the shared banner once at the root and send feature errors into that shared surface.
+- Do not add new inline red error panels or system alerts for ordinary recoverable errors.
+- Keep full-screen error states only when the whole screen cannot continue and needs a retry action.
+
 ## Testing Requirements
 
 Agents should add or update tests when implementing behavior.

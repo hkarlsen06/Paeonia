@@ -9,6 +9,7 @@ struct PaywallContentView: View {
     let headlineTitle: LocalizedStringResource
     let priceLine: String
     let timelineItems: [PaywallTimelineItem]
+    let allowsInviteEntry: Bool
     let onRevealInvite: () -> Void
 
     var body: some View {
@@ -27,16 +28,19 @@ struct PaywallContentView: View {
                 PaywallBillingSelector(billingPeriod: $billingPeriod)
                     .padding(.top, PaeoniaSpacing.space20)
 
+                Spacer(minLength: PaeoniaSpacing.space32)
+
                 PaywallTimelineView(items: timelineItems)
-                    .padding(.top, PaeoniaSpacing.space32)
 
                 Spacer(minLength: PaeoniaSpacing.space24)
 
-                PaywallScrollCue(onTap: onRevealInvite)
-                    .padding(.bottom, PaeoniaSpacing.space20)
+                if allowsInviteEntry {
+                    PaywallScrollCue(onTap: onRevealInvite)
+                        .padding(.bottom, PaeoniaSpacing.space20)
+                }
             }
             .padding(.horizontal, PaeoniaSpacing.space20)
-            .padding(.top, PaeoniaSpacing.space16)
+            .padding(.top, PaeoniaSpacing.space24)
             .frame(maxWidth: 430)
             .frame(maxWidth: .infinity)
             .frame(maxHeight: .infinity, alignment: .top)

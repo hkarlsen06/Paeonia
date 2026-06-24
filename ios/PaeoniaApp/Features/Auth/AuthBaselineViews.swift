@@ -46,20 +46,53 @@ struct AuthOnboardingView: View {
     }
 
     var body: some View {
-        PaeoniaCard {
-            PaeoniaEmptyStateView(
-                title: .authOnboardingTitle,
-                message: .authOnboardingMessage,
-                systemImage: "person.crop.circle.badge.checkmark"
-            ) {
-                onboardingActions
-            }
+        VStack(spacing: PaeoniaSpacing.space32) {
+            Spacer(minLength: PaeoniaSpacing.space16)
+
+            onboardingContent
+
+            Spacer(minLength: PaeoniaSpacing.space24)
+
+            onboardingActions
         }
+        .frame(maxWidth: .infinity)
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private var onboardingMessage: LocalizedStringResource {
+        if session?.displayName?.trimmedNonEmpty != nil {
+            return .authOnboardingPrefilledMessage
+        }
+
+        return .authOnboardingMessage
+    }
+
+    private var onboardingContent: some View {
+        VStack(spacing: PaeoniaSpacing.space20) {
+            Image(systemName: "person.crop.circle.badge.checkmark")
+                .font(.system(size: 48, weight: .semibold))
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .accessibilityHidden(true)
+
+            VStack(spacing: PaeoniaSpacing.space8) {
+                Text(.authOnboardingTitle)
+                    .font(PaeoniaTypography.title)
+                    .foregroundStyle(.paeoniaTextPrimary)
+
+                Text(onboardingMessage)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            displayNameField
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var onboardingActions: some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
-            displayNameField
+        VStack(spacing: PaeoniaSpacing.space12) {
             completeButton
             signOutButton
         }
@@ -99,6 +132,8 @@ struct AuthOnboardingView: View {
     private var signOutButton: some View {
         Button(action: onSignOut) {
             Text(.authOnboardingSignOutButton)
+                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
+                .contentShape(Rectangle())
         }
         .buttonStyle(PaeoniaQuietButtonStyle())
         .disabled(isWorking)

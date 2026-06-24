@@ -185,17 +185,24 @@ actor BlockingDeleteAuthService: AuthServicing {
 @MainActor
 final class GoogleSignInProviderSpy: GoogleSignInProviding {
     private let credential: GoogleSignInCredential
+    private let error: Error?
 
     init(
         credential: GoogleSignInCredential = GoogleSignInCredential(
             idToken: "google-id-token",
             accessToken: "google-access-token"
-        )
+        ),
+        error: Error? = nil
     ) {
         self.credential = credential
+        self.error = error
     }
 
     func signIn() async throws -> GoogleSignInCredential {
+        if let error {
+            throw error
+        }
+
         credential
     }
 }

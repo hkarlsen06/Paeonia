@@ -5,7 +5,7 @@ import SwiftUI
 /// Submission happens from the bottom CTA (which swaps to a "join" button while
 /// the field is focused), so this view holds no button of its own.
 struct PaywallInviteCodeView: View {
-    static let codeLength = 6
+    static let codeLength = PairingInviteCode.length
 
     @Binding var code: String
     var focus: FocusState<Bool>.Binding

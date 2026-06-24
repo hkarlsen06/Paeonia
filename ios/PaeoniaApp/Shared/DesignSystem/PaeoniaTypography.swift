@@ -13,4 +13,12 @@ enum PaeoniaTypography {
     static let countdownNumber = Font.system(.largeTitle, design: .rounded).weight(.bold)
     static let widgetPrimary = Font.headline
     static let widgetSecondary = Font.caption
+
+    static func wordmark(size: CGFloat) -> Font {
+        Font.system(size: size, weight: .semibold, design: .serif)
+    }
+
+    static func wordmarkTagline(size: CGFloat) -> Font {
+        Font.system(size: size, weight: .semibold, design: .serif)
+    }
 }

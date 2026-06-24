@@ -8,7 +8,7 @@ nonisolated enum PairingInviteCodeError: Error, Equatable {
 }
 
 nonisolated enum PairingInviteCode {
-    static let length = 32
+    static let length = 6
 
     private static let alphabet = Array("0123456789ABCDEFGHJKMNPQRSTVWXYZ")
     private static let allowedCharacters = Set(alphabet)

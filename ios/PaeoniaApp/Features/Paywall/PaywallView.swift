@@ -3,9 +3,10 @@ import SwiftUI
 
 struct PaywallView: View {
     @State private var viewModel: PaywallViewModel
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     let onPurchaseConfirmed: () -> Void
-    let onAcceptInvite: () -> Void
+    let allowsInviteEntry: Bool
     let onSignOut: () -> Void
     let onDeleteAccount: () -> Void
 
@@ -17,13 +18,13 @@ struct PaywallView: View {
     init(
         session: AuthSession?,
         onPurchaseConfirmed: @escaping () -> Void,
-        onAcceptInvite: @escaping () -> Void,
+        allowsInviteEntry: Bool,
         onSignOut: @escaping () -> Void,
         onDeleteAccount: @escaping () -> Void
     ) {
         _viewModel = State(initialValue: PaywallViewModel(userID: session?.id))
         self.onPurchaseConfirmed = onPurchaseConfirmed
-        self.onAcceptInvite = onAcceptInvite
+        self.allowsInviteEntry = allowsInviteEntry
         self.onSignOut = onSignOut
         self.onDeleteAccount = onDeleteAccount
     }
@@ -60,8 +61,6 @@ struct PaywallView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     paywallContent(geometry: geometry)
-                    paywallErrorMessage
-                        .padding(.top, PaeoniaSpacing.space16)
                     footerActions
                         .padding(.horizontal, PaeoniaSpacing.space20)
                         .padding(.top, PaeoniaSpacing.space32)
@@ -80,6 +79,9 @@ struct PaywallView: View {
         }
         .safeAreaInset(edge: .bottom) {
             bottomCTA
+        }
+        .onChange(of: viewModel.error) { _, error in
+            showBanner(for: error)
         }
     }
 
@@ -116,6 +118,7 @@ struct PaywallView: View {
             headlineTitle: presentation.headlineTitle,
             priceLine: presentation.priceLine,
             timelineItems: presentation.timelineItems,
+            allowsInviteEntry: allowsInviteEntry,
             onRevealInvite: {
                 withAnimation(.easeInOut(duration: 0.25)) {
                     showInviteOverlay = true
@@ -148,7 +151,7 @@ struct PaywallView: View {
             title: ctaTitle,
             caption: ctaCaption,
             isEnabled: ctaIsEnabled,
-            isBusy: isInviteMode ? false : viewModel.isPurchasing,
+            isBusy: isInviteMode ? viewModel.isAcceptingInvite : viewModel.isPurchasing,
             usesSolidBackground: isInviteMode,
             action: ctaAction
         )
@@ -168,7 +171,7 @@ struct PaywallView: View {
 
     private var ctaIsEnabled: Bool {
         if isInviteMode {
-            return inviteCode.count == PaywallInviteCodeView.codeLength
+            return inviteCode.count == PaywallInviteCodeView.codeLength && !viewModel.isAcceptingInvite
         }
         return presentation.primaryButtonIsEnabled
     }
@@ -182,8 +185,17 @@ struct PaywallView: View {
     }
 
     private func redeemInvite() {
-        dismissInviteOverlay()
-        onAcceptInvite()
+        guard !viewModel.isAcceptingInvite else {
+            return
+        }
+
+        Task {
+            let didAccept = await viewModel.acceptInvite(codeInput: inviteCode)
+            if didAccept {
+                dismissInviteOverlay()
+                onPurchaseConfirmed()
+            }
+        }
     }
 
     private func focusInviteFieldAfterPresentation() async {
@@ -206,28 +218,6 @@ struct PaywallView: View {
 
             inviteFieldFocused = false
             showInviteOverlay = false
-        }
-    }
-
-    @ViewBuilder
-    private var paywallErrorMessage: some View {
-        if let error = viewModel.error {
-            HStack(alignment: .top, spacing: PaeoniaSpacing.space8) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.paeoniaError)
-                    .accessibilityHidden(true)
-
-                Text(error.message)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaError)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Spacer(minLength: 0)
-            }
-            .padding(PaeoniaSpacing.space12)
-            .background(Color.paeoniaError.opacity(0.12))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .frame(maxWidth: 430)
         }
     }
 
@@ -270,6 +260,15 @@ struct PaywallView: View {
             }
         }
     }
+
+    private func showBanner(for error: PaywallError?) {
+        guard let error else {
+            return
+        }
+
+        bannerCenter.show(.error(message: error.message))
+        viewModel.clearError()
+    }
 }
 
 #Preview {
@@ -282,9 +281,10 @@ struct PaywallView: View {
             profileStatus: .complete
         ),
         onPurchaseConfirmed: {},
-        onAcceptInvite: {},
+        allowsInviteEntry: true,
         onSignOut: {},
         onDeleteAccount: {}
     )
     .preferredColorScheme(.dark)
+    .environment(PaeoniaBannerCenter())
 }

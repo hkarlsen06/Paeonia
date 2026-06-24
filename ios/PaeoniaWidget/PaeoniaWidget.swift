@@ -27,7 +27,7 @@ struct PaeoniaWidgetEntryView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(.widgetPlaceholderTitle)
-                .font(.headline)
+                .font(.system(.headline, design: .serif).weight(.semibold))
             Text(.widgetPlaceholderSubtitle)
                 .font(.caption)
                 .foregroundStyle(.secondary)

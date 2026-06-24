@@ -43,7 +43,7 @@ struct PaywallArtworkHeader: View {
                 .accessibilityHidden(true)
 
             Text(.appTitle)
-                .font(.system(size: 36, weight: .semibold, design: .serif))
+                .font(PaeoniaTypography.wordmark(size: 36))
                 .foregroundStyle(.paeoniaTextPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)

@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$comment": "Source of truth for App Store metadata. The generator creates Fastlane .txt files from this.",
+  "metadata": {
+    "en": {
+      "name": "Paeonia",
+      "subtitle": "A private space for couples",
+      "promotional_text": "Feel close, even when life keeps you apart.",
+      "description": "Paeonia gives couples a calm, private place to stay close through distance.\n\nShare small daily rituals, save memories, count down to the moments you are waiting for, and keep your relationship feeling present in everyday life.\n\nBuilt for privacy, reliability, and the quiet moments that matter.",
+      "keywords": "couples,relationship,love,partner,distance,memories,countdown,prompts,private,rituals",
+      "release_notes": "Bug fixes and performance improvements."
+    },
+    "nb": {
+      "name": "Paeonia",
+      "subtitle": "Et privat sted for par",
+      "promotional_text": "Føl dere nære, selv når livet holder dere fra hverandre.",
+      "description": "Paeonia gir par et rolig og privat sted for å føle seg nære, også på avstand.\n\nDel små daglige ritualer, ta vare på minner, tell ned til øyeblikkene dere gleder dere til, og la forholdet føles nært i hverdagen.\n\nLaget for personvern, pålitelighet og de stille øyeblikkene som betyr noe.",
+      "keywords": "par,forhold,kjaerlighet,partner,avstand,minner,nedtelling,sporsmal,privat,ritualer",
+      "release_notes": "Feilrettinger og ytelsesforbedringer."
+    }
+  }
+}

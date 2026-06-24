@@ -1,7 +1,27 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {},
+    "app.banner.dismiss.button" : {
+      "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss notification"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lukk varsel"
+          }
+        }
+      }
+    },
     "app.state.deletingAccount" : {
+      "comment" : "Short status label while account deletion is in progress.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -16,10 +36,10 @@
             "value" : "Sletter konto"
           }
         }
-      },
-      "comment" : "Short status label while account deletion is in progress."
+      }
     },
     "app.state.entitlementLost" : {
+      "comment" : "Short status label when paid access is no longer active.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -34,10 +54,10 @@
             "value" : "Tilgang pauset"
           }
         }
-      },
-      "comment" : "Short status label when paid access is no longer active."
+      }
     },
     "app.state.entitlementRestored" : {
+      "comment" : "Short status label when paid access has been restored.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -52,10 +72,10 @@
             "value" : "Tilgang gjenopprettet"
           }
         }
-      },
-      "comment" : "Short status label when paid access has been restored."
+      }
     },
     "app.state.invitePending" : {
+      "comment" : "Short status label when a partner invite is waiting.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -70,10 +90,10 @@
             "value" : "Invitasjon venter"
           }
         }
-      },
-      "comment" : "Short status label when a partner invite is waiting."
+      }
     },
     "app.state.launching" : {
+      "comment" : "Short status label while the app starts.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -88,10 +108,10 @@
             "value" : "Starter"
           }
         }
-      },
-      "comment" : "Short status label while the app starts."
+      }
     },
     "app.state.limitedAuthenticated" : {
+      "comment" : "Short status label for signed-in users without full access.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -106,10 +126,10 @@
             "value" : "Begrenset tilgang"
           }
         }
-      },
-      "comment" : "Short status label for signed-in users without full access."
+      }
     },
     "app.state.onboarding" : {
+      "comment" : "Short status label while profile setup is incomplete.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -124,10 +144,10 @@
             "value" : "Introduksjon"
           }
         }
-      },
-      "comment" : "Short status label while profile setup is incomplete."
+      }
     },
     "app.state.paired" : {
+      "comment" : "Short status label when both partners are paired and have access.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -142,10 +162,10 @@
             "value" : "Koblet sammen"
           }
         }
-      },
-      "comment" : "Short status label when both partners are paired and have access."
+      }
     },
     "app.state.pairedPaywalled" : {
+      "comment" : "Short status label when partners are paired but still need a subscription.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -160,10 +180,10 @@
             "value" : "Koblet sammen, abonnement trengs"
           }
         }
-      },
-      "comment" : "Short status label when partners are paired but still need a subscription."
+      }
     },
     "app.state.relationshipEndedNotice" : {
+      "comment" : "Short status label when a relationship ended notice must be shown.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -178,10 +198,10 @@
             "value" : "Rommet er lukket"
           }
         }
-      },
-      "comment" : "Short status label when a relationship ended notice must be shown."
+      }
     },
     "app.state.reviewAccess" : {
+      "comment" : "Short status label for App Review access mode.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -196,10 +216,10 @@
             "value" : "Tilgang for App Review"
           }
         }
-      },
-      "comment" : "Short status label for App Review access mode."
+      }
     },
     "app.state.unauthenticated" : {
+      "comment" : "Short status label when the user is signed out.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -214,10 +234,10 @@
             "value" : "Logget ut"
           }
         }
-      },
-      "comment" : "Short status label when the user is signed out."
+      }
     },
     "app.state.unpaired" : {
+      "comment" : "Short status label when the user has access but no partner yet.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -232,10 +252,10 @@
             "value" : "Venter på sammenkobling"
           }
         }
-      },
-      "comment" : "Short status label when the user has access but no partner yet."
+      }
     },
     "app.tagline" : {
+      "comment" : "Main Paeonia tagline shown near the brand name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -250,10 +270,10 @@
             "value" : "Et privat sted for dere to"
           }
         }
-      },
-      "comment" : "Main Paeonia tagline shown near the brand name."
+      }
     },
     "app.title" : {
+      "comment" : "App name shown in headers and accessibility labels.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -268,10 +288,10 @@
             "value" : "Paeonia"
           }
         }
-      },
-      "comment" : "App name shown in headers and accessibility labels."
+      }
     },
     "auth.deleteAccount.button" : {
+      "comment" : "Button that starts the account deletion confirmation flow.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -286,10 +306,10 @@
             "value" : "Slett konto"
           }
         }
-      },
-      "comment" : "Button that starts the account deletion confirmation flow."
+      }
     },
     "auth.deleteAccount.confirm.action" : {
+      "comment" : "Destructive confirmation button that deletes the account.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -304,10 +324,10 @@
             "value" : "Slett konto"
           }
         }
-      },
-      "comment" : "Destructive confirmation button that deletes the account."
+      }
     },
     "auth.deleteAccount.confirm.cancel" : {
+      "comment" : "Cancel button that keeps the account.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -322,10 +342,10 @@
             "value" : "Behold konto"
           }
         }
-      },
-      "comment" : "Cancel button that keeps the account."
+      }
     },
     "auth.deleteAccount.confirm.message" : {
+      "comment" : "Message in the account deletion confirmation dialog.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -340,10 +360,10 @@
             "value" : "Dette fjerner testkontoen fra denne telefonen."
           }
         }
-      },
-      "comment" : "Message in the account deletion confirmation dialog."
+      }
     },
     "auth.deleteAccount.confirm.title" : {
+      "comment" : "Title of the account deletion confirmation dialog.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -358,10 +378,10 @@
             "value" : "Slette denne kontoen?"
           }
         }
-      },
-      "comment" : "Title of the account deletion confirmation dialog."
+      }
     },
     "auth.deleting.message" : {
+      "comment" : "Message shown while account deletion is running.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -376,10 +396,10 @@
             "value" : "Dette kan ta litt tid."
           }
         }
-      },
-      "comment" : "Message shown while account deletion is running."
+      }
     },
     "auth.deleting.title" : {
+      "comment" : "Title shown while account deletion is running.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -394,10 +414,10 @@
             "value" : "Sletter konto"
           }
         }
-      },
-      "comment" : "Title shown while account deletion is running."
+      }
     },
     "auth.launching.message" : {
+      "comment" : "Message shown while checking the saved sign-in state.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -412,10 +432,10 @@
             "value" : "Sjekker innloggingen din."
           }
         }
-      },
-      "comment" : "Message shown while checking the saved sign-in state."
+      }
     },
     "auth.launching.title" : {
+      "comment" : "Title shown while the app checks sign-in state.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -430,10 +450,10 @@
             "value" : "Starter Paeonia"
           }
         }
-      },
-      "comment" : "Title shown while the app checks sign-in state."
+      }
     },
     "auth.notice.deleteAccountFailed.message" : {
+      "comment" : "Alert message shown when account deletion fails.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -448,10 +468,10 @@
             "value" : "Vi kunne ikke slette denne kontoen. Prøv igjen."
           }
         }
-      },
-      "comment" : "Alert message shown when account deletion fails."
+      }
     },
     "auth.notice.deleteAccountFailed.title" : {
+      "comment" : "Alert title shown when account deletion fails.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -466,10 +486,10 @@
             "value" : "Kontoen ble ikke slettet"
           }
         }
-      },
-      "comment" : "Alert title shown when account deletion fails."
+      }
     },
     "auth.notice.inviteEntryPending.message" : {
+      "comment" : "Alert message for invite entry that is not implemented yet.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -484,10 +504,10 @@
             "value" : "Invitasjonslenker åpnes her i neste bygg."
           }
         }
-      },
-      "comment" : "Alert message for invite entry that is not implemented yet."
+      }
     },
     "auth.notice.inviteEntryPending.title" : {
+      "comment" : "Alert title for invite entry that is not implemented yet.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -502,10 +522,10 @@
             "value" : "Invitasjon kommer snart"
           }
         }
-      },
-      "comment" : "Alert title for invite entry that is not implemented yet."
+      }
     },
     "auth.notice.onboardingFailed.message" : {
+      "comment" : "Alert message shown when profile setup cannot be saved.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -520,10 +540,10 @@
             "value" : "Prøv igjen før du fortsetter."
           }
         }
-      },
-      "comment" : "Alert message shown when profile setup cannot be saved."
+      }
     },
     "auth.notice.onboardingFailed.title" : {
+      "comment" : "Alert title shown when profile setup cannot be saved.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -538,10 +558,10 @@
             "value" : "Oppsettet ble ikke lagret"
           }
         }
-      },
-      "comment" : "Alert title shown when profile setup cannot be saved."
+      }
     },
     "auth.notice.sessionLoadFailed.message" : {
+      "comment" : "Alert message shown when sign-in state cannot be checked.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -556,10 +576,10 @@
             "value" : "Vi kunne ikke sjekke om du er logget inn. Prøv igjen."
           }
         }
-      },
-      "comment" : "Alert message shown when sign-in state cannot be checked."
+      }
     },
     "auth.notice.sessionLoadFailed.title" : {
+      "comment" : "Alert title shown when sign-in state cannot be checked.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -574,10 +594,10 @@
             "value" : "Sjekk av innlogging feilet"
           }
         }
-      },
-      "comment" : "Alert title shown when sign-in state cannot be checked."
+      }
     },
     "auth.notice.signInFailed.message" : {
+      "comment" : "Alert message shown when Apple or Google sign-in fails.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -592,10 +612,10 @@
             "value" : "Vi kunne ikke logge deg inn. Prøv igjen."
           }
         }
-      },
-      "comment" : "Alert message shown when Apple or Google sign-in fails."
+      }
     },
     "auth.notice.signInFailed.title" : {
+      "comment" : "Alert title shown when Apple or Google sign-in fails.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -610,10 +630,10 @@
             "value" : "Innlogging feilet"
           }
         }
-      },
-      "comment" : "Alert title shown when Apple or Google sign-in fails."
+      }
     },
     "auth.notice.signOutFailed.message" : {
+      "comment" : "Alert message shown when sign-out fails.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -628,10 +648,10 @@
             "value" : "Vi kunne ikke logge deg ut. Prøv igjen."
           }
         }
-      },
-      "comment" : "Alert message shown when sign-out fails."
+      }
     },
     "auth.notice.signOutFailed.title" : {
+      "comment" : "Alert title shown when sign-out fails.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -646,10 +666,10 @@
             "value" : "Utlogging feilet"
           }
         }
-      },
-      "comment" : "Alert title shown when sign-out fails."
+      }
     },
     "auth.onboarding.complete.button" : {
+      "comment" : "Button that finishes required profile setup.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -664,10 +684,10 @@
             "value" : "Fullfør oppsett"
           }
         }
-      },
-      "comment" : "Button that finishes required profile setup."
+      }
     },
     "auth.onboarding.displayName.label" : {
+      "comment" : "Label for the display name text field during profile setup.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -682,10 +702,10 @@
             "value" : "Navnet ditt"
           }
         }
-      },
-      "comment" : "Label for the display name text field during profile setup."
+      }
     },
     "auth.onboarding.displayName.placeholder" : {
+      "comment" : "Placeholder for the display name field during profile setup.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -700,10 +720,10 @@
             "value" : "Navnet ditt"
           }
         }
-      },
-      "comment" : "Placeholder for the display name field during profile setup."
+      }
     },
     "auth.onboarding.message" : {
+      "comment" : "Message explaining why profile setup is needed.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -718,10 +738,28 @@
             "value" : "Vi trenger litt profilinfo før delte funksjoner skrus på."
           }
         }
-      },
-      "comment" : "Message explaining why profile setup is needed."
+      }
+    },
+    "auth.onboarding.prefilledMessage" : {
+      "comment" : "Message shown when profile setup opens with an OAuth-provided display name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check that your name looks right.\nYou can change it before you continue."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk at navnet ditt ser riktig ut.\nDu kan endre det før du fortsetter."
+          }
+        }
+      }
     },
     "auth.onboarding.signOut.button" : {
+      "comment" : "Button that signs out instead of finishing profile setup.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -736,10 +774,10 @@
             "value" : "Logg ut i stedet"
           }
         }
-      },
-      "comment" : "Button that signs out instead of finishing profile setup."
+      }
     },
     "auth.onboarding.title" : {
+      "comment" : "Title for the required profile setup screen.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -754,10 +792,10 @@
             "value" : "Fullfør oppsettet"
           }
         }
-      },
-      "comment" : "Title for the required profile setup screen."
+      }
     },
     "auth.routeUnavailable.message" : {
+      "comment" : "Message shown for app routes that are not implemented yet.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -772,10 +810,10 @@
             "value" : "Appen viser denne skjermen når neste funksjon er klar."
           }
         }
-      },
-      "comment" : "Message shown for app routes that are not implemented yet."
+      }
     },
     "auth.routeUnavailable.title" : {
+      "comment" : "Title shown for app routes that are not implemented yet.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -790,10 +828,10 @@
             "value" : "Denne delen er ikke klar ennå"
           }
         }
-      },
-      "comment" : "Title shown for app routes that are not implemented yet."
+      }
     },
     "auth.signedIn.message" : {
+      "comment" : "Message shown after sign-in before shared features are ready.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -808,10 +846,10 @@
             "value" : "Neste steg er sammenkobling og delte funksjoner. Foreløpig er kontoen klar."
           }
         }
-      },
-      "comment" : "Message shown after sign-in before shared features are ready."
+      }
     },
     "auth.signedIn.ready.caption" : {
+      "comment" : "Small caption confirming the account is ready.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -826,10 +864,10 @@
             "value" : "Kontoen er klar"
           }
         }
-      },
-      "comment" : "Small caption confirming the account is ready."
+      }
     },
     "auth.signedIn.testAccount.caption" : {
+      "comment" : "Small caption for a local test account.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -844,10 +882,10 @@
             "value" : "Lokal testkonto"
           }
         }
-      },
-      "comment" : "Small caption for a local test account."
+      }
     },
     "auth.signedIn.title" : {
+      "comment" : "Title shown after the user is signed in.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -862,10 +900,10 @@
             "value" : "Du er logget inn"
           }
         }
-      },
-      "comment" : "Title shown after the user is signed in."
+      }
     },
     "auth.signIn.apple.button" : {
+      "comment" : "Button that starts Sign in with Apple.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -880,10 +918,10 @@
             "value" : "Fortsett med Apple"
           }
         }
-      },
-      "comment" : "Button that starts Sign in with Apple."
+      }
     },
     "auth.signIn.development.button" : {
+      "comment" : "Debug-only button for local development sign-in.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -898,10 +936,10 @@
             "value" : "Fortsett med testkonto"
           }
         }
-      },
-      "comment" : "Debug-only button for local development sign-in."
+      }
     },
     "auth.signIn.development.hint" : {
+      "comment" : "Debug-only hint explaining local development sign-in.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -916,10 +954,10 @@
             "value" : "Ingen private data forlater denne telefonen."
           }
         }
-      },
-      "comment" : "Debug-only hint explaining local development sign-in."
+      }
     },
     "auth.signIn.google.button" : {
+      "comment" : "Button that starts Google Sign-In.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -934,10 +972,10 @@
             "value" : "Fortsett med Google"
           }
         }
-      },
-      "comment" : "Button that starts Google Sign-In."
+      }
     },
     "auth.signIn.legal.privacy" : {
+      "comment" : "Footer link label for the privacy policy on sign-in screens.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -952,10 +990,10 @@
             "value" : "Personvern"
           }
         }
-      },
-      "comment" : "Footer link label for the privacy policy on sign-in screens."
+      }
     },
     "auth.signIn.legal.terms" : {
+      "comment" : "Footer link label for terms of service on sign-in screens.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -970,10 +1008,10 @@
             "value" : "Vilkår"
           }
         }
-      },
-      "comment" : "Footer link label for terms of service on sign-in screens."
+      }
     },
     "auth.signIn.secure.hint" : {
+      "comment" : "Short reassurance text near the sign-in buttons.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -988,10 +1026,10 @@
             "value" : "Innloggingen din lagres trygt på denne telefonen."
           }
         }
-      },
-      "comment" : "Short reassurance text near the sign-in buttons."
+      }
     },
     "auth.signIn.support" : {
+      "comment" : "Footer link label for support on sign-in screens.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1006,10 +1044,10 @@
             "value" : "Hjelp"
           }
         }
-      },
-      "comment" : "Footer link label for support on sign-in screens."
+      }
     },
     "auth.signOut.button" : {
+      "comment" : "Button that signs the user out.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1024,28 +1062,28 @@
             "value" : "Logg ut"
           }
         }
-      },
-      "comment" : "Button that signs the user out."
+      }
     },
     "auth.start.message" : {
+      "comment" : "Supporting message on the sign-in screen.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A place for closeness, sharing,\nand everything that matters."
+            "value" : "For closeness, sharing, and everything that matters."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Et sted for nærhet, deling\nog alt som betyr noe."
+            "value" : "For nærhet, deling og alt som betyr noe."
           }
         }
-      },
-      "comment" : "Supporting message on the sign-in screen."
+      }
     },
     "auth.start.title" : {
+      "comment" : "Title on the sign-in screen.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1060,10 +1098,316 @@
             "value" : "Logg inn i Paeonia"
           }
         }
-      },
-      "comment" : "Title on the sign-in screen."
+      }
+    },
+    "pairing.invite.checking.button" : {
+      "comment" : "Button label while checking whether the partner has joined.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking pairing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekker sammenkobling"
+          }
+        }
+      }
+    },
+    "pairing.invite.code.label" : {
+      "comment" : "Label for the generated partner invite code.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invitasjonskode"
+          }
+        }
+      }
+    },
+    "pairing.invite.copied.button" : {
+      "comment" : "Button label after copying the partner invite code.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copied"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiert"
+          }
+        }
+      }
+    },
+    "pairing.invite.copy.button" : {
+      "comment" : "Button that copies the partner invite code.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopier kode"
+          }
+        }
+      }
+    },
+    "pairing.invite.error.message" : {
+      "comment" : "Message when partner invite creation fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      }
+    },
+    "pairing.invite.error.title" : {
+      "comment" : "Title when partner invite creation fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not make an invite"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lage invitasjon"
+          }
+        }
+      }
+    },
+    "pairing.invite.expires.label" : {
+      "comment" : "Short label before the invite expiry date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expires"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utløper"
+          }
+        }
+      }
+    },
+    "pairing.invite.loading.message" : {
+      "comment" : "Message while creating a partner invite.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This usually takes a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette tar vanligvis et øyeblikk."
+          }
+        }
+      }
+    },
+    "pairing.invite.loading.title" : {
+      "comment" : "Title while creating a partner invite.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Making your invite"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lager invitasjonen din"
+          }
+        }
+      }
+    },
+    "pairing.invite.message" : {
+      "comment" : "Message explaining the invite code after a user has subscribed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share this code with your partner. Your subscription covers both of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Del denne koden med partneren din. Ditt abonnement dekker dere begge."
+          }
+        }
+      }
+    },
+    "pairing.invite.newCode.button" : {
+      "comment" : "Button that revokes the current invite and creates a new one.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make new code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lag ny kode"
+          }
+        }
+      }
+    },
+    "pairing.invite.refresh.button" : {
+      "comment" : "Button that checks whether the partner has joined.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check pairing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk sammenkobling"
+          }
+        }
+      }
+    },
+    "pairing.invite.retry.button" : {
+      "comment" : "Button to retry partner invite creation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen"
+          }
+        }
+      }
+    },
+    "pairing.invite.share.button" : {
+      "comment" : "Button that opens the native share sheet for a partner invite.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share invite"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del invitasjon"
+          }
+        }
+      }
+    },
+    "pairing.invite.share.message" : {
+      "comment" : "Share sheet message for partner invite links.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this link to join our space on Paeonia."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk denne lenken for å bli med i rommet vårt på Paeonia."
+          }
+        }
+      }
+    },
+    "pairing.invite.share.subject" : {
+      "comment" : "Share sheet subject for partner invite links.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join me on Paeonia"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bli med meg på Paeonia"
+          }
+        }
+      }
+    },
+    "pairing.invite.title" : {
+      "comment" : "Title for the post-purchase partner invite screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inviter partneren din"
+          }
+        }
+      }
     },
     "paywall.acceptInvite" : {
+      "comment" : "Button or link for users who already have a partner invite.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1078,10 +1422,10 @@
             "value" : "Jeg har en invitasjon"
           }
         }
-      },
-      "comment" : "Button or link for users who already have a partner invite."
+      }
     },
     "paywall.badge" : {
+      "comment" : "Small paywall badge describing the offer.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1096,10 +1440,10 @@
             "value" : "Paeonia Couple"
           }
         }
-      },
-      "comment" : "Small paywall badge describing the offer."
+      }
     },
     "paywall.bestValue" : {
+      "comment" : "Badge for the better-value billing option.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1114,10 +1458,10 @@
             "value" : "Best verdi"
           }
         }
-      },
-      "comment" : "Badge for the better-value billing option."
+      }
     },
     "paywall.billing.monthly" : {
+      "comment" : "Segmented-control label for monthly billing.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1132,10 +1476,10 @@
             "value" : "Månedlig"
           }
         }
-      },
-      "comment" : "Segmented-control label for monthly billing."
+      }
     },
     "paywall.billing.picker" : {
+      "comment" : "Accessibility label for the billing period picker.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1150,10 +1494,10 @@
             "value" : "Betalingsperiode"
           }
         }
-      },
-      "comment" : "Accessibility label for the billing period picker."
+      }
     },
     "paywall.billing.yearly" : {
+      "comment" : "Segmented-control label for yearly billing.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1168,10 +1512,10 @@
             "value" : "Årlig"
           }
         }
-      },
-      "comment" : "Segmented-control label for yearly billing."
+      }
     },
     "paywall.cancelAnytime" : {
+      "comment" : "Short reassurance below the purchase button.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1186,10 +1530,10 @@
             "value" : "Start med 2 trykk, avslutt når som helst."
           }
         }
-      },
-      "comment" : "Short reassurance below the purchase button."
+      }
     },
     "paywall.cta.freeTrial" : {
+      "comment" : "Primary purchase button when a free trial is available.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1204,10 +1548,10 @@
             "value" : "Start min gratise prøveperiode"
           }
         }
-      },
-      "comment" : "Primary purchase button when a free trial is available."
+      }
     },
     "paywall.cta.purchasing" : {
+      "comment" : "Primary purchase button label while purchase is in progress.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1222,10 +1566,10 @@
             "value" : "Bekrefter"
           }
         }
-      },
-      "comment" : "Primary purchase button label while purchase is in progress."
+      }
     },
     "paywall.cta.subscribe" : {
+      "comment" : "Primary purchase button when no trial is available.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1240,10 +1584,46 @@
             "value" : "Fortsett"
           }
         }
-      },
-      "comment" : "Primary purchase button when no trial is available."
+      }
+    },
+    "paywall.error.inviteAcceptFailed" : {
+      "comment" : "Error message when accepting an invite code fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We could not join you with that code. Check the code and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å koble deg til med den koden. Sjekk koden og prøv igjen."
+          }
+        }
+      }
+    },
+    "paywall.error.inviteInvalid" : {
+      "comment" : "Error message when the entered invite code is not valid.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That invite code does not look right."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koden ser ikke riktig ut."
+          }
+        }
+      }
     },
     "paywall.error.noPurchases" : {
+      "comment" : "Error message when restore finds no purchases.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1258,10 +1638,10 @@
             "value" : "Vi fant ikke et abonnement å gjenopprette."
           }
         }
-      },
-      "comment" : "Error message when restore finds no purchases."
+      }
     },
     "paywall.error.productsUnavailable" : {
+      "comment" : "Error message when subscription products cannot be loaded.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1276,10 +1656,10 @@
             "value" : "Vi kunne ikke laste abonnementet nå. Prøv igjen."
           }
         }
-      },
-      "comment" : "Error message when subscription products cannot be loaded."
+      }
     },
     "paywall.error.purchaseNotConfirmed" : {
+      "comment" : "Error message when purchase is not confirmed.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1294,10 +1674,10 @@
             "value" : "Vi kunne ikke bekrefte kjøpet. Prøv å gjenopprette kjøp."
           }
         }
-      },
-      "comment" : "Error message when purchase is not confirmed."
+      }
     },
     "paywall.error.restoreFailed" : {
+      "comment" : "Error message when restoring purchases fails.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1312,10 +1692,10 @@
             "value" : "Vi kunne ikke gjenopprette kjøp. Prøv igjen."
           }
         }
-      },
-      "comment" : "Error message when restoring purchases fails."
+      }
     },
     "paywall.feature.daily" : {
+      "comment" : "Short paywall feature label for daily questions.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1330,10 +1710,10 @@
             "value" : "Daglige spørsmål og private svar"
           }
         }
-      },
-      "comment" : "Short paywall feature label for daily questions."
+      }
     },
     "paywall.feature.memories" : {
+      "comment" : "Short paywall feature label for shared memories.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1348,10 +1728,10 @@
             "value" : "Felles minner, notater, bilder og lyd"
           }
         }
-      },
-      "comment" : "Short paywall feature label for shared memories."
+      }
     },
     "paywall.feature.widget" : {
+      "comment" : "Short paywall feature label for the partner widget.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1366,8 +1746,7 @@
             "value" : "En partner-widget for små øyeblikk"
           }
         }
-      },
-      "comment" : "Short paywall feature label for the partner widget."
+      }
     },
     "paywall.invite.action" : {
       "comment" : "Bottom button label while redeeming a partner invite code.",
@@ -1460,6 +1839,7 @@
       }
     },
     "paywall.manageSubscription" : {
+      "comment" : "Link label for opening subscription management.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1474,10 +1854,10 @@
             "value" : "Administrer abonnement"
           }
         }
-      },
-      "comment" : "Link label for opening subscription management."
+      }
     },
     "paywall.oneSubscription" : {
+      "comment" : "Short text explaining that one subscription covers both partners.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1492,10 +1872,10 @@
             "value" : "Ett abonnement låser opp Paeonia for dere begge."
           }
         }
-      },
-      "comment" : "Short text explaining that one subscription covers both partners."
+      }
     },
     "paywall.period.monthly" : {
+      "comment" : "Full monthly billing period label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1510,10 +1890,10 @@
             "value" : "per måned"
           }
         }
-      },
-      "comment" : "Full monthly billing period label."
+      }
     },
     "paywall.period.monthly.compact" : {
+      "comment" : "Compact monthly billing period label shown next to a price.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1528,10 +1908,10 @@
             "value" : "/mnd"
           }
         }
-      },
-      "comment" : "Compact monthly billing period label shown next to a price."
+      }
     },
     "paywall.period.yearly" : {
+      "comment" : "Full yearly billing period label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1546,10 +1926,10 @@
             "value" : "per år"
           }
         }
-      },
-      "comment" : "Full yearly billing period label."
+      }
     },
     "paywall.period.yearly.compact" : {
+      "comment" : "Compact yearly billing period label shown next to a price.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1564,10 +1944,10 @@
             "value" : "/år"
           }
         }
-      },
-      "comment" : "Compact yearly billing period label shown next to a price."
+      }
     },
     "paywall.price.loading" : {
+      "comment" : "Placeholder shown while StoreKit price is loading.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1582,10 +1962,10 @@
             "value" : "Laster pris"
           }
         }
-      },
-      "comment" : "Placeholder shown while StoreKit price is loading."
+      }
     },
     "paywall.renewal.monthly" : {
+      "comment" : "Text describing monthly renewal.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1600,10 +1980,10 @@
             "value" : "Fornyes månedlig. App Store bekrefter prisen før du betaler."
           }
         }
-      },
-      "comment" : "Text describing monthly renewal."
+      }
     },
     "paywall.renewal.yearly" : {
+      "comment" : "Text describing yearly renewal.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1618,10 +1998,10 @@
             "value" : "Fornyes årlig. App Store bekrefter prisen før du betaler."
           }
         }
-      },
-      "comment" : "Text describing yearly renewal."
+      }
     },
     "paywall.restorePurchases" : {
+      "comment" : "Button that restores App Store purchases.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1636,8 +2016,7 @@
             "value" : "Gjenopprett kjøp"
           }
         }
-      },
-      "comment" : "Button that restores App Store purchases."
+      }
     },
     "paywall.scrollHint" : {
       "comment" : "Button that opens the invite-code overlay for users invited by a partner.",
@@ -1658,6 +2037,7 @@
       }
     },
     "paywall.subtitle" : {
+      "comment" : "Paywall subtitle explaining what the subscription unlocks.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1672,10 +2052,10 @@
             "value" : "Hold kontakten på en leken måte"
           }
         }
-      },
-      "comment" : "Paywall subtitle explaining what the subscription unlocks."
+      }
     },
     "paywall.timeline.charge" : {
+      "comment" : "Timeline title for the future charge date.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1690,10 +2070,10 @@
             "value" : "Prøveperioden slutter"
           }
         }
-      },
-      "comment" : "Timeline title for the future charge date."
+      }
     },
     "paywall.timeline.charge.body" : {
+      "comment" : "Timeline body explaining when billing starts.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1708,10 +2088,10 @@
             "value" : "Avslutt når som helst før"
           }
         }
-      },
-      "comment" : "Timeline body explaining when billing starts."
+      }
     },
     "paywall.timeline.dayPrefix" : {
+      "comment" : "Prefix before a trial timeline day number.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1726,10 +2106,10 @@
             "value" : "Dag"
           }
         }
-      },
-      "comment" : "Prefix before a trial timeline day number."
+      }
     },
     "paywall.timeline.manage" : {
+      "comment" : "Timeline title for subscription management.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1744,10 +2124,10 @@
             "value" : "Du har kontroll"
           }
         }
-      },
-      "comment" : "Timeline title for subscription management."
+      }
     },
     "paywall.timeline.manage.body" : {
+      "comment" : "Timeline body explaining cancellation controls.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1762,10 +2142,10 @@
             "value" : "Administrer i App Store"
           }
         }
-      },
-      "comment" : "Timeline body explaining cancellation controls."
+      }
     },
     "paywall.timeline.reminder" : {
+      "comment" : "Timeline title for the trial reminder.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1780,10 +2160,10 @@
             "value" : "Før den slutter"
           }
         }
-      },
-      "comment" : "Timeline title for the trial reminder."
+      }
     },
     "paywall.timeline.reminder.body" : {
+      "comment" : "Timeline body explaining the reminder before billing.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1798,10 +2178,10 @@
             "value" : "Vi varsler deg — 2 dager igjen"
           }
         }
-      },
-      "comment" : "Timeline body explaining the reminder before billing."
+      }
     },
     "paywall.timeline.renewal" : {
+      "comment" : "Timeline title for subscription renewal.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1816,10 +2196,10 @@
             "value" : "Fornyes automatisk"
           }
         }
-      },
-      "comment" : "Timeline title for subscription renewal."
+      }
     },
     "paywall.timeline.renewal.monthly.body" : {
+      "comment" : "Timeline body for monthly renewal after the trial.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1834,10 +2214,10 @@
             "value" : "Fornyes månedlig med mindre du avslutter."
           }
         }
-      },
-      "comment" : "Timeline body for monthly renewal after the trial."
+      }
     },
     "paywall.timeline.renewal.yearly.body" : {
+      "comment" : "Timeline body for yearly renewal after the trial.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1852,10 +2232,10 @@
             "value" : "Fornyes årlig"
           }
         }
-      },
-      "comment" : "Timeline body for yearly renewal after the trial."
+      }
     },
     "paywall.timeline.today" : {
+      "comment" : "Timeline title for the current day.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1870,10 +2250,10 @@
             "value" : "I dag"
           }
         }
-      },
-      "comment" : "Timeline title for the current day."
+      }
     },
     "paywall.timeline.today.body" : {
+      "comment" : "Timeline body explaining immediate access today.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1888,10 +2268,10 @@
             "value" : "Paeonia åpnes for dere begge"
           }
         }
-      },
-      "comment" : "Timeline body explaining immediate access today."
+      }
     },
     "paywall.title" : {
+      "comment" : "Main paywall title.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1906,10 +2286,10 @@
             "value" : "Paeonia for dere to"
           }
         }
-      },
-      "comment" : "Main paywall title."
+      }
     },
     "paywall.trial.freeWord" : {
+      "comment" : "Word used after a trial duration to say the trial is free.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1924,10 +2304,10 @@
             "value" : "gratis"
           }
         }
-      },
-      "comment" : "Word used after a trial duration to say the trial is free."
+      }
     },
     "paywall.trial.then" : {
+      "comment" : "Connector word before the post-trial price.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1942,10 +2322,10 @@
             "value" : "Deretter"
           }
         }
-      },
-      "comment" : "Connector word before the post-trial price."
+      }
     },
     "paywall.trial.title" : {
+      "comment" : "Paywall heading for the free trial offer.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1960,10 +2340,10 @@
             "value" : "Prøv Paeonia gratis"
           }
         }
-      },
-      "comment" : "Paywall heading for the free trial offer."
+      }
     },
     "paywall.trial.unit.day" : {
+      "comment" : "Singular day unit for trial duration.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1978,10 +2358,10 @@
             "value" : "dag"
           }
         }
-      },
-      "comment" : "Singular day unit for trial duration."
+      }
     },
     "paywall.trial.unit.days" : {
+      "comment" : "Plural day unit for trial duration.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -1996,10 +2376,10 @@
             "value" : "dager"
           }
         }
-      },
-      "comment" : "Plural day unit for trial duration."
+      }
     },
     "paywall.trial.unit.month" : {
+      "comment" : "Singular month unit for trial duration.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2014,10 +2394,10 @@
             "value" : "måned"
           }
         }
-      },
-      "comment" : "Singular month unit for trial duration."
+      }
     },
     "paywall.trial.unit.months" : {
+      "comment" : "Plural month unit for trial duration.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2032,10 +2412,10 @@
             "value" : "måneder"
           }
         }
-      },
-      "comment" : "Plural month unit for trial duration."
+      }
     },
     "paywall.trial.unit.week" : {
+      "comment" : "Singular week unit for trial duration.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2050,10 +2430,10 @@
             "value" : "uke"
           }
         }
-      },
-      "comment" : "Singular week unit for trial duration."
+      }
     },
     "paywall.trial.unit.weeks" : {
+      "comment" : "Plural week unit for trial duration.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2068,10 +2448,10 @@
             "value" : "uker"
           }
         }
-      },
-      "comment" : "Plural week unit for trial duration."
+      }
     },
     "paywall.trial.unit.year" : {
+      "comment" : "Singular year unit for trial duration.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2086,10 +2466,10 @@
             "value" : "år"
           }
         }
-      },
-      "comment" : "Singular year unit for trial duration."
+      }
     },
     "paywall.trial.unit.years" : {
+      "comment" : "Plural year unit for trial duration.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2104,10 +2484,10 @@
             "value" : "år"
           }
         }
-      },
-      "comment" : "Plural year unit for trial duration."
+      }
     },
     "root.empty.message" : {
+      "comment" : "Message for an early placeholder empty state.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2122,10 +2502,10 @@
             "value" : "Sammenkobling, daglige innsjekker, minner og tegninger vil samles her."
           }
         }
-      },
-      "comment" : "Message for an early placeholder empty state."
+      }
     },
     "root.empty.title" : {
+      "comment" : "Title for an early placeholder empty state.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2140,10 +2520,10 @@
             "value" : "Det private rommet deres starter her"
           }
         }
-      },
-      "comment" : "Title for an early placeholder empty state."
+      }
     },
     "root.foundation.message" : {
+      "comment" : "Message for an early foundation placeholder state.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2158,10 +2538,10 @@
             "value" : "Vi gjør klart det private rommet før de første ekte funksjonene kommer."
           }
         }
-      },
-      "comment" : "Message for an early foundation placeholder state."
+      }
     },
     "root.foundation.title" : {
+      "comment" : "Title for an early foundation placeholder state.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2176,10 +2556,10 @@
             "value" : "En rolig start"
           }
         }
-      },
-      "comment" : "Title for an early foundation placeholder state."
+      }
     },
     "root.palette.message" : {
+      "comment" : "Message for an early brand palette placeholder state.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2194,10 +2574,10 @@
             "value" : "Fargene justeres når appikonet og peonreferansen er klare."
           }
         }
-      },
-      "comment" : "Message for an early brand palette placeholder state."
+      }
     },
     "root.palette.title" : {
+      "comment" : "Title for an early brand palette placeholder state.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2212,10 +2592,10 @@
             "value" : "Farger"
           }
         }
-      },
-      "comment" : "Title for an early brand palette placeholder state."
+      }
     },
     "root.primaryAction" : {
+      "comment" : "Primary action label in the early root placeholder screen.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2230,10 +2610,10 @@
             "value" : "Inviter partneren din"
           }
         }
-      },
-      "comment" : "Primary action label in the early root placeholder screen."
+      }
     },
     "root.primaryAction.hint" : {
+      "comment" : "Hint below the early root placeholder primary action.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2248,10 +2628,10 @@
             "value" : "Denne skrus på når sammenkobling er klar."
           }
         }
-      },
-      "comment" : "Hint below the early root placeholder primary action."
+      }
     },
     "sync.status.failed" : {
+      "comment" : "Short sync status label for a failed send.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2266,10 +2646,10 @@
             "value" : "Trenger oppmerksomhet"
           }
         }
-      },
-      "comment" : "Short sync status label for a failed send."
+      }
     },
     "sync.status.offline" : {
+      "comment" : "Short sync status label when the device is offline.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2284,10 +2664,10 @@
             "value" : "Frakoblet"
           }
         }
-      },
-      "comment" : "Short sync status label when the device is offline."
+      }
     },
     "sync.status.savedLocally" : {
+      "comment" : "Short sync status label for content saved only on this phone.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2302,10 +2682,10 @@
             "value" : "Lagret på denne telefonen"
           }
         }
-      },
-      "comment" : "Short sync status label for content saved only on this phone."
+      }
     },
     "sync.status.synced" : {
+      "comment" : "Short sync status label for content sent successfully.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2320,10 +2700,10 @@
             "value" : "Sendt"
           }
         }
-      },
-      "comment" : "Short sync status label for content sent successfully."
+      }
     },
     "sync.status.syncing" : {
+      "comment" : "Short sync status label while content is sending.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2338,8 +2718,7 @@
             "value" : "Sender"
           }
         }
-      },
-      "comment" : "Short sync status label while content is sending."
+      }
     }
   },
   "version" : "1.0"

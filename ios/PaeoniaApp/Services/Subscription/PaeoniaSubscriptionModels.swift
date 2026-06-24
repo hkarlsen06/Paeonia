@@ -98,9 +98,18 @@ nonisolated enum PaeoniaPurchaseError: Error, Equatable {
     case userNotConfigured
     case invalidUserID
     case verificationFailed
-    case serverConfirmationFailed
+    case serverConfirmationFailed(String?)
     case purchaseFailed
     case restoreFailed
+
+    var confirmationReason: String? {
+        switch self {
+        case let .serverConfirmationFailed(reason):
+            reason
+        default:
+            nil
+        }
+    }
 }
 
 nonisolated struct PaeoniaStoreKitUploadRequest: Encodable, Equatable {

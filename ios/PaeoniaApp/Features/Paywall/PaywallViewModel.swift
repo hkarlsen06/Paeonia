@@ -8,16 +8,23 @@ final class PaywallViewModel {
     var billingPeriod: PaeoniaBillingPeriod = .monthly
     private(set) var isLoading = false
     private(set) var isPurchasing = false
+    private(set) var isAcceptingInvite = false
     private(set) var error: PaywallError?
     private(set) var purchaseSucceeded = false
 
     private let storeKitService: any PaeoniaStoreKitServicing
+    private let pairingService: (any PairingServicing)?
+    private let operationProvider: any PairingClientOperationProviding
 
     init(
         userID: String?,
-        storeKitService: (any PaeoniaStoreKitServicing)? = nil
+        storeKitService: (any PaeoniaStoreKitServicing)? = nil,
+        pairingService: (any PairingServicing)? = nil,
+        operationProvider: (any PairingClientOperationProviding)? = nil
     ) {
         self.storeKitService = storeKitService ?? PaeoniaStoreKitService.shared
+        self.pairingService = pairingService ?? (try? SupabasePairingService.live())
+        self.operationProvider = operationProvider ?? PairingClientOperationFactory.shared
 
         if let userID {
             self.storeKitService.configure(userID: userID)
@@ -83,8 +90,12 @@ final class PaywallViewModel {
             purchaseSucceeded = succeeded
             isPurchasing = false
             return succeeded
+        } catch let error as PaeoniaPurchaseError {
+            self.error = .purchaseNotConfirmed(error.confirmationReason ?? Self.diagnosticReason(from: error))
+            isPurchasing = false
+            return false
         } catch {
-            self.error = .purchaseNotConfirmed
+            self.error = .purchaseNotConfirmed(Self.diagnosticReason(from: error))
             isPurchasing = false
             return false
         }
@@ -102,9 +113,44 @@ final class PaywallViewModel {
             }
             isLoading = false
             return restored
-        } catch {
-            self.error = .restoreFailed
+        } catch let error as PaeoniaPurchaseError {
+            self.error = .restoreFailed(error.confirmationReason ?? Self.diagnosticReason(from: error))
             isLoading = false
+            return false
+        } catch {
+            self.error = .restoreFailed(Self.diagnosticReason(from: error))
+            isLoading = false
+            return false
+        }
+    }
+
+    func acceptInvite(codeInput: String) async -> Bool {
+        guard let pairingService else {
+            error = .inviteAcceptFailed
+            return false
+        }
+
+        let startedOn = PairingStartDate(date: Date())
+        isAcceptingInvite = true
+        error = nil
+
+        do {
+            let inviteCode = try PairingInviteCode.normalized(codeInput)
+            let operation = operationProvider.makeOperation()
+            _ = try await pairingService.acceptInvite(
+                codeInput: inviteCode,
+                operation: operation,
+                startedOn: startedOn
+            )
+            isAcceptingInvite = false
+            return true
+        } catch is PairingInviteCodeError {
+            self.error = .inviteInvalid
+            isAcceptingInvite = false
+            return false
+        } catch {
+            self.error = .inviteAcceptFailed
+            isAcceptingInvite = false
             return false
         }
     }
@@ -112,24 +158,63 @@ final class PaywallViewModel {
     func clearError() {
         error = nil
     }
+
+    private static func diagnosticReason(from error: Error) -> String? {
+        #if DEBUG
+        if let localizedError = error as? LocalizedError,
+           let description = localizedError.errorDescription?.nilIfBlank {
+            return description
+        }
+
+        return String(describing: error).nilIfBlank
+        #else
+        return nil
+        #endif
+    }
 }
 
 enum PaywallError: Equatable {
     case productsUnavailable
-    case purchaseNotConfirmed
+    case purchaseNotConfirmed(String?)
     case noPurchasesToRestore
-    case restoreFailed
+    case restoreFailed(String?)
+    case inviteInvalid
+    case inviteAcceptFailed
 
-    var message: LocalizedStringResource {
+    var message: String {
         switch self {
         case .productsUnavailable:
-            .paywallErrorProductsUnavailable
-        case .purchaseNotConfirmed:
-            .paywallErrorPurchaseNotConfirmed
+            String(localized: .paywallErrorProductsUnavailable)
+        case let .purchaseNotConfirmed(reason):
+            Self.message(.paywallErrorPurchaseNotConfirmed, reason: reason)
         case .noPurchasesToRestore:
-            .paywallErrorNoPurchases
-        case .restoreFailed:
-            .paywallErrorRestoreFailed
+            String(localized: .paywallErrorNoPurchases)
+        case let .restoreFailed(reason):
+            Self.message(.paywallErrorRestoreFailed, reason: reason)
+        case .inviteInvalid:
+            String(localized: .paywallErrorInviteInvalid)
+        case .inviteAcceptFailed:
+            String(localized: .paywallErrorInviteAcceptFailed)
         }
+    }
+
+    private static func message(_ base: LocalizedStringResource, reason: String?) -> String {
+        let baseMessage = String(localized: base)
+        #if DEBUG
+        guard let reason = reason?.trimmingCharacters(in: .whitespacesAndNewlines), !reason.isEmpty else {
+            return baseMessage
+        }
+
+        return "\(baseMessage)\n\n\(reason)"
+        #else
+        return baseMessage
+        #endif
+    }
+}
+
+private extension String {
+    var nilIfBlank: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }

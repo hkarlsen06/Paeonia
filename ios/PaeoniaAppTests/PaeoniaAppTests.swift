@@ -73,6 +73,86 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
+    @Test func completedProfilePassesPendingInviteToAccessRoute() async {
+        let accessRouteService = StaticAccessRouteService(route: .invitePending)
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService,
+            inviteStore: TestPairingInviteStore(invite: .test())
+        )
+
+        await viewModel.start()
+
+        #expect(viewModel.state == .invitePending)
+        #expect(await accessRouteService.receivedHasPendingInvite == [true])
+    }
+
+    @MainActor
+    @Test func pairingRefreshKeepsCurrentPairingStateWhileAccessRouteResolves() async {
+        let accessRouteService = BlockingAccessRouteService(
+            routes: [.invitePending, .invitePending],
+            blockedCallIndex: 2
+        )
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService,
+            inviteStore: TestPairingInviteStore(invite: .test())
+        )
+
+        await viewModel.start()
+        #expect(viewModel.state == .invitePending)
+
+        let refreshTask = Task { @MainActor in
+            await viewModel.refreshAfterPairingChange()
+        }
+
+        await accessRouteService.waitForBlockedResolveToStart()
+        #expect(viewModel.state == .invitePending)
+
+        await accessRouteService.releaseBlockedResolve()
+        await refreshTask.value
+
+        #expect(viewModel.state == .invitePending)
+        #expect(await accessRouteService.resolveCallCount == 2)
+    }
+
+    @MainActor
+    @Test func staleAccessRefreshCannotOverwriteNewerRoute() async {
+        let accessRouteService = BlockingAccessRouteService(
+            routes: [.invitePending, .invitePending, .paired],
+            blockedCallIndex: 2
+        )
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService,
+            inviteStore: TestPairingInviteStore(invite: .test())
+        )
+
+        await viewModel.start()
+        #expect(viewModel.state == .invitePending)
+
+        let staleRefreshTask = Task { @MainActor in
+            await viewModel.refreshAfterPairingChange()
+        }
+        await accessRouteService.waitForBlockedResolveToStart()
+
+        let latestRefreshTask = Task { @MainActor in
+            await viewModel.refreshAfterPairingChange()
+        }
+        await latestRefreshTask.value
+        #expect(viewModel.state == .paired)
+
+        await accessRouteService.releaseBlockedResolve()
+        await staleRefreshTask.value
+
+        #expect(viewModel.state == .paired)
+        #expect(await accessRouteService.resolveCallCount == 3)
+    }
+
+    @MainActor
     @Test func developmentSignInCanCompleteOnboarding() async {
         let syncCoordinator = TestSyncCoordinator()
         let viewModel = RootViewModel(
@@ -109,6 +189,21 @@ struct PaeoniaAppTests {
         #expect(viewModel.state == .onboarding)
         #expect(viewModel.currentSession?.provider == .google)
         #expect(viewModel.currentSession?.profileStatus == .needsOnboarding)
+    }
+
+    @MainActor
+    @Test func cancelledGoogleSignInDoesNotShowFailureNotice() async {
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy()
+        )
+
+        await viewModel.signInWithGoogle(
+            using: GoogleSignInProviderSpy(error: GoogleSignInServiceError.userCancelled)
+        )
+
+        #expect(viewModel.state == .unauthenticated)
+        #expect(viewModel.notice == nil)
     }
 
     @MainActor
@@ -173,6 +268,29 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
+    @Test func deleteFailureRestoresResolvedAccessRoute() async {
+        let authService = AuthServiceSpy(
+            session: .test(profileStatus: .complete),
+            failingOperations: [.requestAccountDeletion]
+        )
+        let accessRouteService = StaticAccessRouteService(route: .unpaired)
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: authService,
+            accessRouteService: accessRouteService
+        )
+
+        await viewModel.start()
+        #expect(viewModel.state == .unpaired)
+
+        await viewModel.deleteAccount()
+
+        #expect(viewModel.state == .unpaired)
+        #expect(viewModel.currentSession?.profileStatus == .complete)
+        #expect(viewModel.notice == .deleteAccountFailed)
+    }
+
+    @MainActor
     @Test func failedSessionLoadFallsBackToSignedOut() async {
         let viewModel = RootViewModel(
             syncCoordinator: TestSyncCoordinator(),
@@ -228,6 +346,7 @@ private actor TestSyncCoordinator: SyncCoordinating {
 private actor StaticAccessRouteService: AccessRouteServicing {
     private let route: AccessRoute
     private(set) var resolveCallCount = 0
+    private(set) var receivedHasPendingInvite: [Bool] = []
 
     init(route: AccessRoute) {
         self.route = route
@@ -235,7 +354,84 @@ private actor StaticAccessRouteService: AccessRouteServicing {
 
     func resolveRoute(hasPendingInvite: Bool) async throws -> AccessRoute {
         resolveCallCount += 1
+        receivedHasPendingInvite.append(hasPendingInvite)
         return route
+    }
+}
+
+private actor BlockingAccessRouteService: AccessRouteServicing {
+    private let routes: [AccessRoute]
+    private let blockedCallIndex: Int
+    private var blockedResolveStarted = false
+    private var blockedResolveStartedContinuation: CheckedContinuation<Void, Never>?
+    private var blockedResolveReleaseContinuation: CheckedContinuation<Void, Never>?
+    private(set) var resolveCallCount = 0
+
+    init(routes: [AccessRoute], blockedCallIndex: Int) {
+        precondition(!routes.isEmpty)
+        self.routes = routes
+        self.blockedCallIndex = blockedCallIndex
+    }
+
+    func waitForBlockedResolveToStart() async {
+        if blockedResolveStarted {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            blockedResolveStartedContinuation = continuation
+        }
+    }
+
+    func releaseBlockedResolve() {
+        blockedResolveReleaseContinuation?.resume()
+        blockedResolveReleaseContinuation = nil
+    }
+
+    func resolveRoute(hasPendingInvite: Bool) async throws -> AccessRoute {
+        resolveCallCount += 1
+        let callIndex = resolveCallCount
+
+        if callIndex == blockedCallIndex {
+            blockedResolveStarted = true
+            blockedResolveStartedContinuation?.resume()
+            blockedResolveStartedContinuation = nil
+
+            await withCheckedContinuation { continuation in
+                blockedResolveReleaseContinuation = continuation
+            }
+        }
+
+        let routeIndex = min(callIndex - 1, routes.count - 1)
+        return routes[routeIndex]
+    }
+}
+
+@MainActor
+private final class TestPairingInviteStore: PairingInviteStoring {
+    private var invitesByUserID: [String: PairingInvite]
+
+    init(
+        invite: PairingInvite? = nil,
+        userID: String = AuthSession.test(profileStatus: .complete).id
+    ) {
+        if let invite {
+            self.invitesByUserID = [userID: invite]
+        } else {
+            self.invitesByUserID = [:]
+        }
+    }
+
+    func loadInvite(for userID: String) -> PairingInvite? {
+        invitesByUserID[userID]
+    }
+
+    func saveInvite(_ invite: PairingInvite, for userID: String) {
+        invitesByUserID[userID] = invite
+    }
+
+    func clearInvite(for userID: String) {
+        invitesByUserID[userID] = nil
     }
 }
 
@@ -310,6 +506,17 @@ private actor OrderedAuthService: AuthServicing {
     func signOut() async throws {}
 
     func requestAccountDeletion() async throws {}
+}
+
+private extension PairingInvite {
+    static func test() -> PairingInvite {
+        PairingInvite(
+            id: UUID(uuidString: "0841FAE5-E016-497A-B082-CDF8D4432F30") ?? UUID(),
+            code: "01ABCD",
+            joinURL: URL(string: "https://paeonia.no/join/01ABCD") ?? URL(fileURLWithPath: "/"),
+            expiresAt: Date(timeIntervalSince1970: 1_900_000_000)
+        )
+    }
 }
 
 // swiftlint:enable async_without_await

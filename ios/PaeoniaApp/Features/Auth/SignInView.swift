@@ -17,7 +17,7 @@ struct SignInView: View {
         GeometryReader { proxy in
             ScrollView {
                 VStack(spacing: 0) {
-                    logoLockup
+                    brandLockup
                         .padding(.top, PaeoniaSpacing.space40)
 
                     Spacer(minLength: PaeoniaSpacing.space24)
@@ -68,29 +68,21 @@ struct SignInView: View {
 
     // MARK: - Brand
 
-    private var logoLockup: some View {
+    private var brandLockup: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            Image(.paeoniaMark)
-                .resizable()
-                .scaledToFit()
-                .frame(height: 52)
-                .accessibilityHidden(true)
+            PaeoniaBrandLockup(
+                wordmarkSize: 28,
+                taglineSize: 28,
+                taglineColor: .paeoniaTextPrimary
+            )
 
-            Text(.appTitle)
-                .font(PaeoniaTypography.title)
-                .foregroundStyle(.paeoniaTextPrimary)
+            PaeoniaHeartDivider()
         }
         .frame(maxWidth: .infinity)
     }
 
     private var promise: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            Text(.appTagline)
-                .font(PaeoniaTypography.heroTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
-
-            PaeoniaHeartDivider()
-
             Text(.authStartMessage)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)

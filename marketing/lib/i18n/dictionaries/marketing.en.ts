@@ -92,7 +92,7 @@ export const marketingEn = {
       {
         title: 'Small rituals, no pressure',
         description:
-          'Check-ins and shared moments help distance feel lighter, without streaks, pressure, or guilt.',
+          'Check-ins and shared moments help distance feel lighter, without pressure or guilt.',
       },
       {
         title: 'Yours to keep',

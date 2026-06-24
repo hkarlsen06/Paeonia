@@ -1,5 +1,8 @@
 BEGIN;
-SELECT plan(33);
+SELECT plan(35);
+
+INSERT INTO internal.app_runtime_secrets (secret_name, secret_value)
+VALUES ('invite_code_pepper', 'test-pepper-value-for-pairing-invite-hashes');
 
 SELECT is(
   (
@@ -128,6 +131,28 @@ SELECT ok(
   pg_get_functiondef('internal.request_account_deletion()'::regprocedure)
     LIKE '%#variable_conflict use_column%',
   'account deletion RPC resolves privacy request status as a table column'
+);
+
+SELECT is(
+  (
+    SELECT count(*)::integer
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.prokind = 'f'
+      AND p.proname = 'record_storekit_server_notification'
+      AND has_function_privilege('service_role', p.oid, 'execute')
+      AND NOT has_function_privilege('authenticated', p.oid, 'execute')
+      AND NOT has_function_privilege('anon', p.oid, 'execute')
+  ),
+  1,
+  'StoreKit notification webhook RPC is service-role only'
+);
+
+SELECT is(
+  octet_length(internal.hash_pairing_invite_code('ABC123')),
+  32,
+  'six-character pairing invite codes hash to sha256'
 );
 
 SELECT is(

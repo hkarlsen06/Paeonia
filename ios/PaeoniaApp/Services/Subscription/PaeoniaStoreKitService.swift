@@ -143,23 +143,27 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         jwsRepresentation: String,
         priceDisplay: String?
     ) async throws {
-        let client = try clientProvider.client()
-        let request = PaeoniaStoreKitUploadRequest(
-            jws: jwsRepresentation,
-            transactionId: String(transaction.id),
-            originalTransactionId: String(transaction.originalID),
-            productId: transaction.productID,
-            environment: environmentName(for: transaction),
-            priceDisplay: priceDisplay
-        )
+        do {
+            let client = try clientProvider.client()
+            let request = PaeoniaStoreKitUploadRequest(
+                jws: jwsRepresentation,
+                transactionId: String(transaction.id),
+                originalTransactionId: String(transaction.originalID),
+                productId: transaction.productID,
+                environment: environmentName(for: transaction),
+                priceDisplay: priceDisplay
+            )
 
-        let response: PaeoniaStoreKitUploadResponse = try await client.functions.invoke(
-            "apple-verify-purchase",
-            options: FunctionInvokeOptions(body: request)
-        )
+            let response: PaeoniaStoreKitUploadResponse = try await client.functions.invoke(
+                "apple-verify-purchase",
+                options: FunctionInvokeOptions(body: request)
+            )
 
-        guard response.isConfirmed else {
-            throw PaeoniaPurchaseError.serverConfirmationFailed
+            guard response.isConfirmed else {
+                throw PaeoniaPurchaseError.serverConfirmationFailed(response.error)
+            }
+        } catch let error as FunctionsError {
+            throw PaeoniaPurchaseError.serverConfirmationFailed(confirmationFailureReason(from: error))
         }
     }
 
@@ -170,6 +174,27 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
             "sandbox"
         } else {
             "production"
+        }
+    }
+
+    private func confirmationFailureReason(from error: FunctionsError) -> String {
+        switch error {
+        case .relayError:
+            return "Supabase could not reach the purchase verifier."
+        case let .httpError(code, data):
+            let response = try? JSONDecoder().decode(PaeoniaStoreKitUploadResponse.self, from: data)
+            if let responseError = response?.error, !responseError.isEmpty {
+                return responseError
+            }
+
+            let body = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let body, !body.isEmpty else {
+                return "Purchase verifier returned HTTP \(code)."
+            }
+
+            return "Purchase verifier returned HTTP \(code): \(body)"
+        @unknown default:
+            return "Purchase verifier failed."
         }
     }
 }

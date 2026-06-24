@@ -85,6 +85,12 @@ interface VerifiedAppleTransaction {
   renewalInfo?: AppleRenewalInfo;
 }
 
+interface RecordStoreKitTransactionResponse {
+  ok?: boolean;
+  error?: string;
+  status?: number;
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -148,17 +154,6 @@ Deno.serve(async (request: Request) => {
       });
     }
 
-    const ownership = await assertTransactionBelongsToUser(
-      user.id,
-      verified.transactionInfo,
-    );
-    if (!ownership.ok) {
-      return jsonResponse(ownership.status ?? 403, {
-        ok: false,
-        error: ownership.error,
-      });
-    }
-
     const writeResult = await persistSubscription(
       user.id,
       verified,
@@ -195,10 +190,14 @@ Deno.serve(async (request: Request) => {
     console.error("[apple-verify-purchase]", error);
     return jsonResponse(500, {
       ok: false,
-      error: error instanceof Error ? error.message : "Unexpected error",
+      error: clientSafeErrorMessage(error),
     });
   }
 });
+
+class PurchaseVerifierConfigurationError extends Error {
+  override name = "PurchaseVerifierConfigurationError";
+}
 
 function assertEnvironmentConfigured() {
   const missing: string[] = [];
@@ -215,8 +214,18 @@ function assertEnvironmentConfigured() {
   if (!APPLE_PRIVATE_KEY) missing.push("APPLE_PRIVATE_KEY");
 
   if (missing.length > 0) {
-    throw new Error(`Missing required environment: ${missing.join(", ")}`);
+    throw new PurchaseVerifierConfigurationError(
+      `Missing required environment: ${missing.join(", ")}`,
+    );
   }
+}
+
+function clientSafeErrorMessage(error: unknown): string {
+  if (error instanceof PurchaseVerifierConfigurationError) {
+    return "Purchase verification is not ready yet.";
+  }
+
+  return error instanceof Error ? error.message : "Unexpected error";
 }
 
 async function getAuthenticatedUser(authHeader: string) {
@@ -356,55 +365,6 @@ async function generateAppleJWT(): Promise<string> {
     .sign(privateKey);
 }
 
-async function assertTransactionBelongsToUser(
-  userId: string,
-  transactionInfo: AppleTransactionInfo,
-): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
-  const appAccountToken = transactionInfo.appAccountToken;
-  if (!appAccountToken) {
-    return {
-      ok: false,
-      error: "Apple transaction is missing appAccountToken",
-      status: 403,
-    };
-  }
-
-  const supabaseAdmin = adminClient();
-  const { data, error } = await supabaseAdmin
-    .schema("internal")
-    .from("app_account_tokens")
-    .select("user_id")
-    .eq("token", appAccountToken)
-    .maybeSingle();
-
-  if (error) {
-    console.error("[apple-verify-purchase] token lookup failed", error);
-    return {
-      ok: false,
-      error: "Could not verify purchase owner",
-      status: 500,
-    };
-  }
-
-  if (!data?.user_id) {
-    return {
-      ok: false,
-      error: "Apple appAccountToken is not registered",
-      status: 403,
-    };
-  }
-
-  if (data.user_id !== userId) {
-    return {
-      ok: false,
-      error: "Apple transaction belongs to a different user",
-      status: 403,
-    };
-  }
-
-  return { ok: true };
-}
-
 async function persistSubscription(
   userId: string,
   verified: VerifiedAppleTransaction,
@@ -419,63 +379,22 @@ async function persistSubscription(
   );
   const supabaseAdmin = adminClient();
 
-  const { data: product, error: productError } = await supabaseAdmin
-    .from("subscription_products")
-    .select("id")
-    .eq("apple_product_id", transactionInfo.productId)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (productError) {
-    console.error(
-      "[apple-verify-purchase] product lookup failed",
-      productError,
-    );
-    return { ok: false, error: "Could not verify product" };
-  }
-
-  if (!product?.id) {
-    return {
-      ok: false,
-      error: "Apple product is not active in Paeonia",
-      status: 400,
-    };
-  }
-
-  const { data: existing, error: existingError } = await supabaseAdmin
-    .schema("internal")
-    .from("storekit_transactions")
-    .select("id, user_id")
-    .eq("environment", environment)
-    .eq("transaction_id", transactionInfo.transactionId)
-    .maybeSingle();
-
-  if (existingError) {
-    console.error(
-      "[apple-verify-purchase] existing transaction lookup failed",
-      existingError,
-    );
-    return { ok: false, error: "Could not verify existing purchase" };
-  }
-
-  if (existing?.user_id && existing.user_id !== userId) {
-    return {
-      ok: false,
-      error: "Apple transaction belongs to a different user",
-      status: 403,
-    };
-  }
-
-  const { data: payload, error: payloadError } = await supabaseAdmin
-    .schema("internal")
-    .from("storekit_payloads")
-    .insert({
-      payload_kind: "transaction",
-      environment,
-      original_transaction_id: transactionInfo.originalTransactionId,
-      transaction_id: transactionInfo.transactionId,
-      signed_payload: verified.signedTransactionInfo,
-      payload_json: {
+  const { data, error } = await supabaseAdmin
+    .rpc("record_verified_storekit_transaction", {
+      p_user_id: userId,
+      p_app_account_token: transactionInfo.appAccountToken ?? null,
+      p_apple_product_id: transactionInfo.productId,
+      p_environment: environment,
+      p_original_transaction_id: transactionInfo.originalTransactionId,
+      p_transaction_id: transactionInfo.transactionId,
+      p_web_order_line_item_id: transactionInfo.webOrderLineItemId ?? null,
+      p_status: status,
+      p_purchased_at: millisToIsoOrNull(transactionInfo.purchaseDate),
+      p_expires_at: millisToIsoOrNull(transactionInfo.expiresDate),
+      p_revoked_at: millisToIsoOrNull(transactionInfo.revocationDate),
+      p_revocation_reason: revocationReason(transactionInfo),
+      p_signed_payload: verified.signedTransactionInfo,
+      p_payload_json: {
         transactionInfo,
         renewalInfo: verified.renewalInfo ?? null,
         uploadedTransactionInfo,
@@ -483,46 +402,20 @@ async function persistSubscription(
         priceDisplay,
         verifiedAt: new Date().toISOString(),
       },
-    })
-    .select("id")
-    .single();
-
-  if (payloadError || !payload?.id) {
-    console.error(
-      "[apple-verify-purchase] payload insert failed",
-      payloadError,
-    );
-    return { ok: false, error: "Could not save Apple verification" };
-  }
-
-  const { error: transactionError } = await supabaseAdmin
-    .schema("internal")
-    .from("storekit_transactions")
-    .upsert({
-      user_id: userId,
-      product_id: product.id,
-      environment,
-      app_account_token: transactionInfo.appAccountToken ?? null,
-      original_transaction_id: transactionInfo.originalTransactionId,
-      transaction_id: transactionInfo.transactionId,
-      web_order_line_item_id: transactionInfo.webOrderLineItemId ?? null,
-      status,
-      purchased_at: millisToIsoOrNull(transactionInfo.purchaseDate),
-      expires_at: millisToIsoOrNull(transactionInfo.expiresDate),
-      revoked_at: millisToIsoOrNull(transactionInfo.revocationDate),
-      revocation_reason: revocationReason(transactionInfo),
-      raw_payload_id: payload.id,
-      last_reconciled_at: new Date().toISOString(),
-    }, {
-      onConflict: "environment,transaction_id",
     });
 
-  if (transactionError) {
-    console.error(
-      "[apple-verify-purchase] transaction upsert failed",
-      transactionError,
-    );
+  if (error) {
+    console.error("[apple-verify-purchase] transaction record failed", error);
     return { ok: false, error: "Could not save subscription" };
+  }
+
+  const result = data as RecordStoreKitTransactionResponse | null;
+  if (result?.ok !== true) {
+    return {
+      ok: false,
+      error: result?.error ?? "Could not save subscription",
+      status: result?.status,
+    };
   }
 
   return { ok: true };

@@ -92,7 +92,7 @@ export const marketingNo = {
       {
         title: 'Små ritualer, uten press',
         description:
-          'Små spørsmål og felles øyeblikk gjør avstanden litt lettere, uten streaks, press eller skyldfølelse.',
+          'Små spørsmål og felles øyeblikk gjør avstanden litt lettere, uten press eller skyldfølelse.',
       },
       {
         title: 'Deres å beholde',

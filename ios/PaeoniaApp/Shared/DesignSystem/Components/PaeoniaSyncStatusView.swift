@@ -65,9 +65,5 @@ struct PaeoniaSyncStatusView: View {
                 .accessibilityHidden(true)
         }
         .labelStyle(.titleAndIcon)
-        .padding(.horizontal, PaeoniaSpacing.space12)
-        .padding(.vertical, PaeoniaSpacing.space8)
-        .background(.paeoniaSurfaceSecondary)
-        .clipShape(Capsule(style: .continuous))
     }
 }
