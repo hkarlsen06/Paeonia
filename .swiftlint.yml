@@ -10,6 +10,7 @@ excluded:
   - ios/Scripts/.build
   - ios/Pods
   - ios/DerivedData
+  - ios/build
   - ios/.build
   - ios/vendor
   - ios/PaeoniaApp/Generated

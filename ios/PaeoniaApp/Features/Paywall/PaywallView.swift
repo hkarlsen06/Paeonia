@@ -1,5 +1,4 @@
 import Foundation
-import StoreKit
 import SwiftUI
 
 struct PaywallView: View {
@@ -31,41 +30,7 @@ struct PaywallView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            ZStack {
-                Color.paeoniaSurfacePrimary
-                    .ignoresSafeArea()
-
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        paywallContent(geometry: geometry)
-                        paywallErrorMessage
-                            .padding(.top, PaeoniaSpacing.space16)
-                        footerActions
-                            .padding(.horizontal, PaeoniaSpacing.space20)
-                            .padding(.top, PaeoniaSpacing.space32)
-                    }
-                    .padding(.bottom, PaeoniaSpacing.space16)
-                    .frame(maxWidth: .infinity)
-                    .background(.paeoniaSurfacePrimary)
-                }
-                .scrollDismissesKeyboard(.immediately)
-                .ignoresSafeArea(edges: .top)
-
-                if showInviteOverlay {
-                    inviteOverlay
-                        .transition(.opacity.animation(.easeInOut(duration: 0.25)))
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                PaywallBottomCTAView(
-                    title: ctaTitle,
-                    caption: ctaCaption,
-                    isEnabled: ctaIsEnabled,
-                    isBusy: isInviteMode ? false : viewModel.isPurchasing,
-                    usesSolidBackground: isInviteMode,
-                    action: ctaAction
-                )
-            }
+            paywallScene(geometry: geometry)
         }
         .task {
             await viewModel.loadProducts()
@@ -84,6 +49,37 @@ struct PaywallView: View {
             }
         } message: {
             Text(.authDeleteAccountConfirmMessage)
+        }
+    }
+
+    private func paywallScene(geometry: GeometryProxy) -> some View {
+        ZStack {
+            Color.paeoniaSurfacePrimary
+                .ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    paywallContent(geometry: geometry)
+                    paywallErrorMessage
+                        .padding(.top, PaeoniaSpacing.space16)
+                    footerActions
+                        .padding(.horizontal, PaeoniaSpacing.space20)
+                        .padding(.top, PaeoniaSpacing.space32)
+                }
+                .padding(.bottom, PaeoniaSpacing.space16)
+                .frame(maxWidth: .infinity)
+                .background(.paeoniaSurfacePrimary)
+            }
+            .scrollDismissesKeyboard(.immediately)
+            .ignoresSafeArea(edges: .top)
+
+            if showInviteOverlay {
+                inviteOverlay
+                    .transition(.opacity.animation(.easeInOut(duration: 0.25)))
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            bottomCTA
         }
     }
 
@@ -117,9 +113,9 @@ struct PaywallView: View {
             heroHeight: heroHeight(for: geometry),
             aboveFoldMinHeight: aboveFoldMinHeight(for: geometry),
             billingPeriod: $viewModel.billingPeriod,
-            headlineTitle: headlineTitle,
-            priceLine: priceLine,
-            timelineItems: timelineItems,
+            headlineTitle: presentation.headlineTitle,
+            priceLine: presentation.priceLine,
+            timelineItems: presentation.timelineItems,
             onRevealInvite: {
                 withAnimation(.easeInOut(duration: 0.25)) {
                     showInviteOverlay = true
@@ -147,12 +143,23 @@ struct PaywallView: View {
 
     // MARK: - Bottom CTA
 
+    private var bottomCTA: some View {
+        PaywallBottomCTAView(
+            title: ctaTitle,
+            caption: ctaCaption,
+            isEnabled: ctaIsEnabled,
+            isBusy: isInviteMode ? false : viewModel.isPurchasing,
+            usesSolidBackground: isInviteMode,
+            action: ctaAction
+        )
+    }
+
     private var isInviteMode: Bool {
         showInviteOverlay
     }
 
     private var ctaTitle: LocalizedStringResource {
-        isInviteMode ? .paywallInviteAction : primaryButtonTitle
+        isInviteMode ? .paywallInviteAction : presentation.primaryButtonTitle
     }
 
     private var ctaCaption: LocalizedStringResource {
@@ -163,7 +170,7 @@ struct PaywallView: View {
         if isInviteMode {
             return inviteCode.count == PaywallInviteCodeView.codeLength
         }
-        return primaryButtonIsEnabled
+        return presentation.primaryButtonIsEnabled
     }
 
     private func ctaAction() {
@@ -236,139 +243,14 @@ struct PaywallView: View {
         )
     }
 
-    private var primaryButtonIsEnabled: Bool {
-        viewModel.currentProduct != nil && !viewModel.isPurchasing && !viewModel.isLoading
-    }
-
-    private var primaryButtonTitle: LocalizedStringResource {
-        if viewModel.isPurchasing {
-            return .paywallCtaPurchasing
-        }
-
-        if viewModel.currentFreeTrial != nil {
-            return .paywallCtaFreeTrial
-        }
-
-        return .paywallCtaSubscribe
-    }
-
-    private var headlineTitle: LocalizedStringResource {
-        if viewModel.currentFreeTrial != nil {
-            return .paywallTrialTitle
-        }
-
-        return .paywallTitle
-    }
-
-    private var priceLine: String {
-        guard let product = viewModel.currentProduct else {
-            return String(localized: .paywallPriceLoading)
-        }
-
-        let renewal = "\(compactDisplayPrice(for: product))\(String(localized: compactPeriodLabel))"
-        guard let freeTrial = viewModel.currentFreeTrial else {
-            return renewal
-        }
-
-        let freeWord = String(localized: .paywallTrialFreeWord)
-        let then = String(localized: .paywallTrialThen)
-            .lowercased(with: Locale.current)
-
-        return "\(freeTrial.localizedDurationText) \(freeWord), \(then) \(renewal)"
-    }
-
-    private var timelineItems: [PaywallTimelineItem] {
-        if viewModel.currentFreeTrial != nil {
-            return [
-                PaywallTimelineItem(
-                    id: "today",
-                    title: String(localized: .paywallTimelineToday),
-                    message: String(localized: .paywallTimelineTodayBody),
-                    systemImage: "lock.open.fill",
-                    isActive: true
-                ),
-                PaywallTimelineItem(
-                    id: "reminder",
-                    title: trialTimelineDayTitle(day: trialReminderDay),
-                    message: String(localized: .paywallTimelineReminderBody),
-                    systemImage: "bell.fill",
-                    isActive: false
-                ),
-                PaywallTimelineItem(
-                    id: "charge",
-                    title: trialTimelineDayTitle(day: trialDurationDay),
-                    message: String(localized: .paywallTimelineChargeBody),
-                    systemImage: "calendar.badge.clock",
-                    isActive: false
-                ),
-            ]
-        }
-
-        return [
-            PaywallTimelineItem(
-                id: "today",
-                title: String(localized: .paywallTimelineToday),
-                message: String(localized: .paywallTimelineTodayBody),
-                systemImage: "lock.open.fill",
-                isActive: true
-            ),
-            PaywallTimelineItem(
-                id: "manage",
-                title: String(localized: .paywallTimelineManage),
-                message: String(localized: .paywallTimelineManageBody),
-                systemImage: "gearshape.fill",
-                isActive: false
-            ),
-            PaywallTimelineItem(
-                id: "renewal",
-                title: String(localized: .paywallTimelineRenewal),
-                message: String(localized: renewalTimelineBody),
-                systemImage: "calendar",
-                isActive: false
-            ),
-        ]
-    }
-
-    private var trialDurationDay: Int {
-        viewModel.currentFreeTrial?.approximateDayCount ?? 14
-    }
-
-    private var trialReminderDay: Int {
-        max(trialDurationDay - 2, 1)
-    }
-
-    private func trialTimelineDayTitle(day: Int) -> String {
-        "\(String(localized: .paywallTimelineDayPrefix)) \(day)"
-    }
-
-    private var renewalTimelineBody: LocalizedStringResource {
-        switch viewModel.billingPeriod {
-        case .monthly:
-            .paywallTimelineRenewalMonthlyBody
-        case .yearly:
-            .paywallTimelineRenewalYearlyBody
-        }
-    }
-
-    private var compactPeriodLabel: LocalizedStringResource {
-        switch viewModel.billingPeriod {
-        case .monthly:
-            .paywallPeriodMonthlyCompact
-        case .yearly:
-            .paywallPeriodYearlyCompact
-        }
-    }
-
-    private func compactDisplayPrice(for product: Product) -> String {
-        var price = product.price
-        var rounded = Decimal()
-        NSDecimalRound(&rounded, &price, 0, .plain)
-
-        if rounded == product.price {
-            return product.price.formatted(product.priceFormatStyle.precision(.fractionLength(0)))
-        }
-
-        return product.displayPrice
+    private var presentation: PaywallPresentation {
+        PaywallPresentation(
+            billingPeriod: viewModel.billingPeriod,
+            product: viewModel.currentProduct,
+            freeTrial: viewModel.currentFreeTrial,
+            isPurchasing: viewModel.isPurchasing,
+            isLoading: viewModel.isLoading
+        )
     }
 
     private func purchase() {

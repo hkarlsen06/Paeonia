@@ -9,6 +9,7 @@ fi
 DEFAULT_HEARTBEAT_INTERVAL=20
 MIN_HEARTBEAT_INTERVAL=15
 HEARTBEAT_INTERVAL="${XCODE_BUILD_AGENT_HEARTBEAT_INTERVAL:-$DEFAULT_HEARTBEAT_INTERVAL}"
+CONFIGURATION="${XCODE_BUILD_AGENT_CONFIGURATION:-Debug}"
 RESULT_BUNDLE="${TMPDIR:-/tmp}/Paeonia-build-$(date +%s)-$$.xcresult"
 LOG_FILE="$(mktemp "${TMPDIR:-/tmp}/Paeonia-build-log.XXXXXX")"
 JSON_FILE="$(mktemp "${TMPDIR:-/tmp}/Paeonia-build-json.XXXXXX")"
@@ -65,6 +66,7 @@ xcodebuild \
   -resultBundlePath "$RESULT_BUNDLE" \
   -project ios/Paeonia.xcodeproj \
   -scheme App \
+  -configuration "$CONFIGURATION" \
   -destination 'generic/platform=iOS Simulator' \
   build >"$LOG_FILE" 2>&1 &
 XCODEBUILD_PID=$!

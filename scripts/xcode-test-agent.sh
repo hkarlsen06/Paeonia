@@ -27,6 +27,7 @@ MIN_HEARTBEAT_INTERVAL=15
 HEARTBEAT_INTERVAL="${XCODE_TEST_AGENT_HEARTBEAT_INTERVAL:-$DEFAULT_HEARTBEAT_INTERVAL}"
 PROJECT_PATH="${XCODE_TEST_AGENT_PROJECT_PATH:-ios/Paeonia.xcodeproj}"
 SCHEME_NAME="${XCODE_TEST_AGENT_SCHEME:-App}"
+CONFIGURATION="${XCODE_TEST_AGENT_CONFIGURATION:-Debug}"
 RESULT_BUNDLE="${TMPDIR:-/tmp}/Paeonia-test-$(date +%s)-$$.xcresult"
 LOG_FILE="$(mktemp "${TMPDIR:-/tmp}/Paeonia-test-log.XXXXXX")"
 JSON_FILE="$(mktemp "${TMPDIR:-/tmp}/Paeonia-test-json.XXXXXX")"
@@ -156,6 +157,7 @@ XCODEBUILD_ARGS=(
   -resultBundlePath "$RESULT_BUNDLE"
   -project "$PROJECT_PATH"
   -scheme "$SCHEME_NAME"
+  -configuration "$CONFIGURATION"
   -destination "$DESTINATION"
   test
 )

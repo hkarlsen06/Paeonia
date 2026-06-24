@@ -100,6 +100,8 @@ The developer may run multiple agents in parallel in the same worktree.
 
 - Run commands from the repository root unless explicitly stated otherwise.
 - Prefer fast, focused verification commands.
+- Do not run build or test commands by default. They make each turn significantly slower, and the developer will build locally when needed.
+- Only run builds or tests when the user explicitly asks. You may suggest a relevant build or test command in the final handoff.
 - Avoid verbose command modes unless the extra output is needed to debug the issue.
 - Use `rg` for searching text or files when available.
 - Prefer existing project patterns over introducing new abstractions.
@@ -235,6 +237,23 @@ Text(.dailyPromptRevealTitle)
 String(localized: .countdownDaysRemaining(Int32(days)))
 ```
 
+### Editing String Catalogs
+
+For ordinary plain string entries, use the repo helper instead of hand-editing `.xcstrings` JSON:
+
+```bash
+./scripts/xcstrings-set ios/PaeoniaApp/Resources/Localization/Localizable.xcstrings pairing.invite.button \
+  --comment "Button that starts partner invitation" \
+  --en "Invite partner" \
+  --nb "Inviter partner"
+```
+
+- New keys must include English, Norwegian Bokmal, and a translator comment.
+- The helper preserves existing catalog order by default to keep diffs focused. Pass `--sort-keys` only when intentionally normalizing a catalog.
+- Use `--locale <code>=<value>` for additional languages if the catalog grows beyond `en` and `nb`.
+- Use Xcode's String Catalog editor or XLIFF export/import for pluralization, substitutions, device variants, or bulk translator workflows.
+- After catalog changes, verify generated symbols in Swift code still match the key names. Run a build only when explicitly requested or when symbol generation needs to be checked.
+
 ## Design System
 
 Use semantic colors and design tokens. Do not scatter hardcoded colors, spacing, or typography values through feature views.
@@ -305,7 +324,9 @@ Prefer small focused unit tests over broad UI tests unless behavior is UI-only.
 
 ## iOS Build And Test Commands
 
-Once project-specific wrappers exist, use them instead of raw `xcodebuild`.
+Do not run iOS build or test wrappers by default. Only run them when the user explicitly asks, though you may recommend one of these commands in the final handoff when it would be useful.
+
+When the user asks you to build or test and project-specific wrappers exist, use them instead of raw `xcodebuild`.
 
 Recommended future commands:
 

@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+
+    },
     "app.state.deletingAccount" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1329,6 +1332,24 @@
         }
       }
     },
+    "paywall.invite.dismiss" : {
+      "comment" : "Accessibility label for dismissing the invite-code overlay",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss invite code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lukk invitasjonskode"
+          }
+        }
+      }
+    },
     "paywall.invite.subtitle" : {
       "comment" : "Explains what to type into the invite-code field (RECOVERED verbatim)",
       "extractionState" : "manual",
@@ -2198,24 +2219,6 @@
           }
         }
       }
-    },
-    "paywall.invite.dismiss" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dismiss invite code"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lukk invitasjonskode"
-          }
-        }
-      },
-      "comment" : "Accessibility label for dismissing the invite-code overlay"
     }
   },
   "version" : "1.0"
