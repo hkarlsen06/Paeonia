@@ -4,6 +4,7 @@ import { LandingPage } from '@/components/LandingPage';
 import { getMarketingDictionary } from '@/lib/i18n/dictionaries';
 import { locales, type Locale } from '@/lib/i18n/config';
 import { generateLocaleStaticParams } from '@/lib/i18n/static-params';
+import { marketingPreviewImage, marketingTwitterMetadata } from '@/lib/metadata';
 
 interface LocalePageProps {
   params: Promise<{ locale: string }>;
@@ -36,6 +37,12 @@ export async function generateMetadata({ params }: LocalePageProps): Promise<Met
       description: dictionary.marketing.meta.description,
       url,
       type: 'website',
+      images: [marketingPreviewImage],
+    },
+    twitter: {
+      ...marketingTwitterMetadata,
+      title: dictionary.marketing.meta.title,
+      description: dictionary.marketing.meta.description,
     },
   };
 }

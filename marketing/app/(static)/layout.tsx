@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { defaultLocale } from '@/lib/i18n/config';
+import { marketingPreviewImage, marketingTwitterMetadata } from '@/lib/metadata';
 import '../globals.css';
 
 export const metadata: Metadata = {
@@ -10,11 +11,7 @@ export const metadata: Metadata = {
   },
   description: 'A private place for couples who want to feel close between visits.',
   icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: '32x32' },
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-    ],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
   },
   openGraph: {
     title: 'Paeonia',
@@ -22,7 +19,9 @@ export const metadata: Metadata = {
     url: 'https://paeonia.no',
     siteName: 'Paeonia',
     type: 'website',
+    images: [marketingPreviewImage],
   },
+  twitter: marketingTwitterMetadata,
 };
 
 export const viewport: Viewport = {
