@@ -366,6 +366,30 @@ Recommended future commands:
 ./scripts/xcode-test-agent.sh
 ```
 
+### Toolchain Requirement
+
+Build with Xcode 27.0 beta by setting `DEVELOPER_DIR` for the command or by selecting the beta globally with `xcode-select`. On macOS 27 beta, GM Xcode 26.5's `actool` crashes when compiling the app's Icon Composer icon at `ios/PaeoniaApp/Resources/AppIcon/paeonia_app.icon`.
+
+Known bad pairing:
+
+```bash
+/Applications/Xcode.app
+```
+
+Known working beta toolchain:
+
+```bash
+DEVELOPER_DIR="/Users/hjalmarkarlsen/Documents/Xcode-beta.app/Contents/Developer" xcodebuild ...
+```
+
+Failure symptom:
+
+```text
+Exception while running actool: *** -[__NSPlaceholderArray initWithObjects:count:]: attempt to insert nil object from objects[0]
+```
+
+This is a toolchain bug, not a project icon bug. Do not replace the layered `.icon` with a flat `AppIcon.appiconset` PNG workaround; a prior flat PNG workaround had a transparent background and rendered incorrectly against black in iOS 26/27 dark mode. `ASSETCATALOG_COMPILER_APPICON_NAME` must remain `paeonia_app` so the layered icon keeps the correct plum dark-mode background.
+
 If wrappers do not exist yet:
 
 - Use the project's documented build/test commands.
