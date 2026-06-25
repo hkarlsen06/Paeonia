@@ -62,6 +62,13 @@ The developer may run multiple agents in parallel in the same worktree.
 - Prefer code changes and concise chat summaries over new documentation artifacts.
 - Keep edits scoped to the requested work.
 
+### Placeholder And Stub Behavior
+
+- Do not wire up placeholder states for features that are not finished, such as a button that shows "Coming soon", a stub alert, an empty screen, or a no-op handler, unless we explicitly plan to ship the feature in that interim state.
+- Such placeholders are not free: they get replaced with the real implementation during normal development before release, so the interim state becomes dead code the developer has to find and remove later.
+- If a feature is not ready to wire up, leave it unwired rather than adding a fake destination. Prefer not adding the entry point yet, or stop and ask how the developer wants the unfinished feature surfaced.
+- If a temporary placeholder is genuinely wanted, confirm that intent first, and only then add it.
+
 ### File Size And Splitting
 
 - Avoid letting Swift files grow into broad catch-all files.
