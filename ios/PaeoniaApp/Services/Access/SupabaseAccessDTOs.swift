@@ -49,6 +49,7 @@ nonisolated struct SupabaseRelationshipState: Codable, Equatable, Sendable {
     let memberStatus: SupabaseRelationshipMemberStatus
     let partnerUserID: UUID?
     let partnerDisplayName: String?
+    let partnerProfilePhotoAssetID: UUID?
     let startedOn: String?
     let endedAt: Date?
     let deleteAfter: Date?
@@ -61,6 +62,7 @@ nonisolated struct SupabaseRelationshipState: Codable, Equatable, Sendable {
         case memberStatus = "member_status"
         case partnerUserID = "partner_user_id"
         case partnerDisplayName = "partner_display_name"
+        case partnerProfilePhotoAssetID = "partner_profile_photo_asset_id"
         case startedOn = "started_on"
         case endedAt = "ended_at"
         case deleteAfter = "delete_after"

@@ -232,6 +232,7 @@ private extension SupabaseRelationshipState {
             memberStatus: memberStatus,
             partnerUserID: UUID(),
             partnerDisplayName: "Riley",
+            partnerProfilePhotoAssetID: nil,
             startedOn: "2026-06-23",
             endedAt: relationshipStatus == .ended
                 ? Date(timeIntervalSince1970: 1_800_000_000)

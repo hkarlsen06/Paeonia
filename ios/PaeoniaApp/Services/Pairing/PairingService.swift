@@ -2,6 +2,10 @@ import Foundation
 
 typealias PairingInviteCodeGenerator = @Sendable () -> String
 
+enum PairingInviteCreationError: Error, Equatable {
+    case inviteCodeCollision
+}
+
 protocol PairingServicing: Actor {
     func createInvite(
         operation: PairingClientOperation,
@@ -22,6 +26,7 @@ protocol PairingServicing: Actor {
 actor SupabasePairingService: PairingServicing {
     private let gateway: any SupabasePairingGateway
     private let generateInviteCode: PairingInviteCodeGenerator
+    private let maxCreateInviteAttempts = 3
 
     init(
         gateway: any SupabasePairingGateway,
@@ -40,19 +45,34 @@ actor SupabasePairingService: PairingServicing {
         operation: PairingClientOperation,
         expiresAt: Date
     ) async throws -> PairingInvite {
-        let inviteCode = try PairingInviteCode.normalized(generateInviteCode())
-        let inviteID = try await gateway.createInvite(
-            inviteCode: inviteCode,
-            operation: operation,
-            expiresAt: expiresAt
-        )
+        var lastCollision: PairingInviteCreationError?
 
-        return PairingInvite(
-            id: inviteID,
-            code: inviteCode,
-            joinURL: try PairingJoinURL.make(inviteCode: inviteCode),
-            expiresAt: expiresAt
-        )
+        for _ in 1...maxCreateInviteAttempts {
+            let inviteCode = try PairingInviteCode.normalized(generateInviteCode())
+
+            do {
+                let inviteID = try await gateway.createInvite(
+                    inviteCode: inviteCode,
+                    operation: operation,
+                    expiresAt: expiresAt
+                )
+
+                return PairingInvite(
+                    id: inviteID,
+                    code: inviteCode,
+                    joinURL: try PairingJoinURL.make(inviteCode: inviteCode),
+                    expiresAt: expiresAt
+                )
+            } catch PairingInviteCreationError.inviteCodeCollision {
+                lastCollision = .inviteCodeCollision
+            }
+        }
+
+        if let lastCollision {
+            throw lastCollision
+        }
+
+        throw PairingInviteCreationError.inviteCodeCollision
     }
 
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {

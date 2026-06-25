@@ -31,17 +31,21 @@ actor LiveSupabasePairingGateway: SupabasePairingGateway {
         operation: PairingClientOperation,
         expiresAt: Date
     ) async throws -> UUID {
-        try await client
-            .rpc(
-                "create_pairing_invite",
-                params: CreatePairingInviteRequest(
-                    inviteCode: inviteCode,
-                    operation: operation,
-                    expiresAt: expiresAt
+        do {
+            return try await client
+                .rpc(
+                    "create_pairing_invite",
+                    params: CreatePairingInviteRequest(
+                        inviteCode: inviteCode,
+                        operation: operation,
+                        expiresAt: expiresAt
+                    )
                 )
-            )
-            .execute()
-            .value
+                .execute()
+                .value
+        } catch where Self.isInviteCodeCollision(error) {
+            throw PairingInviteCreationError.inviteCodeCollision
+        }
     }
 
     func previewInvite(inviteCode: String) async throws -> PairingInvitePreview? {
@@ -82,6 +86,10 @@ actor LiveSupabasePairingGateway: SupabasePairingGateway {
             )
             .execute()
             .value
+    }
+
+    private static func isInviteCodeCollision(_ error: any Error) -> Bool {
+        String(describing: error).contains("pairing_invite_secrets_code_hash_unique")
     }
 }
 

@@ -28,9 +28,12 @@ actor SupabaseAuthService: AuthServicing {
             idToken: credential.idToken,
             nonce: credential.nonce
         )
-        let oauthDisplayName = remoteSession.displayName ?? credential.fullName
+        let oauthDisplayName = remoteSession.displayName.flatMap(
+            AuthDisplayNamePolicy.normalizedFirstName
+        )
+            ?? credential.fullName.flatMap(AuthDisplayNamePolicy.normalizedFirstName)
         if remoteSession.displayName?.trimmedNonEmpty == nil,
-           let displayName = normalizedOptionalDisplayName(credential.fullName) {
+           let displayName = credential.fullName.flatMap(AuthDisplayNamePolicy.normalizedFirstName) {
             try await gateway.updateAuthDisplayName(displayName)
         }
         let profile = try await gateway.loadProfile(userID: remoteSession.userID)
@@ -54,7 +57,9 @@ actor SupabaseAuthService: AuthServicing {
             remoteSession: SupabaseRemoteSession(
                 userID: remoteSession.userID,
                 provider: .google,
-                displayName: remoteSession.displayName
+                displayName: remoteSession.displayName.flatMap(
+                    AuthDisplayNamePolicy.normalizedFirstName
+                )
             ),
             profile: profile
         )
@@ -64,7 +69,11 @@ actor SupabaseAuthService: AuthServicing {
         throw AuthServiceError.developmentSignInUnavailable
     }
 
-    func completeOnboarding(displayName: String, timeZoneID: String) async throws -> AuthSession {
+    func completeOnboarding(
+        displayName: String,
+        timeZoneID: String,
+        profilePhotoData: Data?
+    ) async throws -> AuthSession {
         let trimmedDisplayName = try normalizedDisplayName(displayName)
 
         guard let remoteSession = try await gateway.restoreSession() else {
@@ -72,9 +81,26 @@ actor SupabaseAuthService: AuthServicing {
         }
 
         try await gateway.updateAuthDisplayName(trimmedDisplayName)
+        let profilePhotoAssetID: UUID?
+        if let profilePhotoData {
+            let compressedImage = await MainActor.run {
+                ImageCompressor.compress(profilePhotoData)
+            }
+            guard let compressedImage else {
+                throw AuthServiceError.invalidProfilePhoto
+            }
+            profilePhotoAssetID = try await gateway.uploadProfilePhoto(
+                userID: remoteSession.userID,
+                compressedImage: compressedImage
+            )
+        } else {
+            profilePhotoAssetID = nil
+        }
+
         let profile = try await gateway.completeProfileOnboarding(
             userID: remoteSession.userID,
-            timeZoneID: timeZoneID
+            timeZoneID: timeZoneID,
+            profilePhotoAssetID: profilePhotoAssetID
         )
         return makeSession(
             remoteSession: SupabaseRemoteSession(
@@ -103,15 +129,19 @@ actor SupabaseAuthService: AuthServicing {
         remoteSession: SupabaseRemoteSession,
         profile: SupabaseProfile
     ) -> AuthSession {
-        let displayName = remoteSession.displayName?.trimmedNonEmpty
-            ?? profile.displayName?.trimmedNonEmpty
         let profileStatus = Self.profileStatus(for: profile)
+        let displayName = Self.displayName(
+            remoteSession: remoteSession,
+            profile: profile,
+            profileStatus: profileStatus
+        )
 
         return AuthSession(
             id: remoteSession.userID,
             provider: remoteSession.provider,
             displayName: displayName,
             timeZoneID: profile.timeZoneID?.trimmedNonEmpty,
+            profilePhotoAssetID: profile.profilePhotoAssetID,
             profileStatus: profileStatus
         )
     }
@@ -126,20 +156,26 @@ actor SupabaseAuthService: AuthServicing {
         return .needsOnboarding
     }
 
-    private func normalizedDisplayName(_ value: String) throws -> String {
-        guard let displayName = value.trimmedNonEmpty else {
-            throw AuthServiceError.noActiveSession
+    private static func displayName(
+        remoteSession: SupabaseRemoteSession,
+        profile: SupabaseProfile,
+        profileStatus: AuthProfileStatus
+    ) -> String? {
+        switch profileStatus {
+        case .complete:
+            profile.displayName.flatMap(AuthDisplayNamePolicy.normalizedFirstName)
+        case .needsOnboarding:
+            remoteSession.displayName.flatMap(AuthDisplayNamePolicy.normalizedFirstName)
+                ?? profile.displayName.flatMap(AuthDisplayNamePolicy.normalizedFirstName)
         }
-
-        return String(displayName.prefix(80))
     }
 
-    private func normalizedOptionalDisplayName(_ value: String?) -> String? {
-        guard let displayName = value?.trimmedNonEmpty else {
-            return nil
+    private func normalizedDisplayName(_ value: String) throws -> String {
+        guard let displayName = AuthDisplayNamePolicy.validatedSingleName(from: value) else {
+            throw AuthServiceError.invalidDisplayName
         }
 
-        return String(displayName.prefix(80))
+        return displayName
     }
 }
 

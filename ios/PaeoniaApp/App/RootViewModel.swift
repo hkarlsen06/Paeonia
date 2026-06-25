@@ -15,6 +15,7 @@ enum RootNotice: Equatable {
 
 @MainActor
 @Observable
+// swiftlint:disable:next type_body_length
 final class RootViewModel {
     #if DEBUG
     private let logger = Logger(
@@ -27,8 +28,8 @@ final class RootViewModel {
         case launching
         case signedOut
         case onboarding(AuthSession)
-        case resolvingAccess(AuthSession, previous: AccessRoute?)
-        case access(AuthSession, AccessRoute)
+        case resolvingAccess(AuthSession, previous: AccessRouteResolution?)
+        case access(AuthSession, AccessRouteResolution)
         case deletingAccount(AuthSession?)
 
         var appState: AppState {
@@ -40,9 +41,9 @@ final class RootViewModel {
             case .onboarding:
                 .onboarding
             case let .resolvingAccess(_, previous):
-                previous?.appState ?? .launching
-            case let .access(_, accessRoute):
-                accessRoute.appState
+                previous?.route.appState ?? .launching
+            case let .access(_, accessResolution):
+                accessResolution.route.appState
             case .deletingAccount:
                 .deletingAccount
             }
@@ -67,12 +68,12 @@ final class RootViewModel {
             authRoute.session
         }
 
-        var accessRoute: AccessRoute? {
+        var accessResolution: AccessRouteResolution? {
             switch self {
             case let .resolvingAccess(_, previous):
                 previous
-            case let .access(_, accessRoute):
-                accessRoute
+            case let .access(_, accessResolution):
+                accessResolution
             case .launching,
                  .signedOut,
                  .onboarding,
@@ -104,6 +105,24 @@ final class RootViewModel {
     var currentSession: AuthSession? {
         route.session
     }
+
+    var currentPartnerDisplayName: String? {
+        route.accessResolution?.partnerDisplayName
+    }
+
+    var currentProfilePhotoAssetID: UUID? {
+        currentSession?.profilePhotoAssetID
+    }
+
+    var currentPartnerProfilePhotoAssetID: UUID? {
+        route.accessResolution?.partnerProfilePhotoAssetID
+    }
+
+    /// True when access has just resolved to `.paired` as the result of a fresh
+    /// link, so the paired screen should play its celebration intro. Set together
+    /// with the route change so the paired screen reads the right value the instant
+    /// it appears, then cleared once the celebration has claimed it.
+    private(set) var pendingPairingCelebration = false
 
     init(
         syncCoordinator: (any SyncCoordinating)? = nil,
@@ -152,11 +171,22 @@ final class RootViewModel {
         notice = nil
     }
 
-    func completeOnboarding(displayName: String, timeZoneID: String) async {
+    /// Marks the pairing celebration as played so it does not run again on an
+    /// ordinary return to the paired screen.
+    func consumePairingCelebration() {
+        pendingPairingCelebration = false
+    }
+
+    func completeOnboarding(
+        displayName: String,
+        timeZoneID: String,
+        profilePhotoData: Data?
+    ) async {
         await performAuthAction(failureNotice: .onboardingFailed) {
             let session = try await authService.completeOnboarding(
                 displayName: displayName,
-                timeZoneID: timeZoneID
+                timeZoneID: timeZoneID,
+                profilePhotoData: profilePhotoData
             )
             await apply(AuthRoute(session: session))
             await startSyncIfNeeded()
@@ -198,6 +228,18 @@ final class RootViewModel {
 
     func refreshAfterSubscriptionChange() async {
         await refreshAuthRoute()
+        await startSyncIfNeeded()
+    }
+
+    func refreshAfterInviteAccepted() async {
+        guard let session = currentSession else {
+            await refreshAuthRoute()
+            await startSyncIfNeeded()
+            return
+        }
+
+        showAcceptedInviteCelebration(for: session)
+        await resolveAccessRoute(for: session)
         await startSyncIfNeeded()
     }
 
@@ -254,8 +296,12 @@ final class RootViewModel {
     private func logAuthError(_ error: Error, notice: RootNotice?) {
         #if DEBUG
         let noticeDescription = notice.map { String(describing: $0) } ?? "none"
+        let errorDescription = String(describing: error)
         logger.error(
-            "Auth action failed; notice=\(noticeDescription, privacy: .public); error=\(String(describing: error), privacy: .public)"
+            """
+            Auth action failed; notice=\(noticeDescription, privacy: .public); \
+            error=\(errorDescription, privacy: .public)
+            """
         )
         #endif
     }
@@ -275,35 +321,103 @@ final class RootViewModel {
 
     private func resolveAccessRoute(for session: AuthSession) async {
         let generation = beginAccessResolution()
-        let previousAccessRoute = route.accessRoute
-        route = .resolvingAccess(session, previous: previousAccessRoute)
+        let previousAccessResolution = route.accessResolution
+        route = .resolvingAccess(session, previous: previousAccessResolution)
 
         guard let accessRouteService else {
             finishAccessResolution(generation) {
-                route = .access(session, fallbackAccessRoute(for: session))
+                applyAccessResolution(
+                    fallbackAccessResolution(for: session),
+                    for: session,
+                    previous: previousAccessResolution
+                )
             }
             return
         }
 
         do {
             let hasPendingInvite = inviteStore.loadInvite(for: session.id) != nil
-            let accessRoute = try await accessRouteService.resolveRoute(hasPendingInvite: hasPendingInvite)
+            let accessResolution = try await accessRouteService.resolveAccess(hasPendingInvite: hasPendingInvite)
             finishAccessResolution(generation) {
-                route = .access(session, accessRoute)
+                applyAccessResolution(accessResolution, for: session, previous: previousAccessResolution)
             }
         } catch {
             finishAccessResolution(generation) {
-                route = .access(session, previousAccessRoute ?? fallbackAccessRoute(for: session))
+                applyAccessResolution(
+                    previousAccessResolution ?? fallbackAccessResolution(for: session),
+                    for: session,
+                    previous: previousAccessResolution
+                )
             }
         }
     }
 
-    private func fallbackAccessRoute(for session: AuthSession) -> AccessRoute {
-        if inviteStore.loadInvite(for: session.id) != nil {
-            return .invitePending
+    /// Commits a resolved access route and, in the same step, decides whether the
+    /// paired screen should celebrate. Keeping both in one synchronous update means
+    /// the paired screen reads the correct `pendingPairingCelebration` the instant
+    /// it appears, avoiding a race where the intro is skipped.
+    private func applyAccessResolution(
+        _ resolution: AccessRouteResolution,
+        for session: AuthSession,
+        previous: AccessRouteResolution?
+    ) {
+        let shouldCelebrate = pendingPairingCelebration
+            || Self.isFreshLink(from: previous?.route, to: resolution.route)
+        pendingPairingCelebration = resolution.route == .paired
+            && shouldCelebrate
+        route = .access(session, resolution)
+    }
+
+    private func showAcceptedInviteCelebration(for session: AuthSession) {
+        pendingPairingCelebration = true
+        route = .access(
+            session,
+            Self.acceptedInviteOptimisticResolution(previous: route.accessResolution)
+        )
+    }
+
+    /// A fresh link is a transition into `.paired` from a state where the couple
+    /// was not yet fully linked (an ordinary app open that is already paired starts
+    /// from no previous route and must not replay).
+    private static func isFreshLink(from previous: AccessRoute?, to current: AccessRoute) -> Bool {
+        guard current == .paired, let previous else {
+            return false
         }
 
-        return .limitedAuthenticated
+        switch previous {
+        case .invitePending, .unpaired, .limitedAuthenticated, .pairedPaywalled:
+            return true
+        case .paired, .relationshipEndedNotice:
+            return false
+        }
+    }
+
+    private func fallbackAccessResolution(for session: AuthSession) -> AccessRouteResolution {
+        let hasPendingInvite = inviteStore.loadInvite(for: session.id) != nil
+
+        return AccessRouteResolution(
+            route: hasPendingInvite ? .invitePending : .limitedAuthenticated,
+            snapshot: AccessRouteSnapshot(
+                userEntitlement: nil,
+                coupleEntitlement: nil,
+                relationshipState: nil,
+                hasPendingInvite: hasPendingInvite
+            )
+        )
+    }
+
+    private static func acceptedInviteOptimisticResolution(
+        previous: AccessRouteResolution?
+    ) -> AccessRouteResolution {
+        AccessRouteResolution(
+            route: .paired,
+            snapshot: AccessRouteSnapshot(
+                userEntitlement: previous?.snapshot.userEntitlement,
+                coupleEntitlement: previous?.snapshot.coupleEntitlement,
+                relationshipState: previous?.snapshot.relationshipState,
+                hasPendingInvite: false
+            )
+        )
     }
 
     private func beginAccessResolution() -> Int {

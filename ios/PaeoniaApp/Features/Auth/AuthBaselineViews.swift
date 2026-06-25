@@ -1,41 +1,34 @@
+import PhotosUI
 import SwiftUI
+import UIKit
 
+/// A quiet, copy-free launch state that picks up where the system launch screen
+/// leaves off. It is often visible only for a split second, so it should not try
+/// to explain work that the user will not have time to read.
 struct AuthLaunchingView: View {
     var body: some View {
-        PaeoniaCard {
-            VStack(spacing: PaeoniaSpacing.space16) {
-                ProgressView()
-                    .tint(.paeoniaAccentPrimary)
-
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    Text(.authLaunchingTitle)
-                        .font(PaeoniaTypography.title)
-                        .foregroundStyle(.paeoniaTextPrimary)
-
-                    Text(.authLaunchingMessage)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                }
-                .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, PaeoniaSpacing.space8)
-        }
+        Color.paeoniaBackgroundPrimary
+            .ignoresSafeArea()
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(.appStateLaunching))
     }
 }
 
 struct AuthOnboardingView: View {
     let session: AuthSession?
     let isWorking: Bool
-    let onCompleteOnboarding: (String) -> Void
+    let onCompleteOnboarding: (String, Data?) -> Void
     let onSignOut: () -> Void
 
     @State private var displayName: String
+    @State private var selectedProfilePhotoItem: PhotosPickerItem?
+    @State private var selectedProfilePhotoData: Data?
+    @State private var selectedProfilePhotoImage: Image?
 
     init(
         session: AuthSession?,
         isWorking: Bool,
-        onCompleteOnboarding: @escaping (String) -> Void,
+        onCompleteOnboarding: @escaping (String, Data?) -> Void,
         onSignOut: @escaping () -> Void
     ) {
         self.session = session
@@ -86,9 +79,22 @@ struct AuthOnboardingView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            displayNameField
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                profilePhotoPicker
+                displayNameField
+
+                if hasMultipleDisplayNameWords {
+                    Text(.authOnboardingDisplayNameSingleWordHint)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextTertiary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity)
+        .onChange(of: selectedProfilePhotoItem) { _, item in
+            loadProfilePhoto(from: item)
+        }
     }
 
     private var onboardingActions: some View {
@@ -96,6 +102,16 @@ struct AuthOnboardingView: View {
             completeButton
             signOutButton
         }
+    }
+
+    private var canCompleteOnboarding: Bool {
+        !isWorking && AuthDisplayNamePolicy.validatedSingleName(from: displayName) != nil
+    }
+
+    private var hasMultipleDisplayNameWords: Bool {
+        displayName
+            .split(whereSeparator: \.isWhitespace)
+            .count > 1
     }
 
     private var displayNameField: some View {
@@ -116,7 +132,11 @@ struct AuthOnboardingView: View {
 
     private var completeButton: some View {
         Button {
-            onCompleteOnboarding(displayName)
+            guard AuthDisplayNamePolicy.validatedSingleName(from: displayName) != nil else {
+                return
+            }
+
+            onCompleteOnboarding(displayName, selectedProfilePhotoData)
         } label: {
             Label {
                 Text(.authOnboardingCompleteButton)
@@ -126,7 +146,7 @@ struct AuthOnboardingView: View {
             }
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
-        .disabled(isWorking || displayName.trimmedNonEmpty == nil)
+        .disabled(!canCompleteOnboarding)
     }
 
     private var signOutButton: some View {
@@ -137,6 +157,89 @@ struct AuthOnboardingView: View {
         }
         .buttonStyle(PaeoniaQuietButtonStyle())
         .disabled(isWorking)
+    }
+
+    private var profilePhotoPicker: some View {
+        HStack(spacing: PaeoniaSpacing.space12) {
+            profilePhotoPreview
+
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                Text(.authOnboardingProfilePhotoTitle)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextPrimary)
+
+                Text(.authOnboardingProfilePhotoMessage)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: PaeoniaSpacing.space8)
+
+            PhotosPicker(
+                selection: $selectedProfilePhotoItem,
+                matching: .images,
+                photoLibrary: .shared()
+            ) {
+                Image(systemName: selectedProfilePhotoImage == nil ? "plus.circle.fill" : "pencil.circle.fill")
+                    .font(.system(size: 32, weight: .semibold))
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .accessibilityLabel(
+                        Text(
+                            selectedProfilePhotoImage == nil
+                                ? .authOnboardingProfilePhotoAdd
+                                : .authOnboardingProfilePhotoChange
+                        )
+                    )
+            }
+            .disabled(isWorking)
+        }
+        .padding(PaeoniaSpacing.space12)
+        .background(.paeoniaSurfaceSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
+    }
+
+    private var profilePhotoPreview: some View {
+        Group {
+            if let selectedProfilePhotoImage {
+                selectedProfilePhotoImage
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "person.crop.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(PaeoniaSpacing.space8)
+                    .foregroundStyle(.paeoniaTextTertiary)
+            }
+        }
+        .frame(width: 68, height: 68)
+        .background(.paeoniaSurfacePrimary)
+        .clipShape(Circle())
+        .overlay {
+            Circle()
+                .stroke(.paeoniaAccentPrimary.opacity(0.25), lineWidth: 1)
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func loadProfilePhoto(from item: PhotosPickerItem?) {
+        guard let item else {
+            selectedProfilePhotoData = nil
+            selectedProfilePhotoImage = nil
+            return
+        }
+
+        Task {
+            guard let data = try? await item.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data) else {
+                return
+            }
+
+            selectedProfilePhotoData = data
+            // swiftlint:disable:next accessibility_label_for_image
+            selectedProfilePhotoImage = Image(uiImage: image)
+        }
     }
 }
 

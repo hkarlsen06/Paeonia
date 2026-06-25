@@ -107,6 +107,7 @@ The developer may run multiple agents in parallel in the same worktree.
 - Prefer existing project patterns over introducing new abstractions.
 - Keep business logic out of SwiftUI view bodies.
 - Use Tidex's project setup as the default template. Do not introduce a generated Xcode project, alternative build system, different package manager, or different deployment workflow without first discussing the tradeoff with the user.
+- The Xcode project uses filesystem-synchronized groups (`PBXFileSystemSynchronizedRootGroup`), so new `.swift` files under synchronized source folders are auto-included. Do not edit `project.pbxproj` just to add those files.
 - Install local hooks with `./scripts/install-git-hooks.sh` after cloning if they are not already active.
 
 ## Marketing Site Guidelines
@@ -150,6 +151,8 @@ Keep this feature-first structure as a hard maintainability rule. Do not flatten
 ### MVVM Boundaries
 
 - SwiftUI views render state and forward user actions.
+- Use SwiftUI as much as possible for app UI and interaction implementation.
+- If UIKit appears necessary to solve a task, stop before implementing it and report why SwiftUI is insufficient, what UIKit API would be used, and the expected tradeoff.
 - View models own presentation state and async UI flows.
 - Repositories own local data access.
 - Services own platform, backend, notification, media, and subscription integrations.
@@ -165,6 +168,18 @@ Examples of pure/testable logic:
 - notification planning
 - memory ordering
 - sync conflict handling
+
+### Stable Presentation Readiness
+
+For any screen that can be the first app surface after launch, do not dismiss the launch/loading screen until the screen has a stable first presentation.
+
+- View models for launch-adjacent screens must expose `isPresentationReady` by conforming to `PresentationReadinessProviding`.
+- `isPresentationReady` means all data that can materially change the first visible layout, offer, eligibility, entitlement, pairing, or primary CTA has either loaded successfully or reached a final unavailable/error state.
+- While `isPresentationReady == false`, keep showing the existing app loading surface instead of rendering partial feature UI.
+- The app loading surface should be visually blank and copy-free; it may be present for only a split second, so do not add explanatory loading text that users cannot read.
+- Keep the last known stable state visible during refreshes. Do not clear existing content, pricing, trial, pairing, entitlement, or invite state just because a new fetch has started.
+- Transient errors may be shown through the top banner, but clearing the banner must not make `isPresentationReady` false again if the underlying fetch has already settled.
+- Add or update focused tests when introducing readiness gates, especially for blocked or slow fetches and for error-clearing behavior.
 
 ### Local-First Data Flow
 

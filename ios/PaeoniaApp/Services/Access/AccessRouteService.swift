@@ -1,5 +1,5 @@
 protocol AccessRouteServicing: Actor {
-    func resolveRoute(hasPendingInvite: Bool) async throws -> AccessRoute
+    func resolveAccess(hasPendingInvite: Bool) async throws -> AccessRouteResolution
 }
 
 actor SupabaseAccessRouteService: AccessRouteServicing {
@@ -21,18 +21,26 @@ actor SupabaseAccessRouteService: AccessRouteServicing {
         )
     }
 
-    func resolveRoute(hasPendingInvite: Bool = false) async throws -> AccessRoute {
+    func resolveAccess(hasPendingInvite: Bool = false) async throws -> AccessRouteResolution {
         let userEntitlement = try await gateway.loadMyEntitlement()
         let coupleEntitlement = try await gateway.loadMyCoupleEntitlement()
         let relationshipState = try await gateway.loadCurrentRelationshipState()
-
-        return resolver.route(
-            for: AccessRouteSnapshot(
-                userEntitlement: userEntitlement,
-                coupleEntitlement: coupleEntitlement,
-                relationshipState: relationshipState,
-                hasPendingInvite: hasPendingInvite
-            )
+        let snapshot = AccessRouteSnapshot(
+            userEntitlement: userEntitlement,
+            coupleEntitlement: coupleEntitlement,
+            relationshipState: relationshipState,
+            hasPendingInvite: hasPendingInvite
         )
+
+        return AccessRouteResolution(
+            route: resolver.route(for: snapshot),
+            snapshot: snapshot
+        )
+    }
+}
+
+extension AccessRouteServicing {
+    func resolveRoute(hasPendingInvite: Bool = false) async throws -> AccessRoute {
+        try await resolveAccess(hasPendingInvite: hasPendingInvite).route
     }
 }

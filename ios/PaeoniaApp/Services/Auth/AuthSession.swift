@@ -1,8 +1,11 @@
+import Foundation
+
 nonisolated struct AuthSession: Equatable, Identifiable, Sendable {
     let id: String
     let provider: AuthProvider
     let displayName: String?
     let timeZoneID: String?
+    let profilePhotoAssetID: UUID?
     let profileStatus: AuthProfileStatus
 
     // swiftlint:disable:next unneeded_synthesized_initializer
@@ -11,24 +14,28 @@ nonisolated struct AuthSession: Equatable, Identifiable, Sendable {
         provider: AuthProvider,
         displayName: String?,
         timeZoneID: String?,
+        profilePhotoAssetID: UUID?,
         profileStatus: AuthProfileStatus
     ) {
         self.id = id
         self.provider = provider
         self.displayName = displayName
         self.timeZoneID = timeZoneID
+        self.profilePhotoAssetID = profilePhotoAssetID
         self.profileStatus = profileStatus
     }
 
     nonisolated func completingOnboarding(
         displayName: String,
-        timeZoneID: String
+        timeZoneID: String,
+        profilePhotoAssetID: UUID? = nil
     ) -> AuthSession {
         AuthSession(
             id: id,
             provider: provider,
             displayName: displayName,
             timeZoneID: timeZoneID,
+            profilePhotoAssetID: profilePhotoAssetID ?? self.profilePhotoAssetID,
             profileStatus: .complete
         )
     }

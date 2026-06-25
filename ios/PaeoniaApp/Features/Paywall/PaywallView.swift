@@ -1,11 +1,14 @@
 import Foundation
 import SwiftUI
 
+// swiftlint:disable:next type_body_length
 struct PaywallView: View {
     @State private var viewModel: PaywallViewModel
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let onPurchaseConfirmed: () -> Void
+    let onInviteAccepted: () -> Void
     let allowsInviteEntry: Bool
     let onSignOut: () -> Void
     let onDeleteAccount: () -> Void
@@ -13,28 +16,43 @@ struct PaywallView: View {
     @State private var isConfirmingDelete = false
     @State private var inviteCode = ""
     @State private var showInviteOverlay = false
+    @State private var hasPresentedPaywallContent = false
     @FocusState private var inviteFieldFocused: Bool
 
     init(
         session: AuthSession?,
         onPurchaseConfirmed: @escaping () -> Void,
+        onInviteAccepted: @escaping () -> Void,
         allowsInviteEntry: Bool,
         onSignOut: @escaping () -> Void,
         onDeleteAccount: @escaping () -> Void
     ) {
         _viewModel = State(initialValue: PaywallViewModel(userID: session?.id))
         self.onPurchaseConfirmed = onPurchaseConfirmed
+        self.onInviteAccepted = onInviteAccepted
         self.allowsInviteEntry = allowsInviteEntry
         self.onSignOut = onSignOut
         self.onDeleteAccount = onDeleteAccount
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            paywallScene(geometry: geometry)
+        Group {
+            if viewModel.isPresentationReady {
+                GeometryReader { geometry in
+                    paywallScene(geometry: geometry)
+                }
+            } else {
+                AuthLaunchingView()
+            }
         }
         .task {
             await viewModel.loadProducts()
+        }
+        .task(id: viewModel.isPresentationReady) {
+            await presentPaywallContentIfReady()
+        }
+        .onChange(of: viewModel.error) { _, error in
+            showBanner(for: error)
         }
         .confirmationDialog(
             Text(.authDeleteAccountConfirmTitle),
@@ -71,6 +89,8 @@ struct PaywallView: View {
             }
             .scrollDismissesKeyboard(.immediately)
             .ignoresSafeArea(edges: .top)
+            .opacity(paywallEntranceOpacity)
+            .offset(y: paywallEntranceOffset)
 
             if showInviteOverlay {
                 inviteOverlay
@@ -79,9 +99,8 @@ struct PaywallView: View {
         }
         .safeAreaInset(edge: .bottom) {
             bottomCTA
-        }
-        .onChange(of: viewModel.error) { _, error in
-            showBanner(for: error)
+                .opacity(paywallEntranceOpacity)
+                .offset(y: paywallEntranceOffset)
         }
     }
 
@@ -123,14 +142,20 @@ struct PaywallView: View {
                 withAnimation(.easeInOut(duration: 0.25)) {
                     showInviteOverlay = true
                 }
+                inviteFieldFocused = true
             }
         )
     }
 
     private func submitInvite() {
-        if inviteCode.count == PaywallInviteCodeView.codeLength {
-            redeemInvite()
-        } else if !inviteCode.isEmpty {
+        let sanitizedCode = PaywallInviteCodeView.sanitize(inviteCode)
+        if sanitizedCode != inviteCode {
+            inviteCode = sanitizedCode
+        }
+
+        if sanitizedCode.count == PaywallInviteCodeView.codeLength {
+            redeemInvite(codeInput: sanitizedCode)
+        } else if !sanitizedCode.isEmpty {
             inviteFieldFocused = true
         }
     }
@@ -161,6 +186,14 @@ struct PaywallView: View {
         showInviteOverlay
     }
 
+    private var paywallEntranceOpacity: Double {
+        hasPresentedPaywallContent ? 1 : 0
+    }
+
+    private var paywallEntranceOffset: CGFloat {
+        hasPresentedPaywallContent || reduceMotion ? 0 : -10
+    }
+
     private var ctaTitle: LocalizedStringResource {
         isInviteMode ? .paywallInviteAction : presentation.primaryButtonTitle
     }
@@ -171,29 +204,31 @@ struct PaywallView: View {
 
     private var ctaIsEnabled: Bool {
         if isInviteMode {
-            return inviteCode.count == PaywallInviteCodeView.codeLength && !viewModel.isAcceptingInvite
+            return PaywallInviteCodeView.sanitize(inviteCode).count == PaywallInviteCodeView.codeLength
+                && !viewModel.isAcceptingInvite
         }
         return presentation.primaryButtonIsEnabled
     }
 
     private func ctaAction() {
         if isInviteMode {
-            redeemInvite()
+            submitInvite()
         } else {
             purchase()
         }
     }
 
-    private func redeemInvite() {
+    private func redeemInvite(codeInput: String) {
         guard !viewModel.isAcceptingInvite else {
             return
         }
 
         Task {
-            let didAccept = await viewModel.acceptInvite(codeInput: inviteCode)
+            let didAccept = await viewModel.acceptInvite(codeInput: codeInput)
             if didAccept {
-                dismissInviteOverlay()
-                onPurchaseConfirmed()
+                onInviteAccepted()
+            } else {
+                inviteFieldFocused = true
             }
         }
     }
@@ -269,6 +304,23 @@ struct PaywallView: View {
         bannerCenter.show(.error(message: error.message))
         viewModel.clearError()
     }
+
+    private func presentPaywallContentIfReady() async {
+        guard viewModel.isPresentationReady else {
+            hasPresentedPaywallContent = false
+            return
+        }
+
+        await Task.yield()
+
+        if reduceMotion {
+            hasPresentedPaywallContent = true
+        } else {
+            withAnimation(.easeOut(duration: PaeoniaMotion.motionSlow)) {
+                hasPresentedPaywallContent = true
+            }
+        }
+    }
 }
 
 #Preview {
@@ -278,9 +330,11 @@ struct PaywallView: View {
             provider: .apple,
             displayName: "Alvilde",
             timeZoneID: "Europe/Oslo",
+            profilePhotoAssetID: nil,
             profileStatus: .complete
         ),
         onPurchaseConfirmed: {},
+        onInviteAccepted: {},
         allowsInviteEntry: true,
         onSignOut: {},
         onDeleteAccount: {}

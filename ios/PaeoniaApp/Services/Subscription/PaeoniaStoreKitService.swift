@@ -160,11 +160,20 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
             )
 
             guard response.isConfirmed else {
-                throw PaeoniaPurchaseError.serverConfirmationFailed(response.error)
+                throw purchaseError(fromConfirmationReason: response.error)
             }
         } catch let error as FunctionsError {
-            throw PaeoniaPurchaseError.serverConfirmationFailed(confirmationFailureReason(from: error))
+            throw purchaseError(fromConfirmationReason: confirmationFailureReason(from: error))
         }
+    }
+
+    private func purchaseError(fromConfirmationReason reason: String?) -> PaeoniaPurchaseError {
+        if reason == "Apple appAccountToken is not registered"
+            || reason == "Apple transaction belongs to a different user" {
+            return .purchaseLinkedToAnotherAccount
+        }
+
+        return .serverConfirmationFailed(reason)
     }
 
     private func environmentName(for transaction: Transaction) -> String {

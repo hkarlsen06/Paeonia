@@ -1,3 +1,4 @@
+import Foundation
 @testable import PaeoniaApp
 
 // swiftlint:disable async_without_await
@@ -37,6 +38,7 @@ actor AuthServiceSpy: AuthServicing {
             provider: .apple,
             displayName: credential.fullName,
             timeZoneID: nil,
+            profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
         )
         self.session = session
@@ -51,6 +53,7 @@ actor AuthServiceSpy: AuthServicing {
             provider: .google,
             displayName: nil,
             timeZoneID: nil,
+            profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
         )
         self.session = session
@@ -65,7 +68,11 @@ actor AuthServiceSpy: AuthServicing {
         return session
     }
 
-    func completeOnboarding(displayName: String, timeZoneID: String) async throws -> AuthSession {
+    func completeOnboarding(
+        displayName: String,
+        timeZoneID: String,
+        profilePhotoData: Data?
+    ) async throws -> AuthSession {
         try failIfNeeded(.completeOnboarding)
 
         guard let session else {
@@ -128,6 +135,7 @@ actor BlockingDeleteAuthService: AuthServicing {
             provider: .apple,
             displayName: credential.fullName,
             timeZoneID: nil,
+            profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
         )
         self.session = session
@@ -140,6 +148,7 @@ actor BlockingDeleteAuthService: AuthServicing {
             provider: .google,
             displayName: nil,
             timeZoneID: nil,
+            profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
         )
         self.session = session
@@ -152,7 +161,11 @@ actor BlockingDeleteAuthService: AuthServicing {
         return session
     }
 
-    func completeOnboarding(displayName: String, timeZoneID: String) async throws -> AuthSession {
+    func completeOnboarding(
+        displayName: String,
+        timeZoneID: String,
+        profilePhotoData: Data?
+    ) async throws -> AuthSession {
         guard let session else {
             throw AuthServiceError.noActiveSession
         }
@@ -214,6 +227,7 @@ extension AuthSession {
             provider: .development,
             displayName: "Test account",
             timeZoneID: profileStatus == .complete ? "Europe/Oslo" : nil,
+            profilePhotoAssetID: nil,
             profileStatus: profileStatus
         )
     }

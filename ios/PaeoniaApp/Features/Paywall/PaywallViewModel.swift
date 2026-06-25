@@ -1,12 +1,23 @@
 import Foundation
 import Observation
+#if DEBUG
+import OSLog
+#endif
 import StoreKit
 
 @MainActor
 @Observable
-final class PaywallViewModel {
+final class PaywallViewModel: PresentationReadinessProviding {
+    #if DEBUG
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
+        category: "Paywall"
+    )
+    #endif
+
     var billingPeriod: PaeoniaBillingPeriod = .monthly
     private(set) var isLoading = false
+    private(set) var hasFinishedLoadingProducts = false
     private(set) var isPurchasing = false
     private(set) var isAcceptingInvite = false
     private(set) var error: PaywallError?
@@ -56,8 +67,12 @@ final class PaywallViewModel {
         !storeKitService.products.isEmpty
     }
 
+    var isPresentationReady: Bool {
+        hasLoadedProducts || hasFinishedLoadingProducts
+    }
+
     func loadProducts() async {
-        guard !isLoading else {
+        guard !isLoading, !isPresentationReady else {
             return
         }
 
@@ -73,6 +88,7 @@ final class PaywallViewModel {
             self.error = .productsUnavailable
         }
 
+        hasFinishedLoadingProducts = true
         isLoading = false
     }
 
@@ -91,11 +107,12 @@ final class PaywallViewModel {
             isPurchasing = false
             return succeeded
         } catch let error as PaeoniaPurchaseError {
-            self.error = .purchaseNotConfirmed(error.confirmationReason ?? Self.diagnosticReason(from: error))
+            self.error = Self.paywallError(forPurchaseError: error)
             isPurchasing = false
             return false
         } catch {
-            self.error = .purchaseNotConfirmed(Self.diagnosticReason(from: error))
+            Self.logDiagnosticReason(from: error)
+            self.error = .purchaseNotConfirmed
             isPurchasing = false
             return false
         }
@@ -114,11 +131,12 @@ final class PaywallViewModel {
             isLoading = false
             return restored
         } catch let error as PaeoniaPurchaseError {
-            self.error = .restoreFailed(error.confirmationReason ?? Self.diagnosticReason(from: error))
+            self.error = Self.paywallError(forRestoreError: error)
             isLoading = false
             return false
         } catch {
-            self.error = .restoreFailed(Self.diagnosticReason(from: error))
+            Self.logDiagnosticReason(from: error)
+            self.error = .restoreFailed
             isLoading = false
             return false
         }
@@ -159,25 +177,49 @@ final class PaywallViewModel {
         error = nil
     }
 
-    private static func diagnosticReason(from error: Error) -> String? {
+    private static func paywallError(forPurchaseError error: PaeoniaPurchaseError) -> PaywallError {
+        logDiagnosticReason(from: error)
+
+        switch error {
+        case .purchaseLinkedToAnotherAccount:
+            return .purchaseLinkedToAnotherAccount
+        default:
+            return .purchaseNotConfirmed
+        }
+    }
+
+    private static func paywallError(forRestoreError error: PaeoniaPurchaseError) -> PaywallError {
+        logDiagnosticReason(from: error)
+
+        switch error {
+        case .purchaseLinkedToAnotherAccount:
+            return .purchaseLinkedToAnotherAccount
+        default:
+            return .restoreFailed
+        }
+    }
+
+    private static func logDiagnosticReason(from error: Error) {
         #if DEBUG
         if let localizedError = error as? LocalizedError,
            let description = localizedError.errorDescription?.nilIfBlank {
-            return description
+            logger.debug("\(description, privacy: .public)")
+            return
         }
 
-        return String(describing: error).nilIfBlank
-        #else
-        return nil
+        if let description = String(describing: error).nilIfBlank {
+            logger.debug("\(description, privacy: .public)")
+        }
         #endif
     }
 }
 
 enum PaywallError: Equatable {
     case productsUnavailable
-    case purchaseNotConfirmed(String?)
+    case purchaseNotConfirmed
+    case purchaseLinkedToAnotherAccount
     case noPurchasesToRestore
-    case restoreFailed(String?)
+    case restoreFailed
     case inviteInvalid
     case inviteAcceptFailed
 
@@ -185,30 +227,19 @@ enum PaywallError: Equatable {
         switch self {
         case .productsUnavailable:
             String(localized: .paywallErrorProductsUnavailable)
-        case let .purchaseNotConfirmed(reason):
-            Self.message(.paywallErrorPurchaseNotConfirmed, reason: reason)
+        case .purchaseNotConfirmed:
+            String(localized: .paywallErrorPurchaseNotConfirmed)
+        case .purchaseLinkedToAnotherAccount:
+            String(localized: .paywallErrorPurchaseLinkedToAnotherAccount)
         case .noPurchasesToRestore:
             String(localized: .paywallErrorNoPurchases)
-        case let .restoreFailed(reason):
-            Self.message(.paywallErrorRestoreFailed, reason: reason)
+        case .restoreFailed:
+            String(localized: .paywallErrorRestoreFailed)
         case .inviteInvalid:
             String(localized: .paywallErrorInviteInvalid)
         case .inviteAcceptFailed:
             String(localized: .paywallErrorInviteAcceptFailed)
         }
-    }
-
-    private static func message(_ base: LocalizedStringResource, reason: String?) -> String {
-        let baseMessage = String(localized: base)
-        #if DEBUG
-        guard let reason = reason?.trimmingCharacters(in: .whitespacesAndNewlines), !reason.isEmpty else {
-            return baseMessage
-        }
-
-        return "\(baseMessage)\n\n\(reason)"
-        #else
-        return baseMessage
-        #endif
     }
 }
 

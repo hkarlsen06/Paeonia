@@ -6,6 +6,19 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    static func pairingLinkBuildUp(intensity: CGFloat) {
+        let generator = UIImpactFeedbackGenerator(style: .soft)
+        generator.prepare()
+        generator.impactOccurred(intensity: intensity)
+    }
+
+    static func pairingLinkExplosion() {
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.prepare()
+        generator.impactOccurred(intensity: 1)
+        notify(.success)
+    }
+
     static func answerRevealed() {
         notify(.success)
     }

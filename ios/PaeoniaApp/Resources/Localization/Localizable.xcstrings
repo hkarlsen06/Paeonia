@@ -1,7 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {},
+    "" : {
+
+    },
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -416,42 +418,6 @@
         }
       }
     },
-    "auth.launching.message" : {
-      "comment" : "Message shown while checking the saved sign-in state.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Checking your sign-in state."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekker innloggingen din."
-          }
-        }
-      }
-    },
-    "auth.launching.title" : {
-      "comment" : "Title shown while the app checks sign-in state.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Starting Paeonia"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Starter Paeonia"
-          }
-        }
-      }
-    },
     "auth.notice.deleteAccountFailed.message" : {
       "comment" : "Alert message shown when account deletion fails.",
       "extractionState" : "manual",
@@ -693,13 +659,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your name"
+            "value" : "First name or nickname"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Navnet ditt"
+            "value" : "Fornavn eller kallenavn"
           }
         }
       }
@@ -711,13 +677,31 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your name"
+            "value" : "First name or nickname"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Navnet ditt"
+            "value" : "Fornavn eller kallenavn"
+          }
+        }
+      }
+    },
+    "auth.onboarding.displayName.singleWordHint" : {
+      "comment" : "Hint shown when the profile name field contains more than one word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use one word only."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk bare ett ord."
           }
         }
       }
@@ -729,13 +713,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We need a little profile info before shared features turn on."
+            "value" : "Choose the first name or nickname your partner should see."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi trenger litt profilinfo før delte funksjoner skrus på."
+            "value" : "Velg fornavnet eller kallenavnet partneren din skal se."
           }
         }
       }
@@ -747,13 +731,85 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check that your name looks right.\nYou can change it before you continue."
+            "value" : "Check that this is the name you want your partner to see.\nUse your first name or a nickname."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk at navnet ditt ser riktig ut.\nDu kan endre det før du fortsetter."
+            "value" : "Sjekk at dette er navnet du vil at partneren din skal se.\nBruk fornavnet ditt eller et kallenavn."
+          }
+        }
+      }
+    },
+    "auth.onboarding.profilePhoto.add" : {
+      "comment" : "Accessibility label for adding a profile photo during onboarding.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add profile photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til profilbilde"
+          }
+        }
+      }
+    },
+    "auth.onboarding.profilePhoto.change" : {
+      "comment" : "Accessibility label for changing a selected profile photo during onboarding.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change profile photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre profilbilde"
+          }
+        }
+      }
+    },
+    "auth.onboarding.profilePhoto.message" : {
+      "comment" : "Short helper text for the optional profile photo picker in onboarding.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner will see this when you connect."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din ser dette når dere kobles sammen."
+          }
+        }
+      }
+    },
+    "auth.onboarding.profilePhoto.title" : {
+      "comment" : "Title for the optional profile photo picker in onboarding.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til bilde"
           }
         }
       }
@@ -783,13 +839,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Finish your setup"
+            "value" : "What should we call you?"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fullfør oppsettet"
+            "value" : "Hva skal vi kalle deg?"
           }
         }
       }
@@ -1096,6 +1152,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Logg inn i Paeonia"
+          }
+        }
+      }
+    },
+    "pairing.celebration.partnerName" : {
+      "comment" : "Placeholder display name for the partner in the paired celebration until partner profiles are loaded.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partner"
+          }
+        }
+      }
+    },
+    "pairing.celebration.youName" : {
+      "comment" : "Fallback display name for the current user in the paired celebration.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du"
           }
         }
       }
@@ -1658,6 +1750,24 @@
         }
       }
     },
+    "paywall.error.purchaseLinkedToAnotherAccount" : {
+      "comment" : "Error message when an App Store purchase is connected to another Paeonia account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This App Store purchase is linked to another Paeonia account. Contact support and we can help."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette App Store-kjøpet er koblet til en annen Paeonia-konto. Kontakt oss, så hjelper vi deg."
+          }
+        }
+      }
+    },
     "paywall.error.purchaseNotConfirmed" : {
       "comment" : "Error message when purchase is not confirmed.",
       "extractionState" : "manual",
@@ -2025,13 +2135,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Invited? Continue here"
+            "value" : "Invited? Enter key here"
           }
         },
         "nb" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invitert? Fortsett her"
+            "state" : "needs_review",
+            "value" : "Invitert? Skriv inn her"
           }
         }
       }

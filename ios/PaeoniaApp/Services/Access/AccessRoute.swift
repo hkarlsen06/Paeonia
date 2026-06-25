@@ -55,6 +55,24 @@ nonisolated struct AccessRouteSnapshot: Equatable, Sendable {
     }
 }
 
+nonisolated struct AccessRouteResolution: Equatable, Sendable {
+    let route: AccessRoute
+    let snapshot: AccessRouteSnapshot
+
+    nonisolated init(route: AccessRoute, snapshot: AccessRouteSnapshot) {
+        self.route = route
+        self.snapshot = snapshot
+    }
+
+    var partnerDisplayName: String? {
+        snapshot.relationshipState?.partnerDisplayName?.trimmedNonEmpty
+    }
+
+    var partnerProfilePhotoAssetID: UUID? {
+        snapshot.relationshipState?.partnerProfilePhotoAssetID
+    }
+}
+
 nonisolated struct AccessRouteResolver: Sendable {
     func route(for snapshot: AccessRouteSnapshot) -> AccessRoute {
         if let relationshipState = snapshot.relationshipState {

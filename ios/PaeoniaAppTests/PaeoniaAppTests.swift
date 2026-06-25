@@ -4,6 +4,7 @@ import Testing
 
 // swiftlint:disable async_without_await
 
+// swiftlint:disable:next type_body_length
 struct PaeoniaAppTests {
 
     @MainActor
@@ -70,6 +71,23 @@ struct PaeoniaAppTests {
         #expect(viewModel.authRoute.appState == .limitedAuthenticated)
         #expect(viewModel.state == .unpaired)
         #expect(await accessRouteService.resolveCallCount == 1)
+    }
+
+    @MainActor
+    @Test func completedProfileExposesPartnerDisplayNameFromAccessSnapshot() async {
+        let accessRouteService = StaticAccessRouteService(
+            resolution: .test(route: .paired, partnerDisplayName: "Riley")
+        )
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService
+        )
+
+        await viewModel.start()
+
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.currentPartnerDisplayName == "Riley")
     }
 
     @MainActor
@@ -153,6 +171,78 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
+    @Test func freshLinkIntoPairedRequestsCelebration() async {
+        let accessRouteService = BlockingAccessRouteService(
+            routes: [.invitePending, .paired],
+            blockedCallIndex: 0
+        )
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService,
+            inviteStore: TestPairingInviteStore(invite: .test())
+        )
+
+        await viewModel.start()
+        #expect(viewModel.state == .invitePending)
+        #expect(viewModel.pendingPairingCelebration == false)
+
+        await viewModel.refreshAfterPairingChange()
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.pendingPairingCelebration == true)
+
+        viewModel.consumePairingCelebration()
+        #expect(viewModel.pendingPairingCelebration == false)
+    }
+
+    @MainActor
+    @Test func acceptedInviteShowsCelebrationWhileAccessRouteResolves() async {
+        let accessRouteService = BlockingAccessRouteService(
+            routes: [.limitedAuthenticated, .paired],
+            blockedCallIndex: 2
+        )
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService
+        )
+
+        await viewModel.start()
+        #expect(viewModel.state == .limitedAuthenticated)
+
+        let refreshTask = Task { @MainActor in
+            await viewModel.refreshAfterInviteAccepted()
+        }
+
+        await accessRouteService.waitForBlockedResolveToStart()
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.pendingPairingCelebration == true)
+
+        await accessRouteService.releaseBlockedResolve()
+        await refreshTask.value
+
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.pendingPairingCelebration == true)
+    }
+
+    @MainActor
+    @Test func launchingDirectlyIntoPairedDoesNotCelebrate() async {
+        let accessRouteService = StaticAccessRouteService(
+            resolution: .test(route: .paired, partnerDisplayName: "Riley")
+        )
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService
+        )
+
+        await viewModel.start()
+
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.pendingPairingCelebration == false)
+    }
+
+    @MainActor
     @Test func developmentSignInCanCompleteOnboarding() async {
         let syncCoordinator = TestSyncCoordinator()
         let viewModel = RootViewModel(
@@ -168,7 +258,8 @@ struct PaeoniaAppTests {
 
         await viewModel.completeOnboarding(
             displayName: "Test account",
-            timeZoneID: "Europe/Oslo"
+            timeZoneID: "Europe/Oslo",
+            profilePhotoData: nil
         )
 
         #expect(viewModel.state == .limitedAuthenticated)
@@ -344,18 +435,22 @@ private actor TestSyncCoordinator: SyncCoordinating {
 }
 
 private actor StaticAccessRouteService: AccessRouteServicing {
-    private let route: AccessRoute
+    private let resolution: AccessRouteResolution
     private(set) var resolveCallCount = 0
     private(set) var receivedHasPendingInvite: [Bool] = []
 
     init(route: AccessRoute) {
-        self.route = route
+        self.resolution = .test(route: route)
     }
 
-    func resolveRoute(hasPendingInvite: Bool) async throws -> AccessRoute {
+    init(resolution: AccessRouteResolution) {
+        self.resolution = resolution
+    }
+
+    func resolveAccess(hasPendingInvite: Bool) async throws -> AccessRouteResolution {
         resolveCallCount += 1
         receivedHasPendingInvite.append(hasPendingInvite)
-        return route
+        return resolution
     }
 }
 
@@ -388,7 +483,7 @@ private actor BlockingAccessRouteService: AccessRouteServicing {
         blockedResolveReleaseContinuation = nil
     }
 
-    func resolveRoute(hasPendingInvite: Bool) async throws -> AccessRoute {
+    func resolveAccess(hasPendingInvite: Bool) async throws -> AccessRouteResolution {
         resolveCallCount += 1
         let callIndex = resolveCallCount
 
@@ -403,7 +498,51 @@ private actor BlockingAccessRouteService: AccessRouteServicing {
         }
 
         let routeIndex = min(callIndex - 1, routes.count - 1)
-        return routes[routeIndex]
+        return .test(route: routes[routeIndex])
+    }
+}
+
+private extension AccessRouteResolution {
+    static func test(
+        route: AccessRoute,
+        partnerDisplayName: String? = nil,
+        partnerProfilePhotoAssetID: UUID? = nil
+    ) -> AccessRouteResolution {
+        AccessRouteResolution(
+            route: route,
+            snapshot: AccessRouteSnapshot(
+                userEntitlement: nil,
+                coupleEntitlement: nil,
+                relationshipState: partnerDisplayName.map {
+                    .test(
+                        partnerDisplayName: $0,
+                        partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
+                    )
+                },
+                hasPendingInvite: route == .invitePending
+            )
+        )
+    }
+}
+
+private extension SupabaseRelationshipState {
+    static func test(
+        partnerDisplayName: String,
+        partnerProfilePhotoAssetID: UUID? = nil
+    ) -> SupabaseRelationshipState {
+        SupabaseRelationshipState(
+            coupleID: UUID(),
+            pairID: UUID(),
+            relationshipStatus: .active,
+            memberStatus: .active,
+            partnerUserID: UUID(),
+            partnerDisplayName: partnerDisplayName,
+            partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+            startedOn: "2026-06-24",
+            endedAt: nil,
+            deleteAfter: nil,
+            endedNoticeSeenAt: nil
+        )
     }
 }
 
@@ -491,6 +630,7 @@ private actor OrderedAuthService: AuthServicing {
             provider: .google,
             displayName: nil,
             timeZoneID: nil,
+            profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
         )
     }
@@ -499,7 +639,11 @@ private actor OrderedAuthService: AuthServicing {
         .test(profileStatus: .needsOnboarding)
     }
 
-    func completeOnboarding(displayName: String, timeZoneID: String) async throws -> AuthSession {
+    func completeOnboarding(
+        displayName: String,
+        timeZoneID: String,
+        profilePhotoData: Data?
+    ) async throws -> AuthSession {
         .test(profileStatus: .complete)
     }
 
@@ -520,3 +664,4 @@ private extension PairingInvite {
 }
 
 // swiftlint:enable async_without_await
+// swiftlint:disable:this file_length

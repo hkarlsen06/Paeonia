@@ -94,3 +94,13 @@ Premium in Paeonia means:
 - App Review-safe subscription presentation
 
 It does not mean corporate, sterile, or luxury-brand cosplay.
+
+## Stable First Frames
+
+The first app surface after launch should only appear once it can render a stable state. If a screen depends on data that changes its first visible layout, offer, eligibility, entitlement, pairing state, or primary action, keep the launch/loading surface visible until that data has loaded or definitively failed.
+
+The launch/loading surface should stay visually blank and copy-free. It is often shown too briefly to read, and readable loading copy creates a distracting flash.
+
+After a stable screen is visible, refreshes should hold the last known stable presentation until the next stable result is ready. Avoid showing intermediate states that briefly change the meaning of the screen, such as a subscription screen flashing from no trial to free trial after StoreKit finishes loading.
+
+When a launch-adjacent screen appears after readiness, prefer a subtle downward settle: content starts slightly above its final position and fades into place. Keep the distance small, skip movement when Reduce Motion is enabled, and avoid upward pushes that can feel like content popping from below.

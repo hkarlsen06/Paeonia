@@ -56,7 +56,7 @@ struct PaywallInviteCodeView: View {
                         code = sanitized
                     }
                 }
-                .onSubmit(onSubmit)
+                .onSubmit(handleSubmit)
 
             HStack(spacing: PaeoniaSpacing.space8) {
                 ForEach(0..<Self.codeLength, id: \.self) { index in
@@ -102,9 +102,22 @@ struct PaywallInviteCodeView: View {
         return Color.paeoniaTextTertiary.opacity(0.25)
     }
 
-    private static func sanitize(_ value: String) -> String {
+    static func sanitize(_ value: String) -> String {
         let allowed = value.uppercased().filter { $0.isLetter || $0.isNumber }
         return String(allowed.prefix(codeLength))
+    }
+
+    private func handleSubmit() {
+        let sanitized = Self.sanitize(code)
+        if sanitized != code {
+            code = sanitized
+        }
+
+        if sanitized.count == Self.codeLength {
+            onSubmit()
+        } else {
+            focus.wrappedValue = true
+        }
     }
 }
 

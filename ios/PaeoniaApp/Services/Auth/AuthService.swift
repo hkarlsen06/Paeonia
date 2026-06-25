@@ -1,8 +1,12 @@
+import Foundation
+
 enum AuthServiceError: Error, Equatable {
     case noActiveSession
+    case invalidDisplayName
     case missingConfiguration
     case developmentSignInUnavailable
     case accountDeletionUnavailable
+    case invalidProfilePhoto
 }
 
 // swiftlint:disable async_without_await
@@ -12,7 +16,11 @@ protocol AuthServicing: Actor {
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession
     func signInWithGoogle(_ credential: GoogleSignInCredential) async throws -> AuthSession
     func signInForDevelopment() async throws -> AuthSession
-    func completeOnboarding(displayName: String, timeZoneID: String) async throws -> AuthSession
+    func completeOnboarding(
+        displayName: String,
+        timeZoneID: String,
+        profilePhotoData: Data?
+    ) async throws -> AuthSession
     func signOut() async throws
     func requestAccountDeletion() async throws
 }
@@ -32,8 +40,11 @@ actor DevelopmentAuthService: AuthServicing {
         let session = AuthSession(
             id: "development-apple-user",
             provider: .apple,
-            displayName: credential.fullName,
+            displayName: credential.fullName.flatMap(
+                AuthDisplayNamePolicy.normalizedFirstName
+            ),
             timeZoneID: nil,
+            profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
         )
         self.session = session
@@ -46,6 +57,7 @@ actor DevelopmentAuthService: AuthServicing {
             provider: .google,
             displayName: nil,
             timeZoneID: nil,
+            profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
         )
         self.session = session
@@ -58,15 +70,23 @@ actor DevelopmentAuthService: AuthServicing {
             provider: .development,
             displayName: "Local test account",
             timeZoneID: nil,
+            profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
         )
         self.session = session
         return session
     }
 
-    func completeOnboarding(displayName: String, timeZoneID: String) async throws -> AuthSession {
+    func completeOnboarding(
+        displayName: String,
+        timeZoneID: String,
+        profilePhotoData: Data?
+    ) async throws -> AuthSession {
         guard let session else {
             throw AuthServiceError.noActiveSession
+        }
+        guard let displayName = AuthDisplayNamePolicy.validatedSingleName(from: displayName) else {
+            throw AuthServiceError.invalidDisplayName
         }
 
         let completedSession = session.completingOnboarding(
@@ -109,7 +129,11 @@ actor UnavailableAuthService: AuthServicing {
         throw AuthServiceError.developmentSignInUnavailable
     }
 
-    func completeOnboarding(displayName: String, timeZoneID: String) async throws -> AuthSession {
+    func completeOnboarding(
+        displayName: String,
+        timeZoneID: String,
+        profilePhotoData: Data?
+    ) async throws -> AuthSession {
         throw error
     }
 

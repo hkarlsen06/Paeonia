@@ -82,6 +82,55 @@ struct SupabasePairingServiceTests {
         #expect(await gateway.createdExpiresAt == expiresAt)
     }
 
+    @Test func createInviteRetriesCodeCollisionThreeTimes() async throws {
+        let inviteID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let operation = PairingClientOperation(
+            clientID: try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
+            clientSequence: 7
+        )
+        let expiresAt = Date(timeIntervalSince1970: 20)
+        let gateway = FakeSupabasePairingGateway(
+            createdInviteID: inviteID,
+            createFailuresBeforeSuccess: 2
+        )
+        let generatedCodes = GeneratedInviteCodeSequence(["01ABCD", "02BCDE", "03CDEF"])
+        let service = SupabasePairingService(
+            gateway: gateway,
+            generateInviteCode: { generatedCodes.next() }
+        )
+
+        let invite = try await service.createInvite(
+            operation: operation,
+            expiresAt: expiresAt
+        )
+
+        #expect(invite.id == inviteID)
+        #expect(invite.code == "03CDEF")
+        #expect(await gateway.createdInviteCodes == ["01ABCD", "02BCDE", "03CDEF"])
+    }
+
+    @Test func createInviteStopsAfterThreeCodeCollisions() async throws {
+        let operation = PairingClientOperation(
+            clientID: try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
+            clientSequence: 7
+        )
+        let gateway = FakeSupabasePairingGateway(createFailuresBeforeSuccess: 3)
+        let generatedCodes = GeneratedInviteCodeSequence(["01ABCD", "02BCDE", "03CDEF", "04DEFG"])
+        let service = SupabasePairingService(
+            gateway: gateway,
+            generateInviteCode: { generatedCodes.next() }
+        )
+
+        await #expect(throws: PairingInviteCreationError.inviteCodeCollision) {
+            try await service.createInvite(
+                operation: operation,
+                expiresAt: Date(timeIntervalSince1970: 20)
+            )
+        }
+
+        #expect(await gateway.createdInviteCodes == ["01ABCD", "02BCDE", "03CDEF"])
+    }
+
     @Test func previewInviteNormalizesPastedJoinURLBeforeCallingGateway() async throws {
         let preview = PairingInvitePreview(
             inviteID: try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111")),
@@ -168,7 +217,75 @@ struct PaywallInviteAcceptanceTests {
     }
 }
 
+struct PaywallStoreKitLoadingTests {
+    @MainActor
+    @Test func paywallPresentationWaitsForStoreKitProductsToSettle() async {
+        let storeKitService = BlockingPaywallStoreKitService()
+        let viewModel = PaywallViewModel(
+            userID: "11111111-1111-1111-1111-111111111111",
+            storeKitService: storeKitService,
+            pairingService: PaywallPairingServiceSpy(),
+            operationProvider: StaticPairingOperationProvider()
+        )
+
+        #expect(!viewModel.isPresentationReady)
+
+        let loadTask = Task { @MainActor in
+            await viewModel.loadProducts()
+        }
+        await storeKitService.waitForLoadToStart()
+
+        #expect(viewModel.isLoading)
+        #expect(!viewModel.isPresentationReady)
+
+        storeKitService.finishLoad()
+        await loadTask.value
+
+        #expect(!viewModel.isLoading)
+        #expect(viewModel.isPresentationReady)
+        #expect(viewModel.error == .productsUnavailable)
+
+        viewModel.clearError()
+        #expect(viewModel.isPresentationReady)
+    }
+}
+
 struct PairingInviteViewModelTests {
+    @MainActor
+    @Test func initialInviteCreationKeepsPresentationUnreadyUntilInviteIsStable() async throws {
+        let userID = "11111111-1111-1111-1111-111111111111"
+        let invite = try PairingInvite(
+            id: #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
+            code: "01ABCD",
+            joinURL: PairingJoinURL.make(inviteCode: "01ABCD"),
+            expiresAt: Date(timeIntervalSince1970: 20)
+        )
+        let pairingService = PendingCreatePairingService(invite: invite)
+        let viewModel = PairingInviteViewModel(
+            userID: userID,
+            pairingService: pairingService,
+            operationProvider: StaticPairingOperationProvider(),
+            inviteStore: PairingInviteStoreSpy(initialInvite: nil)
+        )
+
+        #expect(!viewModel.isPresentationReady)
+
+        let task = Task {
+            await viewModel.loadInviteIfNeeded()
+        }
+        await pairingService.waitForCreateToStart()
+
+        #expect(viewModel.isLoading)
+        #expect(!viewModel.isPresentationReady)
+
+        await pairingService.finishCreate()
+        await task.value
+
+        #expect(!viewModel.isLoading)
+        #expect(viewModel.invite == invite)
+        #expect(viewModel.isPresentationReady)
+    }
+
     @MainActor
     @Test func replacingInviteKeepsCurrentInviteUntilNewInviteIsReady() async throws {
         let userID = "11111111-1111-1111-1111-111111111111"
@@ -202,33 +319,67 @@ struct PairingInviteViewModelTests {
         #expect(viewModel.isRevoking)
 
         await pairingService.finishCreate()
-        await task.value
+        let createdNewInvite = await task.value
 
+        #expect(createdNewInvite)
         #expect(viewModel.invite == replacementInvite)
         #expect(!viewModel.isRevoking)
         #expect(inviteStore.savedInvite == replacementInvite)
     }
+
+    @MainActor
+    @Test func failedInviteReplacementKeepsCurrentInviteVisible() async throws {
+        let userID = "11111111-1111-1111-1111-111111111111"
+        let currentInvite = try PairingInvite(
+            id: #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
+            code: "01ABCD",
+            joinURL: PairingJoinURL.make(inviteCode: "01ABCD"),
+            expiresAt: Date(timeIntervalSince1970: 20)
+        )
+        let pairingService = FailingCreatePairingService()
+        let inviteStore = PairingInviteStoreSpy(initialInvite: currentInvite)
+        let viewModel = PairingInviteViewModel(
+            userID: userID,
+            pairingService: pairingService,
+            operationProvider: StaticPairingOperationProvider(),
+            inviteStore: inviteStore
+        )
+
+        let createdNewInvite = await viewModel.revokeAndCreateNewInvite()
+
+        #expect(!createdNewInvite)
+        #expect(viewModel.invite == currentInvite)
+        #expect(viewModel.error == nil)
+        #expect(!inviteStore.didClearInvite)
+    }
 }
 
 struct PaywallErrorTests {
-    @Test func purchaseConfirmationErrorMessageIncludesServerReason() {
-        let error = PaywallError.purchaseNotConfirmed("Local StoreKit transactions cannot be verified by Apple")
+    @Test func purchaseConfirmationErrorMessageHidesTechnicalDiagnostics() {
+        let message = PaywallError.purchaseNotConfirmed.message
 
-        #expect(error.message.contains(String(localized: .paywallErrorPurchaseNotConfirmed)))
-        #if DEBUG
-        #expect(error.message.contains("Local StoreKit transactions cannot be verified by Apple"))
-        #else
-        #expect(!error.message.contains("Local StoreKit transactions cannot be verified by Apple"))
-        #endif
+        #expect(message == String(localized: .paywallErrorPurchaseNotConfirmed))
+        #expect(!message.contains("StoreKit"))
+        #expect(!message.contains("appAccountToken"))
+    }
+
+    @Test func linkedAccountErrorMessageHidesAppAccountToken() {
+        let message = PaywallError.purchaseLinkedToAnotherAccount.message
+
+        #expect(message == String(localized: .paywallErrorPurchaseLinkedToAnotherAccount))
+        #expect(!message.contains("StoreKit"))
+        #expect(!message.contains("appAccountToken"))
     }
 }
 
 // swiftlint:disable async_without_await
 private actor FakeSupabasePairingGateway: SupabasePairingGateway {
     private let createdInviteID: UUID
+    private var createFailuresBeforeSuccess: Int
     private let preview: PairingInvitePreview?
     private let acceptedCoupleID: UUID
     private(set) var createdInviteCode: String?
+    private(set) var createdInviteCodes: [String] = []
     private(set) var createdOperation: PairingClientOperation?
     private(set) var createdExpiresAt: Date?
     private(set) var previewedInviteCode: String?
@@ -238,10 +389,12 @@ private actor FakeSupabasePairingGateway: SupabasePairingGateway {
 
     init(
         createdInviteID: UUID = UUID(),
+        createFailuresBeforeSuccess: Int = 0,
         preview: PairingInvitePreview? = nil,
         acceptedCoupleID: UUID = UUID()
     ) {
         self.createdInviteID = createdInviteID
+        self.createFailuresBeforeSuccess = createFailuresBeforeSuccess
         self.preview = preview
         self.acceptedCoupleID = acceptedCoupleID
     }
@@ -252,8 +405,15 @@ private actor FakeSupabasePairingGateway: SupabasePairingGateway {
         expiresAt: Date
     ) async throws -> UUID {
         createdInviteCode = inviteCode
+        createdInviteCodes.append(inviteCode)
         createdOperation = operation
         createdExpiresAt = expiresAt
+
+        if createFailuresBeforeSuccess > 0 {
+            createFailuresBeforeSuccess -= 1
+            throw PairingInviteCreationError.inviteCodeCollision
+        }
+
         return createdInviteID
     }
 
@@ -279,6 +439,20 @@ private actor FakeSupabasePairingGateway: SupabasePairingGateway {
 }
 // swiftlint:enable async_without_await
 
+private final class GeneratedInviteCodeSequence: @unchecked Sendable {
+    private var codes: [String]
+    private var index = 0
+
+    init(_ codes: [String]) {
+        self.codes = codes
+    }
+
+    func next() -> String {
+        defer { index += 1 }
+        return codes[index]
+    }
+}
+
 // swiftlint:disable async_without_await
 @MainActor
 private final class PaywallStoreKitServiceSpy: PaeoniaStoreKitServicing {
@@ -286,6 +460,43 @@ private final class PaywallStoreKitServiceSpy: PaeoniaStoreKitServicing {
 
     func configure(userID: String) {}
     func loadProducts() async throws {}
+    func product(for productID: PaeoniaSubscriptionProductID) -> Product? { nil }
+    func purchase(_ product: Product) async throws -> Bool { false }
+    func restorePurchases() async throws -> Bool { false }
+}
+
+@MainActor
+private final class BlockingPaywallStoreKitService: PaeoniaStoreKitServicing {
+    var products: [Product] { [] }
+
+    private var loadContinuation: CheckedContinuation<Void, any Error>?
+    private var loadStartedContinuation: CheckedContinuation<Void, Never>?
+
+    func configure(userID: String) {}
+
+    func loadProducts() async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            loadContinuation = continuation
+            loadStartedContinuation?.resume()
+            loadStartedContinuation = nil
+        }
+    }
+
+    func waitForLoadToStart() async {
+        if loadContinuation != nil {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            loadStartedContinuation = continuation
+        }
+    }
+
+    func finishLoad() {
+        loadContinuation?.resume()
+        loadContinuation = nil
+    }
+
     func product(for productID: PaeoniaSubscriptionProductID) -> Product? { nil }
     func purchase(_ product: Product) async throws -> Bool { false }
     func restorePurchases() async throws -> Bool { false }
@@ -329,6 +540,7 @@ private actor PaywallPairingServiceSpy: PairingServicing {
     }
 
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
+        await Task.yield()
         nil
     }
 
@@ -408,6 +620,7 @@ private actor PendingCreatePairingService: PairingServicing {
     }
 
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
+        await Task.yield()
         nil
     }
 
@@ -416,10 +629,41 @@ private actor PendingCreatePairingService: PairingServicing {
         operation: PairingClientOperation,
         startedOn: PairingStartDate
     ) async throws -> PairingAcceptedRelationship {
+        await Task.yield()
         PairingAcceptedRelationship(coupleID: UUID())
     }
 
     func revokeInvite(id: UUID) async throws -> Bool {
+        await Task.yield()
         true
     }
 }
+
+private actor FailingCreatePairingService: PairingServicing {
+    func createInvite(
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> PairingInvite {
+        await Task.yield()
+        throw PairingInviteCreationError.inviteCodeCollision
+    }
+
+    func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
+        await Task.yield()
+        nil
+    }
+
+    func acceptInvite(
+        codeInput: String,
+        operation: PairingClientOperation,
+        startedOn: PairingStartDate
+    ) async throws -> PairingAcceptedRelationship {
+        await Task.yield()
+        PairingAcceptedRelationship(coupleID: UUID())
+    }
+
+    func revokeInvite(id: UUID) async throws -> Bool {
+        await Task.yield()
+        true
+    }
+} // swiftlint:disable:this file_length

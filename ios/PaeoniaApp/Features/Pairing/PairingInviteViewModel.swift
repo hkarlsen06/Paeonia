@@ -3,7 +3,7 @@ import Observation
 
 @MainActor
 @Observable
-final class PairingInviteViewModel {
+final class PairingInviteViewModel: PresentationReadinessProviding {
     private(set) var invite: PairingInvite?
     private(set) var isLoading = false
     private(set) var isRevoking = false
@@ -31,6 +31,10 @@ final class PairingInviteViewModel {
         if let userID {
             invite = self.inviteStore.loadInvite(for: userID)
         }
+    }
+
+    var isPresentationReady: Bool {
+        invite != nil || error != nil
     }
 
     func loadInviteIfNeeded() async {
@@ -64,16 +68,18 @@ final class PairingInviteViewModel {
         isLoading = false
     }
 
-    func revokeAndCreateNewInvite() async {
+    @discardableResult
+    func revokeAndCreateNewInvite() async -> Bool {
         guard !isLoading, !isRevoking else {
-            return
+            return false
         }
 
         guard let userID else {
             error = .createFailed
-            return
+            return false
         }
 
+        let existingInvite = invite
         isRevoking = true
         error = nil
 
@@ -82,11 +88,13 @@ final class PairingInviteViewModel {
         }
 
         guard let pairingService else {
-            invite = nil
-            inviteStore.clearInvite(for: userID)
-            error = .createFailed
             isRevoking = false
-            return
+            if existingInvite == nil {
+                invite = nil
+                inviteStore.clearInvite(for: userID)
+                error = .createFailed
+            }
+            return false
         }
 
         do {
@@ -96,13 +104,17 @@ final class PairingInviteViewModel {
             )
             invite = createdInvite
             inviteStore.saveInvite(createdInvite, for: userID)
+            isRevoking = false
+            return true
         } catch {
-            invite = nil
-            inviteStore.clearInvite(for: userID)
-            self.error = .createFailed
+            invite = existingInvite
+            if existingInvite == nil {
+                inviteStore.clearInvite(for: userID)
+                self.error = .createFailed
+            }
+            isRevoking = false
+            return false
         }
-
-        isRevoking = false
     }
 
     func clearError() {

@@ -25,10 +25,10 @@ struct PairingInviteView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let invite = viewModel.invite {
+        if !viewModel.isPresentationReady {
+            AuthLaunchingView()
+        } else if let invite = viewModel.invite {
             readyContent(invite)
-        } else if viewModel.isLoading || viewModel.error == nil {
-            loadingContent
         } else {
             errorContent
         }
@@ -60,28 +60,6 @@ struct PairingInviteView: View {
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity, alignment: .top)
         .animation(PaeoniaMotion.stateChange, value: invite.id)
-    }
-
-    private var loadingContent: some View {
-        PaeoniaCard {
-            VStack(spacing: PaeoniaSpacing.space16) {
-                ProgressView()
-                    .tint(.paeoniaAccentPrimary)
-
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    Text(.pairingInviteLoadingTitle)
-                        .font(PaeoniaTypography.title)
-                        .foregroundStyle(.paeoniaTextPrimary)
-
-                    Text(.pairingInviteLoadingMessage)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                }
-                .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, PaeoniaSpacing.space8)
-        }
     }
 
     private var errorContent: some View {
@@ -140,65 +118,97 @@ struct PairingInviteView: View {
 
     private func actionStack(_ invite: PairingInvite) -> some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            ShareLink(
-                item: invite.joinURL,
-                subject: Text(.pairingInviteShareSubject),
-                message: Text(.pairingInviteShareMessage)
-            ) {
-                Label {
-                    Text(.pairingInviteShareButton)
-                } icon: {
-                    Image(systemName: "square.and.arrow.up")
-                        .accessibilityHidden(true)
-                }
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
-            .disabled(viewModel.isLoading || viewModel.isRevoking)
+            shareButton(for: invite)
+            refreshButton
+            secondaryActions(for: invite)
+        }
+    }
 
-            Button {
-                checkPairing()
-            } label: {
-                Label {
-                    Text(isCheckingPairing ? .pairingInviteCheckingButton : .pairingInviteRefreshButton)
-                } icon: {
-                    if isCheckingPairing {
-                        ProgressView()
-                            .controlSize(.small)
-                            .tint(.paeoniaTextSecondary)
-                    } else {
-                        Image(systemName: "questionmark.circle.fill")
-                            .accessibilityHidden(true)
-                    }
-                }
-            }
-            .buttonStyle(PaeoniaSecondaryButtonStyle())
-            .disabled(isCheckingPairing || viewModel.isLoading || viewModel.isRevoking)
-
-            HStack(spacing: 0) {
-                footerActionButton(
-                    title: didCopyCode ? .pairingInviteCopiedButton : .pairingInviteCopyButton,
-                    systemImage: didCopyCode ? "checkmark.circle.fill" : "doc.on.doc.fill",
-                    isDisabled: viewModel.isLoading || viewModel.isRevoking
-                ) {
-                    copyInviteCode(invite.code)
-                }
-
-                Rectangle()
-                    .fill(.paeoniaSurfacePressed)
-                    .frame(width: PaeoniaRadius.strokeHairline, height: 22)
+    private func shareButton(for invite: PairingInvite) -> some View {
+        ShareLink(
+            item: invite.joinURL,
+            subject: Text(.pairingInviteShareSubject),
+            message: Text(.pairingInviteShareMessage)
+        ) {
+            Label {
+                Text(.pairingInviteShareButton)
+            } icon: {
+                Image(systemName: "square.and.arrow.up")
                     .accessibilityHidden(true)
-
-                footerActionButton(
-                    title: .pairingInviteNewCodeButton,
-                    systemImage: "arrow.clockwise",
-                    isDisabled: viewModel.isLoading || viewModel.isRevoking
-                ) {
-                    Task {
-                        await viewModel.revokeAndCreateNewInvite()
-                    }
-                }
             }
-            .padding(.top, PaeoniaSpacing.space4)
+        }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
+        .disabled(viewModel.isLoading || viewModel.isRevoking)
+    }
+
+    private var refreshButton: some View {
+        Button {
+            checkPairing()
+        } label: {
+            Label {
+                Text(isCheckingPairing ? .pairingInviteCheckingButton : .pairingInviteRefreshButton)
+            } icon: {
+                refreshButtonIcon
+            }
+        }
+        .buttonStyle(PaeoniaSecondaryButtonStyle())
+        .disabled(isCheckingPairing || viewModel.isLoading || viewModel.isRevoking)
+    }
+
+    @ViewBuilder
+    private var refreshButtonIcon: some View {
+        if isCheckingPairing {
+            ProgressView()
+                .controlSize(.small)
+                .tint(.paeoniaTextSecondary)
+        } else {
+            Image(systemName: "checkmark.circle.fill")
+                .accessibilityHidden(true)
+        }
+    }
+
+    private func secondaryActions(for invite: PairingInvite) -> some View {
+        HStack(spacing: 0) {
+            copyActionButton(for: invite)
+            footerDivider
+            newCodeActionButton
+        }
+        .padding(.top, PaeoniaSpacing.space4)
+    }
+
+    private func copyActionButton(for invite: PairingInvite) -> some View {
+        footerActionButton(
+            title: didCopyCode ? .pairingInviteCopiedButton : .pairingInviteCopyButton,
+            systemImage: didCopyCode ? "checkmark.circle.fill" : "doc.on.doc.fill",
+            isDisabled: viewModel.isLoading || viewModel.isRevoking
+        ) {
+            copyInviteCode(invite.code)
+        }
+    }
+
+    private var footerDivider: some View {
+        Rectangle()
+            .fill(.paeoniaSurfacePressed)
+            .frame(width: PaeoniaRadius.strokeHairline, height: 22)
+            .accessibilityHidden(true)
+    }
+
+    private var newCodeActionButton: some View {
+        footerActionButton(
+            title: .pairingInviteNewCodeButton,
+            systemImage: "arrow.clockwise",
+            isDisabled: viewModel.isLoading || viewModel.isRevoking
+        ) {
+            replaceInviteCode()
+        }
+    }
+
+    private func replaceInviteCode() {
+        Task {
+            let createdNewInvite = await viewModel.revokeAndCreateNewInvite()
+            if !createdNewInvite {
+                checkPairing()
+            }
         }
     }
 
@@ -309,6 +319,7 @@ private struct PairingInviteCodeCharacterTile: View {
             provider: .apple,
             displayName: "Alvilde",
             timeZoneID: "Europe/Oslo",
+            profilePhotoAssetID: nil,
             profileStatus: .complete
         ),
         onRefreshAccess: {}

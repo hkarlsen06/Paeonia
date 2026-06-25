@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct RootView: View {
@@ -33,6 +34,8 @@ struct RootView: View {
     @ViewBuilder
     private var rootContent: some View {
         switch viewModel.state {
+        case .launching:
+            AuthLaunchingView()
         case .unauthenticated:
             signInScreen
         case .limitedAuthenticated, .pairedPaywalled, .entitlementLost:
@@ -41,6 +44,8 @@ struct RootView: View {
             onboardingScaffold
         case .unpaired, .invitePending:
             pairingScaffold
+        case .paired:
+            pairedScaffold
         default:
             scaffold
         }
@@ -58,6 +63,7 @@ struct RootView: View {
         PaywallView(
             session: viewModel.currentSession,
             onPurchaseConfirmed: subscriptionChanged,
+            onInviteAccepted: inviteAccepted,
             allowsInviteEntry: viewModel.state == .limitedAuthenticated,
             onSignOut: signOut,
             onDeleteAccount: deleteAccount
@@ -119,6 +125,26 @@ struct RootView: View {
         }
     }
 
+    private var pairedScaffold: some View {
+        NavigationStack {
+            PairingCelebrationView(
+                currentDisplayName: viewModel.currentSession?.displayName,
+                currentProfilePhotoAssetID: viewModel.currentProfilePhotoAssetID,
+                partnerDisplayName: viewModel.currentPartnerDisplayName,
+                partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
+                playsIntro: viewModel.pendingPairingCelebration,
+                onIntroComplete: {
+                    viewModel.consumePairingCelebration()
+                }
+            )
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.screenTopSpacing)
+            .padding(.bottom, PaeoniaSpacing.space16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(.paeoniaBackgroundPrimary)
+        }
+    }
+
     private var header: some View {
         PaeoniaBrandLockup(
             wordmarkSize: 36,
@@ -132,7 +158,8 @@ struct RootView: View {
     private var content: some View {
         switch viewModel.state {
         case .launching:
-            AuthLaunchingView()
+            // Handled at the top level by `AuthLaunchingView`; never shown here.
+            EmptyView()
         case .unauthenticated:
             // Handled at the top level by `signInScreen`; never shown here.
             EmptyView()
@@ -148,9 +175,11 @@ struct RootView: View {
         case .deletingAccount:
             AuthDeletingAccountView()
         case .reviewAccess,
-             .paired,
              .entitlementRestored:
             privateSpacePlaceholder
+        case .paired:
+            // Handled by `pairedScaffold`; never shown here.
+            EmptyView()
         case .pairedPaywalled,
              .entitlementLost,
              .relationshipEndedNotice:
@@ -180,11 +209,12 @@ struct RootView: View {
         }
     }
 
-    private func completeOnboarding(displayName: String) {
+    private func completeOnboarding(displayName: String, profilePhotoData: Data?) {
         Task {
             await viewModel.completeOnboarding(
                 displayName: displayName,
-                timeZoneID: TimeZone.current.identifier
+                timeZoneID: TimeZone.current.identifier,
+                profilePhotoData: profilePhotoData
             )
         }
     }
@@ -204,6 +234,12 @@ struct RootView: View {
     private func subscriptionChanged() {
         Task {
             await viewModel.refreshAfterSubscriptionChange()
+        }
+    }
+
+    private func inviteAccepted() {
+        Task {
+            await viewModel.refreshAfterInviteAccepted()
         }
     }
 

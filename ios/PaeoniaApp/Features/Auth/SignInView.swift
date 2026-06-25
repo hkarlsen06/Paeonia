@@ -70,19 +70,27 @@ struct SignInView: View {
 
     private var brandLockup: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            PaeoniaBrandLockup(
-                wordmarkSize: 28,
-                taglineSize: 28,
-                taglineColor: .paeoniaTextPrimary
-            )
+            Image(.paeoniaMark)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 52)
+                .accessibilityHidden(true)
 
-            PaeoniaHeartDivider()
+            Text(.appTitle)
+                .font(PaeoniaTypography.wordmark(size: 28))
+                .foregroundStyle(.paeoniaTextPrimary)
         }
         .frame(maxWidth: .infinity)
     }
 
     private var promise: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
+            Text(.appTagline)
+                .font(PaeoniaTypography.heroTitle)
+                .foregroundStyle(.paeoniaTextPrimary)
+
+            PaeoniaHeartDivider()
+
             Text(.authStartMessage)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
