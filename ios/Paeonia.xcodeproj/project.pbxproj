@@ -613,7 +613,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2A2D03A02FDE100000A7BE1A /* debug.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = paeonia_app;
 				CODE_SIGN_ENTITLEMENTS = PaeoniaApp/Supporting/PaeoniaApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
@@ -651,7 +651,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2A2D03A12FDE100000A7BE1A /* release.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = paeonia_app;
 				CODE_SIGN_ENTITLEMENTS = PaeoniaApp/Supporting/PaeoniaApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
