@@ -100,7 +100,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         now: Date
     ) async throws -> [PendingSyncOperationSnapshot] {
         let context = ModelContext(container)
-        var descriptor = FetchDescriptor<LocalPendingSyncOperation>(
+        let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
             predicate: #Predicate { operation in
                 operation.ownerUserID == ownerUserID
             },
