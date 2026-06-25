@@ -226,6 +226,8 @@ struct PaywallView: View {
         Task {
             let didAccept = await viewModel.acceptInvite(codeInput: codeInput)
             if didAccept {
+                viewModel.clearError()
+                bannerCenter.dismiss()
                 onInviteAccepted()
             } else {
                 inviteFieldFocused = true
