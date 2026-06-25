@@ -541,7 +541,7 @@ private actor PaywallPairingServiceSpy: PairingServicing {
 
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
         await Task.yield()
-        nil
+        return nil
     }
 
     func acceptInvite(
@@ -556,7 +556,7 @@ private actor PaywallPairingServiceSpy: PairingServicing {
     }
 
     func revokeInvite(id: UUID) async throws -> Bool {
-        true
+        return true
     }
 }
 // swiftlint:enable async_without_await
@@ -572,7 +572,7 @@ private final class PairingInviteStoreSpy: PairingInviteStoring {
     }
 
     func loadInvite(for userID: String) -> PairingInvite? {
-        initialInvite
+        return initialInvite
     }
 
     func saveInvite(_ invite: PairingInvite, for userID: String) {
@@ -621,7 +621,7 @@ private actor PendingCreatePairingService: PairingServicing {
 
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
         await Task.yield()
-        nil
+        return nil
     }
 
     func acceptInvite(
@@ -630,12 +630,12 @@ private actor PendingCreatePairingService: PairingServicing {
         startedOn: PairingStartDate
     ) async throws -> PairingAcceptedRelationship {
         await Task.yield()
-        PairingAcceptedRelationship(coupleID: UUID())
+        return PairingAcceptedRelationship(coupleID: UUID())
     }
 
     func revokeInvite(id: UUID) async throws -> Bool {
         await Task.yield()
-        true
+        return true
     }
 }
 
@@ -650,7 +650,7 @@ private actor FailingCreatePairingService: PairingServicing {
 
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
         await Task.yield()
-        nil
+        return nil
     }
 
     func acceptInvite(
@@ -659,11 +659,11 @@ private actor FailingCreatePairingService: PairingServicing {
         startedOn: PairingStartDate
     ) async throws -> PairingAcceptedRelationship {
         await Task.yield()
-        PairingAcceptedRelationship(coupleID: UUID())
+        return PairingAcceptedRelationship(coupleID: UUID())
     }
 
     func revokeInvite(id: UUID) async throws -> Bool {
         await Task.yield()
-        true
+        return true
     }
 } // swiftlint:disable:this file_length
