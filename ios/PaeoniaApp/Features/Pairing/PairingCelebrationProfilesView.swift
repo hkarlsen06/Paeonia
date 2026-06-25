@@ -65,16 +65,26 @@ struct PairingCelebrationHeartCore: View {
 /// and flies into place. The fixed diameter is scaled up via `scaleEffect` when
 /// shown large, so the whole avatar scales cleanly.
 struct PairingCelebrationAvatar: View {
+    /// The diameter used by the pairing celebration, where the flying hero avatar
+    /// must land exactly over the settled slot. Also the default for callers that
+    /// don't need a smaller avatar.
     static let diameter: CGFloat = 84
 
     let name: String
     let tint: Color
     let imageData: Data?
+    let diameter: CGFloat
 
-    init(name: String, tint: Color, imageData: Data? = nil) {
+    init(
+        name: String,
+        tint: Color,
+        imageData: Data? = nil,
+        diameter: CGFloat = PairingCelebrationAvatar.diameter
+    ) {
         self.name = name
         self.tint = tint
         self.imageData = imageData
+        self.diameter = diameter
     }
 
     var body: some View {
@@ -86,7 +96,7 @@ struct PairingCelebrationAvatar: View {
                 Image(uiImage: profileImage)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: Self.diameter, height: Self.diameter)
+                    .frame(width: diameter, height: diameter)
                     .clipShape(Circle())
             } else {
                 initials
@@ -95,13 +105,13 @@ struct PairingCelebrationAvatar: View {
             Circle()
                 .strokeBorder(tint.opacity(0.82), lineWidth: 1.5)
         }
-        .frame(width: Self.diameter, height: Self.diameter)
+        .frame(width: diameter, height: diameter)
         .accessibilityLabel(Text(name))
     }
 
     private var initials: some View {
         Text(PaeoniaProfilePhotoAvatar.initials(for: name))
-            .font(.system(size: Self.diameter * 0.33, weight: .semibold, design: .rounded))
+            .font(.system(size: diameter * 0.33, weight: .semibold, design: .rounded))
             .foregroundStyle(.paeoniaTextPrimary)
             .lineLimit(1)
             .minimumScaleFactor(0.6)
@@ -125,6 +135,48 @@ struct PairingCelebrationAvatar: View {
 /// flying avatar then lands exactly over it). Everything except the partner avatar
 /// fades in together through `surroundingsOpacity`.
 struct PairingCelebrationProfilesView: View {
+    /// Sizing and behavior that differ between the full-screen celebration and the
+    /// compact copy shown at the top of the Home tab. The celebration preset must
+    /// stay byte-for-byte identical to the original layout so the flying avatar
+    /// still lands exactly over its settled slot.
+    struct Metrics {
+        var avatarDiameter: CGFloat
+        var columnWidth: CGFloat
+        var connectorWidth: CGFloat
+        var avatarNameSpacing: CGFloat
+        var nameFont: Font
+        var connectorCircleDiameter: CGFloat
+        var heartFontSize: CGFloat
+        var connectorLineThickness: CGFloat
+        /// Whether the heart beats. Only the celebration earns the live pulse; the
+        /// Home tab shows a calm, static heart.
+        var animatesHeartbeat: Bool
+
+        static let celebration = Metrics(
+            avatarDiameter: 84,
+            columnWidth: 112,
+            connectorWidth: 82,
+            avatarNameSpacing: PaeoniaSpacing.space12,
+            nameFont: PaeoniaTypography.bodyEmphasis,
+            connectorCircleDiameter: 34,
+            heartFontSize: 13,
+            connectorLineThickness: 1.5,
+            animatesHeartbeat: true
+        )
+
+        static let compact = Metrics(
+            avatarDiameter: 48,
+            columnWidth: 72,
+            connectorWidth: 52,
+            avatarNameSpacing: PaeoniaSpacing.space8,
+            nameFont: PaeoniaTypography.caption,
+            connectorCircleDiameter: 22,
+            heartFontSize: 9,
+            connectorLineThickness: 1,
+            animatesHeartbeat: false
+        )
+    }
+
     let currentName: String
     let currentPhotoData: Data?
     let partnerName: String
@@ -135,18 +187,16 @@ struct PairingCelebrationProfilesView: View {
     let partnerSlotIsPlaceholder: Bool
     let surroundingsOpacity: Double
     let slotCoordinateSpace: String
+    var metrics: Metrics = .celebration
     let onPartnerSlotChange: (CGRect) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var heartbeatScale: CGFloat = 1
 
-    private let columnWidth: CGFloat = 112
-    private let connectorWidth: CGFloat = 82
-
     /// The line must touch both avatar perimeters, so it spans the full
     /// center-to-center distance (one column plus the connector) minus both radii.
     private var connectorLineWidth: CGFloat {
-        columnWidth + connectorWidth - PairingCelebrationAvatar.diameter
+        metrics.columnWidth + metrics.connectorWidth - metrics.avatarDiameter
     }
 
     var body: some View {
@@ -155,9 +205,10 @@ struct PairingCelebrationProfilesView: View {
                 PairingCelebrationAvatar(
                     name: currentName,
                     tint: .paeoniaPartnerOne,
-                    imageData: currentPhotoData
+                    imageData: currentPhotoData,
+                    diameter: metrics.avatarDiameter
                 )
-                    .alignmentGuide(.avatarCenter) { _ in PairingCelebrationAvatar.diameter / 2 }
+                    .alignmentGuide(.avatarCenter) { _ in metrics.avatarDiameter / 2 }
             }
             .opacity(surroundingsOpacity)
 
@@ -166,7 +217,7 @@ struct PairingCelebrationProfilesView: View {
 
             column(name: partnerName, nameOpacity: surroundingsOpacity) {
                 partnerSlot
-                    .alignmentGuide(.avatarCenter) { _ in PairingCelebrationAvatar.diameter / 2 }
+                    .alignmentGuide(.avatarCenter) { _ in metrics.avatarDiameter / 2 }
             }
         }
         .frame(maxWidth: .infinity)
@@ -178,17 +229,17 @@ struct PairingCelebrationProfilesView: View {
         nameOpacity: Double = 1,
         @ViewBuilder avatar: () -> Avatar
     ) -> some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
+        VStack(spacing: metrics.avatarNameSpacing) {
             avatar()
 
             Text(name)
-                .font(PaeoniaTypography.bodyEmphasis)
+                .font(metrics.nameFont)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
                 .opacity(nameOpacity)
         }
-        .frame(width: columnWidth)
+        .frame(width: metrics.columnWidth)
     }
 
     @ViewBuilder
@@ -197,7 +248,7 @@ struct PairingCelebrationProfilesView: View {
             // Reserve the avatar's space and publish where it sits so the flying
             // avatar can land exactly here.
             Color.clear
-                .frame(width: PairingCelebrationAvatar.diameter, height: PairingCelebrationAvatar.diameter)
+                .frame(width: metrics.avatarDiameter, height: metrics.avatarDiameter)
                 .background(
                     GeometryReader { geometry in
                         Color.clear.preference(
@@ -210,7 +261,8 @@ struct PairingCelebrationProfilesView: View {
             PairingCelebrationAvatar(
                 name: partnerName,
                 tint: .paeoniaPartnerTwo,
-                imageData: partnerPhotoData
+                imageData: partnerPhotoData,
+                diameter: metrics.avatarDiameter
             )
         }
     }
@@ -221,19 +273,19 @@ struct PairingCelebrationProfilesView: View {
             // all the way to the avatar circles while leaving column spacing intact.
             Rectangle()
                 .fill(.paeoniaAccentPrimary.opacity(0.6))
-                .frame(width: connectorLineWidth, height: 1.5)
+                .frame(width: connectorLineWidth, height: metrics.connectorLineThickness)
 
             Circle()
                 .fill(.paeoniaBackgroundPrimary)
-                .frame(width: 34, height: 34)
+                .frame(width: metrics.connectorCircleDiameter, height: metrics.connectorCircleDiameter)
 
             Circle()
                 .stroke(.paeoniaAccentPrimary.opacity(0.72), lineWidth: 1.2)
-                .frame(width: 34, height: 34)
+                .frame(width: metrics.connectorCircleDiameter, height: metrics.connectorCircleDiameter)
 
             beatingHeart
         }
-        .frame(width: connectorWidth, height: 34)
+        .frame(width: metrics.connectorWidth, height: metrics.connectorCircleDiameter)
         .accessibilityHidden(true)
     }
 
@@ -243,12 +295,12 @@ struct PairingCelebrationProfilesView: View {
     /// driven purely by `heartbeatScale`, which scales around center without moving.
     private var beatingHeart: some View {
         Image(systemName: "heart.fill")
-            .font(.system(size: 13, weight: .semibold))
+            .font(.system(size: metrics.heartFontSize, weight: .semibold))
             .foregroundStyle(.paeoniaAccentPrimary)
             .accessibilityHidden(true)
             .scaleEffect(heartbeatScale)
             .task(id: reduceMotion) {
-                guard !reduceMotion else {
+                guard metrics.animatesHeartbeat, !reduceMotion else {
                     heartbeatScale = 1
                     return
                 }

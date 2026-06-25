@@ -1,0 +1,426 @@
+import Observation
+import PencilKit
+import SwiftUI
+import UIKit
+
+struct WidgetDrawingColorChoice: Identifiable, Equatable {
+    let id: String
+    let color: Color
+    let uiColor: UIColor
+    let accessibilityLabel: LocalizedStringResource
+
+    static func == (lhs: WidgetDrawingColorChoice, rhs: WidgetDrawingColorChoice) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
+    case pen
+    case pencil
+    case eraser
+
+    var id: Self { self }
+
+    var isEraser: Bool {
+        self == .eraser
+    }
+
+    var systemImageName: String {
+        switch self {
+        case .pen:
+            "pencil.tip"
+        case .pencil:
+            "pencil"
+        case .eraser:
+            "eraser.fill"
+        }
+    }
+
+    var accessibilityLabel: LocalizedStringResource {
+        switch self {
+        case .pen:
+            .widgetDrawingToolPen
+        case .pencil:
+            .widgetDrawingToolPencil
+        case .eraser:
+            .widgetDrawingToolEraser
+        }
+    }
+
+    func pencilKitTool(color: UIColor, width: CGFloat) -> any PKTool {
+        let clampedWidth = clampedWidth(width)
+
+        return switch self {
+        case .pen:
+            PKInkingTool(.pen, color: color, width: clampedWidth)
+        case .pencil:
+            PKInkingTool(.pencil, color: color, width: clampedWidth)
+        case .eraser:
+            PKEraserTool(.bitmap, width: clampedWidth)
+        }
+    }
+
+    func clampedWidth(_ width: CGFloat) -> CGFloat {
+        min(max(validWidthRange.lowerBound, width), validWidthRange.upperBound)
+    }
+
+    /// Maps a `0...1` slider position onto this tool's own valid width range, so
+    /// the full slider travel always spans the tool's smallest-to-largest width.
+    func width(forFraction fraction: CGFloat) -> CGFloat {
+        let clampedFraction = min(max(0, fraction), 1)
+        let range = validWidthRange
+        return range.lowerBound + (range.upperBound - range.lowerBound) * clampedFraction
+    }
+
+    /// Each tool reports its own valid width range; the eraser's differs from the
+    /// inking tools, which is why a single fixed slider range cannot be shared.
+    var validWidthRange: ClosedRange<CGFloat> {
+        switch self {
+        case .pen:
+            PKInkingTool.InkType.pen.validWidthRange
+        case .pencil:
+            PKInkingTool.InkType.pencil.validWidthRange
+        case .eraser:
+            PKEraserTool.EraserType.bitmap.validWidthRange
+        }
+    }
+}
+
+/// Identifies a save failure so the view can route it to the shared banner. A
+/// fresh value each time guarantees `onChange` fires on repeated failures.
+struct WidgetDrawingSaveFailure: Equatable, Identifiable {
+    let id = UUID()
+}
+
+@MainActor
+@Observable
+final class WidgetDrawingViewModel {
+    /// Used to render previews when the canvas has not laid out yet (for
+    /// example, during tests). Production saves read the live canvas bounds.
+    nonisolated static let fallbackCanvasSide: CGFloat = 320
+    private static let savedConfirmationDuration: Duration = .seconds(1.8)
+
+    let colorChoices: [WidgetDrawingColorChoice] = [
+        WidgetDrawingColorChoice(
+            id: "blush",
+            color: .paeoniaWidgetDrawing,
+            uiColor: .paeoniaWidgetDrawing,
+            accessibilityLabel: .widgetDrawingColorBlush
+        ),
+        WidgetDrawingColorChoice(
+            id: "petal",
+            color: .paeoniaAccentPrimary,
+            uiColor: .paeoniaAccentPrimary,
+            accessibilityLabel: .widgetDrawingColorPetal
+        ),
+        WidgetDrawingColorChoice(
+            id: "pink",
+            color: .paeoniaAccentSecondary,
+            uiColor: .paeoniaAccentSecondary,
+            accessibilityLabel: .widgetDrawingColorPink
+        ),
+        WidgetDrawingColorChoice(
+            id: "warm",
+            color: .paeoniaPartnerTwo,
+            uiColor: .paeoniaPartnerTwo,
+            accessibilityLabel: .widgetDrawingColorWarm
+        ),
+        WidgetDrawingColorChoice(
+            id: "green",
+            color: .paeoniaSuccess,
+            uiColor: .paeoniaSuccess,
+            accessibilityLabel: .widgetDrawingColorGreen
+        ),
+        WidgetDrawingColorChoice(
+            id: "gold",
+            color: .paeoniaInkGold,
+            uiColor: .paeoniaInkGold,
+            accessibilityLabel: .widgetDrawingColorGold
+        ),
+        WidgetDrawingColorChoice(
+            id: "blue",
+            color: .paeoniaInkBlue,
+            uiColor: .paeoniaInkBlue,
+            accessibilityLabel: .widgetDrawingColorBlue
+        ),
+        WidgetDrawingColorChoice(
+            id: "lavender",
+            color: .paeoniaInkLavender,
+            uiColor: .paeoniaInkLavender,
+            accessibilityLabel: .widgetDrawingColorLavender
+        ),
+    ]
+
+    var drawing = PKDrawing()
+    var selectedTool: WidgetDrawingTool = .pen
+    var selectedColor: Color = .paeoniaWidgetDrawing
+    private(set) var selectedCGColor: CGColor = UIColor.paeoniaWidgetDrawing.cgColor
+    private var selectedUIColor: UIColor = .paeoniaWidgetDrawing
+    private(set) var canUndoDrawing = false
+    private(set) var canRedoDrawing = false
+    private(set) var toolConfigurationRevision = 0
+    private(set) var selectedColorChoiceID: String? = "blush"
+    @ObservationIgnored private weak var canvasView: PKCanvasView?
+
+    /// Slider position in `0...1`. The actual PencilKit width is derived per tool
+    /// so the slider always spans the selected tool's full width range.
+    private(set) var toolWidthFraction: CGFloat = 0.4
+
+    var toolWidth: CGFloat {
+        selectedTool.width(forFraction: toolWidthFraction)
+    }
+
+    private(set) var isSaving = false
+    private(set) var recentlySaved = false
+    private(set) var saveFailure: WidgetDrawingSaveFailure?
+    @ObservationIgnored private let service: any WidgetCanvasManaging
+    @ObservationIgnored private let uploader: any WidgetCanvasUploading
+    @ObservationIgnored private let authorName: String?
+    @ObservationIgnored private var hasLoadedSavedDrawing = false
+    @ObservationIgnored private var savedConfirmationTask: Task<Void, Never>?
+    /// Serialized form of the drawing as it was last saved (or loaded). Used to
+    /// keep Save disabled until the canvas actually differs from what's stored.
+    @ObservationIgnored private var lastSavedDrawingData: Data?
+
+    init(
+        authorName: String? = nil,
+        service: any WidgetCanvasManaging = WidgetCanvasService.shared,
+        uploader: any WidgetCanvasUploading = WidgetCanvasUploadServiceFactory.makeDefault()
+    ) {
+        self.authorName = authorName
+        self.service = service
+        self.uploader = uploader
+    }
+
+    var isColorSelectionEnabled: Bool {
+        !selectedTool.isEraser
+    }
+
+    /// True when there is drawn content that differs from what's already saved.
+    var canSave: Bool {
+        !isSaving && !drawing.strokes.isEmpty && drawing.dataRepresentation() != lastSavedDrawingData
+    }
+
+    /// True when there is drawn content the user can clear from the canvas.
+    var canClear: Bool {
+        !isSaving && !drawing.strokes.isEmpty
+    }
+
+    var pencilKitTool: any PKTool {
+        selectedTool.pencilKitTool(
+            color: selectedUIColor,
+            width: toolWidth
+        )
+    }
+
+    func selectTool(_ tool: WidgetDrawingTool) {
+        guard selectedTool != tool else {
+            return
+        }
+
+        // The width re-derives from the same fraction against the new tool's
+        // range, so the slider keeps its relative position across tools.
+        selectedTool = tool
+        toolConfigurationRevision += 1
+    }
+
+    func selectColorChoice(_ choice: WidgetDrawingColorChoice) {
+        guard isColorSelectionEnabled else {
+            return
+        }
+
+        selectedColor = choice.color
+        selectedCGColor = choice.uiColor.cgColor
+        selectedUIColor = choice.uiColor
+        selectedColorChoiceID = choice.id
+        toolConfigurationRevision += 1
+    }
+
+    func selectCustomColor(_ color: CGColor) {
+        guard isColorSelectionEnabled else {
+            return
+        }
+
+        let uiColor = UIColor.paeoniaDrawingColor(from: color)
+
+        selectedColor = Color(uiColor: uiColor)
+        selectedCGColor = uiColor.cgColor
+        selectedUIColor = uiColor
+        selectedColorChoiceID = nil
+        toolConfigurationRevision += 1
+    }
+
+    func updateToolWidthFraction(_ fraction: CGFloat) {
+        let clampedFraction = min(max(0, fraction), 1)
+
+        guard toolWidthFraction != clampedFraction else {
+            return
+        }
+
+        toolWidthFraction = clampedFraction
+        toolConfigurationRevision += 1
+    }
+
+    func bindCanvasView(_ canvasView: PKCanvasView) {
+        self.canvasView = canvasView
+        // This is called from the canvas representable's `makeUIView`, which runs
+        // inside SwiftUI's view update. Defer the observed undo/redo refresh to
+        // the next main-actor turn so we don't mutate published state mid-update.
+        Task { @MainActor in
+            self.refreshUndoRedoAvailability()
+        }
+    }
+
+    func updateDrawing(_ drawing: PKDrawing, undoManager: UndoManager?) {
+        self.drawing = drawing
+        refreshUndoRedoAvailability(using: undoManager)
+
+        Task { @MainActor in
+            self.refreshUndoRedoAvailability()
+        }
+    }
+
+    /// Loads the last saved drawing into the canvas once, so the user continues
+    /// from where they left off. Never clobbers in-progress work.
+    func loadSavedDrawingIfNeeded() async {
+        guard !hasLoadedSavedDrawing else {
+            return
+        }
+        hasLoadedSavedDrawing = true
+
+        guard drawing.strokes.isEmpty,
+              let data = await service.loadSavedDrawing(),
+              let savedDrawing = try? PKDrawing(data: data)
+        else {
+            return
+        }
+
+        drawing = savedDrawing
+        lastSavedDrawingData = savedDrawing.dataRepresentation()
+        refreshUndoRedoAvailability()
+    }
+
+    /// Persists the current drawing and publishes it to the widget.
+    func save() async {
+        guard canSave else {
+            return
+        }
+
+        isSaving = true
+        saveFailure = nil
+        let drawingData = drawing.dataRepresentation()
+        let canvasSize = currentCanvasSize()
+        // Snapshot the PencilKit-derived metadata now (on the main actor) so the
+        // upload uses values consistent with the bytes we're saving.
+        let uploadPayload = WidgetDrawingUploadPayload(
+            drawingData: drawingData,
+            canvasSide: canvasSize.width,
+            strokeCount: drawing.strokes.count,
+            pointCount: drawing.strokes.reduce(0) { $0 + $1.path.count },
+            bounds: drawing.bounds
+        )
+
+        do {
+            try await service.saveDrawing(
+                drawingData,
+                canvasSize: canvasSize,
+                authorName: authorName,
+                createdAt: Date()
+            )
+            lastSavedDrawingData = drawingData
+            isSaving = false
+            showSavedConfirmation()
+            // Local widget already updated; send to the partner in the background.
+            await uploader.enqueueUpload(uploadPayload)
+        } catch {
+            isSaving = false
+            saveFailure = WidgetDrawingSaveFailure()
+        }
+    }
+
+    /// Empties the canvas as a local editing action. The widget keeps showing
+    /// the last saved drawing until the user saves again.
+    func clearCanvas() {
+        drawing = PKDrawing()
+        canvasView?.drawing = PKDrawing()
+        canvasView?.undoManager?.removeAllActions()
+        refreshUndoRedoAvailability()
+    }
+
+    private func currentCanvasSize() -> CGSize {
+        let bounds = canvasView?.bounds.size ?? .zero
+        guard bounds.width > 0, bounds.height > 0 else {
+            return CGSize(width: Self.fallbackCanvasSide, height: Self.fallbackCanvasSide)
+        }
+        return bounds
+    }
+
+    private func showSavedConfirmation() {
+        recentlySaved = true
+        savedConfirmationTask?.cancel()
+        savedConfirmationTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: Self.savedConfirmationDuration)
+            guard !Task.isCancelled else {
+                return
+            }
+            self?.recentlySaved = false
+        }
+    }
+
+    func undoDrawing() {
+        guard let canvasView,
+              let undoManager = canvasView.undoManager,
+              undoManager.canUndo
+        else {
+            refreshUndoRedoAvailability()
+            return
+        }
+
+        undoManager.undo()
+        drawing = canvasView.drawing
+        refreshUndoRedoAvailability(using: undoManager)
+    }
+
+    func redoDrawing() {
+        guard let canvasView,
+              let undoManager = canvasView.undoManager,
+              undoManager.canRedo
+        else {
+            refreshUndoRedoAvailability()
+            return
+        }
+
+        undoManager.redo()
+        drawing = canvasView.drawing
+        refreshUndoRedoAvailability(using: undoManager)
+    }
+
+    private func refreshUndoRedoAvailability() {
+        refreshUndoRedoAvailability(using: canvasView?.undoManager)
+    }
+
+    private func refreshUndoRedoAvailability(using undoManager: UndoManager?) {
+        canUndoDrawing = undoManager?.canUndo ?? false
+        canRedoDrawing = undoManager?.canRedo ?? false
+    }
+}
+
+private extension UIColor {
+    static func paeoniaDrawingColor(from cgColor: CGColor) -> UIColor {
+        let resolvedColor = UIColor(cgColor: cgColor).resolvedColor(
+            with: UITraitCollection(userInterfaceStyle: .light)
+        )
+
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+              let convertedColor = resolvedColor.cgColor.converted(
+                  to: colorSpace,
+                  intent: .defaultIntent,
+                  options: nil
+              )
+        else {
+            return resolvedColor
+        }
+
+        return UIColor(cgColor: convertedColor)
+    }
+}

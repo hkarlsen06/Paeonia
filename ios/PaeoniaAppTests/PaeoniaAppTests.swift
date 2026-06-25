@@ -91,6 +91,69 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
+    @Test func widgetDrawingRoutePresentsOnlyWhenPaired() async {
+        let pairedViewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: StaticAccessRouteService(route: .paired)
+        )
+        await pairedViewModel.start()
+
+        // The drawing lives on the Home tab, so opening it from another tab must
+        // also bring the user there or the screen would open hidden behind it.
+        pairedViewModel.selectMainTab(.you)
+        pairedViewModel.openWidgetDrawing()
+
+        #expect(pairedViewModel.presentedDestination == .widgetDrawing)
+        #expect(pairedViewModel.selectedMainTab == .home)
+
+        pairedViewModel.dismissPresentedDestination()
+
+        #expect(pairedViewModel.presentedDestination == nil)
+
+        let unpairedViewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: StaticAccessRouteService(route: .unpaired)
+        )
+        await unpairedViewModel.start()
+
+        unpairedViewModel.openWidgetDrawing()
+
+        #expect(unpairedViewModel.presentedDestination == nil)
+    }
+
+    @MainActor
+    @Test func widgetDrawingRouteWaitsForPairedColdLaunch() async {
+        let pairedViewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: StaticAccessRouteService(route: .paired)
+        )
+
+        pairedViewModel.selectMainTab(.you)
+        pairedViewModel.openWidgetDrawing()
+
+        #expect(pairedViewModel.presentedDestination == nil)
+
+        await pairedViewModel.start()
+
+        #expect(pairedViewModel.presentedDestination == .widgetDrawing)
+        #expect(pairedViewModel.selectedMainTab == .home)
+
+        let unpairedViewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: StaticAccessRouteService(route: .unpaired)
+        )
+
+        unpairedViewModel.openWidgetDrawing()
+        await unpairedViewModel.start()
+
+        #expect(unpairedViewModel.presentedDestination == nil)
+    }
+
+    @MainActor
     @Test func completedProfilePassesPendingInviteToAccessRoute() async {
         let accessRouteService = StaticAccessRouteService(route: .invitePending)
         let viewModel = RootViewModel(

@@ -1,61 +1,45 @@
 import SwiftUI
 import WidgetKit
 
-struct Provider: TimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: .now)
-    }
-
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> Void) {
-        let entry = SimpleEntry(date: .now)
-        completion(entry)
-    }
-
-    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
-        let timeline = Timeline(entries: [SimpleEntry(date: .now)], policy: .never)
-        completion(timeline)
-    }
-}
-
-struct SimpleEntry: TimelineEntry {
-    let date: Date
-}
-
-struct PaeoniaWidgetEntryView: View {
-    var entry: Provider.Entry
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(.widgetPlaceholderTitle)
-                .font(.system(.headline, design: .serif).weight(.semibold))
-            Text(.widgetPlaceholderSubtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-}
-
 struct PaeoniaWidget: Widget {
     let kind: String = "PaeoniaWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            if #available(iOS 17.0, *) {
-                PaeoniaWidgetEntryView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
-            } else {
-                PaeoniaWidgetEntryView(entry: entry)
-                    .padding()
-                    .background()
-            }
+        StaticConfiguration(kind: kind, provider: PaeoniaWidgetTimelineProvider()) { entry in
+            PaeoniaWidgetEntryView(entry: entry)
+                .containerBackground(.paeoniaWidgetBackground, for: .widget)
         }
         .configurationDisplayName(String(localized: .widgetTitle))
         .description(String(localized: .widgetDescription))
+        .supportedFamilies([.systemSmall, .systemLarge])
+    }
+}
+
+private extension PaeoniaWidgetEntry {
+    static var previewDrawing: PaeoniaWidgetEntry {
+        PaeoniaWidgetEntry(
+            date: .now,
+            content: .drawing(
+                PaeoniaWidgetDrawingContent(
+                    previewURL: URL(fileURLWithPath: "/dev/null"),
+                    authorName: "Hjalmar",
+                    savedAt: .now
+                )
+            )
+        )
     }
 }
 
 #Preview(as: .systemSmall) {
     PaeoniaWidget()
 } timeline: {
-    SimpleEntry(date: .now)
+    PaeoniaWidgetEntry(date: .now, content: .placeholder)
+    PaeoniaWidgetEntry.previewDrawing
+}
+
+#Preview(as: .systemLarge) {
+    PaeoniaWidget()
+} timeline: {
+    PaeoniaWidgetEntry(date: .now, content: .placeholder)
+    PaeoniaWidgetEntry.previewDrawing
 }

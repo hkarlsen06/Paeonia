@@ -1,0 +1,369 @@
+import PencilKit
+import SwiftUI
+import Testing
+import UIKit
+@testable import PaeoniaApp
+
+// The widget canvas test double mirrors an async protocol, so its synchronous
+// bodies do not await. This matches the project's other test doubles.
+// swiftlint:disable async_without_await
+
+@MainActor
+struct WidgetDrawingViewModelTests {
+    @Test func startsWithInkingToolAndEnabledColors() throws {
+        let viewModel = WidgetDrawingViewModel()
+
+        #expect(viewModel.selectedTool == .pen)
+        #expect(viewModel.isColorSelectionEnabled)
+        #expect(viewModel.selectedColorChoiceID == "blush")
+
+        let tool = try #require(viewModel.pencilKitTool as? PKInkingTool)
+        #expect(tool.inkType == .pen)
+        #expect(WidgetDrawingTool.pen.validWidthRange.contains(tool.width))
+    }
+
+    @Test func selectedInkingToolUsesCurrentWidth() throws {
+        let viewModel = WidgetDrawingViewModel()
+
+        viewModel.selectTool(.pencil)
+        viewModel.updateToolWidthFraction(0.5)
+
+        let tool = try #require(viewModel.pencilKitTool as? PKInkingTool)
+        #expect(tool.inkType == .pencil)
+        #expect(tool.width == WidgetDrawingTool.pencil.width(forFraction: 0.5))
+    }
+
+    @Test func selectedPresetColorIsPassedToPencilKit() throws {
+        let viewModel = WidgetDrawingViewModel()
+
+        let initialTool = try #require(viewModel.pencilKitTool as? PKInkingTool)
+        #expect(initialTool.color.isEqual(UIColor.paeoniaWidgetDrawing))
+
+        viewModel.selectColorChoice(viewModel.colorChoices[2])
+
+        let pinkTool = try #require(viewModel.pencilKitTool as? PKInkingTool)
+        #expect(pinkTool.color.isEqual(UIColor.paeoniaAccentSecondary))
+    }
+
+    @Test func customBlackAndWhiteColorsArePassedLiterallyToPencilKit() throws {
+        let viewModel = WidgetDrawingViewModel()
+
+        viewModel.selectCustomColor(UIColor.white.cgColor)
+
+        let whiteTool = try #require(viewModel.pencilKitTool as? PKInkingTool)
+        assertColor(whiteTool.color, red: 1, green: 1, blue: 1)
+
+        viewModel.selectCustomColor(UIColor.black.cgColor)
+
+        let blackTool = try #require(viewModel.pencilKitTool as? PKInkingTool)
+        assertColor(blackTool.color, red: 0, green: 0, blue: 0)
+    }
+
+    @Test func sliderFractionMapsToToolWidthImmediately() throws {
+        let viewModel = WidgetDrawingViewModel()
+
+        viewModel.updateToolWidthFraction(0.7)
+
+        let updatedTool = try #require(viewModel.pencilKitTool as? PKInkingTool)
+        #expect(updatedTool.width == WidgetDrawingTool.pen.width(forFraction: 0.7))
+    }
+
+    @Test func fullSliderTravelSpansInkingToolValidWidthRange() throws {
+        let viewModel = WidgetDrawingViewModel()
+
+        viewModel.updateToolWidthFraction(0)
+        let smallest = try #require(viewModel.pencilKitTool as? PKInkingTool)
+        #expect(smallest.width == WidgetDrawingTool.pen.validWidthRange.lowerBound)
+
+        viewModel.updateToolWidthFraction(1)
+        let largest = try #require(viewModel.pencilKitTool as? PKInkingTool)
+        #expect(largest.width == WidgetDrawingTool.pen.validWidthRange.upperBound)
+    }
+
+    @Test func eraserDisablesColorSelectionAndUsesEraserTool() throws {
+        let viewModel = WidgetDrawingViewModel()
+
+        viewModel.selectTool(.eraser)
+
+        #expect(!viewModel.isColorSelectionEnabled)
+
+        let tool = try #require(viewModel.pencilKitTool as? PKEraserTool)
+        #expect(tool.eraserType == .bitmap)
+        #expect(WidgetDrawingTool.eraser.validWidthRange.contains(tool.width))
+    }
+
+    @Test func eraserSliderSpansEraserValidWidthRange() throws {
+        let viewModel = WidgetDrawingViewModel()
+        viewModel.selectTool(.eraser)
+
+        viewModel.updateToolWidthFraction(0)
+        let smallest = try #require(viewModel.pencilKitTool as? PKEraserTool)
+        #expect(smallest.width == WidgetDrawingTool.eraser.validWidthRange.lowerBound)
+
+        viewModel.updateToolWidthFraction(1)
+        let largest = try #require(viewModel.pencilKitTool as? PKEraserTool)
+        #expect(largest.width == WidgetDrawingTool.eraser.validWidthRange.upperBound)
+    }
+
+    @Test func colorSelectionIsIgnoredWhileErasing() {
+        let viewModel = WidgetDrawingViewModel()
+        let pinkChoice = viewModel.colorChoices[2]
+
+        viewModel.selectTool(.eraser)
+        viewModel.selectColorChoice(pinkChoice)
+        viewModel.selectCustomColor(UIColor.paeoniaAccentSecondary.cgColor)
+
+        #expect(viewModel.selectedColorChoiceID == "blush")
+    }
+
+    @Test func undoAvailabilityFollowsProvidedUndoManager() {
+        let viewModel = WidgetDrawingViewModel()
+        let undoManager = UndoManager()
+        let target = WidgetDrawingUndoTestTarget()
+
+        undoManager.registerUndo(withTarget: target) { _ in }
+        viewModel.updateDrawing(PKDrawing(), undoManager: undoManager)
+
+        #expect(viewModel.canUndoDrawing)
+        #expect(!viewModel.canRedoDrawing)
+    }
+
+    @Test func canvasUsesLightInterfaceStyleForLiteralInkColors() {
+        let canvasView = PKCanvasView()
+
+        canvasView.configureForPaeoniaDrawingCanvas()
+
+        #expect(canvasView.overrideUserInterfaceStyle == .light)
+    }
+
+    @Test func emptyCanvasCannotBeSavedOrCleared() {
+        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy())
+
+        #expect(!viewModel.canSave)
+        #expect(!viewModel.canClear)
+    }
+
+    @Test func saveIsIgnoredWhenCanvasIsEmpty() async {
+        let spy = WidgetCanvasServiceSpy()
+        let viewModel = WidgetDrawingViewModel(service: spy)
+
+        await viewModel.save()
+
+        #expect(spy.saveCount == 0)
+    }
+
+    @Test func saveSendsDrawingDataToServiceAndConfirms() async {
+        let spy = WidgetCanvasServiceSpy()
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: NoOpWidgetCanvasUpload())
+        viewModel.drawing = makeNonEmptyDrawing()
+
+        #expect(viewModel.canSave)
+
+        await viewModel.save()
+
+        #expect(spy.saveCount == 1)
+        #expect(spy.lastSavedData == viewModel.drawing.dataRepresentation())
+        #expect(viewModel.recentlySaved)
+        #expect(viewModel.saveFailure == nil)
+        #expect(!viewModel.isSaving)
+    }
+
+    @Test func saveForwardsAuthorNameToService() async {
+        let spy = WidgetCanvasServiceSpy()
+        let viewModel = WidgetDrawingViewModel(
+            authorName: "Hjalmar",
+            service: spy,
+            uploader: NoOpWidgetCanvasUpload()
+        )
+        viewModel.drawing = makeNonEmptyDrawing()
+
+        await viewModel.save()
+
+        #expect(spy.lastAuthorName == "Hjalmar")
+    }
+
+    @Test func cannotSaveAgainUntilDrawingChanges() async {
+        let spy = WidgetCanvasServiceSpy()
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: NoOpWidgetCanvasUpload())
+        viewModel.drawing = makeNonEmptyDrawing()
+
+        #expect(viewModel.canSave)
+
+        await viewModel.save()
+
+        #expect(!viewModel.canSave)
+    }
+
+    @Test func saveEnqueuesUploadWithDrawingMetadata() async throws {
+        let uploadSpy = WidgetCanvasUploadSpy()
+        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy(), uploader: uploadSpy)
+        viewModel.drawing = makeNonEmptyDrawing()
+
+        await viewModel.save()
+
+        let payload = try #require(uploadSpy.enqueued.first)
+        #expect(uploadSpy.enqueued.count == 1)
+        #expect(payload.drawingData == viewModel.drawing.dataRepresentation())
+        #expect(payload.strokeCount == viewModel.drawing.strokes.count)
+    }
+
+    @Test func failedSaveDoesNotEnqueueUpload() async {
+        let serviceSpy = WidgetCanvasServiceSpy()
+        serviceSpy.saveError = WidgetDrawingTestError.failed
+        let uploadSpy = WidgetCanvasUploadSpy()
+        let viewModel = WidgetDrawingViewModel(service: serviceSpy, uploader: uploadSpy)
+        viewModel.drawing = makeNonEmptyDrawing()
+
+        await viewModel.save()
+
+        #expect(uploadSpy.enqueued.isEmpty)
+    }
+
+    @Test func cannotSaveAFreshlyLoadedDrawing() async {
+        let spy = WidgetCanvasServiceSpy()
+        spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
+        let viewModel = WidgetDrawingViewModel(service: spy)
+
+        await viewModel.loadSavedDrawingIfNeeded()
+
+        #expect(!viewModel.drawing.strokes.isEmpty)
+        #expect(!viewModel.canSave)
+    }
+
+    @Test func saveSurfacesFailureWithoutConfirmation() async {
+        let spy = WidgetCanvasServiceSpy()
+        spy.saveError = WidgetDrawingTestError.failed
+        let viewModel = WidgetDrawingViewModel(service: spy)
+        viewModel.drawing = makeNonEmptyDrawing()
+
+        await viewModel.save()
+
+        #expect(viewModel.saveFailure != nil)
+        #expect(!viewModel.recentlySaved)
+        #expect(!viewModel.isSaving)
+    }
+
+    @Test func clearCanvasEmptiesDrawing() {
+        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy())
+        viewModel.drawing = makeNonEmptyDrawing()
+
+        #expect(viewModel.canClear)
+
+        viewModel.clearCanvas()
+
+        #expect(viewModel.drawing.strokes.isEmpty)
+        #expect(!viewModel.canSave)
+        #expect(!viewModel.canClear)
+    }
+
+    @Test func loadSavedDrawingLoadsPersistedDataOnce() async {
+        let spy = WidgetCanvasServiceSpy()
+        spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
+        let viewModel = WidgetDrawingViewModel(service: spy)
+
+        await viewModel.loadSavedDrawingIfNeeded()
+
+        #expect(spy.loadCount == 1)
+        #expect(!viewModel.drawing.strokes.isEmpty)
+
+        await viewModel.loadSavedDrawingIfNeeded()
+
+        #expect(spy.loadCount == 1)
+    }
+
+    @Test func loadSavedDrawingDoesNotClobberInProgressWork() async {
+        let spy = WidgetCanvasServiceSpy()
+        spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
+        let viewModel = WidgetDrawingViewModel(service: spy)
+        let inProgress = makeNonEmptyDrawing()
+        viewModel.drawing = inProgress
+
+        await viewModel.loadSavedDrawingIfNeeded()
+
+        #expect(viewModel.drawing.dataRepresentation() == inProgress.dataRepresentation())
+    }
+
+    private func makeNonEmptyDrawing() -> PKDrawing {
+        let point = PKStrokePoint(
+            location: CGPoint(x: 12, y: 12),
+            timeOffset: 0,
+            size: CGSize(width: 4, height: 4),
+            opacity: 1,
+            force: 1,
+            azimuth: 0,
+            altitude: 0
+        )
+        let path = PKStrokePath(controlPoints: [point], creationDate: Date())
+        let stroke = PKStroke(ink: PKInk(.pen, color: .black), path: path)
+        return PKDrawing(strokes: [stroke])
+    }
+}
+
+private enum WidgetDrawingTestError: Error {
+    case failed
+}
+
+private final class WidgetCanvasServiceSpy: WidgetCanvasManaging, @unchecked Sendable {
+    private(set) var saveCount = 0
+    private(set) var loadCount = 0
+    private(set) var clearCount = 0
+    private(set) var lastSavedData: Data?
+    private(set) var lastCanvasSize: CGSize?
+    private(set) var lastAuthorName: String?
+    var saveError: Error?
+    var savedDrawingData: Data?
+
+    func loadSavedDrawing() async -> Data? {
+        loadCount += 1
+        return savedDrawingData
+    }
+
+    func saveDrawing(
+        _ drawingData: Data,
+        canvasSize: CGSize,
+        authorName: String?,
+        createdAt: Date
+    ) async throws {
+        saveCount += 1
+        lastSavedData = drawingData
+        lastCanvasSize = canvasSize
+        lastAuthorName = authorName
+        if let saveError {
+            throw saveError
+        }
+    }
+
+    func clearForPrivacy() async {
+        clearCount += 1
+    }
+}
+
+private final class WidgetCanvasUploadSpy: WidgetCanvasUploading, @unchecked Sendable {
+    private(set) var enqueued: [WidgetDrawingUploadPayload] = []
+
+    func enqueueUpload(_ payload: WidgetDrawingUploadPayload) {
+        enqueued.append(payload)
+    }
+}
+
+private final class WidgetDrawingUndoTestTarget {}
+
+private func assertColor(
+    _ color: UIColor,
+    red expectedRed: CGFloat,
+    green expectedGreen: CGFloat,
+    blue expectedBlue: CGFloat
+) {
+    var red: CGFloat = 0
+    var green: CGFloat = 0
+    var blue: CGFloat = 0
+    var alpha: CGFloat = 0
+
+    #expect(color.getRed(&red, green: &green, blue: &blue, alpha: &alpha))
+    #expect(abs(red - expectedRed) < 0.001)
+    #expect(abs(green - expectedGreen) < 0.001)
+    #expect(abs(blue - expectedBlue) < 0.001)
+    #expect(abs(alpha - 1) < 0.001)
+}
+
+// swiftlint:enable async_without_await

@@ -1,22 +1,33 @@
 import Foundation
 import SwiftUI
+import UIKit
 
 struct RootView: View {
     @State private var viewModel: RootViewModel
     @State private var bannerCenter = PaeoniaBannerCenter()
+    @Binding private var widgetDeepLink: PaeoniaWidgetDeepLink?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     private let appleSignInProvider: any AppleSignInProviding
     private let googleSignInProvider: any GoogleSignInProviding
+    private let widgetCanvasService: any WidgetCanvasManaging
+    private let widgetCanvasSync: any WidgetCanvasSyncing
 
     @MainActor
     init(
+        widgetDeepLink: Binding<PaeoniaWidgetDeepLink?> = .constant(nil),
         viewModel: RootViewModel? = nil,
         appleSignInProvider: (any AppleSignInProviding)? = nil,
-        googleSignInProvider: (any GoogleSignInProviding)? = nil
+        googleSignInProvider: (any GoogleSignInProviding)? = nil,
+        widgetCanvasService: (any WidgetCanvasManaging)? = nil,
+        widgetCanvasSync: (any WidgetCanvasSyncing)? = nil
     ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
+        _widgetDeepLink = widgetDeepLink
         self.appleSignInProvider = appleSignInProvider ?? AppleSignInService()
         self.googleSignInProvider = googleSignInProvider ?? GoogleSignInService()
+        self.widgetCanvasService = widgetCanvasService ?? WidgetCanvasService.shared
+        self.widgetCanvasSync = widgetCanvasSync ?? WidgetCanvasSyncServiceFactory.makeDefault()
     }
 
     var body: some View {
@@ -26,10 +37,52 @@ struct RootView: View {
                 await viewModel.start()
             }
             .preferredColorScheme(.dark)
+            // Handle widget deep links from an async task (fires on appear and
+            // whenever the link changes) so navigation state is never mutated
+            // synchronously during a view update.
+            .task(id: widgetDeepLink) {
+                handleWidgetDeepLink(widgetDeepLink)
+            }
             .onChange(of: viewModel.notice) { _, notice in
                 showBanner(for: notice)
             }
+            .onChange(of: viewModel.state) { _, state in
+                clearWidgetIfNeeded(for: state)
+                syncWidgetIfPaired(state)
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    syncWidgetIfPaired(viewModel.state)
+                }
+            }
+            .onChange(of: viewModel.currentSession?.id) { _, sessionID in
+                // Once signed in, get an APNs token so the backend can send the
+                // silent push that wakes us to sync a partner's drawing.
+                if sessionID != nil {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            }
             .paeoniaTopBanner(bannerCenter)
+    }
+
+    private var widgetDrawingPresented: Binding<Bool> {
+        Binding(
+            get: {
+                viewModel.presentedDestination == .widgetDrawing
+            },
+            set: { isPresented in
+                if !isPresented {
+                    viewModel.dismissPresentedDestination()
+                }
+            }
+        )
+    }
+
+    private var mainTabSelection: Binding<MainTab> {
+        Binding(
+            get: { viewModel.selectedMainTab },
+            set: { viewModel.selectMainTab($0) }
+        )
     }
 
     @ViewBuilder
@@ -127,43 +180,25 @@ struct RootView: View {
     }
 
     private var pairedScaffold: some View {
-        NavigationStack {
-            pairedContent
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.screenTopSpacing)
-                .padding(.bottom, PaeoniaSpacing.space16)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .background(.paeoniaBackgroundPrimary)
-        }
-    }
-
-    @ViewBuilder
-    private var pairedContent: some View {
         ZStack {
             if viewModel.isPairingCelebrationPresented {
-                PairingCelebrationView(
+                pairingCelebration
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity,
+                            removal: pairedCelebrationRemovalTransition
+                        )
+                    )
+            } else {
+                MainTabView(
                     currentDisplayName: viewModel.currentSession?.displayName,
                     currentProfilePhotoAssetID: viewModel.currentProfilePhotoAssetID,
                     partnerDisplayName: viewModel.currentPartnerDisplayName,
                     partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
-                    playsIntro: viewModel.pendingPairingCelebration,
-                    onIntroComplete: {
-                        viewModel.consumePairingCelebration()
-                    },
-                    onDismiss: {
-                        dismissPairingCelebration()
-                    }
-                )
-                .transition(
-                    .asymmetric(
-                        insertion: .opacity,
-                        removal: pairedCelebrationRemovalTransition
-                    )
-                )
-            } else {
-                PairedHomeView(
-                    currentDisplayName: viewModel.currentSession?.displayName,
-                    partnerDisplayName: viewModel.currentPartnerDisplayName
+                    authorName: viewModel.currentSession?.displayName,
+                    selection: mainTabSelection,
+                    widgetDrawingPresented: widgetDrawingPresented,
+                    onOpenWidgetDrawing: { viewModel.openWidgetDrawing() }
                 )
                 .transition(
                     .asymmetric(
@@ -173,7 +208,29 @@ struct RootView: View {
                 )
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.paeoniaBackgroundPrimary)
         .animation(pairedScreenAnimation, value: viewModel.isPairingCelebrationPresented)
+    }
+
+    private var pairingCelebration: some View {
+        PairingCelebrationView(
+            currentDisplayName: viewModel.currentSession?.displayName,
+            currentProfilePhotoAssetID: viewModel.currentProfilePhotoAssetID,
+            partnerDisplayName: viewModel.currentPartnerDisplayName,
+            partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
+            playsIntro: viewModel.pendingPairingCelebration,
+            onIntroComplete: {
+                viewModel.consumePairingCelebration()
+            },
+            onDismiss: {
+                dismissPairingCelebration()
+            }
+        )
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.top, PaeoniaSpacing.screenTopSpacing)
+        .padding(.bottom, PaeoniaSpacing.space16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var pairedScreenAnimation: Animation? {
@@ -295,6 +352,53 @@ struct RootView: View {
     private func dismissPairingCelebration() {
         withAnimation(pairedScreenAnimation) {
             viewModel.dismissPairingCelebration()
+        }
+    }
+
+    private func handleWidgetDeepLink(_ deepLink: PaeoniaWidgetDeepLink?) {
+        guard let deepLink else {
+            return
+        }
+
+        switch deepLink {
+        case .drawing:
+            viewModel.openWidgetDrawing()
+        }
+
+        widgetDeepLink = nil
+    }
+
+    /// Keeps private drawing content off the Home Screen the moment the app
+    /// leaves the paired state (sign out, account deletion, lost access, ended
+    /// relationship). Never fires for `.launching`, so a paired user's saved
+    /// drawing survives across launches.
+    private func clearWidgetIfNeeded(for state: AppState) {
+        guard state != .paired, state != .launching else {
+            return
+        }
+
+        Task {
+            await widgetCanvasService.clearForPrivacy()
+        }
+    }
+
+    /// Pulls the partner's latest drawing (and our own latest) into the widget
+    /// and in-app canvas whenever we're paired and the app comes forward.
+    private func syncWidgetIfPaired(_ state: AppState) {
+        guard state == .paired else {
+            return
+        }
+
+        let identity = WidgetSyncIdentity(
+            currentUserID: viewModel.currentSession.flatMap { UUID(uuidString: $0.id) },
+            currentDisplayName: viewModel.currentSession?.displayName,
+            partnerDisplayName: viewModel.currentPartnerDisplayName
+        )
+        // Persist so a silent-push-triggered background sync can label the
+        // drawing with the right nickname even when no view is alive.
+        WidgetSyncIdentityStore.shared.save(identity)
+        Task {
+            await widgetCanvasSync.sync(identity: identity)
         }
     }
 

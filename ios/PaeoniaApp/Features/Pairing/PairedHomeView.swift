@@ -2,56 +2,63 @@ import SwiftUI
 
 struct PairedHomeView: View {
     let currentDisplayName: String?
+    let currentProfilePhotoAssetID: UUID?
     let partnerDisplayName: String?
+    let partnerProfilePhotoAssetID: UUID?
+    var onOpenWidgetDrawing: () -> Void = {}
+
+    init(
+        currentDisplayName: String?,
+        currentProfilePhotoAssetID: UUID? = nil,
+        partnerDisplayName: String?,
+        partnerProfilePhotoAssetID: UUID? = nil,
+        onOpenWidgetDrawing: @escaping () -> Void = {}
+    ) {
+        self.currentDisplayName = currentDisplayName
+        self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
+        self.partnerDisplayName = partnerDisplayName
+        self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
+        self.onOpenWidgetDrawing = onOpenWidgetDrawing
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            PaeoniaBrandLockup(
-                wordmarkSize: 36,
-                taglineSize: 17,
-                taglineColor: .paeoniaTextSecondary
+            PairedProfilesHeader(
+                currentName: currentName,
+                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                partnerName: partnerName,
+                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
             )
             .frame(maxWidth: .infinity)
 
-            if let pairNames {
-                Text(verbatim: pairNames)
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .padding(.top, PaeoniaSpacing.space20)
-            }
-
             Spacer(minLength: PaeoniaSpacing.space32)
 
-            PaeoniaEmptyStateView(
-                title: .rootEmptyTitle,
-                message: .rootEmptyMessage,
-                systemImage: "heart.circle.fill"
-            )
-            .frame(maxWidth: 360)
+            HomeWidgetCard(onOpen: onOpenWidgetDrawing)
 
             Spacer(minLength: PaeoniaSpacing.space32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var pairNames: String? {
-        guard let currentDisplayName = currentDisplayName?.trimmedNonEmpty,
-              let partnerDisplayName = partnerDisplayName?.trimmedNonEmpty else {
-            return nil
-        }
+    private var currentName: String {
+        currentDisplayName?.trimmedNonEmpty ?? String(localized: .pairingCelebrationYouName)
+    }
 
-        return "\(currentDisplayName) + \(partnerDisplayName)"
+    private var partnerName: String {
+        partnerDisplayName?.trimmedNonEmpty ?? String(localized: .pairingCelebrationPartnerName)
     }
 }
 
 #Preview {
-    PairedHomeView(
-        currentDisplayName: "Hjalmar",
-        partnerDisplayName: "Oda"
-    )
-    .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-    .padding(.top, PaeoniaSpacing.screenTopSpacing)
-    .padding(.bottom, PaeoniaSpacing.space16)
-    .background(.paeoniaBackgroundPrimary)
+    NavigationStack {
+        PairedHomeView(
+            currentDisplayName: "Hjalmar",
+            partnerDisplayName: "Oda"
+        )
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.top, PaeoniaSpacing.screenTopSpacing)
+        .padding(.bottom, PaeoniaSpacing.space16)
+        .background(.paeoniaBackgroundPrimary)
+    }
     .preferredColorScheme(.dark)
 }

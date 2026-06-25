@@ -1,0 +1,112 @@
+import SwiftUI
+
+/// The native tab bar shown once a couple is paired. Only the Home tab is wired
+/// up today; the remaining tabs are scaffolding placeholders so the navigation
+/// shell is in place for upcoming features.
+///
+/// Tab selection is owned by `RootViewModel` and passed in as a binding. That lets
+/// navigation intent — opening the widget drawing screen from the Home Screen
+/// widget — select the Home tab and present its destination in one atomic update,
+/// so the screen can never open hidden behind another tab.
+struct MainTabView: View {
+    let currentDisplayName: String?
+    let currentProfilePhotoAssetID: UUID?
+    let partnerDisplayName: String?
+    let partnerProfilePhotoAssetID: UUID?
+    let authorName: String?
+    let selection: Binding<MainTab>
+    let widgetDrawingPresented: Binding<Bool>
+    let onOpenWidgetDrawing: () -> Void
+
+    var body: some View {
+        TabView(selection: selection) {
+            ForEach(MainTab.allCases) { tab in
+                content(for: tab)
+                    .tag(tab)
+                    .tabItem {
+                        Label {
+                            Text(tab.title)
+                        } icon: {
+                            Image(systemName: tab.systemImage)
+                        }
+                    }
+            }
+        }
+        .tint(.paeoniaAccentPrimary)
+    }
+
+    @ViewBuilder
+    private func content(for tab: MainTab) -> some View {
+        switch tab {
+        case .home:
+            homeTab
+        case .memories, .you:
+            placeholderTab(title: tab.title, systemImage: tab.systemImage)
+        }
+    }
+
+    private var homeTab: some View {
+        NavigationStack {
+            PairedHomeView(
+                currentDisplayName: currentDisplayName,
+                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                partnerDisplayName: partnerDisplayName,
+                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                onOpenWidgetDrawing: onOpenWidgetDrawing
+            )
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.screenTopSpacing)
+            .padding(.bottom, PaeoniaSpacing.space16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(.paeoniaBackgroundPrimary)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Image(.paeoniaMark)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 28)
+                        .accessibilityHidden(true)
+                }
+                // The mark is the brand, not a control, so keep it free of the
+                // system's Liquid Glass capsule and let it sit flat on the bar.
+                .sharedBackgroundVisibility(.hidden)
+            }
+            .navigationDestination(isPresented: widgetDrawingPresented) {
+                WidgetDrawingView(authorName: authorName)
+            }
+        }
+    }
+
+    private func placeholderTab(
+        title: LocalizedStringResource,
+        systemImage: String
+    ) -> some View {
+        NavigationStack {
+            PaeoniaEmptyStateView(
+                title: title,
+                message: .mainTabPlaceholderMessage,
+                systemImage: systemImage
+            )
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(.paeoniaBackgroundPrimary)
+        }
+    }
+}
+
+#if DEBUG
+#Preview {
+    MainTabView(
+        currentDisplayName: "Hjalmar",
+        currentProfilePhotoAssetID: nil,
+        partnerDisplayName: "Oda",
+        partnerProfilePhotoAssetID: nil,
+        authorName: "Hjalmar",
+        selection: .constant(.home),
+        widgetDrawingPresented: .constant(false),
+        onOpenWidgetDrawing: {}
+    )
+    .preferredColorScheme(.dark)
+}
+#endif

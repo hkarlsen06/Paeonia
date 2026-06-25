@@ -2,6 +2,7 @@
   "sourceLanguage" : "en",
   "strings" : {
     "widget.description" : {
+      "comment" : "Widget gallery description for the Paeonia widget.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -16,46 +17,154 @@
             "value" : "En privat widget for dere to."
           }
         }
-      },
-      "comment" : "Widget gallery description for the Paeonia widget."
+      }
+    },
+    "widget.drawing.action" : {
+      "comment" : "Small call to action shown when the widget displays a cached drawing preview.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to add yours"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk for å legge til din"
+          }
+        }
+      }
+    },
+    "widget.drawing.title" : {
+      "comment" : "Short title shown when the widget can display a cached drawing preview.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latest drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siste tegning"
+          }
+        }
+      }
+    },
+    "widget.placeholder.action" : {
+      "comment" : "Small call to action shown inside the widget before a real drawing exists.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to open Paeonia"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk for å åpne Paeonia"
+          }
+        }
+      }
     },
     "widget.placeholder.subtitle" : {
+      "comment" : "Short placeholder couple label shown inside the widget before a real drawing exists.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Drawing support comes next."
+            "value" : "You + them"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegnestøtte kommer neste."
+            "value" : "Du + dem"
           }
         }
-      },
-      "comment" : "Placeholder subtitle before drawing support is implemented."
+      }
     },
     "widget.placeholder.title" : {
+      "comment" : "Primary placeholder invitation shown inside the widget before a real drawing exists.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia"
+            "value" : "Draw something for them"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia"
+            "value" : "Tegn noe til partneren din"
           }
         }
-      },
-      "comment" : "Placeholder title shown inside the widget."
+      }
+    },
+    "widget.redacted.subtitle" : {
+      "comment" : "Subtitle shown when widget drawing content is hidden for privacy.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Paeonia to see it"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Paeonia for å se den"
+          }
+        }
+      }
+    },
+    "widget.redacted.title" : {
+      "comment" : "Title shown when widget drawing content is hidden for privacy.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widget hidden"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widgeten er skjult"
+          }
+        }
+      }
+    },
+    "widget.refresh" : {
+      "comment" : "Accessibility label and title for the widget refresh button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oppdater"
+          }
+        }
+      }
     },
     "widget.title" : {
+      "comment" : "Widget display name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -70,8 +179,7 @@
             "value" : "Paeonia"
           }
         }
-      },
-      "comment" : "Widget display name."
+      }
     }
   },
   "version" : "1.0"

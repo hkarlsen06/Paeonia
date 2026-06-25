@@ -13,6 +13,10 @@ enum RootNotice: Equatable {
     case deleteAccountFailed
 }
 
+enum RootPresentedDestination: Equatable {
+    case widgetDrawing
+}
+
 @MainActor
 @Observable
 // swiftlint:disable:next type_body_length
@@ -92,8 +96,14 @@ final class RootViewModel {
     private var route: RootRoute = .launching
     private(set) var isWorking = false
     private(set) var notice: RootNotice?
+    private(set) var presentedDestination: RootPresentedDestination?
+    /// The selected paired tab. Owned here (rather than in the tab view) so that
+    /// navigation intent can move the user to the right tab and present its
+    /// destination as one atomic change. See [openWidgetDrawing].
+    private(set) var selectedMainTab: MainTab = .home
     private var hasStartedSync = false
     private var accessResolutionGeneration = 0
+    private var opensWidgetDrawingWhenPaired = false
     private var shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = false
 
     var state: AppState {
@@ -178,6 +188,39 @@ final class RootViewModel {
         notice = nil
     }
 
+    /// Lets the tab bar write the user's manual tab selection back into the
+    /// single source of truth.
+    func selectMainTab(_ tab: MainTab) {
+        selectedMainTab = tab
+    }
+
+    /// Opens the couple's widget drawing screen. The screen is a destination on
+    /// the Home tab, so opening it always selects Home first; presenting it on a
+    /// non-visible tab would otherwise leave it hidden behind whatever tab the
+    /// user was last on.
+    func openWidgetDrawing() {
+        switch state {
+        case .paired:
+            presentWidgetDrawing()
+        case .launching:
+            opensWidgetDrawingWhenPaired = true
+        default:
+            opensWidgetDrawingWhenPaired = false
+        }
+    }
+
+    func dismissPresentedDestination() {
+        presentedDestination = nil
+    }
+
+    /// Selects the Home tab and presents the widget drawing destination as one
+    /// atomic change. The single entry point keeps the "drawing lives on Home"
+    /// rule in one place for every caller (direct tap and deferred deep link).
+    private func presentWidgetDrawing() {
+        selectedMainTab = .home
+        presentedDestination = .widgetDrawing
+    }
+
     /// Marks the pairing celebration intro as claimed so a SwiftUI view recreation
     /// cannot replay it while the interstitial is still on screen.
     func consumePairingCelebration() {
@@ -211,6 +254,7 @@ final class RootViewModel {
             try await authService.signOut()
             invalidateAccessResolution()
             clearPairingCelebrationPresentation()
+            clearPendingWidgetDrawingOpen()
             route = .signedOut
             hasStartedSync = false
         }
@@ -226,6 +270,7 @@ final class RootViewModel {
         notice = nil
         invalidateAccessResolution()
         clearPairingCelebrationPresentation()
+        clearPendingWidgetDrawingOpen()
         route = .deletingAccount(previousRoute.session)
 
         do {
@@ -330,10 +375,12 @@ final class RootViewModel {
         case .signedOut:
             invalidateAccessResolution()
             clearPairingCelebrationPresentation()
+            clearPendingWidgetDrawingOpen()
             route = .signedOut
         case let .onboarding(session):
             invalidateAccessResolution()
             clearPairingCelebrationPresentation()
+            clearPendingWidgetDrawingOpen()
             route = .onboarding(session)
         case let .limitedAuthenticated(session):
             await resolveAccessRoute(for: session)
@@ -384,6 +431,7 @@ final class RootViewModel {
             || Self.isFreshLink(from: previous?.route, to: resolution.route)
         applyPairingCelebrationPresentation(for: resolution, shouldCelebrate: shouldCelebrate)
         route = .access(session, resolution)
+        presentPendingWidgetDrawingIfNeeded(for: resolution.route)
     }
 
     private func showAcceptedInviteCelebration(for session: AuthSession) {
@@ -446,6 +494,8 @@ final class RootViewModel {
     ) {
         guard resolution.route == .paired else {
             clearPairingCelebrationPresentation()
+            dismissPresentedDestination()
+            clearPendingWidgetDrawingOpen()
             return
         }
 
@@ -499,6 +549,22 @@ final class RootViewModel {
         pendingPairingCelebration = false
         isPairingCelebrationPresented = false
         shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = false
+    }
+
+    private func presentPendingWidgetDrawingIfNeeded(for accessRoute: AccessRoute) {
+        guard opensWidgetDrawingWhenPaired else {
+            return
+        }
+
+        opensWidgetDrawingWhenPaired = false
+        if accessRoute == .paired {
+            presentWidgetDrawing()
+        }
+    }
+
+    private func clearPendingWidgetDrawingOpen() {
+        opensWidgetDrawingWhenPaired = false
+        dismissPresentedDestination()
     }
 
     private func beginAccessResolution() -> Int {

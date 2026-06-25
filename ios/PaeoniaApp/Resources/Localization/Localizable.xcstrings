@@ -1,7 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {},
+    "" : {
+
+    },
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -1150,6 +1152,186 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Logg inn i Paeonia"
+          }
+        }
+      }
+    },
+    "common.cancel" : {
+      "comment" : "Generic button title for cancelling the current sheet or action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avbryt"
+          }
+        }
+      }
+    },
+    "home.widget.card.hint" : {
+      "comment" : "Accessibility hint for the tappable widget preview on the home screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the drawing screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpner tegneskjermen"
+          }
+        }
+      }
+    },
+    "home.widget.card.label" : {
+      "comment" : "Accessibility label for the tappable widget preview on the home screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your shared drawing widget"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den delte tegne-widgeten"
+          }
+        }
+      }
+    },
+    "home.widget.cta" : {
+      "comment" : "Call to action shown on the home screen widget preview that opens the drawing screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw something"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn noe"
+          }
+        }
+      }
+    },
+    "imageCrop.done" : {
+      "comment" : "Button title that confirms the selected image crop.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
+          }
+        }
+      }
+    },
+    "mainTab.home.us" : {
+      "comment" : "Title for the shared couple Home tab in the main tab bar",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Us"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oss"
+          }
+        }
+      }
+    },
+    "mainTab.memories" : {
+      "comment" : "Title for the Memories tab in the main tab bar",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Memories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minner"
+          }
+        }
+      }
+    },
+    "mainTab.placeholder.message" : {
+      "comment" : "Message shown on tabs that are not built yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We're still building this part. Check back soon."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi bygger fortsatt denne delen. Kom tilbake snart."
+          }
+        }
+      }
+    },
+    "mainTab.you" : {
+      "comment" : "Title for the personal profile/settings tab in the main tab bar",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Me"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Meg"
+          }
+        }
+      }
+    },
+    "pairing.celebration.getStartedButton" : {
+      "comment" : "Button that dismisses the pairing celebration after it settles.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let's get started"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La oss komme i gang"
           }
         }
       }
@@ -2828,59 +3010,491 @@
         }
       }
     },
-    "common.cancel" : {
+    "widgetDrawing.canvas.label" : {
+      "comment" : "Accessibility label for the widget drawing canvas.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cancel"
+            "value" : "Drawing canvas"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Avbryt"
+            "value" : "Tegneflate"
           }
         }
-      },
-      "comment" : "Generic button title for cancelling the current sheet or action."
+      }
     },
-    "imageCrop.done" : {
+    "widgetDrawing.clear.button" : {
+      "comment" : "Button that clears the current drawing from the canvas.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Done"
+            "value" : "Clear"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ferdig"
+            "value" : "Tøm"
           }
         }
-      },
-      "comment" : "Button title that confirms the selected image crop."
+      }
     },
-    "pairing.celebration.getStartedButton" : {
+    "widgetDrawing.clear.cancel" : {
+      "comment" : "Cancel button in the clear-canvas confirmation dialog.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Let's get started"
+            "value" : "Keep drawing"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La oss komme i gang"
+            "value" : "Fortsett å tegne"
           }
         }
-      },
-      "comment" : "Button that dismisses the pairing celebration after it settles."
+      }
+    },
+    "widgetDrawing.clear.confirm.action" : {
+      "comment" : "Confirm button in the clear-canvas confirmation dialog.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tøm"
+          }
+        }
+      }
+    },
+    "widgetDrawing.clear.confirm.message" : {
+      "comment" : "Body of the confirmation dialog shown before clearing the canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This clears what you're drawing now. The last saved drawing stays until you save a new one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette tømmer det du tegner nå. Den siste tegningen blir værende til du lagrer en ny."
+          }
+        }
+      }
+    },
+    "widgetDrawing.clear.confirm.title" : {
+      "comment" : "Title of the confirmation dialog shown before clearing the canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear the canvas?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tømme tegneflaten?"
+          }
+        }
+      }
+    },
+    "widgetDrawing.color.blue" : {
+      "comment" : "Accessibility label for the blue drawing color swatch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blå"
+          }
+        }
+      }
+    },
+    "widgetDrawing.color.blush" : {
+      "comment" : "Accessibility label for the blush drawing color swatch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blush"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lys rosa"
+          }
+        }
+      }
+    },
+    "widgetDrawing.color.custom" : {
+      "comment" : "Accessibility label for the custom color picker in the widget drawing screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom color"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Egendefinert farge"
+          }
+        }
+      }
+    },
+    "widgetDrawing.color.gold" : {
+      "comment" : "Accessibility label for the gold drawing color swatch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gold"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gull"
+          }
+        }
+      }
+    },
+    "widgetDrawing.color.green" : {
+      "comment" : "Accessibility label for the green drawing color swatch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Green"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grønn"
+          }
+        }
+      }
+    },
+    "widgetDrawing.color.lavender" : {
+      "comment" : "Accessibility label for the lavender drawing color swatch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lavender"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lavendel"
+          }
+        }
+      }
+    },
+    "widgetDrawing.color.petal" : {
+      "comment" : "Accessibility label for the petal drawing color swatch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Petal pink"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peonrosa"
+          }
+        }
+      }
+    },
+    "widgetDrawing.color.pink" : {
+      "comment" : "Accessibility label for the bright pink drawing color swatch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pink"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rosa"
+          }
+        }
+      }
+    },
+    "widgetDrawing.color.warm" : {
+      "comment" : "Accessibility label for the warm pink drawing color swatch.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warm pink"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varm rosa"
+          }
+        }
+      }
+    },
+    "widgetDrawing.redo.button" : {
+      "comment" : "Accessibility label for the redo button in the widget drawing screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør om"
+          }
+        }
+      }
+    },
+    "widgetDrawing.save.button" : {
+      "comment" : "Primary button that saves the drawing and shows it on the Home Screen widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        }
+      }
+    },
+    "widgetDrawing.save.error.message" : {
+      "comment" : "Banner message shown when saving a drawing fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong while saving. Please try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt under lagringen. Prøv igjen."
+          }
+        }
+      }
+    },
+    "widgetDrawing.save.error.title" : {
+      "comment" : "Banner title shown when saving a drawing fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre"
+          }
+        }
+      }
+    },
+    "widgetDrawing.saved" : {
+      "comment" : "Confirmation shown on the save button right after a drawing is saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret"
+          }
+        }
+      }
+    },
+    "widgetDrawing.saving" : {
+      "comment" : "Label shown on the save button while the drawing is being saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saving …"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagrer …"
+          }
+        }
+      }
+    },
+    "widgetDrawing.size.slider" : {
+      "comment" : "Accessibility label for the tool size slider in the widget drawing screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tool size"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verktøystørrelse"
+          }
+        }
+      }
+    },
+    "widgetDrawing.title" : {
+      "comment" : "Navigation title for the widget drawing screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegning"
+          }
+        }
+      }
+    },
+    "widgetDrawing.tool.eraser" : {
+      "comment" : "Accessibility label for the eraser tool in the widget drawing screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eraser"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viskelær"
+          }
+        }
+      }
+    },
+    "widgetDrawing.tool.pen" : {
+      "comment" : "Accessibility label for the pen tool in the widget drawing screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Penn"
+          }
+        }
+      }
+    },
+    "widgetDrawing.tool.pencil" : {
+      "comment" : "Accessibility label for the pencil tool in the widget drawing screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pencil"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blyant"
+          }
+        }
+      }
+    },
+    "widgetDrawing.undo.button" : {
+      "comment" : "Accessibility label for the undo button in the widget drawing screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angre"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
