@@ -138,6 +138,7 @@ struct PairingCelebrationProfilesView: View {
     let onPartnerSlotChange: (CGRect) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var heartbeatScale: CGFloat = 1
 
     private let columnWidth: CGFloat = 112
     private let connectorWidth: CGFloat = 82
@@ -236,51 +237,41 @@ struct PairingCelebrationProfilesView: View {
         .accessibilityHidden(true)
     }
 
-    @ViewBuilder
+    /// Always the same single image so its identity stays stable: the connector
+    /// fades in during the settle spring, and any structural swap here would make
+    /// SwiftUI animate the heart in from the container origin. The lub-dub pulse is
+    /// driven purely by `heartbeatScale`, which scales around center without moving.
     private var beatingHeart: some View {
-        let heart = Image(systemName: "heart.fill")
+        Image(systemName: "heart.fill")
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(.paeoniaAccentPrimary)
-
-        if reduceMotion {
-            heart
-        } else {
-            PhaseAnimator(PairingHeartbeatPhase.allCases) { phase in
-                heart.scaleEffect(phase.scale)
-            } animation: { phase in
-                phase.animation
+            .accessibilityHidden(true)
+            .scaleEffect(heartbeatScale)
+            .task(id: reduceMotion) {
+                guard !reduceMotion else {
+                    heartbeatScale = 1
+                    return
+                }
+                await runHeartbeat()
             }
-        }
-    }
-}
-
-/// The lub-dub rhythm of the connector heart: two quick swells with a rest before
-/// the cycle repeats, so the link between the two people looks alive. Skipped when
-/// Reduce Motion is on.
-private enum PairingHeartbeatPhase: CaseIterable {
-    case rest
-    case lub
-    case lubRelease
-    case dub
-    case dubRelease
-
-    var scale: CGFloat {
-        switch self {
-        case .rest, .lubRelease, .dubRelease: 1
-        case .lub: 1.22
-        case .dub: 1.13
-        }
     }
 
-    var animation: Animation {
-        switch self {
-        // The pause between beats lives here as a delay before the first swell,
-        // because a same-value "hold" phase would complete instantly and be skipped.
-        case .lub: .easeOut(duration: 0.14).delay(0.9)
-        case .lubRelease: .easeIn(duration: 0.16)
-        case .dub: .easeOut(duration: 0.12)
-        case .dubRelease: .easeIn(duration: 0.18)
-        case .rest: .easeInOut(duration: 0.2)
+    /// Beats twice (a strong lub, a softer dub) and then rests, on a loop, so the
+    /// link reads like a calm resting heart rather than a steady fast pulse.
+    @MainActor
+    private func runHeartbeat() async {
+        while !Task.isCancelled {
+            withAnimation(.easeOut(duration: 0.14)) { heartbeatScale = 1.22 }
+            try? await Task.sleep(for: .seconds(0.15))
+
+            withAnimation(.easeIn(duration: 0.16)) { heartbeatScale = 1 }
+            try? await Task.sleep(for: .seconds(0.12))
+
+            withAnimation(.easeOut(duration: 0.12)) { heartbeatScale = 1.12 }
+            try? await Task.sleep(for: .seconds(0.12))
+
+            withAnimation(.easeIn(duration: 0.2)) { heartbeatScale = 1 }
+            try? await Task.sleep(for: .seconds(0.95))
         }
     }
 }
