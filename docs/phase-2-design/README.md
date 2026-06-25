@@ -2,13 +2,13 @@
 
 This folder captures Paeonia's brand and design-system decisions before feature implementation starts.
 
-The goal is not to freeze every visual detail. The goal is to make the app easier to build consistently while leaving the logo and color palette open until the designer returns icon work and the peony color reference is chosen.
+The goal is not to freeze every visual detail. The goal is to make the app easier to build consistently from the locked Paeonia logo, app-icon mark, and plum-led color baseline.
 
 ## Current Status
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| App icon | In progress | Designer order placed. Source must be layered/vector for Apple Icon Composer. |
+| App icon | Decided | Delivered mark and Icon Composer exports are the source baseline. Material/depth tuning can still be adjusted. |
 | Color system | Decided | Paeonia uses a single plum-led brand theme. No separate light/dark app themes for MVP. |
 | Typography | Decided | Use SF/system typography across native app and marketing for MVP. |
 | Spacing/radius tokens | Decided | Use a small semantic scale, not ad hoc values. |

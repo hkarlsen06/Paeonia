@@ -220,7 +220,9 @@ ios/PaeoniaApp/
 
 ## Phase 2: Brand And Design Foundation
 
-**Status: foundation complete; icon and final colors deferred.** Design foundation docs live in `docs/phase-2-design/`. Locked direction: premium calm, slightly custom native components, tactile key moments, and SF/system typography across app and marketing. Color decisions are intentionally deferred until the designer returns logo direction and the peony color reference is chosen.
+**Status: complete for MVP foundation.** Design foundation docs live in `docs/phase-2-design/`. Locked direction: premium calm, slightly custom native components, tactile key moments, SF/system typography across app and marketing, and a single plum-led visual theme instead of separate light/dark brand themes.
+
+The delivered Paeonia logo, app-icon mark, and plum/pink palette are now the canonical visual baseline for marketing and native app work. Icon Composer material/depth tuning can still be adjusted as implementation polish, but the core brand direction is no longer deferred.
 
 ### Brand
 
@@ -238,12 +240,12 @@ ios/PaeoniaApp/
 
 ### Visual System
 
-- Define color palette inspired by peonies, warmth, and privacy.
-- Define the single plum-led app theme and accessibility behavior.
-- Define typography roles.
-- Define spacing scale.
-- Define cards, buttons, sheets, empty states, and alerts.
-- Define haptic patterns:
+- Define color palette inspired by peonies, warmth, and privacy. Completed.
+- Define the single plum-led app theme and accessibility behavior. Completed.
+- Define typography roles. Completed.
+- Define spacing scale. Completed.
+- Define cards, buttons, sheets, empty states, and alerts. Completed.
+- Define haptic patterns. Completed:
   - paired successfully
   - answer revealed
   - memory saved
@@ -251,31 +253,31 @@ ios/PaeoniaApp/
 
 ### App Icon
 
-- Create an app icon before TestFlight.
-- Direction: abstract peony/petal mark, not a literal flower photo.
+- Create an app icon before TestFlight. Completed.
+- Direction: abstract paired peony/petal mark, not a literal flower photo. Completed.
 - Requirements:
   - recognizable at small sizes
   - no text
   - no screenshots or UI elements
-  - works in light and dark contexts
+  - works in light and dark system contexts while preserving the plum brand background
   - works with iOS 26 icon appearances
   - export App Store marketing icon
   - keep source file in design assets
-- Consider Apple Icon Composer for layered Liquid Glass icon work.
+- Apple Icon Composer source/export assets are kept in the repo as the editable source of truth. The app currently compiles from a standard `.appiconset` PNG export to avoid Xcode asset compiler instability with the `.icon` package.
 - Verify final icon in:
-  - Home Screen
-  - Settings
-  - Spotlight
-  - App Store preview
-  - TestFlight
+  - Home Screen. Completed manually.
+  - Settings.
+  - Spotlight.
+  - App Store preview.
+  - TestFlight.
 
 ## Phase 3: Backend And Data Model
 
-Use Supabase. Design the backend before UI implementation goes too far.
+**Status: implementation in progress.** The data contract and migration checklist are written, the migration suite exists, and database pgTAP tests exist. The remaining gate is local Supabase verification against a running Docker/OrbStack stack before treating the schema as locked.
 
 Data-contract decisions are tracked in `docs/phase-3-data-contract.md`. Migration implementation order and checklist gates are tracked in `docs/phase-3-migration-checklist.md`.
 
-Do not write migrations until the current implementation slice has been checked against both documents.
+New migrations must still be checked against both documents before they are written. Existing migrations should be verified locally with `supabase db reset --local` and `supabase test db --local supabase/tests` before being treated as the stable backend baseline.
 
 ### Core Tables
 
@@ -358,6 +360,8 @@ Do not write migrations until the current implementation slice has been checked 
 
 ## Phase 4: Authentication And Pairing
 
+**Status: active.** Apple/Google auth, onboarding, profile-photo handling, paywall/StoreKit plumbing, app-account-token infrastructure, pairing invite flows, and relationship-state routing are under implementation. This phase is not complete until the full pre-auth to paired/paywalled flow is working on device, covered by focused tests, and backed by verified Supabase migrations.
+
 ### Authentication
 
 - Support only:
@@ -365,9 +369,9 @@ Do not write migrations until the current implementation slice has been checked 
   - Google Sign-In
 - Do not support passkeys, email/password, or email magic-link auth in the MVP.
 - Keep Sign in with Apple available because Google Sign-In is offered.
-- Implement both auth surfaces as first-class MVP requirements.
-- Do not require unnecessary profile fields.
-- Add account deletion inside the app before App Store submission.
+- Implement both auth surfaces as first-class MVP requirements. In progress.
+- Do not require unnecessary profile fields. In progress.
+- Add account deletion inside the app before App Store submission. Backend/request plumbing exists; end-to-end UI and App Review validation still need completion.
 
 ### Pairing
 
@@ -381,6 +385,7 @@ Do not write migrations until the current implementation slice has been checked 
   - disconnected
 - Add ability to leave/disconnect couple.
 - Add recovery path if invite expires.
+- Pairing invite, preview, accept, and celebration surfaces are underway. They must remain invite-and-explicit-accept only; no searchable users or automatic pairing.
 
 ### Tests
 
