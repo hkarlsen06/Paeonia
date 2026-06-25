@@ -1,10 +1,12 @@
 -- Silent push for widget drawings:
---   1) When a revision is saved, enqueue a background ('content-available') push
---      to the *other* couple member so their app wakes and syncs the widget.
---   2) Service-role drain RPCs the edge function uses to claim pending
---      notifications (with the raw device token) and record the send result.
---      The outbox lives in `internal`, which PostgREST does not expose, so the
---      drainer goes through these `public` security-definer wrappers.
+-- 1) When a revision is saved, enqueue a background ('content-available') push
+--    to the other couple member so the app wakes and syncs the widget.
+-- 2) A service-role Edge Function drains the internal notification outbox,
+--    claims pending notifications with raw device tokens, and records results.
+--
+-- Internal security-definer functions hold elevated outbox access. Public RPC
+-- wrappers stay security-invoker so PostgREST can expose them to service_role
+-- without putting security-definer functions in the exposed schema.
 
 -- 1) Enqueue on revision insert ------------------------------------------------
 
@@ -28,7 +30,7 @@ begin
   limit 1;
 
   if recipient_user_id is not null then
-    -- A save must never fail because of a notification problem.
+    -- A notification problem must never make saving a drawing fail.
     begin
       perform internal.enqueue_notification_for_user(
         recipient_user_id,
@@ -56,9 +58,28 @@ execute function internal.notify_partner_of_widget_revision();
 
 -- 2) Service-role drain RPCs ---------------------------------------------------
 
--- Atomically claims a batch of sendable notifications (skipping rows another
--- worker already holds) and returns the raw push token for each.
-create or replace function public.claim_notification_batch(p_limit integer default 50)
+create or replace function internal.fail_exhausted_notification_claims()
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog
+as $$
+begin
+  update internal.notification_outbox
+  set failed_at = now(),
+      last_error = coalesce(
+        nullif(last_error, ''),
+        'delivery attempt budget exhausted before a result was recorded'
+      )
+  where sent_at is null
+    and failed_at is null
+    and attempt_count >= 5;
+end;
+$$;
+
+-- Atomically claims a batch of sendable notifications, skipping rows another
+-- worker already holds, and returns each raw push token.
+create or replace function internal.claim_notification_batch(p_limit integer default 50)
 returns table (
   outbox_id uuid,
   push_token text,
@@ -72,6 +93,8 @@ security definer
 set search_path = pg_catalog
 as $$
 begin
+  perform internal.fail_exhausted_notification_claims();
+
   return query
   with claimed as (
     select outbox.id, outbox.target_device_id
@@ -80,7 +103,7 @@ begin
       and outbox.failed_at is null
       and outbox.scheduled_for <= now()
       and outbox.attempt_count < 5
-      -- This drainer only delivers silent pushes; alert kinds need their own path.
+      -- This drainer only delivers silent pushes; alert kinds need own path.
       and outbox.apns_push_type = 'background'
     order by outbox.scheduled_for
     for update skip locked
@@ -103,9 +126,9 @@ begin
 end;
 $$;
 
--- Records the outcome of a send attempt. Failures only become terminal once the
--- attempt budget is exhausted, so transient errors are retried by later drains.
-create or replace function public.mark_notification_result(
+-- Records the result of one send attempt. Failures become terminal once the
+-- attempt budget is exhausted; transient errors stay retryable.
+create or replace function internal.mark_notification_result(
   p_outbox_id uuid,
   p_success boolean,
   p_provider_message_id text default null,
@@ -127,7 +150,7 @@ begin
       and failed_at is null;
   else
     update internal.notification_outbox
-    set last_error = left(coalesce(p_error, ''), 2000),
+    set last_error = left(coalesce(nullif(btrim(p_error), ''), 'delivery failed'), 2000),
         failed_at = case when attempt_count >= 5 then now() else null end
     where id = p_outbox_id
       and sent_at is null
@@ -136,12 +159,49 @@ begin
 end;
 $$;
 
--- 3) Automatic delivery: drain the outbox to APNs as soon as it's enqueued -----
--- pg_net queues the HTTP call and sends it after this transaction commits, so the
--- edge function always sees the committed row. The drain secret is read from
--- Vault (create it with: select vault.create_secret('<value>', 'widget_drain_secret'));
--- until it exists the call is skipped, so no unauthenticated POST is made.
--- Missed/failed sends still reconcile via on-open sync and the next save's drain.
+create or replace function public.claim_notification_batch(p_limit integer default 50)
+returns table (
+  outbox_id uuid,
+  push_token text,
+  apns_environment text,
+  apns_push_type text,
+  apns_collapse_id text,
+  payload jsonb
+)
+language sql
+security invoker
+set search_path = pg_catalog
+as $$
+  select *
+  from internal.claim_notification_batch(p_limit);
+$$;
+
+create or replace function public.mark_notification_result(
+  p_outbox_id uuid,
+  p_success boolean,
+  p_provider_message_id text default null,
+  p_error text default null
+)
+returns void
+language sql
+security invoker
+set search_path = pg_catalog
+as $$
+  select internal.mark_notification_result(
+    p_outbox_id,
+    p_success,
+    p_provider_message_id,
+    p_error
+  );
+$$;
+
+-- 3) Automatic delivery: drain outbox to APNs as soon as it's enqueued ---------
+
+-- pg_net queues the HTTP call and sends it after the transaction commits, so the
+-- Edge Function always sees committed rows. The drain secret is read from Vault
+-- (create it with: select vault.create_secret('<value>', 'widget_drain_secret'));
+-- until it exists, the call is skipped and no unauthenticated POST is made.
+-- Missed/failed sends still reconcile through on-open sync and scheduled drains.
 
 create extension if not exists pg_net;
 
@@ -162,7 +222,7 @@ begin
 
   if coalesce(drain_secret, '') <> '' then
     perform net.http_post(
-      url := 'https://pbquwluigzrkpjufayst.supabase.co/functions/v1/send-widget-push',
+      url := 'https://api.paeonia.no/functions/v1/send-widget-push',
       headers := jsonb_build_object(
         'Content-Type', 'application/json',
         'x-drain-secret', drain_secret
@@ -181,6 +241,15 @@ execute function internal.invoke_widget_push_drain();
 
 revoke all on function internal.notify_partner_of_widget_revision() from public, anon, authenticated;
 grant execute on function internal.notify_partner_of_widget_revision() to service_role;
+
+revoke all on function internal.fail_exhausted_notification_claims() from public, anon, authenticated;
+grant execute on function internal.fail_exhausted_notification_claims() to service_role;
+
+revoke all on function internal.claim_notification_batch(integer) from public, anon, authenticated;
+grant execute on function internal.claim_notification_batch(integer) to service_role;
+
+revoke all on function internal.mark_notification_result(uuid, boolean, text, text) from public, anon, authenticated;
+grant execute on function internal.mark_notification_result(uuid, boolean, text, text) to service_role;
 
 revoke all on function internal.invoke_widget_push_drain() from public, anon, authenticated;
 grant execute on function internal.invoke_widget_push_drain() to service_role;

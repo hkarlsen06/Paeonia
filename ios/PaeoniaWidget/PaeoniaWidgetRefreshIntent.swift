@@ -8,7 +8,15 @@ import WidgetKit
 /// local state. Once partner sync exists, trigger that sync here before
 /// reloading so the button pulls a partner's newest drawing on demand.
 struct PaeoniaWidgetRefreshIntent: AppIntent {
-    static let title: LocalizedStringResource = .widgetRefresh
+    // AppIntents extracts `title` at build time and only accepts a string literal
+    // or a `LocalizedStringResource` initializer call — not a generated catalog
+    // symbol like `.widgetRefresh`. Use the initializer form so the existing
+    // `widget.refresh` catalog entry (and its en/nb translations) still backs it.
+    static let title = LocalizedStringResource(
+        "widget.refresh",
+        table: "Localizable",
+        comment: "Accessibility label and title for the widget refresh button."
+    )
 
     // `perform()` is async by AppIntent protocol; reloading the timeline is synchronous.
     // swiftlint:disable:next async_without_await

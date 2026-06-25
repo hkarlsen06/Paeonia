@@ -37,10 +37,68 @@ struct WidgetCanvasSyncServiceTests {
         let env = SyncEnvironment()
         env.gateway.state = Self.state(authorUserID: UUID(), canvasSide: 280)
         env.gateway.signedURL = URL(string: "https://example.com/payload")
-        env.pendingStore.markPending("local-work-hash")
+        env.pendingStore.markPending(
+            Self.uploadPayload(for: env.downloadedData),
+            contentHash: WidgetCanvasUploadService.sha256Hex(of: env.downloadedData)
+        )
 
         await env.service.sync(identity: Self.identity(partnerID: UUID()))
 
+        #expect(env.localStore.savedCalls.isEmpty)
+        #expect(env.uploadSpy.uploadedPayloads.isEmpty)
+    }
+
+    @Test func syncSkipsRemoteRevisionForLegacyPendingUploadMarker() async {
+        let env = SyncEnvironment()
+        env.gateway.state = Self.state(authorUserID: UUID(), canvasSide: 280)
+        env.gateway.signedURL = URL(string: "https://example.com/payload")
+        env.pendingStore.defaults.set(
+            "legacy-local-work-hash",
+            forKey: "paeonia.widgetCanvas.pendingUploadHash"
+        )
+
+        await env.service.sync(identity: Self.identity(partnerID: UUID()))
+
+        #expect(env.localStore.savedCalls.isEmpty)
+        #expect(env.uploadSpy.uploadedPayloads.isEmpty)
+    }
+
+    @Test func syncRetriesStalePendingUploadBeforePullingRemoteRevision() async {
+        let env = SyncEnvironment()
+        let contentHash = WidgetCanvasUploadService.sha256Hex(of: env.downloadedData)
+        env.localStore.savedDrawingData = env.downloadedData
+        env.gateway.state = Self.state(authorUserID: UUID(), canvasSide: 280)
+        env.gateway.signedURL = URL(string: "https://example.com/payload")
+        env.pendingStore.markPending(
+            Self.uploadPayload(for: env.downloadedData),
+            contentHash: contentHash,
+            at: Date(timeIntervalSince1970: 0)
+        )
+
+        await env.service.sync(identity: Self.identity(partnerID: UUID()))
+
+        #expect(env.uploadSpy.uploadedPayloads.count == 1)
+        #expect(!env.pendingStore.hasPending)
+        #expect(env.localStore.savedCalls.count == 1)
+    }
+
+    @Test func syncKeepsPendingUploadWhenRetryFails() async {
+        let env = SyncEnvironment()
+        let contentHash = WidgetCanvasUploadService.sha256Hex(of: env.downloadedData)
+        env.localStore.savedDrawingData = env.downloadedData
+        env.uploadSpy.error = WidgetCanvasGatewayError.emptyResponse
+        env.gateway.state = Self.state(authorUserID: UUID(), canvasSide: 280)
+        env.gateway.signedURL = URL(string: "https://example.com/payload")
+        env.pendingStore.markPending(
+            Self.uploadPayload(for: env.downloadedData),
+            contentHash: contentHash,
+            at: Date(timeIntervalSince1970: 0)
+        )
+
+        await env.service.sync(identity: Self.identity(partnerID: UUID()))
+
+        #expect(env.uploadSpy.uploadedPayloads.count == 1)
+        #expect(env.pendingStore.hasPending)
         #expect(env.localStore.savedCalls.isEmpty)
     }
 
@@ -86,12 +144,23 @@ struct WidgetCanvasSyncServiceTests {
     private static func identity(partnerID: UUID) -> WidgetSyncIdentity {
         WidgetSyncIdentity(currentUserID: UUID(), currentDisplayName: "Me", partnerDisplayName: "Partner")
     }
+
+    private static func uploadPayload(for data: Data) -> WidgetDrawingUploadPayload {
+        WidgetDrawingUploadPayload(
+            drawingData: data,
+            canvasSide: 320,
+            strokeCount: 1,
+            pointCount: 1,
+            bounds: CGRect(x: 0, y: 0, width: 100, height: 100)
+        )
+    }
 }
 
 @MainActor
 private final class SyncEnvironment {
     let gateway = SyncGatewaySpy()
     let localStore = SyncLocalStoreSpy()
+    let uploadSpy = SyncUploadSpy()
     let pendingStore: WidgetPendingUploadStore
     let downloadedData: Data
     let service: WidgetCanvasSyncService
@@ -107,6 +176,7 @@ private final class SyncEnvironment {
             localStore: localStore,
             downloader: SyncDownloaderSpy(data: drawingData),
             pendingStore: pendingStore,
+            pendingUploader: uploadSpy,
             defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard
         )
     }
@@ -140,14 +210,29 @@ private nonisolated final class SyncLocalStoreSpy: WidgetCanvasManaging, @unchec
         let createdAt: Date
     }
     private(set) var savedCalls: [SaveCall] = []
+    var savedDrawingData: Data?
 
-    func loadSavedDrawing() -> Data? { nil }
+    func loadSavedDrawing() -> Data? { savedDrawingData }
     func saveDrawing(_ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date) {
         savedCalls.append(
             SaveCall(data: drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
         )
     }
     func clearForPrivacy() {}
+}
+
+private nonisolated final class SyncUploadSpy: WidgetCanvasUploading, @unchecked Sendable {
+    private(set) var uploadedPayloads: [WidgetDrawingUploadPayload] = []
+    var error: Error?
+
+    func enqueueUpload(_ payload: WidgetDrawingUploadPayload) {}
+
+    func uploadPending(_ payload: WidgetDrawingUploadPayload) async throws {
+        uploadedPayloads.append(payload)
+        if let error {
+            throw error
+        }
+    }
 }
 
 private nonisolated final class SyncGatewaySpy: WidgetCanvasGateway, @unchecked Sendable {

@@ -1,9 +1,8 @@
 /// <reference types="jsr:@supabase/functions-js/edge-runtime.d.ts" />
 
-// Drains pending notifications from the outbox and delivers them to APNs as
-// silent ('content-available') pushes. Invoked by a Database Webhook on
-// `internal.notification_outbox` insert (and/or on a schedule). Idempotent and
-// safe to call repeatedly — it only sends rows it can atomically claim.
+// Drains pending notification outbox rows and delivers APNs silent
+// ('content-available') pushes. It is safe to call repeatedly because rows are
+// claimed atomically in Postgres.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -28,30 +27,47 @@ interface ClaimedNotification {
   payload: Record<string, unknown>;
 }
 
+interface ApnsSendResult {
+  ok: boolean;
+  providerMessageId?: string;
+  error?: string;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function base64url(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(
+    /=+$/,
+    "",
+  );
 }
 
 function pemToDer(pem: string): ArrayBuffer {
-    const normalized = pem.replace(/\\n/g, "\n");
-    const base64 = normalized
-        .replace(/-----BEGIN [^-]+-----/, "")
-        .replace(/-----END [^-]+-----/, "")
-        .replace(/\s+/g, "");
-    const binary = atob(base64);
-    const buffer = new ArrayBuffer(binary.length);
-    const der = new Uint8Array(buffer);
-    for (let i = 0; i < binary.length; i++) der[i] = binary.charCodeAt(i);
-    return buffer;
+  const normalized = pem.replace(/\\n/g, "\n");
+  const base64 = normalized
+    .replace(/-----BEGIN [^-]+-----/, "")
+    .replace(/-----END [^-]+-----/, "")
+    .replace(/\s+/g, "");
+  const binary = atob(base64);
+  const buffer = new ArrayBuffer(binary.length);
+  const der = new Uint8Array(buffer);
+  for (let index = 0; index < binary.length; index++) {
+    der[index] = binary.charCodeAt(index);
+  }
+  return buffer;
 }
 
 let cachedToken: { jwt: string; issuedAt: number } | null = null;
 
 async function apnsProviderToken(): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  if (cachedToken && now - cachedToken.issuedAt < PROVIDER_TOKEN_MAX_AGE_SECONDS) {
+  if (
+    cachedToken && now - cachedToken.issuedAt < PROVIDER_TOKEN_MAX_AGE_SECONDS
+  ) {
     return cachedToken.jwt;
   }
 
@@ -84,7 +100,7 @@ async function apnsProviderToken(): Promise<string> {
 async function sendToApns(
   notification: ClaimedNotification,
   jwt: string,
-): Promise<{ ok: boolean; providerMessageId?: string; error?: string }> {
+): Promise<ApnsSendResult> {
   const host = notification.apns_environment === "production"
     ? "api.push.apple.com"
     : "api.sandbox.push.apple.com";
@@ -100,26 +116,28 @@ async function sendToApns(
     headers["apns-collapse-id"] = notification.apns_collapse_id;
   }
 
-  const body = notification.apns_push_type === "background"
-    ? JSON.stringify({ aps: { "content-available": 1 } })
-    : JSON.stringify({ aps: { "content-available": 1 } });
-
-  const response = await fetch(`https://${host}/3/device/${notification.push_token}`, {
-    method: "POST",
-    headers,
-    body,
-  });
+  const response = await fetch(
+    `https://${host}/3/device/${notification.push_token}`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ aps: { "content-available": 1 } }),
+    },
+  );
 
   if (response.status === 200) {
-    return { ok: true, providerMessageId: response.headers.get("apns-id") ?? undefined };
+    return {
+      ok: true,
+      providerMessageId: response.headers.get("apns-id") ?? undefined,
+    };
   }
 
   let reason = `status ${response.status}`;
   try {
     const json = await response.json();
     if (json?.reason) reason = String(json.reason);
-  } catch (_) {
-    // keep the status-based reason
+  } catch {
+    // Keep status-based reason.
   }
   return { ok: false, error: reason };
 }
@@ -128,29 +146,63 @@ Deno.serve(async (request) => {
   if (!DRAIN_SECRET || request.headers.get("x-drain-secret") !== DRAIN_SECRET) {
     return new Response("unauthorized", { status: 401 });
   }
-  if (!APNS_KEY_ID || !APNS_TEAM_ID || !APNS_PRIVATE_KEY || !SERVICE_KEY) {
+
+  if (
+    !SUPABASE_URL || !SERVICE_KEY || !APNS_KEY_ID || !APNS_TEAM_ID ||
+    !APNS_PRIVATE_KEY
+  ) {
+    return new Response("push delivery is not configured", { status: 500 });
+  }
+
+  let jwt: string;
+  try {
+    jwt = await apnsProviderToken();
+  } catch (error) {
+    console.error("Unable to create APNs provider token", error);
     return new Response("push delivery is not configured", { status: 500 });
   }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
-  const { data, error } = await supabase.rpc("claim_notification_batch", { p_limit: 100 });
+  const { data, error } = await supabase.rpc("claim_notification_batch", {
+    p_limit: 100,
+  });
   if (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+    });
   }
 
   const batch = (data ?? []) as ClaimedNotification[];
-  const jwt = await apnsProviderToken();
   let sent = 0;
   let failed = 0;
 
   for (const notification of batch) {
-    const result = await sendToApns(notification, jwt);
-    await supabase.rpc("mark_notification_result", {
-      p_outbox_id: notification.outbox_id,
-      p_success: result.ok,
-      p_provider_message_id: result.providerMessageId ?? null,
-      p_error: result.error ?? null,
-    });
+    let result: ApnsSendResult;
+    try {
+      result = await sendToApns(notification, jwt);
+    } catch (error) {
+      result = { ok: false, error: errorMessage(error) };
+    }
+
+    const { error: markError } = await supabase.rpc(
+      "mark_notification_result",
+      {
+        p_outbox_id: notification.outbox_id,
+        p_success: result.ok,
+        p_provider_message_id: result.providerMessageId ?? null,
+        p_error: result.error ?? null,
+      },
+    );
+
+    if (markError) {
+      console.error("Unable to record notification result", {
+        outbox_id: notification.outbox_id,
+        error: markError.message,
+      });
+      failed++;
+      continue;
+    }
+
     if (result.ok) sent++;
     else failed++;
   }

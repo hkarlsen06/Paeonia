@@ -39,6 +39,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
     private let localStore: any WidgetCanvasManaging
     private let downloader: any WidgetPayloadDownloading
     private let pendingStore: WidgetPendingUploadStore
+    private let pendingUploader: (any WidgetCanvasUploading)?
     private let defaults: UserDefaults
     private let lastSyncedKey = "paeonia.widgetCanvas.lastSyncedRevisionID"
 
@@ -54,18 +55,24 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
         localStore: any WidgetCanvasManaging,
         downloader: any WidgetPayloadDownloading = URLSessionWidgetPayloadDownloader(),
         pendingStore: WidgetPendingUploadStore = .shared,
+        pendingUploader: (any WidgetCanvasUploading)? = nil,
         defaults: UserDefaults = .standard
     ) {
         self.gateway = gateway
         self.localStore = localStore
         self.downloader = downloader
         self.pendingStore = pendingStore
+        self.pendingUploader = pendingUploader
         self.defaults = defaults
     }
 
     func sync(identity: WidgetSyncIdentity) async {
         // Don't overwrite a local save that hasn't reached the server yet.
-        guard !pendingStore.hasPending else {
+        if let pendingSnapshot = pendingStore.pendingSnapshot {
+            guard await retryPendingUploadIfNeeded(pendingSnapshot) else {
+                return
+            }
+        } else if pendingStore.hasPending {
             return
         }
 
@@ -120,6 +127,38 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
         }
     }
 
+    private func retryPendingUploadIfNeeded(_ snapshot: WidgetPendingUploadSnapshot) async -> Bool {
+        guard pendingStore.shouldRetry(snapshot) else {
+            return false
+        }
+
+        guard let drawingData = await localStore.loadSavedDrawing() else {
+            pendingStore.clearPending(snapshot.contentHash)
+            return true
+        }
+
+        guard WidgetCanvasUploadService.sha256Hex(of: drawingData) == snapshot.contentHash,
+              (try? PKDrawing(data: drawingData)) != nil
+        else {
+            pendingStore.clearPending(snapshot.contentHash)
+            return true
+        }
+
+        guard let pendingUploader else {
+            return false
+        }
+
+        do {
+            try await pendingUploader.uploadPending(snapshot.uploadPayload(with: drawingData))
+            return true
+        } catch {
+            #if DEBUG
+            logger.error("Pending widget upload retry failed: \(String(describing: error))")
+            #endif
+            return false
+        }
+    }
+
     static func authorName(for authorID: UUID?, identity: WidgetSyncIdentity) -> String? {
         guard let authorID else {
             return nil
@@ -140,9 +179,19 @@ nonisolated enum WidgetCanvasSyncServiceFactory {
         guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
             return NoOpWidgetCanvasSync()
         }
+        let gateway = LiveSupabaseWidgetCanvasGateway(client: client)
+        let pendingStore = WidgetPendingUploadStore.shared
+        let uploader = WidgetCanvasUploadService(
+            gateway: gateway,
+            operationFactory: WidgetCanvasClientOperationFactory.shared,
+            pendingStore: pendingStore
+        )
+
         return WidgetCanvasSyncService(
-            gateway: LiveSupabaseWidgetCanvasGateway(client: client),
-            localStore: WidgetCanvasService.shared
+            gateway: gateway,
+            localStore: WidgetCanvasService.shared,
+            pendingStore: pendingStore,
+            pendingUploader: uploader
         )
     }
 }

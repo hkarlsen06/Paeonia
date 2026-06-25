@@ -21,6 +21,10 @@ nonisolated protocol WidgetCanvasUploading: Sendable {
     /// Fire-and-forget: starts the upload on a task that outlives the drawing
     /// screen, so navigating back doesn't cancel an in-flight upload.
     func enqueueUpload(_ payload: WidgetDrawingUploadPayload) async
+
+    /// Retries an already-pending local save and clears pending state only
+    /// after server confirms it.
+    func uploadPending(_ payload: WidgetDrawingUploadPayload) async throws
 }
 
 /// Orchestrates the canonical upload pipeline: resolve the couple's canvas,
@@ -54,20 +58,26 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
         // Mark this drawing as not-yet-on-the-server so a sync can't pull an
         // older revision over it. Cleared only once the upload is confirmed.
         let contentHash = Self.sha256Hex(of: payload.drawingData)
-        pendingStore.markPending(contentHash)
+        pendingStore.markPending(payload, contentHash: contentHash)
 
         Task {
             do {
-                try await upload(payload)
-                pendingStore.clearPending(contentHash)
+                try await uploadPending(payload)
             } catch {
                 // Leave the pending marker so newer local work isn't overwritten
-                // before it reaches the server; the next successful save clears it.
+                // before it reaches the server; a later retry or save clears it.
                 #if DEBUG
                 logger.error("Widget drawing upload failed: \(String(describing: error))")
                 #endif
             }
         }
+    }
+
+    func uploadPending(_ payload: WidgetDrawingUploadPayload) async throws {
+        let contentHash = Self.sha256Hex(of: payload.drawingData)
+        pendingStore.recordAttempt(contentHash)
+        try await upload(payload)
+        pendingStore.clearPending(contentHash)
     }
 
     func upload(_ payload: WidgetDrawingUploadPayload) async throws {
@@ -155,6 +165,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
 /// Used when no Supabase client is configured; saving stays local-only.
 nonisolated struct NoOpWidgetCanvasUpload: WidgetCanvasUploading {
     func enqueueUpload(_ payload: WidgetDrawingUploadPayload) {}
+    func uploadPending(_ payload: WidgetDrawingUploadPayload) async throws {}
 }
 
 nonisolated enum WidgetCanvasUploadServiceFactory {

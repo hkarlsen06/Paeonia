@@ -1,4 +1,51 @@
+import CoreGraphics
 import Foundation
+
+nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
+    let contentHash: String
+    let markedAt: Date
+    var lastAttemptAt: Date?
+    let canvasSide: Double
+    let strokeCount: Int
+    let pointCount: Int
+    let boundsX: Double
+    let boundsY: Double
+    let boundsWidth: Double
+    let boundsHeight: Double
+
+    init(
+        contentHash: String,
+        markedAt: Date,
+        lastAttemptAt: Date?,
+        payload: WidgetDrawingUploadPayload
+    ) {
+        self.contentHash = contentHash
+        self.markedAt = markedAt
+        self.lastAttemptAt = lastAttemptAt
+        canvasSide = Double(payload.canvasSide)
+        strokeCount = payload.strokeCount
+        pointCount = payload.pointCount
+        boundsX = Double(payload.bounds.origin.x)
+        boundsY = Double(payload.bounds.origin.y)
+        boundsWidth = Double(payload.bounds.width)
+        boundsHeight = Double(payload.bounds.height)
+    }
+
+    func uploadPayload(with drawingData: Data) -> WidgetDrawingUploadPayload {
+        WidgetDrawingUploadPayload(
+            drawingData: drawingData,
+            canvasSide: CGFloat(canvasSide),
+            strokeCount: strokeCount,
+            pointCount: pointCount,
+            bounds: CGRect(
+                x: boundsX,
+                y: boundsY,
+                width: boundsWidth,
+                height: boundsHeight
+            )
+        )
+    }
+}
 
 /// Tracks whether this device has a saved drawing whose upload hasn't been
 /// confirmed on the server yet. While something is pending, a sync must not pull
@@ -10,23 +57,69 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
     nonisolated static let shared = WidgetPendingUploadStore()
 
     private let defaults: UserDefaults
-    private let key = "paeonia.widgetCanvas.pendingUploadHash"
+    private let key = "paeonia.widgetCanvas.pendingUpload"
+    private let legacyHashKey = "paeonia.widgetCanvas.pendingUploadHash"
+    private let retryDelay: TimeInterval
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, retryDelay: TimeInterval = 60) {
         self.defaults = defaults
+        self.retryDelay = retryDelay
     }
 
     var hasPending: Bool {
-        defaults.string(forKey: key) != nil
+        defaults.data(forKey: key) != nil || defaults.string(forKey: legacyHashKey) != nil
     }
 
-    func markPending(_ contentHash: String) {
-        defaults.set(contentHash, forKey: key)
+    var pendingSnapshot: WidgetPendingUploadSnapshot? {
+        guard let data = defaults.data(forKey: key) else {
+            return nil
+        }
+
+        return try? JSONDecoder().decode(WidgetPendingUploadSnapshot.self, from: data)
+    }
+
+    func markPending(
+        _ payload: WidgetDrawingUploadPayload,
+        contentHash: String,
+        at date: Date = Date()
+    ) {
+        let snapshot = WidgetPendingUploadSnapshot(
+            contentHash: contentHash,
+            markedAt: date,
+            lastAttemptAt: date,
+            payload: payload
+        )
+        if let data = try? JSONEncoder().encode(snapshot) {
+            defaults.set(data, forKey: key)
+            defaults.removeObject(forKey: legacyHashKey)
+        }
+    }
+
+    func shouldRetry(_ snapshot: WidgetPendingUploadSnapshot, now: Date = Date()) -> Bool {
+        guard let lastAttemptAt = snapshot.lastAttemptAt else {
+            return true
+        }
+
+        return now.timeIntervalSince(lastAttemptAt) >= retryDelay
+    }
+
+    func recordAttempt(_ contentHash: String, at date: Date = Date()) {
+        guard var snapshot = pendingSnapshot, snapshot.contentHash == contentHash else {
+            return
+        }
+
+        snapshot.lastAttemptAt = date
+        if let data = try? JSONEncoder().encode(snapshot) {
+            defaults.set(data, forKey: key)
+        }
     }
 
     func clearPending(_ contentHash: String) {
-        if defaults.string(forKey: key) == contentHash {
+        if pendingSnapshot?.contentHash == contentHash {
             defaults.removeObject(forKey: key)
+        }
+        if defaults.string(forKey: legacyHashKey) == contentHash {
+            defaults.removeObject(forKey: legacyHashKey)
         }
     }
 }

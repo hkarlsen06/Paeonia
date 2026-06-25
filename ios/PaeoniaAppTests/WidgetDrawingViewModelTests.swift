@@ -344,6 +344,10 @@ private final class WidgetCanvasUploadSpy: WidgetCanvasUploading, @unchecked Sen
     func enqueueUpload(_ payload: WidgetDrawingUploadPayload) {
         enqueued.append(payload)
     }
+
+    func uploadPending(_ payload: WidgetDrawingUploadPayload) async throws {
+        enqueued.append(payload)
+    }
 }
 
 private final class WidgetDrawingUndoTestTarget {}
