@@ -171,6 +171,7 @@ Rules:
 - body states consequence
 - destructive button uses a verb
 - cancellation is clear
+- present them in the centered system alert dialog (SwiftUI `.alert`), app-wide; do not use a bottom action sheet (`.confirmationDialog`)
 
 ## Paywall Components
 

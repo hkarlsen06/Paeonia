@@ -314,6 +314,13 @@ Use cards only when the framed surface has product meaning, such as a distinct r
 - Do not add new inline red error panels or system alerts for ordinary recoverable errors.
 - Keep full-screen error states only when the whole screen cannot continue and needs a retry action.
 
+### Confirmation Dialogs
+
+- Confirmations and destructive choices use the centered system alert dialog, app-wide. Use SwiftUI `.alert(_:isPresented:actions:message:)`.
+- Do not use `.confirmationDialog` (the bottom action sheet) for these. It anchors to the bottom or renders as a popover and is not the intended presentation.
+- This is separate from error presentation: errors still go to the top banner (see above); the centered alert is only for confirmations the user must explicitly approve (for example: clear canvas, delete account, leave relationship).
+- Title states the action, the message states the consequence and reversibility, the destructive button uses a verb with the `.destructive` role, and the cancel button uses the `.cancel` role.
+
 ## Testing Requirements
 
 Agents should add or update tests when implementing behavior.

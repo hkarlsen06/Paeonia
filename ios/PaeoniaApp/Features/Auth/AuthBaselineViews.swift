@@ -301,10 +301,9 @@ struct AuthenticatedBaselineView: View {
 
     var body: some View {
         card
-            .confirmationDialog(
+            .alert(
                 Text(.authDeleteAccountConfirmTitle),
-                isPresented: $isConfirmingDelete,
-                titleVisibility: .visible
+                isPresented: $isConfirmingDelete
             ) {
                 Button(role: .destructive, action: onDeleteAccount) {
                     Text(.authDeleteAccountConfirmAction)

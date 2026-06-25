@@ -54,10 +54,9 @@ struct PaywallView: View {
         .onChange(of: viewModel.error) { _, error in
             showBanner(for: error)
         }
-        .confirmationDialog(
+        .alert(
             Text(.authDeleteAccountConfirmTitle),
-            isPresented: $isConfirmingDelete,
-            titleVisibility: .visible
+            isPresented: $isConfirmingDelete
         ) {
             Button(role: .destructive, action: onDeleteAccount) {
                 Text(.authDeleteAccountConfirmAction)
