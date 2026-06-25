@@ -4,6 +4,7 @@ import SwiftUI
 struct RootView: View {
     @State private var viewModel: RootViewModel
     @State private var bannerCenter = PaeoniaBannerCenter()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let appleSignInProvider: any AppleSignInProviding
     private let googleSignInProvider: any GoogleSignInProviding
 
@@ -127,22 +128,64 @@ struct RootView: View {
 
     private var pairedScaffold: some View {
         NavigationStack {
-            PairingCelebrationView(
-                currentDisplayName: viewModel.currentSession?.displayName,
-                currentProfilePhotoAssetID: viewModel.currentProfilePhotoAssetID,
-                partnerDisplayName: viewModel.currentPartnerDisplayName,
-                partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
-                playsIntro: viewModel.pendingPairingCelebration,
-                onIntroComplete: {
-                    viewModel.consumePairingCelebration()
-                }
-            )
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.screenTopSpacing)
-            .padding(.bottom, PaeoniaSpacing.space16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(.paeoniaBackgroundPrimary)
+            pairedContent
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.top, PaeoniaSpacing.screenTopSpacing)
+                .padding(.bottom, PaeoniaSpacing.space16)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .background(.paeoniaBackgroundPrimary)
         }
+    }
+
+    @ViewBuilder
+    private var pairedContent: some View {
+        ZStack {
+            if viewModel.isPairingCelebrationPresented {
+                PairingCelebrationView(
+                    currentDisplayName: viewModel.currentSession?.displayName,
+                    currentProfilePhotoAssetID: viewModel.currentProfilePhotoAssetID,
+                    partnerDisplayName: viewModel.currentPartnerDisplayName,
+                    partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
+                    playsIntro: viewModel.pendingPairingCelebration,
+                    onIntroComplete: {
+                        viewModel.consumePairingCelebration()
+                    },
+                    onDismiss: {
+                        dismissPairingCelebration()
+                    }
+                )
+                .transition(
+                    .asymmetric(
+                        insertion: .opacity,
+                        removal: pairedCelebrationRemovalTransition
+                    )
+                )
+            } else {
+                PairedHomeView(
+                    currentDisplayName: viewModel.currentSession?.displayName,
+                    partnerDisplayName: viewModel.currentPartnerDisplayName
+                )
+                .transition(
+                    .asymmetric(
+                        insertion: pairedHomeInsertionTransition,
+                        removal: .opacity
+                    )
+                )
+            }
+        }
+        .animation(pairedScreenAnimation, value: viewModel.isPairingCelebrationPresented)
+    }
+
+    private var pairedScreenAnimation: Animation? {
+        reduceMotion ? nil : PaeoniaMotion.pairedScreenTransition
+    }
+
+    private var pairedCelebrationRemovalTransition: AnyTransition {
+        reduceMotion ? .opacity : .scale(scale: 0.96).combined(with: .opacity)
+    }
+
+    private var pairedHomeInsertionTransition: AnyTransition {
+        reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity)
     }
 
     private var header: some View {
@@ -246,6 +289,12 @@ struct RootView: View {
     private func refreshPairing() {
         Task {
             await viewModel.refreshAfterPairingChange()
+        }
+    }
+
+    private func dismissPairingCelebration() {
+        withAnimation(pairedScreenAnimation) {
+            viewModel.dismissPairingCelebration()
         }
     }
 

@@ -171,40 +171,55 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
-    @Test func freshLinkIntoPairedRequestsCelebration() async {
+    @Test func freshLinkIntoPairedRequestsCelebration() async throws {
+        let pairID = try #require(UUID(uuidString: "2C7B12FD-4DD2-4900-98B6-5E37B9DFE4DD"))
+        let pairingCelebrationStore = TestPairingCelebrationStore()
         let accessRouteService = BlockingAccessRouteService(
             routes: [.invitePending, .paired],
-            blockedCallIndex: 0
+            blockedCallIndex: 0,
+            pairID: pairID
         )
         let viewModel = RootViewModel(
             syncCoordinator: TestSyncCoordinator(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService,
-            inviteStore: TestPairingInviteStore(invite: .test())
+            inviteStore: TestPairingInviteStore(invite: .test()),
+            pairingCelebrationStore: pairingCelebrationStore
         )
 
         await viewModel.start()
         #expect(viewModel.state == .invitePending)
         #expect(viewModel.pendingPairingCelebration == false)
+        #expect(viewModel.isPairingCelebrationPresented == false)
 
         await viewModel.refreshAfterPairingChange()
         #expect(viewModel.state == .paired)
         #expect(viewModel.pendingPairingCelebration == true)
+        #expect(viewModel.isPairingCelebrationPresented == true)
 
         viewModel.consumePairingCelebration()
         #expect(viewModel.pendingPairingCelebration == false)
+        #expect(viewModel.isPairingCelebrationPresented == true)
+
+        viewModel.dismissPairingCelebration()
+        #expect(viewModel.isPairingCelebrationPresented == false)
+        #expect(pairingCelebrationStore.hasSeenCelebration(forPairID: pairID) == true)
     }
 
     @MainActor
-    @Test func acceptedInviteShowsCelebrationWhileAccessRouteResolves() async {
+    @Test func acceptedInviteShowsCelebrationWhileAccessRouteResolves() async throws {
+        let pairID = try #require(UUID(uuidString: "8C01125D-7164-4E19-9742-A8F419B78E77"))
+        let pairingCelebrationStore = TestPairingCelebrationStore()
         let accessRouteService = BlockingAccessRouteService(
             routes: [.limitedAuthenticated, .paired],
-            blockedCallIndex: 2
+            blockedCallIndex: 2,
+            pairID: pairID
         )
         let viewModel = RootViewModel(
             syncCoordinator: TestSyncCoordinator(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: accessRouteService
+            accessRouteService: accessRouteService,
+            pairingCelebrationStore: pairingCelebrationStore
         )
 
         await viewModel.start()
@@ -217,29 +232,124 @@ struct PaeoniaAppTests {
         await accessRouteService.waitForBlockedResolveToStart()
         #expect(viewModel.state == .paired)
         #expect(viewModel.pendingPairingCelebration == true)
+        #expect(viewModel.isPairingCelebrationPresented == true)
 
         await accessRouteService.releaseBlockedResolve()
         await refreshTask.value
 
         #expect(viewModel.state == .paired)
         #expect(viewModel.pendingPairingCelebration == true)
+        #expect(viewModel.isPairingCelebrationPresented == true)
+
+        viewModel.dismissPairingCelebration()
+        #expect(viewModel.isPairingCelebrationPresented == false)
+        #expect(pairingCelebrationStore.hasSeenCelebration(forPairID: pairID) == true)
     }
 
     @MainActor
-    @Test func launchingDirectlyIntoPairedDoesNotCelebrate() async {
-        let accessRouteService = StaticAccessRouteService(
-            resolution: .test(route: .paired, partnerDisplayName: "Riley")
+    @Test func acceptedInviteDismissedBeforeSnapshotMarksSeenWhenPairIDArrives() async throws {
+        let pairID = try #require(UUID(uuidString: "B14D1155-6F4E-4631-8429-12C023D028CB"))
+        let pairingCelebrationStore = TestPairingCelebrationStore()
+        let accessRouteService = BlockingAccessRouteService(
+            routes: [.limitedAuthenticated, .paired],
+            blockedCallIndex: 2,
+            pairID: pairID
         )
         let viewModel = RootViewModel(
             syncCoordinator: TestSyncCoordinator(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: accessRouteService
+            accessRouteService: accessRouteService,
+            pairingCelebrationStore: pairingCelebrationStore
+        )
+
+        await viewModel.start()
+
+        let refreshTask = Task { @MainActor in
+            await viewModel.refreshAfterInviteAccepted()
+        }
+
+        await accessRouteService.waitForBlockedResolveToStart()
+        viewModel.dismissPairingCelebration()
+        #expect(viewModel.isPairingCelebrationPresented == false)
+        #expect(pairingCelebrationStore.hasSeenCelebration(forPairID: pairID) == false)
+
+        await accessRouteService.releaseBlockedResolve()
+        await refreshTask.value
+
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.isPairingCelebrationPresented == false)
+        #expect(pairingCelebrationStore.hasSeenCelebration(forPairID: pairID) == true)
+    }
+
+    @MainActor
+    @Test func seenPairingCelebrationDoesNotPresentFreshLinkAgain() async throws {
+        let pairID = try #require(UUID(uuidString: "E88951E9-41DC-4961-A92D-DC2D5856F558"))
+        let pairingCelebrationStore = TestPairingCelebrationStore(seenPairIDs: [pairID])
+        let accessRouteService = BlockingAccessRouteService(
+            routes: [.invitePending, .paired],
+            blockedCallIndex: 0,
+            pairID: pairID
+        )
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService,
+            inviteStore: TestPairingInviteStore(invite: .test()),
+            pairingCelebrationStore: pairingCelebrationStore
+        )
+
+        await viewModel.start()
+        await viewModel.refreshAfterPairingChange()
+
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.pendingPairingCelebration == false)
+        #expect(viewModel.isPairingCelebrationPresented == false)
+    }
+
+    @MainActor
+    @Test func launchingDirectlyIntoUnseenPairedShowsSettledCelebration() async throws {
+        let pairID = try #require(UUID(uuidString: "E6067801-9F27-4982-B8FD-0DFED2F61672"))
+        let pairingCelebrationStore = TestPairingCelebrationStore()
+        let accessRouteService = StaticAccessRouteService(
+            resolution: .test(route: .paired, partnerDisplayName: "Riley", pairID: pairID)
+        )
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService,
+            pairingCelebrationStore: pairingCelebrationStore
         )
 
         await viewModel.start()
 
         #expect(viewModel.state == .paired)
         #expect(viewModel.pendingPairingCelebration == false)
+        #expect(viewModel.isPairingCelebrationPresented == true)
+
+        viewModel.dismissPairingCelebration()
+        #expect(viewModel.isPairingCelebrationPresented == false)
+        #expect(pairingCelebrationStore.hasSeenCelebration(forPairID: pairID) == true)
+    }
+
+    @MainActor
+    @Test func launchingDirectlyIntoSeenPairedDoesNotShowCelebration() async throws {
+        let pairID = try #require(UUID(uuidString: "97C22CEF-03CE-4A20-B817-698EE5A43511"))
+        let pairingCelebrationStore = TestPairingCelebrationStore(seenPairIDs: [pairID])
+        let accessRouteService = StaticAccessRouteService(
+            resolution: .test(route: .paired, partnerDisplayName: "Riley", pairID: pairID)
+        )
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService,
+            pairingCelebrationStore: pairingCelebrationStore
+        )
+
+        await viewModel.start()
+
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.pendingPairingCelebration == false)
+        #expect(viewModel.isPairingCelebrationPresented == false)
     }
 
     @MainActor
@@ -457,15 +567,17 @@ private actor StaticAccessRouteService: AccessRouteServicing {
 private actor BlockingAccessRouteService: AccessRouteServicing {
     private let routes: [AccessRoute]
     private let blockedCallIndex: Int
+    private let pairID: UUID?
     private var blockedResolveStarted = false
     private var blockedResolveStartedContinuation: CheckedContinuation<Void, Never>?
     private var blockedResolveReleaseContinuation: CheckedContinuation<Void, Never>?
     private(set) var resolveCallCount = 0
 
-    init(routes: [AccessRoute], blockedCallIndex: Int) {
+    init(routes: [AccessRoute], blockedCallIndex: Int, pairID: UUID? = nil) {
         precondition(!routes.isEmpty)
         self.routes = routes
         self.blockedCallIndex = blockedCallIndex
+        self.pairID = pairID
     }
 
     func waitForBlockedResolveToStart() async {
@@ -498,7 +610,7 @@ private actor BlockingAccessRouteService: AccessRouteServicing {
         }
 
         let routeIndex = min(callIndex - 1, routes.count - 1)
-        return .test(route: routes[routeIndex])
+        return .test(route: routes[routeIndex], pairID: pairID)
     }
 }
 
@@ -506,33 +618,61 @@ private extension AccessRouteResolution {
     static func test(
         route: AccessRoute,
         partnerDisplayName: String? = nil,
-        partnerProfilePhotoAssetID: UUID? = nil
+        partnerProfilePhotoAssetID: UUID? = nil,
+        pairID: UUID? = nil
     ) -> AccessRouteResolution {
         AccessRouteResolution(
             route: route,
             snapshot: AccessRouteSnapshot(
                 userEntitlement: nil,
                 coupleEntitlement: nil,
-                relationshipState: partnerDisplayName.map {
-                    .test(
-                        partnerDisplayName: $0,
-                        partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
-                    )
-                },
+                relationshipState: relationshipState(
+                    route: route,
+                    partnerDisplayName: partnerDisplayName,
+                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                    pairID: pairID
+                ),
                 hasPendingInvite: route == .invitePending
             )
         )
+    }
+
+    private static func relationshipState(
+        route: AccessRoute,
+        partnerDisplayName: String?,
+        partnerProfilePhotoAssetID: UUID?,
+        pairID: UUID?
+    ) -> SupabaseRelationshipState? {
+        if let partnerDisplayName {
+            return .test(
+                partnerDisplayName: partnerDisplayName,
+                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                pairID: pairID
+            )
+        }
+
+        switch route {
+        case .paired, .pairedPaywalled, .relationshipEndedNotice:
+            return .test(
+                partnerDisplayName: "Partner",
+                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                pairID: pairID
+            )
+        case .limitedAuthenticated, .unpaired, .invitePending:
+            return nil
+        }
     }
 }
 
 private extension SupabaseRelationshipState {
     static func test(
         partnerDisplayName: String,
-        partnerProfilePhotoAssetID: UUID? = nil
+        partnerProfilePhotoAssetID: UUID? = nil,
+        pairID: UUID? = nil
     ) -> SupabaseRelationshipState {
         SupabaseRelationshipState(
             coupleID: UUID(),
-            pairID: UUID(),
+            pairID: pairID ?? UUID(),
             relationshipStatus: .active,
             memberStatus: .active,
             partnerUserID: UUID(),
@@ -543,6 +683,23 @@ private extension SupabaseRelationshipState {
             deleteAfter: nil,
             endedNoticeSeenAt: nil
         )
+    }
+}
+
+@MainActor
+private final class TestPairingCelebrationStore: PairingCelebrationStoring {
+    private var seenPairIDs: Set<UUID>
+
+    init(seenPairIDs: Set<UUID> = []) {
+        self.seenPairIDs = seenPairIDs
+    }
+
+    func hasSeenCelebration(forPairID pairID: UUID) -> Bool {
+        seenPairIDs.contains(pairID)
+    }
+
+    func markCelebrationSeen(forPairID pairID: UUID) {
+        seenPairIDs.insert(pairID)
     }
 }
 

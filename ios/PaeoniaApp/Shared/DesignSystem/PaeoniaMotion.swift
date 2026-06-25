@@ -11,4 +11,5 @@ enum PaeoniaMotion {
     static let stateChange = Animation.easeOut(duration: motionDefault)
     static let cardReveal = Animation.spring(duration: motionDefault, bounce: 0.18)
     static let meaningfulMoment = Animation.easeInOut(duration: motionSlow)
+    static let pairedScreenTransition = Animation.spring(duration: motionCelebration, bounce: 0.16)
 }

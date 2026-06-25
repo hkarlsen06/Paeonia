@@ -36,6 +36,7 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
     @State private var partnerSlot: CGRect = .zero
 
     @State private var surroundingsShown = false
+    @State private var dismissButtonShown = false
     @State private var currentProfilePhotoData: Data?
     @State private var partnerProfilePhotoData: Data?
     @State private var currentProfilePhotoLoadFinished = false
@@ -49,6 +50,7 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
     let partnerProfilePhotoAssetID: UUID?
     let playsIntro: Bool
     let onIntroComplete: () -> Void
+    let onDismiss: () -> Void
     private let profilePhotoProvider: any ProfilePhotoImageProviding
 
     init(
@@ -58,7 +60,8 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
         partnerProfilePhotoAssetID: UUID? = nil,
         playsIntro: Bool,
         profilePhotoProvider: (any ProfilePhotoImageProviding)? = nil,
-        onIntroComplete: @escaping () -> Void = {}
+        onIntroComplete: @escaping () -> Void = {},
+        onDismiss: @escaping () -> Void = {}
     ) {
         self.currentDisplayName = currentDisplayName
         self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
@@ -66,6 +69,7 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.playsIntro = playsIntro
         self.onIntroComplete = onIntroComplete
+        self.onDismiss = onDismiss
         self.profilePhotoProvider = profilePhotoProvider
             ?? (try? ProfilePhotoImageService.live())
             ?? UnavailableProfilePhotoImageProvider()
@@ -112,6 +116,8 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
                 .position(x: proxy.size.width / 2, y: proxy.size.height * 0.5)
 
                 partnerHero(heartCenter: heartCenter, slotTarget: slotTarget)
+
+                dismissButton
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .coordinateSpace(.named(Self.coordinateSpace))
@@ -206,6 +212,7 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
         heartOpacity = 0
         partnerRevealed = false
         surroundingsShown = true
+        dismissButtonShown = true
     }
 
     @MainActor
@@ -221,6 +228,7 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
         partnerLanded = false
         partnerGlow = 24
         surroundingsShown = false
+        dismissButtonShown = false
     }
 
     @MainActor
@@ -238,6 +246,7 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
         guard await sleep(PairingCelebrationTiming.landingSettle) else { return }
 
         phase = .settled
+        showDismissButton()
     }
 
     /// 1. The heart forms in the middle of the screen.
@@ -297,6 +306,34 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
         withAnimation(.spring(response: 0.6, dampingFraction: 0.86).delay(0.16)) {
             surroundingsShown = true
         }
+    }
+
+    @MainActor
+    private func showDismissButton() {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) {
+            dismissButtonShown = true
+        }
+    }
+
+    private var dismissButton: some View {
+        VStack {
+            Spacer()
+
+            Button(action: dismiss) {
+                Text(.pairingCelebrationGetStartedButton)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .opacity(dismissButtonShown ? 1 : 0)
+            .offset(y: dismissButtonShown ? 0 : 18)
+            .allowsHitTesting(dismissButtonShown)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @MainActor
+    private func dismiss() {
+        PaeoniaHaptics.pairingCelebrationDismissed()
+        onDismiss()
     }
 
     /// Builds soft impact pulses that rise in intensity while their gaps shrink,

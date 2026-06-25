@@ -87,12 +87,14 @@ final class RootViewModel {
     private let authService: any AuthServicing
     private let accessRouteService: (any AccessRouteServicing)?
     private let inviteStore: any PairingInviteStoring
+    private let pairingCelebrationStore: any PairingCelebrationStoring
 
     private var route: RootRoute = .launching
     private(set) var isWorking = false
     private(set) var notice: RootNotice?
     private var hasStartedSync = false
     private var accessResolutionGeneration = 0
+    private var shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = false
 
     var state: AppState {
         route.appState
@@ -118,22 +120,27 @@ final class RootViewModel {
         route.accessResolution?.partnerProfilePhotoAssetID
     }
 
-    /// True when access has just resolved to `.paired` as the result of a fresh
-    /// link, so the paired screen should play its celebration intro. Set together
-    /// with the route change so the paired screen reads the right value the instant
-    /// it appears, then cleared once the celebration has claimed it.
+    /// True while the one-time celebration interstitial is presented above the
+    /// paired state. The regular paired screen is shown once this is false.
+    private(set) var isPairingCelebrationPresented = false
+
+    /// True when the currently presented celebration should play its intro. This
+    /// is cleared once the celebration has claimed it, while the interstitial
+    /// itself stays visible until the user dismisses it.
     private(set) var pendingPairingCelebration = false
 
     init(
         syncCoordinator: (any SyncCoordinating)? = nil,
         authService: (any AuthServicing)? = nil,
         accessRouteService: (any AccessRouteServicing)? = nil,
-        inviteStore: (any PairingInviteStoring)? = nil
+        inviteStore: (any PairingInviteStoring)? = nil,
+        pairingCelebrationStore: (any PairingCelebrationStoring)? = nil
     ) {
         self.syncCoordinator = syncCoordinator ?? SyncCoordinator()
         self.authService = authService ?? AuthServiceFactory.makeDefault()
         self.accessRouteService = accessRouteService ?? (try? SupabaseAccessRouteService.live())
         self.inviteStore = inviteStore ?? UserDefaultsPairingInviteStore.shared
+        self.pairingCelebrationStore = pairingCelebrationStore ?? UserDefaultsPairingCelebrationStore.shared
     }
 
     func start() async {
@@ -171,10 +178,16 @@ final class RootViewModel {
         notice = nil
     }
 
-    /// Marks the pairing celebration as played so it does not run again on an
-    /// ordinary return to the paired screen.
+    /// Marks the pairing celebration intro as claimed so a SwiftUI view recreation
+    /// cannot replay it while the interstitial is still on screen.
     func consumePairingCelebration() {
         pendingPairingCelebration = false
+    }
+
+    func dismissPairingCelebration() {
+        pendingPairingCelebration = false
+        isPairingCelebrationPresented = false
+        markCurrentPairingCelebrationSeen()
     }
 
     func completeOnboarding(
@@ -197,6 +210,7 @@ final class RootViewModel {
         await performAuthAction(failureNotice: .signOutFailed) {
             try await authService.signOut()
             invalidateAccessResolution()
+            clearPairingCelebrationPresentation()
             route = .signedOut
             hasStartedSync = false
         }
@@ -211,14 +225,19 @@ final class RootViewModel {
         isWorking = true
         notice = nil
         invalidateAccessResolution()
+        clearPairingCelebrationPresentation()
         route = .deletingAccount(previousRoute.session)
 
         do {
             try await authService.requestAccountDeletion()
             invalidateAccessResolution()
+            clearPairingCelebrationPresentation()
             route = .signedOut
             hasStartedSync = false
         } catch {
+            if case .access = previousRoute {
+                isPairingCelebrationPresented = false
+            }
             route = previousRoute
             notice = .deleteAccountFailed
         }
@@ -310,9 +329,11 @@ final class RootViewModel {
         switch authRoute {
         case .signedOut:
             invalidateAccessResolution()
+            clearPairingCelebrationPresentation()
             route = .signedOut
         case let .onboarding(session):
             invalidateAccessResolution()
+            clearPairingCelebrationPresentation()
             route = .onboarding(session)
         case let .limitedAuthenticated(session):
             await resolveAccessRoute(for: session)
@@ -353,9 +374,7 @@ final class RootViewModel {
     }
 
     /// Commits a resolved access route and, in the same step, decides whether the
-    /// paired screen should celebrate. Keeping both in one synchronous update means
-    /// the paired screen reads the correct `pendingPairingCelebration` the instant
-    /// it appears, avoiding a race where the intro is skipped.
+    /// one-time pairing celebration should be presented above the paired screen.
     private func applyAccessResolution(
         _ resolution: AccessRouteResolution,
         for session: AuthSession,
@@ -363,13 +382,14 @@ final class RootViewModel {
     ) {
         let shouldCelebrate = pendingPairingCelebration
             || Self.isFreshLink(from: previous?.route, to: resolution.route)
-        pendingPairingCelebration = resolution.route == .paired
-            && shouldCelebrate
+        applyPairingCelebrationPresentation(for: resolution, shouldCelebrate: shouldCelebrate)
         route = .access(session, resolution)
     }
 
     private func showAcceptedInviteCelebration(for session: AuthSession) {
         pendingPairingCelebration = true
+        isPairingCelebrationPresented = true
+        shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = false
         route = .access(
             session,
             Self.acceptedInviteOptimisticResolution(previous: route.accessResolution)
@@ -418,6 +438,67 @@ final class RootViewModel {
                 hasPendingInvite: false
             )
         )
+    }
+
+    private func applyPairingCelebrationPresentation(
+        for resolution: AccessRouteResolution,
+        shouldCelebrate: Bool
+    ) {
+        guard resolution.route == .paired else {
+            clearPairingCelebrationPresentation()
+            return
+        }
+
+        if shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives {
+            if markPairingCelebrationSeen(for: resolution) {
+                shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = false
+            }
+            pendingPairingCelebration = false
+            isPairingCelebrationPresented = false
+            return
+        }
+
+        if isPairingCelebrationPresented {
+            return
+        }
+
+        let hasSeenCelebration = hasSeenPairingCelebration(for: resolution)
+        pendingPairingCelebration = shouldCelebrate && !hasSeenCelebration
+        isPairingCelebrationPresented = !hasSeenCelebration
+    }
+
+    private func markCurrentPairingCelebrationSeen() {
+        guard let accessResolution = route.accessResolution,
+              markPairingCelebrationSeen(for: accessResolution) else {
+            shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = true
+            return
+        }
+
+        shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = false
+    }
+
+    @discardableResult
+    private func markPairingCelebrationSeen(for resolution: AccessRouteResolution) -> Bool {
+        guard let pairID = resolution.pairingCelebrationPairID else {
+            return false
+        }
+
+        pairingCelebrationStore.markCelebrationSeen(forPairID: pairID)
+        return true
+    }
+
+    private func hasSeenPairingCelebration(for resolution: AccessRouteResolution) -> Bool {
+        guard let pairID = resolution.pairingCelebrationPairID else {
+            return false
+        }
+
+        return pairingCelebrationStore.hasSeenCelebration(forPairID: pairID)
+    }
+
+    private func clearPairingCelebrationPresentation() {
+        pendingPairingCelebration = false
+        isPairingCelebrationPresented = false
+        shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = false
     }
 
     private func beginAccessResolution() -> Int {

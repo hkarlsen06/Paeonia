@@ -19,6 +19,13 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    static func pairingCelebrationDismissed() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.prepare()
+        generator.impactOccurred(intensity: 0.85)
+        notify(.success)
+    }
+
     static func answerRevealed() {
         notify(.success)
     }

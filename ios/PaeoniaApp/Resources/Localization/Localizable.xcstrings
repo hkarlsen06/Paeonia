@@ -2863,6 +2863,24 @@
         }
       },
       "comment" : "Button title that confirms the selected image crop."
+    },
+    "pairing.celebration.getStartedButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let's get started"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La oss komme i gang"
+          }
+        }
+      },
+      "comment" : "Button that dismisses the pairing celebration after it settles."
     }
   },
   "version" : "1.0"

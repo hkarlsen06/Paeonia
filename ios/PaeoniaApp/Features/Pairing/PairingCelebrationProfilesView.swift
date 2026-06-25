@@ -137,7 +137,16 @@ struct PairingCelebrationProfilesView: View {
     let slotCoordinateSpace: String
     let onPartnerSlotChange: (CGRect) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private let columnWidth: CGFloat = 112
+    private let connectorWidth: CGFloat = 82
+
+    /// The line must touch both avatar perimeters, so it spans the full
+    /// center-to-center distance (one column plus the connector) minus both radii.
+    private var connectorLineWidth: CGFloat {
+        columnWidth + connectorWidth - PairingCelebrationAvatar.diameter
+    }
 
     var body: some View {
         HStack(alignment: .avatarCenter, spacing: 0) {
@@ -207,9 +216,11 @@ struct PairingCelebrationProfilesView: View {
 
     private var connector: some View {
         ZStack {
+            // The line overflows the connector frame on both sides so it reaches
+            // all the way to the avatar circles while leaving column spacing intact.
             Rectangle()
                 .fill(.paeoniaAccentPrimary.opacity(0.6))
-                .frame(width: 82, height: 1.5)
+                .frame(width: connectorLineWidth, height: 1.5)
 
             Circle()
                 .fill(.paeoniaBackgroundPrimary)
@@ -219,12 +230,58 @@ struct PairingCelebrationProfilesView: View {
                 .stroke(.paeoniaAccentPrimary.opacity(0.72), lineWidth: 1.2)
                 .frame(width: 34, height: 34)
 
-            Image(systemName: "heart.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.paeoniaAccentPrimary)
+            beatingHeart
         }
-        .frame(width: 82, height: 34)
+        .frame(width: connectorWidth, height: 34)
         .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var beatingHeart: some View {
+        let heart = Image(systemName: "heart.fill")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.paeoniaAccentPrimary)
+
+        if reduceMotion {
+            heart
+        } else {
+            PhaseAnimator(PairingHeartbeatPhase.allCases) { phase in
+                heart.scaleEffect(phase.scale)
+            } animation: { phase in
+                phase.animation
+            }
+        }
+    }
+}
+
+/// The lub-dub rhythm of the connector heart: two quick swells with a rest before
+/// the cycle repeats, so the link between the two people looks alive. Skipped when
+/// Reduce Motion is on.
+private enum PairingHeartbeatPhase: CaseIterable {
+    case rest
+    case lub
+    case lubRelease
+    case dub
+    case dubRelease
+
+    var scale: CGFloat {
+        switch self {
+        case .rest, .lubRelease, .dubRelease: 1
+        case .lub: 1.22
+        case .dub: 1.13
+        }
+    }
+
+    var animation: Animation {
+        switch self {
+        // The pause between beats lives here as a delay before the first swell,
+        // because a same-value "hold" phase would complete instantly and be skipped.
+        case .lub: .easeOut(duration: 0.14).delay(0.9)
+        case .lubRelease: .easeIn(duration: 0.16)
+        case .dub: .easeOut(duration: 0.12)
+        case .dubRelease: .easeIn(duration: 0.18)
+        case .rest: .easeInOut(duration: 0.2)
+        }
     }
 }
 
