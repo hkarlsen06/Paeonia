@@ -13,6 +13,8 @@
 		2A2D03652FDD04D100A7BE1A /* PaeoniaNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2A2D035E2FDD04D100A7BE1A /* PaeoniaNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2A2D03902FDE000000A7BE1A /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D03932FDE000000A7BE1A /* Supabase */; };
 		2A2D04012FDF000000A7BE1A /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D04032FDF000000A7BE1A /* GoogleSignIn */; };
+		2A2D04112FE0000000A7BE1A /* CropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D04132FE0000000A7BE1A /* CropViewController */; };
+		2A2D04142FE0000000A7BE1A /* TOCropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D04152FE0000000A7BE1A /* TOCropViewController */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -140,6 +142,8 @@
 			files = (
 				2A2D03902FDE000000A7BE1A /* Supabase in Frameworks */,
 				2A2D04012FDF000000A7BE1A /* GoogleSignIn in Frameworks */,
+				2A2D04112FE0000000A7BE1A /* CropViewController in Frameworks */,
+				2A2D04142FE0000000A7BE1A /* TOCropViewController in Frameworks */,
 			);
 		};
 		2A2D03402FDD045E00A7BE1A /* Frameworks */ = {
@@ -231,6 +235,8 @@
 			packageProductDependencies = (
 				2A2D03932FDE000000A7BE1A /* Supabase */,
 				2A2D04032FDF000000A7BE1A /* GoogleSignIn */,
+				2A2D04132FE0000000A7BE1A /* CropViewController */,
+				2A2D04152FE0000000A7BE1A /* TOCropViewController */,
 			);
 			productName = PaeoniaApp;
 			productReference = 000000000000000000000120 /* PaeoniaApp.app */;
@@ -356,6 +362,7 @@
 			packageReferences = (
 				2A2D03922FDE000000A7BE1A /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				2A2D04022FDF000000A7BE1A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				2A2D04122FE0000000A7BE1A /* XCRemoteSwiftPackageReference "TOCropViewController" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
@@ -962,6 +969,14 @@
 				minimumVersion = 9.2.0;
 			};
 		};
+		2A2D04122FE0000000A7BE1A /* XCRemoteSwiftPackageReference "TOCropViewController" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/TimOliver/TOCropViewController";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -974,6 +989,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2A2D04022FDF000000A7BE1A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
+		};
+		2A2D04132FE0000000A7BE1A /* CropViewController */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2A2D04122FE0000000A7BE1A /* XCRemoteSwiftPackageReference "TOCropViewController" */;
+			productName = CropViewController;
+		};
+		2A2D04152FE0000000A7BE1A /* TOCropViewController */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2A2D04122FE0000000A7BE1A /* XCRemoteSwiftPackageReference "TOCropViewController" */;
+			productName = TOCropViewController;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

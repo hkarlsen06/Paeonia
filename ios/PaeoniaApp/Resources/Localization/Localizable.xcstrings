@@ -1,9 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
+    "" : {},
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -731,13 +729,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check that this is the name you want your partner to see.\nUse your first name or a nickname."
+            "value" : "Check that this is the name you want your partner to see. Use your first name or a nickname."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk at dette er navnet du vil at partneren din skal se.\nBruk fornavnet ditt eller et kallenavn."
+            "value" : "Sjekk at dette er navnet du vil at partneren din skal se. Bruk fornavnet ditt eller et kallenavn."
           }
         }
       }
@@ -2829,6 +2827,42 @@
           }
         }
       }
+    },
+    "common.cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avbryt"
+          }
+        }
+      },
+      "comment" : "Generic button title for cancelling the current sheet or action."
+    },
+    "imageCrop.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
+          }
+        }
+      },
+      "comment" : "Button title that confirms the selected image crop."
     }
   },
   "version" : "1.0"

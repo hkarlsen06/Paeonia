@@ -24,6 +24,8 @@ struct AuthOnboardingView: View {
     @State private var selectedProfilePhotoItem: PhotosPickerItem?
     @State private var selectedProfilePhotoData: Data?
     @State private var selectedProfilePhotoImage: Image?
+    @State private var profilePhotoCropDraft: ProfilePhotoCropDraft?
+    @State private var isResettingProfilePhotoPicker = false
 
     init(
         session: AuthSession?,
@@ -77,6 +79,10 @@ struct AuthOnboardingView: View {
                     .foregroundStyle(.paeoniaTextSecondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                    // Keep the supporting copy a touch narrower than the title so
+                    // the two wrapped lines stay balanced instead of a long line
+                    // followed by a short orphan.
+                    .padding(.horizontal, PaeoniaSpacing.space24)
             }
 
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
@@ -94,6 +100,14 @@ struct AuthOnboardingView: View {
         .frame(maxWidth: .infinity)
         .onChange(of: selectedProfilePhotoItem) { _, item in
             loadProfilePhoto(from: item)
+        }
+        .sheet(item: $profilePhotoCropDraft) { draft in
+            PaeoniaProfileImageCropSheet(
+                image: draft.image,
+                onCrop: applyCroppedProfilePhoto,
+                onCancel: cancelProfilePhotoCrop
+            )
+            .ignoresSafeArea()
         }
     }
 
@@ -225,8 +239,12 @@ struct AuthOnboardingView: View {
 
     private func loadProfilePhoto(from item: PhotosPickerItem?) {
         guard let item else {
-            selectedProfilePhotoData = nil
-            selectedProfilePhotoImage = nil
+            if isResettingProfilePhotoPicker {
+                isResettingProfilePhotoPicker = false
+            } else {
+                selectedProfilePhotoData = nil
+                selectedProfilePhotoImage = nil
+            }
             return
         }
 
@@ -236,11 +254,42 @@ struct AuthOnboardingView: View {
                 return
             }
 
-            selectedProfilePhotoData = data
-            // swiftlint:disable:next accessibility_label_for_image
-            selectedProfilePhotoImage = Image(uiImage: image)
+            profilePhotoCropDraft = ProfilePhotoCropDraft(image: image)
         }
     }
+
+    private func applyCroppedProfilePhoto(_ image: UIImage) {
+        guard let imageData = image.jpegData(compressionQuality: 0.95) else {
+            profilePhotoCropDraft = nil
+            return
+        }
+
+        selectedProfilePhotoData = imageData
+        // swiftlint:disable:next accessibility_label_for_image
+        selectedProfilePhotoImage = Image(uiImage: image)
+        profilePhotoCropDraft = nil
+        resetProfilePhotoPicker()
+    }
+
+    private func cancelProfilePhotoCrop() {
+        profilePhotoCropDraft = nil
+        resetProfilePhotoPicker()
+    }
+
+    private func resetProfilePhotoPicker() {
+        guard selectedProfilePhotoItem != nil else {
+            isResettingProfilePhotoPicker = false
+            return
+        }
+
+        isResettingProfilePhotoPicker = true
+        selectedProfilePhotoItem = nil
+    }
+}
+
+private struct ProfilePhotoCropDraft: Identifiable {
+    let id = UUID()
+    let image: UIImage
 }
 
 struct AuthenticatedBaselineView: View {
