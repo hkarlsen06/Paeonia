@@ -406,6 +406,11 @@ verify_jwt = false
 [functions.apple-server-notifications]
 verify_jwt = false
 
+# Drains the notification outbox to APNs. Invoked by a Database Webhook /
+# schedule, guarded by the DRAIN_SECRET header, so no user JWT is involved.
+[functions.send-widget-push]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
