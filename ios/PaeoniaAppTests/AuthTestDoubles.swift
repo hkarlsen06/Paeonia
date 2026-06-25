@@ -216,7 +216,7 @@ final class GoogleSignInProviderSpy: GoogleSignInProviding {
             throw error
         }
 
-        credential
+        return credential
     }
 }
 

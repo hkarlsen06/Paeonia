@@ -100,7 +100,7 @@ struct PairingCelebrationAvatar: View {
     }
 
     private var initials: some View {
-        Text(Self.initials(for: name))
+        Text(PaeoniaProfilePhotoAvatar.initials(for: name))
             .font(.system(size: Self.diameter * 0.33, weight: .semibold, design: .rounded))
             .foregroundStyle(.paeoniaTextPrimary)
             .lineLimit(1)
@@ -113,19 +113,6 @@ struct PairingCelebrationAvatar: View {
         }
 
         return UIImage(data: imageData)
-    }
-
-    static func initials(for name: String) -> String {
-        let parts = name
-            .split(separator: " ")
-            .prefix(2)
-            .compactMap { $0.first }
-
-        if parts.isEmpty {
-            return "?"
-        }
-
-        return parts.map { String($0).uppercased() }.joined()
     }
 }
 

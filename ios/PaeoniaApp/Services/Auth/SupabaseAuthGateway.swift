@@ -1,5 +1,4 @@
 import Foundation
-import CryptoKit
 import Supabase
 
 nonisolated struct SupabaseRemoteSession: Equatable, Sendable {
@@ -36,6 +35,7 @@ protocol SupabaseAuthGateway: Actor {
         userID: String,
         compressedImage: ImageCompressor.CompressedImage
     ) async throws -> UUID
+    func markMediaForDeletion(_ mediaAssetID: UUID) async throws
     func completeProfileOnboarding(
         userID: String,
         timeZoneID: String,
@@ -194,6 +194,15 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
         return finalized.mediaAssetID
     }
 
+    func markMediaForDeletion(_ mediaAssetID: UUID) async throws {
+        try await client
+            .rpc(
+                "mark_media_for_deletion",
+                params: MarkMediaForDeletionRequest(mediaAssetID: mediaAssetID)
+            )
+            .execute()
+    }
+
     func requestAccountDeletion() async throws {
         try await client
             .rpc("request_account_deletion")
@@ -261,141 +270,16 @@ nonisolated private struct CompleteProfileOnboardingRequest: Encodable {
     }
 }
 
-nonisolated private struct AuthClientOperation: Sendable {
-    let id: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-}
-
-nonisolated private struct PendingMediaUploadResponse: Decodable, Sendable {
-    let mediaAssetID: UUID
-    let bucket: String
-    let storagePath: String
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "media_asset_id"
-        case bucket
-        case storagePath = "storage_path"
-    }
-}
-
-nonisolated private struct FinalizedMediaUploadResponse: Decodable, Sendable {
-    let mediaAssetID: UUID
-    let uploadStatus: String
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "media_asset_id"
-        case uploadStatus = "upload_status"
-    }
-}
-
-nonisolated private struct CreatePendingProfilePhotoUploadRequest: Encodable {
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-    let reservedParentKind = "profile_photo"
-    let reservedParentID: UUID
-    let uploadPurpose = "profile_photo"
-    let mediaType = "image"
-    let fileExtension: String
-
-    init(
-        operation: AuthClientOperation,
-        reservedParentID: UUID,
-        fileExtension: String
-    ) {
-        self.clientOperationID = operation.id
-        self.clientID = operation.clientID
-        self.clientSequence = operation.clientSequence
-        self.localCreatedAt = operation.localCreatedAt
-        self.reservedParentID = reservedParentID
-        self.fileExtension = fileExtension
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-        case reservedParentKind = "p_reserved_parent_kind"
-        case reservedParentID = "p_reserved_parent_id"
-        case uploadPurpose = "p_upload_purpose"
-        case mediaType = "p_media_type"
-        case fileExtension = "p_file_extension"
-    }
-}
-
-nonisolated private struct FinalizeProfilePhotoUploadRequest: Encodable {
-    let mediaAssetID: UUID
-    let reservedByClientOperationID: UUID
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-    let bucket: String
-    let storagePath: String
-    let reservedParentKind = "profile_photo"
-    let reservedParentID: UUID
-    let uploadPurpose = "profile_photo"
-    let mediaType = "image"
-    let mimeType: String
-    let byteSize: Int64
-    let sha256Hex: String
-    let width: Int
-    let height: Int
-
-    init(
-        reservation: PendingMediaUploadResponse,
-        reservedByClientOperationID: UUID,
-        operation: AuthClientOperation,
-        reservedParentID: UUID,
-        image: ImageCompressor.CompressedImage
-    ) {
-        self.mediaAssetID = reservation.mediaAssetID
-        self.reservedByClientOperationID = reservedByClientOperationID
-        self.clientOperationID = operation.id
-        self.clientID = operation.clientID
-        self.clientSequence = operation.clientSequence
-        self.localCreatedAt = operation.localCreatedAt
-        self.bucket = reservation.bucket
-        self.storagePath = reservation.storagePath
-        self.reservedParentID = reservedParentID
-        self.mimeType = image.mediaType
-        self.byteSize = Int64(image.data.count)
-        self.sha256Hex = SHA256.hash(data: image.data).map { String(format: "%02x", $0) }.joined()
-        self.width = image.width
-        self.height = image.height
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "p_media_asset_id"
-        case reservedByClientOperationID = "p_reserved_by_client_operation_id"
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-        case bucket = "p_bucket"
-        case storagePath = "p_storage_path"
-        case reservedParentKind = "p_reserved_parent_kind"
-        case reservedParentID = "p_reserved_parent_id"
-        case uploadPurpose = "p_upload_purpose"
-        case mediaType = "p_media_type"
-        case mimeType = "p_mime_type"
-        case byteSize = "p_byte_size"
-        case sha256Hex = "p_sha256_hex"
-        case width = "p_width"
-        case height = "p_height"
-    }
-}
-
 private extension LiveSupabaseAuthGateway {
     enum DefaultsKey {
         static let clientID = "paeonia.auth.clientID"
         static let clientSequence = "paeonia.auth.clientSequence"
     }
 
+    // TODO: Consolidate this device client identity with
+    // `PairingClientOperationFactory` (and the future SyncCoordinator) so every
+    // domain shares one canonical `client_id`/sequence instead of minting a
+    // separate one per feature.
     func makeClientOperation() -> AuthClientOperation {
         let clientID = resolvedClientID()
         let clientSequence = nextClientSequence()
@@ -446,4 +330,4 @@ extension String {
         let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }
-} // swiftlint:disable:this file_length
+}

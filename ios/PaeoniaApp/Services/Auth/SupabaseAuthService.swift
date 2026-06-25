@@ -1,12 +1,26 @@
 import Foundation
+#if DEBUG
+import OSLog
+#endif
 
 // swiftlint:disable async_without_await
 
 actor SupabaseAuthService: AuthServicing {
     private let gateway: any SupabaseAuthGateway
+    private let profilePhotoCache: any ProfilePhotoImageCaching
+    #if DEBUG
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
+        category: "Auth"
+    )
+    #endif
 
-    init(gateway: any SupabaseAuthGateway) {
+    init(
+        gateway: any SupabaseAuthGateway,
+        profilePhotoCache: (any ProfilePhotoImageCaching)? = nil
+    ) {
         self.gateway = gateway
+        self.profilePhotoCache = profilePhotoCache ?? FileProfilePhotoImageCache.live()
     }
 
     static func live() throws -> SupabaseAuthService {
@@ -81,27 +95,29 @@ actor SupabaseAuthService: AuthServicing {
         }
 
         try await gateway.updateAuthDisplayName(trimmedDisplayName)
-        let profilePhotoAssetID: UUID?
-        if let profilePhotoData {
-            let compressedImage = await MainActor.run {
-                ImageCompressor.compress(profilePhotoData)
-            }
-            guard let compressedImage else {
-                throw AuthServiceError.invalidProfilePhoto
-            }
-            profilePhotoAssetID = try await gateway.uploadProfilePhoto(
+
+        let profilePhotoAssetID = await uploadProfilePhotoIfAvailable(
+            userID: remoteSession.userID,
+            data: profilePhotoData
+        )
+
+        let profile: SupabaseProfile
+        do {
+            profile = try await gateway.completeProfileOnboarding(
                 userID: remoteSession.userID,
-                compressedImage: compressedImage
+                timeZoneID: timeZoneID,
+                profilePhotoAssetID: profilePhotoAssetID
             )
-        } else {
-            profilePhotoAssetID = nil
+        } catch {
+            // Linking failed after the photo was already finalized; don't leave an
+            // orphaned object behind in storage or a stale local cache entry.
+            if let profilePhotoAssetID {
+                try? await gateway.markMediaForDeletion(profilePhotoAssetID)
+                try? await profilePhotoCache.removeProfilePhotoData(for: profilePhotoAssetID)
+            }
+            throw error
         }
 
-        let profile = try await gateway.completeProfileOnboarding(
-            userID: remoteSession.userID,
-            timeZoneID: timeZoneID,
-            profilePhotoAssetID: profilePhotoAssetID
-        )
         return makeSession(
             remoteSession: SupabaseRemoteSession(
                 userID: remoteSession.userID,
@@ -112,8 +128,45 @@ actor SupabaseAuthService: AuthServicing {
         )
     }
 
+    /// Compresses and uploads the chosen profile photo, caching it locally on
+    /// success. The photo is optional, so any failure here — an image we can't
+    /// process or a failed upload — returns `nil` and lets the person finish setup
+    /// rather than blocking onboarding.
+    private func uploadProfilePhotoIfAvailable(userID: String, data: Data?) async -> UUID? {
+        guard let data else {
+            return nil
+        }
+
+        let compressedImage = await MainActor.run {
+            ImageCompressor.compress(data)
+        }
+        guard let compressedImage else {
+            logProfilePhotoIssue("could not be processed")
+            return nil
+        }
+
+        do {
+            let assetID = try await gateway.uploadProfilePhoto(
+                userID: userID,
+                compressedImage: compressedImage
+            )
+            try? await profilePhotoCache.storeProfilePhotoData(compressedImage.data, for: assetID)
+            return assetID
+        } catch {
+            logProfilePhotoIssue("failed to upload: \(error)")
+            return nil
+        }
+    }
+
+    private func logProfilePhotoIssue(_ message: String) {
+        #if DEBUG
+        logger.error("Profile photo \(message, privacy: .public); continuing onboarding without it.")
+        #endif
+    }
+
     func signOut() async throws {
         try await gateway.signOut()
+        try? await profilePhotoCache.removeAllProfilePhotoData()
     }
 
     func requestAccountDeletion() async throws {
@@ -123,6 +176,7 @@ actor SupabaseAuthService: AuthServicing {
 
         try await gateway.requestAccountDeletion()
         try await gateway.signOut()
+        try? await profilePhotoCache.removeAllProfilePhotoData()
     }
 
     private func makeSession(

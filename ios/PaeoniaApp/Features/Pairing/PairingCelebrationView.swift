@@ -49,7 +49,7 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
     let partnerProfilePhotoAssetID: UUID?
     let playsIntro: Bool
     let onIntroComplete: () -> Void
-    private let profilePhotoURLProvider: any ProfilePhotoURLProviding
+    private let profilePhotoProvider: any ProfilePhotoImageProviding
 
     init(
         currentDisplayName: String?,
@@ -57,7 +57,7 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
         partnerDisplayName: String? = nil,
         partnerProfilePhotoAssetID: UUID? = nil,
         playsIntro: Bool,
-        profilePhotoURLProvider: (any ProfilePhotoURLProviding)? = nil,
+        profilePhotoProvider: (any ProfilePhotoImageProviding)? = nil,
         onIntroComplete: @escaping () -> Void = {}
     ) {
         self.currentDisplayName = currentDisplayName
@@ -66,9 +66,9 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.playsIntro = playsIntro
         self.onIntroComplete = onIntroComplete
-        self.profilePhotoURLProvider = profilePhotoURLProvider
-            ?? (try? SupabaseProfilePhotoURLService.live())
-            ?? UnavailableProfilePhotoURLProvider()
+        self.profilePhotoProvider = profilePhotoProvider
+            ?? (try? ProfilePhotoImageService.live())
+            ?? UnavailableProfilePhotoImageProvider()
     }
 
     private var currentName: String {
@@ -364,29 +364,7 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
 
     @MainActor
     private func loadProfilePhotoData(for mediaAssetID: UUID?) async -> Data? {
-        guard let mediaAssetID else {
-            return nil
-        }
-
-        guard let signedURL = try? await profilePhotoURLProvider.signedProfilePhotoURL(for: mediaAssetID) else {
-            return nil
-        }
-
-        do {
-            let (data, response) = try await URLSession.shared.data(from: signedURL)
-            guard !Task.isCancelled else {
-                return nil
-            }
-
-            if let httpResponse = response as? HTTPURLResponse,
-               !(200..<300).contains(httpResponse.statusCode) {
-                return nil
-            }
-
-            return data
-        } catch {
-            return nil
-        }
+        await profilePhotoProvider.profilePhotoData(for: mediaAssetID)
     }
 
     @MainActor
@@ -447,10 +425,10 @@ enum PairingCelebrationTiming {
     static var explodeEnd: Double { explodeStart + explode }
 }
 
-private struct UnavailableProfilePhotoURLProvider: ProfilePhotoURLProviding {
-    func signedProfilePhotoURL(for mediaAssetID: UUID?) async throws -> URL? {
+private struct UnavailableProfilePhotoImageProvider: ProfilePhotoImageProviding {
+    func profilePhotoData(for mediaAssetID: UUID?) async -> Data? {
         await Task.yield()
-        nil
+        return nil
     }
 }
 

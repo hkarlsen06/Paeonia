@@ -5,15 +5,15 @@ protocol ProfilePhotoURLProviding: Sendable {
     func signedProfilePhotoURL(for mediaAssetID: UUID?) async throws -> URL?
 }
 
-actor SupabaseProfilePhotoURLService: ProfilePhotoURLProviding {
+final class SupabaseProfilePhotoURLService: @unchecked Sendable, ProfilePhotoURLProviding {
     private let client: SupabaseClient
     private let expiresInSeconds = 3_600
 
-    init(client: SupabaseClient) {
+    nonisolated init(client: SupabaseClient) {
         self.client = client
     }
 
-    static func live() throws -> SupabaseProfilePhotoURLService {
+    nonisolated static func live() throws -> SupabaseProfilePhotoURLService {
         let client = try PaeoniaSupabaseClientProvider.shared.client()
         return SupabaseProfilePhotoURLService(client: client)
     }

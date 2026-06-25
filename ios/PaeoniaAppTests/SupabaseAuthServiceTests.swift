@@ -154,7 +154,11 @@ struct SupabaseAuthServiceTests {
             profile: .test(displayName: nil, onboardingCompletedAt: nil),
             profilePhotoAssetID: profilePhotoAssetID
         )
-        let service = SupabaseAuthService(gateway: gateway)
+        let profilePhotoCache = FakeProfilePhotoImageCache()
+        let service = SupabaseAuthService(
+            gateway: gateway,
+            profilePhotoCache: profilePhotoCache
+        )
 
         let session = try await service.completeOnboarding(
             displayName: "Jamie",
@@ -166,6 +170,58 @@ struct SupabaseAuthServiceTests {
         #expect(await gateway.completedProfilePhotoAssetID == profilePhotoAssetID)
         #expect(session.profilePhotoAssetID == profilePhotoAssetID)
         #expect(session.profileStatus == .complete)
+        #expect(await profilePhotoCache.storedMediaAssetIDs == [profilePhotoAssetID])
+        #expect(await profilePhotoCache.profilePhotoData(for: profilePhotoAssetID) != nil)
+    }
+
+    @Test func completeOnboardingContinuesWhenProfilePhotoUploadFails() async throws {
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .apple),
+            profile: .test(displayName: nil, onboardingCompletedAt: nil),
+            uploadShouldFail: true
+        )
+        let profilePhotoCache = FakeProfilePhotoImageCache()
+        let service = SupabaseAuthService(
+            gateway: gateway,
+            profilePhotoCache: profilePhotoCache
+        )
+
+        let session = try await service.completeOnboarding(
+            displayName: "Jamie",
+            timeZoneID: "Europe/Oslo",
+            profilePhotoData: Self.makeJPEGData()
+        )
+
+        #expect(session.profileStatus == .complete)
+        #expect(session.profilePhotoAssetID == nil)
+        #expect(await gateway.completedProfilePhotoAssetID == nil)
+        #expect(await profilePhotoCache.storedMediaAssetIDs.isEmpty)
+    }
+
+    @Test func completeOnboardingDeletesOrphanedPhotoWhenProfileUpdateFails() async throws {
+        let profilePhotoAssetID = try #require(UUID(uuidString: "26D82C6B-281E-4E51-BC3A-A4620282BC9A"))
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .apple),
+            profile: .test(displayName: nil, onboardingCompletedAt: nil),
+            profilePhotoAssetID: profilePhotoAssetID,
+            completeProfileShouldFail: true
+        )
+        let profilePhotoCache = FakeProfilePhotoImageCache()
+        let service = SupabaseAuthService(
+            gateway: gateway,
+            profilePhotoCache: profilePhotoCache
+        )
+
+        await #expect(throws: AuthServiceError.noActiveSession) {
+            try await service.completeOnboarding(
+                displayName: "Jamie",
+                timeZoneID: "Europe/Oslo",
+                profilePhotoData: Self.makeJPEGData()
+            )
+        }
+
+        #expect(await gateway.markedForDeletionAssetID == profilePhotoAssetID)
+        #expect(await profilePhotoCache.profilePhotoData(for: profilePhotoAssetID) == nil)
     }
 
     @Test func completeOnboardingRejectsMultipleWords() async {
@@ -210,6 +266,23 @@ struct SupabaseAuthServiceTests {
         #expect(await gateway.signOutCallCount == 1)
     }
 
+    @Test func signOutClearsCachedProfilePhotosAfterRemoteSignOut() async throws {
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .apple),
+            profile: .test(onboardingCompletedAt: Date())
+        )
+        let profilePhotoCache = FakeProfilePhotoImageCache()
+        let service = SupabaseAuthService(
+            gateway: gateway,
+            profilePhotoCache: profilePhotoCache
+        )
+
+        try await service.signOut()
+
+        #expect(await gateway.signOutCallCount == 1)
+        #expect(await profilePhotoCache.removeAllCallCount == 1)
+    }
+
     @Test func requestAccountDeletionRequiresActiveSession() async {
         let gateway = FakeSupabaseAuthGateway(
             remoteSession: nil,
@@ -239,19 +312,26 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
     private(set) var updatedTimeZoneID: String?
     private(set) var uploadedProfilePhotoUserID: String?
     private(set) var completedProfilePhotoAssetID: UUID?
+    private(set) var markedForDeletionAssetID: UUID?
     private(set) var requestAccountDeletionCallCount = 0
     private(set) var signOutCallCount = 0
+    private let uploadShouldFail: Bool
+    private let completeProfileShouldFail: Bool
 
     init(
         remoteSession: SupabaseRemoteSession?,
         profile: SupabaseProfile,
-        profilePhotoAssetID: UUID? = nil
+        profilePhotoAssetID: UUID? = nil,
+        uploadShouldFail: Bool = false,
+        completeProfileShouldFail: Bool = false
     ) {
         self.remoteSession = remoteSession
         self.profile = profile
         self.profilePhotoAssetID = profilePhotoAssetID
             ?? UUID(uuidString: "A6B39D76-11D0-4A4D-8B77-5AF09A9E85E1")
             ?? UUID()
+        self.uploadShouldFail = uploadShouldFail
+        self.completeProfileShouldFail = completeProfileShouldFail
     }
 
     func restoreSession() async throws -> SupabaseRemoteSession? {
@@ -294,8 +374,15 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
         userID: String,
         compressedImage: ImageCompressor.CompressedImage
     ) async throws -> UUID {
+        if uploadShouldFail {
+            throw AuthServiceError.invalidProfilePhoto
+        }
         uploadedProfilePhotoUserID = userID
         return profilePhotoAssetID
+    }
+
+    func markMediaForDeletion(_ mediaAssetID: UUID) async throws {
+        markedForDeletionAssetID = mediaAssetID
     }
 
     func completeProfileOnboarding(
@@ -303,8 +390,11 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
         timeZoneID: String,
         profilePhotoAssetID: UUID?
     ) async throws -> SupabaseProfile {
-        updatedTimeZoneID = timeZoneID
         completedProfilePhotoAssetID = profilePhotoAssetID
+        if completeProfileShouldFail {
+            throw AuthServiceError.noActiveSession
+        }
+        updatedTimeZoneID = timeZoneID
         profile = SupabaseProfile(
             userID: userID,
             displayName: profile.displayName,
@@ -325,6 +415,30 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
     }
 }
 // swiftlint:enable async_without_await
+
+private actor FakeProfilePhotoImageCache: ProfilePhotoImageCaching {
+    private var storedData: [UUID: Data] = [:]
+    private(set) var storedMediaAssetIDs: [UUID] = []
+    private(set) var removeAllCallCount = 0
+
+    func profilePhotoData(for mediaAssetID: UUID) async -> Data? {
+        storedData[mediaAssetID]
+    }
+
+    func storeProfilePhotoData(_ data: Data, for mediaAssetID: UUID) async throws {
+        storedData[mediaAssetID] = data
+        storedMediaAssetIDs.append(mediaAssetID)
+    }
+
+    func removeProfilePhotoData(for mediaAssetID: UUID) async throws {
+        storedData[mediaAssetID] = nil
+    }
+
+    func removeAllProfilePhotoData() async throws {
+        removeAllCallCount += 1
+        storedData.removeAll()
+    }
+}
 
 private extension SupabaseRemoteSession {
     static func test(
