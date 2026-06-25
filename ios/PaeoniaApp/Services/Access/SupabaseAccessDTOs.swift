@@ -78,6 +78,40 @@ nonisolated struct SupabaseRelationshipState: Codable, Equatable, Sendable {
     }
 }
 
+nonisolated struct SupabaseRelationshipSyncEvent: Codable, Equatable, Sendable {
+    let id: UUID
+    let userID: UUID
+    let coupleID: UUID
+    let initiatedByUserID: UUID?
+    let eventKind: String
+    let reason: String?
+    let occurredAt: Date
+    let relationshipStatus: String
+    let memberStatus: String
+    let endedAt: Date?
+    let deleteAfter: Date?
+    let localPurgeScope: [String: String]
+    let createdAt: Date
+    let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userID = "user_id"
+        case coupleID = "couple_id"
+        case initiatedByUserID = "initiated_by_user_id"
+        case eventKind = "event_kind"
+        case reason
+        case occurredAt = "occurred_at"
+        case relationshipStatus = "relationship_status"
+        case memberStatus = "member_status"
+        case endedAt = "ended_at"
+        case deleteAfter = "delete_after"
+        case localPurgeScope = "local_purge_scope"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
 nonisolated enum SupabaseRelationshipStatus: Codable, Equatable, Sendable {
     case active
     case ended

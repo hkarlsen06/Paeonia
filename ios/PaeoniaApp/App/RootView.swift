@@ -50,11 +50,14 @@ struct RootView: View {
                 clearWidgetIfNeeded(for: state)
                 syncWidgetIfPaired(state)
             }
-            .onChange(of: scenePhase) { _, phase in
-                if phase == .active {
-                    syncWidgetIfPaired(viewModel.state)
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                syncWidgetIfPaired(viewModel.state)
+                Task {
+                    await viewModel.refreshAfterForegroundActivation()
                 }
             }
+        }
             .onChange(of: viewModel.currentSession?.id) { _, sessionID in
                 // Once signed in, get an APNs token so the backend can send the
                 // silent push that wakes us to sync a partner's drawing.

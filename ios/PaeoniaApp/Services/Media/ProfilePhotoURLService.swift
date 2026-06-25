@@ -1,7 +1,7 @@
 import Foundation
 import Supabase
 
-protocol ProfilePhotoURLProviding: Sendable {
+nonisolated protocol ProfilePhotoURLProviding: Sendable {
     func signedProfilePhotoURL(for mediaAssetID: UUID?) async throws -> URL?
 }
 

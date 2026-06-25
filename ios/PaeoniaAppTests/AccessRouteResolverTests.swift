@@ -130,6 +130,13 @@ private actor FakeSupabaseAccessGateway: SupabaseAccessGateway {
         calls.append(.loadCurrentRelationshipState)
         return relationshipState
     }
+
+    func loadRelationshipSyncEvents(
+        after _: SyncCursor,
+        limit _: Int
+    ) async throws -> [SupabaseRelationshipSyncEvent] {
+        []
+    }
 }
 // swiftlint:enable async_without_await
 

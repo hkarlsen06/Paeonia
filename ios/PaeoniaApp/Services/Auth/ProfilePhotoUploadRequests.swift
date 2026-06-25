@@ -3,12 +3,7 @@ import Foundation
 
 /// A device-scoped client operation that makes the media reserve/finalize calls
 /// idempotent.
-nonisolated struct AuthClientOperation: Sendable {
-    let id: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-}
+typealias AuthClientOperation = SyncClientOperation
 
 nonisolated struct PendingMediaUploadResponse: Decodable, Sendable {
     let mediaAssetID: UUID

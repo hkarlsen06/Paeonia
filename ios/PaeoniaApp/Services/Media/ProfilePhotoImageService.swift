@@ -1,13 +1,13 @@
 import Foundation
 
-protocol ProfilePhotoImageCaching: Sendable {
+nonisolated protocol ProfilePhotoImageCaching: Sendable {
     func profilePhotoData(for mediaAssetID: UUID) async -> Data?
     func storeProfilePhotoData(_ data: Data, for mediaAssetID: UUID) async throws
     func removeProfilePhotoData(for mediaAssetID: UUID) async throws
     func removeAllProfilePhotoData() async throws
 }
 
-protocol ProfilePhotoImageProviding: Sendable {
+nonisolated protocol ProfilePhotoImageProviding: Sendable {
     func profilePhotoData(for mediaAssetID: UUID?) async -> Data?
 }
 

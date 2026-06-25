@@ -256,6 +256,7 @@ final class RootViewModel {
             clearPairingCelebrationPresentation()
             clearPendingWidgetDrawingOpen()
             route = .signedOut
+            await syncCoordinator.resetForUserChange()
             hasStartedSync = false
         }
     }
@@ -278,6 +279,7 @@ final class RootViewModel {
             invalidateAccessResolution()
             clearPairingCelebrationPresentation()
             route = .signedOut
+            await syncCoordinator.resetForUserChange()
             hasStartedSync = false
         } catch {
             if case .access = previousRoute {
@@ -310,6 +312,16 @@ final class RootViewModel {
     func refreshAfterPairingChange() async {
         await refreshAuthRoute()
         await startSyncIfNeeded()
+    }
+
+    func refreshAfterForegroundActivation() async {
+        await startSyncIfNeeded()
+
+        guard hasStartedSync, currentSession != nil else {
+            return
+        }
+
+        await syncCoordinator.requestSync(reason: .foreground)
     }
 
     private func refreshAuthRoute() async {
@@ -592,7 +604,12 @@ final class RootViewModel {
         switch authRoute {
         case .signedOut, .onboarding:
             return
-        case .limitedAuthenticated:
+        case let .limitedAuthenticated(session):
+            guard let syncSession = SyncSession(authSession: session) else {
+                return
+            }
+
+            await syncCoordinator.configure(session: syncSession)
             await syncCoordinator.start()
             hasStartedSync = true
         }

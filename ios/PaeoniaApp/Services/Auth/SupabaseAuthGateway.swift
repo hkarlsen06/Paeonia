@@ -47,8 +47,6 @@ protocol SupabaseAuthGateway: Actor {
 
 actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
     private let client: SupabaseClient
-    private let defaults: UserDefaults
-    private var fallbackClientSequence: Int64 = 0
     private let profileColumns = """
         user_id,
         display_name,
@@ -58,9 +56,8 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
         profile_photo_asset_id
         """
 
-    init(client: SupabaseClient, defaults: UserDefaults = .standard) {
+    init(client: SupabaseClient) {
         self.client = client
-        self.defaults = defaults
     }
 
     func restoreSession() async throws -> SupabaseRemoteSession? {
@@ -148,7 +145,7 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
         compressedImage: ImageCompressor.CompressedImage
     ) async throws -> UUID {
         let reservedParentID = try UUID(uuidString: userID).orThrow()
-        let reserveOperation = makeClientOperation()
+        let reserveOperation = await makeClientOperation()
         let reservation: [PendingMediaUploadResponse] = try await client
             .rpc(
                 "create_pending_media_upload",
@@ -172,7 +169,7 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
                 options: FileOptions(contentType: compressedImage.mediaType)
             )
 
-        let finalizeOperation = makeClientOperation()
+        let finalizeOperation = await makeClientOperation()
         let finalized: [FinalizedMediaUploadResponse] = try await client
             .rpc(
                 "finalize_media_upload",
@@ -271,47 +268,10 @@ nonisolated private struct CompleteProfileOnboardingRequest: Encodable {
 }
 
 private extension LiveSupabaseAuthGateway {
-    enum DefaultsKey {
-        static let clientID = "paeonia.auth.clientID"
-        static let clientSequence = "paeonia.auth.clientSequence"
-    }
-
-    // TODO: Consolidate this device client identity with
-    // `PairingClientOperationFactory` (and the future SyncCoordinator) so every
-    // domain shares one canonical `client_id`/sequence instead of minting a
-    // separate one per feature.
-    func makeClientOperation() -> AuthClientOperation {
-        let clientID = resolvedClientID()
-        let clientSequence = nextClientSequence()
-
-        return AuthClientOperation(
-            id: UUID(),
-            clientID: clientID,
-            clientSequence: clientSequence,
-            localCreatedAt: Date()
-        )
-    }
-
-    func resolvedClientID() -> UUID {
-        if let storedValue = defaults.string(forKey: DefaultsKey.clientID),
-           let storedID = UUID(uuidString: storedValue) {
-            return storedID
+    func makeClientOperation() async -> AuthClientOperation {
+        await MainActor.run {
+            SyncClientOperationFactory.shared.makeOperation()
         }
-
-        let clientID = UUID()
-        defaults.set(clientID.uuidString, forKey: DefaultsKey.clientID)
-        return clientID
-    }
-
-    func nextClientSequence() -> Int64 {
-        let currentValue = max(
-            Int64(defaults.integer(forKey: DefaultsKey.clientSequence)),
-            fallbackClientSequence
-        )
-        let nextValue = currentValue + 1
-        defaults.set(nextValue, forKey: DefaultsKey.clientSequence)
-        fallbackClientSequence = nextValue
-        return nextValue
     }
 }
 

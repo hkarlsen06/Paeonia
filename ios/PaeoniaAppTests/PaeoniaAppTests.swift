@@ -601,9 +601,26 @@ struct PaeoniaAppTests {
 
 private actor TestSyncCoordinator: SyncCoordinating {
     private(set) var startCallCount = 0
+    private(set) var requestedReasons: [SyncRequestReason] = []
+    private(set) var configuredSessions: [SyncSession?] = []
+    private(set) var resetCallCount = 0
+
+    func configure(session: SyncSession?) {
+        configuredSessions.append(session)
+    }
 
     func start() {
         startCallCount += 1
+    }
+
+    func requestSync(reason: SyncRequestReason) {
+        requestedReasons.append(reason)
+    }
+
+    func stop() {}
+
+    func resetForUserChange() {
+        resetCallCount += 1
     }
 }
 
@@ -823,9 +840,17 @@ private actor OrderedSyncCoordinator: SyncCoordinating {
         self.recorder = recorder
     }
 
+    func configure(session _: SyncSession?) {}
+
     func start() {
         recorder.record(.startSync)
     }
+
+    func requestSync(reason _: SyncRequestReason) {}
+
+    func stop() {}
+
+    func resetForUserChange() {}
 }
 
 private actor OrderedAuthService: AuthServicing {

@@ -4,24 +4,7 @@ enum PairingStartDateError: Error, Equatable {
     case invalidFormat
 }
 
-nonisolated struct PairingClientOperation: Equatable, Sendable {
-    let id: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-
-    init(
-        id: UUID = UUID(),
-        clientID: UUID,
-        clientSequence: Int64,
-        localCreatedAt: Date = Date()
-    ) {
-        self.id = id
-        self.clientID = clientID
-        self.clientSequence = clientSequence
-        self.localCreatedAt = localCreatedAt
-    }
-}
+typealias PairingClientOperation = SyncClientOperation
 
 nonisolated struct PairingStartDate: Equatable, Sendable {
     let rawValue: String
