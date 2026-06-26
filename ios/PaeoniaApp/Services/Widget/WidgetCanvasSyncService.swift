@@ -159,7 +159,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
         }
     }
 
-    static func authorName(for authorID: UUID?, identity: WidgetSyncIdentity) -> String? {
+    nonisolated static func authorName(for authorID: UUID?, identity: WidgetSyncIdentity) -> String? {
         guard let authorID else {
             return nil
         }

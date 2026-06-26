@@ -3,6 +3,7 @@ import SwiftUI
 struct WidgetDrawingView: View {
     @State private var viewModel: WidgetDrawingViewModel
     @State private var isClearConfirmationPresented = false
+    @State private var isHistoryPresented = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     init(authorName: String? = nil) {
@@ -31,6 +32,19 @@ struct WidgetDrawingView: View {
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    isHistoryPresented = true
+                } label: {
+                    Image(systemName: "clock.arrow.circlepath")
+                }
+                .accessibilityLabel(Text(.widgetHistoryOpenButton))
+            }
+        }
+        .sheet(isPresented: $isHistoryPresented) {
+            WidgetDrawingHistoryView()
+        }
         .task {
             await viewModel.loadSavedDrawingIfNeeded()
         }

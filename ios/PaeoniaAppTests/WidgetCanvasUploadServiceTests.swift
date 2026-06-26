@@ -149,4 +149,10 @@ private nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @un
 
     func getCanvasState() -> WidgetCanvasState? { nil }
     func signedPayloadURL(mediaAssetID: UUID) -> URL? { nil }
+    func listRevisions(
+        canvasID: UUID,
+        limit: Int,
+        createdBefore: Date?,
+        createdBeforeRevisionID: UUID?
+    ) -> [WidgetDrawingRevisionSummary] { [] }
 }

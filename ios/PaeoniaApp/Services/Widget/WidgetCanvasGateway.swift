@@ -114,6 +114,15 @@ nonisolated protocol WidgetCanvasGateway: Sendable {
 
     /// A short-lived signed URL for downloading a finalized payload object.
     func signedPayloadURL(mediaAssetID: UUID) async throws -> URL?
+
+    /// A newest-first page of the canvas's revisions. Pass the last row's
+    /// `createdAt`/`revisionID` as the cursor to load the next, older page.
+    func listRevisions(
+        canvasID: UUID,
+        limit: Int,
+        createdBefore: Date?,
+        createdBeforeRevisionID: UUID?
+    ) async throws -> [WidgetDrawingRevisionSummary]
 }
 
 actor LiveSupabaseWidgetCanvasGateway: WidgetCanvasGateway {
@@ -122,7 +131,9 @@ actor LiveSupabaseWidgetCanvasGateway: WidgetCanvasGateway {
     nonisolated static let rendererVersion = "1"
     nonisolated static let validationVersion = "1"
 
-    private let client: SupabaseClient
+    // Internal (not private) so the history-gateway extension in another file
+    // can issue its own RPC.
+    let client: SupabaseClient
 
     init(client: SupabaseClient) {
         self.client = client

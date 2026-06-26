@@ -241,6 +241,12 @@ private nonisolated final class SyncGatewaySpy: WidgetCanvasGateway, @unchecked 
 
     func getCanvasState() -> WidgetCanvasState? { state }
     func signedPayloadURL(mediaAssetID: UUID) -> URL? { signedURL }
+    func listRevisions(
+        canvasID: UUID,
+        limit: Int,
+        createdBefore: Date?,
+        createdBeforeRevisionID: UUID?
+    ) -> [WidgetDrawingRevisionSummary] { [] }
 
     func getOrCreateCanvas() throws -> WidgetCanvasReference { throw WidgetCanvasGatewayError.emptyResponse }
     func reserveDrawingUpload(
