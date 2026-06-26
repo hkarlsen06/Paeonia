@@ -146,7 +146,17 @@ function buildApsPayload(
   if (notification.title) {
     alert.title = notification.title;
   }
-  return { aps: { alert, sound: "default" } };
+  // `mutable-content` lets the Notification Service Extension upgrade this into a
+  // communication notification (partner avatar + name). `content-available` also
+  // wakes the app to sync the widget on delivery, so the alert landing refreshes
+  // the widget even if the separate silent push was throttled. The outbox payload
+  // (type, route, canvas_id, sender_user_id) and the sender name are spread
+  // top-level so they reach `userInfo` for both the extension and tap routing.
+  return {
+    aps: { alert, sound: "default", "mutable-content": 1, "content-available": 1 },
+    ...notification.payload,
+    sender_name: notification.title ?? undefined,
+  };
 }
 
 async function sendToApns(

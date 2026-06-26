@@ -283,6 +283,45 @@ struct WidgetDrawingViewModelTests {
         #expect(viewModel.drawing.dataRepresentation() == inProgress.dataRepresentation())
     }
 
+    @Test func reloadFromSyncAppliesNewerDrawingWhenNoEdits() async {
+        let spy = WidgetCanvasServiceSpy()
+        spy.savedDrawingData = makeNonEmptyDrawing(seed: 12).dataRepresentation()
+        let viewModel = WidgetDrawingViewModel(service: spy)
+        await viewModel.loadSavedDrawingIfNeeded()
+        #expect(!viewModel.hasUnsavedEdits)
+        let originalSignature = PKDrawing(strokes: viewModel.drawing.strokes).dataRepresentation()
+
+        // A partner's newer drawing syncs into local storage.
+        spy.savedDrawingData = makeNonEmptyDrawing(seed: 99).dataRepresentation()
+        spy.savedAuthorName = "Partner"
+
+        await viewModel.reloadSavedDrawingFromSyncIfSafe()
+
+        let reloadedSignature = PKDrawing(strokes: viewModel.drawing.strokes).dataRepresentation()
+        #expect(reloadedSignature != originalSignature)
+        #expect(viewModel.savedDrawingAuthorName == "Partner")
+        #expect(!viewModel.hasUnsavedEdits)
+    }
+
+    @Test func reloadFromSyncSkipsWhenUnsavedEdits() async {
+        let spy = WidgetCanvasServiceSpy()
+        spy.savedDrawingData = makeNonEmptyDrawing(seed: 12).dataRepresentation()
+        let viewModel = WidgetDrawingViewModel(service: spy)
+        await viewModel.loadSavedDrawingIfNeeded()
+
+        // The user has started drawing on top of the loaded drawing.
+        viewModel.drawing = PKDrawing(strokes: viewModel.drawing.strokes + makeNonEmptyDrawing(seed: 77).strokes)
+        #expect(viewModel.hasUnsavedEdits)
+        let editedSignature = PKDrawing(strokes: viewModel.drawing.strokes).dataRepresentation()
+
+        // A partner's drawing syncs in; it must not clobber the in-progress work.
+        spy.savedDrawingData = makeNonEmptyDrawing(seed: 99).dataRepresentation()
+        await viewModel.reloadSavedDrawingFromSyncIfSafe()
+
+        let afterSignature = PKDrawing(strokes: viewModel.drawing.strokes).dataRepresentation()
+        #expect(afterSignature == editedSignature)
+    }
+
 }
 
 /// Canvas attribution + edited-state behavior (name/timestamp + strikethrough).
@@ -346,6 +385,29 @@ struct WidgetDrawingAttributionTests {
         viewModel.drawing = PKDrawing(strokes: baseline.strokes)
         #expect(!viewModel.hasUnsavedEdits)
         #expect(!viewModel.canSave)
+    }
+
+    @Test func reencodedIdenticalDrawingDoesNotReadAsEdit() async {
+        let spy = WidgetCanvasServiceSpy()
+        let viewModel = WidgetDrawingViewModel(
+            authorName: "Me",
+            service: spy,
+            uploader: WidgetCanvasUploadSpy()
+        )
+        viewModel.drawing = makeNonEmptyDrawing(seed: 20)
+        await viewModel.save()
+        #expect(!viewModel.hasUnsavedEdits)
+
+        // PencilKit re-emits the committed stroke after a save with sub-point
+        // geometry noise. That must not read as a fresh, savable edit.
+        viewModel.drawing = makeNonEmptyDrawing(seed: 20.2)
+        #expect(!viewModel.hasUnsavedEdits)
+        #expect(!viewModel.canSave)
+
+        // A real change still registers.
+        viewModel.drawing = makeNonEmptyDrawing(seed: 48)
+        #expect(viewModel.hasUnsavedEdits)
+        #expect(viewModel.canSave)
     }
 
     @Test func loadingAppliesSavedAttribution() async {

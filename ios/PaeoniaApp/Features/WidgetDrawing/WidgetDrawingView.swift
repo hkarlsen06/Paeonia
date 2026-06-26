@@ -5,6 +5,7 @@ struct WidgetDrawingView: View {
     @State private var isClearConfirmationPresented = false
     @State private var isHistoryPresented = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.scenePhase) private var scenePhase
 
     init(authorName: String? = nil) {
         _viewModel = State(initialValue: WidgetDrawingViewModel(authorName: authorName))
@@ -47,6 +48,19 @@ struct WidgetDrawingView: View {
         }
         .task {
             await viewModel.loadSavedDrawingIfNeeded()
+            // The user is now looking at the drawing, so drop any lingering
+            // "partner updated the widget" alerts from Notification Center.
+            await WidgetUpdateNotifications.clearDelivered()
+        }
+        // A partner's update synced in while this screen was open.
+        .onReceive(NotificationCenter.default.publisher(for: .paeoniaWidgetCanvasDidUpdate)) { _ in
+            Task { await viewModel.reloadSavedDrawingFromSyncIfSafe() }
+        }
+        // Catch a sync that landed while we were backgrounded.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await viewModel.reloadSavedDrawingFromSyncIfSafe() }
+            }
         }
         .onChange(of: viewModel.recentlySaved) { _, recentlySaved in
             if recentlySaved {

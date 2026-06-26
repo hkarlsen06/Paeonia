@@ -6,6 +6,12 @@ import WidgetKit
 import OSLog
 #endif
 
+extension Notification.Name {
+    /// Posted whenever the saved widget drawing/payload changes — a partner's
+    /// synced revision or the user's own save — so in-app surfaces can refresh.
+    nonisolated static let paeoniaWidgetCanvasDidUpdate = Notification.Name("paeonia.widgetCanvas.didUpdate")
+}
+
 /// Reloads the Home Screen widget timeline. Abstracted so the save pipeline can
 /// be tested without touching WidgetKit.
 nonisolated protocol WidgetTimelineReloading: Sendable {
@@ -188,6 +194,11 @@ actor WidgetCanvasService: WidgetCanvasManaging {
             logger.error("Failed to publish widget payload: \(String(describing: error))")
             #endif
         }
+
+        // One signal for any payload write — a partner's synced revision or the
+        // user's own save — so in-app surfaces (home preview, drawing canvas)
+        // refresh without waiting to reappear.
+        NotificationCenter.default.post(name: .paeoniaWidgetCanvasDidUpdate, object: nil)
     }
 
     func clearForPrivacy() async {

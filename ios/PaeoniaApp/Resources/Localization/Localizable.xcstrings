@@ -1,7 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {},
+    "" : {
+
+    },
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -1172,6 +1174,168 @@
         }
       }
     },
+    "home.dailyPrompt.answer" : {
+      "comment" : "Button that opens today's shared question to answer it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar"
+          }
+        }
+      }
+    },
+    "home.dailyPrompt.eyebrow" : {
+      "comment" : "Small overline above today's shared questions on the Us tab; the couple answers three each day",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dagens spørsmål"
+          }
+        }
+      }
+    },
+    "home.dailyPrompt.progress" : {
+      "comment" : "Accessibility label for the three-step progress bar on today's questions, showing which question is current. Count is placeholder until data is wired.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question 1 of 3"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmål 1 av 3"
+          }
+        }
+      }
+    },
+    "home.map.accessibilityLabel" : {
+      "comment" : "Accessibility label for the map showing where each partner is",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A map showing where you and your partner are"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et kart som viser hvor du og partneren din er"
+          }
+        }
+      }
+    },
+    "home.map.eyebrow" : {
+      "comment" : "Small overline above the globe on the Us tab showing the couple across distance",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Across the distance"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Over avstanden"
+          }
+        }
+      }
+    },
+    "home.map.openHint" : {
+      "comment" : "Accessibility hint for the map tile on the Us tab; tapping opens the locations in the Maps app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens in Maps"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpner i Kart"
+          }
+        }
+      }
+    },
+    "home.milestone.dayUnit" : {
+      "comment" : "Unit shown next to the milestone countdown number, e.g. 12 days",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager"
+          }
+        }
+      }
+    },
+    "home.milestone.eyebrow" : {
+      "comment" : "Small overline above the milestone countdown on the Us tab",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Counting down to"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teller ned til"
+          }
+        }
+      }
+    },
+    "home.streak.label" : {
+      "comment" : "Label under the streak number on the Us tab, e.g. 12 day streak",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "day streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager på rad"
+          }
+        }
+      }
+    },
     "home.widget.card.hint" : {
       "comment" : "Accessibility hint for the tappable widget preview on the home screen",
       "extractionState" : "manual",
@@ -1294,6 +1458,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi bygger fortsatt denne delen. Kom tilbake snart."
+          }
+        }
+      }
+    },
+    "mainTab.questions" : {
+      "comment" : "Title for the Questions tab in the main tab bar, where answered daily questions are kept",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmål"
           }
         }
       }
@@ -2918,6 +3100,150 @@
         }
       }
     },
+    "settings.notifications.openSettingsButton" : {
+      "comment" : "Button that opens the iOS Settings app",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Innstillinger"
+          }
+        }
+      }
+    },
+    "settings.notifications.saveError.message" : {
+      "comment" : "Error banner message when saving a notification toggle fails",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't update your notification settings. Please try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke oppdatere varselinnstillingene dine. Prøv igjen."
+          }
+        }
+      }
+    },
+    "settings.notifications.saveError.title" : {
+      "comment" : "Error banner title when saving a notification toggle fails",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre"
+          }
+        }
+      }
+    },
+    "settings.notifications.sectionTitle" : {
+      "comment" : "Section header for notification settings on the You tab",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varsler"
+          }
+        }
+      }
+    },
+    "settings.notifications.systemOff.message" : {
+      "comment" : "Tells the user how to turn notifications back on in iOS Settings",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on notifications for Paeonia in the Settings app to get these."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå på varsler for Paeonia i Innstillinger for å få disse."
+          }
+        }
+      }
+    },
+    "settings.notifications.systemOff.title" : {
+      "comment" : "Shown when iOS notifications are turned off for the app",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications are off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varsler er av"
+          }
+        }
+      }
+    },
+    "settings.notifications.widgetAlerts.subtitle" : {
+      "comment" : "Explains what the drawing updates toggle does",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a notification when your partner adds a new drawing."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få et varsel når partneren din lager en ny tegning."
+          }
+        }
+      }
+    },
+    "settings.notifications.widgetAlerts.title" : {
+      "comment" : "Toggle title: get a banner when the partner updates the shared widget drawing",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing updates"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nye tegninger"
+          }
+        }
+      }
+    },
     "sync.status.failed" : {
       "comment" : "Short sync status label for a failed send.",
       "extractionState" : "manual",
@@ -3007,6 +3333,174 @@
           }
         }
       }
+    },
+    "widget.drawing.action" : {
+      "comment" : "Accessibility label and title for opening the widget drawing."
+    },
+    "widget.history.done" : {
+      "comment" : "Button that closes the drawing history screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
+          }
+        }
+      }
+    },
+    "widget.history.empty.message" : {
+      "comment" : "Message shown when there are no saved drawings yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawings you and your partner save will show up here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegninger du og partneren din lagrer, dukker opp her."
+          }
+        }
+      }
+    },
+    "widget.history.empty.title" : {
+      "comment" : "Title shown when there are no saved drawings yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No drawings yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen tegninger ennå"
+          }
+        }
+      }
+    },
+    "widget.history.error.message" : {
+      "comment" : "Message shown when drawing history could not load",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk forbindelsen og prøv igjen."
+          }
+        }
+      }
+    },
+    "widget.history.error.title" : {
+      "comment" : "Title shown when drawing history could not load",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load your drawings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å laste tegningene"
+          }
+        }
+      }
+    },
+    "widget.history.openButton" : {
+      "comment" : "Accessibility label for the toolbar button that opens the drawing history",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing history"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegnehistorikk"
+          }
+        }
+      }
+    },
+    "widget.history.retry" : {
+      "comment" : "Button that retries loading the drawing history",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen"
+          }
+        }
+      }
+    },
+    "widget.history.title" : {
+      "comment" : "Title of the screen listing past saved drawings",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing history"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegnehistorikk"
+          }
+        }
+      }
+    },
+    "widget.history.unknownAuthor" : {
+      "comment" : "Fallback label when the drawer's nickname is unknown",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Someone"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noen"
+          }
+        }
+      }
+    },
+    "widget.refresh" : {
+      "comment" : "Accessibility label and title for the widget refresh button."
     },
     "widgetDrawing.canvas.label" : {
       "comment" : "Accessibility label for the widget drawing canvas.",
@@ -3493,492 +3987,6 @@
           }
         }
       }
-    },
-    "home.map.eyebrow" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Across the distance"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Over avstanden"
-          }
-        }
-      },
-      "comment" : "Small overline above the globe on the Us tab showing the couple across distance"
-    },
-    "home.map.accessibilityLabel" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A map showing where you and your partner are"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Et kart som viser hvor du og partneren din er"
-          }
-        }
-      },
-      "comment" : "Accessibility label for the map showing where each partner is"
-    },
-    "home.milestone.eyebrow" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Counting down to"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teller ned til"
-          }
-        }
-      },
-      "comment" : "Small overline above the milestone countdown on the Us tab"
-    },
-    "home.milestone.dayUnit" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "days"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "dager"
-          }
-        }
-      },
-      "comment" : "Unit shown next to the milestone countdown number, e.g. 12 days"
-    },
-    "home.dailyPrompt.eyebrow" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today's questions"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dagens spørsmål"
-          }
-        }
-      },
-      "comment" : "Small overline above today's shared questions on the Us tab; the couple answers three each day"
-    },
-    "home.dailyPrompt.answer" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar"
-          }
-        }
-      },
-      "comment" : "Button that opens today's shared question to answer it"
-    },
-    "home.streak.label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "day streak"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "dager på rad"
-          }
-        }
-      },
-      "comment" : "Label under the streak number on the Us tab, e.g. 12 day streak"
-    },
-    "home.dailyPrompt.progress" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Question 1 of 3"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spørsmål 1 av 3"
-          }
-        }
-      },
-      "comment" : "Accessibility label for the three-step progress bar on today's questions, showing which question is current. Count is placeholder until data is wired."
-    },
-    "mainTab.questions" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Questions"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spørsmål"
-          }
-        }
-      },
-      "comment" : "Title for the Questions tab in the main tab bar, where answered daily questions are kept"
-    },
-    "home.map.openHint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opens in Maps"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Åpner i Kart"
-          }
-        }
-      },
-      "comment" : "Accessibility hint for the map tile on the Us tab; tapping opens the locations in the Maps app."
-    },
-    "widget.history.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Drawing history"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tegnehistorikk"
-          }
-        }
-      },
-      "comment" : "Title of the screen listing past saved drawings"
-    },
-    "widget.history.openButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Drawing history"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tegnehistorikk"
-          }
-        }
-      },
-      "comment" : "Accessibility label for the toolbar button that opens the drawing history"
-    },
-    "widget.history.done" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Done"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ferdig"
-          }
-        }
-      },
-      "comment" : "Button that closes the drawing history screen"
-    },
-    "widget.history.empty.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No drawings yet"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingen tegninger ennå"
-          }
-        }
-      },
-      "comment" : "Title shown when there are no saved drawings yet"
-    },
-    "widget.history.empty.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Drawings you and your partner save will show up here."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tegninger du og partneren din lagrer, dukker opp her."
-          }
-        }
-      },
-      "comment" : "Message shown when there are no saved drawings yet"
-    },
-    "widget.history.error.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't load your drawings"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi klarte ikke å laste tegningene"
-          }
-        }
-      },
-      "comment" : "Title shown when drawing history could not load"
-    },
-    "widget.history.error.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check your connection and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekk forbindelsen og prøv igjen."
-          }
-        }
-      },
-      "comment" : "Message shown when drawing history could not load"
-    },
-    "widget.history.retry" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Try again"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prøv igjen"
-          }
-        }
-      },
-      "comment" : "Button that retries loading the drawing history"
-    },
-    "widget.history.unknownAuthor" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Someone"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noen"
-          }
-        }
-      },
-      "comment" : "Fallback label when the drawer's nickname is unknown"
-    },
-    "settings.notifications.sectionTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Notifications"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Varsler"
-          }
-        }
-      },
-      "comment" : "Section header for notification settings on the You tab"
-    },
-    "settings.notifications.widgetAlerts.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Drawing updates"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nye tegninger"
-          }
-        }
-      },
-      "comment" : "Toggle title: get a banner when the partner updates the shared widget drawing"
-    },
-    "settings.notifications.widgetAlerts.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get a notification when your partner adds a new drawing."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få et varsel når partneren din lager en ny tegning."
-          }
-        }
-      },
-      "comment" : "Explains what the drawing updates toggle does"
-    },
-    "settings.notifications.systemOff.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Notifications are off"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Varsler er av"
-          }
-        }
-      },
-      "comment" : "Shown when iOS notifications are turned off for the app"
-    },
-    "settings.notifications.systemOff.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Turn on notifications for Paeonia in the Settings app to get these."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Slå på varsler for Paeonia i Innstillinger for å få disse."
-          }
-        }
-      },
-      "comment" : "Tells the user how to turn notifications back on in iOS Settings"
-    },
-    "settings.notifications.openSettingsButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Settings"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Åpne Innstillinger"
-          }
-        }
-      },
-      "comment" : "Button that opens the iOS Settings app"
-    },
-    "settings.notifications.saveError.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't save"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke lagre"
-          }
-        }
-      },
-      "comment" : "Error banner title when saving a notification toggle fails"
-    },
-    "settings.notifications.saveError.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't update your notification settings. Please try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi kunne ikke oppdatere varselinnstillingene dine. Prøv igjen."
-          }
-        }
-      },
-      "comment" : "Error banner message when saving a notification toggle fails"
     }
   },
   "version" : "1.0"

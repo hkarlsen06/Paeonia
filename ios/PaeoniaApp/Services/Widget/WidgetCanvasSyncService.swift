@@ -67,6 +67,10 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
     }
 
     func sync(identity: WidgetSyncIdentity) async {
+        #if DEBUG
+        logger.debug("Widget canvas sync started.")
+        #endif
+
         // Don't overwrite a local save that hasn't reached the server yet.
         if let pendingSnapshot = pendingStore.pendingSnapshot {
             guard await retryPendingUploadIfNeeded(pendingSnapshot) else {
@@ -97,34 +101,51 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
                 return
             }
 
-            guard let url = try await gateway.signedPayloadURL(mediaAssetID: mediaAssetID) else {
-                return
-            }
-
-            let data = try await downloader.download(from: url)
-            // Required precondition: only show data we can re-render.
-            guard (try? PKDrawing(data: data)) != nil else {
-                return
-            }
-
-            let canvasSide = state.bounds?.canvasSide ?? Double(WidgetDrawingViewModel.fallbackCanvasSide)
-            let authorName = Self.authorName(for: state.activeRevisionAuthorUserID, identity: identity)
-
-            // Persists locally + renders previews + reloads the widget, and makes
-            // the in-app canvas load this revision next time it opens.
-            try await localStore.saveDrawing(
-                data,
-                canvasSize: CGSize(width: canvasSide, height: canvasSide),
-                authorName: authorName,
-                createdAt: state.revisionCreatedAt ?? Date()
+            try await applyRemoteRevision(
+                state,
+                revisionID: revisionID,
+                mediaAssetID: mediaAssetID,
+                identity: identity
             )
-
-            defaults.set(revisionID.uuidString, forKey: lastSyncedKey)
         } catch {
             #if DEBUG
             logger.error("Widget sync failed: \(String(describing: error))")
             #endif
         }
+    }
+
+    /// Downloads the partner's revision, persists it (which re-renders previews
+    /// and reloads the widget), marks it seen, and tells an open drawing screen
+    /// to refresh.
+    private func applyRemoteRevision(
+        _ state: WidgetCanvasState,
+        revisionID: UUID,
+        mediaAssetID: UUID,
+        identity: WidgetSyncIdentity
+    ) async throws {
+        guard let url = try await gateway.signedPayloadURL(mediaAssetID: mediaAssetID) else {
+            return
+        }
+
+        let data = try await downloader.download(from: url)
+        // Required precondition: only show data we can re-render.
+        guard (try? PKDrawing(data: data)) != nil else {
+            return
+        }
+
+        let canvasSide = state.bounds?.canvasSide ?? Double(WidgetDrawingViewModel.fallbackCanvasSide)
+        let authorName = Self.authorName(for: state.activeRevisionAuthorUserID, identity: identity)
+
+        // `saveDrawing` persists locally, reloads the widget, and posts
+        // `.paeoniaWidgetCanvasDidUpdate` so open in-app surfaces refresh.
+        try await localStore.saveDrawing(
+            data,
+            canvasSize: CGSize(width: canvasSide, height: canvasSide),
+            authorName: authorName,
+            createdAt: state.revisionCreatedAt ?? Date()
+        )
+
+        defaults.set(revisionID.uuidString, forKey: lastSyncedKey)
     }
 
     private func retryPendingUploadIfNeeded(_ snapshot: WidgetPendingUploadSnapshot) async -> Bool {

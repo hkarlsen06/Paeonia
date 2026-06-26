@@ -85,6 +85,7 @@ struct HomeWidgetCard: View {
     let onOpen: () -> Void
 
     @State private var model = HomeWidgetPreviewModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Button(action: onOpen) {
@@ -97,6 +98,17 @@ struct HomeWidgetCard: View {
         .accessibilityAddTraits(.isButton)
         .task {
             model.reload()
+        }
+        // Refresh the preview the moment a sync writes a new payload, instead of
+        // waiting for this card to reappear (e.g. after visiting the drawing
+        // screen).
+        .onReceive(NotificationCenter.default.publisher(for: .paeoniaWidgetCanvasDidUpdate)) { _ in
+            model.reload()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                model.reload()
+            }
         }
     }
 

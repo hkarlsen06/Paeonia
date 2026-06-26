@@ -187,13 +187,15 @@ final class WidgetDrawingViewModel {
     @ObservationIgnored private let authorName: String?
     @ObservationIgnored private var hasLoadedSavedDrawing = false
     @ObservationIgnored private var savedConfirmationTask: Task<Void, Never>?
-    /// Normalized signature of the drawing as it was last saved (or loaded).
-    /// Used to keep Save disabled, and the attribution un-struck, until the
-    /// canvas actually differs from what's stored. Normalized (rebuilt from the
-    /// strokes) because `PKDrawing.dataRepresentation()` also encodes session
-    /// state such as the inks used this session, so adding then undoing a stroke
-    /// would otherwise never compare equal to the baseline again.
-    @ObservationIgnored private var lastSavedDrawingSignature: Data?
+    /// Content signature of the drawing as it was last saved (or loaded). Used
+    /// to keep Save disabled, and the attribution un-struck, until the canvas
+    /// actually differs from what's stored. Derived from the strokes' geometry
+    /// and ink rather than `PKDrawing.dataRepresentation()`, because the byte
+    /// representation also encodes session state and is re-encoded by PencilKit
+    /// after every commit, so identical content would otherwise stop comparing
+    /// equal right after a save (re-enabling Save and striking the attribution
+    /// with no real edit).
+    @ObservationIgnored private var lastSavedDrawingSignature: Int?
 
     init(
         authorName: String? = nil,
@@ -217,9 +219,35 @@ final class WidgetDrawingViewModel {
     }
 
     /// A stable signature of just the visible strokes, so add-then-undo returns
-    /// to the same value. See `lastSavedDrawingSignature`.
-    private static func drawingSignature(for drawing: PKDrawing) -> Data {
-        PKDrawing(strokes: drawing.strokes).dataRepresentation()
+    /// to the same value and a re-encode after saving does not. Built from each
+    /// stroke's geometry and ink instead of the serialized bytes, which are not
+    /// stable for identical content. See `lastSavedDrawingSignature`.
+    private static func drawingSignature(for drawing: PKDrawing) -> Int {
+        var hasher = Hasher()
+        hasher.combine(drawing.strokes.count)
+        for stroke in drawing.strokes {
+            hasher.combine(stroke.path.count)
+            hasher.combine(stroke.ink.inkType)
+
+            // Round to whole points so sub-pixel re-rendering noise after a
+            // commit never reads as a change.
+            let bounds = stroke.renderBounds
+            hasher.combine(Int(bounds.minX.rounded()))
+            hasher.combine(Int(bounds.minY.rounded()))
+            hasher.combine(Int(bounds.width.rounded()))
+            hasher.combine(Int(bounds.height.rounded()))
+
+            var red: CGFloat = 0
+            var green: CGFloat = 0
+            var blue: CGFloat = 0
+            var alpha: CGFloat = 0
+            stroke.ink.color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            hasher.combine(Int((red * 255).rounded()))
+            hasher.combine(Int((green * 255).rounded()))
+            hasher.combine(Int((blue * 255).rounded()))
+            hasher.combine(Int((alpha * 255).rounded()))
+        }
+        return hasher.finalize()
     }
 
     /// True when there is drawn content that differs from what's already saved.
@@ -330,6 +358,33 @@ final class WidgetDrawingViewModel {
         lastSavedDrawingSignature = Self.drawingSignature(for: savedDrawing)
         savedDrawingAuthorName = snapshot.authorName
         savedDrawingCreatedAt = snapshot.createdAt
+        refreshUndoRedoAvailability()
+    }
+
+    /// Re-loads the saved drawing when a partner's update has synced in (the
+    /// screen was already open). Skips when the user has unsaved edits, so
+    /// in-progress work is never clobbered, and no-ops when nothing changed.
+    func reloadSavedDrawingFromSyncIfSafe() async {
+        guard drawing.strokes.isEmpty || !hasUnsavedEdits else {
+            return
+        }
+
+        guard let snapshot = await service.loadSavedSnapshot(),
+              let savedDrawing = try? PKDrawing(data: snapshot.drawingData)
+        else {
+            return
+        }
+
+        let signature = Self.drawingSignature(for: savedDrawing)
+        guard signature != lastSavedDrawingSignature else {
+            return
+        }
+
+        drawing = savedDrawing
+        lastSavedDrawingSignature = signature
+        savedDrawingAuthorName = snapshot.authorName
+        savedDrawingCreatedAt = snapshot.createdAt
+        hasLoadedSavedDrawing = true
         refreshUndoRedoAvailability()
     }
 

@@ -1,12 +1,32 @@
 import AppIntents
+import Foundation
+#if DEBUG
+import OSLog
+#endif
 import WidgetKit
 
-/// Backs the widget's refresh button. Reloads the widget from the latest local
-/// App Group payload.
-///
-/// Today the payload only changes when the app saves a drawing, so this re-reads
-/// local state. Once partner sync exists, trigger that sync here before
-/// reloading so the button pulls a partner's newest drawing on demand.
+/// Opens the in-app drawing screen from widget areas that are not the refresh
+/// button.
+struct PaeoniaWidgetOpenDrawingIntent: AppIntent {
+    static let title = LocalizedStringResource(
+        "widget.drawing.action",
+        table: "Localizable",
+        comment: "Accessibility label and title for opening the widget drawing."
+    )
+    static var supportedModes: IntentModes { .background }
+
+    func perform() async throws -> some IntentResult {
+        .result(opensIntent: OpenURLIntent(Self.drawingURL))
+    }
+
+    // A fixed, known-valid literal URL; the optional initializer cannot fail here.
+    // swiftlint:disable:next force_unwrapping
+    private static let drawingURL = URL(string: "paeonia://widget/drawing")!
+}
+
+/// Backs the widget's refresh button. In the app target it asks the app sync
+/// service to pull the partner's latest drawing; in the widget target it keeps
+/// compiling as an App-Group-only local reload.
 struct PaeoniaWidgetRefreshIntent: AppIntent {
     // AppIntents extracts `title` at build time and only accepts a string literal
     // or a `LocalizedStringResource` initializer call — not a generated catalog
@@ -17,11 +37,30 @@ struct PaeoniaWidgetRefreshIntent: AppIntent {
         table: "Localizable",
         comment: "Accessibility label and title for the widget refresh button."
     )
+    static var supportedModes: IntentModes { .background }
 
-    // `perform()` is async by AppIntent protocol; reloading the timeline is synchronous.
-    // swiftlint:disable:next async_without_await
     func perform() async throws -> some IntentResult {
+        #if DEBUG
+        let bundleIdentifier = Bundle.main.bundleIdentifier ?? "unknown"
+        Self.logger.debug("Widget refresh intent running in bundle: \(bundleIdentifier, privacy: .public)")
+        #endif
+
+        #if !WIDGET_EXTENSION
+        #if DEBUG
+        Self.logger.debug("Starting widget canvas sync from refresh intent.")
+        #endif
+        await WidgetCanvasSyncServiceFactory.makeDefault()
+            .sync(identity: WidgetSyncIdentityStore.shared.load())
+        #endif
+
         WidgetCenter.shared.reloadTimelines(ofKind: "PaeoniaWidget")
         return .result()
     }
+
+    #if DEBUG
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
+        category: "WidgetRefreshIntent"
+    )
+    #endif
 }

@@ -9,19 +9,35 @@ struct PaeoniaWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        VStack(alignment: .leading, spacing: contentSpacing) {
-            header
+        ZStack(alignment: .topLeading) {
+            openDrawingBackgroundButton
 
-            drawingSurface
+            VStack(alignment: .leading, spacing: contentSpacing) {
+                header
+                    .allowsHitTesting(false)
 
-            footer
+                drawingSurface
+                    .allowsHitTesting(false)
+
+                footer
+            }
         }
         .padding(contentPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .widgetURL(PaeoniaWidgetURL.drawing)
         // `.contain` (not `.combine`) so the interactive refresh button stays a
         // separately actionable accessibility element.
         .accessibilityElement(children: .contain)
+    }
+
+    private var openDrawingBackgroundButton: some View {
+        Button(intent: PaeoniaWidgetOpenDrawingIntent()) {
+            Rectangle()
+                .fill(.clear)
+                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(footerAction))
     }
 
     private var header: some View {
@@ -110,7 +126,8 @@ struct PaeoniaWidgetEntryView: View {
                 .foregroundStyle(.paeoniaWidgetTextPrimary)
                 .lineLimit(family == .systemSmall ? 2 : 1)
                 .minimumScaleFactor(0.7)
-                .layoutPriority(1)
+                .allowsHitTesting(false)
+            .layoutPriority(1)
 
             Spacer(minLength: PaeoniaWidgetSpacing.space8)
 
@@ -136,6 +153,9 @@ struct PaeoniaWidgetEntryView: View {
                     .foregroundStyle(.paeoniaWidgetAccentPrimary)
                     .frame(width: refreshButtonSize, height: refreshButtonSize)
                     .background(.paeoniaWidgetAccentPrimary.opacity(0.16), in: Circle())
+                    // Shows the system "working" treatment while the refresh
+                    // intent runs, so the tap has visible feedback.
+                    .invalidatableContent()
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text(.widgetRefresh))
@@ -145,6 +165,7 @@ struct PaeoniaWidgetEntryView: View {
                 .foregroundStyle(.paeoniaWidgetAccentPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.68)
+                .allowsHitTesting(false)
         }
     }
 
@@ -205,10 +226,6 @@ struct PaeoniaWidgetEntryView: View {
     private var redactedIconSize: CGFloat {
         family == .systemSmall ? 22 : 28
     }
-}
-
-private enum PaeoniaWidgetURL {
-    static let drawing = URL(string: "paeonia://widget/drawing")
 }
 
 private struct PaeoniaWidgetDrawingArea<Content: View>: View {

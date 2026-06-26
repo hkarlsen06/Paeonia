@@ -6,19 +6,23 @@ struct PairedHomeView: View {
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
     var onOpenWidgetDrawing: () -> Void = {}
+    var onRefresh: () async -> Void = {}
+    @Environment(\.scenePhase) private var scenePhase
 
     init(
         currentDisplayName: String?,
         currentProfilePhotoAssetID: UUID? = nil,
         partnerDisplayName: String?,
         partnerProfilePhotoAssetID: UUID? = nil,
-        onOpenWidgetDrawing: @escaping () -> Void = {}
+        onOpenWidgetDrawing: @escaping () -> Void = {},
+        onRefresh: @escaping () async -> Void = {}
     ) {
         self.currentDisplayName = currentDisplayName
         self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
         self.partnerDisplayName = partnerDisplayName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
+        self.onRefresh = onRefresh
     }
 
     var body: some View {
@@ -45,6 +49,17 @@ struct PairedHomeView: View {
             .padding(.bottom, PaeoniaSpacing.space16)
         }
         .scrollIndicators(.hidden)
+        .refreshable { await onRefresh() }
+        // The home screen shows the couple's current widget, so seeing it means
+        // the user has noticed any update — clear lingering partner alerts.
+        .task {
+            await WidgetUpdateNotifications.clearDelivered()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await WidgetUpdateNotifications.clearDelivered() }
+            }
+        }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Let the scroll view reach the bottom edge so the tab bar's automatic
         // content inset applies and cards scroll behind the floating glass bar,

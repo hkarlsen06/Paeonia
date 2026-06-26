@@ -97,6 +97,22 @@
 			);
 			target = 000000000000000100000000 /* PaeoniaApp */;
 		};
+		2A2D05002FE1000000A7BE1A /* Exceptions for "PaeoniaWidget" folder in "PaeoniaApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+				Info.plist,
+				PaeoniaPlaceholderDrawing.swift,
+				PaeoniaWidget.swift,
+				PaeoniaWidgetBundle.swift,
+				PaeoniaWidgetEntryView.swift,
+				PaeoniaWidgetStore.swift,
+				PaeoniaWidgetTheme.swift,
+				PaeoniaWidgetTimelineProvider.swift,
+				Resources/Localization/Localizable.xcstrings,
+			);
+			target = 000000000000000100000000 /* PaeoniaApp */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -111,6 +127,7 @@
 		2A2D03492FDD045E00A7BE1A /* PaeoniaWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				2A2D05002FE1000000A7BE1A /* Exceptions for "PaeoniaWidget" folder in "PaeoniaApp" target */,
 				2A2D03572FDD045F00A7BE1A /* Exceptions for "PaeoniaWidget" folder in "PaeoniaWidgetExtension" target */,
 			);
 			path = PaeoniaWidget;
@@ -230,6 +247,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				000000000000000000000010 /* PaeoniaApp */,
+				2A2D03492FDD045E00A7BE1A /* PaeoniaWidget */,
 			);
 			name = PaeoniaApp;
 			packageProductDependencies = (
@@ -710,6 +728,7 @@
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) WIDGET_EXTENSION";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
@@ -743,6 +762,7 @@
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) WIDGET_EXTENSION";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
@@ -756,6 +776,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2A2D03A02FDE100000A7BE1A /* debug.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PaeoniaNotificationService/PaeoniaNotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -785,6 +806,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2A2D03A12FDE100000A7BE1A /* release.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PaeoniaNotificationService/PaeoniaNotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 48ZSLD4RMP;
 				GENERATE_INFOPLIST_FILE = YES;

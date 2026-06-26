@@ -17,6 +17,14 @@ nonisolated enum PaeoniaAppGroup {
     /// rendered preview images referenced by the widget payload.
     nonisolated static let widgetPreviewsDirectory = "Widget/previews"
 
+    /// Relative path, inside the App Group container, of the partner's avatar
+    /// image. The app writes it while paired so the Notification Service
+    /// Extension can show it on the widget update alert (a communication
+    /// notification). Cleared when the relationship ends. The Notification
+    /// Service Extension hardcodes the same identifier + path (it cannot import
+    /// this type) — keep them in sync.
+    nonisolated static let communicationPartnerAvatarPath = "Notifications/partner-avatar"
+
     nonisolated static var containerURL: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: identifier)
     }

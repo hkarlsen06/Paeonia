@@ -17,6 +17,7 @@ struct MainTabView: View {
     let selection: Binding<MainTab>
     let widgetDrawingPresented: Binding<Bool>
     let onOpenWidgetDrawing: () -> Void
+    var onHomeRefresh: () async -> Void = {}
 
     var body: some View {
         TabView(selection: selection) {
@@ -54,7 +55,8 @@ struct MainTabView: View {
                 currentProfilePhotoAssetID: currentProfilePhotoAssetID,
                 partnerDisplayName: partnerDisplayName,
                 partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                onOpenWidgetDrawing: onOpenWidgetDrawing
+                onOpenWidgetDrawing: onOpenWidgetDrawing,
+                onRefresh: onHomeRefresh
             )
             .navigationBarTitleDisplayMode(.inline)
             // The brand mark and couple avatars are populated into the navigation

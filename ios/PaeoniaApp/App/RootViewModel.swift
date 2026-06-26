@@ -324,6 +324,12 @@ final class RootViewModel {
         await syncCoordinator.requestSync(reason: .foreground)
     }
 
+    /// Pull-to-refresh on Home. The widget sync is triggered alongside this from
+    /// the view (see `RootView`).
+    func refreshFromHomePull() async {
+        await startSyncIfNeeded()
+    }
+
     private func refreshAuthRoute() async {
         do {
             let session = try await authService.restoreSession()

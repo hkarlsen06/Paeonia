@@ -14,6 +14,7 @@ struct RootView: View {
     private let widgetCanvasService: any WidgetCanvasManaging
     private let widgetCanvasSync: any WidgetCanvasSyncing
     private let pushAuthorization: any PushAuthorizationProviding
+    private let partnerAvatarSharing: (any PartnerAvatarSharing)?
 
     @MainActor
     init(
@@ -24,7 +25,8 @@ struct RootView: View {
         googleSignInProvider: (any GoogleSignInProviding)? = nil,
         widgetCanvasService: (any WidgetCanvasManaging)? = nil,
         widgetCanvasSync: (any WidgetCanvasSyncing)? = nil,
-        pushAuthorization: (any PushAuthorizationProviding)? = nil
+        pushAuthorization: (any PushAuthorizationProviding)? = nil,
+        partnerAvatarSharing: (any PartnerAvatarSharing)? = nil
     ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
         _widgetDeepLink = widgetDeepLink
@@ -34,6 +36,7 @@ struct RootView: View {
         self.widgetCanvasService = widgetCanvasService ?? WidgetCanvasService.shared
         self.widgetCanvasSync = widgetCanvasSync ?? WidgetCanvasSyncServiceFactory.makeDefault()
         self.pushAuthorization = pushAuthorization ?? PushAuthorizationService()
+        self.partnerAvatarSharing = partnerAvatarSharing ?? PartnerAvatarSharingServiceFactory.makeDefault()
     }
 
     var body: some View {
@@ -209,7 +212,8 @@ struct RootView: View {
                     authorName: viewModel.currentSession?.displayName,
                     selection: mainTabSelection,
                     widgetDrawingPresented: widgetDrawingPresented,
-                    onOpenWidgetDrawing: { viewModel.openWidgetDrawing() }
+                    onOpenWidgetDrawing: { viewModel.openWidgetDrawing() },
+                    onHomeRefresh: { await refreshHomeFromPull() }
                 )
                 .transition(
                     .asymmetric(
@@ -390,12 +394,19 @@ struct RootView: View {
 
         Task {
             await widgetCanvasService.clearForPrivacy()
+            await partnerAvatarSharing?.clear()
         }
     }
 
     /// Pulls the partner's latest drawing (and our own latest) into the widget
     /// and in-app canvas whenever we're paired and the app comes forward.
     private func syncWidgetIfPaired(_ state: AppState) {
+        Task { await performWidgetSyncIfPaired(state) }
+    }
+
+    /// Awaitable core of the widget sync, so pull-to-refresh can keep its spinner
+    /// up until the partner's drawing and avatar are staged.
+    private func performWidgetSyncIfPaired(_ state: AppState) async {
         guard state == .paired else {
             return
         }
@@ -408,9 +419,16 @@ struct RootView: View {
         // Persist so a silent-push-triggered background sync can label the
         // drawing with the right nickname even when no view is alive.
         WidgetSyncIdentityStore.shared.save(identity)
-        Task {
-            await widgetCanvasSync.sync(identity: identity)
-        }
+        await widgetCanvasSync.sync(identity: identity)
+        // Stage the partner's avatar so the alert can render it as a
+        // communication notification while the app is in the background.
+        await partnerAvatarSharing?.cachePartnerAvatar(assetID: viewModel.currentPartnerProfilePhotoAssetID)
+    }
+
+    /// Pull-to-refresh on Home: runs `startSyncIfNeeded()` and the widget sync.
+    private func refreshHomeFromPull() async {
+        await viewModel.refreshFromHomePull()
+        await performWidgetSyncIfPaired(viewModel.state)
     }
 
     /// Asks for notification permission once the couple is paired (the first
