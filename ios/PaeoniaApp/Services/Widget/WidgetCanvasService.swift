@@ -36,10 +36,23 @@ nonisolated enum WidgetCanvasError: Error, Equatable {
 /// Remote sync (uploading the canonical `.pkdrawing` payload and propagating a
 /// partner's revision) is a separate concern handled by the sync layer once it
 /// exists; this service owns only the on-device surface.
+/// The last saved drawing plus its on-canvas attribution: who saved it and when.
+/// `authorName`/`createdAt` are nil when no matching saved metadata is available.
+nonisolated struct WidgetCanvasSnapshot: Sendable, Equatable {
+    let drawingData: Data
+    let authorName: String?
+    let createdAt: Date?
+}
+
 nonisolated protocol WidgetCanvasManaging: Sendable {
     /// Returns the canonical data for the last saved drawing, if one exists and
     /// still decodes.
     func loadSavedDrawing() async -> Data?
+
+    /// Returns the last saved drawing together with its attribution (author name
+    /// and save time) for display on the canvas. Defaults to the canonical
+    /// drawing with no attribution; `WidgetCanvasService` fills in the metadata.
+    func loadSavedSnapshot() async -> WidgetCanvasSnapshot?
 
     /// Persists the drawing locally, renders widget previews, updates the App
     /// Group payload, and reloads the widget. `authorName` is the display name
@@ -55,6 +68,15 @@ nonisolated protocol WidgetCanvasManaging: Sendable {
     /// Removes the saved drawing and widget previews so private content does not
     /// linger on the Home Screen after a session ends.
     func clearForPrivacy() async
+}
+
+extension WidgetCanvasManaging {
+    func loadSavedSnapshot() async -> WidgetCanvasSnapshot? {
+        guard let data = await loadSavedDrawing() else {
+            return nil
+        }
+        return WidgetCanvasSnapshot(drawingData: data, authorName: nil, createdAt: nil)
+    }
 }
 
 actor WidgetCanvasService: WidgetCanvasManaging {
@@ -106,6 +128,37 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         }
 
         return data
+    }
+
+    func loadSavedSnapshot() -> WidgetCanvasSnapshot? {
+        guard let data = loadSavedDrawing() else {
+            return nil
+        }
+        // Attribution lives in the published widget payload. Only trust it when
+        // it describes this exact drawing, so we never label a drawing with a
+        // different revision's author or time.
+        let metadata = savedPayloadMetadata(matching: data)
+        return WidgetCanvasSnapshot(
+            drawingData: data,
+            authorName: metadata?.authorName,
+            createdAt: metadata?.createdAt
+        )
+    }
+
+    /// Reads the saved widget payload and returns its attribution only if its
+    /// content hash matches `data`.
+    private func savedPayloadMetadata(matching data: Data) -> (authorName: String?, createdAt: Date)? {
+        guard let appGroupContainerURL else {
+            return nil
+        }
+        let payloadURL = appGroupContainerURL.appendingPathComponent(PaeoniaAppGroup.widgetPayloadPath)
+        guard let payloadData = try? Data(contentsOf: payloadURL),
+              let payload = try? WidgetSharePayload.decoder().decode(WidgetSharePayload.self, from: payloadData),
+              payload.contentHash == Self.contentHash(for: data)
+        else {
+            return nil
+        }
+        return (payload.authorName, payload.createdAt)
     }
 
     func saveDrawing(

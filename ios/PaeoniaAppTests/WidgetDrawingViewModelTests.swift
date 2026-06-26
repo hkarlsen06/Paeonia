@@ -283,20 +283,100 @@ struct WidgetDrawingViewModelTests {
         #expect(viewModel.drawing.dataRepresentation() == inProgress.dataRepresentation())
     }
 
-    private func makeNonEmptyDrawing() -> PKDrawing {
-        let point = PKStrokePoint(
-            location: CGPoint(x: 12, y: 12),
-            timeOffset: 0,
-            size: CGSize(width: 4, height: 4),
-            opacity: 1,
-            force: 1,
-            azimuth: 0,
-            altitude: 0
+}
+
+/// Canvas attribution + edited-state behavior (name/timestamp + strikethrough).
+@MainActor
+struct WidgetDrawingAttributionTests {
+    @Test func savingSetsAttributionAndClearsEdits() async {
+        let spy = WidgetCanvasServiceSpy()
+        let viewModel = WidgetDrawingViewModel(
+            authorName: "Me",
+            service: spy,
+            uploader: WidgetCanvasUploadSpy()
         )
-        let path = PKStrokePath(controlPoints: [point], creationDate: Date())
-        let stroke = PKStroke(ink: PKInk(.pen, color: .black), path: path)
-        return PKDrawing(strokes: [stroke])
+        viewModel.drawing = makeNonEmptyDrawing()
+        #expect(viewModel.hasUnsavedEdits)
+
+        await viewModel.save()
+
+        #expect(spy.saveCount == 1)
+        #expect(viewModel.savedDrawingAuthorName == "Me")
+        #expect(viewModel.savedDrawingCreatedAt != nil)
+        #expect(!viewModel.hasUnsavedEdits)
+        #expect(viewModel.isShowingSavedAttribution)
     }
+
+    @Test func editingAfterSaveMarksUnsavedButKeepsAttribution() async {
+        let spy = WidgetCanvasServiceSpy()
+        let viewModel = WidgetDrawingViewModel(
+            authorName: "Me",
+            service: spy,
+            uploader: WidgetCanvasUploadSpy()
+        )
+        viewModel.drawing = makeNonEmptyDrawing()
+        await viewModel.save()
+        #expect(!viewModel.hasUnsavedEdits)
+
+        // A different drawing differs from what was just saved.
+        viewModel.drawing = makeNonEmptyDrawing(seed: 48)
+
+        #expect(viewModel.hasUnsavedEdits)
+        #expect(viewModel.isShowingSavedAttribution)
+        #expect(viewModel.savedDrawingAuthorName == "Me")
+    }
+
+    @Test func undoingEditsBackToSavedStateClearsUnsavedEdits() async {
+        let spy = WidgetCanvasServiceSpy()
+        let viewModel = WidgetDrawingViewModel(
+            authorName: "Me",
+            service: spy,
+            uploader: WidgetCanvasUploadSpy()
+        )
+        let baseline = makeNonEmptyDrawing()
+        viewModel.drawing = baseline
+        await viewModel.save()
+        #expect(!viewModel.hasUnsavedEdits)
+
+        // Add a stroke on top of the saved drawing.
+        viewModel.drawing = PKDrawing(strokes: baseline.strokes + makeNonEmptyDrawing(seed: 80).strokes)
+        #expect(viewModel.hasUnsavedEdits)
+
+        // Undo back to exactly the saved strokes — should read as unedited again.
+        viewModel.drawing = PKDrawing(strokes: baseline.strokes)
+        #expect(!viewModel.hasUnsavedEdits)
+        #expect(!viewModel.canSave)
+    }
+
+    @Test func loadingAppliesSavedAttribution() async {
+        let spy = WidgetCanvasServiceSpy()
+        spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
+        spy.savedAuthorName = "Partner"
+        spy.savedCreatedAt = Date(timeIntervalSinceReferenceDate: 1_000)
+        let viewModel = WidgetDrawingViewModel(service: spy)
+
+        await viewModel.loadSavedDrawingIfNeeded()
+
+        #expect(viewModel.savedDrawingAuthorName == "Partner")
+        #expect(viewModel.savedDrawingCreatedAt == Date(timeIntervalSinceReferenceDate: 1_000))
+        #expect(!viewModel.hasUnsavedEdits)
+        #expect(viewModel.isShowingSavedAttribution)
+    }
+}
+
+private func makeNonEmptyDrawing(seed: CGFloat = 12) -> PKDrawing {
+    let point = PKStrokePoint(
+        location: CGPoint(x: seed, y: seed),
+        timeOffset: 0,
+        size: CGSize(width: 4, height: 4),
+        opacity: 1,
+        force: 1,
+        azimuth: 0,
+        altitude: 0
+    )
+    let path = PKStrokePath(controlPoints: [point], creationDate: Date())
+    let stroke = PKStroke(ink: PKInk(.pen, color: .black), path: path)
+    return PKDrawing(strokes: [stroke])
 }
 
 private enum WidgetDrawingTestError: Error {
@@ -312,10 +392,23 @@ private final class WidgetCanvasServiceSpy: WidgetCanvasManaging, @unchecked Sen
     private(set) var lastAuthorName: String?
     var saveError: Error?
     var savedDrawingData: Data?
+    var savedAuthorName: String?
+    var savedCreatedAt: Date?
 
     func loadSavedDrawing() async -> Data? {
+        savedDrawingData
+    }
+
+    func loadSavedSnapshot() async -> WidgetCanvasSnapshot? {
         loadCount += 1
-        return savedDrawingData
+        guard let savedDrawingData else {
+            return nil
+        }
+        return WidgetCanvasSnapshot(
+            drawingData: savedDrawingData,
+            authorName: savedAuthorName,
+            createdAt: savedCreatedAt
+        )
     }
 
     func saveDrawing(

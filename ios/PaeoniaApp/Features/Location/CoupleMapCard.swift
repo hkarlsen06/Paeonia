@@ -169,7 +169,7 @@ private struct CoupleMapSnapshot: View {
 
         let kiss = TapKiss(
             bornAt: .now,
-            plan: KissPlan(seed: Int.random(in: 0..<Int.max), forward: Bool.random())
+            plan: KissPlan(forward: Bool.random(), next: { Double.random(in: 0..<1) })
         )
         tapKisses.append(kiss)
 
@@ -351,35 +351,39 @@ private struct MapAvatarPin: View {
     }
 }
 
-/// Shape of one heart's flight, randomized per kiss so none feel alike. The same
-/// plan drives both the ambient kisses and the tap-spawned ones.
+/// Shape of one heart's flight. Every value is drawn independently from the given
+/// random source, so no two kisses share a path, speed, size, or wobble. The same
+/// plan type drives both the ambient kisses (fed a deterministic per-slot sequence)
+/// and the tap-spawned ones (fed the system RNG).
 private struct KissPlan {
     let forward: Bool
     let flightDuration: Double
     let arcSign: CGFloat
+    let arcMagnitude: CGFloat
     let loopTurns: CGFloat
     let loopSign: CGFloat
     let loopPhase: CGFloat
     let loopRadiusFactor: CGFloat
+    let baseScale: CGFloat
+    let rotationAmplitude: Double
 
-    init(seed: Int, forward: Bool) {
-        let r0 = KissMath.random01(seed)
-        let r2 = KissMath.random01(seed &+ 2)
-        let r3 = KissMath.random01(seed &+ 3)
-        let r4 = KissMath.random01(seed &+ 4)
-        let r5 = KissMath.random01(seed &+ 5)
-
+    init(forward: Bool, next: () -> Double) {
         self.forward = forward
-        // Slow, wind-like drift; varies kiss to kiss.
-        flightDuration = 4.6 + r0 * 1.8
-        arcSign = r2 < 0.5 ? -1 : 1
-        loopSign = r5 < 0.5 ? -1 : 1
-        loopPhase = CGFloat(r2 * 2 * .pi)
+        // Slow, wind-like drift; speed varies kiss to kiss.
+        flightDuration = 3.6 + next() * 3.0
+        arcSign = next() < 0.5 ? -1 : 1
+        arcMagnitude = 0.05 + CGFloat(next()) * 0.13
+        loopPhase = CGFloat(next() * 2 * .pi)
+        loopSign = next() < 0.5 ? -1 : 1
 
-        // Only some kisses loop, and the ones that do use a couple of tighter turns
-        // so the loops stay small while still crossing themselves.
-        loopTurns = r4 < 0.5 ? 2 : 3
-        loopRadiusFactor = r3 < 0.55 ? 0.11 : 0
+        // Only some kisses loop; the ones that do use 2–3 tighter turns of varying
+        // size so the loops stay small while still crossing themselves.
+        let hasLoop = next() < 0.6
+        loopTurns = hasLoop ? (next() < 0.5 ? 2 : 3) : 0
+        loopRadiusFactor = hasLoop ? (0.09 + CGFloat(next()) * 0.06) : 0
+
+        baseScale = 0.8 + CGFloat(next()) * 0.5
+        rotationAmplitude = 6 + next() * 10
     }
 }
 
@@ -410,8 +414,8 @@ private enum KissMath {
         return State(
             position: position,
             opacity: fadeOpacity(progress),
-            scale: scale(progress),
-            rotation: Double(sin(theta) * 10)
+            scale: scale(progress) * plan.baseScale,
+            rotation: Double(sin(theta)) * plan.rotationAmplitude
         )
     }
 
@@ -427,7 +431,7 @@ private enum KissMath {
         let perpY = dx / distance
 
         let envelope = sin(.pi * along)
-        let arc = plan.arcSign * distance * 0.10 * envelope
+        let arc = plan.arcSign * distance * plan.arcMagnitude * envelope
         let loopRadius = distance * plan.loopRadiusFactor * envelope
         let theta = plan.loopSign * 2 * .pi * plan.loopTurns * along + plan.loopPhase
 
@@ -467,6 +471,17 @@ private enum KissMath {
         x = (x ^ (x >> 27)) &* 0x94D0_49BB_1331_11EB
         x = x ^ (x >> 31)
         return Double(x >> 11) * (1.0 / 9_007_199_254_740_992.0)
+    }
+
+    /// A deterministic sequence of pseudo-random values from one seed, for the
+    /// ambient kiss (recomputed every frame, so it must be reproducible per slot).
+    static func hashedSequence(seed: Int) -> () -> Double {
+        var index = 0
+        return {
+            let value = random01(seed &+ index)
+            index += 1
+            return value
+        }
     }
 }
 
@@ -518,8 +533,11 @@ private struct KissLayer: View {
     private func ambientState(at date: Date) -> KissMath.State? {
         let time = date.timeIntervalSinceReferenceDate
         let slot = Int(floor(time / Self.slotPeriod))
-        let plan = KissPlan(seed: slot &* 7, forward: slot.isMultiple(of: 2))
-        let startOffset = KissMath.random01(slot &* 7 &+ 1) * (Self.slotPeriod - plan.flightDuration)
+        let plan = KissPlan(
+            forward: slot.isMultiple(of: 2),
+            next: KissMath.hashedSequence(seed: slot &* 31)
+        )
+        let startOffset = KissMath.random01(slot &* 31 &- 1) * (Self.slotPeriod - plan.flightDuration)
         let phase = time - Double(slot) * Self.slotPeriod
 
         guard phase >= startOffset, phase < startOffset + plan.flightDuration else {

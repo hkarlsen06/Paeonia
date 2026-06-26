@@ -49,4 +49,10 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
         encoder.dateEncodingStrategy = .iso8601
         return encoder
     }
+
+    nonisolated static func decoder() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }
 }

@@ -14,6 +14,60 @@ struct WidgetDrawingColorChoice: Identifiable, Equatable {
     }
 }
 
+extension WidgetDrawingColorChoice {
+    /// The fixed ink palette offered by the drawing tools.
+    static let palette: [WidgetDrawingColorChoice] = [
+        WidgetDrawingColorChoice(
+            id: "blush",
+            color: .paeoniaWidgetDrawing,
+            uiColor: .paeoniaWidgetDrawing,
+            accessibilityLabel: .widgetDrawingColorBlush
+        ),
+        WidgetDrawingColorChoice(
+            id: "petal",
+            color: .paeoniaAccentPrimary,
+            uiColor: .paeoniaAccentPrimary,
+            accessibilityLabel: .widgetDrawingColorPetal
+        ),
+        WidgetDrawingColorChoice(
+            id: "pink",
+            color: .paeoniaAccentSecondary,
+            uiColor: .paeoniaAccentSecondary,
+            accessibilityLabel: .widgetDrawingColorPink
+        ),
+        WidgetDrawingColorChoice(
+            id: "warm",
+            color: .paeoniaPartnerTwo,
+            uiColor: .paeoniaPartnerTwo,
+            accessibilityLabel: .widgetDrawingColorWarm
+        ),
+        WidgetDrawingColorChoice(
+            id: "green",
+            color: .paeoniaSuccess,
+            uiColor: .paeoniaSuccess,
+            accessibilityLabel: .widgetDrawingColorGreen
+        ),
+        WidgetDrawingColorChoice(
+            id: "gold",
+            color: .paeoniaInkGold,
+            uiColor: .paeoniaInkGold,
+            accessibilityLabel: .widgetDrawingColorGold
+        ),
+        WidgetDrawingColorChoice(
+            id: "blue",
+            color: .paeoniaInkBlue,
+            uiColor: .paeoniaInkBlue,
+            accessibilityLabel: .widgetDrawingColorBlue
+        ),
+        WidgetDrawingColorChoice(
+            id: "lavender",
+            color: .paeoniaInkLavender,
+            uiColor: .paeoniaInkLavender,
+            accessibilityLabel: .widgetDrawingColorLavender
+        ),
+    ]
+}
+
 enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
     case pen
     case pencil
@@ -100,56 +154,7 @@ final class WidgetDrawingViewModel {
     nonisolated static let fallbackCanvasSide: CGFloat = 320
     private static let savedConfirmationDuration: Duration = .seconds(1.8)
 
-    let colorChoices: [WidgetDrawingColorChoice] = [
-        WidgetDrawingColorChoice(
-            id: "blush",
-            color: .paeoniaWidgetDrawing,
-            uiColor: .paeoniaWidgetDrawing,
-            accessibilityLabel: .widgetDrawingColorBlush
-        ),
-        WidgetDrawingColorChoice(
-            id: "petal",
-            color: .paeoniaAccentPrimary,
-            uiColor: .paeoniaAccentPrimary,
-            accessibilityLabel: .widgetDrawingColorPetal
-        ),
-        WidgetDrawingColorChoice(
-            id: "pink",
-            color: .paeoniaAccentSecondary,
-            uiColor: .paeoniaAccentSecondary,
-            accessibilityLabel: .widgetDrawingColorPink
-        ),
-        WidgetDrawingColorChoice(
-            id: "warm",
-            color: .paeoniaPartnerTwo,
-            uiColor: .paeoniaPartnerTwo,
-            accessibilityLabel: .widgetDrawingColorWarm
-        ),
-        WidgetDrawingColorChoice(
-            id: "green",
-            color: .paeoniaSuccess,
-            uiColor: .paeoniaSuccess,
-            accessibilityLabel: .widgetDrawingColorGreen
-        ),
-        WidgetDrawingColorChoice(
-            id: "gold",
-            color: .paeoniaInkGold,
-            uiColor: .paeoniaInkGold,
-            accessibilityLabel: .widgetDrawingColorGold
-        ),
-        WidgetDrawingColorChoice(
-            id: "blue",
-            color: .paeoniaInkBlue,
-            uiColor: .paeoniaInkBlue,
-            accessibilityLabel: .widgetDrawingColorBlue
-        ),
-        WidgetDrawingColorChoice(
-            id: "lavender",
-            color: .paeoniaInkLavender,
-            uiColor: .paeoniaInkLavender,
-            accessibilityLabel: .widgetDrawingColorLavender
-        ),
-    ]
+    let colorChoices = WidgetDrawingColorChoice.palette
 
     var drawing = PKDrawing()
     var selectedTool: WidgetDrawingTool = .pen
@@ -173,14 +178,22 @@ final class WidgetDrawingViewModel {
     private(set) var isSaving = false
     private(set) var recentlySaved = false
     private(set) var saveFailure: WidgetDrawingSaveFailure?
+    /// Attribution of the drawing currently on the canvas (the last saved or
+    /// loaded one). Both nil until something has been saved or loaded.
+    private(set) var savedDrawingAuthorName: String?
+    private(set) var savedDrawingCreatedAt: Date?
     @ObservationIgnored private let service: any WidgetCanvasManaging
     @ObservationIgnored private let uploader: any WidgetCanvasUploading
     @ObservationIgnored private let authorName: String?
     @ObservationIgnored private var hasLoadedSavedDrawing = false
     @ObservationIgnored private var savedConfirmationTask: Task<Void, Never>?
-    /// Serialized form of the drawing as it was last saved (or loaded). Used to
-    /// keep Save disabled until the canvas actually differs from what's stored.
-    @ObservationIgnored private var lastSavedDrawingData: Data?
+    /// Normalized signature of the drawing as it was last saved (or loaded).
+    /// Used to keep Save disabled, and the attribution un-struck, until the
+    /// canvas actually differs from what's stored. Normalized (rebuilt from the
+    /// strokes) because `PKDrawing.dataRepresentation()` also encodes session
+    /// state such as the inks used this session, so adding then undoing a stroke
+    /// would otherwise never compare equal to the baseline again.
+    @ObservationIgnored private var lastSavedDrawingSignature: Data?
 
     init(
         authorName: String? = nil,
@@ -196,9 +209,27 @@ final class WidgetDrawingViewModel {
         !selectedTool.isEraser
     }
 
+    /// True when the canvas differs from what's saved. Drives both the Save
+    /// button and the struck-out attribution shown until the next save.
+    /// Returns false again once edits are undone back to the saved state.
+    var hasUnsavedEdits: Bool {
+        Self.drawingSignature(for: drawing) != lastSavedDrawingSignature
+    }
+
+    /// A stable signature of just the visible strokes, so add-then-undo returns
+    /// to the same value. See `lastSavedDrawingSignature`.
+    private static func drawingSignature(for drawing: PKDrawing) -> Data {
+        PKDrawing(strokes: drawing.strokes).dataRepresentation()
+    }
+
     /// True when there is drawn content that differs from what's already saved.
     var canSave: Bool {
-        !isSaving && !drawing.strokes.isEmpty && drawing.dataRepresentation() != lastSavedDrawingData
+        !isSaving && !drawing.strokes.isEmpty && hasUnsavedEdits
+    }
+
+    /// True when a non-cleared canvas has saved attribution to show.
+    var isShowingSavedAttribution: Bool {
+        !drawing.strokes.isEmpty && savedDrawingCreatedAt != nil
     }
 
     /// True when there is drawn content the user can clear from the canvas.
@@ -289,14 +320,16 @@ final class WidgetDrawingViewModel {
         hasLoadedSavedDrawing = true
 
         guard drawing.strokes.isEmpty,
-              let data = await service.loadSavedDrawing(),
-              let savedDrawing = try? PKDrawing(data: data)
+              let snapshot = await service.loadSavedSnapshot(),
+              let savedDrawing = try? PKDrawing(data: snapshot.drawingData)
         else {
             return
         }
 
         drawing = savedDrawing
-        lastSavedDrawingData = savedDrawing.dataRepresentation()
+        lastSavedDrawingSignature = Self.drawingSignature(for: savedDrawing)
+        savedDrawingAuthorName = snapshot.authorName
+        savedDrawingCreatedAt = snapshot.createdAt
         refreshUndoRedoAvailability()
     }
 
@@ -309,6 +342,7 @@ final class WidgetDrawingViewModel {
         isSaving = true
         saveFailure = nil
         let drawingData = drawing.dataRepresentation()
+        let savedAt = Date()
         let canvasSize = currentCanvasSize()
         // Snapshot the PencilKit-derived metadata now (on the main actor) so the
         // upload uses values consistent with the bytes we're saving.
@@ -325,9 +359,11 @@ final class WidgetDrawingViewModel {
                 drawingData,
                 canvasSize: canvasSize,
                 authorName: authorName,
-                createdAt: Date()
+                createdAt: savedAt
             )
-            lastSavedDrawingData = drawingData
+            lastSavedDrawingSignature = Self.drawingSignature(for: drawing)
+            savedDrawingAuthorName = authorName
+            savedDrawingCreatedAt = savedAt
             isSaving = false
             showSavedConfirmation()
             // Local widget already updated; send to the partner in the background.

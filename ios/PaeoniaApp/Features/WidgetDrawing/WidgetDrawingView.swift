@@ -141,11 +141,58 @@ struct WidgetDrawingView: View {
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
                 .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
         }
+        // Attribution for the saved drawing on the canvas: who drew it (top
+        // leading) and when (bottom trailing), in the widget's own type styles.
+        // Struck out the moment the canvas is edited, until the next save.
+        .overlay(alignment: .topLeading) {
+            canvasAuthorLabel
+        }
+        .overlay(alignment: .bottomTrailing) {
+            canvasTimestampLabel
+        }
         // Fill the space left by the controls and the bottom row as the largest
         // possible square, so freeing vertical space grows the canvas.
         .aspectRatio(1, contentMode: .fit)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
+    }
+
+    @ViewBuilder
+    private var canvasAuthorLabel: some View {
+        if viewModel.isShowingSavedAttribution,
+           let name = viewModel.savedDrawingAuthorName,
+           !name.isEmpty {
+            Text(verbatim: name)
+                .font(PaeoniaTypography.widgetPrimary)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .strikethrough(viewModel.hasUnsavedEdits)
+                .lineLimit(1)
+                .padding(PaeoniaSpacing.space16)
+                .allowsHitTesting(false)
+        }
+    }
+
+    @ViewBuilder
+    private var canvasTimestampLabel: some View {
+        if viewModel.isShowingSavedAttribution,
+           let createdAt = viewModel.savedDrawingCreatedAt {
+            Text(Self.attributionTimestamp(createdAt))
+                .font(PaeoniaTypography.widgetSecondary)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .strikethrough(viewModel.hasUnsavedEdits)
+                .lineLimit(1)
+                .padding(PaeoniaSpacing.space16)
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// Matches the widget's timestamp treatment: just the time today, otherwise
+    /// the date.
+    private static func attributionTimestamp(_ date: Date) -> String {
+        if Calendar.current.isDateInToday(date) {
+            return date.formatted(date: .omitted, time: .shortened)
+        }
+        return date.formatted(date: .abbreviated, time: .omitted)
     }
 }
 
