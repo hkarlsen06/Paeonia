@@ -6,6 +6,7 @@ struct RootView: View {
     @State private var viewModel: RootViewModel
     @State private var bannerCenter = PaeoniaBannerCenter()
     @Binding private var widgetDeepLink: PaeoniaWidgetDeepLink?
+    @Binding private var pendingJoinInviteCode: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     private let appleSignInProvider: any AppleSignInProviding
@@ -17,6 +18,7 @@ struct RootView: View {
     @MainActor
     init(
         widgetDeepLink: Binding<PaeoniaWidgetDeepLink?> = .constant(nil),
+        pendingJoinInviteCode: Binding<String?> = .constant(nil),
         viewModel: RootViewModel? = nil,
         appleSignInProvider: (any AppleSignInProviding)? = nil,
         googleSignInProvider: (any GoogleSignInProviding)? = nil,
@@ -26,6 +28,7 @@ struct RootView: View {
     ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
         _widgetDeepLink = widgetDeepLink
+        _pendingJoinInviteCode = pendingJoinInviteCode
         self.appleSignInProvider = appleSignInProvider ?? AppleSignInService()
         self.googleSignInProvider = googleSignInProvider ?? GoogleSignInService()
         self.widgetCanvasService = widgetCanvasService ?? WidgetCanvasService.shared
@@ -123,6 +126,7 @@ struct RootView: View {
     private var paywallScreen: some View {
         PaywallView(
             session: viewModel.currentSession,
+            pendingInviteCode: $pendingJoinInviteCode,
             onPurchaseConfirmed: subscriptionChanged,
             onInviteAccepted: inviteAccepted,
             allowsInviteEntry: viewModel.state == .limitedAuthenticated,

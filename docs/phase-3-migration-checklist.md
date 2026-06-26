@@ -10,7 +10,10 @@ Rules:
 - Do not apply remote migrations until a Supabase project is intentionally linked.
 - Keep each migration reviewable. If a migration becomes hard to audit, split it.
 - Enable RLS on every table in exposed schemas.
-- Keep security-definer functions in `internal`, not `public`.
+- Keep privileged helpers in `internal` by default. Public RPC wrappers may be
+  `security definer` only when they are approved client/service entry points,
+  use a fixed `search_path`, have narrow `EXECUTE` grants, and avoid exposing
+  broad table-shaped access.
 - Use `security_invoker = true` for exposed views that should respect RLS.
 - Revoke broad privileges before granting narrow client access.
 - Use `TO authenticated` on ordinary user policies.

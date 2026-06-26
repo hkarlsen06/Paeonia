@@ -2775,7 +2775,9 @@ Use helper functions for actor checks:
 
 Helper function rules:
 
-- Put security-definer helpers in `internal` or another non-exposed schema.
+- Put reusable security-definer helpers in `internal` or another non-exposed
+  schema. Public RPC wrappers may be security-definer only for approved
+  client/service entry points with fixed `search_path` and narrow execute grants.
 - Set fixed `search_path`.
 - Fully qualify table names.
 - Grant execute narrowly.

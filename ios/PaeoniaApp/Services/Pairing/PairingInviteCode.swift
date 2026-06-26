@@ -115,4 +115,21 @@ nonisolated enum PairingJoinURL {
 
         return url
     }
+
+    static func inviteCode(from url: URL) -> String? {
+        guard url.scheme?.lowercased() == scheme,
+              url.host()?.lowercased() == host
+        else {
+            return nil
+        }
+
+        let components = url.pathComponents.filter { $0 != "/" }
+        guard components.count == 2,
+              components[0] == joinPathComponent
+        else {
+            return nil
+        }
+
+        return try? PairingInviteCode.normalized(components[1])
+    }
 }

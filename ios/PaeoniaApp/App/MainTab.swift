@@ -12,8 +12,6 @@ import Foundation
 /// correct tab and present its destination as a single, atomic state change.
 enum MainTab: String, CaseIterable, Identifiable {
     case home
-    case questions
-    case memories
     case you
 
     var id: String { rawValue }
@@ -21,8 +19,6 @@ enum MainTab: String, CaseIterable, Identifiable {
     var title: LocalizedStringResource {
         switch self {
         case .home: .mainTabHomeUs
-        case .questions: .mainTabQuestions
-        case .memories: .mainTabMemories
         case .you: .mainTabYou
         }
     }
@@ -30,8 +26,6 @@ enum MainTab: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .home: "heart.fill"
-        case .questions: "bubble.left.and.bubble.right.fill"
-        case .memories: "memories"
         case .you: "person.crop.circle"
         }
     }

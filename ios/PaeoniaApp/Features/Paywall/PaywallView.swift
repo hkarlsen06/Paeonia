@@ -4,6 +4,7 @@ import SwiftUI
 // swiftlint:disable:next type_body_length
 struct PaywallView: View {
     @State private var viewModel: PaywallViewModel
+    @Binding private var pendingInviteCode: String?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -21,6 +22,7 @@ struct PaywallView: View {
 
     init(
         session: AuthSession?,
+        pendingInviteCode: Binding<String?> = .constant(nil),
         onPurchaseConfirmed: @escaping () -> Void,
         onInviteAccepted: @escaping () -> Void,
         allowsInviteEntry: Bool,
@@ -28,6 +30,7 @@ struct PaywallView: View {
         onDeleteAccount: @escaping () -> Void
     ) {
         _viewModel = State(initialValue: PaywallViewModel(userID: session?.id))
+        _pendingInviteCode = pendingInviteCode
         self.onPurchaseConfirmed = onPurchaseConfirmed
         self.onInviteAccepted = onInviteAccepted
         self.allowsInviteEntry = allowsInviteEntry
@@ -50,6 +53,12 @@ struct PaywallView: View {
         }
         .task(id: viewModel.isPresentationReady) {
             await presentPaywallContentIfReady()
+        }
+        .task(id: pendingInviteCode) {
+            await presentPendingInviteIfAvailable()
+        }
+        .task(id: allowsInviteEntry) {
+            await presentPendingInviteIfAvailable()
         }
         .onChange(of: viewModel.error) { _, error in
             showBanner(for: error)
@@ -157,6 +166,25 @@ struct PaywallView: View {
         } else if !sanitizedCode.isEmpty {
             inviteFieldFocused = true
         }
+    }
+
+    @MainActor
+    private func presentPendingInviteIfAvailable() async {
+        guard allowsInviteEntry,
+              let pendingInviteCode,
+              let normalizedCode = try? PairingInviteCode.normalized(pendingInviteCode)
+        else {
+            return
+        }
+
+        inviteCode = normalizedCode
+        pendingInviteCode = nil
+
+        withAnimation(.easeInOut(duration: 0.25)) {
+            showInviteOverlay = true
+        }
+
+        await focusInviteFieldAfterPresentation()
     }
 
     private func heroHeight(for geometry: GeometryProxy) -> CGFloat {

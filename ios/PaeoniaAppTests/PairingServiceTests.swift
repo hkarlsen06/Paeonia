@@ -46,6 +46,39 @@ struct PairingInviteCodeTests {
 
         #expect(url.absoluteString == "https://paeonia.no/join/\(canonicalCode)")
     }
+
+    @Test func joinURLParserAcceptsCanonicalPublicJoinLinks() throws {
+        let url = try #require(URL(string: "https://paeonia.no/join/01-ab-cd"))
+
+        #expect(PairingJoinURL.inviteCode(from: url) == canonicalCode)
+    }
+
+    @Test func joinURLParserRejectsNonJoinLinks() throws {
+        let wrongHost = try #require(URL(string: "https://example.com/join/01-ab-cd"))
+        let wrongScheme = try #require(URL(string: "http://paeonia.no/join/01-ab-cd"))
+        let wrongPath = try #require(URL(string: "https://paeonia.no/invite/01-ab-cd"))
+        let extraPath = try #require(URL(string: "https://paeonia.no/join/01-ab-cd/extra"))
+
+        #expect(PairingJoinURL.inviteCode(from: wrongHost) == nil)
+        #expect(PairingJoinURL.inviteCode(from: wrongScheme) == nil)
+        #expect(PairingJoinURL.inviteCode(from: wrongPath) == nil)
+        #expect(PairingJoinURL.inviteCode(from: extraPath) == nil)
+    }
+
+    @Test func pendingJoinInviteStorePersistsNormalizedCode() throws {
+        let suiteName = "PaeoniaAppTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = UserDefaultsPairingJoinInviteStore(defaults: defaults)
+        store.saveInviteCode("01-ab-cd")
+
+        #expect(store.loadInviteCode() == canonicalCode)
+
+        store.clearInviteCode()
+
+        #expect(store.loadInviteCode() == nil)
+    }
 }
 
 struct SupabasePairingServiceTests {

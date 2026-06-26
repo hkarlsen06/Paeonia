@@ -1,8 +1,6 @@
 import SwiftUI
 
-/// The native tab bar shown once a couple is paired. Only the Home tab is wired
-/// up today; the remaining tabs are scaffolding placeholders so the navigation
-/// shell is in place for upcoming features.
+/// The native tab bar shown once a couple is paired.
 ///
 /// Tab selection is owned by `RootViewModel` and passed in as a binding. That lets
 /// navigation intent — opening the widget drawing screen from the Home Screen
@@ -42,8 +40,6 @@ struct MainTabView: View {
             homeTab
         case .you:
             youTab
-        case .questions, .memories:
-            placeholderTab(title: tab.title, systemImage: tab.systemImage)
         }
     }
 
@@ -71,21 +67,6 @@ struct MainTabView: View {
         }
     }
 
-    private func placeholderTab(
-        title: LocalizedStringResource,
-        systemImage: String
-    ) -> some View {
-        NavigationStack {
-            PaeoniaEmptyStateView(
-                title: title,
-                message: .mainTabPlaceholderMessage,
-                systemImage: systemImage
-            )
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(.paeoniaBackgroundPrimary)
-        }
-    }
 }
 
 #if DEBUG
