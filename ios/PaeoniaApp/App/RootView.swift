@@ -12,6 +12,7 @@ struct RootView: View {
     private let googleSignInProvider: any GoogleSignInProviding
     private let widgetCanvasService: any WidgetCanvasManaging
     private let widgetCanvasSync: any WidgetCanvasSyncing
+    private let pushAuthorization: any PushAuthorizationProviding
 
     @MainActor
     init(
@@ -20,7 +21,8 @@ struct RootView: View {
         appleSignInProvider: (any AppleSignInProviding)? = nil,
         googleSignInProvider: (any GoogleSignInProviding)? = nil,
         widgetCanvasService: (any WidgetCanvasManaging)? = nil,
-        widgetCanvasSync: (any WidgetCanvasSyncing)? = nil
+        widgetCanvasSync: (any WidgetCanvasSyncing)? = nil,
+        pushAuthorization: (any PushAuthorizationProviding)? = nil
     ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
         _widgetDeepLink = widgetDeepLink
@@ -28,6 +30,7 @@ struct RootView: View {
         self.googleSignInProvider = googleSignInProvider ?? GoogleSignInService()
         self.widgetCanvasService = widgetCanvasService ?? WidgetCanvasService.shared
         self.widgetCanvasSync = widgetCanvasSync ?? WidgetCanvasSyncServiceFactory.makeDefault()
+        self.pushAuthorization = pushAuthorization ?? PushAuthorizationService()
     }
 
     var body: some View {
@@ -49,6 +52,7 @@ struct RootView: View {
             .onChange(of: viewModel.state) { _, state in
                 clearWidgetIfNeeded(for: state)
                 syncWidgetIfPaired(state)
+                requestPushAuthorizationIfPaired(state)
             }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
@@ -405,6 +409,19 @@ struct RootView: View {
         }
     }
 
+    /// Asks for notification permission once the couple is paired (the first
+    /// moment a partner can send a drawing). The request only prompts when the
+    /// status is still undetermined, so repeated paired transitions are no-ops.
+    private func requestPushAuthorizationIfPaired(_ state: AppState) {
+        guard state == .paired else {
+            return
+        }
+
+        Task {
+            await pushAuthorization.requestAuthorizationIfNeeded()
+        }
+    }
+
     private func showBanner(for notice: RootNotice?) {
         guard let notice else {
             return
@@ -417,38 +434,6 @@ struct RootView: View {
             )
         )
         viewModel.dismissNotice()
-    }
-}
-
-private extension RootNotice {
-    var title: LocalizedStringResource {
-        switch self {
-        case .sessionLoadFailed:
-            .authNoticeSessionLoadFailedTitle
-        case .signInFailed:
-            .authNoticeSignInFailedTitle
-        case .onboardingFailed:
-            .authNoticeOnboardingFailedTitle
-        case .signOutFailed:
-            .authNoticeSignOutFailedTitle
-        case .deleteAccountFailed:
-            .authNoticeDeleteAccountFailedTitle
-        }
-    }
-
-    var message: LocalizedStringResource {
-        switch self {
-        case .sessionLoadFailed:
-            .authNoticeSessionLoadFailedMessage
-        case .signInFailed:
-            .authNoticeSignInFailedMessage
-        case .onboardingFailed:
-            .authNoticeOnboardingFailedMessage
-        case .signOutFailed:
-            .authNoticeSignOutFailedMessage
-        case .deleteAccountFailed:
-            .authNoticeDeleteAccountFailedMessage
-        }
     }
 }
 

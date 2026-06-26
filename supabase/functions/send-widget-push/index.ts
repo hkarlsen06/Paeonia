@@ -1,8 +1,15 @@
 /// <reference types="jsr:@supabase/functions-js/edge-runtime.d.ts" />
 
-// Drains pending notification outbox rows and delivers APNs silent
-// ('content-available') pushes. It is safe to call repeatedly because rows are
-// claimed atomically in Postgres.
+// Drains pending notification outbox rows and delivers APNs pushes: silent
+// ('content-available') refreshes that wake the app to sync, and visible widget
+// alerts. Safe to call repeatedly because rows are claimed atomically in
+// Postgres.
+//
+// APNs environment handling mirrors Tidex: a device token is valid on exactly
+// one host, so the device's stored environment is tried first and the other is
+// tried on BadDeviceToken, then the confirmed environment is written back so
+// later sends skip the fallback. A single token-based .p8 key works for both
+// hosts; separate sandbox credentials are optional and fall back to production.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -11,25 +18,37 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
   Deno.env.get("SUPABASE_SECRET_KEY") ?? "";
 const DRAIN_SECRET = Deno.env.get("DRAIN_SECRET") ?? "";
 
+// Production credentials (App Store builds).
 const APNS_KEY_ID = Deno.env.get("APNS_KEY_ID") ?? "";
 const APNS_TEAM_ID = Deno.env.get("APNS_TEAM_ID") ?? "";
 const APNS_PRIVATE_KEY = Deno.env.get("APNS_PRIVATE_KEY") ?? "";
+// Sandbox credentials (debug/TestFlight builds). Optional: a token-based key
+// works on both hosts, so these fall back to the production credentials.
+const APNS_SANDBOX_KEY_ID = Deno.env.get("APNS_SANDBOX_KEY_ID") ?? "";
+const APNS_SANDBOX_PRIVATE_KEY = Deno.env.get("APNS_SANDBOX_PRIVATE_KEY") ?? "";
 const APNS_BUNDLE_ID = Deno.env.get("APNS_BUNDLE_ID") ?? "no.paeonia.app";
 
 const PROVIDER_TOKEN_MAX_AGE_SECONDS = 2400; // refresh well under APNs' 60 min cap
 
+type ApnsEnvironment = "sandbox" | "production";
+
 interface ClaimedNotification {
   outbox_id: string;
+  target_device_id: string;
   push_token: string;
-  apns_environment: "sandbox" | "production";
+  apns_environment: ApnsEnvironment;
   apns_push_type: "alert" | "background";
   apns_collapse_id: string | null;
+  title: string | null;
+  body: string | null;
   payload: Record<string, unknown>;
 }
 
 interface ApnsSendResult {
   ok: boolean;
   providerMessageId?: string;
+  environment?: ApnsEnvironment;
+  invalidToken?: boolean;
   error?: string;
 }
 
@@ -61,26 +80,35 @@ function pemToDer(pem: string): ArrayBuffer {
   return buffer;
 }
 
-let cachedToken: { jwt: string; issuedAt: number } | null = null;
+// One cached provider JWT per environment; the same key may back both.
+const cachedTokens: Record<ApnsEnvironment, { jwt: string; issuedAt: number } | null> = {
+  sandbox: null,
+  production: null,
+};
 
-async function apnsProviderToken(): Promise<string> {
+async function apnsProviderToken(environment: ApnsEnvironment): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  if (
-    cachedToken && now - cachedToken.issuedAt < PROVIDER_TOKEN_MAX_AGE_SECONDS
-  ) {
-    return cachedToken.jwt;
+  const cached = cachedTokens[environment];
+  if (cached && now - cached.issuedAt < PROVIDER_TOKEN_MAX_AGE_SECONDS) {
+    return cached.jwt;
   }
+
+  const sandbox = environment === "sandbox";
+  const keyId = sandbox ? (APNS_SANDBOX_KEY_ID || APNS_KEY_ID) : APNS_KEY_ID;
+  const privateKey = sandbox
+    ? (APNS_SANDBOX_PRIVATE_KEY || APNS_PRIVATE_KEY)
+    : APNS_PRIVATE_KEY;
 
   const key = await crypto.subtle.importKey(
     "pkcs8",
-    pemToDer(APNS_PRIVATE_KEY),
+    pemToDer(privateKey),
     { name: "ECDSA", namedCurve: "P-256" },
     false,
     ["sign"],
   );
 
   const header = base64url(new TextEncoder().encode(
-    JSON.stringify({ alg: "ES256", kid: APNS_KEY_ID }),
+    JSON.stringify({ alg: "ES256", kid: keyId }),
   ));
   const claims = base64url(new TextEncoder().encode(
     JSON.stringify({ iss: APNS_TEAM_ID, iat: now }),
@@ -93,53 +121,149 @@ async function apnsProviderToken(): Promise<string> {
   );
 
   const jwt = `${signingInput}.${base64url(new Uint8Array(signature))}`;
-  cachedToken = { jwt, issuedAt: now };
+  cachedTokens[environment] = { jwt, issuedAt: now };
   return jwt;
+}
+
+// Preferred environment first, the other as fallback (mixed App Store +
+// TestFlight/debug installs).
+function environmentOrder(preferred: ApnsEnvironment): ApnsEnvironment[] {
+  return preferred === "sandbox"
+    ? ["sandbox", "production"]
+    : ["production", "sandbox"];
+}
+
+// Background rows wake the app to sync (no user-visible alert); alert rows show
+// the localized lock-screen banner. Title/body are pre-localized in Postgres.
+function buildApsPayload(
+  notification: ClaimedNotification,
+): Record<string, unknown> {
+  if (notification.apns_push_type === "background") {
+    return { aps: { "content-available": 1 } };
+  }
+
+  const alert: Record<string, string> = { body: notification.body ?? "" };
+  if (notification.title) {
+    alert.title = notification.title;
+  }
+  return { aps: { alert, sound: "default" } };
 }
 
 async function sendToApns(
   notification: ClaimedNotification,
-  jwt: string,
 ): Promise<ApnsSendResult> {
-  const host = notification.apns_environment === "production"
-    ? "api.push.apple.com"
-    : "api.sandbox.push.apple.com";
+  const body = JSON.stringify(buildApsPayload(notification));
+  const order = environmentOrder(notification.apns_environment);
+  let lastError = "no delivery attempt";
 
-  const headers: Record<string, string> = {
-    authorization: `bearer ${jwt}`,
-    "apns-topic": APNS_BUNDLE_ID,
-    "apns-push-type": notification.apns_push_type,
-    "apns-priority": notification.apns_push_type === "background" ? "5" : "10",
-    "content-type": "application/json",
-  };
-  if (notification.apns_collapse_id) {
-    headers["apns-collapse-id"] = notification.apns_collapse_id;
-  }
+  for (let index = 0; index < order.length; index++) {
+    const environment = order[index];
+    const isLastAttempt = index === order.length - 1;
+    const host = environment === "production"
+      ? "api.push.apple.com"
+      : "api.sandbox.push.apple.com";
 
-  const response = await fetch(
-    `https://${host}/3/device/${notification.push_token}`,
-    {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ aps: { "content-available": 1 } }),
-    },
-  );
+    let jwt: string;
+    try {
+      jwt = await apnsProviderToken(environment);
+    } catch (error) {
+      lastError = `provider token: ${errorMessage(error)}`;
+      continue;
+    }
 
-  if (response.status === 200) {
-    return {
-      ok: true,
-      providerMessageId: response.headers.get("apns-id") ?? undefined,
+    const headers: Record<string, string> = {
+      authorization: `bearer ${jwt}`,
+      "apns-topic": APNS_BUNDLE_ID,
+      "apns-push-type": notification.apns_push_type,
+      "apns-priority": notification.apns_push_type === "background" ? "5" : "10",
+      "content-type": "application/json",
     };
+    if (notification.apns_collapse_id) {
+      headers["apns-collapse-id"] = notification.apns_collapse_id;
+    }
+
+    const response = await fetch(
+      `https://${host}/3/device/${notification.push_token}`,
+      { method: "POST", headers, body },
+    );
+
+    if (response.status === 200) {
+      return {
+        ok: true,
+        providerMessageId: response.headers.get("apns-id") ?? undefined,
+        environment,
+      };
+    }
+
+    let reason = `status ${response.status}`;
+    try {
+      const json = await response.json();
+      if (json?.reason) reason = String(json.reason);
+    } catch {
+      // Keep status-based reason.
+    }
+    lastError = reason;
+
+    // The token is valid on exactly one host. BadDeviceToken means the stored
+    // environment was wrong, so try the other before giving up.
+    if (response.status === 400 && reason === "BadDeviceToken" && !isLastAttempt) {
+      continue;
+    }
+
+    // 410 Unregistered, or BadDeviceToken on the final host, means the token is
+    // dead on every environment.
+    if (
+      response.status === 410 ||
+      (response.status === 400 && reason === "BadDeviceToken")
+    ) {
+      return { ok: false, error: reason, invalidToken: true, environment };
+    }
+
+    // Any other failure (rate limit, transient server error, payload issue) is
+    // not an environment mismatch; let the claim lease retry it later.
+    return { ok: false, error: reason, environment };
   }
 
-  let reason = `status ${response.status}`;
-  try {
-    const json = await response.json();
-    if (json?.reason) reason = String(json.reason);
-  } catch {
-    // Keep status-based reason.
+  return { ok: false, error: lastError };
+}
+
+// Writes the confirmed environment back so later sends skip the fallback.
+async function persistDeviceEnvironment(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  deviceId: string,
+  environment: ApnsEnvironment,
+): Promise<void> {
+  const { error } = await supabase
+    .from("user_devices")
+    .update({ apns_environment: environment })
+    .eq("id", deviceId);
+  if (error) {
+    console.error("Unable to persist confirmed APNs environment", {
+      deviceId,
+      error: error.message,
+    });
   }
-  return { ok: false, error: reason };
+}
+
+// Retires a device whose token APNs rejected on every environment, so future
+// notifications skip it (enqueue filters disabled devices).
+async function disableDevice(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  deviceId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("user_devices")
+    .update({ disabled_at: new Date().toISOString() })
+    .eq("id", deviceId)
+    .is("disabled_at", null);
+  if (error) {
+    console.error("Unable to disable device with invalid token", {
+      deviceId,
+      error: error.message,
+    });
+  }
 }
 
 Deno.serve(async (request) => {
@@ -151,14 +275,6 @@ Deno.serve(async (request) => {
     !SUPABASE_URL || !SERVICE_KEY || !APNS_KEY_ID || !APNS_TEAM_ID ||
     !APNS_PRIVATE_KEY
   ) {
-    return new Response("push delivery is not configured", { status: 500 });
-  }
-
-  let jwt: string;
-  try {
-    jwt = await apnsProviderToken();
-  } catch (error) {
-    console.error("Unable to create APNs provider token", error);
     return new Response("push delivery is not configured", { status: 500 });
   }
 
@@ -179,9 +295,24 @@ Deno.serve(async (request) => {
   for (const notification of batch) {
     let result: ApnsSendResult;
     try {
-      result = await sendToApns(notification, jwt);
+      result = await sendToApns(notification);
     } catch (error) {
       result = { ok: false, error: errorMessage(error) };
+    }
+
+    if (
+      result.ok && result.environment &&
+      result.environment !== notification.apns_environment
+    ) {
+      await persistDeviceEnvironment(
+        supabase,
+        notification.target_device_id,
+        result.environment,
+      );
+    }
+
+    if (result.invalidToken) {
+      await disableDevice(supabase, notification.target_device_id);
     }
 
     const { error: markError } = await supabase.rpc(
@@ -191,6 +322,7 @@ Deno.serve(async (request) => {
         p_success: result.ok,
         p_provider_message_id: result.providerMessageId ?? null,
         p_error: result.error ?? null,
+        p_invalid_token: result.invalidToken ?? false,
       },
     );
 

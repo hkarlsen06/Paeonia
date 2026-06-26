@@ -40,7 +40,9 @@ struct MainTabView: View {
         switch tab {
         case .home:
             homeTab
-        case .questions, .memories, .you:
+        case .you:
+            youTab
+        case .questions, .memories:
             placeholderTab(title: tab.title, systemImage: tab.systemImage)
         }
     }
@@ -60,6 +62,12 @@ struct MainTabView: View {
             .navigationDestination(isPresented: widgetDrawingPresented) {
                 WidgetDrawingView(authorName: authorName)
             }
+        }
+    }
+
+    private var youTab: some View {
+        NavigationStack {
+            SettingsView()
         }
     }
 

@@ -3835,6 +3835,150 @@
         }
       },
       "comment" : "Fallback label when the drawer's nickname is unknown"
+    },
+    "settings.notifications.sectionTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varsler"
+          }
+        }
+      },
+      "comment" : "Section header for notification settings on the You tab"
+    },
+    "settings.notifications.widgetAlerts.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing updates"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nye tegninger"
+          }
+        }
+      },
+      "comment" : "Toggle title: get a banner when the partner updates the shared widget drawing"
+    },
+    "settings.notifications.widgetAlerts.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a notification when your partner adds a new drawing."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få et varsel når partneren din lager en ny tegning."
+          }
+        }
+      },
+      "comment" : "Explains what the drawing updates toggle does"
+    },
+    "settings.notifications.systemOff.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications are off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varsler er av"
+          }
+        }
+      },
+      "comment" : "Shown when iOS notifications are turned off for the app"
+    },
+    "settings.notifications.systemOff.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on notifications for Paeonia in the Settings app to get these."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå på varsler for Paeonia i Innstillinger for å få disse."
+          }
+        }
+      },
+      "comment" : "Tells the user how to turn notifications back on in iOS Settings"
+    },
+    "settings.notifications.openSettingsButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Innstillinger"
+          }
+        }
+      },
+      "comment" : "Button that opens the iOS Settings app"
+    },
+    "settings.notifications.saveError.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre"
+          }
+        }
+      },
+      "comment" : "Error banner title when saving a notification toggle fails"
+    },
+    "settings.notifications.saveError.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't update your notification settings. Please try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke oppdatere varselinnstillingene dine. Prøv igjen."
+          }
+        }
+      },
+      "comment" : "Error banner message when saving a notification toggle fails"
     }
   },
   "version" : "1.0"

@@ -5,6 +5,7 @@ import SwiftUI
 struct PaeoniaApp: App {
   @UIApplicationDelegateAdaptor(PaeoniaAppDelegate.self) private var appDelegate
   @State private var widgetDeepLink: PaeoniaWidgetDeepLink?
+  @State private var notificationRouter = PaeoniaNotificationRouter.shared
 
   var body: some Scene {
     WindowGroup {
@@ -23,6 +24,15 @@ struct PaeoniaApp: App {
           // in the background, then prefill and reveal the paywall invite field
           // when the user reaches the paywall.
           PaeoniaSupabaseClientProvider.shared.handle(url)
+        }
+        // A tapped widget alert routes through the same deep-link path as the
+        // Home Screen widget, so the drawing screen opens either way.
+        .onChange(of: notificationRouter.pendingWidgetDeepLink) { _, deepLink in
+          guard let deepLink else {
+            return
+          }
+          widgetDeepLink = deepLink
+          notificationRouter.consumePendingWidgetDeepLink()
         }
     }
   }
