@@ -28,7 +28,16 @@ struct PairedHomeView: View {
 
                 DailyPromptCard()
 
-                HomeWidgetCard(onOpen: onOpenWidgetDrawing)
+                HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
+                    CoupleMapCard(
+                        currentName: currentName,
+                        currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                        partnerName: partnerName,
+                        partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
+                    )
+
+                    HomeWidgetCard(onOpen: onOpenWidgetDrawing)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)

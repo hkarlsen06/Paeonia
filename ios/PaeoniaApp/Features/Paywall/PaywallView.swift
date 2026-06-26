@@ -171,14 +171,14 @@ struct PaywallView: View {
     @MainActor
     private func presentPendingInviteIfAvailable() async {
         guard allowsInviteEntry,
-              let pendingInviteCode,
-              let normalizedCode = try? PairingInviteCode.normalized(pendingInviteCode)
+              let pendingCode = pendingInviteCode,
+              let normalizedCode = try? PairingInviteCode.normalized(pendingCode)
         else {
             return
         }
 
         inviteCode = normalizedCode
-        pendingInviteCode = nil
+        self.pendingInviteCode = nil
 
         withAnimation(.easeInOut(duration: 0.25)) {
             showInviteOverlay = true
