@@ -151,6 +151,9 @@ struct PairingCelebrationProfilesView: View {
         /// Whether the heart beats. Only the celebration earns the live pulse; the
         /// Home tab shows a calm, static heart.
         var animatesHeartbeat: Bool
+        /// Whether each avatar shows its name underneath. The Home tab toolbar
+        /// drops the names so the cluster fits the navigation bar height.
+        var showsNames: Bool
 
         static let celebration = Metrics(
             avatarDiameter: 84,
@@ -161,7 +164,8 @@ struct PairingCelebrationProfilesView: View {
             connectorCircleDiameter: 34,
             heartFontSize: 13,
             connectorLineThickness: 1.5,
-            animatesHeartbeat: true
+            animatesHeartbeat: true,
+            showsNames: true
         )
 
         static let compact = Metrics(
@@ -173,7 +177,8 @@ struct PairingCelebrationProfilesView: View {
             connectorCircleDiameter: 22,
             heartFontSize: 9,
             connectorLineThickness: 1,
-            animatesHeartbeat: false
+            animatesHeartbeat: false,
+            showsNames: false
         )
     }
 
@@ -232,12 +237,14 @@ struct PairingCelebrationProfilesView: View {
         VStack(spacing: metrics.avatarNameSpacing) {
             avatar()
 
-            Text(name)
-                .font(metrics.nameFont)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .opacity(nameOpacity)
+            if metrics.showsNames {
+                Text(name)
+                    .font(metrics.nameFont)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .opacity(nameOpacity)
+            }
         }
         .frame(width: metrics.columnWidth)
     }

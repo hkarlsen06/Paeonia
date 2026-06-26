@@ -40,7 +40,7 @@ struct MainTabView: View {
         switch tab {
         case .home:
             homeTab
-        case .memories, .you:
+        case .questions, .memories, .you:
             placeholderTab(title: tab.title, systemImage: tab.systemImage)
         }
     }
@@ -54,24 +54,9 @@ struct MainTabView: View {
                 partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
                 onOpenWidgetDrawing: onOpenWidgetDrawing
             )
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.screenTopSpacing)
-            .padding(.bottom, PaeoniaSpacing.space16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(.paeoniaBackgroundPrimary)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Image(.paeoniaMark)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 28)
-                        .accessibilityHidden(true)
-                }
-                // The mark is the brand, not a control, so keep it free of the
-                // system's Liquid Glass capsule and let it sit flat on the bar.
-                .sharedBackgroundVisibility(.hidden)
-            }
+            // The brand mark and couple avatars are populated into the navigation
+            // bar from inside PairedHomeView, where the name/photo data lives.
             .navigationDestination(isPresented: widgetDrawingPresented) {
                 WidgetDrawingView(authorName: authorName)
             }

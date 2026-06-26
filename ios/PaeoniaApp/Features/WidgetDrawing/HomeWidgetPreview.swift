@@ -86,8 +86,6 @@ struct HomeWidgetCard: View {
 
     @State private var model = HomeWidgetPreviewModel()
 
-    private static let widgetSide: CGFloat = 168
-
     var body: some View {
         Button(action: onOpen) {
             widget
@@ -119,8 +117,12 @@ struct HomeWidgetCard: View {
             }
             .foregroundStyle(.paeoniaAccentPrimary)
         }
-        .padding(PaeoniaSpacing.space16)
-        .frame(width: Self.widgetSide, height: Self.widgetSide)
+        // Match the map tile's distance label: same bottom inset so the two CTAs
+        // line up vertically across the side-by-side tiles.
+        .padding([.top, .horizontal], PaeoniaSpacing.space16)
+        .padding(.bottom, PaeoniaSpacing.tileCaptionBottomInset)
+        .frame(maxWidth: .infinity)
+        .aspectRatio(1, contentMode: .fit)
         .background(.paeoniaBackgroundPrimary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
         .overlay {

@@ -1,9 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
+    "" : {},
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -3495,6 +3493,186 @@
           }
         }
       }
+    },
+    "home.map.eyebrow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Across distance"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Over avstanden"
+          }
+        }
+      },
+      "comment" : "Small overline above globe on Us tab showing couple across distance"
+    },
+    "home.map.accessibilityLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A map showing where you and your partner are"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et kart som viser hvor du og partneren din er"
+          }
+        }
+      },
+      "comment" : "Accessibility label for the map showing where each partner is"
+    },
+    "home.milestone.eyebrow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Counting down to"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teller ned til"
+          }
+        }
+      },
+      "comment" : "Small overline above milestone countdown on Us tab"
+    },
+    "home.milestone.dayUnit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager"
+          }
+        }
+      },
+      "comment" : "Unit shown next to milestone countdown number, e.g. 12 days"
+    },
+    "home.dailyPrompt.eyebrow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dagens spørsmål"
+          }
+        }
+      },
+      "comment" : "Small overline above today's shared questions on Us tab; couple answers three each day"
+    },
+    "home.dailyPrompt.answer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar"
+          }
+        }
+      },
+      "comment" : "Button that opens today's shared question to answer it"
+    },
+    "home.streak.label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "day streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager på rad"
+          }
+        }
+      },
+      "comment" : "Label under streak number on Us tab, e.g. 12 day streak"
+    },
+    "home.dailyPrompt.progress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question 1 of 3"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmål 1 av 3"
+          }
+        }
+      },
+      "comment" : "Accessibility label for the three-step progress bar on today's questions, showing which question is current. Count is placeholder until data is wired."
+    },
+    "mainTab.questions" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmål"
+          }
+        }
+      },
+      "comment" : "Title for the Questions tab in main tab bar, where answered daily questions are kept"
+    },
+    "home.map.openHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens in Maps"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpner i Kart"
+          }
+        }
+      },
+      "comment" : "Accessibility hint for map tile on Us tab; tapping opens locations in Maps app."
     }
   },
   "version" : "1.0"

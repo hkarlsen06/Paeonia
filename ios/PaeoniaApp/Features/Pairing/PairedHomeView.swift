@@ -22,22 +22,56 @@ struct PairedHomeView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            PairedProfilesHeader(
-                currentName: currentName,
-                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
-                partnerName: partnerName,
-                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
-            )
+        ScrollView {
+            VStack(spacing: PaeoniaSpacing.sectionSpacing) {
+                MilestoneCountdownCard()
+
+                DailyPromptCard()
+
+                HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
+                    CoupleMapCard(
+                        currentName: currentName,
+                        currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                        partnerName: partnerName,
+                        partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
+                    )
+
+                    HomeWidgetCard(onOpen: onOpenWidgetDrawing)
+                }
+            }
             .frame(maxWidth: .infinity)
-
-            Spacer(minLength: PaeoniaSpacing.space32)
-
-            HomeWidgetCard(onOpen: onOpenWidgetDrawing)
-
-            Spacer(minLength: PaeoniaSpacing.space32)
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.space12)
+            .padding(.bottom, PaeoniaSpacing.space16)
         }
+        .scrollIndicators(.hidden)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Let the scroll view reach the bottom edge so the tab bar's automatic
+        // content inset applies and cards scroll behind the floating glass bar,
+        // instead of a flat background panel filling the space above it.
+        .background(.paeoniaBackgroundPrimary)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Image(.paeoniaMark)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 28)
+                    .accessibilityHidden(true)
+            }
+            // The mark is the brand, not a control, so keep it free of the
+            // system's Liquid Glass capsule and let it sit flat on the bar.
+            .sharedBackgroundVisibility(.hidden)
+
+            ToolbarItem(placement: .principal) {
+                PairedProfilesHeader(
+                    currentName: currentName,
+                    currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                    partnerName: partnerName,
+                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
+                )
+                .padding(.top, PaeoniaSpacing.space2)
+            }
+        }
     }
 
     private var currentName: String {
@@ -55,10 +89,6 @@ struct PairedHomeView: View {
             currentDisplayName: "Hjalmar",
             partnerDisplayName: "Oda"
         )
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.top, PaeoniaSpacing.screenTopSpacing)
-        .padding(.bottom, PaeoniaSpacing.space16)
-        .background(.paeoniaBackgroundPrimary)
     }
     .preferredColorScheme(.dark)
 }
