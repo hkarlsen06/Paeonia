@@ -4,7 +4,7 @@ import Supabase
 protocol DailyChallengeServicing: Actor {
     func loadToday(currentUserID: UUID) async throws -> DailyChallengeSnapshot
     func startToday(currentUserID: UUID, operation: SyncClientOperation) async throws -> DailyChallengeSnapshot
-    func submitAnswer(instanceID: UUID, answerID: UUID, payload: DailyAnswerPayload, operation: SyncClientOperation) async throws -> UUID
+    func loadStreak() async throws -> CoupleStreak
     func editTextAnswer(instanceID: UUID, text: String, operation: SyncClientOperation) async throws -> UUID
     func editPartnerChoice(instanceID: UUID, selectedUserID: UUID, operation: SyncClientOperation) async throws -> UUID
     func shuffleQuestion(
@@ -17,6 +17,7 @@ protocol DailyChallengeServicing: Actor {
 protocol SupabaseDailyChallengeGateway: Actor {
     func loadTodayQuestions() async throws -> [DailyQuestionRow]
     func startDailyChallenge(operation: SyncClientOperation) async throws -> [DailyQuestionRow]
+    func loadCoupleStreak() async throws -> CoupleStreak
     func loadAnswerDetails(coupleDayID: UUID) async throws -> [DailyAnswerDetailRow]
     func submitAnswer(instanceID: UUID, answerID: UUID, payload: DailyAnswerPayload, operation: SyncClientOperation) async throws -> UUID
     func editTextAnswer(instanceID: UUID, text: String, operation: SyncClientOperation) async throws -> UUID
@@ -56,18 +57,8 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
         return try await snapshot(currentUserID: currentUserID, rows: rows)
     }
 
-    func submitAnswer(
-        instanceID: UUID,
-        answerID: UUID,
-        payload: DailyAnswerPayload,
-        operation: SyncClientOperation
-    ) async throws -> UUID {
-        try await gateway.submitAnswer(
-            instanceID: instanceID,
-            answerID: answerID,
-            payload: payload,
-            operation: operation
-        )
+    func loadStreak() async throws -> CoupleStreak {
+        try await gateway.loadCoupleStreak()
     }
 
     func editTextAnswer(
@@ -174,6 +165,14 @@ actor LiveSupabaseDailyChallengeGateway: SupabaseDailyChallengeGateway {
             .value
     }
 
+    func loadCoupleStreak() async throws -> CoupleStreak {
+        let rows: [CoupleStreakRow] = try await client
+            .rpc("get_couple_streak")
+            .execute()
+            .value
+        return rows.first?.streak ?? .none
+    }
+
     func loadAnswerDetails(coupleDayID: UUID) async throws -> [DailyAnswerDetailRow] {
         try await client
             .rpc(
@@ -278,13 +277,8 @@ private actor EmptyDailyChallengeService: DailyChallengeServicing {
         .empty(currentUserID: currentUserID)
     }
 
-    func submitAnswer(
-        instanceID _: UUID,
-        answerID _: UUID,
-        payload _: DailyAnswerPayload,
-        operation _: SyncClientOperation
-    ) async throws -> UUID {
-        throw DailyChallengeServiceUnavailableError()
+    func loadStreak() async throws -> CoupleStreak {
+        .none
     }
 
     func editTextAnswer(

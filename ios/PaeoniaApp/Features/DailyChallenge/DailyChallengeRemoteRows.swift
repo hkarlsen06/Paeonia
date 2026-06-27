@@ -63,6 +63,29 @@ nonisolated struct DailyQuestionRow: Decodable, Equatable, Sendable {
     }
 }
 
+nonisolated struct CoupleStreakRow: Decodable, Equatable, Sendable {
+    let currentCount: Int
+    let longestCount: Int
+    let lastQualifiedDate: String?
+    let restoreAvailable: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case currentCount = "current_count"
+        case longestCount = "longest_count"
+        case lastQualifiedDate = "last_qualified_date"
+        case restoreAvailable = "restore_available"
+    }
+
+    var streak: CoupleStreak {
+        CoupleStreak(
+            currentCount: currentCount,
+            longestCount: longestCount,
+            lastQualifiedDate: lastQualifiedDate,
+            restoreAvailable: restoreAvailable
+        )
+    }
+}
+
 nonisolated struct DailyAnswerDetailRow: Decodable, Equatable, Sendable {
     let coupleDayID: UUID
     let instanceID: UUID

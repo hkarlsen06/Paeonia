@@ -17,11 +17,12 @@ struct DailyChallengeScreen: View {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
                 heroCard
 
-                if !answeredOwnQuestions.isEmpty {
+                if !ownReadQuestions.isEmpty {
                     DailyChallengeReadSection(
                         title: .dailyChallengeOwnSectionTitle,
-                        questions: answeredOwnQuestions,
-                        participants: viewModel.participants
+                        questions: ownReadQuestions,
+                        participants: viewModel.participants,
+                        sendingPreview: { sendingPreview(for: $0) }
                     )
                 }
 
@@ -49,8 +50,25 @@ struct DailyChallengeScreen: View {
         }
     }
 
-    private var answeredOwnQuestions: [DailyChallengeQuestion] {
-        viewModel.snapshot.ownQuestions.filter(\.hasOwnAnswer)
+    /// Own questions to surface in the read overview: answered ones, plus any whose
+    /// media answer is still saving in the background — so a saved voice note (or
+    /// photo) stays visible and playable here while it finishes uploading.
+    private var ownReadQuestions: [DailyChallengeQuestion] {
+        viewModel.snapshot.ownQuestions.filter { $0.hasOwnAnswer || viewModel.isSending($0.id) }
+    }
+
+    /// Resolves the "saved, sending" preview for a question, or nil when it has
+    /// already landed and reads from its revealed answer instead.
+    private func sendingPreview(for question: DailyChallengeQuestion) -> DailySendingPreview? {
+        guard viewModel.isSending(question.id) else { return nil }
+        if let simple = viewModel.sendingSimpleContent(for: question.id) {
+            return .simple(simple)
+        }
+        return .media(
+            kind: question.mediaAnswerKind,
+            data: viewModel.sendingMediaData(for: question.id),
+            durationMs: viewModel.sendingVoiceDurationMs(for: question.id)
+        )
     }
 
     private var heroCard: some View {
@@ -73,10 +91,21 @@ struct DailyChallengeScreen: View {
     }
 }
 
+/// A "saved, sending" answer to keep visible in the read overview while it finishes
+/// sending: a photo/voice note plays from its staged bytes, while text and partner
+/// choice show what was written or picked.
+private enum DailySendingPreview {
+    case media(kind: DailyChallengeAnswerKind, data: Data?, durationMs: Int?)
+    case simple(DailySendingSimpleContent)
+}
+
 private struct DailyChallengeReadSection: View {
     let title: LocalizedStringResource
     let questions: [DailyChallengeQuestion]
     var participants = DailyChallengeParticipants()
+    /// Resolves a question's "saved, sending" preview; partner sections leave this at
+    /// its default since only the current user's own answers send from this device.
+    var sendingPreview: (DailyChallengeQuestion) -> DailySendingPreview? = { _ in nil }
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
@@ -86,7 +115,11 @@ private struct DailyChallengeReadSection: View {
 
             VStack(spacing: PaeoniaSpacing.space12) {
                 ForEach(questions) { question in
-                    DailyChallengeReadCard(question: question, participants: participants)
+                    DailyChallengeReadCard(
+                        question: question,
+                        participants: participants,
+                        sending: sendingPreview(question)
+                    )
                 }
             }
         }
@@ -96,6 +129,7 @@ private struct DailyChallengeReadSection: View {
 private struct DailyChallengeReadCard: View {
     let question: DailyChallengeQuestion
     var participants = DailyChallengeParticipants()
+    var sending: DailySendingPreview?
 
     var body: some View {
         PaeoniaCard {
@@ -105,9 +139,24 @@ private struct DailyChallengeReadCard: View {
                     .foregroundStyle(.paeoniaTextPrimary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                DailyQuestionStatusView(question: question)
+                if let sending {
+                    // Still saving: its own status line says "saved, sending", so the
+                    // usual "not answered" status would only contradict it.
+                    switch sending {
+                    case let .media(kind, data, durationMs):
+                        DailySendingAnswerView(
+                            mediaKind: kind,
+                            mediaData: data,
+                            voiceDurationMs: durationMs
+                        )
+                    case let .simple(content):
+                        DailySendingSimpleAnswerView(content: content)
+                    }
+                } else {
+                    DailyQuestionStatusView(question: question)
 
-                DailyAnswerDetailsView(question: question, participants: participants)
+                    DailyAnswerDetailsView(question: question, participants: participants)
+                }
             }
         }
     }
@@ -179,6 +228,10 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
 
     func startToday(currentUserID: UUID, operation _: SyncClientOperation) async throws -> DailyChallengeSnapshot {
         try await loadToday(currentUserID: currentUserID)
+    }
+
+    func loadStreak() async throws -> CoupleStreak {
+        CoupleStreak(currentCount: 6, longestCount: 12, lastQualifiedDate: "2026-06-26", restoreAvailable: false)
     }
 
     func submitAnswer(instanceID _: UUID, answerID _: UUID, payload _: DailyAnswerPayload, operation _: SyncClientOperation) async throws -> UUID {

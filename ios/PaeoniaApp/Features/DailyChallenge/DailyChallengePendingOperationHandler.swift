@@ -1,21 +1,39 @@
 import Foundation
 
-/// The persisted description of a queued media answer. Carries everything the
-/// background handler needs to finish sending it: which question and answer, the
-/// media's metadata (the bytes live in the staged-media store keyed by instance),
-/// and the reserve/finalize operations so retries stay idempotent.
+/// The persisted description of a queued daily answer. Carries everything the
+/// background handler needs to finish sending it after a network blip or while
+/// offline: which question and answer, and the answer content itself.
+///
+/// Text and partner-choice answers submit straight to the backend. A media answer
+/// keeps its bytes in the staged-media store (keyed by instance) and carries the
+/// reserve/finalize operations so a retry never creates a duplicate asset.
 nonisolated struct DailySubmitAnswerOperationPayload: Codable, Sendable, Equatable {
     let instanceID: UUID
     let answerID: UUID
-    let media: DailyAnswerMediaDraft
-    let reserveOperation: SyncClientOperation
-    let finalizeOperation: SyncClientOperation
+    let content: Content
+
+    /// What the queued answer is sending.
+    nonisolated enum Content: Codable, Sendable, Equatable {
+        case text(String)
+        case partnerChoice(UUID)
+        case media(Media)
+    }
+
+    /// The staged-media details a queued photo/voice answer needs to upload. The
+    /// reserve/finalize operations are fixed here so retries stay idempotent.
+    nonisolated struct Media: Codable, Sendable, Equatable {
+        let draft: DailyAnswerMediaDraft
+        let reserveOperation: SyncClientOperation
+        let finalizeOperation: SyncClientOperation
+    }
 }
 
-/// Finishes a staged media answer in the background: uploads the staged file, then
-/// submits its asset id. Reused on every retry, so a flaky connection eventually
-/// lands the answer without losing the photo. The reserve/finalize/submit operations
-/// are fixed in the payload, so a retry never creates a duplicate asset or answer.
+/// Finishes a queued daily answer in the background. Text and partner-choice answers
+/// submit directly; a media answer uploads its staged file first, then submits the
+/// asset id. Reused on every retry, so a flaky connection eventually lands the answer
+/// without losing it. The answer id (and, for media, the reserve/finalize/submit
+/// operations) are fixed in the payload, so a retry never creates a duplicate answer
+/// or asset.
 struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .submitDailyAnswer
 
@@ -43,38 +61,64 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
 
         let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: requestData)
 
+        switch payload.content {
+        case let .text(body):
+            try await submit(.text(body), payload: payload, operation: operation)
+            return .succeeded
+        case let .partnerChoice(userID):
+            try await submit(.partnerChoice(userID), payload: payload, operation: operation)
+            return .succeeded
+        case let .media(media):
+            return try await sendMedia(media, payload: payload, operation: operation)
+        }
+    }
+
+    /// Uploads the staged bytes for a media answer, then submits the resulting asset.
+    /// Fails terminally — rather than retrying forever — when the staged file is gone
+    /// (e.g. cleared on sign-out), since there's nothing left to send.
+    private func sendMedia(
+        _ media: DailySubmitAnswerOperationPayload.Media,
+        payload: DailySubmitAnswerOperationPayload,
+        operation: PendingSyncOperationSnapshot
+    ) async throws -> PendingSyncOperationSendResult {
         guard let bytes = mediaDraftStore.stagedMediaData(instanceID: payload.instanceID) else {
-            // The staged photo is gone (e.g. cleared on sign-out), so there's nothing
-            // left to send. Fail terminally rather than retrying forever.
             return .terminalFailure("Staged media missing")
         }
 
         let uploadable = DailyAnswerUploadMedia(
             data: bytes,
-            purpose: payload.media.purpose,
-            mimeType: payload.media.mimeType,
-            fileExtension: payload.media.fileExtension,
-            width: payload.media.width,
-            height: payload.media.height,
-            durationMs: payload.media.durationMs
+            purpose: media.draft.purpose,
+            mimeType: media.draft.mimeType,
+            fileExtension: media.draft.fileExtension,
+            width: media.draft.width,
+            height: media.draft.height,
+            durationMs: media.draft.durationMs
         )
 
         let assetID = try await mediaUploadService.uploadMedia(
             uploadable,
             answerID: payload.answerID,
-            reserveOperation: payload.reserveOperation,
-            finalizeOperation: payload.finalizeOperation
+            reserveOperation: media.reserveOperation,
+            finalizeOperation: media.finalizeOperation
         )
 
-        _ = try await gateway.submitAnswer(
-            instanceID: payload.instanceID,
-            answerID: payload.answerID,
-            payload: .media([assetID]),
-            operation: operation.operation
-        )
+        try await submit(.media([assetID]), payload: payload, operation: operation)
 
         // The answer is sent; the staged copy is no longer needed.
         mediaDraftStore.removeStagedMedia(instanceID: payload.instanceID)
         return .succeeded
+    }
+
+    private func submit(
+        _ answer: DailyAnswerPayload,
+        payload: DailySubmitAnswerOperationPayload,
+        operation: PendingSyncOperationSnapshot
+    ) async throws {
+        _ = try await gateway.submitAnswer(
+            instanceID: payload.instanceID,
+            answerID: payload.answerID,
+            payload: answer,
+            operation: operation.operation
+        )
     }
 }

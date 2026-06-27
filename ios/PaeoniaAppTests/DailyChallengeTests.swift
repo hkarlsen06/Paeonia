@@ -242,17 +242,47 @@ struct DailyChallengeMappingTests {
     }
 
     @MainActor
+    @Test func refreshStreakLoadsTheCoupleStreak() async throws {
+        let snapshot = makeSnapshot(rows: [
+            questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
+        ])
+        let service = RecordingDailyChallengeService(
+            snapshots: [snapshot],
+            streak: CoupleStreak(
+                currentCount: 5,
+                longestCount: 9,
+                lastQualifiedDate: "2026-06-27",
+                restoreAvailable: true
+            )
+        )
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider()
+        )
+
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        await viewModel.refreshStreak()
+
+        #expect(viewModel.streak.currentCount == 5)
+        #expect(viewModel.streak.longestCount == 9)
+        #expect(viewModel.streak.lastQualifiedDate == "2026-06-27")
+        #expect(await service.streakLoadCount == 1)
+    }
+
+    @MainActor
     @Test func draftsSurviveReopenAndClearOnSubmit() async throws {
         let baseSnapshot = makeSnapshot(rows: [
             questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
         ])
         let service = RecordingDailyChallengeService(snapshots: [baseSnapshot])
         let store = InMemoryDailyChallengeDraftStore()
+        let pendingStore = InMemoryPendingSyncOperationRepository()
 
         let first = DailyChallengeViewModel(
             service: service,
             operationProvider: FixedDailyChallengeOperationProvider(),
-            draftStore: store
+            draftStore: store,
+            pendingOperationStore: pendingStore
         )
         await first.configure(currentUserID: TestDailyChallengeIDs.currentUser)
         let question = try #require(first.snapshot.ownQuestions.first)
@@ -262,7 +292,8 @@ struct DailyChallengeMappingTests {
         let second = DailyChallengeViewModel(
             service: service,
             operationProvider: FixedDailyChallengeOperationProvider(),
-            draftStore: store
+            draftStore: store,
+            pendingOperationStore: pendingStore
         )
         await second.configure(currentUserID: TestDailyChallengeIDs.currentUser)
         #expect(second.draftText(for: question.id) == "Halfway through a thought")
@@ -574,7 +605,7 @@ struct DailyChallengeMappingTests {
     }
 
     @MainActor
-    @Test func emptyAnswerDoesNotCallSubmitService() async throws {
+    @Test func emptyAnswerDoesNotQueueSend() async throws {
         let question = makeSnapshot(rows: [
             questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
         ]).ownQuestions[0]
@@ -586,28 +617,37 @@ struct DailyChallengeMappingTests {
                 refreshedAt: TestDailyChallengeIDs.startsAt
             ),
         ])
+        let pendingStore = InMemoryPendingSyncOperationRepository()
         let viewModel = DailyChallengeViewModel(
             service: service,
-            operationProvider: FixedDailyChallengeOperationProvider()
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            pendingOperationStore: pendingStore
         )
 
         await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
         await viewModel.submitAnswer(for: question)
 
         #expect(viewModel.notice == .emptyAnswer)
-        #expect(await service.submittedTexts.isEmpty)
+        #expect(!viewModel.isSending(question.id))
+        let queued = try await pendingStore.inFlightOperations(
+            ownerUserID: TestDailyChallengeIDs.currentUser,
+            kind: .submitDailyAnswer
+        )
+        #expect(queued.isEmpty)
     }
 
     @MainActor
-    @Test func submitAnswerSendsTrimmedTextPayload() async throws {
+    @Test func submitAnswerQueuesTrimmedTextForBackgroundSend() async throws {
         let baseSnapshot = makeSnapshot(rows: [
             questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
         ])
         let service = RecordingDailyChallengeService(snapshots: [baseSnapshot])
+        let pendingStore = InMemoryPendingSyncOperationRepository()
         let viewModel = DailyChallengeViewModel(
             service: service,
             operationProvider: FixedDailyChallengeOperationProvider(),
-            draftStore: InMemoryDailyChallengeDraftStore()
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            pendingOperationStore: pendingStore
         )
 
         await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
@@ -616,8 +656,22 @@ struct DailyChallengeMappingTests {
 
         await viewModel.submitAnswer(for: question)
 
-        #expect(await service.submittedPayloads == [.text("Thinking of you")])
+        // Saved on the device and shown as sending right away — nothing was lost and no
+        // error was raised — with the trimmed text queued for the sync engine to send.
+        #expect(viewModel.isSending(question.id))
+        #expect(viewModel.notice == nil)
         #expect(viewModel.draftText(for: question.id).isEmpty)
+        #expect(viewModel.sendingSimpleContent(for: question.id) == .text("Thinking of you"))
+
+        let queued = try await pendingStore.inFlightOperations(
+            ownerUserID: TestDailyChallengeIDs.currentUser,
+            kind: .submitDailyAnswer
+        )
+        #expect(queued.count == 1)
+        let data = try #require(queued.first?.requestData)
+        let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
+        #expect(payload.instanceID == question.id)
+        #expect(payload.content == .text("Thinking of you"))
     }
 
     @MainActor
@@ -642,7 +696,7 @@ struct DailyChallengeMappingTests {
     }
 
     @MainActor
-    @Test func submitAnswerSendsPartnerChoicePayload() async throws {
+    @Test func submitAnswerQueuesPartnerChoiceForBackgroundSend() async throws {
         let snapshot = makeSnapshot(rows: [
             questionRow(
                 slotNumber: 1,
@@ -651,10 +705,12 @@ struct DailyChallengeMappingTests {
             ),
         ])
         let service = RecordingDailyChallengeService(snapshots: [snapshot])
+        let pendingStore = InMemoryPendingSyncOperationRepository()
         let viewModel = DailyChallengeViewModel(
             service: service,
             operationProvider: FixedDailyChallengeOperationProvider(),
-            draftStore: InMemoryDailyChallengeDraftStore()
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            pendingOperationStore: pendingStore
         )
 
         await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
@@ -668,7 +724,17 @@ struct DailyChallengeMappingTests {
         #expect(viewModel.hasDraftToSubmit(for: question))
 
         await viewModel.submitAnswer(for: question)
-        #expect(await service.submittedPayloads == [.partnerChoice(TestDailyChallengeIDs.partnerUser)])
+
+        #expect(viewModel.isSending(question.id))
+        #expect(viewModel.notice == nil)
+        let queued = try await pendingStore.inFlightOperations(
+            ownerUserID: TestDailyChallengeIDs.currentUser,
+            kind: .submitDailyAnswer
+        )
+        #expect(queued.count == 1)
+        let data = try #require(queued.first?.requestData)
+        let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
+        #expect(payload.content == .partnerChoice(TestDailyChallengeIDs.partnerUser))
     }
 
     @Test func partnerChoiceParticipantsResolveNamesAndOptions() throws {
@@ -803,8 +869,8 @@ struct DailyChallengeMappingTests {
         )
         #expect(queued.count == 1)
         #expect(viewModel.sendingMediaData(for: question.id) != nil)
-        // Nothing was submitted directly — the background handler does that.
-        #expect(await service.submittedPayloads.isEmpty)
+        // A media answer previews from its staged bytes, not the simple-content path.
+        #expect(viewModel.sendingSimpleContent(for: question.id) == nil)
     }
 
     @MainActor
@@ -826,16 +892,20 @@ struct DailyChallengeMappingTests {
         let payload = DailySubmitAnswerOperationPayload(
             instanceID: instanceID,
             answerID: answerID,
-            media: DailyAnswerMediaDraft(
-                purpose: .photo,
-                mimeType: "image/jpeg",
-                fileExtension: "jpg",
-                width: 10,
-                height: 8,
-                durationMs: nil
-            ),
-            reserveOperation: fixedClientOperation(),
-            finalizeOperation: fixedClientOperation()
+            content: .media(
+                DailySubmitAnswerOperationPayload.Media(
+                    draft: DailyAnswerMediaDraft(
+                        purpose: .photo,
+                        mimeType: "image/jpeg",
+                        fileExtension: "jpg",
+                        width: 10,
+                        height: 8,
+                        durationMs: nil
+                    ),
+                    reserveOperation: fixedClientOperation(),
+                    finalizeOperation: fixedClientOperation()
+                )
+            )
         )
         let operation = pendingSnapshot(
             requestData: try JSONEncoder().encode(payload)
@@ -862,16 +932,20 @@ struct DailyChallengeMappingTests {
         let payload = DailySubmitAnswerOperationPayload(
             instanceID: UUID(),
             answerID: UUID(),
-            media: DailyAnswerMediaDraft(
-                purpose: .photo,
-                mimeType: "image/jpeg",
-                fileExtension: "jpg",
-                width: 1,
-                height: 1,
-                durationMs: nil
-            ),
-            reserveOperation: fixedClientOperation(),
-            finalizeOperation: fixedClientOperation()
+            content: .media(
+                DailySubmitAnswerOperationPayload.Media(
+                    draft: DailyAnswerMediaDraft(
+                        purpose: .photo,
+                        mimeType: "image/jpeg",
+                        fileExtension: "jpg",
+                        width: 1,
+                        height: 1,
+                        durationMs: nil
+                    ),
+                    reserveOperation: fixedClientOperation(),
+                    finalizeOperation: fixedClientOperation()
+                )
+            )
         )
         let operation = pendingSnapshot(requestData: try JSONEncoder().encode(payload))
 
@@ -882,6 +956,34 @@ struct DailyChallengeMappingTests {
         } else {
             Issue.record("Expected terminal failure, got \(result)")
         }
+    }
+
+    @MainActor
+    @Test func dailySubmitAnswerHandlerSubmitsTextWithoutUpload() async throws {
+        let instanceID = UUID()
+        let answerID = UUID()
+        let uploader = RecordingMediaUploadService(assetID: UUID())
+        let gateway = RecordingDailyChallengeGateway()
+        let handler = DailySubmitAnswerPendingOperationHandler(
+            mediaUploadService: uploader,
+            gateway: gateway,
+            mediaDraftStore: InMemoryDailyAnswerMediaDraftStore()
+        )
+
+        let payload = DailySubmitAnswerOperationPayload(
+            instanceID: instanceID,
+            answerID: answerID,
+            content: .text("Thinking of you")
+        )
+        let operation = pendingSnapshot(requestData: try JSONEncoder().encode(payload))
+
+        let result = try await handler.send(operation, context: dailyChallengeSyncContext())
+
+        #expect(result == .succeeded)
+        // Text goes straight to the backend — no media upload step.
+        #expect(await uploader.uploadCount == 0)
+        #expect(await gateway.submittedPayloads == [.text("Thinking of you")])
+        #expect(await gateway.submittedAnswerIDs == [answerID])
     }
 
     @Test func voiceQuestionIsComposableAndRevealsAsVoice() throws {
@@ -957,8 +1059,50 @@ struct DailyChallengeMappingTests {
 
         let data = try #require(queued.first?.requestData)
         let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
-        #expect(payload.media.purpose == .voice)
-        #expect(payload.media.durationMs == 4200)
+        guard case let .media(media) = payload.content else {
+            Issue.record("Expected media content, got \(payload.content)")
+            return
+        }
+        #expect(media.draft.purpose == .voice)
+        #expect(media.draft.durationMs == 4200)
+    }
+
+    @MainActor
+    @Test func sendingVoiceNoteStaysPlayableWithDurationAfterDraftCleared() async throws {
+        let snapshot = makeSnapshot(rows: [
+            questionRow(
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                answerKinds: [.voice]
+            ),
+        ])
+        let service = RecordingDailyChallengeService(snapshots: [snapshot])
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let mediaStore = InMemoryDailyAnswerMediaDraftStore()
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            mediaDraftStore: mediaStore,
+            pendingOperationStore: pendingStore
+        )
+
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        let question = try #require(viewModel.snapshot.ownQuestions.first)
+
+        let voiceURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("test-voice-\(UUID().uuidString).m4a")
+        try Data([0x00, 0x01, 0x02, 0x03]).write(to: voiceURL)
+        viewModel.stageVoice(url: voiceURL, durationMs: 4200, for: question.id)
+
+        await viewModel.submitAnswer(for: question)
+
+        // The editable draft is gone once it's queued, but the sending preview still
+        // has the bytes and the recorded length so it stays playable on both screens.
+        #expect(viewModel.isSending(question.id))
+        #expect(viewModel.stagedVoiceDurationMs(for: question.id) == nil)
+        #expect(viewModel.sendingMediaData(for: question.id) != nil)
+        #expect(viewModel.sendingVoiceDurationMs(for: question.id) == 4200)
     }
 
     @Test func stagedMediaDraftStoreRoundTripsAndClears() throws {
@@ -1116,33 +1260,33 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
     private let shuffleSnapshot: DailyChallengeSnapshot?
     private let shuffleError: Error?
     private let editError: Error?
-    private(set) var submittedPayloads: [DailyAnswerPayload] = []
+    private let streak: CoupleStreak
     private(set) var editedTexts: [String] = []
     private(set) var editedChoices: [UUID] = []
     private(set) var shuffledSlots: [Int] = []
-
-    /// Convenience for the text-answer assertions: the submitted text payloads only.
-    var submittedTexts: [String] {
-        submittedPayloads.compactMap { payload in
-            if case let .text(body) = payload { return body }
-            return nil
-        }
-    }
+    private(set) var streakLoadCount = 0
 
     init(
         snapshots: [DailyChallengeSnapshot],
         shuffleSnapshot: DailyChallengeSnapshot? = nil,
         shuffleError: Error? = nil,
-        editError: Error? = nil
+        editError: Error? = nil,
+        streak: CoupleStreak = .none
     ) {
         self.snapshots = snapshots
         self.shuffleSnapshot = shuffleSnapshot
         self.shuffleError = shuffleError
         self.editError = editError
+        self.streak = streak
     }
 
     func loadToday(currentUserID: UUID) async throws -> DailyChallengeSnapshot {
         snapshots.first ?? .empty(currentUserID: currentUserID)
+    }
+
+    func loadStreak() async throws -> CoupleStreak {
+        streakLoadCount += 1
+        return streak
     }
 
     func startToday(
@@ -1150,16 +1294,6 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
         operation _: SyncClientOperation
     ) async throws -> DailyChallengeSnapshot {
         snapshots.first ?? .empty(currentUserID: currentUserID)
-    }
-
-    func submitAnswer(
-        instanceID _: UUID,
-        answerID _: UUID,
-        payload: DailyAnswerPayload,
-        operation _: SyncClientOperation
-    ) async throws -> UUID {
-        submittedPayloads.append(payload)
-        return UUID()
     }
 
     func editTextAnswer(
@@ -1290,6 +1424,8 @@ private actor RecordingDailyChallengeGateway: SupabaseDailyChallengeGateway {
     func loadTodayQuestions() async throws -> [DailyQuestionRow] { [] }
 
     func startDailyChallenge(operation _: SyncClientOperation) async throws -> [DailyQuestionRow] { [] }
+
+    func loadCoupleStreak() async throws -> CoupleStreak { .none }
 
     func loadAnswerDetails(coupleDayID _: UUID) async throws -> [DailyAnswerDetailRow] { [] }
 

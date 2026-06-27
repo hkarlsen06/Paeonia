@@ -25,6 +25,7 @@ struct MainTabView: View {
     @State private var dailyChallengeViewModel = DailyChallengeViewModel()
     @State private var isAnswerFlowExpanded = false
     @Namespace private var dailyChallengeMorph
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         currentUserID: UUID?,
@@ -79,10 +80,11 @@ struct MainTabView: View {
             if isAnswerFlowExpanded {
                 DailyChallengeAnswerFlow(
                     viewModel: dailyChallengeViewModel,
-                    namespace: dailyChallengeMorph,
+                    namespace: reduceMotion ? nil : dailyChallengeMorph,
                     onClose: closeAnswerFlow
                 )
                 .zIndex(1)
+                .transition(answerFlowTransition)
             }
         }
         .tint(.paeoniaAccentPrimary)
@@ -161,10 +163,30 @@ struct MainTabView: View {
 
     /// The card only owns the shared morph ids while it is the visible entry point
     /// and the flow is collapsed. Once expanded, both cards release the ids so the
-    /// flow becomes their sole owner and the elements travel into it.
+    /// flow becomes their sole owner and the elements travel into it. Reduce Motion
+    /// opts out of the glide entirely (a plain cross-fade is used instead).
     private func morphNamespace(for tab: MainTab) -> Namespace.ID? {
-        guard !isAnswerFlowExpanded, selection.wrappedValue == tab else { return nil }
+        guard !reduceMotion, !isAnswerFlowExpanded, selection.wrappedValue == tab else { return nil }
         return dailyChallengeMorph
+    }
+
+    /// How the answering flow enters and leaves.
+    ///
+    /// Expanding uses `.identity` so the morphing card elements stay fully opaque and
+    /// only *glide* (via `matchedGeometryEffect`) — the flow's own surface and
+    /// supporting content fade in from inside the flow, so the card reads as growing
+    /// rather than the whole screen dissolving over the card still showing behind it.
+    /// Collapsing fades the surface back out as those elements glide home. Reduce
+    /// Motion drops the glide for a plain cross-fade in both directions.
+    private var answerFlowTransition: AnyTransition {
+        if reduceMotion { return .opacity }
+        return .asymmetric(insertion: .identity, removal: .opacity)
+    }
+
+    /// Spring that carries the morph (and the fade-out on close). A plain, short
+    /// cross-fade replaces it under Reduce Motion.
+    private var morphAnimation: Animation? {
+        reduceMotion ? .easeInOut(duration: PaeoniaMotion.motionDefault) : PaeoniaMotion.heroMorph
     }
 
     /// Today's questions are created lazily, so opening the flow before the couple
@@ -174,13 +196,13 @@ struct MainTabView: View {
         if dailyChallengeViewModel.homeCardState.kind == .noChallenge {
             Task { await dailyChallengeViewModel.startToday() }
         }
-        withAnimation(PaeoniaMotion.pairedScreenTransition) {
+        withAnimation(morphAnimation) {
             isAnswerFlowExpanded = true
         }
     }
 
     private func closeAnswerFlow() {
-        withAnimation(PaeoniaMotion.pairedScreenTransition) {
+        withAnimation(morphAnimation) {
             isAnswerFlowExpanded = false
         }
     }

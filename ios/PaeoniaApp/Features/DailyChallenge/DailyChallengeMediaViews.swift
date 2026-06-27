@@ -178,33 +178,82 @@ struct DailyPhotoAnswerComposer: View {
     }
 }
 
-/// Shown for a photo answer that's saved on the device and finishing its upload in
-/// the background, so the user knows it's handled even when they're offline.
+/// Shown for a media answer that's saved on the device and finishing its upload in
+/// the background, so the user knows it's handled even when they're offline. A photo
+/// shows a thumbnail; a voice note stays playable straight from its staged bytes.
 struct DailySendingAnswerView: View {
-    let imageData: Data?
+    let mediaKind: DailyChallengeAnswerKind
+    let mediaData: Data?
+    var voiceDurationMs: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            if let imageData, let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 220)
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-            }
+            preview
+            DailySendingStatusLine()
+        }
+    }
 
-            HStack(spacing: PaeoniaSpacing.space8) {
-                Image(systemName: "arrow.up.circle")
-                    .foregroundStyle(.paeoniaAccentPrimary)
-                    .accessibilityHidden(true)
-
-                Text(.dailyChallengeSendingMessage)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+    @ViewBuilder
+    private var preview: some View {
+        if mediaKind == .voice {
+            if let mediaData {
+                DailyVoicePlaybackView(source: .data(mediaData), fallbackDurationMs: voiceDurationMs)
             }
+        } else if let mediaData, let uiImage = UIImage(data: mediaData) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity)
+                .frame(height: 220)
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+        }
+    }
+}
+
+/// Shown for a text or partner-choice answer that's saved on the device and finishing
+/// its send in the background, so the user sees what they wrote is safe — even offline
+/// — instead of an error asking them to try again.
+struct DailySendingSimpleAnswerView: View {
+    let content: DailySendingSimpleContent
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            preview
+            DailySendingStatusLine()
+        }
+    }
+
+    @ViewBuilder
+    private var preview: some View {
+        switch content {
+        case let .text(body):
+            Text(body)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        case let .partnerChoice(name):
+            Text(name)
+                .font(PaeoniaTypography.body.weight(.semibold))
+                .foregroundStyle(.paeoniaTextPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
+/// The shared "saved on this phone, sending" line under every still-sending answer.
+private struct DailySendingStatusLine: View {
+    var body: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            Image(systemName: "arrow.up.circle")
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .accessibilityHidden(true)
+
+            Text(.dailyChallengeSendingMessage)
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

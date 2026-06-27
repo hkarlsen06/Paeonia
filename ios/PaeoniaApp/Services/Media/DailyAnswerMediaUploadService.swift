@@ -14,7 +14,7 @@ nonisolated enum DailyAnswerMediaPurpose: String, Codable, Sendable, Equatable {
         case .photo:
             "image"
         case .voice:
-            "audio"
+            "voice"
         }
     }
 }

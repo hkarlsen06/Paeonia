@@ -46,6 +46,23 @@ enum PaeoniaHaptics {
         impact(.light)
     }
 
+    /// One rung of the streak count-up: a soft tap whose strength rises as the
+    /// number climbs, so the celebration feels like pressure building.
+    static func streakTick(intensity: CGFloat) {
+        let generator = UIImpactFeedbackGenerator(style: .soft)
+        generator.prepare()
+        generator.impactOccurred(intensity: max(0, min(intensity, 1)))
+    }
+
+    /// The payoff at the top of the streak count-up: a firm hit plus a success
+    /// chime the moment the flame fills and the number lands.
+    static func streakCelebrated() {
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.prepare()
+        generator.impactOccurred(intensity: 1)
+        notify(.success)
+    }
+
     static func drawingSent() {
         impact(.light)
     }
