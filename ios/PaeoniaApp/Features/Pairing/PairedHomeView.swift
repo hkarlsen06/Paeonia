@@ -5,8 +5,11 @@ struct PairedHomeView: View {
     let currentProfilePhotoAssetID: UUID?
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
+    let dailyChallengeCardState: DailyChallengeCardState
+    let dailyChallengeMorphNamespace: Namespace.ID?
     let locationMapState: CoupleMapState
     let onPromptCurrentLocation: () -> Void
+    var onOpenDailyChallenge: () -> Void = {}
     var onOpenWidgetDrawing: () -> Void = {}
     var onRefresh: () async -> Void = {}
     @Environment(\.scenePhase) private var scenePhase
@@ -16,8 +19,15 @@ struct PairedHomeView: View {
         currentProfilePhotoAssetID: UUID? = nil,
         partnerDisplayName: String?,
         partnerProfilePhotoAssetID: UUID? = nil,
+        dailyChallengeCardState: DailyChallengeCardState = DailyChallengeCardState(
+            kind: .loading,
+            answeredCount: 0,
+            totalCount: DailyChallengeProgress.requiredOwnQuestionCount
+        ),
+        dailyChallengeMorphNamespace: Namespace.ID? = nil,
         locationMapState: CoupleMapState,
         onPromptCurrentLocation: @escaping () -> Void = {},
+        onOpenDailyChallenge: @escaping () -> Void = {},
         onOpenWidgetDrawing: @escaping () -> Void = {},
         onRefresh: @escaping () async -> Void = {}
     ) {
@@ -25,8 +35,11 @@ struct PairedHomeView: View {
         self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
         self.partnerDisplayName = partnerDisplayName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
+        self.dailyChallengeCardState = dailyChallengeCardState
+        self.dailyChallengeMorphNamespace = dailyChallengeMorphNamespace
         self.locationMapState = locationMapState
         self.onPromptCurrentLocation = onPromptCurrentLocation
+        self.onOpenDailyChallenge = onOpenDailyChallenge
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
         self.onRefresh = onRefresh
     }
@@ -36,7 +49,7 @@ struct PairedHomeView: View {
             VStack(spacing: PaeoniaSpacing.sectionSpacing) {
                 MilestoneCountdownCard()
 
-                DailyPromptCard()
+                dailyPromptCard
 
                 HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
                     CoupleMapCard(
@@ -95,6 +108,14 @@ struct PairedHomeView: View {
                 .padding(.top, PaeoniaSpacing.space2)
             }
         }
+    }
+
+    private var dailyPromptCard: some View {
+        DailyPromptCard(
+            state: dailyChallengeCardState,
+            morphNamespace: dailyChallengeMorphNamespace,
+            onAnswer: onOpenDailyChallenge
+        )
     }
 
     private var currentName: String {

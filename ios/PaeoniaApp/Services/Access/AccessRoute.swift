@@ -68,6 +68,10 @@ nonisolated struct AccessRouteResolution: Equatable, Sendable {
         snapshot.relationshipState?.partnerDisplayName?.trimmedNonEmpty
     }
 
+    var partnerUserID: UUID? {
+        snapshot.relationshipState?.partnerUserID
+    }
+
     var activeCoupleID: UUID? {
         snapshot.relationshipState?.coupleID
     }

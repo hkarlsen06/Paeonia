@@ -95,6 +95,8 @@ The developer may run multiple agents in parallel in the same worktree.
 - Error messages must say what happened and what the user can do next.
 - If a phrase sounds correct to an engineer but awkward for a normal teenager, rewrite it.
 
+- Before writing, seeding, localizing, or versioning couple/daily questions, read `docs/couple-question-guidelines.md`. Questions are authored by Paeonia, not by either partner, and must not sound like they came from the partner.
+
 ### Git
 
 - Do not include `Co-Authored-By` lines in commit messages.

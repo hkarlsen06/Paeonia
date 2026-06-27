@@ -1,98 +1,132 @@
 import SwiftUI
 
-/// Today's shared questions on the Us tab, with the couple's streak. This is the
-/// core daily ritual surface and has no tab of its own, so it sits at the top of
-/// Home.
+/// Compact entry point for today's Daily Challenge on the Us tab.
 ///
-/// Each person answers three questions a day; this card shows the first one and a
-/// three-step indicator for the rest. The question text and streak are placeholder
-/// values for now, and the Answer button is inert. They get wired to the daily
-/// challenge data later.
+/// When `morphNamespace` is set, the eyebrow, the step bar, and the primary button
+/// take part in the hero morph that expands this card into the answering flow.
 struct DailyPromptCard: View {
+    let state: DailyChallengeCardState
+    var morphNamespace: Namespace.ID?
     var onAnswer: () -> Void = {}
-
-    // Placeholders until the daily questions and streak are wired up.
-    private static let questionCount = 3
-    private static let currentQuestion = 1
-    private static let placeholderQuestion =
-        "What's one small thing I did this week that made you feel loved?"
-    private static let placeholderStreak = 12
 
     var body: some View {
         PaeoniaCard {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 HStack(alignment: .center) {
                     PaeoniaCardEyebrow(.homeDailyPromptEyebrow)
+                        .dailyChallengeMorph(DailyChallengeMorph.eyebrow, in: morphNamespace)
+
                     Spacer(minLength: PaeoniaSpacing.space12)
-                    StreakPill(count: Self.placeholderStreak)
+
+                    DailyPromptProgressPill(
+                        answeredCount: state.answeredCount,
+                        totalCount: state.totalCount
+                    )
                 }
 
-                QuestionProgress(total: Self.questionCount, current: Self.currentQuestion)
+                DailyChallengeStepBar(
+                    total: state.totalCount,
+                    completed: state.answeredCount
+                )
+                .dailyChallengeMorph(DailyChallengeMorph.stepBar, in: morphNamespace)
 
-                Text(verbatim: Self.placeholderQuestion)
-                    .font(PaeoniaTypography.title)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
+                titleBlock
 
                 Button(action: onAnswer) {
-                    Text(.homeDailyPromptAnswer)
+                    Text(actionTitle)
                 }
                 .buttonStyle(PaeoniaPrimaryButtonStyle())
+                .disabled(!state.isActionEnabled)
+                .dailyChallengeMorph(DailyChallengeMorph.primaryButton, in: morphNamespace)
             }
         }
     }
-}
 
-/// A three-step bar showing how far through today's questions the couple is. The
-/// first segment is the active question; the rest are still to come.
-private struct QuestionProgress: View {
-    let total: Int
-    let current: Int
-
-    var body: some View {
-        HStack(spacing: PaeoniaSpacing.space4) {
-            ForEach(0..<total, id: \.self) { index in
-                Capsule()
-                    .fill(index < current ? Color.paeoniaAccentPrimary : Color.paeoniaSurfaceSecondary)
-                    .frame(height: 4)
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(.homeDailyPromptProgress))
-    }
-}
-
-/// A compact flame pill showing how many days the couple has kept their streak.
-private struct StreakPill: View {
-    let count: Int
-
-    var body: some View {
-        HStack(spacing: PaeoniaSpacing.space4) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.paeoniaAccentSecondary)
-
-            Text(count, format: .number)
-                .font(PaeoniaTypography.bodyEmphasis)
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            Text(title)
+                .font(PaeoniaTypography.title)
                 .foregroundStyle(.paeoniaTextPrimary)
+                .fixedSize(horizontal: false, vertical: true)
 
-            Text(.homeStreakLabel)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
+            if let message {
+                Text(message)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
+    }
+
+    private var title: LocalizedStringResource {
+        switch state.kind {
+        case .loading:
+            .dailyChallengeHomeLoadingTitle
+        case .noChallenge:
+            .dailyChallengeHomeNoChallengeTitle
+        case .active:
+            .dailyChallengeHomeActiveTitle
+        case .complete:
+            .dailyChallengeHomeCompleteTitle
+        }
+    }
+
+    private var message: String? {
+        switch state.kind {
+        case .loading:
+            nil
+        case .noChallenge:
+            String(localized: .dailyChallengeHomeNoChallengeMessage)
+        case let .active(prompt):
+            prompt
+        case .complete:
+            String(localized: .dailyChallengeHomeCompleteMessage)
+        }
+    }
+
+    private var actionTitle: LocalizedStringResource {
+        switch state.kind {
+        case .loading:
+            .dailyChallengeOpenButton
+        case .noChallenge:
+            .dailyChallengeStartButton
+        case .active, .complete:
+            .dailyChallengeOpenButton
+        }
+    }
+}
+
+private struct DailyPromptProgressPill: View {
+    let answeredCount: Int
+    let totalCount: Int
+
+    var body: some View {
+        HStack(spacing: PaeoniaSpacing.space4) {
+            Text(answeredCount, format: .number)
+            Text(verbatim: "/")
+            Text(totalCount, format: .number)
+        }
+        .font(PaeoniaTypography.caption.weight(.semibold))
+        .monospacedDigit()
+        .foregroundStyle(.paeoniaTextInverse)
         .padding(.horizontal, PaeoniaSpacing.space12)
-        .padding(.vertical, PaeoniaSpacing.space8)
-        .background(Capsule().fill(.paeoniaSurfaceSecondary))
-        .accessibilityElement(children: .combine)
+        .padding(.vertical, PaeoniaSpacing.space4)
+        .background(.paeoniaAccentPrimary)
+        .clipShape(Capsule())
     }
 }
 
 #if DEBUG
 #Preview {
-    DailyPromptCard()
-        .padding(PaeoniaSpacing.screenHorizontalPadding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(.paeoniaBackgroundPrimary)
-        .preferredColorScheme(.dark)
+    DailyPromptCard(
+        state: DailyChallengeCardState(
+            kind: .active(prompt: "A small moment today"),
+            answeredCount: 1,
+            totalCount: 3
+        )
+    )
+    .padding(PaeoniaSpacing.screenHorizontalPadding)
+    .background(.paeoniaBackgroundPrimary)
+    .preferredColorScheme(.dark)
 }
 #endif

@@ -360,23 +360,23 @@ New migrations must still be checked against both documents before they are writ
 
 ## Phase 4: Authentication And Pairing
 
-**Status: active.** Apple/Google auth, onboarding, profile-photo handling, paywall/StoreKit plumbing, app-account-token infrastructure, pairing invite flows, and relationship-state routing are under implementation. This phase is not complete until the full pre-auth to paired/paywalled flow is working on device, covered by focused tests, and backed by verified Supabase migrations.
+**Status: mostly implemented, still needs device-level flow hardening.** Apple/Google auth, onboarding, profile-photo handling, paywall/StoreKit plumbing, app-account-token infrastructure, pairing invite flows, join-link handling, relationship-state routing, and paired-home routing exist. This phase is not complete until the full pre-auth to paired/paywalled flow is manually verified on device, account deletion is fully review-ready in app UI, and App Review/demo-account instructions are written.
 
 ### Authentication
 
 - Support only:
   - Sign in with Apple
   - Google Sign-In
-- Do not support passkeys, email/password, or email magic-link auth in the MVP.
+- Do not support passkeys, email/password, or email magic-link auth in MVP.
 - Keep Sign in with Apple available because Google Sign-In is offered.
 - Implement both auth surfaces as first-class MVP requirements. In progress.
 - Do not require unnecessary profile fields. In progress.
-- Add account deletion inside the app before App Store submission. Backend/request plumbing exists; end-to-end UI and App Review validation still need completion.
+- Add account deletion inside app before App Store submission. Backend/request plumbing exists; end-to-end UI and App Review validation still need completion.
 
 ### Pairing
 
 - Create invite code or invite-link pairing.
-- One active couple per user for MVP.
+- One active couple per user MVP.
 - Show clear states:
   - not paired
   - invite pending
@@ -385,7 +385,8 @@ New migrations must still be checked against both documents before they are writ
   - disconnected
 - Add ability to leave/disconnect couple.
 - Add recovery path if invite expires.
-- Pairing invite, preview, accept, and celebration surfaces are underway. They must remain invite-and-explicit-accept only; no searchable users or automatic pairing.
+- Pairing invite, preview, accept, celebration, and join-link handling are implemented enough to treat pairing as an active vertical slice.
+- Pairing must remain invite-and-explicit-accept only; no searchable users or automatic pairing.
 
 ### Tests
 
@@ -395,45 +396,59 @@ New migrations must still be checked against both documents before they are writ
 - Already paired.
 - Disconnect behavior.
 - Account deletion cleanup.
+- Device-level happy path: fresh install -> auth -> onboarding -> paywall -> invite -> paired home.
 
 ## Phase 5: Daily Ritual Core
 
+**Status: next implementation priority.** The backend schema includes daily-question and answer tables, and the home card exists visually, but the app still shows placeholder daily prompt content and the Questions tab is not wired to real data. The next product slice should replace placeholder question UI with a small real daily challenge loop.
+
 ### Daily Challenge
 
-- Give each partner three daily candidate questions.
-- Let users shuffle unanswered candidate questions.
-- Limit each user to 5 shuffles per daily challenge across all three assigned questions.
-- Exclude shuffled questions from that user's candidate pool for 14 days.
-- The two partners do not have to receive the same three questions.
-- A user's daily challenge is complete when they answer their own three questions.
-- Show partner-answered questions in a separate screen so the other partner can answer them too.
-- Reveal answer content only after both partners have answered the same question instance.
-- Show that the partner answered, including when they answered, before revealing content.
-- Create a conversation thread only when someone sends the first follow-up message.
-- Use push notifications to remind users before the streak expires, for example when there is about one hour left.
-- Notify a user when their partner completes the daily challenge.
-- Notification copy should explain that answering is required to reveal what the partner wrote.
-- Handle missed days gracefully.
-- Add time-zone rules:
-  - compose the couple day when the daily challenge is started, anchored to the earliest partner timezone
-  - do not expire the streak before midnight for the latest partner timezone
-  - freeze each started couple day's timezone window
+- First slice:
+  - Read or create today's daily challenge for the current user and couple.
+  - Show up to three unanswered questions from the database.
+  - Model question answer kinds correctly from day one. Each question version can allow one or two answer kinds.
+  - Supported MVP answer kinds are text, photo, and voice note.
+  - Implement the first narrow UI around the existing answer-kind contract, without hardcoding daily challenge as text-only.
+  - If media/voice capture is too large for the first pass, keep the model/service/UI state answer-kind aware and ask before cutting behavior.
+  - Replace `DailyPromptCard` placeholder content with real challenge progress.
+  - Wire the Questions tab to today's challenge and partner-answered questions.
+  - Reveal answer content only after both partners answered the same question instance.
+  - Show that the partner answered, including when they answered, before revealing content.
+  - Keep copy simple enough for a 16-year-old to understand.
+- Later in the phase:
+  - Let users shuffle unanswered candidate questions.
+  - Limit each user to 5 shuffles per daily challenge across all three assigned questions.
+  - Exclude shuffled questions from that user's candidate pool for 14 days.
+  - Partners do not have to receive the same three questions.
+  - A user's daily challenge is complete when they answer their own three questions.
+  - Show partner-answered questions in a separate screen so the other partner can answer them too.
+  - Create conversation thread only when someone sends the first follow-up message.
+  - Use push notifications to remind users before streak expires, for example about one hour left.
+  - Notify user when partner completes daily challenge.
+  - Notification copy should explain answering is required before seeing what partner wrote.
+  - Handle missed days gracefully.
+  - Add time-zone rules:
+    - compose couple day daily challenge when started, anchored to earliest partner timezone
+    - do not expire streak before midnight in latest partner timezone
+    - freeze each started couple day's timezone window
 
 ### Streaks
 
 - Use couple-level streaks only.
-- Continue the streak when a qualifying couple activity happens during the couple day.
-- Qualifying activity includes completing the daily challenge or updating the shared widget.
+- Continue streak when qualifying couple activity happens during couple day.
+- Qualifying activity includes completing daily challenge or updating shared widget.
 - Do not make streaks punitive.
 - Add repair logic:
   - graceful restore button
-  - no manipulative purchase-to-repair mechanic for MVP
+  - no manipulative purchase-to-repair mechanic MVP
 
 ### Tests
 
+- No challenge yet.
 - One user answered.
-- Both users answered.
-- Reveal state.
+- Partner answered but unrevealed.
+- Both users answered and answer content revealed.
 - Missed day.
 - Time-zone boundary.
 - Streak continuation.
@@ -441,16 +456,18 @@ New migrations must still be checked against both documents before they are writ
 
 ## Phase 6: Memories And Media
 
+**Status: not started as a product slice.** Backend schema exists, but the app should not build memories before the daily ritual loop is real. Memories remain MVP scope, but daily questions are the next priority.
+
 ### Timeline
 
 - Add shared timeline.
 - Support memory entries with:
   - up to 5 images per partner
-  - one text note from either partner to create the entry
+  - one text note from either partner can create entry
   - optional second partner note added later
   - optional voice notes in V1
-- Photos must support private upload, local caching, compression, deletion, and offline pending states.
-- Voice notes must support local drafts, upload retry, deletion, and privacy-safe playback.
+- Photos must support private upload, local caching, compression, deletion, offline pending states.
+- Voice notes must support local drafts, upload retry, deletion, privacy-safe playback.
 - Show empty states with clear next actions.
 - Add local drafts so content is not lost.
 
@@ -459,15 +476,15 @@ New migrations must still be checked against both documents before they are writ
 Even if Paeonia is private one-to-one, user-generated content still needs safety controls.
 
 - Add report/contact path.
-- Add block/leave/disconnect path as the MVP safety cutoff.
-- The report-and-leave flow should be labeled as blocking where that is the user's intent.
-- Blocking closes the current relationship and prevents future pairing between the same two users unless the blocking user explicitly unblocks later.
+- Add block/leave/disconnect path MVP safety cutoff.
+- Report-and-leave flow should be labeled around the user's intent.
+- Blocking closes current relationship and prevents future pairing between the two users unless blocking user explicitly unblocks later.
 - Add support contact information.
 - Add content deletion.
 - Add internal SQL/service-role moderation process for reported content before public launch.
-- Use manual/service-role quarantine for MVP moderation. Do not add an external media scanning vendor unless explicitly revisited later.
-- Defer scanner-specific backend fields until an external scanning integration is actually selected.
-- A custom admin UI is not required for MVP.
+- Use manual/service-role quarantine for MVP moderation. Do not add external media scanning vendor unless explicitly revisited later.
+- Defer scanner-specific backend fields until external scanning integration is selected.
+- Custom admin UI is not required for MVP.
 - Publish terms/community standards before submission.
 
 ### Tests
@@ -481,62 +498,68 @@ Even if Paeonia is private one-to-one, user-generated content still needs safety
 - Offline draft recovery.
 - Partner visibility.
 
-## Phase 7: Countdown, Notifications, Partner Location, And Widget
+## Phase 7: Countdown, Notifications, Partner Location, Widget
+
+**Status: partially implemented ahead of schedule.** Widget drawing, widget history/attribution, widget update notifications, paired-home widget card, and partner location map work have progressed substantially. Countdown remains visually placeholder-driven. Notification preferences and streak/daily-question notification behavior still need to be connected to the daily ritual.
 
 ### Countdown
 
-- Create countdowns from the relationship start date collected during onboarding.
+- Create countdowns from relationship start date collected during onboarding.
 - Default countdown:
-  - if together under one year, count down to the next monthly milestone
-  - after one year, count down to the next anniversary
-- Allow a later custom countdown to next visit or another important date if it fits the MVP.
+  - if together under one year, count down next monthly milestone
+  - after one year, count down next anniversary
+- Allow later custom countdown next visit or another important date if it fits MVP.
 - Make timezone behavior explicit.
-- Support editing and deletion.
-- Use local notifications only with permission.
+- Support editing deletion.
+- Use local notifications only permission.
+- Current state: home has a branded milestone card with placeholder values; milestone calculation and relationship-date data wiring still need implementation.
 
 ### Push Notifications
 
-- Request notification permission at the right moment, not on first launch.
+- Request notification permission right moment, not on first launch.
 - Support notification preferences:
   - streak expiry reminder
   - partner answered
   - new drawing
   - countdown reminders
 - Avoid sensitive lock-screen content by default.
-- Store typed, redacted push payloads by default; do not put answer text, note text, precise location, media URLs, invite codes, or report details in pushes.
-- Track APNs environment, delivery attempts, provider message id, and failure reasons in the notification outbox.
+- Store typed, redacted push payloads by default; do not put answer text, note text, precise location, media URLs, invite codes, report details in pushes.
+- Track APNs environment, delivery attempts, provider message id, failure reasons in notification outbox.
 - Provide in-app settings to disable categories.
+- Current state: widget update notifications exist. Daily-question/streak notification behavior still depends on Phase 5.
 
 ### Partner Location
 
-- Partner location is part of the MVP.
-- Show the map only after both partners explicitly opt in.
+- Partner location is part of MVP.
+- Show map only after both partners explicitly opt in.
 - Use foreground/manual location updates only in MVP. Do not request background location access.
 - Store latest location only, not location history.
-- Show when the location was last updated.
-- Show the partner avatar on the map and dim stale location markers after 24 hours.
-- Store consent audit fields for the current location-sharing preference, including enable/disable timestamps and consent copy version.
-- Reject or ignore stale offline location retries that are older than the currently stored latest location.
-- Delete location rows when sharing is disabled, the relationship ends, or account deletion begins.
-- Make App Store privacy labels and the privacy policy account for precise location collection.
+- Show when location last updated.
+- Show partner avatar on map and dim stale location markers after 24 hours.
+- Store consent audit fields for current location-sharing preference, including enable/disable timestamps and consent copy version.
+- Reject or ignore stale offline location retries older than currently stored latest location.
+- Delete location rows when sharing is disabled, relationship ends, or account deletion begins.
+- Make App Store privacy labels and privacy policy account for precise location collection.
+- Current state: couple map card, location view model, partner update paths, and location tests exist. Remaining work is device QA, permission/copy polish, and privacy-policy/App Store-label alignment.
 
 ### Widget
 
-- The widget is a crucial MVP surface.
-- Support a widget-driven drawing experience: tap widget, draw in app, widget updates.
-- Use PencilKit for the in-app drawing canvas.
+- Widget is a crucial MVP surface.
+- Support widget-driven drawing experience: tap widget, draw in app, widget updates.
+- Use PencilKit for in-app drawing canvas.
 - Store canonical drawings as editable `PKDrawing` vector/stroke payloads.
-- Do not store drawings as canonical PNGs.
-- Rasterize drawings on-device for display and network efficiency.
-- Store canonical `.pkdrawing` payloads in private Storage and metadata in Postgres.
+- Do not store drawings canonical PNGs.
+- Rasterize drawings on-device for display/network efficiency.
+- Store canonical `.pkdrawing` payloads in private Storage metadata in Postgres.
 - Keep raster previews as derived cache only.
 - Consider widget modes:
   - latest partner drawing
   - countdown/milestone
   - today's ritual status
 - Use App Group storage.
-- Avoid showing sensitive content on the widget by default.
-- Provide a privacy setting for widget content.
+- Avoid showing sensitive content on widget by default.
+- Provide privacy setting for widget content.
+- Current state: widget drawing, App Group refresh path, deep-link opening, drawing history, author attribution, reliable reload handling, and partner update notifications exist. Remaining work is polish, privacy toggles, and connecting widget activity into the streak/daily ritual system.
 
 ### Tests
 

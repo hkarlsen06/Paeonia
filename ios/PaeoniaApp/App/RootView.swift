@@ -239,8 +239,10 @@ struct RootView: View {
                     )
             } else {
                 MainTabView(
+                    currentUserID: viewModel.currentSession.flatMap { UUID(uuidString: $0.id) },
                     currentDisplayName: viewModel.currentSession?.displayName,
                     currentProfilePhotoAssetID: viewModel.currentProfilePhotoAssetID,
+                    partnerUserID: viewModel.currentPartnerUserID,
                     partnerDisplayName: viewModel.currentPartnerDisplayName,
                     partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
                     authorName: viewModel.currentSession?.displayName,
@@ -431,10 +433,11 @@ struct RootView: View {
         widgetDeepLink = nil
     }
 
-    /// Keeps private drawing content off the Home Screen the moment the app
-    /// leaves the paired state (sign out, account deletion, lost access, ended
-    /// relationship). Never fires for `.launching`, so a paired user's saved
-    /// drawing survives across launches.
+    /// Keeps private content off the device the moment the app leaves the paired
+    /// state (sign out, account deletion, lost access, ended relationship): the
+    /// Home Screen drawing, the partner avatar, and any staged or cached daily-answer
+    /// photos. Never fires for `.launching`, so a paired user's content survives
+    /// across launches.
     private func clearWidgetIfNeeded(for state: AppState) {
         guard state != .paired, state != .launching else {
             return
@@ -443,6 +446,8 @@ struct RootView: View {
         Task {
             await widgetCanvasService.clearForPrivacy()
             await partnerAvatarSharing?.clear()
+            FileDailyAnswerMediaDraftStore.live().clearAll()
+            await (try? DailyAnswerMediaImageService.live())?.clearAll()
         }
     }
 

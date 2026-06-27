@@ -123,6 +123,10 @@ final class RootViewModel {
         route.accessResolution?.partnerDisplayName
     }
 
+    var currentPartnerUserID: UUID? {
+        route.accessResolution?.partnerUserID
+    }
+
     var currentActiveCoupleID: UUID? {
         route.accessResolution?.activeCoupleID
     }
