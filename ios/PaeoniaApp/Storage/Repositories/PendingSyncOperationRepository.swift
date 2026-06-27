@@ -50,6 +50,13 @@ protocol PendingSyncOperationPersisting: Actor {
         now: Date
     ) async throws -> [PendingSyncOperationSnapshot]
 
+    /// Operations of a kind that haven't finished yet — queued, sending, retrying, or
+    /// waiting to retry. Used to show a "still sending" state that survives relaunch.
+    func inFlightOperations(
+        ownerUserID: UUID,
+        kind: SyncPendingOperationKind
+    ) async throws -> [PendingSyncOperationSnapshot]
+
     func markSending(clientOperationID: UUID, at date: Date) async throws
     func markSucceeded(clientOperationID: UUID, at date: Date) async throws
     func markRetryableFailure(
@@ -124,6 +131,34 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
             .prefix(limit)
 
         return operations.map(Self.snapshot(from:))
+    }
+
+    func inFlightOperations(
+        ownerUserID: UUID,
+        kind: SyncPendingOperationKind
+    ) async throws -> [PendingSyncOperationSnapshot] {
+        let context = ModelContext(container)
+        let kindRawValue = kind.rawValue
+        let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
+            predicate: #Predicate { operation in
+                operation.ownerUserID == ownerUserID && operation.operationKindRawValue == kindRawValue
+            },
+            sortBy: [
+                SortDescriptor(\.localCreatedAt),
+                SortDescriptor(\.clientSequence)
+            ]
+        )
+
+        return try context.fetch(descriptor)
+            .filter { operation in
+                switch operation.status {
+                case .queued, .sending, .retrying, .failedRetryable:
+                    return true
+                case .failedTerminal, .succeeded:
+                    return false
+                }
+            }
+            .map(Self.snapshot(from:))
     }
 
     func markSending(clientOperationID: UUID, at date: Date) async throws {
@@ -289,6 +324,28 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
             }
             .prefix(limit)
             .map { $0 }
+    }
+
+    func inFlightOperations(
+        ownerUserID: UUID,
+        kind: SyncPendingOperationKind
+    ) async throws -> [PendingSyncOperationSnapshot] {
+        operations.values
+            .filter { $0.ownerUserID == ownerUserID && $0.operationKind == kind }
+            .filter { operation in
+                switch operation.status {
+                case .queued, .sending, .retrying, .failedRetryable:
+                    return true
+                case .failedTerminal, .succeeded:
+                    return false
+                }
+            }
+            .sorted {
+                if $0.operation.localCreatedAt == $1.operation.localCreatedAt {
+                    return $0.operation.clientSequence < $1.operation.clientSequence
+                }
+                return $0.operation.localCreatedAt < $1.operation.localCreatedAt
+            }
     }
 
     func markSending(clientOperationID: UUID, at date: Date) async throws {

@@ -57,8 +57,12 @@
 	<string>$(PAEONIA_SUPABASE_URL)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Paeonia uses your camera so you can take a photo to answer the daily question.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Paeonia uses your location to show your partner where you are when you turn on location sharing.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Paeonia uses your microphone so you can record a voice answer to the daily question.</string>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>Paeonia sends notifications for partner updates, streak reminders, and nudges from your partner.</string>
 	<key>NSUserActivityTypes</key>

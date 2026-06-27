@@ -71,7 +71,8 @@ struct DailyAnswerDetailsView: View {
                 DailyVisibleAnswerBlock(
                     title: .dailyChallengeYourAnswerTitle,
                     detail: detail,
-                    participants: participants
+                    participants: participants,
+                    mediaKind: question.mediaAnswerKind
                 )
             }
 
@@ -79,7 +80,8 @@ struct DailyAnswerDetailsView: View {
                 DailyVisibleAnswerBlock(
                     title: .dailyChallengePartnerAnswerTitle,
                     detail: detail,
-                    participants: participants
+                    participants: participants,
+                    mediaKind: question.mediaAnswerKind
                 )
             } else if question.partnerAnswer != nil, !question.canViewPartnerAnswer {
                 Text(.dailyChallengePartnerHiddenMessage)
@@ -95,6 +97,7 @@ private struct DailyVisibleAnswerBlock: View {
     let title: LocalizedStringResource
     let detail: DailyQuestionAnswerDetail
     var participants = DailyChallengeParticipants()
+    var mediaKind: DailyChallengeAnswerKind = .photo
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
@@ -113,7 +116,11 @@ private struct DailyVisibleAnswerBlock: View {
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextPrimary)
             } else if let mediaAssetID = detail.mediaAssetIDs.first {
-                DailyAnswerImageView(mediaAssetID: mediaAssetID)
+                if mediaKind == .voice {
+                    DailyVoicePlaybackView(source: .mediaAsset(mediaAssetID))
+                } else {
+                    DailyAnswerImageView(mediaAssetID: mediaAssetID)
+                }
             }
         }
         .padding(PaeoniaSpacing.space12)
@@ -168,60 +175,91 @@ struct DailyAnswerTextField: View {
     }
 }
 
-/// The two-option picker for a partner-choice question: tap "You" or your partner.
-/// Exactly one option is selected at a time, and the chosen person becomes the
-/// answer. The Send action lives in the flow's bottom bar like the text composer.
+/// The two-person picker for a partner-choice question: tap your avatar or your
+/// partner's. The chosen person's photo (or initials) gets a green ring and a
+/// checkmark; exactly one is selected at a time. The Send/Save action lives in the
+/// flow's bottom bar like the text composer.
 struct DailyPartnerChoicePicker: View {
     let options: [DailyChallengeParticipants.Option]
     let selection: UUID?
     let onSelect: (UUID) -> Void
 
+    private let avatarSize: CGFloat = 104
+
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             Text(.dailyChallengeChoiceLabel)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextSecondary)
 
-            VStack(spacing: PaeoniaSpacing.space8) {
+            HStack(alignment: .top, spacing: PaeoniaSpacing.space24) {
                 ForEach(options) { option in
-                    optionRow(option)
+                    avatarOption(option)
                 }
             }
+            .frame(maxWidth: .infinity)
+            .accessibilityElement(children: .contain)
         }
     }
 
-    private func optionRow(_ option: DailyChallengeParticipants.Option) -> some View {
+    private func avatarOption(_ option: DailyChallengeParticipants.Option) -> some View {
         let isSelected = option.id == selection
         return Button {
             PaeoniaHaptics.selection()
             onSelect(option.id)
         } label: {
-            HStack(spacing: PaeoniaSpacing.space12) {
-                Text(option.label)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextPrimary)
-
-                Spacer(minLength: 0)
-
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.paeoniaAccentPrimary : Color.paeoniaTextTertiary)
-                    .accessibilityHidden(true)
-            }
-            .padding(PaeoniaSpacing.space16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.paeoniaBackgroundSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                    .stroke(
-                        isSelected ? Color.paeoniaAccentPrimary : Color.paeoniaSurfacePressed,
-                        lineWidth: isSelected ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
+            VStack(spacing: PaeoniaSpacing.space12) {
+                ZStack(alignment: .topTrailing) {
+                    PaeoniaProfilePhotoAvatar(
+                        mediaAssetID: option.profilePhotoAssetID,
+                        name: option.avatarName,
+                        tint: .paeoniaAccentPrimary,
+                        size: avatarSize
                     )
+                    .overlay {
+                        Circle()
+                            .strokeBorder(
+                                isSelected ? Color.paeoniaSuccess : Color.clear,
+                                lineWidth: 3
+                            )
+                    }
+
+                    if isSelected {
+                        selectedBadge
+                    }
+                }
+
+                Text(option.label)
+                    .font(isSelected ? PaeoniaTypography.bodyEmphasis : PaeoniaTypography.body)
+                    .foregroundStyle(isSelected ? Color.paeoniaTextPrimary : Color.paeoniaTextSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .animation(PaeoniaMotion.stateChange, value: isSelected)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityLabel(Text(option.label))
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    /// A green disc with a checkmark, rimmed in the background colour so it reads as
+    /// a badge sitting on the selected avatar's top-right edge.
+    private var selectedBadge: some View {
+        Circle()
+            .fill(Color.paeoniaSuccess)
+            .frame(width: 28, height: 28)
+            .overlay {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color.paeoniaTextInverse)
+            }
+            .overlay {
+                Circle().strokeBorder(Color.paeoniaBackgroundPrimary, lineWidth: 2)
+            }
+            .offset(x: 4, y: -4)
+            .accessibilityHidden(true)
     }
 }
 

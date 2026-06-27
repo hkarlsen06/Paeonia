@@ -148,18 +148,37 @@ nonisolated enum DailyAnswerPayload: Equatable, Sendable {
 /// is revealed.
 nonisolated struct DailyChallengeParticipants: Equatable, Sendable {
     var currentUserID: UUID?
+    var currentDisplayName: String?
+    var currentProfilePhotoAssetID: UUID?
     var partnerUserID: UUID?
     var partnerDisplayName: String?
+    var partnerProfilePhotoAssetID: UUID?
 
-    init(currentUserID: UUID? = nil, partnerUserID: UUID? = nil, partnerDisplayName: String? = nil) {
+    init(
+        currentUserID: UUID? = nil,
+        currentDisplayName: String? = nil,
+        currentProfilePhotoAssetID: UUID? = nil,
+        partnerUserID: UUID? = nil,
+        partnerDisplayName: String? = nil,
+        partnerProfilePhotoAssetID: UUID? = nil
+    ) {
         self.currentUserID = currentUserID
+        self.currentDisplayName = currentDisplayName
+        self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
         self.partnerUserID = partnerUserID
         self.partnerDisplayName = partnerDisplayName
+        self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
     }
 
     struct Option: Identifiable, Equatable, Sendable {
         let id: UUID
+        /// Caption shown under the avatar — "You" for the current user, the
+        /// partner's name otherwise.
         let label: String
+        /// The person's real name, used for the avatar photo's accessibility label
+        /// and the initials fallback when no photo is set.
+        let avatarName: String
+        let profilePhotoAssetID: UUID?
         let isCurrentUser: Bool
     }
 
@@ -168,8 +187,20 @@ nonisolated struct DailyChallengeParticipants: Equatable, Sendable {
     var partnerChoiceOptions: [Option]? {
         guard let currentUserID, let partnerUserID else { return nil }
         return [
-            Option(id: currentUserID, label: String(localized: .dailyChallengeChoiceYou), isCurrentUser: true),
-            Option(id: partnerUserID, label: partnerName, isCurrentUser: false),
+            Option(
+                id: currentUserID,
+                label: String(localized: .dailyChallengeChoiceYou),
+                avatarName: currentDisplayName ?? String(localized: .dailyChallengeChoiceYou),
+                profilePhotoAssetID: currentProfilePhotoAssetID,
+                isCurrentUser: true
+            ),
+            Option(
+                id: partnerUserID,
+                label: partnerName,
+                avatarName: partnerName,
+                profilePhotoAssetID: partnerProfilePhotoAssetID,
+                isCurrentUser: false
+            ),
         ]
     }
 
@@ -274,14 +305,25 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Sendable {
         answerKinds.contains(.text)
     }
 
+    var supportsPartnerChoiceAnswer: Bool {
+        answerKinds.contains(.partnerChoice)
+    }
+
     var canSubmitTextAnswer: Bool {
         isAvailableToAnswer && supportsTextAnswer
     }
 
-    /// Answer kinds the app can compose a reply for today. Grows as the voice
-    /// composer ships.
+    /// Answer kinds the app can compose a reply for today.
     var composableAnswerKinds: [DailyChallengeAnswerKind] {
-        answerKinds.filter { $0 == .text || $0 == .partnerChoice || $0 == .photo }
+        answerKinds.filter { $0 == .text || $0 == .partnerChoice || $0 == .photo || $0 == .voice }
+    }
+
+    /// Which media kind a revealed media answer is. The reveal data only carries
+    /// asset ids (no type), so we infer it from the question: a voice question reveals
+    /// audio, anything else with media reveals a photo. This holds because no active
+    /// question mixes photo and voice.
+    var mediaAnswerKind: DailyChallengeAnswerKind {
+        answerKinds.contains(.voice) ? .voice : .photo
     }
 
     /// The kind a question opens to when it accepts more than one. Text is preferred
@@ -297,15 +339,26 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Sendable {
         isAvailableToAnswer && defaultComposableKind != nil
     }
 
-    /// Whether the user may still edit their own text answer. Editing is allowed
-    /// only while the answer is private — once the partner has answered the same
-    /// instance the content is revealed and locked.
+    /// The kind of a still-private own answer the user is allowed to change. Editing
+    /// is allowed only while the answer is private — once the partner has answered the
+    /// same instance the content is revealed and locked. Text and partner-choice
+    /// answers can be changed; media answers cannot.
+    var editableAnswerKind: DailyChallengeAnswerKind? {
+        guard
+            origin == .own,
+            hasOwnAnswer,
+            partnerAnswer == nil,
+            status != .shuffled
+        else { return nil }
+
+        if supportsTextAnswer { return .text }
+        if supportsPartnerChoiceAnswer { return .partnerChoice }
+        return nil
+    }
+
+    /// Whether the user may still change their own answer (text or partner-choice).
     var canEditOwnAnswer: Bool {
-        origin == .own
-            && hasOwnAnswer
-            && partnerAnswer == nil
-            && status != .shuffled
-            && supportsTextAnswer
+        editableAnswerKind != nil
     }
 }
 

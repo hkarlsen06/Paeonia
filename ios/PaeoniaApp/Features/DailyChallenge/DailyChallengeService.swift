@@ -6,6 +6,7 @@ protocol DailyChallengeServicing: Actor {
     func startToday(currentUserID: UUID, operation: SyncClientOperation) async throws -> DailyChallengeSnapshot
     func submitAnswer(instanceID: UUID, answerID: UUID, payload: DailyAnswerPayload, operation: SyncClientOperation) async throws -> UUID
     func editTextAnswer(instanceID: UUID, text: String, operation: SyncClientOperation) async throws -> UUID
+    func editPartnerChoice(instanceID: UUID, selectedUserID: UUID, operation: SyncClientOperation) async throws -> UUID
     func shuffleQuestion(
         currentUserID: UUID,
         slotNumber: Int,
@@ -19,6 +20,7 @@ protocol SupabaseDailyChallengeGateway: Actor {
     func loadAnswerDetails(coupleDayID: UUID) async throws -> [DailyAnswerDetailRow]
     func submitAnswer(instanceID: UUID, answerID: UUID, payload: DailyAnswerPayload, operation: SyncClientOperation) async throws -> UUID
     func editTextAnswer(instanceID: UUID, text: String, operation: SyncClientOperation) async throws -> UUID
+    func editPartnerChoice(instanceID: UUID, selectedUserID: UUID, operation: SyncClientOperation) async throws -> UUID
     func shuffleQuestion(slotNumber: Int, operation: SyncClientOperation) async throws -> [DailyQuestionRow]
 }
 
@@ -82,6 +84,27 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
         } catch {
             // Translate the "partner already answered" rejection into a typed error
             // so the UI can explain it plainly instead of inviting a pointless retry.
+            if String(describing: error).contains("answers cannot be edited after your partner has answered") {
+                throw DailyChallengeEditLockedError()
+            }
+            throw error
+        }
+    }
+
+    func editPartnerChoice(
+        instanceID: UUID,
+        selectedUserID: UUID,
+        operation: SyncClientOperation
+    ) async throws -> UUID {
+        do {
+            return try await gateway.editPartnerChoice(
+                instanceID: instanceID,
+                selectedUserID: selectedUserID,
+                operation: operation
+            )
+        } catch {
+            // Same lock as text: once the partner has answered, the picks are revealed
+            // and can no longer be changed. Surface it as a friendly, non-retry notice.
             if String(describing: error).contains("answers cannot be edited after your partner has answered") {
                 throw DailyChallengeEditLockedError()
             }
@@ -199,6 +222,24 @@ actor LiveSupabaseDailyChallengeGateway: SupabaseDailyChallengeGateway {
             .value
     }
 
+    func editPartnerChoice(
+        instanceID: UUID,
+        selectedUserID: UUID,
+        operation: SyncClientOperation
+    ) async throws -> UUID {
+        try await client
+            .rpc(
+                "update_daily_answer_partner_choice",
+                params: EditDailyPartnerChoiceRequest(
+                    instanceID: instanceID,
+                    selectedUserID: selectedUserID,
+                    operation: operation
+                )
+            )
+            .execute()
+            .value
+    }
+
     func shuffleQuestion(
         slotNumber: Int,
         operation: SyncClientOperation
@@ -249,6 +290,14 @@ private actor EmptyDailyChallengeService: DailyChallengeServicing {
     func editTextAnswer(
         instanceID _: UUID,
         text _: String,
+        operation _: SyncClientOperation
+    ) async throws -> UUID {
+        throw DailyChallengeServiceUnavailableError()
+    }
+
+    func editPartnerChoice(
+        instanceID _: UUID,
+        selectedUserID _: UUID,
         operation _: SyncClientOperation
     ) async throws -> UUID {
         throw DailyChallengeServiceUnavailableError()
@@ -377,6 +426,33 @@ nonisolated private struct EditDailyTextAnswerRequest: Encodable {
     enum CodingKeys: String, CodingKey {
         case instanceID = "p_instance_id"
         case text = "p_text"
+        case clientOperationID = "p_client_operation_id"
+        case clientID = "p_client_id"
+        case clientSequence = "p_client_sequence"
+        case localCreatedAt = "p_local_created_at"
+    }
+}
+
+nonisolated private struct EditDailyPartnerChoiceRequest: Encodable {
+    let instanceID: UUID
+    let selectedUserID: UUID
+    let clientOperationID: UUID
+    let clientID: UUID
+    let clientSequence: Int64
+    let localCreatedAt: Date
+
+    init(instanceID: UUID, selectedUserID: UUID, operation: SyncClientOperation) {
+        self.instanceID = instanceID
+        self.selectedUserID = selectedUserID
+        clientOperationID = operation.id
+        clientID = operation.clientID
+        clientSequence = operation.clientSequence
+        localCreatedAt = operation.localCreatedAt
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case instanceID = "p_instance_id"
+        case selectedUserID = "p_selected_user_id"
         case clientOperationID = "p_client_operation_id"
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"

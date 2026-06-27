@@ -214,11 +214,17 @@ struct DailyChallengeAnswerFlow: View {
     }
 
     private var answeredCount: Int {
-        questions.filter(\.hasOwnAnswer).count
+        // A staged photo that's still uploading counts toward progress — it's done
+        // from the user's side.
+        questions.filter { $0.hasOwnAnswer || viewModel.isSending($0.id) }.count
     }
 
     private var answerableIndices: [Int] {
-        questions.indices.filter { !questions[$0].hasOwnAnswer && questions[$0].isAvailableToAnswer }
+        questions.indices.filter {
+            !questions[$0].hasOwnAnswer
+                && questions[$0].isAvailableToAnswer
+                && !viewModel.isSending(questions[$0].id)
+        }
     }
 
     private var isSubmittingCurrent: Bool {
@@ -236,6 +242,7 @@ struct DailyChallengeAnswerFlow: View {
         return currentQuestion.origin == .own
             && !currentQuestion.hasOwnAnswer
             && currentQuestion.isAvailableToAnswer
+            && !viewModel.isSending(currentQuestion.id)
     }
 
     /// True once the draft holds a real answer. Skipping discards it, so Skip must
@@ -249,11 +256,27 @@ struct DailyChallengeAnswerFlow: View {
     /// an edit to an answer that can still be changed, or just moves the user along.
     private var isPrimaryActionSend: Bool {
         guard let currentQuestion else { return false }
-        return !currentQuestion.hasOwnAnswer && currentQuestion.canSubmitAnswer
+        return !currentQuestion.hasOwnAnswer
+            && currentQuestion.canSubmitAnswer
+            && !viewModel.isSending(currentQuestion.id)
     }
 
+    /// True only when the user has actually changed a previously sent answer (and
+    /// not blanked it). When there's no change, the button becomes Next/Done instead
+    /// so they can step forward without reaching for the progress bar.
     private var isPrimaryActionSave: Bool {
-        currentQuestion?.canEditOwnAnswer ?? false
+        guard let currentQuestion, let kind = currentQuestion.editableAnswerKind else { return false }
+        switch kind {
+        case .partnerChoice:
+            guard let draft = viewModel.partnerChoiceSelection(for: currentQuestion.id) else { return false }
+            return draft != currentQuestion.ownAnswerDetail?.selectedUserID
+        default:
+            let draft = viewModel.draftText(for: currentQuestion.id)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let saved = (currentQuestion.ownAnswerDetail?.textBody ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return !draft.isEmpty && draft != saved
+        }
     }
 
     private var primaryActionTitle: LocalizedStringResource {
@@ -270,15 +293,10 @@ struct DailyChallengeAnswerFlow: View {
         }
 
         if isPrimaryActionSave {
-            // Editing is text-only, so this stays on the text draft.
-            let draft = viewModel.draftText(for: currentQuestion.id)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            let saved = (currentQuestion.ownAnswerDetail?.textBody ?? "")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            // Nothing to save when empty or unchanged from what was already sent.
-            return draft.isEmpty || draft == saved || isSubmittingCurrent
+            return isSubmittingCurrent
         }
 
+        // Next / Done is plain navigation, always available.
         return false
     }
 
@@ -289,7 +307,14 @@ struct DailyChallengeAnswerFlow: View {
             Task { await submitCurrent() }
         } else if isPrimaryActionSave {
             Task { await editCurrent() }
-        } else if isLastStep {
+        } else {
+            advanceOrFinish()
+        }
+    }
+
+    /// Move to the next question, or leave the flow when this is the last one.
+    private func advanceOrFinish() {
+        if isLastStep {
             dismiss()
         } else {
             withAnimation(PaeoniaMotion.stateChange) { index = boundedIndex + 1 }
@@ -334,10 +359,12 @@ struct DailyChallengeAnswerFlow: View {
 
         await viewModel.submitAnswer(for: question)
 
-        // Only advance if the answer actually landed; a failure leaves the draft
-        // in place and surfaces a banner instead.
-        let didAnswer = viewModel.snapshot.answerFlowQuestions
-            .first(where: { $0.id == question.id })?.hasOwnAnswer ?? false
+        // Advance once the answer has landed on the server or — for a photo — been
+        // staged to send in the background. A failure leaves the draft in place and
+        // surfaces a banner instead.
+        let didAnswer = (viewModel.snapshot.answerFlowQuestions
+            .first(where: { $0.id == question.id })?.hasOwnAnswer ?? false)
+            || viewModel.isSending(question.id)
         guard didAnswer else { return }
 
         isComposerFocused = false
@@ -350,9 +377,35 @@ struct DailyChallengeAnswerFlow: View {
     }
 
     private func editCurrent() async {
-        guard let question = currentQuestion else { return }
-        await viewModel.editTextAnswer(for: question)
-        isComposerFocused = false
+        guard let question = currentQuestion, let kind = question.editableAnswerKind else { return }
+
+        switch kind {
+        case .partnerChoice:
+            let attempted = viewModel.partnerChoiceSelection(for: question.id)
+            await viewModel.editPartnerChoiceAnswer(for: question)
+
+            // Move on only if the save landed; a failure keeps the user here with a banner.
+            let savedNow = viewModel.snapshot.answerFlowQuestions
+                .first(where: { $0.id == question.id })?
+                .ownAnswerDetail?.selectedUserID
+            if savedNow == attempted {
+                advanceOrFinish()
+            }
+        default:
+            let attempted = viewModel.draftText(for: question.id)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            await viewModel.editTextAnswer(for: question)
+            isComposerFocused = false
+
+            let savedNow = viewModel.snapshot.answerFlowQuestions
+                .first(where: { $0.id == question.id })?
+                .ownAnswerDetail?.textBody?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if savedNow == attempted {
+                advanceOrFinish()
+            }
+        }
     }
 
     private func skipCurrent() async {
@@ -408,10 +461,10 @@ private struct DailyChallengeAnswerStep: View {
     var isFocused: FocusState<Bool>.Binding
 
     var body: some View {
-        // Sit the question and its answer low on the screen so the input lands right
-        // under the question and within thumb reach. The action bar below keeps the
-        // standard keyboard avoidance, so this group rests just above the keyboard
-        // while typing.
+        // Text answers sit low so the field lands right under the question and just
+        // above the keyboard (the action bar keeps keyboard avoidance). Tap-only
+        // composers — partner choice, photo, voice — and review states read better
+        // anchored under the question near the top, with the choice below it.
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             Text(question.prompt)
                 .font(PaeoniaTypography.heroTitle)
@@ -420,16 +473,29 @@ private struct DailyChallengeAnswerStep: View {
 
             answerSection
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: pinsToBottom ? .bottom : .top)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.top, pinsToBottom ? 0 : PaeoniaSpacing.space24)
         .padding(.bottom, PaeoniaSpacing.space8)
         .onAppear(perform: seedEditDraftIfNeeded)
     }
 
+    /// Whether the active composer is a keyboard text field, which should hug the
+    /// bottom. Everything else (choice avatars, media, review) anchors to the top.
+    private var pinsToBottom: Bool {
+        if viewModel.isSending(question.id) { return false }
+        if let editKind = question.editableAnswerKind { return editKind == .text }
+        if question.hasOwnAnswer { return false }
+        if question.canSubmitAnswer { return viewModel.composeKind(for: question) == .text }
+        return false
+    }
+
     @ViewBuilder
     private var answerSection: some View {
-        if question.canEditOwnAnswer {
-            DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
+        if viewModel.isSending(question.id) {
+            DailySendingAnswerView(imageData: viewModel.sendingMediaData(for: question.id))
+        } else if let editKind = question.editableAnswerKind {
+            editComposer(kind: editKind)
         } else if question.hasOwnAnswer {
             DailyQuestionStatusView(question: question)
             DailyAnswerDetailsView(question: question, participants: viewModel.participants)
@@ -440,6 +506,31 @@ private struct DailyChallengeAnswerStep: View {
             composer
         } else {
             DailyUnsupportedAnswerMessage(answerKinds: question.answerKinds)
+        }
+    }
+
+    /// The composer for an answer the user already sent but can still change while
+    /// it's private. Text reopens the editable field; partner choice reopens the
+    /// avatar picker (pre-selected) with a line showing when it was answered.
+    @ViewBuilder
+    private func editComposer(kind: DailyChallengeAnswerKind) -> some View {
+        switch kind {
+        case .partnerChoice:
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+                DailyQuestionStatusView(question: question)
+
+                if let options = viewModel.participants.partnerChoiceOptions {
+                    DailyPartnerChoicePicker(
+                        options: options,
+                        selection: viewModel.partnerChoiceSelection(for: question.id),
+                        onSelect: { viewModel.setPartnerChoice($0, for: question.id) }
+                    )
+                } else {
+                    DailyAnswerDetailsView(question: question, participants: viewModel.participants)
+                }
+            }
+        default:
+            DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
         }
     }
 
@@ -476,25 +567,71 @@ private struct DailyChallengeAnswerStep: View {
             }
         case .photo:
             DailyPhotoAnswerComposer(
-                imageData: viewModel.stagedPhotoData(for: question.id),
+                imageData: viewModel.stagedMediaData(for: question.id),
                 onPick: { viewModel.stagePhoto($0, for: question.id) },
-                onRemove: { viewModel.removeStagedPhoto(for: question.id) }
+                onRemove: { viewModel.removeStagedMedia(for: question.id) }
             )
+        case .voice:
+            voiceComposer
         default:
             DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
         }
     }
 
-    /// When revisiting an answer you can still edit, start the field from what you
+    @ViewBuilder
+    private var voiceComposer: some View {
+        if let voiceData = viewModel.stagedMediaData(for: question.id) {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                Text(.dailyChallengeVoiceLabel)
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextSecondary)
+
+                DailyVoicePlaybackView(
+                    source: .data(voiceData),
+                    fallbackDurationMs: viewModel.stagedVoiceDurationMs(for: question.id)
+                )
+
+                Button {
+                    viewModel.removeStagedMedia(for: question.id)
+                } label: {
+                    Label {
+                        Text(.dailyChallengeVoiceReRecord)
+                    } icon: {
+                        Image(systemName: "arrow.counterclockwise").accessibilityHidden(true)
+                    }
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .frame(maxWidth: .infinity)
+            }
+        } else {
+            DailyVoiceRecorderView(
+                onRecorded: { url, durationMs in
+                    viewModel.stageVoice(url: url, durationMs: durationMs, for: question.id)
+                }
+            )
+        }
+    }
+
+    /// When revisiting an answer you can still edit, start the composer from what you
     /// previously sent (unless you already have an unsaved edit in progress).
     private func seedEditDraftIfNeeded() {
-        guard
-            question.canEditOwnAnswer,
-            viewModel.draftText(for: question.id).isEmpty,
-            let existing = question.ownAnswerDetail?.textBody,
-            !existing.isEmpty
-        else { return }
-        viewModel.setDraftText(existing, for: question.id)
+        switch question.editableAnswerKind {
+        case .text:
+            guard
+                viewModel.draftText(for: question.id).isEmpty,
+                let existing = question.ownAnswerDetail?.textBody,
+                !existing.isEmpty
+            else { return }
+            viewModel.setDraftText(existing, for: question.id)
+        case .partnerChoice:
+            guard
+                viewModel.partnerChoiceSelection(for: question.id) == nil,
+                let existing = question.ownAnswerDetail?.selectedUserID
+            else { return }
+            viewModel.setPartnerChoice(existing, for: question.id)
+        default:
+            break
+        }
     }
 
     private var draftBinding: Binding<String> {

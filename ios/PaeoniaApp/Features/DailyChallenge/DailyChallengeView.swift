@@ -189,6 +189,10 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
         UUID()
     }
 
+    func editPartnerChoice(instanceID _: UUID, selectedUserID _: UUID, operation _: SyncClientOperation) async throws -> UUID {
+        UUID()
+    }
+
     func shuffleQuestion(
         currentUserID: UUID,
         slotNumber _: Int,

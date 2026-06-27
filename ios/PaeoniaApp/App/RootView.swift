@@ -251,7 +251,8 @@ struct RootView: View {
                     selection: mainTabSelection,
                     widgetDrawingPresented: widgetDrawingPresented,
                     onOpenWidgetDrawing: { viewModel.openWidgetDrawing() },
-                    onHomeRefresh: { await refreshHomeFromPull() }
+                    onHomeRefresh: { await refreshHomeFromPull() },
+                    onDailyChallengeLocalChange: { await viewModel.syncAfterLocalChange() }
                 )
                 .transition(
                     .asymmetric(

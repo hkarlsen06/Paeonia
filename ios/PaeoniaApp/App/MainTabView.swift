@@ -20,6 +20,7 @@ struct MainTabView: View {
     let widgetDrawingPresented: Binding<Bool>
     let onOpenWidgetDrawing: () -> Void
     var onHomeRefresh: () async -> Void = {}
+    var onDailyChallengeLocalChange: @MainActor () async -> Void = {}
 
     @State private var dailyChallengeViewModel = DailyChallengeViewModel()
     @State private var isAnswerFlowExpanded = false
@@ -38,7 +39,8 @@ struct MainTabView: View {
         selection: Binding<MainTab>,
         widgetDrawingPresented: Binding<Bool>,
         onOpenWidgetDrawing: @escaping () -> Void,
-        onHomeRefresh: @escaping () async -> Void = {}
+        onHomeRefresh: @escaping () async -> Void = {},
+        onDailyChallengeLocalChange: @escaping @MainActor () async -> Void = {}
     ) {
         self.currentUserID = currentUserID
         self.currentDisplayName = currentDisplayName
@@ -53,6 +55,7 @@ struct MainTabView: View {
         self.widgetDrawingPresented = widgetDrawingPresented
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
         self.onHomeRefresh = onHomeRefresh
+        self.onDailyChallengeLocalChange = onDailyChallengeLocalChange
     }
 
     var body: some View {
@@ -84,6 +87,7 @@ struct MainTabView: View {
         }
         .tint(.paeoniaAccentPrimary)
         .task(id: dailyChallengeParticipants) {
+            dailyChallengeViewModel.setLocalChangeSyncHandler(onDailyChallengeLocalChange)
             await dailyChallengeViewModel.configure(participants: dailyChallengeParticipants)
         }
     }
@@ -94,8 +98,11 @@ struct MainTabView: View {
     private var dailyChallengeParticipants: DailyChallengeParticipants {
         DailyChallengeParticipants(
             currentUserID: currentUserID,
+            currentDisplayName: currentDisplayName,
+            currentProfilePhotoAssetID: currentProfilePhotoAssetID,
             partnerUserID: partnerUserID,
-            partnerDisplayName: partnerDisplayName
+            partnerDisplayName: partnerDisplayName,
+            partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
         )
     }
 

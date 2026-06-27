@@ -314,6 +314,11 @@ actor SyncCoordinator: SyncCoordinating {
                 gateway: locationGateway,
                 ownLocationStore: ownLocationStore
             ),
+            DailySubmitAnswerPendingOperationHandler(
+                mediaUploadService: LiveDailyAnswerMediaUploadService(client: client),
+                gateway: LiveSupabaseDailyChallengeGateway(client: client),
+                mediaDraftStore: FileDailyAnswerMediaDraftStore.live()
+            ),
         ]
         return [
             AccessSyncStream(

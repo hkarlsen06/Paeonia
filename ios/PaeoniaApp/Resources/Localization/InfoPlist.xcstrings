@@ -25,6 +25,24 @@
         }
       }
     },
+    "NSCameraUsageDescription" : {
+      "comment" : "Privacy - Camera Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Paeonia uses your camera so you can take a photo to answer the daily question."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia bruker kameraet ditt så du kan ta et bilde som svar på dagens spørsmål."
+          }
+        }
+      }
+    },
     "NSLocationWhenInUseUsageDescription" : {
       "comment" : "iOS location permission prompt shown when the user turns on location sharing.",
       "extractionState" : "manual",
@@ -43,7 +61,26 @@
         }
       }
     },
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Privacy - Microphone Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Paeonia uses your microphone so you can record a voice answer to the daily question."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia bruker mikrofonen din så du kan spille inn et lydsvar på dagens spørsmål."
+          }
+        }
+      }
+    },
     "NSUserNotificationsUsageDescription" : {
+      "comment" : "iOS notification permission prompt shown before enabling alerts for partner activity and relationship reminders.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -58,8 +95,7 @@
             "value" : "Paeonia sender varsler om oppdateringer fra partneren din, påminnelser om dager på rad og små dytt."
           }
         }
-      },
-      "comment" : "iOS notification permission prompt shown before enabling alerts for partner activity and relationship reminders."
+      }
     }
   },
   "version" : "1.0"

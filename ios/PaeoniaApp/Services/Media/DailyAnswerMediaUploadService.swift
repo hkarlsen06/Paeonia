@@ -63,26 +63,6 @@ nonisolated protocol DailyAnswerMediaUploading: Sendable {
 nonisolated enum DailyAnswerMediaUploadError: Error, Equatable, Sendable {
     case reservationFailed
     case finalizeFailed
-    case unavailable
-}
-
-nonisolated enum DailyAnswerMediaUploadServiceFactory {
-    static func makeDefault() -> any DailyAnswerMediaUploading {
-        (try? LiveDailyAnswerMediaUploadService.live()) ?? UnavailableDailyAnswerMediaUploadService()
-    }
-}
-
-/// Used when the Supabase client can't be created (e.g. previews/tests without
-/// configuration). Any upload attempt fails loudly rather than silently no-op'ing.
-private struct UnavailableDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
-    func uploadMedia(
-        _: DailyAnswerUploadMedia,
-        answerID _: UUID,
-        reserveOperation _: SyncClientOperation,
-        finalizeOperation _: SyncClientOperation
-    ) async throws -> UUID {
-        throw DailyAnswerMediaUploadError.unavailable
-    }
 }
 
 /// Uploads daily-answer media through the same reserve → storage → finalize path the

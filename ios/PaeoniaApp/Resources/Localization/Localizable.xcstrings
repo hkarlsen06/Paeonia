@@ -5548,6 +5548,132 @@
         }
       },
       "comment" : "Accessibility label for a revealed photo answer"
+    },
+    "dailyChallenge.photo.take" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta et bilde"
+          }
+        }
+      },
+      "comment" : "Button to capture a photo answer with the camera"
+    },
+    "dailyChallenge.sending.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved on this phone. We'll send it when you're online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret på denne telefonen. Vi sender det når du er på nett."
+          }
+        }
+      },
+      "comment" : "Shown under a photo answer that is saved locally and uploading in the background"
+    },
+    "dailyChallenge.voice.label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your voice note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talemeldingen din"
+          }
+        }
+      },
+      "comment" : "Label above the voice answer recorder/preview"
+    },
+    "dailyChallenge.voice.record" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to record"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk for å spille inn"
+          }
+        }
+      },
+      "comment" : "Prompt on the button to start recording a voice answer"
+    },
+    "dailyChallenge.voice.reRecord" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Re-record"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill inn på nytt"
+          }
+        }
+      },
+      "comment" : "Button to discard a recorded voice answer and record again"
+    },
+    "dailyChallenge.voice.play" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill av"
+          }
+        }
+      },
+      "comment" : "Accessibility label for the voice answer play button"
+    },
+    "dailyChallenge.voice.permissionDenied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow microphone access in Settings to record a voice answer."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi tilgang til mikrofonen i Innstillinger for å spille inn et lydsvar."
+          }
+        }
+      },
+      "comment" : "Shown when microphone access is denied and a voice answer can't be recorded"
     }
   },
   "version" : "1.0"

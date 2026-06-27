@@ -57,6 +57,7 @@ struct DailyPhotoAnswerComposer: View {
 
     @State private var selection: PhotosPickerItem?
     @State private var isLoading = false
+    @State private var isCameraPresented = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
@@ -72,6 +73,10 @@ struct DailyPhotoAnswerComposer: View {
         }
         .onChange(of: selection) { _, item in
             loadSelection(item)
+        }
+        .fullScreenCover(isPresented: $isCameraPresented) {
+            DailyCameraPicker(onCapture: onPick)
+                .ignoresSafeArea()
         }
     }
 
@@ -96,11 +101,32 @@ struct DailyPhotoAnswerComposer: View {
                 .accessibilityLabel(Text(.dailyChallengePhotoRemove))
             }
 
-            PhotosPicker(selection: $selection, matching: .images) {
+            HStack(spacing: PaeoniaSpacing.space8) {
+                PhotosPicker(selection: $selection, matching: .images) {
+                    Label {
+                        Text(.dailyChallengePhotoChange)
+                    } icon: {
+                        Image(systemName: "photo.on.rectangle").accessibilityHidden(true)
+                    }
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .frame(maxWidth: .infinity)
+
+                cameraButton
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var cameraButton: some View {
+        if DailyCameraPicker.isAvailable {
+            Button {
+                isCameraPresented = true
+            } label: {
                 Label {
-                    Text(.dailyChallengePhotoChange)
+                    Text(.dailyChallengePhotoTake)
                 } icon: {
-                    Image(systemName: "photo.on.rectangle").accessibilityHidden(true)
+                    Image(systemName: "camera").accessibilityHidden(true)
                 }
             }
             .buttonStyle(PaeoniaQuietButtonStyle())
@@ -109,30 +135,34 @@ struct DailyPhotoAnswerComposer: View {
     }
 
     private var photoPlaceholderPicker: some View {
-        PhotosPicker(selection: $selection, matching: .images) {
-            VStack(spacing: PaeoniaSpacing.space8) {
-                if isLoading {
-                    ProgressView()
-                } else {
-                    Image(systemName: "photo.badge.plus")
-                        .font(.largeTitle)
-                        .foregroundStyle(.paeoniaAccentPrimary)
-                        .accessibilityHidden(true)
-                    Text(.dailyChallengePhotoAdd)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
+        VStack(spacing: PaeoniaSpacing.space8) {
+            PhotosPicker(selection: $selection, matching: .images) {
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    if isLoading {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "photo.badge.plus")
+                            .font(.largeTitle)
+                            .foregroundStyle(.paeoniaAccentPrimary)
+                            .accessibilityHidden(true)
+                        Text(.dailyChallengePhotoAdd)
+                            .font(PaeoniaTypography.body)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 160)
+                .background(.paeoniaBackgroundSecondary)
+                .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+                        .stroke(Color.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 160)
-            .background(.paeoniaBackgroundSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                    .stroke(Color.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
-            }
+            .buttonStyle(.plain)
+
+            cameraButton
         }
-        .buttonStyle(.plain)
     }
 
     private func loadSelection(_ item: PhotosPickerItem?) {
@@ -144,6 +174,37 @@ struct DailyPhotoAnswerComposer: View {
             }
             isLoading = false
             selection = nil
+        }
+    }
+}
+
+/// Shown for a photo answer that's saved on the device and finishing its upload in
+/// the background, so the user knows it's handled even when they're offline.
+struct DailySendingAnswerView: View {
+    let imageData: Data?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            if let imageData, let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 220)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+            }
+
+            HStack(spacing: PaeoniaSpacing.space8) {
+                Image(systemName: "arrow.up.circle")
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .accessibilityHidden(true)
+
+                Text(.dailyChallengeSendingMessage)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 }

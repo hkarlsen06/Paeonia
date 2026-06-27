@@ -336,6 +336,12 @@ final class RootViewModel {
     }
 
     func syncAfterLocalLocationChange() async {
+        await syncAfterLocalChange()
+    }
+
+    /// Flushes pending local changes (e.g. a queued media answer) to the backend now,
+    /// starting sync first if it hasn't begun.
+    func syncAfterLocalChange() async {
         await startSyncIfNeeded()
 
         guard hasStartedSync, currentSession != nil else {
