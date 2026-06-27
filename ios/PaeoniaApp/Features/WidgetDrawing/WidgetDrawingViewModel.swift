@@ -110,7 +110,7 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
         case .pencil:
             PKInkingTool(.pencil, color: color, width: clampedWidth)
         case .eraser:
-            PKEraserTool(.bitmap, width: clampedWidth)
+            PKEraserTool(.fixedWidthBitmap, width: clampedWidth)
         }
     }
 
@@ -135,7 +135,7 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
         case .pencil:
             PKInkingTool.InkType.pencil.validWidthRange
         case .eraser:
-            PKEraserTool.EraserType.bitmap.validWidthRange
+            PKEraserTool.EraserType.fixedWidthBitmap.validWidthRange
         }
     }
 }

@@ -4,6 +4,7 @@ import PencilKit
 import Testing
 @testable import PaeoniaApp
 
+@MainActor
 struct WidgetCanvasSyncServiceTests {
     @Test func syncDownloadsActiveRevisionAndPublishesLocally() async throws {
         let env = SyncEnvironment()
@@ -52,7 +53,7 @@ struct WidgetCanvasSyncServiceTests {
         let env = SyncEnvironment()
         env.gateway.state = Self.state(authorUserID: UUID(), canvasSide: 280)
         env.gateway.signedURL = URL(string: "https://example.com/payload")
-        env.pendingStore.defaults.set(
+        env.pendingDefaults.set(
             "legacy-local-work-hash",
             forKey: "paeonia.widgetCanvas.pendingUploadHash"
         )
@@ -160,17 +161,21 @@ struct WidgetCanvasSyncServiceTests {
 private final class SyncEnvironment {
     let gateway = SyncGatewaySpy()
     let localStore = SyncLocalStoreSpy()
-    let uploadSpy = SyncUploadSpy()
+    let uploadSpy: SyncUploadSpy
     let pendingStore: WidgetPendingUploadStore
+    /// The defaults backing `pendingStore`, exposed so tests can seed legacy markers
+    /// without reaching into the store's private storage.
+    let pendingDefaults: UserDefaults
     let downloadedData: Data
     let service: WidgetCanvasSyncService
 
     init() {
         let drawingData = SyncEnvironment.makeDrawing().dataRepresentation()
         downloadedData = drawingData
-        pendingStore = WidgetPendingUploadStore(
-            defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard
-        )
+        let pendingDefaults = UserDefaults(suiteName: UUID().uuidString) ?? .standard
+        self.pendingDefaults = pendingDefaults
+        pendingStore = WidgetPendingUploadStore(defaults: pendingDefaults)
+        uploadSpy = SyncUploadSpy(pendingStore: pendingStore)
         service = WidgetCanvasSyncService(
             gateway: gateway,
             localStore: localStore,
@@ -222,8 +227,13 @@ private nonisolated final class SyncLocalStoreSpy: WidgetCanvasManaging, @unchec
 }
 
 private nonisolated final class SyncUploadSpy: WidgetCanvasUploading, @unchecked Sendable {
+    private let pendingStore: WidgetPendingUploadStore
     private(set) var uploadedPayloads: [WidgetDrawingUploadPayload] = []
     var error: Error?
+
+    init(pendingStore: WidgetPendingUploadStore) {
+        self.pendingStore = pendingStore
+    }
 
     func enqueueUpload(_ payload: WidgetDrawingUploadPayload) {}
 
@@ -232,6 +242,7 @@ private nonisolated final class SyncUploadSpy: WidgetCanvasUploading, @unchecked
         if let error {
             throw error
         }
+        pendingStore.clearPending(WidgetCanvasUploadService.sha256Hex(of: payload.drawingData))
     }
 }
 

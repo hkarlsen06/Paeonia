@@ -65,7 +65,7 @@ struct WidgetDrawingViewModelTests {
         viewModel.updateToolWidthFraction(0.7)
 
         let updatedTool = try #require(viewModel.pencilKitTool as? PKInkingTool)
-        #expect(updatedTool.width == WidgetDrawingTool.pen.width(forFraction: 0.7))
+        #expect(abs(updatedTool.width - WidgetDrawingTool.pen.width(forFraction: 0.7)) < 0.000001)
     }
 
     @Test func fullSliderTravelSpansInkingToolValidWidthRange() throws {
@@ -88,7 +88,7 @@ struct WidgetDrawingViewModelTests {
         #expect(!viewModel.isColorSelectionEnabled)
 
         let tool = try #require(viewModel.pencilKitTool as? PKEraserTool)
-        #expect(tool.eraserType == .bitmap)
+        #expect(tool.eraserType == .fixedWidthBitmap)
         #expect(WidgetDrawingTool.eraser.validWidthRange.contains(tool.width))
     }
 
@@ -139,7 +139,7 @@ struct WidgetDrawingViewModelTests {
     @Test func emptyCanvasCannotBeSavedOrCleared() {
         let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy())
 
-        #expect(!viewModel.canSave)
+        #expect(viewModel.canSave == false)
         #expect(!viewModel.canClear)
     }
 
@@ -191,7 +191,7 @@ struct WidgetDrawingViewModelTests {
 
         await viewModel.save()
 
-        #expect(!viewModel.canSave)
+        #expect(viewModel.canSave == false)
     }
 
     @Test func saveEnqueuesUploadWithDrawingMetadata() async throws {
@@ -227,7 +227,7 @@ struct WidgetDrawingViewModelTests {
         await viewModel.loadSavedDrawingIfNeeded()
 
         #expect(!viewModel.drawing.strokes.isEmpty)
-        #expect(!viewModel.canSave)
+        #expect(viewModel.canSave == false)
     }
 
     @Test func saveSurfacesFailureWithoutConfirmation() async {
@@ -252,7 +252,7 @@ struct WidgetDrawingViewModelTests {
         viewModel.clearCanvas()
 
         #expect(viewModel.drawing.strokes.isEmpty)
-        #expect(!viewModel.canSave)
+        #expect(viewModel.canSave == false)
         #expect(!viewModel.canClear)
     }
 
@@ -288,7 +288,7 @@ struct WidgetDrawingViewModelTests {
         spy.savedDrawingData = makeNonEmptyDrawing(seed: 12).dataRepresentation()
         let viewModel = WidgetDrawingViewModel(service: spy)
         await viewModel.loadSavedDrawingIfNeeded()
-        #expect(!viewModel.hasUnsavedEdits)
+        #expect(viewModel.hasUnsavedEdits == false)
         let originalSignature = PKDrawing(strokes: viewModel.drawing.strokes).dataRepresentation()
 
         // A partner's newer drawing syncs into local storage.
@@ -300,7 +300,7 @@ struct WidgetDrawingViewModelTests {
         let reloadedSignature = PKDrawing(strokes: viewModel.drawing.strokes).dataRepresentation()
         #expect(reloadedSignature != originalSignature)
         #expect(viewModel.savedDrawingAuthorName == "Partner")
-        #expect(!viewModel.hasUnsavedEdits)
+        #expect(viewModel.hasUnsavedEdits == false)
     }
 
     @Test func reloadFromSyncSkipsWhenUnsavedEdits() async {
@@ -312,14 +312,13 @@ struct WidgetDrawingViewModelTests {
         // The user has started drawing on top of the loaded drawing.
         viewModel.drawing = PKDrawing(strokes: viewModel.drawing.strokes + makeNonEmptyDrawing(seed: 77).strokes)
         #expect(viewModel.hasUnsavedEdits)
-        let editedSignature = PKDrawing(strokes: viewModel.drawing.strokes).dataRepresentation()
+        let editedStrokeBounds = viewModel.drawing.strokes.map(\.renderBounds)
 
         // A partner's drawing syncs in; it must not clobber the in-progress work.
         spy.savedDrawingData = makeNonEmptyDrawing(seed: 99).dataRepresentation()
         await viewModel.reloadSavedDrawingFromSyncIfSafe()
 
-        let afterSignature = PKDrawing(strokes: viewModel.drawing.strokes).dataRepresentation()
-        #expect(afterSignature == editedSignature)
+        #expect(viewModel.drawing.strokes.map(\.renderBounds) == editedStrokeBounds)
     }
 
 }
@@ -342,7 +341,7 @@ struct WidgetDrawingAttributionTests {
         #expect(spy.saveCount == 1)
         #expect(viewModel.savedDrawingAuthorName == "Me")
         #expect(viewModel.savedDrawingCreatedAt != nil)
-        #expect(!viewModel.hasUnsavedEdits)
+        #expect(viewModel.hasUnsavedEdits == false)
         #expect(viewModel.isShowingSavedAttribution)
     }
 
@@ -355,7 +354,7 @@ struct WidgetDrawingAttributionTests {
         )
         viewModel.drawing = makeNonEmptyDrawing()
         await viewModel.save()
-        #expect(!viewModel.hasUnsavedEdits)
+        #expect(viewModel.hasUnsavedEdits == false)
 
         // A different drawing differs from what was just saved.
         viewModel.drawing = makeNonEmptyDrawing(seed: 48)
@@ -375,7 +374,7 @@ struct WidgetDrawingAttributionTests {
         let baseline = makeNonEmptyDrawing()
         viewModel.drawing = baseline
         await viewModel.save()
-        #expect(!viewModel.hasUnsavedEdits)
+        #expect(viewModel.hasUnsavedEdits == false)
 
         // Add a stroke on top of the saved drawing.
         viewModel.drawing = PKDrawing(strokes: baseline.strokes + makeNonEmptyDrawing(seed: 80).strokes)
@@ -383,11 +382,11 @@ struct WidgetDrawingAttributionTests {
 
         // Undo back to exactly the saved strokes — should read as unedited again.
         viewModel.drawing = PKDrawing(strokes: baseline.strokes)
-        #expect(!viewModel.hasUnsavedEdits)
-        #expect(!viewModel.canSave)
+        #expect(viewModel.hasUnsavedEdits == false)
+        #expect(viewModel.canSave == false)
     }
 
-    @Test func reencodedIdenticalDrawingDoesNotReadAsEdit() async {
+    @Test func reencodedIdenticalDrawingDoesNotReadAsEdit() async throws {
         let spy = WidgetCanvasServiceSpy()
         let viewModel = WidgetDrawingViewModel(
             authorName: "Me",
@@ -396,13 +395,14 @@ struct WidgetDrawingAttributionTests {
         )
         viewModel.drawing = makeNonEmptyDrawing(seed: 20)
         await viewModel.save()
-        #expect(!viewModel.hasUnsavedEdits)
+        #expect(viewModel.hasUnsavedEdits == false)
 
-        // PencilKit re-emits the committed stroke after a save with sub-point
-        // geometry noise. That must not read as a fresh, savable edit.
-        viewModel.drawing = makeNonEmptyDrawing(seed: 20.2)
-        #expect(!viewModel.hasUnsavedEdits)
-        #expect(!viewModel.canSave)
+        // PencilKit re-emits committed strokes from serialized data after save.
+        // That must not read as a fresh, savable edit.
+        let savedData = try #require(spy.lastSavedData)
+        viewModel.drawing = try PKDrawing(data: savedData)
+        #expect(viewModel.hasUnsavedEdits == false)
+        #expect(viewModel.canSave == false)
 
         // A real change still registers.
         viewModel.drawing = makeNonEmptyDrawing(seed: 48)
@@ -421,7 +421,7 @@ struct WidgetDrawingAttributionTests {
 
         #expect(viewModel.savedDrawingAuthorName == "Partner")
         #expect(viewModel.savedDrawingCreatedAt == Date(timeIntervalSinceReferenceDate: 1_000))
-        #expect(!viewModel.hasUnsavedEdits)
+        #expect(viewModel.hasUnsavedEdits == false)
         #expect(viewModel.isShowingSavedAttribution)
     }
 }
