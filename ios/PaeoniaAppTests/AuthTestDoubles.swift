@@ -223,7 +223,7 @@ final class GoogleSignInProviderSpy: GoogleSignInProviding {
 extension AuthSession {
     nonisolated static func test(profileStatus: AuthProfileStatus) -> AuthSession {
         AuthSession(
-            id: "test-user",
+            id: "11111111-1111-1111-1111-111111111111",
             provider: .development,
             displayName: "Test account",
             timeZoneID: profileStatus == .complete ? "Europe/Oslo" : nil,

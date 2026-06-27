@@ -435,7 +435,8 @@ struct PaeoniaAppTests {
         let syncCoordinator = TestSyncCoordinator()
         let viewModel = RootViewModel(
             syncCoordinator: syncCoordinator,
-            authService: AuthServiceSpy()
+            authService: AuthServiceSpy(),
+            accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
 
         await viewModel.signInForDevelopment()
@@ -477,6 +478,7 @@ struct PaeoniaAppTests {
             authService: AuthServiceSpy()
         )
 
+        await viewModel.start()
         await viewModel.signInWithGoogle(
             using: GoogleSignInProviderSpy(error: GoogleSignInServiceError.userCancelled)
         )
@@ -490,7 +492,8 @@ struct PaeoniaAppTests {
         let authService = AuthServiceSpy(session: .test(profileStatus: .complete))
         let viewModel = RootViewModel(
             syncCoordinator: TestSyncCoordinator(),
-            authService: authService
+            authService: authService,
+            accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
 
         await viewModel.start()
@@ -506,7 +509,8 @@ struct PaeoniaAppTests {
         let authService = BlockingDeleteAuthService()
         let viewModel = RootViewModel(
             syncCoordinator: TestSyncCoordinator(),
-            authService: authService
+            authService: authService,
+            accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
 
         await viewModel.start()
@@ -535,7 +539,8 @@ struct PaeoniaAppTests {
         )
         let viewModel = RootViewModel(
             syncCoordinator: TestSyncCoordinator(),
-            authService: authService
+            authService: authService,
+            accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
 
         await viewModel.start()
@@ -604,7 +609,8 @@ struct PaeoniaAppTests {
         let syncCoordinator = OrderedSyncCoordinator(recorder: recorder)
         let viewModel = RootViewModel(
             syncCoordinator: syncCoordinator,
-            authService: authService
+            authService: authService,
+            accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
 
         await viewModel.start()
