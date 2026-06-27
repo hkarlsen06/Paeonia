@@ -12,6 +12,7 @@ struct PaeoniaWidget: Widget {
         .configurationDisplayName(String(localized: .widgetTitle))
         .description(String(localized: .widgetDescription))
         .supportedFamilies([.systemSmall, .systemLarge])
+        .contentMarginsDisabled()
     }
 }
 

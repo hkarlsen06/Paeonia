@@ -5,12 +5,19 @@ import UIKit
 /// notification settings; more personal settings will join it here.
 struct SettingsView: View {
     @State private var viewModel = SettingsViewModel()
+    let locationViewModel: LocationMapViewModel
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.openURL) private var openURL
+
+    @MainActor
+    init(locationViewModel: LocationMapViewModel) {
+        self.locationViewModel = locationViewModel
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
+                locationSection
                 notificationsSection
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -35,6 +42,29 @@ struct SettingsView: View {
                 )
             )
             viewModel.dismissNotice()
+        }
+    }
+
+    private var locationSection: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            Text(.settingsLocationSectionTitle)
+                .font(PaeoniaTypography.sectionTitle)
+                .foregroundStyle(.paeoniaTextSecondary)
+
+            PaeoniaCard {
+                Toggle(isOn: locationSharingBinding) {
+                    VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                        Text(.settingsLocationSharingTitle)
+                            .font(PaeoniaTypography.body)
+                            .foregroundStyle(.paeoniaTextPrimary)
+                        Text(.settingsLocationSharingSubtitle)
+                            .font(PaeoniaTypography.caption)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                    }
+                }
+                .tint(.paeoniaAccentPrimary)
+                .disabled(!locationViewModel.isSharingLoaded)
+            }
         }
     }
 
@@ -98,11 +128,20 @@ struct SettingsView: View {
             }
         )
     }
+
+    private var locationSharingBinding: Binding<Bool> {
+        Binding(
+            get: { locationViewModel.sharingEnabled },
+            set: { newValue in
+                Task { await locationViewModel.setSharingEnabled(newValue) }
+            }
+        )
+    }
 }
 
 #Preview {
     NavigationStack {
-        SettingsView()
+        SettingsView(locationViewModel: LocationMapViewModel())
     }
     .environment(PaeoniaBannerCenter())
     .preferredColorScheme(.dark)

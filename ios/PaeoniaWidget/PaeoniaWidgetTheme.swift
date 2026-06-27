@@ -4,6 +4,7 @@ import WidgetKit
 enum PaeoniaWidgetSpacing {
     static let space6: CGFloat = 6
     static let space8: CGFloat = 8
+    static let space10: CGFloat = 10
     static let space12: CGFloat = 12
     static let space14: CGFloat = 14
     static let space16: CGFloat = 16

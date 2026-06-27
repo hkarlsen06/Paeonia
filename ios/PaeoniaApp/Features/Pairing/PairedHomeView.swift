@@ -5,6 +5,8 @@ struct PairedHomeView: View {
     let currentProfilePhotoAssetID: UUID?
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
+    let locationMapState: CoupleMapState
+    let onPromptCurrentLocation: () -> Void
     var onOpenWidgetDrawing: () -> Void = {}
     var onRefresh: () async -> Void = {}
     @Environment(\.scenePhase) private var scenePhase
@@ -14,6 +16,8 @@ struct PairedHomeView: View {
         currentProfilePhotoAssetID: UUID? = nil,
         partnerDisplayName: String?,
         partnerProfilePhotoAssetID: UUID? = nil,
+        locationMapState: CoupleMapState,
+        onPromptCurrentLocation: @escaping () -> Void = {},
         onOpenWidgetDrawing: @escaping () -> Void = {},
         onRefresh: @escaping () async -> Void = {}
     ) {
@@ -21,6 +25,8 @@ struct PairedHomeView: View {
         self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
         self.partnerDisplayName = partnerDisplayName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
+        self.locationMapState = locationMapState
+        self.onPromptCurrentLocation = onPromptCurrentLocation
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
         self.onRefresh = onRefresh
     }
@@ -37,7 +43,9 @@ struct PairedHomeView: View {
                         currentName: currentName,
                         currentProfilePhotoAssetID: currentProfilePhotoAssetID,
                         partnerName: partnerName,
-                        partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
+                        partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                        state: locationMapState,
+                        onPromptCurrentLocation: onPromptCurrentLocation
                     )
 
                     HomeWidgetCard(onOpen: onOpenWidgetDrawing)
@@ -102,7 +110,8 @@ struct PairedHomeView: View {
     NavigationStack {
         PairedHomeView(
             currentDisplayName: "Hjalmar",
-            partnerDisplayName: "Oda"
+            partnerDisplayName: "Oda",
+            locationMapState: .partnerUnknown(.notSharing)
         )
     }
     .preferredColorScheme(.dark)

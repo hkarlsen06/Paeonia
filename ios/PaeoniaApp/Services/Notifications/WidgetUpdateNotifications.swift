@@ -19,5 +19,7 @@ enum WidgetUpdateNotifications {
             return
         }
         center.removeDeliveredNotifications(withIdentifiers: identifiers)
+        // The widget alert is the only badging notification, so clear the dot too.
+        try? await center.setBadgeCount(0)
     }
 }

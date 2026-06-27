@@ -54,7 +54,10 @@ struct WidgetDrawingView: View {
         }
         // A partner's update synced in while this screen was open.
         .onReceive(NotificationCenter.default.publisher(for: .paeoniaWidgetCanvasDidUpdate)) { _ in
-            Task { await viewModel.reloadSavedDrawingFromSyncIfSafe() }
+            Task {
+                await viewModel.reloadSavedDrawingFromSyncIfSafe()
+                await WidgetUpdateNotifications.clearDelivered()
+            }
         }
         // Catch a sync that landed while we were backgrounded.
         .onChange(of: scenePhase) { _, phase in

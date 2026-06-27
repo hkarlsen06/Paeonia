@@ -74,6 +74,21 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
+    @Test func localLocationChangeRunsImmediateLocalChangeSync() async {
+        let syncCoordinator = TestSyncCoordinator()
+        let viewModel = RootViewModel(
+            syncCoordinator: syncCoordinator,
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: StaticAccessRouteService(route: .paired)
+        )
+        await viewModel.start()
+
+        await viewModel.syncAfterLocalLocationChange()
+
+        #expect(await syncCoordinator.runOnceReasons == [.localChange])
+    }
+
+    @MainActor
     @Test func completedProfileExposesPartnerDisplayNameFromAccessSnapshot() async {
         let accessRouteService = StaticAccessRouteService(
             resolution: .test(route: .paired, partnerDisplayName: "Riley")
@@ -602,6 +617,7 @@ struct PaeoniaAppTests {
 private actor TestSyncCoordinator: SyncCoordinating {
     private(set) var startCallCount = 0
     private(set) var requestedReasons: [SyncRequestReason] = []
+    private(set) var runOnceReasons: [SyncRequestReason] = []
     private(set) var configuredSessions: [SyncSession?] = []
     private(set) var resetCallCount = 0
 
@@ -615,6 +631,17 @@ private actor TestSyncCoordinator: SyncCoordinating {
 
     func requestSync(reason: SyncRequestReason) {
         requestedReasons.append(reason)
+    }
+
+    func runOnce(reason: SyncRequestReason) async -> SyncRunResult {
+        runOnceReasons.append(reason)
+        return SyncRunResult(
+            status: .succeeded,
+            attemptedStreamCount: 0,
+            completedStreamCount: 0,
+            failedStreamKey: nil,
+            errorDescription: nil
+        )
     }
 
     func stop() {}
@@ -847,6 +874,16 @@ private actor OrderedSyncCoordinator: SyncCoordinating {
     }
 
     func requestSync(reason _: SyncRequestReason) {}
+
+    func runOnce(reason _: SyncRequestReason) async -> SyncRunResult {
+        SyncRunResult(
+            status: .succeeded,
+            attemptedStreamCount: 0,
+            completedStreamCount: 0,
+            failedStreamKey: nil,
+            errorDescription: nil
+        )
+    }
 
     func stop() {}
 

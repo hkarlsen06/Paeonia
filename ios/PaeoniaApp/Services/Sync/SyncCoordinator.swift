@@ -4,6 +4,7 @@ nonisolated protocol SyncCoordinating: Actor {
     func configure(session: SyncSession?)
     func start()
     func requestSync(reason: SyncRequestReason)
+    func runOnce(reason: SyncRequestReason) async -> SyncRunResult
     func stop()
     func resetForUserChange()
 }
@@ -138,25 +139,36 @@ actor SyncCoordinator: SyncCoordinating {
         pendingOperationStore: (any PendingSyncOperationPersisting)? = nil,
         accessSnapshotStore: (any AccessSyncSnapshotPersisting)? = nil,
         relationshipEventStore: (any RelationshipSyncEventPersisting)? = nil,
+        locationVisibilityStore: (any LocationVisibilitySnapshotPersisting)? = nil,
+        ownLocationStore: (any OwnLocationSnapshotPersisting)? = nil,
         pendingOperationHandlers: [any PendingSyncOperationHandling] = [],
         minimumForegroundSyncInterval: TimeInterval = 60,
         syncTimeoutNanoseconds: UInt64 = 30_000_000_000
     ) {
         let needsDefaultStreamStores = streams.isEmpty
-            && (accessSnapshotStore == nil || relationshipEventStore == nil)
+        && (
+            accessSnapshotStore == nil
+            || relationshipEventStore == nil
+            || locationVisibilityStore == nil
+            || ownLocationStore == nil
+        )
         let needsDefaultStores = stateStore == nil
             || pendingOperationStore == nil
             || needsDefaultStreamStores
         let fallbackStores = needsDefaultStores ? Self.makeDefaultStores() : nil
         if streams.isEmpty {
             guard let resolvedAccessSnapshotStore = accessSnapshotStore ?? fallbackStores?.accessSnapshotStore,
-                let resolvedRelationshipEventStore = relationshipEventStore ?? fallbackStores?.relationshipEventStore else {
+                  let resolvedRelationshipEventStore = relationshipEventStore ?? fallbackStores?.relationshipEventStore,
+                  let resolvedLocationVisibilityStore = locationVisibilityStore ?? fallbackStores?.locationVisibilityStore,
+                  let resolvedOwnLocationStore = ownLocationStore ?? fallbackStores?.ownLocationStore else {
                 preconditionFailure("Default sync streams require persistent sync stores")
             }
 
             self.streams = Self.makeDefaultStreams(
                 accessSnapshotStore: resolvedAccessSnapshotStore,
                 relationshipEventStore: resolvedRelationshipEventStore,
+                locationVisibilityStore: resolvedLocationVisibilityStore,
+                ownLocationStore: resolvedOwnLocationStore,
                 pendingOperationHandlers: pendingOperationHandlers
             )
         } else {
@@ -261,7 +273,9 @@ actor SyncCoordinator: SyncCoordinating {
         stateStore: any SyncStatePersisting,
         pendingOperationStore: any PendingSyncOperationPersisting,
         accessSnapshotStore: any AccessSyncSnapshotPersisting,
-        relationshipEventStore: any RelationshipSyncEventPersisting
+        relationshipEventStore: any RelationshipSyncEventPersisting,
+        locationVisibilityStore: any LocationVisibilitySnapshotPersisting,
+        ownLocationStore: any OwnLocationSnapshotPersisting
     ) {
         do {
             let localStore = try PaeoniaLocalStore()
@@ -269,7 +283,9 @@ actor SyncCoordinator: SyncCoordinating {
                 SwiftDataSyncStateRepository(container: localStore.container),
                 SwiftDataPendingSyncOperationRepository(container: localStore.container),
                 SwiftDataAccessSyncSnapshotRepository(container: localStore.container),
-                SwiftDataRelationshipSyncEventRepository(container: localStore.container)
+                SwiftDataRelationshipSyncEventRepository(container: localStore.container),
+                SwiftDataLocationVisibilitySnapshotRepository(container: localStore.container),
+                SwiftDataOwnLocationSnapshotRepository(container: localStore.container)
             )
         } catch {
             preconditionFailure("Unable to create persistent sync store: \(error)")
@@ -279,26 +295,54 @@ actor SyncCoordinator: SyncCoordinating {
     private static func makeDefaultStreams(
         accessSnapshotStore: any AccessSyncSnapshotPersisting,
         relationshipEventStore: any RelationshipSyncEventPersisting,
+        locationVisibilityStore: any LocationVisibilitySnapshotPersisting,
+        ownLocationStore: any OwnLocationSnapshotPersisting,
         pendingOperationHandlers: [any PendingSyncOperationHandling] = []
     ) -> [any SyncStream] {
         guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
             return []
         }
 
-        let gateway = LiveSupabaseAccessGateway(client: client)
+        let accessGateway = LiveSupabaseAccessGateway(client: client)
+        let locationGateway = LiveSupabaseLocationGateway(client: client)
+        let locationHandlers: [any PendingSyncOperationHandling] = [
+            LocationSharingPreferencePendingOperationHandler(
+                gateway: locationGateway,
+                visibilityStore: locationVisibilityStore
+            ),
+            LatestPartnerLocationPendingOperationHandler(
+                gateway: locationGateway,
+                ownLocationStore: ownLocationStore
+            ),
+        ]
         return [
             AccessSyncStream(
-                gateway: gateway,
+                gateway: accessGateway,
                 snapshotStore: accessSnapshotStore
             ),
             RelationshipSyncEventsStream(
-                gateway: gateway,
+                gateway: accessGateway,
                 eventStore: relationshipEventStore
             ),
             PendingSyncOperationDrainStream(
-                handlers: pendingOperationHandlers
+                handlers: Self.mergedHandlers(
+                    customHandlers: pendingOperationHandlers,
+                    defaultHandlers: locationHandlers
+                )
+            ),
+            LocationVisibilitySyncStream(
+                gateway: locationGateway,
+                visibilityStore: locationVisibilityStore
             )
         ]
+    }
+
+    private static func mergedHandlers(
+        customHandlers: [any PendingSyncOperationHandling],
+        defaultHandlers: [any PendingSyncOperationHandling]
+    ) -> [any PendingSyncOperationHandling] {
+        let customKinds = Set(customHandlers.map(\.operationKind))
+        return customHandlers + defaultHandlers.filter { !customKinds.contains($0.operationKind) }
     }
 
     private func scheduleSync(reason: SyncRequestReason) {

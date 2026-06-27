@@ -12,7 +12,9 @@ final class PaeoniaLocalStore: LocalStore, @unchecked Sendable {
             LocalSyncState.self,
             LocalPendingSyncOperation.self,
             LocalAccessSyncSnapshot.self,
-            LocalRelationshipSyncEvent.self
+            LocalRelationshipSyncEvent.self,
+            LocalLocationVisibilitySnapshot.self,
+            LocalOwnLocationSnapshot.self
         ])
         let configuration = ModelConfiguration(
             schema: schema,

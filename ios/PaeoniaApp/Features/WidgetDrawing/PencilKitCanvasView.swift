@@ -92,6 +92,11 @@ extension PencilKitCanvasView {
             isApplyingDrawingProgrammatically = true
             defer { isApplyingDrawingProgrammatically = false }
             canvasView.drawing = drawing
+            // Make the loaded drawing the clean undo baseline. Otherwise PencilKit
+            // keeps the snapshot from before this programmatic load, so undoing the
+            // user's first stroke reverts to that stale (often empty) snapshot and
+            // wipes the loaded drawing instead of just removing the stroke.
+            canvasView.undoManager?.removeAllActions()
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {

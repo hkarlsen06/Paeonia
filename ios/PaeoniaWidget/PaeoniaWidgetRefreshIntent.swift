@@ -5,25 +5,6 @@ import OSLog
 #endif
 import WidgetKit
 
-/// Opens the in-app drawing screen from widget areas that are not the refresh
-/// button.
-struct PaeoniaWidgetOpenDrawingIntent: AppIntent {
-    static let title = LocalizedStringResource(
-        "widget.drawing.action",
-        table: "Localizable",
-        comment: "Accessibility label and title for opening the widget drawing."
-    )
-    static var supportedModes: IntentModes { .background }
-
-    func perform() async throws -> some IntentResult {
-        .result(opensIntent: OpenURLIntent(Self.drawingURL))
-    }
-
-    // A fixed, known-valid literal URL; the optional initializer cannot fail here.
-    // swiftlint:disable:next force_unwrapping
-    private static let drawingURL = URL(string: "paeonia://widget/drawing")!
-}
-
 /// Backs the widget's refresh button. In the app target it asks the app sync
 /// service to pull the partner's latest drawing; in the widget target it keeps
 /// compiling as an App-Group-only local reload.

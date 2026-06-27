@@ -14,6 +14,8 @@ struct MainTabView: View {
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
     let authorName: String?
+    let locationMapState: CoupleMapState
+    let locationViewModel: LocationMapViewModel
     let selection: Binding<MainTab>
     let widgetDrawingPresented: Binding<Bool>
     let onOpenWidgetDrawing: () -> Void
@@ -55,6 +57,10 @@ struct MainTabView: View {
                 currentProfilePhotoAssetID: currentProfilePhotoAssetID,
                 partnerDisplayName: partnerDisplayName,
                 partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                locationMapState: locationMapState,
+                onPromptCurrentLocation: {
+                    Task { await locationViewModel.promptForCurrentLocation() }
+                },
                 onOpenWidgetDrawing: onOpenWidgetDrawing,
                 onRefresh: onHomeRefresh
             )
@@ -69,7 +75,7 @@ struct MainTabView: View {
 
     private var youTab: some View {
         NavigationStack {
-            SettingsView()
+            SettingsView(locationViewModel: locationViewModel)
         }
     }
 
@@ -98,6 +104,8 @@ struct MainTabView: View {
         partnerDisplayName: "Oda",
         partnerProfilePhotoAssetID: nil,
         authorName: "Hjalmar",
+        locationMapState: .partnerUnknown(.notSharing),
+        locationViewModel: LocationMapViewModel(),
         selection: .constant(.home),
         widgetDrawingPresented: .constant(false),
         onOpenWidgetDrawing: {}

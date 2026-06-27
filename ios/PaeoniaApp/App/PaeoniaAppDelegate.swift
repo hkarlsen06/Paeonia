@@ -61,33 +61,70 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         return .newData
     }
 
-    /// Show the widget alert even while the app is open, so a partner's drawing
-    /// update is not silently swallowed in the foreground. The completion-handler
-    /// form answers synchronously without an unused `async`.
+    /// While the app is open, suppress the system banner for a partner's widget
+    /// update and surface it as an in-app top banner instead (like the rest of
+    /// the app's notices). Other notifications present normally. The sender name
+    /// and localized body are read off the content before crossing to the main
+    /// actor, since `userInfo` is not `Sendable`.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.banner, .sound, .list])
-    }
-
-    /// Tapping a widget alert opens the drawing screen. `userInfo` is not
-    /// `Sendable`, so the widget check is reduced to a `Bool` before crossing to
-    /// the main actor.
-    nonisolated func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
-        let userInfo = response.notification.request.content.userInfo
+        let content = notification.request.content
+        // Detect a widget update from several signals: the notification service
+        // extension rewrites the alert into a communication notification before
+        // this runs, and `updating(from:)` can drop custom `userInfo`. The
+        // thread identifier it sets ("widget:<sender>") survives that rewrite.
+        let userInfo = content.userInfo
         let isWidgetUpdate = (userInfo["type"] as? String) == "widget_updated"
             || (userInfo["route"] as? String) == "widget"
+            || content.threadIdentifier.hasPrefix("widget:")
+
+        #if DEBUG
+        let type = (userInfo["type"] as? String) ?? "nil"
+        let detail = "widget=\(isWidgetUpdate) thread=\(content.threadIdentifier) type=\(type)"
+        logger.debug("willPresent \(detail, privacy: .public)")
+        #endif
+
         guard isWidgetUpdate else {
+            completionHandler([.banner, .sound, .list])
             return
         }
 
-        await MainActor.run {
-            PaeoniaNotificationRouter.shared.route(.drawing)
+        let title = content.title
+        let body = content.body
+        Task { @MainActor in
+            PaeoniaNotificationRouter.shared.presentForegroundNotice(
+                title: title.isEmpty ? nil : title,
+                message: body
+            )
         }
+        // Suppress the system presentation entirely so nothing piles up in
+        // Notification Center while the user is already in the app.
+        completionHandler([])
+    }
+
+    /// Tapping a widget alert opens the drawing screen.
+    ///
+    /// Uses the completion-handler form (not the `async` variant): UIKit calls it
+    /// on the main thread and performs snapshot/state-restoration work right after
+    /// it returns, and that work asserts it is on the main thread. The `async`
+    /// variant runs on a background cooperative thread and crashes UIApplication
+    /// when that post-completion work fires off-main.
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let userInfo = response.notification.request.content.userInfo
+        let isWidgetUpdate = (userInfo["type"] as? String) == "widget_updated"
+            || (userInfo["route"] as? String) == "widget"
+        if isWidgetUpdate {
+            Task { @MainActor in
+                PaeoniaNotificationRouter.shared.route(.drawing)
+            }
+        }
+        completionHandler()
     }
 }

@@ -197,8 +197,13 @@ actor WidgetCanvasService: WidgetCanvasManaging {
 
         // One signal for any payload write — a partner's synced revision or the
         // user's own save — so in-app surfaces (home preview, drawing canvas)
-        // refresh without waiting to reappear.
-        NotificationCenter.default.post(name: .paeoniaWidgetCanvasDidUpdate, object: nil)
+        // refresh without waiting to reappear. Posted on the main thread because
+        // this runs on the service actor (a background thread): `.onReceive`
+        // subscribers update `@Observable` view state synchronously on the
+        // posting thread, and doing that off-main crashes SwiftUI.
+        await MainActor.run {
+            NotificationCenter.default.post(name: .paeoniaWidgetCanvasDidUpdate, object: nil)
+        }
     }
 
     func clearForPrivacy() async {

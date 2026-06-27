@@ -10,34 +10,64 @@ struct PaeoniaWidgetEntryView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            openDrawingBackgroundButton
-
-            VStack(alignment: .leading, spacing: contentSpacing) {
-                header
-                    .allowsHitTesting(false)
-
-                drawingSurface
-                    .allowsHitTesting(false)
-
-                footer
-            }
+            openDrawingBackgroundLink
+            overlayContent
+            refreshButtonLayer
         }
-        .padding(contentPadding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         // `.contain` (not `.combine`) so the interactive refresh button stays a
         // separately actionable accessibility element.
         .accessibilityElement(children: .contain)
     }
 
-    private var openDrawingBackgroundButton: some View {
-        Button(intent: PaeoniaWidgetOpenDrawingIntent()) {
+    private var openDrawingBackgroundLink: some View {
+        Link(destination: PaeoniaWidgetURL.drawing) {
             Rectangle()
                 .fill(.clear)
                 .contentShape(Rectangle())
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .buttonStyle(.plain)
         .accessibilityLabel(Text(footerAction))
+    }
+
+    private var overlayContent: some View {
+        VStack(alignment: .leading, spacing: contentSpacing) {
+            header
+
+            middleContent
+
+            footer
+        }
+        .padding(contentPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        // The saved drawing fills the whole widget edge to edge, so a partner
+        // filling the canvas colors the entire widget instead of a small square
+        // in the middle.
+        .background {
+            drawingBackground
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// The saved drawing rendered full-bleed behind the header and footer. Only
+    /// real drawings fill the widget; the placeholder and redacted states stay in
+    /// the centered band via `middleContent`.
+    @ViewBuilder
+    private var drawingBackground: some View {
+        if let image = drawingImage {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var drawingImage: UIImage? {
+        guard case let .drawing(content) = entry.content else {
+            return nil
+        }
+        return UIImage(contentsOfFile: content.previewURL.path)
     }
 
     private var header: some View {
@@ -81,24 +111,24 @@ struct PaeoniaWidgetEntryView: View {
         }
     }
 
+    /// The content shown in the middle band between header and footer. A real
+    /// drawing is rendered full-bleed behind everything (see `drawingBackground`),
+    /// so here it only takes up flexible space; the placeholder and redacted
+    /// states stay centered in the band.
     @ViewBuilder
-    private var drawingSurface: some View {
+    private var middleContent: some View {
         switch entry.content {
         case .placeholder:
             PaeoniaWidgetDrawingArea {
                 PaeoniaPlaceholderDrawing()
             }
-        case let .drawing(content):
-            PaeoniaWidgetDrawingArea {
-                if let image = UIImage(contentsOfFile: content.previewURL.path) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .padding(PaeoniaWidgetSpacing.space6)
-                        .accessibilityHidden(true)
-                } else {
+        case .drawing:
+            if drawingImage == nil {
+                PaeoniaWidgetDrawingArea {
                     PaeoniaPlaceholderDrawing()
                 }
+            } else {
+                Spacer(minLength: 0)
             }
         case .redacted:
             PaeoniaWidgetDrawingArea {
@@ -147,18 +177,9 @@ struct PaeoniaWidgetEntryView: View {
     @ViewBuilder
     private var footerTrailing: some View {
         if case .drawing = entry.content {
-            Button(intent: PaeoniaWidgetRefreshIntent()) {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: family == .systemSmall ? 12 : 14, weight: .semibold))
-                    .foregroundStyle(.paeoniaWidgetAccentPrimary)
-                    .frame(width: refreshButtonSize, height: refreshButtonSize)
-                    .background(.paeoniaWidgetAccentPrimary.opacity(0.16), in: Circle())
-                    // Shows the system "working" treatment while the refresh
-                    // intent runs, so the tap has visible feedback.
-                    .invalidatableContent()
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text(.widgetRefresh))
+            Color.clear
+                .frame(width: refreshButtonSize, height: refreshButtonSize)
+                .accessibilityHidden(true)
         } else {
             Text(footerAction)
                 .font(PaeoniaWidgetTypography.action(family: family))
@@ -189,6 +210,38 @@ struct PaeoniaWidgetEntryView: View {
         }
     }
 
+    @ViewBuilder
+    private var refreshButtonLayer: some View {
+        if case .drawing = entry.content {
+            VStack {
+                Spacer(minLength: 0)
+
+                HStack {
+                    Spacer(minLength: 0)
+
+                    refreshButton
+                }
+            }
+            .padding(contentPadding)
+        }
+    }
+
+    private var refreshButton: some View {
+        Button(intent: PaeoniaWidgetRefreshIntent()) {
+            Image(systemName: "arrow.clockwise")
+                .font(.system(size: family == .systemSmall ? 15 : 17, weight: .semibold))
+                .foregroundStyle(.paeoniaWidgetAccentPrimary)
+                .frame(width: refreshButtonSize, height: refreshButtonSize)
+                .background(.paeoniaWidgetAccentPrimary.opacity(0.16), in: Circle())
+                .contentShape(Circle())
+                // Shows the system "working" treatment while the refresh
+                // intent runs, so the tap has visible feedback.
+                .invalidatableContent()
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(.widgetRefresh))
+    }
+
     private var drawingContent: PaeoniaWidgetDrawingContent? {
         if case let .drawing(content) = entry.content {
             return content
@@ -197,7 +250,7 @@ struct PaeoniaWidgetEntryView: View {
     }
 
     private var refreshButtonSize: CGFloat {
-        family == .systemSmall ? 26 : 30
+        family == .systemSmall ? 36 : 42
     }
 
     private static func timestampText(_ date: Date) -> String {
@@ -208,7 +261,7 @@ struct PaeoniaWidgetEntryView: View {
     }
 
     private var contentPadding: CGFloat {
-        family == .systemSmall ? PaeoniaWidgetSpacing.space14 : PaeoniaWidgetSpacing.space16
+        family == .systemSmall ? PaeoniaWidgetSpacing.space10 : PaeoniaWidgetSpacing.space12
     }
 
     private var contentSpacing: CGFloat {
@@ -226,6 +279,12 @@ struct PaeoniaWidgetEntryView: View {
     private var redactedIconSize: CGFloat {
         family == .systemSmall ? 22 : 28
     }
+}
+
+private enum PaeoniaWidgetURL {
+    // A fixed, known-valid literal URL; the optional initializer cannot fail here.
+    // swiftlint:disable:next force_unwrapping
+    static let drawing = URL(string: "paeonia://widget/drawing")!
 }
 
 private struct PaeoniaWidgetDrawingArea<Content: View>: View {

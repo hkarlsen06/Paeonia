@@ -102,6 +102,7 @@ final class RootViewModel {
     /// destination as one atomic change. See [openWidgetDrawing].
     private(set) var selectedMainTab: MainTab = .home
     private var hasStartedSync = false
+    private var configuredSyncSession: SyncSession?
     private var accessResolutionGeneration = 0
     private var opensWidgetDrawingWhenPaired = false
     private var shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = false
@@ -120,6 +121,10 @@ final class RootViewModel {
 
     var currentPartnerDisplayName: String? {
         route.accessResolution?.partnerDisplayName
+    }
+
+    var currentActiveCoupleID: UUID? {
+        route.accessResolution?.activeCoupleID
     }
 
     var currentProfilePhotoAssetID: UUID? {
@@ -258,6 +263,7 @@ final class RootViewModel {
             route = .signedOut
             await syncCoordinator.resetForUserChange()
             hasStartedSync = false
+            configuredSyncSession = nil
         }
     }
 
@@ -281,6 +287,7 @@ final class RootViewModel {
             route = .signedOut
             await syncCoordinator.resetForUserChange()
             hasStartedSync = false
+            configuredSyncSession = nil
         } catch {
             if case .access = previousRoute {
                 isPairingCelebrationPresented = false
@@ -322,6 +329,16 @@ final class RootViewModel {
         }
 
         await syncCoordinator.requestSync(reason: .foreground)
+    }
+
+    func syncAfterLocalLocationChange() async {
+        await startSyncIfNeeded()
+
+        guard hasStartedSync, currentSession != nil else {
+            return
+        }
+
+        _ = await syncCoordinator.runOnce(reason: .localChange)
     }
 
     /// Pull-to-refresh on Home. The widget sync is triggered alongside this from
@@ -603,21 +620,24 @@ final class RootViewModel {
     }
 
     private func startSyncIfNeeded() async {
-        guard !hasStartedSync else {
-            return
-        }
-
         switch authRoute {
         case .signedOut, .onboarding:
             return
         case let .limitedAuthenticated(session):
-            guard let syncSession = SyncSession(authSession: session) else {
+            guard let userID = UUID(uuidString: session.id) else {
                 return
             }
 
-            await syncCoordinator.configure(session: syncSession)
-            await syncCoordinator.start()
-            hasStartedSync = true
+            let syncSession = SyncSession(userID: userID, activeCoupleID: currentActiveCoupleID)
+            if configuredSyncSession != syncSession {
+                await syncCoordinator.configure(session: syncSession)
+                configuredSyncSession = syncSession
+            }
+
+            if !hasStartedSync {
+                await syncCoordinator.start()
+                hasStartedSync = true
+            }
         }
     }
 }

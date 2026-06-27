@@ -1,9 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
+    "" : {},
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -1246,6 +1244,42 @@
         }
       }
     },
+    "home.map.currentUnknown.message" : {
+      "comment" : "Message shown in the Home map tile when this user must share location before seeing the couple map.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on sharing to see your distance here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå på deling for å se avstanden deres her."
+          }
+        }
+      }
+    },
+    "home.map.currentUnknown.title" : {
+      "comment" : "Title shown in the Home map tile when this user has not shared location yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share your location"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del posisjonen din"
+          }
+        }
+      }
+    },
     "home.map.eyebrow" : {
       "comment" : "Small overline above the globe on the Us tab showing the couple across distance",
       "extractionState" : "manual",
@@ -1278,6 +1312,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Åpner i Kart"
+          }
+        }
+      }
+    },
+    "home.map.partnerUnknown.message" : {
+      "comment" : "Message shown in the Home map tile when the partner location is not known.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask your partner to share location."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spør partneren din om å dele posisjon."
+          }
+        }
+      }
+    },
+    "home.map.partnerUnknown.title" : {
+      "comment" : "Title shown in the Home map tile when the partner location is missing or not shared.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spør partneren din"
+          }
+        }
+      }
+    },
+    "home.map.relationshipEnded.title" : {
+      "comment" : "Title shown in the Home map tile if location visibility reports that the relationship ended.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location is off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posisjon er av"
           }
         }
       }
@@ -1404,6 +1492,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ferdig"
+          }
+        }
+      }
+    },
+    "location.permission.whenInUse" : {
+      "comment" : "iOS permission prompt text explaining why Paeonia asks for location.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia uses your location to show your partner where you are when you turn on location sharing."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia bruker posisjonen din til å vise partneren din hvor du er når du slår på posisjonsdeling."
           }
         }
       }
@@ -3100,6 +3206,168 @@
         }
       }
     },
+    "settings.location.permissionDenied.message" : {
+      "comment" : "Top banner message when iOS location permission is denied.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow location in Settings to share it with your partner."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tillat posisjon i Innstillinger for å dele den med partneren din."
+          }
+        }
+      }
+    },
+    "settings.location.permissionDenied.title" : {
+      "comment" : "Top banner title when iOS location permission is denied.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location permission is off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posisjonstilgang er av"
+          }
+        }
+      }
+    },
+    "settings.location.saveError.message" : {
+      "comment" : "Top banner message when saving location sharing fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      }
+    },
+    "settings.location.saveError.title" : {
+      "comment" : "Top banner title when saving location sharing fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location was not updated"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posisjonen ble ikke oppdatert"
+          }
+        }
+      }
+    },
+    "settings.location.sectionTitle" : {
+      "comment" : "Settings section title for location sharing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posisjon"
+          }
+        }
+      }
+    },
+    "settings.location.sharing.subtitle" : {
+      "comment" : "Settings toggle subtitle explaining foreground-only location sharing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner can see your latest location while sharing is on."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din kan se den siste posisjonen din når deling er på."
+          }
+        }
+      }
+    },
+    "settings.location.sharing.title" : {
+      "comment" : "Settings toggle title for sharing this user's location with their partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share my location"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del posisjonen min"
+          }
+        }
+      }
+    },
+    "settings.location.unavailable.message" : {
+      "comment" : "Top banner message when the phone cannot fetch current location.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move somewhere with a clearer signal and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gå et sted med bedre signal og prøv igjen."
+          }
+        }
+      }
+    },
+    "settings.location.unavailable.title" : {
+      "comment" : "Top banner title when the phone cannot fetch current location.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location is not available"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posisjon er ikke tilgjengelig"
+          }
+        }
+      }
+    },
     "settings.notifications.openSettingsButton" : {
       "comment" : "Button that opens the iOS Settings app",
       "extractionState" : "manual",
@@ -3333,9 +3601,6 @@
           }
         }
       }
-    },
-    "widget.drawing.action" : {
-      "comment" : "Accessibility label and title for opening the widget drawing."
     },
     "widget.history.done" : {
       "comment" : "Button that closes the drawing history screen",
@@ -3987,6 +4252,24 @@
           }
         }
       }
+    },
+    "home.map.currentUnknown.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share location"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del posisjon"
+          }
+        }
+      },
+      "comment" : "Button in the Home map tile that asks iOS for this user's location and turns on sharing."
     }
   },
   "version" : "1.0"

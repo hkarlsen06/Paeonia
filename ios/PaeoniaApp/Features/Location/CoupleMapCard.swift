@@ -7,63 +7,76 @@ import UIKit
 /// bottom. The map is rendered with `MKMapSnapshotter` so it has no Apple Maps
 /// attribution overlay and so the camera framing and pin placement are fully under
 /// our control.
-///
-/// Coordinates are placeholder values for now. Once partner location sharing is
-/// wired up, feed real coordinates in and the snapshot reframes and recomputes the
-/// distance automatically.
 struct CoupleMapCard: View {
     let currentName: String
     let currentProfilePhotoAssetID: UUID?
     let partnerName: String
     let partnerProfilePhotoAssetID: UUID?
+    let state: CoupleMapState
+    var onPromptCurrentLocation: () -> Void = {}
 
-    // Placeholder coordinates until partner location sharing feeds real ones.
-    // current = Hilde in Stout, Iowa; partner = Hjalmar in Alta, Norway.
-    private static let currentCoordinate = CLLocationCoordinate2D(latitude: 42.5236, longitude: -92.7160)
-    private static let partnerCoordinate = CLLocationCoordinate2D(latitude: 69.9689, longitude: 23.2716)
-
-    // Placeholder capture times until real location updates carry their own.
-    private static let currentCapturedAt = Date.now.addingTimeInterval(-8 * 60)
-    private static let partnerCapturedAt = Date.now.addingTimeInterval(-3 * 60 * 60)
-
+    @ViewBuilder
     var body: some View {
-        // Tap blows a heart between the avatars; a long press opens Maps.
-        CoupleMapSnapshot(
-            currentName: currentName,
-            currentProfilePhotoAssetID: currentProfilePhotoAssetID,
-            currentCoordinate: Self.currentCoordinate,
-            currentCapturedAt: Self.currentCapturedAt,
-            partnerName: partnerName,
-            partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-            partnerCoordinate: Self.partnerCoordinate,
-            partnerCapturedAt: Self.partnerCapturedAt,
-            onLongPress: openInAppleMaps
-        )
-        .frame(maxWidth: .infinity)
-        .aspectRatio(1, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-                .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+        switch state {
+        case let .ready(current, partner):
+            // Tap blows heart between avatars; long press opens Maps.
+            mapTile {
+                CoupleMapSnapshot(
+                    currentName: currentName,
+                    currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                    currentCoordinate: current.coordinate,
+                    currentCapturedAt: current.capturedAt,
+                    partnerName: partnerName,
+                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                    partnerCoordinate: partner.coordinate,
+                    partnerCapturedAt: partner.capturedAt,
+                    onLongPress: {
+                        openInAppleMaps(current: current, partner: partner)
+                    }
+                )
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(.homeMapAccessibilityLabel))
+            .accessibilityHint(Text(.homeMapOpenHint))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction {
+                openInAppleMaps(current: current, partner: partner)
+            }
+        case .loading:
+            mapTile {
+                Color.paeoniaBackgroundSecondary
+            }
+            .accessibilityHidden(true)
+        case .currentUnknown:
+            mapTile {
+                MapEmptyState(
+                    title: .homeMapCurrentUnknownTitle,
+                    message: .homeMapCurrentUnknownMessage,
+                    systemImage: "location.slash.fill",
+                    actionTitle: .homeMapCurrentUnknownButton,
+                    actionSystemImage: "location.fill",
+                    action: onPromptCurrentLocation
+                )
+            }
+        case let .partnerUnknown(reason):
+            mapTile {
+                MapEmptyState(
+                    title: partnerUnknownTitle(for: reason),
+                    message: .homeMapPartnerUnknownMessage,
+                    systemImage: "location.slash.fill"
+                )
+            }
         }
-        .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(.homeMapAccessibilityLabel))
-        .accessibilityHint(Text(.homeMapOpenHint))
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { openInAppleMaps() }
     }
 
-    /// Surfaces Apple Maps (and its attribution/legal) by opening both partners'
-    /// locations in the Maps app.
-    private func openInAppleMaps() {
+    private func openInAppleMaps(current: LocationPoint, partner: LocationPoint) {
         let you = MKMapItem(
-            location: CLLocation(latitude: Self.currentCoordinate.latitude, longitude: Self.currentCoordinate.longitude),
+            location: CLLocation(latitude: current.latitude, longitude: current.longitude),
             address: nil
         )
         you.name = currentName
         let partner = MKMapItem(
-            location: CLLocation(latitude: Self.partnerCoordinate.latitude, longitude: Self.partnerCoordinate.longitude),
+            location: CLLocation(latitude: partner.latitude, longitude: partner.longitude),
             address: nil
         )
         partner.name = partnerName
@@ -71,6 +84,93 @@ struct CoupleMapCard: View {
             with: [you, partner],
             launchOptions: [MKLaunchOptionsMapTypeKey: NSNumber(value: MKMapType.standard.rawValue)]
         )
+    }
+
+    private func mapTile<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .frame(maxWidth: .infinity)
+            .aspectRatio(1, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
+                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+            }
+            .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
+    }
+
+    private func partnerUnknownTitle(for reason: PartnerLocationVisibilityState) -> LocalizedStringResource {
+        switch reason {
+        case .relationshipEnded:
+            .homeMapRelationshipEndedTitle
+        case .disabled, .notSharing, .visible, .unknown:
+            .homeMapPartnerUnknownTitle
+        }
+    }
+}
+
+private extension LocationPoint {
+    var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+}
+
+private struct MapEmptyState: View {
+    let title: LocalizedStringResource
+    let message: LocalizedStringResource
+    let systemImage: String
+    var actionTitle: LocalizedStringResource?
+    var actionSystemImage: String?
+    var action: (() -> Void)?
+
+    var body: some View {
+        ZStack {
+            Color.paeoniaBackgroundSecondary
+
+            VStack(spacing: PaeoniaSpacing.space8) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .accessibilityHidden(true)
+
+                VStack(spacing: PaeoniaSpacing.space4) {
+                    Text(title)
+                        .font(PaeoniaTypography.caption.weight(.semibold))
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+
+                    Text(message)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.8)
+                        .multilineTextAlignment(.center)
+                }
+
+                if let actionTitle, let action {
+                    Button(action: action) {
+                        Label {
+                            Text(actionTitle)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                        } icon: {
+                            if let actionSystemImage {
+                                Image(systemName: actionSystemImage)
+                                    .accessibilityHidden(true)
+                            }
+                        }
+                    }
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextInverse)
+                    .padding(.horizontal, PaeoniaSpacing.space12)
+                    .padding(.vertical, PaeoniaSpacing.space8)
+                    .background(.paeoniaAccentPrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(PaeoniaSpacing.space12)
+        }
     }
 }
 
@@ -110,6 +210,28 @@ private struct CoupleMapSnapshot: View {
         let partnerPoint: CGPoint
     }
 
+    private struct SnapshotRequest: Hashable {
+        let width: CGFloat
+        let height: CGFloat
+        let currentLatitude: CLLocationDegrees
+        let currentLongitude: CLLocationDegrees
+        let partnerLatitude: CLLocationDegrees
+        let partnerLongitude: CLLocationDegrees
+
+        init(
+            size: CGSize,
+            currentCoordinate: CLLocationCoordinate2D,
+            partnerCoordinate: CLLocationCoordinate2D
+        ) {
+            width = size.width
+            height = size.height
+            currentLatitude = currentCoordinate.latitude
+            currentLongitude = currentCoordinate.longitude
+            partnerLatitude = partnerCoordinate.latitude
+            partnerLongitude = partnerCoordinate.longitude
+        }
+    }
+
     var body: some View {
         GeometryReader { proxy in
             ZStack {
@@ -127,6 +249,7 @@ private struct CoupleMapSnapshot: View {
                         assetID: currentProfilePhotoAssetID,
                         tint: .paeoniaPartnerOne,
                         capturedAt: currentCapturedAt,
+                        showsTimestamp: false,
                         point: snapshot.currentPoint,
                         containerWidth: proxy.size.width
                     )
@@ -137,6 +260,7 @@ private struct CoupleMapSnapshot: View {
                         assetID: partnerProfilePhotoAssetID,
                         tint: .paeoniaPartnerTwo,
                         capturedAt: partnerCapturedAt,
+                        showsTimestamp: true,
                         point: snapshot.partnerPoint,
                         containerWidth: proxy.size.width
                     )
@@ -154,7 +278,13 @@ private struct CoupleMapSnapshot: View {
             .contentShape(Rectangle())
             .onTapGesture { spawnTapKiss() }
             .onLongPressGesture(minimumDuration: 0.4) { onLongPress() }
-            .task(id: proxy.size) {
+            .task(
+                id: SnapshotRequest(
+                    size: proxy.size,
+                    currentCoordinate: currentCoordinate,
+                    partnerCoordinate: partnerCoordinate
+                )
+            ) {
                 await loadSnapshot(size: proxy.size)
             }
         }
@@ -240,6 +370,8 @@ private struct CoupleMapSnapshot: View {
         guard size.width > 0, size.height > 0 else {
             return
         }
+
+        snapshot = nil
 
         // Muted standard config plays down roads, borders, and labels so the map
         // reads as a calm backdrop rather than a navigation map.
@@ -339,15 +471,18 @@ private struct MapAvatarPin: View {
     let assetID: UUID?
     let tint: Color
     let capturedAt: Date
+    let showsTimestamp: Bool
     let point: CGPoint
     let containerWidth: CGFloat
 
     @State private var badgeWidth: CGFloat = 0
 
     private static let edgeInset: CGFloat = 8
+    private static let avatarDiameter: CGFloat = 36
+    private static let badgeRefreshInterval: TimeInterval = 30
 
     private var diameter: CGFloat {
-        PairingCelebrationProfilesView.Metrics.compact.avatarDiameter
+        Self.avatarDiameter
     }
 
     /// Slides the badge horizontally so it stays inset from both card edges, while
@@ -373,7 +508,11 @@ private struct MapAvatarPin: View {
             size: diameter
         )
         .overlay(alignment: .top) {
-            Text(capturedAt.formatted(Date.RelativeFormatStyle(presentation: .named, unitsStyle: .abbreviated)))
+            if showsTimestamp {
+                LiveRelativeTimestampText(
+                    capturedAt: capturedAt,
+                    refreshInterval: Self.badgeRefreshInterval
+                )
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.paeoniaTextPrimary)
                 .lineLimit(1)
@@ -383,7 +522,28 @@ private struct MapAvatarPin: View {
                 .background(Capsule().fill(.black.opacity(0.5)))
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { badgeWidth = $0 }
                 .offset(x: badgeOffsetX, y: diameter + PaeoniaSpacing.space4)
+            }
         }
+    }
+}
+
+private struct LiveRelativeTimestampText: View {
+    let capturedAt: Date
+    let refreshInterval: TimeInterval
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: refreshInterval)) { context in
+            Text(displayDate(asOf: context.date).formatted(Self.relativeStyle))
+        }
+    }
+
+    private static let relativeStyle = Date.RelativeFormatStyle(
+        presentation: .named,
+        unitsStyle: .abbreviated
+    )
+
+    private func displayDate(asOf referenceDate: Date) -> Date {
+        min(capturedAt, referenceDate)
     }
 }
 
@@ -600,7 +760,8 @@ private struct KissLayer: View {
             currentName: "Hjalmar",
             currentProfilePhotoAssetID: nil,
             partnerName: "Oda",
-            partnerProfilePhotoAssetID: nil
+            partnerProfilePhotoAssetID: nil,
+            state: .partnerUnknown(.notSharing)
         )
         Color.clear
     }

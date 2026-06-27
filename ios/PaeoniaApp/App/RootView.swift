@@ -4,6 +4,7 @@ import UIKit
 
 struct RootView: View {
     @State private var viewModel: RootViewModel
+    @State private var locationViewModel: LocationMapViewModel
     @State private var bannerCenter = PaeoniaBannerCenter()
     @Binding private var widgetDeepLink: PaeoniaWidgetDeepLink?
     @Binding private var pendingJoinInviteCode: String?
@@ -21,6 +22,7 @@ struct RootView: View {
         widgetDeepLink: Binding<PaeoniaWidgetDeepLink?> = .constant(nil),
         pendingJoinInviteCode: Binding<String?> = .constant(nil),
         viewModel: RootViewModel? = nil,
+        locationViewModel: LocationMapViewModel? = nil,
         appleSignInProvider: (any AppleSignInProviding)? = nil,
         googleSignInProvider: (any GoogleSignInProviding)? = nil,
         widgetCanvasService: (any WidgetCanvasManaging)? = nil,
@@ -29,6 +31,7 @@ struct RootView: View {
         partnerAvatarSharing: (any PartnerAvatarSharing)? = nil
     ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
+        _locationViewModel = State(initialValue: locationViewModel ?? LocationMapViewModel())
         _widgetDeepLink = widgetDeepLink
         _pendingJoinInviteCode = pendingJoinInviteCode
         self.appleSignInProvider = appleSignInProvider ?? AppleSignInService()
@@ -43,17 +46,42 @@ struct RootView: View {
         rootContent
             .environment(bannerCenter)
             .task {
+                locationViewModel.setLocalChangeSyncHandler {
+                    await viewModel.syncAfterLocalLocationChange()
+                }
                 await viewModel.start()
             }
             .preferredColorScheme(.dark)
             // Handle widget deep links from an async task (fires on appear and
             // whenever the link changes) so navigation state is never mutated
             // synchronously during a view update.
-            .task(id: widgetDeepLink) {
-                handleWidgetDeepLink(widgetDeepLink)
-            }
-            .onChange(of: viewModel.notice) { _, notice in
-                showBanner(for: notice)
+        .task(id: widgetDeepLink) {
+            handleWidgetDeepLink(widgetDeepLink)
+        }
+        .task(id: locationIdentity) {
+            await locationViewModel.configure(identity: locationIdentity)
+        }
+        .onChange(of: viewModel.notice) { _, notice in
+            showBanner(for: notice)
+        }
+        .onChange(of: locationViewModel.notice) { _, notice in
+            showBanner(for: notice)
+        }
+            // A partner's widget update arrived while the app is open: the delegate
+            // suppressed the system banner and relayed it here for the in-app one.
+            .onChange(of: PaeoniaNotificationRouter.shared.pendingForegroundNotice) { _, notice in
+                guard let notice else {
+                    return
+                }
+                bannerCenter.show(
+                    .info(
+                        title: notice.title,
+                        message: notice.message,
+                        imageData: partnerAvatarData(),
+                        isTappable: true
+                    )
+                )
+                PaeoniaNotificationRouter.shared.consumeForegroundNotice()
             }
             .onChange(of: viewModel.state) { _, state in
                 clearWidgetIfNeeded(for: state)
@@ -64,7 +92,9 @@ struct RootView: View {
             if phase == .active {
                 syncWidgetIfPaired(viewModel.state)
                 Task {
+                    await locationViewModel.refreshOwnLocationIfSharingEnabled(source: .foregroundOpen)
                     await viewModel.refreshAfterForegroundActivation()
+                    await locationViewModel.reload()
                 }
             }
         }
@@ -75,7 +105,11 @@ struct RootView: View {
                     UIApplication.shared.registerForRemoteNotifications()
                 }
             }
-            .paeoniaTopBanner(bannerCenter)
+            .paeoniaTopBanner(bannerCenter) {
+                // Tapping a partner-update notice opens the drawing screen, the
+                // same destination the notification tap routes to.
+                viewModel.openWidgetDrawing()
+            }
     }
 
     private var widgetDrawingPresented: Binding<Bool> {
@@ -210,6 +244,8 @@ struct RootView: View {
                     partnerDisplayName: viewModel.currentPartnerDisplayName,
                     partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
                     authorName: viewModel.currentSession?.displayName,
+                    locationMapState: locationViewModel.mapState,
+                    locationViewModel: locationViewModel,
                     selection: mainTabSelection,
                     widgetDrawingPresented: widgetDrawingPresented,
                     onOpenWidgetDrawing: { viewModel.openWidgetDrawing() },
@@ -370,6 +406,18 @@ struct RootView: View {
         }
     }
 
+    /// Reads the partner avatar the app stages in the shared App Group (the same
+    /// image the notification service extension uses) so the in-app notice can
+    /// show the partner's face instead of a generic icon.
+    private func partnerAvatarData() -> Data? {
+        guard let url = PaeoniaAppGroup.containerURL?
+            .appendingPathComponent(PaeoniaAppGroup.communicationPartnerAvatarPath)
+        else {
+            return nil
+        }
+        return try? Data(contentsOf: url)
+    }
+
     private func handleWidgetDeepLink(_ deepLink: PaeoniaWidgetDeepLink?) {
         guard let deepLink else {
             return
@@ -425,10 +473,12 @@ struct RootView: View {
         await partnerAvatarSharing?.cachePartnerAvatar(assetID: viewModel.currentPartnerProfilePhotoAssetID)
     }
 
-    /// Pull-to-refresh on Home: runs `startSyncIfNeeded()` and the widget sync.
+    /// Pull-to-refresh on Home: refreshes shared local surfaces and widget sync.
     private func refreshHomeFromPull() async {
+        await locationViewModel.refreshOwnLocationIfSharingEnabled(source: .manualRefresh)
         await viewModel.refreshFromHomePull()
         await performWidgetSyncIfPaired(viewModel.state)
+        await locationViewModel.reload()
     }
 
     /// Asks for notification permission once the couple is paired (the first
@@ -456,6 +506,27 @@ struct RootView: View {
             )
         )
         viewModel.dismissNotice()
+    }
+
+    private func showBanner(for notice: LocationMapViewModel.Notice?) {
+        guard let notice else {
+            return
+        }
+
+        bannerCenter.show(
+            .error(
+                title: String(localized: notice.title),
+                message: String(localized: notice.message)
+            )
+        )
+        locationViewModel.dismissNotice()
+    }
+
+    private var locationIdentity: LocationIdentity {
+        LocationIdentity(
+            currentUserID: viewModel.currentSession.flatMap { UUID(uuidString: $0.id) },
+            coupleID: viewModel.currentActiveCoupleID
+        )
     }
 }
 

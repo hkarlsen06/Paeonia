@@ -57,6 +57,18 @@
 	<string>$(PAEONIA_SUPABASE_URL)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Paeonia uses your location to show your partner where you are when you turn on location sharing.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Paeonia sends notifications for partner updates, streak reminders, and nudges from your partner.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<!-- The partner widget-update alert is a communication notification (it
+		     donates an INSendMessageIntent for the avatar/name). Tapping it
+		     continues that intent as a user activity; declaring it here lets the
+		     app launch and handle the tap instead of failing to open. -->
+		<string>INSendMessageIntent</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
