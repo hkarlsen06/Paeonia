@@ -100,7 +100,7 @@ struct LocationPendingOperationHandlerTests {
     func preferenceHandlerSendsRpcPayloadAndUpdatesLocalPreference() async throws {
         let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
-        let operation = operation(id: "33333333-3333-3333-3333-333333333333")
+        let operation = try operation(id: "33333333-3333-3333-3333-333333333333")
         let payload = LocationSharingPreferenceOperationPayload(
             coupleID: coupleID,
             isEnabled: true,
@@ -144,7 +144,7 @@ struct LocationPendingOperationHandlerTests {
     func staleLocationRetryIsTerminalAndDoesNotOverwriteLocalLocation() async throws {
         let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
-        let operation = operation(id: "33333333-3333-3333-3333-333333333333")
+        let operation = try operation(id: "33333333-3333-3333-3333-333333333333")
         let newerLocal = OwnLocationSnapshot(
             ownerUserID: ownerUserID,
             coupleID: coupleID,
@@ -189,6 +189,7 @@ struct LocationPendingOperationHandlerTests {
     }
 }
 
+@MainActor
 struct LocationMapViewModelTests {
     @Test
     func mapStateRequiresCurrentAndPartnerLocations() throws {
@@ -413,7 +414,7 @@ private func visibilitySnapshot(
         ownerUserID: ownerUserID,
         coupleID: coupleID,
         viewerUserID: ownerUserID,
-        partnerUserID: try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333")),
+        partnerUserID: testUUID("33333333-3333-3333-3333-333333333333"),
         visibilityState: visibilityState,
         viewerSharingEnabled: true,
         partnerSharingEnabled: true,

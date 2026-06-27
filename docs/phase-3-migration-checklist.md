@@ -255,6 +255,7 @@ Checklist:
 - [ ] RPCs using `internal.client_operations` mark in-progress operations in a way that concurrent duplicate retries either wait, return a retryable response, or safely return the stored response once available.
 - [ ] Create timestamp/revision trigger helpers.
 - [ ] Use `security invoker` by default for helper functions. Use `security definer` only for helpers that need elevated access, and always set a fixed `search_path`.
+- [ ] Public RPC wrappers that call private `internal.*` functions are approved `security definer` exceptions only when they are thin wrappers and the internal function performs `auth.uid()` authorization.
 - [ ] Create `internal.current_user_id()` only if useful; it can be `security invoker` because it only wraps `auth.uid()`.
 - [ ] If adding an RLS auto-enable event trigger, keep it as a narrow guardrail for future `public` tables only. Each migration must still explicitly enable RLS on public tables.
 
@@ -744,6 +745,7 @@ RPCs/jobs:
 - `update_location_sharing_preference(...)`
 - `update_latest_partner_location(...)`
 - `get_partner_location_visibility()`
+- Location RPC public wrappers must stay `security definer` with fixed `search_path` because the implementation lives in private `internal`.
 - `record_couple_activity(...)`
 - notification fanout job/function
 - streak reminder scheduler

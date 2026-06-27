@@ -436,6 +436,12 @@ Supabase execute_sql get_project_url list_tables
 
 Prefer `mcp__supabase__.execute_sql` for database inspection and narrow, targeted data fixes when available. Use ad hoc service-role scripts only as a fallback when MCP tools are unavailable or insufficient, and explain why.
 
+### PostgREST Client Calls
+
+- Client-side Supabase table writes must include an explicit row filter such as `.eq("user_id", value: session.user.id.uuidString)`. Do not rely on RLS alone to scope `update` or `delete` calls; production rejects unfiltered writes before RLS policies are applied.
+- Before user-scoped RPC writes from the iOS app, make sure the Supabase client has an active `client.auth.session`. If no session exists, fail locally and let local-first pending sync retry after auth is restored instead of sending anonymous PostgREST requests.
+- Keep public RPC wrappers for app-callable functions as thin wrappers around private `internal.*` implementations. If the wrapper needs to call the private `internal` schema, it must be `security definer` with a fixed `search_path`, and the internal implementation must enforce authorization with `auth.uid()`.
+
 ### GitHub Integration Deployments
 
 Paeonia uses Supabase's GitHub integration for remote deploys. On push to `origin` for the remote branch configured in Supabase, the Git integration automatically handles the Supabase deploy steps:

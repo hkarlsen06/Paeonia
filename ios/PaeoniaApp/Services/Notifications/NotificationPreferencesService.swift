@@ -37,11 +37,12 @@ actor SupabaseNotificationPreferencesService: NotificationPreferencesProviding {
     }
 
     func setWidgetAlertsEnabled(_ enabled: Bool) async throws {
-        // RLS limits the update to the caller's own row, matching the existing
-        // table-access pattern elsewhere in the app.
+        let session = try await client.auth.session
+
         try await client
             .from(Self.table)
             .update([Self.widgetAlertsColumn: enabled])
+            .eq("user_id", value: session.user.id.uuidString)
             .execute()
     }
 }

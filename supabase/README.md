@@ -18,3 +18,9 @@ Current backend decisions:
 - Use the Supabase CLI to create migration files when implementation starts.
 - Start with the migration order listed in `docs/phase-3-migration-checklist.md`.
 - Do not deploy or apply remote migrations until a project is intentionally linked.
+
+PostgREST implementation notes:
+
+- iOS table writes must always include an explicit row filter. RLS still enforces ownership, but production rejects unfiltered `UPDATE`/`DELETE` statements before RLS can scope them.
+- User-scoped RPC writes should only be sent when the Supabase client has an active auth session; otherwise local-first pending sync should retry later.
+- Public RPC wrappers that call private `internal.*` functions must be thin `security definer` wrappers with a fixed `search_path`; the private implementation must perform the `auth.uid()` authorization checks.

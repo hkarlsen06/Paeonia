@@ -42,6 +42,8 @@ actor LiveSupabaseLocationGateway: SupabaseLocationGateway {
         payload: LocationSharingPreferenceOperationPayload,
         operation: SyncClientOperation
     ) async throws -> LocationSharingPreferenceUpdateResponse? {
+        _ = try await client.auth.session
+
         let rows: [LocationSharingPreferenceUpdateResponse] = try await client
             .rpc(
                 "update_location_sharing_preference",
@@ -57,6 +59,8 @@ actor LiveSupabaseLocationGateway: SupabaseLocationGateway {
         payload: LatestPartnerLocationOperationPayload,
         operation: SyncClientOperation
     ) async throws -> LatestPartnerLocationUpdateResponse? {
+        _ = try await client.auth.session
+
         let rows: [LatestPartnerLocationUpdateResponse] = try await client
             .rpc(
                 "update_latest_partner_location",
