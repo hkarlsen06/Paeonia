@@ -18,7 +18,6 @@ final class DailyVoicePlayer {
     func load(url: URL) {
         stop()
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback)
             let player = try AVAudioPlayer(contentsOf: url)
             player.prepareToPlay()
             self.player = player
@@ -34,11 +33,25 @@ final class DailyVoicePlayer {
         if player.isPlaying {
             pause()
         } else {
-            try? AVAudioSession.sharedInstance().setActive(true)
-            player.play()
-            isPlaying = true
-            startTicking()
+            // Activate the session off the main thread (it blocks), then start.
+            Task { @MainActor in
+                await Self.activatePlaybackSession()
+                guard let player = self.player, !player.isPlaying else { return }
+                player.play()
+                isPlaying = true
+                startTicking()
+            }
         }
+    }
+
+    /// Configures and activates playback on the shared audio session off the main
+    /// thread; `setCategory`/`setActive` block and would otherwise stall the UI.
+    nonisolated private static func activatePlaybackSession() async {
+        await Task.detached(priority: .userInitiated) {
+            let session = AVAudioSession.sharedInstance()
+            try? session.setCategory(.playback)
+            try? session.setActive(true)
+        }.value
     }
 
     func pause() {

@@ -189,6 +189,55 @@ struct LocationPendingOperationHandlerTests {
     }
 }
 
+struct SupabaseLocationGatewayRequestEncodingTests {
+    @Test
+    func preferenceRequestEncodesNilConsentVersionAsNull() throws {
+        let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let request = UpdateLocationSharingPreferenceRequest(
+            payload: LocationSharingPreferenceOperationPayload(
+                coupleID: coupleID,
+                isEnabled: false,
+                consentVersion: nil,
+                source: .settingsToggle
+            ),
+            operation: try operation(id: "33333333-3333-3333-3333-333333333333")
+        )
+
+        let encoded = try JSONEncoder().encode(request)
+        let json = try JSONSerialization.jsonObject(with: encoded)
+        let object = try #require(json as? [String: Any])
+
+        #expect(object.keys.contains("p_consent_version"))
+        #expect(object["p_consent_version"] is NSNull)
+        #expect(object["p_is_enabled"] as? Bool == false)
+    }
+
+    @Test
+    func latestLocationRequestEncodesNilAccuracyAsNull() throws {
+        let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let request = UpdateLatestPartnerLocationRequest(
+            payload: LatestPartnerLocationOperationPayload(
+                coupleID: coupleID,
+                location: LocationPoint(
+                    latitude: 59,
+                    longitude: 10,
+                    capturedAt: Date(timeIntervalSince1970: 100)
+                ),
+                source: .manualRefresh
+            ),
+            operation: try operation(id: "33333333-3333-3333-3333-333333333333")
+        )
+
+        let encoded = try JSONEncoder().encode(request)
+        let json = try JSONSerialization.jsonObject(with: encoded)
+        let object = try #require(json as? [String: Any])
+
+        #expect(object.keys.contains("p_accuracy_m"))
+        #expect(object["p_accuracy_m"] is NSNull)
+        #expect(object["p_source"] as? String == LocationSharingSource.manualRefresh.rawValue)
+    }
+}
+
 @MainActor
 struct LocationMapViewModelTests {
     @Test

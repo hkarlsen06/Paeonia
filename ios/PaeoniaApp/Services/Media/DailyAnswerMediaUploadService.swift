@@ -55,6 +55,7 @@ nonisolated protocol DailyAnswerMediaUploading: Sendable {
     func uploadMedia(
         _ media: DailyAnswerUploadMedia,
         answerID: UUID,
+        coupleID: UUID,
         reserveOperation: SyncClientOperation,
         finalizeOperation: SyncClientOperation
     ) async throws -> UUID
@@ -82,6 +83,7 @@ actor LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
     func uploadMedia(
         _ media: DailyAnswerUploadMedia,
         answerID: UUID,
+        coupleID: UUID,
         reserveOperation: SyncClientOperation,
         finalizeOperation: SyncClientOperation
     ) async throws -> UUID {
@@ -91,6 +93,7 @@ actor LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
                 params: ReserveDailyAnswerMediaRequest(
                     operation: reserveOperation,
                     answerID: answerID,
+                    coupleID: coupleID,
                     purpose: media.purpose,
                     fileExtension: media.fileExtension
                 )
@@ -137,6 +140,7 @@ nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
     let localCreatedAt: Date
     let reservedParentKind = "daily_answer_media"
     let reservedParentID: UUID
+    let coupleID: UUID
     let uploadPurpose: String
     let mediaType: String
     let fileExtension: String
@@ -144,6 +148,7 @@ nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
     init(
         operation: SyncClientOperation,
         answerID: UUID,
+        coupleID: UUID,
         purpose: DailyAnswerMediaPurpose,
         fileExtension: String
     ) {
@@ -152,6 +157,7 @@ nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
         clientSequence = operation.clientSequence
         localCreatedAt = operation.localCreatedAt
         reservedParentID = answerID
+        self.coupleID = coupleID
         uploadPurpose = purpose.rawValue
         mediaType = purpose.mediaType
         self.fileExtension = fileExtension
@@ -164,6 +170,7 @@ nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
         case localCreatedAt = "p_local_created_at"
         case reservedParentKind = "p_reserved_parent_kind"
         case reservedParentID = "p_reserved_parent_id"
+        case coupleID = "p_couple_id"
         case uploadPurpose = "p_upload_purpose"
         case mediaType = "p_media_type"
         case fileExtension = "p_file_extension"

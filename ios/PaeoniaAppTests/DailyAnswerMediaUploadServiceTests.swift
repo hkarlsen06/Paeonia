@@ -4,9 +4,11 @@ import Testing
 
 struct DailyAnswerMediaUploadServiceTests {
     @Test func voiceReserveRequestUsesBackendVoiceMediaType() throws {
+        let coupleID = try #require(UUID(uuidString: "B1E4F2A0-1C3D-4E5F-8A9B-0C1D2E3F4A5B"))
         let request = ReserveDailyAnswerMediaRequest(
             operation: try Self.operation(),
             answerID: try #require(UUID(uuidString: "F3004A57-760A-4238-8F47-3BC9F06D6699")),
+            coupleID: coupleID,
             purpose: .voice,
             fileExtension: "m4a"
         )
@@ -16,6 +18,7 @@ struct DailyAnswerMediaUploadServiceTests {
         #expect(payload["p_upload_purpose"] as? String == "voice_note")
         #expect(payload["p_media_type"] as? String == "voice")
         #expect(payload["p_file_extension"] as? String == "m4a")
+        #expect(payload["p_couple_id"] as? String == coupleID.uuidString)
     }
 
     @Test func voiceFinalizeRequestUsesBackendVoiceMediaType() throws {

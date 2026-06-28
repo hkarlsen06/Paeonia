@@ -162,7 +162,7 @@ nonisolated private struct PartnerLocationVisibilityRequest: Encodable {
     }
 }
 
-nonisolated private struct UpdateLocationSharingPreferenceRequest: Encodable {
+nonisolated struct UpdateLocationSharingPreferenceRequest: Encodable {
     let coupleID: UUID
     let isEnabled: Bool
     let consentVersion: String?
@@ -193,9 +193,25 @@ nonisolated private struct UpdateLocationSharingPreferenceRequest: Encodable {
         case clientSequence = "p_client_sequence"
         case localCreatedAt = "p_local_created_at"
     }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(coupleID, forKey: .coupleID)
+        try container.encode(isEnabled, forKey: .isEnabled)
+        if let consentVersion {
+            try container.encode(consentVersion, forKey: .consentVersion)
+        } else {
+            try container.encodeNil(forKey: .consentVersion)
+        }
+        try container.encode(source, forKey: .source)
+        try container.encode(clientOperationID, forKey: .clientOperationID)
+        try container.encode(clientID, forKey: .clientID)
+        try container.encode(clientSequence, forKey: .clientSequence)
+        try container.encode(localCreatedAt, forKey: .localCreatedAt)
+    }
 }
 
-nonisolated private struct UpdateLatestPartnerLocationRequest: Encodable {
+nonisolated struct UpdateLatestPartnerLocationRequest: Encodable {
     let coupleID: UUID
     let latitude: Double
     let longitude: Double
@@ -231,6 +247,24 @@ nonisolated private struct UpdateLatestPartnerLocationRequest: Encodable {
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"
         case localCreatedAt = "p_local_created_at"
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(coupleID, forKey: .coupleID)
+        try container.encode(latitude, forKey: .latitude)
+        try container.encode(longitude, forKey: .longitude)
+        if let accuracyMeters {
+            try container.encode(accuracyMeters, forKey: .accuracyMeters)
+        } else {
+            try container.encodeNil(forKey: .accuracyMeters)
+        }
+        try container.encode(capturedAt, forKey: .capturedAt)
+        try container.encode(source, forKey: .source)
+        try container.encode(clientOperationID, forKey: .clientOperationID)
+        try container.encode(clientID, forKey: .clientID)
+        try container.encode(clientSequence, forKey: .clientSequence)
+        try container.encode(localCreatedAt, forKey: .localCreatedAt)
     }
 }
 

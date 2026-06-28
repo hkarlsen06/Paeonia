@@ -250,6 +250,7 @@ final class DailyChallengeViewModel {
             content: .media(
                 DailySubmitAnswerOperationPayload.Media(
                     draft: media,
+                    coupleID: question.coupleID,
                     reserveOperation: operationProvider.makeOperation(),
                     finalizeOperation: operationProvider.makeOperation()
                 )

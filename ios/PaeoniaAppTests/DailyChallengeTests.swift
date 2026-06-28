@@ -902,6 +902,7 @@ struct DailyChallengeMappingTests {
                         height: 8,
                         durationMs: nil
                     ),
+                    coupleID: TestDailyChallengeIDs.couple,
                     reserveOperation: fixedClientOperation(),
                     finalizeOperation: fixedClientOperation()
                 )
@@ -916,6 +917,7 @@ struct DailyChallengeMappingTests {
         #expect(result == .succeeded)
         #expect(await uploader.uploadCount == 1)
         #expect(await uploader.lastAnswerID == answerID)
+        #expect(await uploader.lastCoupleID == TestDailyChallengeIDs.couple)
         #expect(await gateway.submittedPayloads == [.media([assetID])])
         #expect(await gateway.submittedAnswerIDs == [answerID])
         // The staged copy is removed once the answer is sent.
@@ -942,6 +944,7 @@ struct DailyChallengeMappingTests {
                         height: 1,
                         durationMs: nil
                     ),
+                    coupleID: TestDailyChallengeIDs.couple,
                     reserveOperation: fixedClientOperation(),
                     finalizeOperation: fixedClientOperation()
                 )
@@ -1370,6 +1373,7 @@ private actor RecordingMediaUploadService: DailyAnswerMediaUploading {
     let assetID: UUID
     private(set) var uploadCount = 0
     private(set) var lastAnswerID: UUID?
+    private(set) var lastCoupleID: UUID?
 
     init(assetID: UUID) {
         self.assetID = assetID
@@ -1378,11 +1382,13 @@ private actor RecordingMediaUploadService: DailyAnswerMediaUploading {
     func uploadMedia(
         _: DailyAnswerUploadMedia,
         answerID: UUID,
+        coupleID: UUID,
         reserveOperation _: SyncClientOperation,
         finalizeOperation _: SyncClientOperation
     ) async throws -> UUID {
         uploadCount += 1
         lastAnswerID = answerID
+        lastCoupleID = coupleID
         return assetID
     }
 }

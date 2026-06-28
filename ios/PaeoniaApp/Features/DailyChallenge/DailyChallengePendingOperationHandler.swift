@@ -20,9 +20,11 @@ nonisolated struct DailySubmitAnswerOperationPayload: Codable, Sendable, Equatab
     }
 
     /// The staged-media details a queued photo/voice answer needs to upload. The
-    /// reserve/finalize operations are fixed here so retries stay idempotent.
+    /// reserve/finalize operations are fixed here so retries stay idempotent, and
+    /// the couple id scopes the upload (the reserve RPC requires it for couple media).
     nonisolated struct Media: Codable, Sendable, Equatable {
         let draft: DailyAnswerMediaDraft
+        let coupleID: UUID
         let reserveOperation: SyncClientOperation
         let finalizeOperation: SyncClientOperation
     }
@@ -98,6 +100,7 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
         let assetID = try await mediaUploadService.uploadMedia(
             uploadable,
             answerID: payload.answerID,
+            coupleID: media.coupleID,
             reserveOperation: media.reserveOperation,
             finalizeOperation: media.finalizeOperation
         )
