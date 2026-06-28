@@ -19,16 +19,14 @@ struct AccessSyncStream: SyncStream {
     }
 
     func pull(context: SyncContext) async throws -> SyncCursor? {
-        async let userEntitlement = gateway.loadMyEntitlement()
-        async let coupleEntitlement = gateway.loadMyCoupleEntitlement()
-        async let relationshipState = gateway.loadCurrentRelationshipState()
+        let accessSnapshot = try await gateway.loadAccessSnapshot()
 
         try await snapshotStore.save(
             AccessSyncSnapshot(
                 ownerUserID: context.session.userID,
-                userEntitlement: userEntitlement,
-                coupleEntitlement: coupleEntitlement,
-                relationshipState: relationshipState,
+                userEntitlement: accessSnapshot.userEntitlement,
+                coupleEntitlement: accessSnapshot.coupleEntitlement,
+                relationshipState: accessSnapshot.relationshipState,
                 refreshedAt: Date()
             )
         )

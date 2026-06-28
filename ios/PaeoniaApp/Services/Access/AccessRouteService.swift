@@ -22,13 +22,11 @@ actor SupabaseAccessRouteService: AccessRouteServicing {
     }
 
     func resolveAccess(hasPendingInvite: Bool = false) async throws -> AccessRouteResolution {
-        let userEntitlement = try await gateway.loadMyEntitlement()
-        let coupleEntitlement = try await gateway.loadMyCoupleEntitlement()
-        let relationshipState = try await gateway.loadCurrentRelationshipState()
+        let accessSnapshot = try await gateway.loadAccessSnapshot()
         let snapshot = AccessRouteSnapshot(
-            userEntitlement: userEntitlement,
-            coupleEntitlement: coupleEntitlement,
-            relationshipState: relationshipState,
+            userEntitlement: accessSnapshot.userEntitlement,
+            coupleEntitlement: accessSnapshot.coupleEntitlement,
+            relationshipState: accessSnapshot.relationshipState,
             hasPendingInvite: hasPendingInvite
         )
 

@@ -103,16 +103,12 @@ private actor RelationshipEventsGateway: SupabaseAccessGateway {
         self.events = events
     }
 
-    func loadMyEntitlement() async throws -> SupabaseUserEntitlement? {
-        nil
-    }
-
-    func loadMyCoupleEntitlement() async throws -> SupabaseCoupleEntitlement? {
-        nil
-    }
-
-    func loadCurrentRelationshipState() async throws -> SupabaseRelationshipState? {
-        nil
+    func loadAccessSnapshot() async throws -> SupabaseAccessSnapshot {
+        SupabaseAccessSnapshot(
+            userEntitlement: nil,
+            coupleEntitlement: nil,
+            relationshipState: nil
+        )
     }
 
     func loadRelationshipSyncEvents(

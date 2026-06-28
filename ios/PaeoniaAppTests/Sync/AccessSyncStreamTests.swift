@@ -48,16 +48,12 @@ private actor FakeSupabaseAccessGateway: SupabaseAccessGateway {
         self.relationshipState = relationshipState
     }
 
-    func loadMyEntitlement() async throws -> SupabaseUserEntitlement? {
-        userEntitlement
-    }
-
-    func loadMyCoupleEntitlement() async throws -> SupabaseCoupleEntitlement? {
-        coupleEntitlement
-    }
-
-    func loadCurrentRelationshipState() async throws -> SupabaseRelationshipState? {
-        relationshipState
+    func loadAccessSnapshot() async throws -> SupabaseAccessSnapshot {
+        SupabaseAccessSnapshot(
+            userEntitlement: userEntitlement,
+            coupleEntitlement: coupleEntitlement,
+            relationshipState: relationshipState
+        )
     }
 
     func loadRelationshipSyncEvents(

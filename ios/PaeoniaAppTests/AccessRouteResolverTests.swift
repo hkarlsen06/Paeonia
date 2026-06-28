@@ -85,20 +85,14 @@ struct AccessRouteResolverTests {
         let route = try await service.resolveRoute()
 
         #expect(route == .unpaired)
-        #expect(await gateway.calls == [
-            .loadMyEntitlement,
-            .loadMyCoupleEntitlement,
-            .loadCurrentRelationshipState,
-        ])
+        #expect(await gateway.calls == [.loadAccessSnapshot])
     }
 }
 
 // swiftlint:disable async_without_await
 private actor FakeSupabaseAccessGateway: SupabaseAccessGateway {
     enum Call: Equatable, Sendable {
-        case loadMyEntitlement
-        case loadMyCoupleEntitlement
-        case loadCurrentRelationshipState
+        case loadAccessSnapshot
     }
 
     private let userEntitlement: SupabaseUserEntitlement?
@@ -116,19 +110,13 @@ private actor FakeSupabaseAccessGateway: SupabaseAccessGateway {
         self.relationshipState = relationshipState
     }
 
-    func loadMyEntitlement() async throws -> SupabaseUserEntitlement? {
-        calls.append(.loadMyEntitlement)
-        return userEntitlement
-    }
-
-    func loadMyCoupleEntitlement() async throws -> SupabaseCoupleEntitlement? {
-        calls.append(.loadMyCoupleEntitlement)
-        return coupleEntitlement
-    }
-
-    func loadCurrentRelationshipState() async throws -> SupabaseRelationshipState? {
-        calls.append(.loadCurrentRelationshipState)
-        return relationshipState
+    func loadAccessSnapshot() async throws -> SupabaseAccessSnapshot {
+        calls.append(.loadAccessSnapshot)
+        return SupabaseAccessSnapshot(
+            userEntitlement: userEntitlement,
+            coupleEntitlement: coupleEntitlement,
+            relationshipState: relationshipState
+        )
     }
 
     func loadRelationshipSyncEvents(

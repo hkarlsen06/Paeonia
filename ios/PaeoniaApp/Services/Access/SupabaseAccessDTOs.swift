@@ -1,5 +1,17 @@
 import Foundation
 
+nonisolated struct SupabaseAccessSnapshot: Codable, Equatable, Sendable {
+    let userEntitlement: SupabaseUserEntitlement?
+    let coupleEntitlement: SupabaseCoupleEntitlement?
+    let relationshipState: SupabaseRelationshipState?
+
+    enum CodingKeys: String, CodingKey {
+        case userEntitlement = "user_entitlement"
+        case coupleEntitlement = "couple_entitlement"
+        case relationshipState = "relationship_state"
+    }
+}
+
 nonisolated struct SupabaseUserEntitlement: Codable, Equatable, Sendable {
     let userID: UUID
     let isEntitled: Bool
