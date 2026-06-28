@@ -12,11 +12,15 @@ nonisolated struct DailySubmitAnswerOperationPayload: Codable, Sendable, Equatab
     let answerID: UUID
     let content: Content
 
-    /// What the queued answer is sending.
+    /// What the queued answer is sending. The combined cases let one answer carry a
+    /// text caption alongside a photo or a partner pick (kept as separate cases so
+    /// already-queued single-kind operations still decode after an app update).
     nonisolated enum Content: Codable, Sendable, Equatable {
         case text(String)
         case partnerChoice(UUID)
         case media(Media)
+        case textAndMedia(String, Media)
+        case textAndPartnerChoice(String, UUID)
     }
 
     /// The staged-media details a queued photo/voice answer needs to upload. The
@@ -83,21 +87,32 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
 
         switch payload.content {
         case let .text(body):
-            try await submit(.text(body), payload: payload, operation: operation)
+            try await submit(DailyAnswerPayload(text: body), payload: payload, operation: operation)
             return .succeeded
         case let .partnerChoice(userID):
-            try await submit(.partnerChoice(userID), payload: payload, operation: operation)
+            try await submit(DailyAnswerPayload(partnerChoiceUserID: userID), payload: payload, operation: operation)
             return .succeeded
         case let .media(media):
-            return try await sendMedia(media, payload: payload, operation: operation)
+            return try await sendMedia(media, text: nil, payload: payload, operation: operation)
+        case let .textAndMedia(body, media):
+            return try await sendMedia(media, text: body, payload: payload, operation: operation)
+        case let .textAndPartnerChoice(body, userID):
+            try await submit(
+                DailyAnswerPayload(text: body, partnerChoiceUserID: userID),
+                payload: payload,
+                operation: operation
+            )
+            return .succeeded
         }
     }
 
-    /// Uploads the staged bytes for a media answer, then submits the resulting asset.
-    /// If the staged file is unavailable after relaunch, falls back to the
-    /// copy embedded in the queued operation and restages it for later retries.
+    /// Uploads the staged bytes for a media answer, then submits the resulting asset
+    /// (with an optional text caption alongside it). If the staged file is unavailable
+    /// after relaunch, falls back to the copy embedded in the queued operation and
+    /// restages it for later retries.
     private func sendMedia(
         _ media: DailySubmitAnswerOperationPayload.Media,
+        text: String?,
         payload: DailySubmitAnswerOperationPayload,
         operation: PendingSyncOperationSnapshot
     ) async throws -> PendingSyncOperationSendResult {
@@ -123,7 +138,11 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
             finalizeOperation: media.finalizeOperation
         )
 
-        try await submit(.media([assetID]), payload: payload, operation: operation)
+        try await submit(
+            DailyAnswerPayload(text: text, mediaAssetIDs: [assetID]),
+            payload: payload,
+            operation: operation
+        )
 
         // The answer is sent; the staged copy is no longer needed.
         mediaDraftStore.removeStagedMedia(instanceID: payload.instanceID)

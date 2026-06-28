@@ -8,6 +8,18 @@ enum DailyChallengeMorph {
     static let eyebrow = "dailyChallenge.morph.eyebrow"
     static let stepBar = "dailyChallenge.morph.stepBar"
     static let primaryButton = "dailyChallenge.morph.primaryButton"
+
+    /// Per-question id for the partner-answer morph in the Questions tab, so each
+    /// answerable partner card glides its own CTA into the single-question flow.
+    static func partnerAnswerButton(_ questionID: UUID) -> String {
+        "dailyChallenge.morph.partnerAnswer.\(questionID.uuidString)"
+    }
+
+    /// Per-question id for the question prompt morphing from a partner card into the
+    /// full-screen flow, so the question text transforms into its fullscreen position.
+    static func partnerAnswerPrompt(_ questionID: UUID) -> String {
+        "dailyChallenge.morph.partnerAnswerPrompt.\(questionID.uuidString)"
+    }
 }
 
 extension View {
@@ -25,11 +37,12 @@ extension View {
     }
 }
 
-private extension View {
+extension View {
     /// Dismisses the keyboard when the user taps anywhere on the view that isn't an
     /// interactive control. This is a convenience for sighted users, not an
     /// accessibility control, so it intentionally does not advertise a button trait
-    /// (VoiceOver dismisses the keyboard through its own affordances).
+    /// (VoiceOver dismisses the keyboard through its own affordances). Shared by the
+    /// daily challenge flow and the Questions-tab partner-answer flow.
     func dismissesKeyboardOnTap(_ action: @escaping () -> Void) -> some View {
         contentShape(Rectangle()).onTapGesture(perform: action)
     }
@@ -44,7 +57,9 @@ private extension View {
 /// there. On close it runs in reverse, drawing the content shut as the elements glide
 /// home. `progress` is the open fraction (0 hidden, 1 shown). Under Reduce Motion the
 /// wipe is dropped for a plain fade, since the elements no longer travel.
-private struct VerticalReveal: ViewModifier {
+///
+/// Shared by the daily challenge flow and the Questions-tab partner-answer flow.
+struct VerticalReveal: ViewModifier {
     let progress: Double
     let enabled: Bool
 
@@ -55,6 +70,20 @@ private struct VerticalReveal: ViewModifier {
             }
         } else {
             content.opacity(progress)
+        }
+    }
+}
+
+extension View {
+    /// Applies `VerticalReveal` only when `active`; otherwise passes through
+    /// untouched. Lets one part of a layout wipe while a sibling (e.g. a morphing
+    /// prompt) is excluded, without the false-`enabled` opacity fallback kicking in.
+    @ViewBuilder
+    func verticalReveal(progress: Double, enabled: Bool, active: Bool) -> some View {
+        if active {
+            modifier(VerticalReveal(progress: progress, enabled: enabled))
+        } else {
+            self
         }
     }
 }
@@ -78,6 +107,9 @@ struct DailyChallengeAnswerFlow: View {
     /// Opens the streak-restore offer from the completion screen when a lost
     /// streak can still be bought back.
     var onRestore: () -> Void = {}
+    /// Opens the Questions tab so the user can pick up optional partner
+    /// answers after their required streak questions are finished.
+    var onOpenPartnerQuestions: () -> Void = {}
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -101,13 +133,15 @@ struct DailyChallengeAnswerFlow: View {
         namespace: Namespace.ID? = nil,
         isExpanded: Bool = true,
         onClose: @escaping () -> Void = {},
-        onRestore: @escaping () -> Void = {}
+        onRestore: @escaping () -> Void = {},
+        onOpenPartnerQuestions: @escaping () -> Void = {}
     ) {
         self.viewModel = viewModel
         self.namespace = namespace
         self.isExpanded = isExpanded
         self.onClose = onClose
         self.onRestore = onRestore
+        self.onOpenPartnerQuestions = onOpenPartnerQuestions
         _heroOpacity = State(initialValue: isExpanded ? 1 : 0)
     }
 
@@ -120,6 +154,14 @@ struct DailyChallengeAnswerFlow: View {
 
     private var questions: [DailyChallengeQuestion] {
         viewModel.snapshot.answerFlowQuestions
+    }
+
+    private var requiredQuestions: [DailyChallengeQuestion] {
+        viewModel.snapshot.ownQuestions
+    }
+
+    private var hasPartnerQuestionsToAnswer: Bool {
+        viewModel.snapshot.hasAnswerablePartnerQuestions
     }
 
     private var phase: Phase {
@@ -155,6 +197,8 @@ struct DailyChallengeAnswerFlow: View {
                     streak: currentStreak,
                     restorableCount: viewModel.streak.isRestorable ? viewModel.streak.restorableCount : nil,
                     onRestore: onRestore,
+                    hasPartnerQuestionsToAnswer: hasPartnerQuestionsToAnswer,
+                    onOpenPartnerQuestions: onOpenPartnerQuestions,
                     onDone: dismiss
                 )
                 .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -202,11 +246,11 @@ struct DailyChallengeAnswerFlow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             DailyChallengeStepBar(
-                total: max(questions.count, DailyChallengeProgress.requiredOwnQuestionCount),
-                completed: answeredCount,
-                current: questions.isEmpty ? nil : boundedIndex,
+                total: DailyChallengeProgress.requiredOwnQuestionCount,
+                completed: answeredRequiredCount,
+                current: currentRequiredStep,
                 height: 8,
-                onSelect: questions.isEmpty ? nil : { (step: Int) in goToStep(step) }
+                onSelect: requiredQuestions.isEmpty ? nil : { (step: Int) in goToRequiredStep(step) }
             )
             .dailyChallengeMorph(DailyChallengeMorph.stepBar, in: namespace)
         }
@@ -310,18 +354,34 @@ struct DailyChallengeAnswerFlow: View {
         boundedIndex >= questions.count - 1
     }
 
-    private var answeredCount: Int {
+    private var currentRequiredStep: Int? {
+        guard let currentQuestion, currentQuestion.origin == .own else { return nil }
+        return requiredQuestions.firstIndex { $0.id == currentQuestion.id }
+    }
+
+    private var answeredRequiredCount: Int {
         // A staged photo that's still uploading counts toward progress — it's done
         // from the user's side.
-        questions.filter { $0.hasOwnAnswer || viewModel.isSending($0.id) }.count
+        min(
+            requiredQuestions.filter { $0.hasOwnAnswer || viewModel.isSending($0.id) }.count,
+            DailyChallengeProgress.requiredOwnQuestionCount
+        )
+    }
+
+    private var hasFinishedRequiredQuestions: Bool {
+        answeredRequiredCount >= DailyChallengeProgress.requiredOwnQuestionCount
     }
 
     private var answerableIndices: [Int] {
         questions.indices.filter {
             !questions[$0].hasOwnAnswer
-                && questions[$0].isAvailableToAnswer
-                && !viewModel.isSending(questions[$0].id)
+            && questions[$0].isAvailableToAnswer
+            && !viewModel.isSending(questions[$0].id)
         }
+    }
+
+    private var answerableRequiredIndices: [Int] {
+        answerableIndices.filter { questions[$0].origin == .own }
     }
 
     private var isSubmittingCurrent: Bool {
@@ -466,13 +526,16 @@ struct DailyChallengeAnswerFlow: View {
 
         isComposerFocused = false
 
-        if answerableIndices.isEmpty {
+        if question.origin == .own && hasFinishedRequiredQuestions {
             // Pull the latest streak before the celebration so the count-up shows
             // the right number; the screen predicts today's increment on top.
             await viewModel.refreshStreak()
             celebrate()
         } else if let next = nextAnswerableIndex(after: boundedIndex) {
             withAnimation(PaeoniaMotion.stateChange) { index = next }
+        } else {
+            await viewModel.refreshStreak()
+            celebrate()
         }
     }
 
@@ -517,20 +580,34 @@ struct DailyChallengeAnswerFlow: View {
     /// Jump to a question tapped in the progress bar. Drafts are kept, so an
     /// unanswered question reopens with your in-progress text; an answered one opens
     /// to review what you sent.
-    private func goToStep(_ step: Int) {
-        guard step >= 0, step < questions.count, step != boundedIndex else { return }
+    private func goToRequiredStep(_ step: Int) {
+        guard
+            step >= 0,
+            step < requiredQuestions.count,
+            let questionIndex = questions.firstIndex(where: { $0.id == requiredQuestions[step].id }),
+            questionIndex != boundedIndex
+        else { return }
         isComposerFocused = false
-        withAnimation(PaeoniaMotion.stateChange) { index = step }
+        withAnimation(PaeoniaMotion.stateChange) { index = questionIndex }
     }
 
     private func nextAnswerableIndex(after current: Int) -> Int? {
         answerableIndices.first(where: { $0 > current }) ?? answerableIndices.first
     }
 
+    private func nextRequiredAnswerableIndex(after current: Int) -> Int? {
+        answerableRequiredIndices.first(where: { $0 > current }) ?? answerableRequiredIndices.first
+    }
+
     private func setInitialIndexIfNeeded() {
         guard !didSetInitialIndex, !questions.isEmpty else { return }
         didSetInitialIndex = true
-        if let first = nextAnswerableIndex(after: -1) {
+        if let first = nextRequiredAnswerableIndex(after: -1) {
+            index = first
+        } else if let firstRequiredQuestion = requiredQuestions.first,
+                  let first = questions.firstIndex(where: { $0.id == firstRequiredQuestion.id }) {
+            index = first
+        } else if let first = nextAnswerableIndex(after: -1) {
             index = first
         }
     }
@@ -580,7 +657,9 @@ struct DailyChallengeAnswerFlow: View {
 
 // MARK: - One question
 
-private struct DailyChallengeAnswerStep: View {
+/// One question's prompt + composer, shared by the daily challenge flow and the
+/// Questions-tab partner-answer flow.
+struct DailyChallengeAnswerStep: View {
     let question: DailyChallengeQuestion
     let viewModel: DailyChallengeViewModel
     var isFocused: FocusState<Bool>.Binding
@@ -590,62 +669,142 @@ private struct DailyChallengeAnswerStep: View {
     /// gliding elements read as parting to reveal the body between them.
     var revealProgress: Double = 1
     var revealEnabled = false
+    /// When set, the question prompt is a morphing hero element (it glides in from a
+    /// card via `matchedGeometryEffect`) rather than part of the wipe. The partner-
+    /// answer flow turns this on; the daily flow leaves it off (its prompt wipes in).
+    var morphsPrompt = false
+    var promptMorphID = ""
+    var promptMorphNamespace: Namespace.ID?
+    /// Opacity of the morphing prompt: solid while it glides, fading on close.
+    var promptOpacity: Double = 1
 
     var body: some View {
-        // Text answers sit low so the field lands right under the question and just
-        // above the keyboard (the action bar keeps keyboard avoidance). Tap-only
-        // composers — partner choice, photo, voice — and review states read better
-        // anchored under the question near the top, with the choice below it.
+        // The question always sits at the top. The answer-method picker is pinned
+        // right under it, so its position never shifts with the composer. The actual
+        // composer (text field, photo, voice, choice) drops to the bottom within
+        // thumb reach; a keyboard just shrinks the gap, keeping the question on top.
+        // The waiting hint reads as question context, so it stays up top too. Review
+        // states have no bottom composer and sit under the question.
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            Text(question.prompt)
-                .font(PaeoniaTypography.heroTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .fixedSize(horizontal: false, vertical: true)
+            promptView
 
+            if showsKindPicker {
+                DailyAnswerKindPicker(
+                    kinds: question.composableAnswerKinds,
+                    selection: viewModel.composeKind(for: question),
+                    onSelect: { viewModel.setComposeKind($0, for: question.id) }
+                )
+                .verticalReveal(progress: revealProgress, enabled: revealEnabled, active: morphsPrompt)
+            }
+
+            if showsPartnerWaitingNote {
+                DailyPartnerWaitingNote()
+                    .verticalReveal(progress: revealProgress, enabled: revealEnabled, active: morphsPrompt)
+            }
+
+            if hasBottomComposer {
+                Spacer(minLength: PaeoniaSpacing.space24)
+            }
+
+            // In morph mode the prompt is excluded from the wipe (it glides instead),
+            // so only the composer wipes; otherwise the whole cluster wipes together.
             answerSection
+                .verticalReveal(progress: revealProgress, enabled: revealEnabled, active: morphsPrompt)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: pinsToBottom ? .bottom : .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         // Wipe the full bar-to-button gap (not just the text block) so the band's top
         // edge travels with the bar and its bottom edge with the button.
-        .modifier(VerticalReveal(progress: revealProgress, enabled: revealEnabled))
+        .verticalReveal(progress: revealProgress, enabled: revealEnabled, active: !morphsPrompt)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.top, pinsToBottom ? 0 : PaeoniaSpacing.space24)
+        .padding(.top, PaeoniaSpacing.space24)
         .padding(.bottom, PaeoniaSpacing.space8)
         .onAppear(perform: seedEditDraftIfNeeded)
     }
 
-    /// Whether the active composer is a keyboard text field, which should hug the
-    /// bottom. Everything else (choice avatars, media, review) anchors to the top.
-    private var pinsToBottom: Bool {
-        if viewModel.isSending(question.id) { return false }
-        if let editKind = question.editableAnswerKind { return editKind == .text }
-        if question.hasOwnAnswer { return false }
-        if question.canSubmitAnswer { return viewModel.composeKind(for: question) == .text }
-        return false
+    /// The question text. In morph mode it carries the shared id so it transforms
+    /// from the tapped card into this position, and stays crisp (only its frame
+    /// moves) rather than being wiped.
+    @ViewBuilder
+    private var promptView: some View {
+        let prompt = Text(question.prompt)
+            .font(PaeoniaTypography.heroTitle)
+            .foregroundStyle(.paeoniaTextPrimary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+        if morphsPrompt {
+            prompt
+                .dailyChallengeMorph(promptMorphID, in: promptMorphNamespace)
+                .opacity(promptOpacity)
+        } else {
+            prompt
+        }
+    }
+
+    /// The kind of composer currently on screen, or nil when the step is showing a
+    /// review/sending state rather than an editable composer.
+    private var activeComposerKind: DailyChallengeAnswerKind? {
+        if viewModel.isSending(question.id) { return nil }
+        if let editKind = question.editableAnswerKind { return editKind }
+        if question.hasOwnAnswer { return nil }
+        if question.canSubmitAnswer { return viewModel.composeKind(for: question) }
+        return nil
+    }
+
+    /// Whether an input composer is on screen (compose or edit), so it should drop to
+    /// the bottom for thumb reach. Review/sending states have none and sit up top.
+    private var hasBottomComposer: Bool {
+        activeComposerKind != nil
+    }
+
+    /// The answer-method picker shows only while composing a fresh answer that accepts
+    /// more than one kind. It's pinned under the question so its position is stable
+    /// regardless of which composer is selected.
+    private var showsKindPicker: Bool {
+        !viewModel.isSending(question.id)
+            && question.editableAnswerKind == nil
+            && !question.hasOwnAnswer
+            && question.canSubmitAnswer
+            && question.composableAnswerKinds.count > 1
+            // Combined questions show both composers at once, so there's nothing to pick.
+            && !question.usesCombinedCompose
+    }
+
+    /// Whether the partner's reply is waiting behind a fresh answer, so the "answer
+    /// to see their reply" hint should show under the question.
+    private var showsPartnerWaitingNote: Bool {
+        !viewModel.isSending(question.id)
+            && question.editableAnswerKind == nil
+            && !question.hasOwnAnswer
+            && question.canSubmitAnswer
+            && question.partnerAnswer != nil
+            && !question.canViewPartnerAnswer
     }
 
     @ViewBuilder
     private var answerSection: some View {
         if viewModel.isSending(question.id) {
-            if let simple = viewModel.sendingSimpleContent(for: question.id) {
-                DailySendingSimpleAnswerView(content: simple)
-            } else {
-                DailySendingAnswerView(
-                    mediaKind: question.mediaAnswerKind,
-                    mediaData: viewModel.sendingMediaData(for: question.id),
-                    voiceDurationMs: viewModel.sendingVoiceDurationMs(for: question.id)
-                )
-            }
+            DailySendingAnswerView(
+                mediaKind: question.mediaAnswerKind,
+                mediaData: viewModel.sendingMediaData(for: question.id),
+                voiceDurationMs: viewModel.sendingVoiceDurationMs(for: question.id),
+                partnerChoiceName: viewModel.sendingPartnerChoiceName(for: question.id),
+                text: viewModel.sendingText(for: question.id)
+            )
         } else if let editKind = question.editableAnswerKind {
             editComposer(kind: editKind)
         } else if question.hasOwnAnswer {
             DailyQuestionStatusView(question: question)
             DailyAnswerDetailsView(question: question, participants: viewModel.participants)
         } else if question.canSubmitAnswer {
-            if question.partnerAnswer != nil, !question.canViewPartnerAnswer {
-                DailyPartnerWaitingNote()
+            // Just the input here — the kind picker and the "answer to see their
+            // reply" hint are pinned under the question in `body`, so only the
+            // composer itself drops to the bottom for thumb reach.
+            if question.usesCombinedCompose {
+                combinedComposer
+            } else {
+                kindComposer
             }
-            composer
         } else {
             DailyUnsupportedAnswerMessage(answerKinds: question.answerKinds)
         }
@@ -676,21 +835,33 @@ private struct DailyChallengeAnswerStep: View {
         }
     }
 
-    /// Shows the input for the question's composable kind. When a question accepts
-    /// more than one kind (e.g. photo or text), a small picker lets the user choose
-    /// which to answer with first.
+
+    /// For questions that accept text alongside a photo or partner pick, both
+    /// composers show together — each optional — so the user can add one, the other,
+    /// or both. The text field sits below so it lands just above the keyboard.
     @ViewBuilder
-    private var composer: some View {
+    private var combinedComposer: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            if question.composableAnswerKinds.count > 1 {
-                DailyAnswerKindPicker(
-                    kinds: question.composableAnswerKinds,
-                    selection: viewModel.composeKind(for: question),
-                    onSelect: { viewModel.setComposeKind($0, for: question.id) }
+            switch question.combinedSecondaryKind {
+            case .photo:
+                DailyPhotoAnswerComposer(
+                    imageData: viewModel.stagedMediaData(for: question.id),
+                    onPick: { viewModel.stagePhoto($0, for: question.id) },
+                    onRemove: { viewModel.removeStagedMedia(for: question.id) }
                 )
+            case .partnerChoice:
+                if let options = viewModel.participants.partnerChoiceOptions {
+                    DailyPartnerChoicePicker(
+                        options: options,
+                        selection: viewModel.partnerChoiceSelection(for: question.id),
+                        onSelect: { viewModel.setPartnerChoice($0, for: question.id) }
+                    )
+                }
+            default:
+                EmptyView()
             }
 
-            kindComposer
+            DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
         }
     }
 
@@ -805,14 +976,19 @@ private struct DailyPartnerWaitingNote: View {
 
 // MARK: - Bottom action bar
 
-private struct DailyChallengeAnswerActionBar: View {
+/// The fixed bottom action bar, shared by the daily challenge flow and the
+/// Questions-tab partner-answer flow. Skip is optional (off for partner answers).
+struct DailyChallengeAnswerActionBar: View {
     let primaryTitle: LocalizedStringResource
     let isPrimaryBusy: Bool
     let isPrimaryDisabled: Bool
-    let canSkip: Bool
-    let isSkipBusy: Bool
-    let isSkipDisabled: Bool
+    var canSkip = false
+    var isSkipBusy = false
+    var isSkipDisabled = false
     var morphNamespace: Namespace.ID?
+    /// Morph id for the primary button. Defaults to the daily flow's shared button;
+    /// the partner-answer flow passes a per-question id instead.
+    var morphID = DailyChallengeMorph.primaryButton
     /// Reveal for everything in the bar except the primary button — the Close/Skip
     /// row and the bar's own backdrop, which uncover with the rest of the surface.
     var chromeOpacity: Double = 1
@@ -821,7 +997,7 @@ private struct DailyChallengeAnswerActionBar: View {
     var primaryButtonOpacity: Double = 1
     let onPrimary: () -> Void
     let onClose: () -> Void
-    let onSkip: () -> Void
+    var onSkip: () -> Void = {}
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
@@ -846,7 +1022,7 @@ private struct DailyChallengeAnswerActionBar: View {
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
         .disabled(isPrimaryDisabled || isPrimaryBusy)
-        .dailyChallengeMorph(DailyChallengeMorph.primaryButton, in: morphNamespace)
+        .dailyChallengeMorph(morphID, in: morphNamespace)
     }
 
     // Close sits on the left, Skip on the right, with a thin divider between them.
@@ -896,6 +1072,8 @@ private struct DailyChallengeCompletionView: View {
     /// action is offered above Done.
     var restorableCount: Int?
     var onRestore: () -> Void = {}
+    var hasPartnerQuestionsToAnswer = false
+    var onOpenPartnerQuestions: () -> Void = {}
     let onDone: () -> Void
 
     private var isRestorable: Bool { restorableCount != nil }
@@ -936,6 +1114,18 @@ private struct DailyChallengeCompletionView: View {
                 }
                 .buttonStyle(PaeoniaPrimaryButtonStyle())
 
+                partnerQuestionsButton(style: .secondary)
+
+                Button(action: onDone) {
+                    Text(.dailyChallengeFlowDoneButton)
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+            }
+        } else if hasPartnerQuestionsToAnswer {
+            VStack(spacing: PaeoniaSpacing.space12) {
+                partnerQuestionsButton(style: .primary)
+
                 Button(action: onDone) {
                     Text(.dailyChallengeFlowDoneButton)
                 }
@@ -948,6 +1138,29 @@ private struct DailyChallengeCompletionView: View {
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
         }
+    }
+
+    @ViewBuilder
+    private func partnerQuestionsButton(style: PartnerQuestionsButtonStyle) -> some View {
+        if hasPartnerQuestionsToAnswer {
+            switch style {
+            case .primary:
+                Button(action: onOpenPartnerQuestions) {
+                    Text(.dailyChallengeFlowPartnerQuestionsButton)
+                }
+                .buttonStyle(PaeoniaPrimaryButtonStyle())
+            case .secondary:
+                Button(action: onOpenPartnerQuestions) {
+                    Text(.dailyChallengeFlowPartnerQuestionsButton)
+                }
+                .buttonStyle(PaeoniaSecondaryButtonStyle())
+            }
+        }
+    }
+
+    private enum PartnerQuestionsButtonStyle {
+        case primary
+        case secondary
     }
 }
 

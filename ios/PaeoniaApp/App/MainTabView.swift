@@ -28,7 +28,14 @@ struct MainTabView: View {
     @State private var isAnswerFlowPresented = false
     @State private var isAnswerFlowExpanded = false
     @State private var showStreakRestore = false
+    /// The Questions-tab single-question partner-answer flow. Like the daily flow,
+    /// `presented` keeps it mounted while `expanded` drives the open/close morph; the
+    /// question is the card that was tapped.
+    @State private var partnerAnswerQuestion: DailyChallengeQuestion?
+    @State private var isPartnerAnswerPresented = false
+    @State private var isPartnerAnswerExpanded = false
     @Namespace private var dailyChallengeMorph
+    @Namespace private var partnerAnswerMorph
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
@@ -90,16 +97,40 @@ struct MainTabView: View {
                     namespace: flowNamespace,
                     isExpanded: isAnswerFlowExpanded,
                     onClose: closeAnswerFlow,
-                    onRestore: openStreakRestore
+                    onRestore: openStreakRestore,
+                    onOpenPartnerQuestions: openQuestionsTabFromAnswerFlow
                 )
                 .zIndex(1)
                 .transition(answerFlowTransition)
             }
+
+            // The single-question partner-answer flow, opened from a Questions-tab
+            // card. Same mount/expand split as the daily flow; sits above it.
+            if isPartnerAnswerPresented, let question = partnerAnswerQuestion {
+                DailyPartnerAnswerFlow(
+                    question: question,
+                    viewModel: dailyChallengeViewModel,
+                    namespace: partnerFlowNamespace,
+                    isExpanded: isPartnerAnswerExpanded,
+                    onClose: closePartnerAnswerFlow
+                )
+                .zIndex(2)
+                .transition(answerFlowTransition)
+            }
         }
         .tint(.paeoniaAccentPrimary)
-        .task(id: dailyChallengeParticipants) {
+        // Key the load on the signed-in user alone. The partner id, display names,
+        // and profile photos all populate/refresh shortly after launch; if they were
+        // in this id, every one of those changes would cancel and restart the task —
+        // killing an in-flight question fetch with URLError.cancelled. Cosmetic
+        // identity instead flows through refreshParticipants below, which never
+        // reloads. See the `.task(id:)` note in AGENTS.md.
+        .task(id: currentUserID) {
             dailyChallengeViewModel.setLocalChangeSyncHandler(onDailyChallengeLocalChange)
             await dailyChallengeViewModel.configure(participants: dailyChallengeParticipants)
+        }
+        .onChange(of: dailyChallengeParticipants) { _, participants in
+            dailyChallengeViewModel.refreshParticipants(participants)
         }
         .sheet(isPresented: $showStreakRestore) {
             streakRestoreSheet
@@ -172,7 +203,7 @@ struct MainTabView: View {
                     Task { await locationViewModel.promptForCurrentLocation() }
                 },
                 onTapStreak: openStreakRestore,
-                onOpenDailyChallenge: openAnswerFlow,
+                onOpenDailyChallenge: openDailyChallengeFromHome,
                 onOpenWidgetDrawing: onOpenWidgetDrawing,
                 onRefresh: {
                     await dailyChallengeViewModel.reload()
@@ -193,8 +224,10 @@ struct MainTabView: View {
             DailyChallengeScreen(
                 viewModel: dailyChallengeViewModel,
                 morphNamespace: morphNamespace(for: .questions),
+                partnerMorphNamespace: partnerCardNamespace,
                 onOpenAnswerFlow: openAnswerFlow,
-                onTapStreak: openStreakRestore
+                onTapStreak: openStreakRestore,
+                onAnswerPartnerQuestion: openPartnerAnswerFlow
             )
         }
     }
@@ -233,6 +266,16 @@ struct MainTabView: View {
         reduceMotion ? .easeInOut(duration: PaeoniaMotion.motionDefault) : PaeoniaMotion.heroMorph
     }
 
+    private func openDailyChallengeFromHome() {
+        let state = dailyChallengeViewModel.homeCardState
+        if state.kind == .complete, state.hasPartnerAnswersForToday {
+            selection.wrappedValue = .questions
+            return
+        }
+
+        openAnswerFlow()
+    }
+
     /// Today's questions are created lazily, so opening the flow before the couple
     /// has started kicks off that one-time setup; the flow shows a brief loading
     /// state until the questions arrive.
@@ -246,6 +289,11 @@ struct MainTabView: View {
             isAnswerFlowPresented = true
             isAnswerFlowExpanded = true
         }
+    }
+
+    private func openQuestionsTabFromAnswerFlow() {
+        selection.wrappedValue = .questions
+        closeAnswerFlow()
     }
 
     private func closeAnswerFlow() {
@@ -263,6 +311,41 @@ struct MainTabView: View {
             isAnswerFlowExpanded = false
         } completion: {
             if !isAnswerFlowExpanded { isAnswerFlowPresented = false }
+        }
+    }
+
+    /// Answerable partner cards own their per-question morph ids while collapsed, so a
+    /// tapped card's CTA can glide into the flow; they release on expand (and never
+    /// claim them under Reduce Motion).
+    private var partnerCardNamespace: Namespace.ID? {
+        (reduceMotion || isPartnerAnswerExpanded) ? nil : partnerAnswerMorph
+    }
+
+    /// The partner flow owns the CTA id only while open, mirroring `flowNamespace`.
+    private var partnerFlowNamespace: Namespace.ID? {
+        (reduceMotion || !isPartnerAnswerExpanded) ? nil : partnerAnswerMorph
+    }
+
+    private func openPartnerAnswerFlow(_ question: DailyChallengeQuestion) {
+        partnerAnswerQuestion = question
+        withAnimation(morphAnimation) {
+            isPartnerAnswerPresented = true
+            isPartnerAnswerExpanded = true
+        }
+    }
+
+    private func closePartnerAnswerFlow() {
+        guard !reduceMotion else {
+            withAnimation(morphAnimation) {
+                isPartnerAnswerExpanded = false
+                isPartnerAnswerPresented = false
+            }
+            return
+        }
+        withAnimation(morphAnimation) {
+            isPartnerAnswerExpanded = false
+        } completion: {
+            if !isPartnerAnswerExpanded { isPartnerAnswerPresented = false }
         }
     }
 

@@ -10,6 +10,7 @@ struct DailyPromptCard: View {
     /// a tappable "broken" look when a lost streak can be bought back.
     var streak: StreakPillState = .hidden
     var morphNamespace: Namespace.ID?
+    var prefersPartnerAnswersWhenComplete = false
     var onAnswer: () -> Void = {}
     /// Called when the user taps the chip while a restore is offered.
     var onTapStreak: (() -> Void)?
@@ -43,14 +44,45 @@ struct DailyPromptCard: View {
 
                 titleBlock
 
-                Button(action: onAnswer) {
-                    Text(actionTitle)
-                }
-                .buttonStyle(PaeoniaPrimaryButtonStyle())
-                .disabled(!state.isActionEnabled)
-                .dailyChallengeMorph(DailyChallengeMorph.primaryButton, in: morphNamespace)
+                actionButton
             }
         }
+    }
+
+    /// The card's action. A real call to action while there's something to do
+    /// (start/open the challenge) uses the filled primary button; once the day is
+    /// complete it only offers to *review* answers, so it drops to the neutral
+    /// secondary style — same size and shape, so the hero morph still lines up.
+    @ViewBuilder
+    private var actionButton: some View {
+        if isReviewAction {
+            styledActionButton(PaeoniaSecondaryButtonStyle())
+        } else {
+            styledActionButton(PaeoniaPrimaryButtonStyle())
+        }
+    }
+
+    private func styledActionButton(_ style: some ButtonStyle) -> some View {
+        Button(action: onAnswer) {
+            Text(actionTitle)
+        }
+        .buttonStyle(style)
+        .disabled(!state.isActionEnabled)
+        .dailyChallengeMorph(DailyChallengeMorph.primaryButton, in: morphNamespace)
+    }
+
+    /// A review action (neutral, not a CTA) once the day is complete — unless the
+    /// partner has replies the user can still unlock by answering, which keeps the
+    /// "See partner answers" button a real call to action.
+    private var isReviewAction: Bool {
+        guard case .complete = state.kind else { return false }
+        return !showsPartnerAnswersCTA
+    }
+
+    /// Whether the complete-state button points the user at partner replies they can
+    /// still unlock (vs. just reviewing answers that are all in).
+    private var showsPartnerAnswersCTA: Bool {
+        prefersPartnerAnswersWhenComplete && state.hasAnswerablePartnerQuestions
     }
 
     private var titleBlock: some View {
@@ -101,8 +133,14 @@ struct DailyPromptCard: View {
             .dailyChallengeOpenButton
         case .noChallenge:
             .dailyChallengeStartButton
-        case .active, .complete:
+        case .active:
             .dailyChallengeOpenButton
+        case .complete:
+            if showsPartnerAnswersCTA {
+                .dailyChallengeSeePartnerAnswersButton
+            } else {
+                .dailyChallengeSeeYourAnswersButton
+            }
         }
     }
 }

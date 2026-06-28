@@ -121,6 +121,7 @@ struct PairedHomeView: View {
             state: dailyChallengeCardState,
             streak: dailyChallengeStreak,
             morphNamespace: dailyChallengeMorphNamespace,
+            prefersPartnerAnswersWhenComplete: true,
             onAnswer: onOpenDailyChallenge,
             onTapStreak: onTapStreak
         )

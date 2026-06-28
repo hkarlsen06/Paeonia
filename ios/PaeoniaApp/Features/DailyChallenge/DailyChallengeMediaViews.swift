@@ -181,20 +181,41 @@ struct DailyPhotoAnswerComposer: View {
 /// Shown for a media answer that's saved on the device and finishing its upload in
 /// the background, so the user knows it's handled even when they're offline. A photo
 /// shows a thumbnail; a voice note stays playable straight from its staged bytes.
+/// Shows whatever a still-sending answer carries — a photo or voice note, a partner
+/// pick, and/or a text caption — so the user sees what they saved is safe (even
+/// offline) while it finishes sending. A combined answer shows all of its parts.
 struct DailySendingAnswerView: View {
-    let mediaKind: DailyChallengeAnswerKind
-    let mediaData: Data?
-    var voiceDurationMs: Int?
+    var mediaKind: DailyChallengeAnswerKind = .photo
+    var mediaData: Data? = nil
+    var voiceDurationMs: Int? = nil
+    var partnerChoiceName: String? = nil
+    var text: String? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            preview
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            mediaPreview
+
+            if let partnerChoiceName {
+                Text(partnerChoiceName)
+                    .font(PaeoniaTypography.body.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if let text, !text.isEmpty {
+                Text(text)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             DailySendingStatusLine()
         }
     }
 
     @ViewBuilder
-    private var preview: some View {
+    private var mediaPreview: some View {
         if mediaKind == .voice {
             if let mediaData {
                 DailyVoicePlaybackView(source: .data(mediaData), fallbackDurationMs: voiceDurationMs)
@@ -207,37 +228,6 @@ struct DailySendingAnswerView: View {
                 .frame(height: 220)
                 .clipped()
                 .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-        }
-    }
-}
-
-/// Shown for a text or partner-choice answer that's saved on the device and finishing
-/// its send in the background, so the user sees what they wrote is safe — even offline
-/// — instead of an error asking them to try again.
-struct DailySendingSimpleAnswerView: View {
-    let content: DailySendingSimpleContent
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            preview
-            DailySendingStatusLine()
-        }
-    }
-
-    @ViewBuilder
-    private var preview: some View {
-        switch content {
-        case let .text(body):
-            Text(body)
-                .font(PaeoniaTypography.body)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-        case let .partnerChoice(name):
-            Text(name)
-                .font(PaeoniaTypography.body.weight(.semibold))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

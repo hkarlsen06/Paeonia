@@ -389,13 +389,16 @@ nonisolated private struct DailyAnswerPayloadBody: Encodable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(answerID, forKey: .answerID)
-        switch payload {
-        case let .text(body):
-            try container.encode(body, forKey: .text)
-        case let .partnerChoice(userID):
+        // Any combination the backend allows: a text body, a partner pick, and/or
+        // media ids — only the parts that are present are sent.
+        if let text = payload.text {
+            try container.encode(text, forKey: .text)
+        }
+        if let userID = payload.partnerChoiceUserID {
             try container.encode(userID, forKey: .partnerChoiceUserID)
-        case let .media(assetIDs):
-            try container.encode(assetIDs, forKey: .mediaAssetIDs)
+        }
+        if !payload.mediaAssetIDs.isEmpty {
+            try container.encode(payload.mediaAssetIDs, forKey: .mediaAssetIDs)
         }
     }
 }

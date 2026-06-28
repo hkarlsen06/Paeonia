@@ -44,14 +44,10 @@ final class DailyVoicePlayer {
         }
     }
 
-    /// Configures and activates playback on the shared audio session off the main
-    /// thread; `setCategory`/`setActive` block and would otherwise stall the UI.
+    /// Configures and activates playback without blocking the main thread on
+    /// synchronous activation.
     nonisolated private static func activatePlaybackSession() async {
-        await Task.detached(priority: .userInitiated) {
-            let session = AVAudioSession.sharedInstance()
-            try? session.setCategory(.playback)
-            try? session.setActive(true)
-        }.value
+        await DailyVoiceAudioSession.configureForPlayback()
     }
 
     func pause() {

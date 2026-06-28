@@ -229,6 +229,15 @@ Default to local-first behavior:
 - Avoid heavy work in SwiftUI `body` or computed properties.
 - Use `Sendable` for values crossing concurrency boundaries when appropriate.
 
+#### `.task(id:)` keys must be load-bearing only
+
+`SwiftUI`'s `.task(id:)` cancels its running task and restarts it whenever the `id` value changes. So the `id` must contain *only* the inputs that determine what the task loads — never cosmetic data that arrives or refreshes shortly after launch.
+
+- Symptom of getting this wrong: a network request fails with `NSURLErrorCancelled` (`URLError.cancelled`, code `-999`) a beat after the screen appears, then a manual retry works. The launch-time load was aborted because some unrelated field in the `id` changed mid-flight.
+- Concrete case (do not reintroduce): the daily challenge load was keyed on the whole `DailyChallengeParticipants` value (current/partner ids **plus** display names and profile-photo asset ids). Names and avatars populate asynchronously, so each one cancelled the in-flight `get_today_daily_questions` fetch. Fixed by keying `.task(id:)` on `currentUserID` alone and feeding cosmetic identity through a separate non-reloading path (`DailyChallengeViewModel.refreshParticipants` via `.onChange`).
+- Rule: key the load on identity that genuinely changes *what* is fetched (usually a user/couple id). Route display-only updates (names, photos, labels) through `.onChange` into a method that refreshes rendering without re-fetching. When in doubt, prefer a narrow, stable `id` and a separate cosmetic-update path.
+- Note that swallowing `URLError.cancelled` (treating it like Swift's `CancellationError`) hides the *banner*, but the load is still wastefully cancelled and may not auto-retry. Fix the `id`, don't just silence the error.
+
 ## Localization
 
 Localization is required for all user-facing strings.

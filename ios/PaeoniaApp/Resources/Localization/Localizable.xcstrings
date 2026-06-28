@@ -4637,17 +4637,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not answered yet"
+            "value" : "You haven't answered yet"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ikke svart ennå"
+            "value" : "Du har ikke svart ennå"
           }
         }
       },
-      "comment" : "Status label for an unanswered daily challenge question"
+      "comment" : "Status label for the current user's own unanswered daily challenge question"
     },
     "dailyChallenge.openButton" : {
       "extractionState" : "manual",
@@ -4738,24 +4738,6 @@
         }
       },
       "comment" : "Message explaining that the partner answer is hidden until the user answers the same daily question"
-    },
-    "dailyChallenge.partnerRevealed" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partner answer is visible"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partnersvaret er synlig"
-          }
-        }
-      },
-      "comment" : "Status label indicating the partner answer can now be seen"
     },
     "dailyChallenge.partnerSection.title" : {
       "extractionState" : "manual",
@@ -5333,24 +5315,6 @@
       },
       "comment" : "Message shown when saving an edit to an answer did not work"
     },
-    "dailyChallenge.choice.label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your pick"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ditt valg"
-          }
-        }
-      },
-      "comment" : "Label above the two-person picker for a partner-choice daily question"
-    },
     "dailyChallenge.choice.you" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5782,6 +5746,96 @@
         }
       },
       "comment" : "Error shown when a streak can no longer be restored"
+    },
+    "dailyChallenge.flow.partnerQuestionsButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer to see your partner's answers"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar for å se partnerens svar"
+          }
+        }
+      },
+      "comment" : "Button on the daily completion screen opens the Questions tab for optional questions the partner has already answered"
+    },
+    "dailyChallenge.seePartnerAnswersButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See partner's answers"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se partnerens svar"
+          }
+        }
+      },
+      "comment" : "Button on the Us tab daily challenge card opens today's partner answers when the user's required questions are done"
+    },
+    "dailyChallenge.seeYourAnswersButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See your answers"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se svarene dine"
+          }
+        }
+      },
+      "comment" : "Button on the daily challenge card opens the user's completed daily answers"
+    },
+    "dailyChallenge.partner.answerCta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer to see their reply"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar for å se deres svar"
+          }
+        }
+      },
+      "comment" : "Button on a partner-answered question that opens the answer flow; answering reveals the partner's reply"
+    },
+    "dailyChallenge.partner.lockedCta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish your questions first"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fullfør dine spørsmål først"
+          }
+        }
+      },
+      "comment" : "Disabled button on a partner-answered question, shown until the user has finished their own three daily questions"
     }
   },
   "version" : "1.0"

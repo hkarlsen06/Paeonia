@@ -135,12 +135,22 @@ nonisolated struct DailyAnswerMediaDraft: Codable, Equatable, Sendable {
 
 /// What the user is actually sending for one answer, resolved from the draft at
 /// submit time. The backend's `submit_daily_answer` accepts text, a partner pick,
-/// or media ids in a single payload; this enum is the seam the service maps to that
-/// payload.
-nonisolated enum DailyAnswerPayload: Equatable, Sendable {
-    case text(String)
-    case partnerChoice(UUID)
-    case media([UUID])
+/// and media ids together in a single payload — so this carries any combination
+/// (e.g. a photo *and* a caption), and the service maps whatever is present.
+nonisolated struct DailyAnswerPayload: Equatable, Sendable {
+    var text: String?
+    var partnerChoiceUserID: UUID?
+    var mediaAssetIDs: [UUID]
+
+    init(text: String? = nil, partnerChoiceUserID: UUID? = nil, mediaAssetIDs: [UUID] = []) {
+        self.text = text
+        self.partnerChoiceUserID = partnerChoiceUserID
+        self.mediaAssetIDs = mediaAssetIDs
+    }
+
+    var isEmpty: Bool {
+        (text?.isEmpty ?? true) && partnerChoiceUserID == nil && mediaAssetIDs.isEmpty
+    }
 }
 
 /// The two people in the couple, used to label partner-choice answers — "you" for
@@ -335,6 +345,23 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Sendable {
         return composableAnswerKinds.first
     }
 
+    /// Questions that let the user answer with text *and* a photo or partner-choice in
+    /// one go (both composers shown together, each optional) rather than picking a
+    /// single kind. The combo must be exactly text + photo or text + partner-choice;
+    /// voice and any other shape keep the single-kind picker. The backend already
+    /// stores text alongside media/choice on one answer.
+    var combinedSecondaryKind: DailyChallengeAnswerKind? {
+        let kinds = Set(composableAnswerKinds)
+        guard kinds.contains(.text) else { return nil }
+        let others = kinds.subtracting([.text])
+        guard others == [.photo] || others == [.partnerChoice] else { return nil }
+        return others.first
+    }
+
+    var usesCombinedCompose: Bool {
+        combinedSecondaryKind != nil
+    }
+
     var canSubmitAnswer: Bool {
         isAvailableToAnswer && defaultComposableKind != nil
     }
@@ -348,7 +375,10 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Sendable {
             origin == .own,
             hasOwnAnswer,
             partnerAnswer == nil,
-            status != .shuffled
+            status != .shuffled,
+            // Combined answers can hold media, which can't be edited, so the whole
+            // answer is locked once sent (same rule as any media answer).
+            !usesCombinedCompose
         else { return nil }
 
         if supportsTextAnswer { return .text }
@@ -390,6 +420,25 @@ nonisolated struct DailyChallengeCardState: Equatable, Sendable {
     let kind: Kind
     let answeredCount: Int
     let totalCount: Int
+    let hasPartnerAnswersForToday: Bool
+    /// Whether the partner has answered questions the user can still answer to
+    /// unlock. Distinguishes "there's a partner reply to reveal" (a real call to
+    /// action) from "everything is already answered" (pure review).
+    let hasAnswerablePartnerQuestions: Bool
+
+    init(
+        kind: Kind,
+        answeredCount: Int,
+        totalCount: Int,
+        hasPartnerAnswersForToday: Bool = false,
+        hasAnswerablePartnerQuestions: Bool = false
+    ) {
+        self.kind = kind
+        self.answeredCount = answeredCount
+        self.totalCount = totalCount
+        self.hasPartnerAnswersForToday = hasPartnerAnswersForToday
+        self.hasAnswerablePartnerQuestions = hasAnswerablePartnerQuestions
+    }
 
     var isActionEnabled: Bool {
         kind != .loading
@@ -434,12 +483,56 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         (ownQuestions + partnerStartedQuestions).filter(\.isVisibleToCurrentUser)
     }
 
+    var answerablePartnerQuestions: [DailyChallengeQuestion] {
+        partnerStartedQuestions.filter(\.isAvailableToAnswer)
+    }
+
+    var hasAnswerablePartnerQuestions: Bool {
+        !answerablePartnerQuestions.isEmpty
+    }
+
+    var hasPartnerAnswersForToday: Bool {
+        visibleQuestions.contains(where: \.hasPartnerAnswer)
+    }
+
+    var partnerQuestionsForReadOverview: [DailyChallengeQuestion] {
+        // Still-answerable cards stay on top (they carry the CTA). The rest are the
+        // revealed exchanges, ordered by when *you* answered them — the moment the
+        // reply unlocked — newest first, so recent activity surfaces.
+        let answerable = partnerStartedQuestions.filter(\.isAvailableToAnswer)
+        let answered = partnerStartedQuestions
+            .filter { !$0.isAvailableToAnswer }
+            .sorted { lhs, rhs in
+                let left = lhs.ownAnswer?.answeredAt ?? .distantPast
+                let right = rhs.ownAnswer?.answeredAt ?? .distantPast
+                if left == right { return lhs.slotNumber < rhs.slotNumber }
+                return left > right
+            }
+        return answerable + answered
+    }
+
+    var ownQuestionsForReadOverview: [DailyChallengeQuestion] {
+        // Questions your partner has answered come first, ordered by when *they*
+        // answered yours — the moment it was revealed — newest first. The ones still
+        // waiting on the partner follow, in their natural slot order.
+        let withPartnerAnswers = ownQuestions
+            .filter(\.hasPartnerAnswer)
+            .sorted { lhs, rhs in
+                let left = lhs.partnerAnswer?.answeredAt ?? .distantPast
+                let right = rhs.partnerAnswer?.answeredAt ?? .distantPast
+                if left == right { return lhs.slotNumber < rhs.slotNumber }
+                return left > right
+            }
+        let withoutPartnerAnswers = ownQuestions.filter { !$0.hasPartnerAnswer }
+        return withPartnerAnswers + withoutPartnerAnswers
+    }
+
     /// Questions surfaced inside the focused answering flow, in the order the
     /// flow steps through them: the user's own three first, then any of the
     /// partner's questions the user can still answer. Already-answered own
     /// questions stay in the list so the user can swipe back and review them.
     var answerFlowQuestions: [DailyChallengeQuestion] {
-        ownQuestions + partnerStartedQuestions.filter(\.isAvailableToAnswer)
+        ownQuestions + answerablePartnerQuestions
     }
 
     var progress: DailyChallengeProgress {
@@ -459,7 +552,9 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
             return DailyChallengeCardState(
                 kind: .noChallenge,
                 answeredCount: progress.ownAnsweredCount,
-                totalCount: progress.requiredQuestionCount
+                totalCount: progress.requiredQuestionCount,
+                hasPartnerAnswersForToday: hasPartnerAnswersForToday,
+                hasAnswerablePartnerQuestions: hasAnswerablePartnerQuestions
             )
         }
 
@@ -467,7 +562,9 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
             return DailyChallengeCardState(
                 kind: .complete,
                 answeredCount: progress.ownAnsweredCount,
-                totalCount: progress.requiredQuestionCount
+                totalCount: progress.requiredQuestionCount,
+                hasPartnerAnswersForToday: hasPartnerAnswersForToday,
+                hasAnswerablePartnerQuestions: hasAnswerablePartnerQuestions
             )
         }
 
@@ -480,7 +577,9 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         return DailyChallengeCardState(
             kind: .active(prompt: prompt),
             answeredCount: progress.ownAnsweredCount,
-            totalCount: progress.requiredQuestionCount
+            totalCount: progress.requiredQuestionCount,
+            hasPartnerAnswersForToday: hasPartnerAnswersForToday,
+            hasAnswerablePartnerQuestions: hasAnswerablePartnerQuestions
         )
     }
 

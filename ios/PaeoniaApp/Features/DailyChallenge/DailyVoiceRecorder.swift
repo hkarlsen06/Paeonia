@@ -111,22 +111,16 @@ final class DailyVoiceRecorder {
         }
     }
 
-    /// Configures and activates the shared audio session off the main thread.
-    /// `setCategory`/`setActive` block, and on the main thread they stall the UI.
+    /// Configures and activates shared audio session without blocking the main
+    /// thread on synchronous activation.
     nonisolated private static func activateRecordingSession() async throws {
-        try await Task.detached(priority: .userInitiated) {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
-            try session.setActive(true)
-        }.value
+        try await DailyVoiceAudioSession.configureForRecording()
     }
 
-    /// Deactivation also blocks, so it runs off the main thread. Fire-and-forget:
-    /// the recorder has already stopped, so nothing waits on the session closing.
+    /// Deactivation can block on older OS versions. Fire-and-forget:
+    /// the recorder has already stopped, so nothing waits on session closing.
     private func deactivateSession() {
-        Task.detached(priority: .utility) {
-            try? AVAudioSession.sharedInstance().setActive(false)
-        }
+        DailyVoiceAudioSession.deactivate()
     }
 
     private func discardRecordedFile() {

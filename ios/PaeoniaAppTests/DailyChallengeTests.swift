@@ -174,6 +174,117 @@ struct DailyChallengeMappingTests {
         #expect(snapshot.progress.ownAnsweredCount == 3)
         #expect(snapshot.progress.partnerQuestionCount == 3)
         #expect(snapshot.progress.isComplete)
+        #expect(snapshot.hasPartnerAnswersForToday)
+        #expect(snapshot.homeCardState.hasPartnerAnswersForToday)
+        #expect(snapshot.hasAnswerablePartnerQuestions)
+        #expect(snapshot.answerablePartnerQuestions.count == 3)
+        #expect(snapshot.answerFlowQuestions.count == 6)
+    }
+
+    @Test func readOverviewOrdersPartnerQuestionsThenOwnQuestionsByPartnerAnswer() {
+        let snapshot = makeSnapshot(rows: [
+            questionRow(
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID()
+            ),
+            questionRow(
+                slotNumber: 2,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID(),
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: TestDailyChallengeIDs.answerDate
+            ),
+            questionRow(
+                slotNumber: 3,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID()
+            ),
+            questionRow(
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: TestDailyChallengeIDs.answerDate
+            ),
+            questionRow(
+                slotNumber: 2,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                ownAnswerID: UUID(),
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: TestDailyChallengeIDs.answerDate
+            ),
+            questionRow(
+                slotNumber: 3,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: TestDailyChallengeIDs.answerDate
+            ),
+        ])
+
+        let partnerReadQuestions = snapshot.partnerQuestionsForReadOverview
+        #expect(partnerReadQuestions.map(\.slotNumber) == [1, 3, 2])
+        #expect(partnerReadQuestions.prefix(2).allSatisfy { $0.isAvailableToAnswer })
+        #expect(partnerReadQuestions.last?.isAvailableToAnswer == false)
+
+        let ownReadQuestions = snapshot.ownQuestionsForReadOverview
+        #expect(ownReadQuestions.map(\.slotNumber) == [2, 1, 3])
+        #expect(ownReadQuestions.first?.hasPartnerAnswer == true)
+    }
+
+    @Test func readOverviewOrdersRevealedCardsByCompletionTimeNewestFirst() {
+        let earlier = TestDailyChallengeIDs.answerDate
+        let later = earlier.addingTimeInterval(3600)
+
+        let snapshot = makeSnapshot(rows: [
+            // The partner's questions you've answered (revealed) sort by when YOU
+            // answered, newest first → slot 2 (later) before slot 1 (earlier).
+            questionRow(
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                ownAnswerID: UUID(),
+                ownAnsweredAt: earlier,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: earlier,
+                canViewPartnerAnswer: true
+            ),
+            questionRow(
+                slotNumber: 2,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                ownAnswerID: UUID(),
+                ownAnsweredAt: later,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: earlier,
+                canViewPartnerAnswer: true
+            ),
+            // Your own questions the partner answered sort by when the PARTNER
+            // answered, newest first → slot 4 (later) before slot 3 (earlier).
+            questionRow(
+                slotNumber: 3,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID(),
+                ownAnsweredAt: earlier,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: earlier,
+                canViewPartnerAnswer: true
+            ),
+            questionRow(
+                slotNumber: 4,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID(),
+                ownAnsweredAt: earlier,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: later,
+                canViewPartnerAnswer: true
+            ),
+        ])
+
+        #expect(snapshot.partnerQuestionsForReadOverview.map(\.slotNumber) == [2, 1])
+        #expect(snapshot.ownQuestionsForReadOverview.map(\.slotNumber) == [4, 3])
     }
 
     @Test func answerFlowOrdersOwnQuestionsThenAnswerablePartnerQuestions() {
@@ -269,6 +380,80 @@ struct DailyChallengeMappingTests {
         #expect(viewModel.streak.longestCount == 9)
         #expect(viewModel.streak.lastQualifiedDate == "2026-06-27")
         #expect(await service.streakLoadCount == 1)
+    }
+
+    @MainActor
+    @Test func cancelledLoadDoesNotSurfaceAnError() async throws {
+        // A superseded or torn-down load reports `URLError.cancelled` (-999), not
+        // Swift's `CancellationError`. It must be swallowed silently — never shown as
+        // the "we couldn't load today's question" banner over otherwise-fine content.
+        let service = RecordingDailyChallengeService(
+            snapshots: [],
+            loadError: URLError(.cancelled)
+        )
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider()
+        )
+
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+
+        #expect(viewModel.notice == nil)
+    }
+
+    @MainActor
+    @Test func realLoadFailureStillSurfacesTheErrorBanner() async throws {
+        // A genuine load failure (anything other than cancellation) must still show
+        // the friendly notice so the user knows to retry.
+        let service = RecordingDailyChallengeService(
+            snapshots: [],
+            loadError: URLError(.timedOut)
+        )
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider()
+        )
+
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+
+        #expect(viewModel.notice == .loadFailed)
+    }
+
+    @MainActor
+    @Test func refreshingParticipantsUpdatesDisplayDataWithoutReloading() async throws {
+        // Names and profile photos arrive/refresh after launch. Feeding them in must
+        // update the rendered participants but must NOT re-fetch the questions — the
+        // reason the load is keyed on the signed-in user alone (see AGENTS.md).
+        let snapshot = makeSnapshot(rows: [
+            questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
+        ])
+        let service = RecordingDailyChallengeService(snapshots: [snapshot])
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider()
+        )
+
+        await viewModel.configure(participants: DailyChallengeParticipants(
+            currentUserID: TestDailyChallengeIDs.currentUser,
+            currentDisplayName: "You",
+            partnerUserID: TestDailyChallengeIDs.partnerUser,
+            partnerDisplayName: "Old partner name"
+        ))
+        let loadsAfterConfigure = await service.loadCount
+
+        viewModel.refreshParticipants(DailyChallengeParticipants(
+            currentUserID: TestDailyChallengeIDs.currentUser,
+            currentDisplayName: "You",
+            currentProfilePhotoAssetID: UUID(),
+            partnerUserID: TestDailyChallengeIDs.partnerUser,
+            partnerDisplayName: "New partner name",
+            partnerProfilePhotoAssetID: UUID()
+        ))
+
+        #expect(viewModel.participants.partnerDisplayName == "New partner name")
+        #expect(viewModel.participants.partnerProfilePhotoAssetID != nil)
+        // No additional load was triggered by the cosmetic change.
+        #expect(await service.loadCount == loadsAfterConfigure)
     }
 
     @MainActor
@@ -663,7 +848,7 @@ struct DailyChallengeMappingTests {
         #expect(viewModel.isSending(question.id))
         #expect(viewModel.notice == nil)
         #expect(viewModel.draftText(for: question.id).isEmpty)
-        #expect(viewModel.sendingSimpleContent(for: question.id) == .text("Thinking of you"))
+        #expect(viewModel.sendingText(for: question.id) == "Thinking of you")
 
         let queued = try await pendingStore.inFlightOperations(
             ownerUserID: TestDailyChallengeIDs.currentUser,
@@ -683,7 +868,80 @@ struct DailyChallengeMappingTests {
         )
         await relaunched.configure(currentUserID: TestDailyChallengeIDs.currentUser)
         #expect(relaunched.isSending(question.id))
-        #expect(relaunched.sendingSimpleContent(for: question.id) == .text("Thinking of you"))
+        #expect(relaunched.sendingText(for: question.id) == "Thinking of you")
+    }
+
+    @MainActor
+    @Test func requiredCompletionCountsQueuedOwnAnswers() async throws {
+        let baseSnapshot = makeSnapshot(rows: [
+            questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
+            questionRow(slotNumber: 2, seededForUserID: TestDailyChallengeIDs.currentUser),
+            questionRow(slotNumber: 3, seededForUserID: TestDailyChallengeIDs.currentUser),
+        ])
+        let service = RecordingDailyChallengeService(snapshots: [baseSnapshot])
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            pendingOperationStore: pendingStore
+        )
+
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        let questions = viewModel.snapshot.ownQuestions
+
+        #expect(questions.count == DailyChallengeProgress.requiredOwnQuestionCount)
+        #expect(!viewModel.snapshot.progress.isComplete)
+        #expect(!viewModel.hasCompletedRequiredDailyQuestions)
+
+        for question in questions {
+            viewModel.setDraftText("Answer \(question.slotNumber)", for: question.id)
+            await viewModel.submitAnswer(for: question)
+        }
+
+        #expect(!viewModel.snapshot.progress.isComplete)
+        #expect(viewModel.hasCompletedRequiredDailyQuestions)
+    }
+
+    @MainActor
+    @Test func submitAnswerDoesNotWaitForSyncNudge() async throws {
+        let baseSnapshot = makeSnapshot(rows: [
+            questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
+        ])
+        let service = RecordingDailyChallengeService(snapshots: [baseSnapshot])
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let syncProbe = DailyChallengeSyncNudgeProbe()
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            pendingOperationStore: pendingStore
+        )
+        viewModel.setLocalChangeSyncHandler {
+            await syncProbe.blockUntilReleased()
+        }
+
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        viewModel.setDraftText(" Thinking of you ", for: question.id)
+
+        let submitTask = Task { @MainActor in
+            await viewModel.submitAnswer(for: question)
+            await syncProbe.markSubmitReturned()
+        }
+
+        for _ in 0..<1_000 {
+            if await syncProbe.didSubmitReturn() {
+                break
+            }
+            await Task.yield()
+        }
+
+        #expect(await syncProbe.didSubmitReturn())
+        #expect(viewModel.isSending(question.id))
+
+        await syncProbe.release()
+        await submitTask.value
     }
 
     @MainActor
@@ -762,7 +1020,7 @@ struct DailyChallengeMappingTests {
             )
         )
         #expect(relaunched.isSending(question.id))
-        #expect(relaunched.sendingSimpleContent(for: question.id) == .partnerChoice(name: "Oda"))
+        #expect(relaunched.sendingPartnerChoiceName(for: question.id) == "Oda")
     }
 
     @Test func partnerChoiceParticipantsResolveNamesAndOptions() throws {
@@ -904,8 +1162,8 @@ struct DailyChallengeMappingTests {
         }
         #expect(media.stagedData != nil)
         #expect(viewModel.sendingMediaData(for: question.id) != nil)
-        // A media answer previews from its staged bytes, not the simple-content path.
-        #expect(viewModel.sendingSimpleContent(for: question.id) == nil)
+        // A photo-only answer has no caption text or partner pick.
+        #expect(viewModel.sendingText(for: question.id) == nil)
 
         let relaunched = DailyChallengeViewModel(
             service: service,
@@ -917,7 +1175,97 @@ struct DailyChallengeMappingTests {
         await relaunched.configure(currentUserID: TestDailyChallengeIDs.currentUser)
         #expect(relaunched.isSending(question.id))
         #expect(relaunched.sendingMediaData(for: question.id) != nil)
-        #expect(relaunched.sendingSimpleContent(for: question.id) == nil)
+        #expect(relaunched.sendingText(for: question.id) == nil)
+    }
+
+    @Test func combinedComposeAppliesOnlyToTextWithPhotoOrPartnerChoice() {
+        func secondaryKind(_ kinds: [DailyChallengeAnswerKind]) -> DailyChallengeAnswerKind? {
+            makeSnapshot(rows: [
+                questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser, answerKinds: kinds)
+            ]).ownQuestions[0].combinedSecondaryKind
+        }
+
+        #expect(secondaryKind([.text, .photo]) == .photo)
+        #expect(secondaryKind([.photo, .text]) == .photo)
+        #expect(secondaryKind([.text, .partnerChoice]) == .partnerChoice)
+        #expect(secondaryKind([.text]) == nil)
+        #expect(secondaryKind([.photo]) == nil)
+        #expect(secondaryKind([.text, .voice]) == nil)
+    }
+
+    @Test func combinedAnswersAreNotEditable() {
+        let combined = makeSnapshot(rows: [
+            questionRow(
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                answerKinds: [.photo, .text],
+                ownAnswerID: UUID()
+            ),
+        ]).ownQuestions[0]
+        #expect(combined.usesCombinedCompose)
+        #expect(combined.editableAnswerKind == nil)
+
+        // A plain text answer is still editable while it's private.
+        let textOnly = makeSnapshot(rows: [
+            questionRow(
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                answerKinds: [.text],
+                ownAnswerID: UUID()
+            ),
+        ]).ownQuestions[0]
+        #expect(textOnly.editableAnswerKind == .text)
+    }
+
+    @MainActor
+    @Test func submitCombinedPhotoAndTextQueuesBothTogether() async throws {
+        let snapshot = makeSnapshot(rows: [
+            questionRow(
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                answerKinds: [.photo, .text]
+            ),
+        ])
+        let service = RecordingDailyChallengeService(snapshots: [snapshot])
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let mediaStore = InMemoryDailyAnswerMediaDraftStore()
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            mediaDraftStore: mediaStore,
+            pendingOperationStore: pendingStore
+        )
+
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        #expect(question.usesCombinedCompose)
+
+        // The user adds both a photo and a caption; either alone would also send.
+        viewModel.setDraftText("By the lake", for: question.id)
+        viewModel.stagePhoto(sampleImageData(), for: question.id)
+        #expect(viewModel.hasDraftToSubmit(for: question))
+
+        await viewModel.submitAnswer(for: question)
+
+        let queued = try await pendingStore.inFlightOperations(
+            ownerUserID: TestDailyChallengeIDs.currentUser,
+            kind: .submitDailyAnswer
+        )
+        let queuedData = try #require(queued.first?.requestData)
+        let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: queuedData)
+        guard case let .textAndMedia(body, media) = payload.content else {
+            Issue.record("Expected combined text+media content, got \(payload.content)")
+            return
+        }
+        #expect(body == "By the lake")
+        #expect(media.stagedData != nil)
+
+        // Both parts stay visible in the "saved, sending" preview while it uploads.
+        #expect(viewModel.sendingText(for: question.id) == "By the lake")
+        #expect(viewModel.sendingMediaData(for: question.id) != nil)
     }
 
     @MainActor
@@ -965,7 +1313,7 @@ struct DailyChallengeMappingTests {
         #expect(await uploader.uploadCount == 1)
         #expect(await uploader.lastAnswerID == answerID)
         #expect(await uploader.lastCoupleID == TestDailyChallengeIDs.couple)
-        #expect(await gateway.submittedPayloads == [.media([assetID])])
+        #expect(await gateway.submittedPayloads == [DailyAnswerPayload(mediaAssetIDs: [assetID])])
         #expect(await gateway.submittedAnswerIDs == [answerID])
         // The staged copy is removed once the answer is sent.
         #expect(mediaStore.stagedMediaData(instanceID: instanceID) == nil)
@@ -1012,7 +1360,7 @@ struct DailyChallengeMappingTests {
 
         #expect(result == .succeeded)
         #expect(await uploader.uploadCount == 1)
-        #expect(await gateway.submittedPayloads == [.media([assetID])])
+        #expect(await gateway.submittedPayloads == [DailyAnswerPayload(mediaAssetIDs: [assetID])])
         #expect(mediaStore.stagedMediaData(instanceID: instanceID) == nil)
     }
 
@@ -1077,7 +1425,7 @@ struct DailyChallengeMappingTests {
         #expect(result == .succeeded)
         // Text goes straight to the backend — no media upload step.
         #expect(await uploader.uploadCount == 0)
-        #expect(await gateway.submittedPayloads == [.text("Thinking of you")])
+        #expect(await gateway.submittedPayloads == [DailyAnswerPayload(text: "Thinking of you")])
         #expect(await gateway.submittedAnswerIDs == [answerID])
     }
 
@@ -1371,28 +1719,36 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
     private let shuffleSnapshot: DailyChallengeSnapshot?
     private let shuffleError: Error?
     private let editError: Error?
+    private let loadError: Error?
     private let streak: CoupleStreak
     private(set) var editedTexts: [String] = []
     private(set) var editedChoices: [UUID] = []
     private(set) var shuffledSlots: [Int] = []
     private(set) var streakLoadCount = 0
+    private(set) var loadCount = 0
 
     init(
         snapshots: [DailyChallengeSnapshot],
         shuffleSnapshot: DailyChallengeSnapshot? = nil,
         shuffleError: Error? = nil,
         editError: Error? = nil,
+        loadError: Error? = nil,
         streak: CoupleStreak = .none
     ) {
         self.snapshots = snapshots
         self.shuffleSnapshot = shuffleSnapshot
         self.shuffleError = shuffleError
         self.editError = editError
+        self.loadError = loadError
         self.streak = streak
     }
 
     func loadToday(currentUserID: UUID) async throws -> DailyChallengeSnapshot {
-        snapshots.first ?? .empty(currentUserID: currentUserID)
+        loadCount += 1
+        if let loadError {
+            throw loadError
+        }
+        return snapshots.first ?? .empty(currentUserID: currentUserID)
     }
 
     func loadStreak() async throws -> CoupleStreak {
@@ -1563,6 +1919,29 @@ private actor RecordingDailyChallengeGateway: SupabaseDailyChallengeGateway {
     }
 
     func shuffleQuestion(slotNumber _: Int, operation _: SyncClientOperation) async throws -> [DailyQuestionRow] { [] }
+}
+
+private actor DailyChallengeSyncNudgeProbe {
+    private var isReleased = false
+    private var submitReturned = false
+
+    func blockUntilReleased() async {
+        while !isReleased {
+            await Task.yield()
+        }
+    }
+
+    func markSubmitReturned() {
+        submitReturned = true
+    }
+
+    func didSubmitReturn() -> Bool {
+        submitReturned
+    }
+
+    func release() {
+        isReleased = true
+    }
 }
 
 private func fixedClientOperation() -> SyncClientOperation {

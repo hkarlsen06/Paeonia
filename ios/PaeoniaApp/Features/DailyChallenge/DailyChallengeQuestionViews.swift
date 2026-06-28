@@ -5,34 +5,78 @@ struct DailyQuestionStatusView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            if let ownAnswer = question.ownAnswer {
+            ForEach(statusLines) { line in
                 DailyStatusLine(
+                    systemImage: line.systemImage,
+                    title: line.title,
+                    date: line.date,
+                    tint: line.tint
+                )
+            }
+        }
+    }
+
+    /// Both people's status for this question, ordered chronologically: answered
+    /// events (which carry a timestamp) come first, oldest to newest, and a still
+    /// "you haven't answered yet" line sits last as the unresolved present. In the
+    /// common case that puts "your partner answered" above "you haven't answered yet".
+    private var statusLines: [DailyStatusLineModel] {
+        var lines: [DailyStatusLineModel] = []
+
+        if let partnerAnswer = question.partnerAnswer {
+            // Same wording whether revealed or not — the timestamp shows when the
+            // partner answered, not when it became visible to you. Only the icon
+            // distinguishes a revealed answer (heart) from a still-hidden one (lock).
+            lines.append(
+                DailyStatusLineModel(
+                    id: "partner",
+                    systemImage: question.canViewPartnerAnswer ? "heart.circle.fill" : "lock.circle.fill",
+                    title: .dailyChallengePartnerHidden,
+                    date: partnerAnswer.answeredAt,
+                    tint: question.canViewPartnerAnswer ? .paeoniaAccentPrimary : .paeoniaTextTertiary
+                )
+            )
+        }
+
+        if let ownAnswer = question.ownAnswer {
+            lines.append(
+                DailyStatusLineModel(
+                    id: "own",
                     systemImage: "checkmark.circle.fill",
                     title: .dailyChallengeYouAnswered,
                     date: ownAnswer.answeredAt,
                     tint: .paeoniaSuccess
                 )
-            } else {
-                DailyStatusLine(
+            )
+        } else {
+            lines.append(
+                DailyStatusLineModel(
+                    id: "own",
                     systemImage: "circle",
                     title: .dailyChallengeNotAnswered,
                     date: nil,
                     tint: .paeoniaTextTertiary
                 )
-            }
+            )
+        }
 
-            if let partnerAnswer = question.partnerAnswer {
-                DailyStatusLine(
-                    systemImage: question.canViewPartnerAnswer ? "heart.circle.fill" : "lock.circle.fill",
-                    title: question.canViewPartnerAnswer
-                        ? .dailyChallengePartnerRevealed
-                        : .dailyChallengePartnerHidden,
-                    date: partnerAnswer.answeredAt,
-                    tint: question.canViewPartnerAnswer ? .paeoniaAccentPrimary : .paeoniaTextTertiary
-                )
+        return lines.sorted { lhs, rhs in
+            switch (lhs.date, rhs.date) {
+            case let (left?, right?): return left < right
+            case (.some, nil): return true
+            case (nil, .some): return false
+            case (nil, nil): return false
             }
         }
     }
+}
+
+private struct DailyStatusLineModel: Identifiable {
+    let id: String
+    let systemImage: String
+    let title: LocalizedStringResource
+    let date: Date?
+    let tint: Color
 }
 
 private struct DailyStatusLine: View {
@@ -100,27 +144,33 @@ private struct DailyVisibleAnswerBlock: View {
     var mediaKind: DailyChallengeAnswerKind = .photo
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+        // A combined answer can carry several parts at once, so each present part is
+        // shown — media first, then a partner pick, then the text caption beneath.
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             Text(title)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextSecondary)
+
+            if let mediaAssetID = detail.mediaAssetIDs.first {
+                if mediaKind == .voice {
+                    DailyVoicePlaybackView(source: .mediaAsset(mediaAssetID))
+                } else {
+                    DailyAnswerImageView(mediaAssetID: mediaAssetID)
+                }
+            }
+
+            if let selectedUserID = detail.selectedUserID {
+                // A partner-choice answer reveals as the chosen person's name.
+                Text(participants.name(for: selectedUserID))
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextPrimary)
+            }
 
             if let textBody = detail.textBody, !textBody.isEmpty {
                 Text(textBody)
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .fixedSize(horizontal: false, vertical: true)
-            } else if let selectedUserID = detail.selectedUserID {
-                // A partner-choice answer reveals as the chosen person's name.
-                Text(participants.name(for: selectedUserID))
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextPrimary)
-            } else if let mediaAssetID = detail.mediaAssetIDs.first {
-                if mediaKind == .voice {
-                    DailyVoicePlaybackView(source: .mediaAsset(mediaAssetID))
-                } else {
-                    DailyAnswerImageView(mediaAssetID: mediaAssetID)
-                }
             }
         }
         .padding(PaeoniaSpacing.space12)
@@ -132,7 +182,11 @@ private struct DailyVisibleAnswerBlock: View {
 
 /// The text entry field used inside the answering flow. The Send action lives in
 /// the flow's fixed bottom bar (so it stays above the keyboard), so this view is
-/// just the labelled, bordered editor with a placeholder and focus ring.
+/// just the labelled, bordered field with a placeholder and focus ring.
+///
+/// It starts compact and grows line by line with what's typed, up to a cap, after
+/// which it scrolls. It never greedily fills the screen, so the answering flow can
+/// keep the whole question-and-field cluster low, within thumb reach.
 struct DailyAnswerTextField: View {
     @Binding var text: String
     var isFocused: FocusState<Bool>.Binding
@@ -143,24 +197,18 @@ struct DailyAnswerTextField: View {
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextSecondary)
 
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $text)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .frame(minHeight: 80)
-                    .scrollContentBackground(.hidden)
-                    .padding(PaeoniaSpacing.space8)
-                    .focused(isFocused)
-
-                if text.isEmpty {
-                    Text(.dailyChallengeTextAnswerPlaceholder)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextTertiary)
-                        .padding(.horizontal, PaeoniaSpacing.space12)
-                        .padding(.vertical, PaeoniaSpacing.space16)
-                        .allowsHitTesting(false)
-                }
+            TextField(
+                text: $text,
+                prompt: Text(.dailyChallengeTextAnswerPlaceholder),
+                axis: .vertical
+            ) {
+                Text(.dailyChallengeTextAnswerLabel)
             }
+            .lineLimit(3...8)
+            .font(PaeoniaTypography.body)
+            .foregroundStyle(.paeoniaTextPrimary)
+            .padding(PaeoniaSpacing.space12)
+            .focused(isFocused)
             .background(.paeoniaBackgroundSecondary)
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
             .overlay {
@@ -187,19 +235,13 @@ struct DailyPartnerChoicePicker: View {
     private let avatarSize: CGFloat = 104
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            Text(.dailyChallengeChoiceLabel)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextSecondary)
-
-            HStack(alignment: .top, spacing: PaeoniaSpacing.space24) {
-                ForEach(options) { option in
-                    avatarOption(option)
-                }
+        HStack(alignment: .top, spacing: PaeoniaSpacing.space24) {
+            ForEach(options) { option in
+                avatarOption(option)
             }
-            .frame(maxWidth: .infinity)
-            .accessibilityElement(children: .contain)
         }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .contain)
     }
 
     private func avatarOption(_ option: DailyChallengeParticipants.Option) -> some View {

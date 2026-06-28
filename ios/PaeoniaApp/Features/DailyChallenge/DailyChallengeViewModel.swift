@@ -1,24 +1,24 @@
 import Foundation
 import Observation
-
-/// The content of a still-sending text or partner-choice answer, for its "saved,
-/// sending" preview. Resolved from the queued operation so nothing the user wrote
-/// disappears while it's on its way. Media answers preview from their staged bytes
-/// instead (see `sendingMediaData`).
-nonisolated enum DailySendingSimpleContent: Equatable, Sendable {
-    case text(String)
-    case partnerChoice(name: String)
-}
+#if DEBUG
+import OSLog
+#endif
 
 @MainActor
 @Observable
 final class DailyChallengeViewModel {
     /// A still-sending answer, reconstructed from the queued operation so the "saved,
-    /// sending" preview survives relaunch and clears once the send lands.
-    private enum SendingAnswer: Equatable {
-        case text(String)
-        case partnerChoice(UUID)
-        case media(DailyAnswerMediaDraft, stagedData: Data?)
+    /// sending" preview survives relaunch and clears once the send lands. Any
+    /// combination can be present (e.g. a photo with a caption).
+    private struct SendingAnswer: Equatable {
+        var text: String? = nil
+        var partnerChoiceUserID: UUID? = nil
+        var media: Media? = nil
+
+        struct Media: Equatable {
+            let draft: DailyAnswerMediaDraft
+            let stagedData: Data?
+        }
     }
 
     enum Notice: Equatable {
@@ -38,6 +38,12 @@ final class DailyChallengeViewModel {
     private let mediaDraftStore: any DailyAnswerMediaDraftStoring
     private let pendingOperationStore: any PendingSyncOperationPersisting
     private let encoder = JSONEncoder()
+    #if DEBUG
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
+        category: "DailyChallenge"
+    )
+    #endif
     private var localChangeSyncHandler: (@MainActor () async -> Void)?
     private var currentUserID: UUID?
     private var answerDrafts: [UUID: DailyAnswerDraft] = [:]
@@ -79,10 +85,40 @@ final class DailyChallengeViewModel {
         return InMemoryPendingSyncOperationRepository()
     }
 
+    /// Prints the real error behind a user-facing notice to the Xcode console in
+    /// debug builds, so a failure that shows only a friendly banner can still be
+    /// diagnosed. No-op in release.
+    private func logFailure(_ context: String, _ error: Error) {
+        #if DEBUG
+        logger.error("\(context, privacy: .public): \(String(describing: error))")
+        #endif
+    }
+
+    /// Whether an error just means the request was cancelled — a superseded or
+    /// torn-down load (for example a fresh reload, or the screen going away), not a
+    /// real failure. Foundation reports a cancelled URLSession task as
+    /// `URLError.cancelled` (-999) rather than Swift's `CancellationError`, so both
+    /// must be treated the same: swallowed silently, never shown as an error banner.
+    private nonisolated func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
+        return false
+    }
+
     /// Wires the daily challenge to the app's sync engine so a just-queued media
     /// answer is flushed promptly (mirrors the location pattern).
     func setLocalChangeSyncHandler(_ handler: (@MainActor () async -> Void)?) {
         localChangeSyncHandler = handler
+    }
+
+    /// Queued answers are already durable locally, so the answering flow should
+    /// not wait for sync before moving on to the next question.
+    private func syncQueuedAnswerInBackground() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await localChangeSyncHandler?()
+            await reload()
+        }
     }
 
     func configure(currentUserID: UUID?) async {
@@ -113,15 +149,27 @@ final class DailyChallengeViewModel {
         await reload()
     }
 
+    /// Updates the partners' display data — names and profile photos — without
+    /// touching the loaded question state. Cosmetic identity (a name or avatar that
+    /// arrives or refreshes after launch) must not reload or, worse, cancel an
+    /// in-flight load, so the view feeds those changes here while keying the load on
+    /// the signed-in user alone. A change of the signed-in user still goes through
+    /// `configure`, which reloads. See the `.task(id:)` note in AGENTS.md.
+    func refreshParticipants(_ participants: DailyChallengeParticipants) {
+        self.participants = participants
+    }
+
     func reload() async {
         guard let currentUserID else { return }
 
         isLoading = true
         do {
             snapshot = try await service.loadToday(currentUserID: currentUserID)
-        } catch is CancellationError {
         } catch {
-            notice = .loadFailed
+            if !isCancellation(error) {
+                logFailure("Loading today's challenge failed", error)
+                notice = .loadFailed
+            }
         }
         await refreshStreak()
         await refreshSendingState()
@@ -134,9 +182,11 @@ final class DailyChallengeViewModel {
     func refreshStreak() async {
         do {
             streak = try await service.loadStreak()
-        } catch is CancellationError {
         } catch {
             // Keep the last known streak; the completion screen falls back gracefully.
+            if !isCancellation(error) {
+                logFailure("Loading the couple streak failed", error)
+            }
         }
     }
 
@@ -149,58 +199,119 @@ final class DailyChallengeViewModel {
                 currentUserID: currentUserID,
                 operation: operationProvider.makeOperation()
             )
-        } catch is CancellationError {
         } catch {
-            notice = .startFailed
+            if !isCancellation(error) {
+                logFailure("Starting today's challenge failed", error)
+                notice = .startFailed
+            }
         }
         isStarting = false
     }
 
-    /// Sends the user's answer for a question, resolving the kind from the draft.
+    /// Sends the user's answer for a question, resolving the kind(s) from the draft.
     /// Every kind is saved on the device first and sent in the background, so a
-    /// network blip never loses what the user wrote — text and partner choice queue
-    /// the answer directly, a photo or voice note stages its bytes and queues too.
+    /// network blip never loses what the user wrote. Questions that allow a photo or
+    /// partner pick *alongside* text send whatever the user filled in, together.
     func submitAnswer(for question: DailyChallengeQuestion) async {
-        guard submittingQuestionID == nil else { return }
+        guard submittingQuestionID == nil, let currentUserID else { return }
+
+        guard let outgoing = resolveOutgoingAnswer(for: question) else {
+            notice = .emptyAnswer
+            return
+        }
+
+        await enqueueAnswer(outgoing, for: question, currentUserID: currentUserID)
+    }
+
+    private typealias OutgoingAnswer = (
+        content: DailySubmitAnswerOperationPayload.Content,
+        sending: SendingAnswer
+    )
+
+    /// Resolves the draft into the answer to queue and its "saved, sending" preview,
+    /// or nil when there's nothing to send. Combined questions fold text together with
+    /// a photo or partner pick; everything else stays single-kind.
+    private func resolveOutgoingAnswer(for question: DailyChallengeQuestion) -> OutgoingAnswer? {
+        let text = nonEmptyDraftText(for: question.id)
+
+        if question.usesCombinedCompose {
+            switch question.combinedSecondaryKind {
+            case .photo:
+                if let media = stagedMediaParts(for: question) {
+                    if let text {
+                        return (.textAndMedia(text, media.payload), SendingAnswer(text: text, media: media.sending))
+                    }
+                    return (.media(media.payload), SendingAnswer(media: media.sending))
+                }
+                return textOnly(text)
+            case .partnerChoice:
+                if let choice = partnerChoiceSelection(for: question.id) {
+                    if let text {
+                        return (.textAndPartnerChoice(text, choice), SendingAnswer(text: text, partnerChoiceUserID: choice))
+                    }
+                    return (.partnerChoice(choice), SendingAnswer(partnerChoiceUserID: choice))
+                }
+                return textOnly(text)
+            default:
+                return nil
+            }
+        }
 
         switch composeKind(for: question) {
         case .photo, .voice:
-            await submitMediaAnswer(for: question)
+            guard let media = stagedMediaParts(for: question) else { return nil }
+            return (.media(media.payload), SendingAnswer(media: media.sending))
+        case .partnerChoice:
+            guard let choice = partnerChoiceSelection(for: question.id) else { return nil }
+            return (.partnerChoice(choice), SendingAnswer(partnerChoiceUserID: choice))
+        case .text:
+            return textOnly(text)
         default:
-            await submitSimpleAnswer(for: question)
+            return nil
         }
     }
 
-    /// Saves a text or partner-choice answer on the device and queues it for sending,
-    /// then nudges the sync engine to send it now if we're online (it retries in the
-    /// background otherwise). This is local-first: a transient failure never surfaces
-    /// an error or asks the user to retry — the queued answer is sent when it can be.
-    private func submitSimpleAnswer(for question: DailyChallengeQuestion) async {
-        guard let payload = makePayload(for: question), let currentUserID else {
-            notice = .emptyAnswer
-            return
-        }
+    /// A text-only outgoing answer, or nil when there's no text.
+    private func textOnly(_ text: String?) -> OutgoingAnswer? {
+        guard let text else { return nil }
+        return (.text(text), SendingAnswer(text: text))
+    }
 
-        let content: DailySubmitAnswerOperationPayload.Content
-        let sending: SendingAnswer
-        switch payload {
-        case let .text(body):
-            content = .text(body)
-            sending = .text(body)
-        case let .partnerChoice(userID):
-            content = .partnerChoice(userID)
-            sending = .partnerChoice(userID)
-        case .media:
-            // Media answers go through submitMediaAnswer and never reach here.
-            notice = .emptyAnswer
-            return
-        }
+    /// Builds the queue and preview parts for a staged photo/voice draft, with fresh
+    /// reserve/finalize operations fixed in the payload so retries stay idempotent.
+    private func stagedMediaParts(
+        for question: DailyChallengeQuestion
+    ) -> (payload: DailySubmitAnswerOperationPayload.Media, sending: SendingAnswer.Media)? {
+        guard
+            let media = answerDrafts[question.id]?.media,
+            let stagedData = mediaDraftStore.stagedMediaData(instanceID: question.id)
+        else { return nil }
 
+        let payload = DailySubmitAnswerOperationPayload.Media(
+            draft: media,
+            coupleID: question.coupleID,
+            reserveOperation: operationProvider.makeOperation(),
+            finalizeOperation: operationProvider.makeOperation(),
+            stagedData: stagedData
+        )
+        return (payload, SendingAnswer.Media(draft: media, stagedData: stagedData))
+    }
+
+    /// Saves the resolved answer on the device and queues it for sending, then nudges
+    /// the sync engine to send it now if we're online (it retries in the background
+    /// otherwise). Local-first: a transient failure never surfaces an error — the
+    /// queued answer is sent when it can be. Staged media bytes stay on disk for the
+    /// upload; the handler clears them once it lands.
+    private func enqueueAnswer(
+        _ outgoing: OutgoingAnswer,
+        for question: DailyChallengeQuestion,
+        currentUserID: UUID
+    ) async {
         submittingQuestionID = question.id
         let operationPayload = DailySubmitAnswerOperationPayload(
             instanceID: question.id,
             answerID: UUID(),
-            content: content
+            content: outgoing.content
         )
 
         do {
@@ -214,101 +325,47 @@ final class DailyChallengeViewModel {
                 )
             )
         } catch {
+            logFailure("Saving an answer to send failed", error)
             notice = .submitFailed
             submittingQuestionID = nil
             return
         }
 
-        // Saved and shown as sending right away; the queued operation now carries the
-        // answer, so the editable draft can go.
-        sendingAnswers[question.id] = sending
+        // Shown as sending right away; the queued operation now carries the answer, so
+        // the editable draft can go (staged media stays on disk for the upload).
+        sendingAnswers[question.id] = outgoing.sending
         clearDraft(for: question.id)
         submittingQuestionID = nil
-        await localChangeSyncHandler?()
-        await reload()
+        syncQueuedAnswerInBackground()
     }
 
-    /// Stages a media answer (photo or voice) for background sending: the staged bytes
-    /// stay on disk and a `.submitDailyAnswer` operation is queued, then the sync
-    /// engine is nudged to upload and submit it (retrying if offline). The media is
-    /// never lost — it's already on disk — and the question immediately reads as
-    /// "saved, sending".
-    private func submitMediaAnswer(for question: DailyChallengeQuestion) async {
-        guard
-            let media = answerDrafts[question.id]?.media,
-            let stagedData = mediaDraftStore.stagedMediaData(instanceID: question.id),
-            let currentUserID
-        else {
-            notice = .emptyAnswer
-            return
-        }
-
-        submittingQuestionID = question.id
-        let submitOperation = operationProvider.makeOperation()
-        let payload = DailySubmitAnswerOperationPayload(
-            instanceID: question.id,
-            answerID: UUID(),
-            content: .media(
-                    DailySubmitAnswerOperationPayload.Media(
-                        draft: media,
-                        coupleID: question.coupleID,
-                        reserveOperation: operationProvider.makeOperation(),
-                        finalizeOperation: operationProvider.makeOperation(),
-                        stagedData: stagedData
-                    )
-                )
-            )
-
-        do {
-            try await pendingOperationStore.enqueue(
-                PendingSyncOperationRequest(
-                    ownerUserID: currentUserID,
-                    operation: submitOperation,
-                    operationKind: .submitDailyAnswer,
-                    idempotencyScope: "daily-answer:\(question.id.uuidString.lowercased())",
-                    requestData: try encoder.encode(payload)
-                )
-            )
-        } catch {
-            notice = .submitFailed
-            submittingQuestionID = nil
-            return
-        }
-
-        // Show it as sending right away; drop the editable draft (the staged bytes stay
-        // for the upload), then ask the sync engine to send it now if we're online.
-        sendingAnswers[question.id] = .media(media, stagedData: stagedData)
-        clearDraft(for: question.id)
-        submittingQuestionID = nil
-        await localChangeSyncHandler?()
-        await reload()
-    }
-
-    /// Resolves the draft into a directly-sendable payload (text or partner choice),
-    /// or nil when there's nothing to send yet. Photo answers go through their own
-    /// upload path, so they resolve to nil here.
-    private func makePayload(for question: DailyChallengeQuestion) -> DailyAnswerPayload? {
-        switch composeKind(for: question) {
-        case .partnerChoice:
-            guard let selection = partnerChoiceSelection(for: question.id) else { return nil }
-            return .partnerChoice(selection)
-        case .text:
-            let answerText = draftText(for: question.id).trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !answerText.isEmpty else { return nil }
-            return .text(answerText)
-        default:
-            return nil
-        }
+    /// The trimmed draft text for a question, or nil when it's empty.
+    private func nonEmptyDraftText(for questionID: UUID) -> String? {
+        let text = draftText(for: questionID).trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? nil : text
     }
 
     /// Whether the current draft is complete enough to send — drives the flow's
-    /// primary button and keeps Skip out of reach once an answer is in progress.
+    /// primary button and keeps Skip out of reach once an answer is in progress. A
+    /// combined question needs only one of its parts filled in.
     func hasDraftToSubmit(for question: DailyChallengeQuestion) -> Bool {
+        let hasText = nonEmptyDraftText(for: question.id) != nil
+        let hasMedia = answerDrafts[question.id]?.media != nil
+        let hasChoice = partnerChoiceSelection(for: question.id) != nil
+
+        if question.usesCombinedCompose {
+            switch question.combinedSecondaryKind {
+            case .photo: return hasText || hasMedia
+            case .partnerChoice: return hasText || hasChoice
+            default: return hasText
+            }
+        }
+
         switch composeKind(for: question) {
-        case .photo, .voice:
-            return answerDrafts[question.id]?.media != nil
-        default:
-            return makePayload(for: question) != nil
+        case .photo, .voice: return hasMedia
+        case .partnerChoice: return hasChoice
+        case .text: return hasText
+        default: return false
         }
     }
 
@@ -352,12 +409,14 @@ final class DailyChallengeViewModel {
             // Save disables again until the next change.
             setDraftText(answerText, for: question.id)
             await reload()
-        } catch is CancellationError {
         } catch is DailyChallengeEditLockedError {
             notice = .editLocked
             await reload()
         } catch {
-            notice = .editFailed
+            if !isCancellation(error) {
+                logFailure("Saving a text answer edit failed", error)
+                notice = .editFailed
+            }
         }
         submittingQuestionID = nil
     }
@@ -384,12 +443,14 @@ final class DailyChallengeViewModel {
             // the next change.
             setPartnerChoice(selection, for: question.id)
             await reload()
-        } catch is CancellationError {
         } catch is DailyChallengeEditLockedError {
             notice = .editLocked
             await reload()
         } catch {
-            notice = .editFailed
+            if !isCancellation(error) {
+                logFailure("Saving a partner-choice answer edit failed", error)
+                notice = .editFailed
+            }
         }
         submittingQuestionID = nil
     }
@@ -414,11 +475,13 @@ final class DailyChallengeViewModel {
                 operation: operationProvider.makeOperation()
             )
             clearDraft(for: question.id)
-        } catch is CancellationError {
         } catch is DailyChallengeShuffleLimitError {
             notice = .shuffleLimitReached
         } catch {
-            notice = .shuffleFailed
+            if !isCancellation(error) {
+                logFailure("Skipping (shuffling) a question failed", error)
+                notice = .shuffleFailed
+            }
         }
         shufflingSlotNumber = nil
     }
@@ -465,6 +528,9 @@ final class DailyChallengeViewModel {
     /// to upload. Selecting a photo also makes photo the chosen kind.
     func stagePhoto(_ imageData: Data, for questionID: UUID) {
         guard let compressed = ImageCompressor.compress(imageData) else {
+            #if DEBUG
+            logger.error("Compressing the picked photo returned nil; cannot stage it")
+            #endif
             notice = .submitFailed
             return
         }
@@ -472,6 +538,7 @@ final class DailyChallengeViewModel {
         do {
             try mediaDraftStore.writeStagedMedia(compressed.data, instanceID: questionID)
         } catch {
+            logFailure("Staging a photo on the device failed", error)
             notice = .submitFailed
             return
         }
@@ -493,7 +560,11 @@ final class DailyChallengeViewModel {
     /// Stages a recorded voice note so it persists across reopen and is ready to
     /// upload. Reads the recording's bytes off the temporary file.
     func stageVoice(url: URL, durationMs: Int, for questionID: UUID) {
-        guard let data = try? Data(contentsOf: url) else {
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            logFailure("Reading the recorded voice note off disk failed", error)
             notice = .submitFailed
             return
         }
@@ -501,6 +572,7 @@ final class DailyChallengeViewModel {
         do {
             try mediaDraftStore.writeStagedMedia(data, instanceID: questionID)
         } catch {
+            logFailure("Staging a voice note on the device failed", error)
             notice = .submitFailed
             return
         }
@@ -548,35 +620,32 @@ final class DailyChallengeViewModel {
         sendingAnswers[instanceID] != nil
     }
 
-    /// The content of a still-sending text or partner-choice answer, for its preview.
-    /// Nil for media answers (they preview from their staged bytes) and for answers
-    /// that aren't sending.
-    func sendingSimpleContent(for instanceID: UUID) -> DailySendingSimpleContent? {
-        switch sendingAnswers[instanceID] {
-        case let .text(body):
-            return .text(body)
-        case let .partnerChoice(userID):
-            return .partnerChoice(name: participants.name(for: userID))
-        case .media(_, stagedData: _), nil:
-            return nil
-        }
+    /// The text of a still-sending answer (a standalone text answer or the caption on
+    /// a combined photo/choice answer). Nil when there's no text or it isn't sending.
+    func sendingText(for instanceID: UUID) -> String? {
+        sendingAnswers[instanceID]?.text
+    }
+
+    /// The chosen person's name for a still-sending partner-choice answer. Nil
+    /// otherwise.
+    func sendingPartnerChoiceName(for instanceID: UUID) -> String? {
+        guard let userID = sendingAnswers[instanceID]?.partnerChoiceUserID else { return nil }
+        return participants.name(for: userID)
     }
 
     /// The staged media bytes for a still-sending media answer, for its "saved,
     /// sending" preview. Reads the staged file first, then queued fallback bytes.
-    /// Nil for text/partner-choice answers.
+    /// Nil for answers without media.
     func sendingMediaData(for instanceID: UUID) -> Data? {
-        guard case let .media(_, stagedData: stagedData) = sendingAnswers[instanceID] else { return nil }
-        return mediaDraftStore.stagedMediaData(instanceID: instanceID) ?? stagedData
+        guard let media = sendingAnswers[instanceID]?.media else { return nil }
+        return mediaDraftStore.stagedMediaData(instanceID: instanceID) ?? media.stagedData
     }
 
     /// The recorded length of a still-sending voice note, so its playback scrubber
     /// shows a duration before the local file finishes loading. Nil for photos.
     func sendingVoiceDurationMs(for instanceID: UUID) -> Int? {
-        guard case let .media(media, stagedData: _) = sendingAnswers[instanceID],
-              media.purpose == .voice
-        else { return nil }
-        return media.durationMs
+        guard let media = sendingAnswers[instanceID]?.media, media.draft.purpose == .voice else { return nil }
+        return media.draft.durationMs
     }
 
     /// Recomputes which questions still have a queued/in-flight answer, from the
@@ -598,21 +667,41 @@ final class DailyChallengeViewModel {
                 guard let data = operation.requestData,
                       let payload = try? JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
                 else { return nil }
-                switch payload.content {
-                case let .text(body):
-                    return (payload.instanceID, .text(body))
-            case let .partnerChoice(userID):
-                return (payload.instanceID, .partnerChoice(userID))
-            case let .media(media):
-                return (payload.instanceID, .media(media.draft, stagedData: media.stagedData))
-            }
+                return (payload.instanceID, Self.sendingAnswer(from: payload.content))
             },
             uniquingKeysWith: { first, _ in first }
         )
     }
 
+    private static func sendingAnswer(
+        from content: DailySubmitAnswerOperationPayload.Content
+    ) -> SendingAnswer {
+        switch content {
+        case let .text(body):
+            return SendingAnswer(text: body)
+        case let .partnerChoice(userID):
+            return SendingAnswer(partnerChoiceUserID: userID)
+        case let .media(media):
+            return SendingAnswer(media: .init(draft: media.draft, stagedData: media.stagedData))
+        case let .textAndMedia(body, media):
+            return SendingAnswer(text: body, media: .init(draft: media.draft, stagedData: media.stagedData))
+        case let .textAndPartnerChoice(body, userID):
+            return SendingAnswer(text: body, partnerChoiceUserID: userID)
+        }
+    }
+
     func dismissNotice() {
         notice = nil
+    }
+
+    var hasCompletedRequiredDailyQuestions: Bool {
+        let requiredCount = DailyChallengeProgress.requiredOwnQuestionCount
+        guard snapshot.ownQuestions.count >= requiredCount else { return false }
+
+        let completedCount = snapshot.ownQuestions.filter { question in
+            question.hasOwnAnswer || sendingAnswers[question.id] != nil
+        }.count
+        return completedCount >= requiredCount
     }
 
     var homeCardState: DailyChallengeCardState {

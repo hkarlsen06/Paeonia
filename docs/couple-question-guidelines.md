@@ -109,9 +109,15 @@ Use answer kinds this way:
 - `voice`: for prompts where tone, presence, or hearing the person matters.
 - `partner_choice`: for prompts where the answer is one member of the couple.
 
-Use a single answer kind when the prompt clearly calls for one mode. Use two answer kinds only when both modes naturally fit the same question, such as `photo` plus `text` for a moment that can be shown or described.
+Use a single answer kind when the prompt clearly calls for one mode. Use two answer kinds when both modes naturally fit the same question.
 
-The wording must match the answer kinds. Do not write "Record a voice note" unless `voice` is allowed. Do not write "Send a photo" unless `photo` is allowed. For `partner_choice`, make the prompt about choosing a person, not writing a reflection.
+### Combine `text` with `photo` or `partner_choice` (prefer this)
+
+`text` + `photo` and `text` + `partner_choice` are **combined** answers: the app shows **both composers at once** and the partner can add one, the other, or both in a single answer (a photo with a caption, or a pick with a few words of why). This is usually richer than forcing a choice, so reach for it whenever a prompt can be both shown/picked **and** described — e.g. "Show or describe one small thing that caught the mood of your day," or "Who's more likely to plan the next trip — and why?". The reveal shows every part the partner filled in.
+
+Other two-kind pairings (anything involving `voice`) are **either/or**: the app shows a single-kind picker and the partner chooses one mode. So `text` + `voice` means "write it or say it," not both.
+
+The wording must match the answer kinds, and for combined questions it should invite both parts without demanding either (each is optional). Do not write "Record a voice note" unless `voice` is allowed. Do not write "Send a photo" unless `photo` is allowed. For `partner_choice`, make the prompt about choosing a person (optionally with a reason when paired with `text`).
 
 ## Localization
 
