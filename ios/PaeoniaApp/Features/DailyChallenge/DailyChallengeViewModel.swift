@@ -723,7 +723,7 @@ final class DailyChallengeViewModel {
     }
 
     var homeCardState: DailyChallengeCardState {
-        if isLoading && !snapshot.hasAnyQuestions {
+        if isLoading && !snapshot.hasAnyCurrentDayQuestions {
             return DailyChallengeCardState(
                 kind: .loading,
                 answeredCount: snapshot.progress.ownAnsweredCount,

@@ -127,11 +127,16 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
         currentUserID: UUID,
         rows: [DailyQuestionRow]
     ) async throws -> DailyChallengeSnapshot {
-        guard let coupleDayID = rows.first?.coupleDayID else {
+        var seenCoupleDayIDs = Set<UUID>()
+        let coupleDayIDs = rows.map(\.coupleDayID).filter { seenCoupleDayIDs.insert($0).inserted }
+        guard !coupleDayIDs.isEmpty else {
             return .empty(currentUserID: currentUserID)
         }
 
-        let answerDetails = try await gateway.loadAnswerDetails(coupleDayID: coupleDayID)
+        var answerDetails: [DailyAnswerDetailRow] = []
+        for coupleDayID in coupleDayIDs {
+            answerDetails += try await gateway.loadAnswerDetails(coupleDayID: coupleDayID)
+        }
         return DailyChallengeSnapshot.make(
             currentUserID: currentUserID,
             rows: rows,

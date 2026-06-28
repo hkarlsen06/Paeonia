@@ -24,20 +24,35 @@ struct MainTabView: View {
     var onDailyChallengeLocalChange: @MainActor () async -> Void = {}
 
     @State private var dailyChallengeViewModel = DailyChallengeViewModel()
-    /// `presented` keeps the flow mounted; `expanded` drives the open/close morph.
-    /// They differ only briefly during a close, while the flow plays its collapse.
     @State private var isAnswerFlowPresented = false
-    @State private var isAnswerFlowExpanded = false
+    /// Which card the daily answer flow should zoom out of (the Home prompt card or the
+    /// Questions-tab hero card), so the cover grows from the one the user tapped.
+    @State private var dailyFlowSource: DailyFlowSource = .home
+    /// Streak-restore offer opened from a card's streak pill, outside the answer flow.
     @State private var showStreakRestore = false
-    /// The Questions-tab single-question partner-answer flow. Like the daily flow,
-    /// `presented` keeps it mounted while `expanded` drives the open/close morph; the
-    /// question is the card that was tapped.
+    /// Streak-restore offer opened from inside the answer flow's completion screen. A
+    /// separate binding because a sheet cannot present over its own full-screen cover,
+    /// so the in-flow offer is presented from within the cover instead.
+    @State private var showStreakRestoreInFlow = false
+    /// The Questions-tab single-question partner-answer flow. The tapped question drives
+    /// presentation and is the card the cover zooms out of.
     @State private var partnerAnswerQuestion: DailyChallengeQuestion?
-    @State private var isPartnerAnswerPresented = false
-    @State private var isPartnerAnswerExpanded = false
-    @Namespace private var dailyChallengeMorph
-    @Namespace private var partnerAnswerMorph
+    @Namespace private var zoomNamespace
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Which entry card the daily answer flow zooms out of.
+    private enum DailyFlowSource {
+        case home
+        case questions
+
+        var zoomSourceID: String {
+            switch self {
+            case .home: DailyFlowZoom.home
+            case .questions: DailyFlowZoom.questions
+            }
+        }
+    }
 
     init(
         currentUserID: UUID?,
@@ -74,53 +89,17 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        ZStack {
-            TabView(selection: selection) {
-                ForEach(MainTab.allCases) { tab in
-                    content(for: tab)
-                        .tag(tab)
-                        .tabItem {
-                            Label {
-                                Text(tab.title)
-                            } icon: {
-                                Image(systemName: tab.systemImage)
-                            }
+        TabView(selection: selection) {
+            ForEach(MainTab.allCases) { tab in
+                content(for: tab)
+                    .tag(tab)
+                    .tabItem {
+                        Label {
+                            Text(tab.title)
+                        } icon: {
+                            Image(systemName: tab.systemImage)
                         }
-                }
-            }
-
-            // The answering flow lives above the tab bar so the card can grow into
-            // a full-screen surface (and the floating tab bar doesn't show through).
-            // Mount (`presented`) and open (`expanded`) are separate so that on close
-            // the flow stays mounted long enough to play its reveal-collapse while the
-            // elements glide home, then unmounts once it's invisible.
-            if isAnswerFlowPresented {
-                DailyChallengeAnswerFlow(
-                    viewModel: dailyChallengeViewModel,
-                    namespace: flowNamespace,
-                    surfaceNamespace: surfaceFlowNamespace,
-                    isExpanded: isAnswerFlowExpanded,
-                    onClose: closeAnswerFlow,
-                    onRestore: openStreakRestore,
-                    onOpenPartnerQuestions: openQuestionsTabFromAnswerFlow
-                )
-                .zIndex(1)
-                .transition(answerFlowTransition)
-            }
-
-            // The single-question partner-answer flow, opened from a Questions-tab
-            // card. Same mount/expand split as the daily flow; sits above it.
-            if isPartnerAnswerPresented, let question = partnerAnswerQuestion {
-                DailyPartnerAnswerFlow(
-                    question: question,
-                    viewModel: dailyChallengeViewModel,
-                    namespace: partnerFlowNamespace,
-                    surfaceNamespace: partnerSurfaceFlowNamespace,
-                    isExpanded: isPartnerAnswerExpanded,
-                    onClose: closePartnerAnswerFlow
-                )
-                .zIndex(2)
-                .transition(answerFlowTransition)
+                    }
             }
         }
         .tint(.paeoniaAccentPrimary)
@@ -137,8 +116,36 @@ struct MainTabView: View {
         .onChange(of: dailyChallengeParticipants) { _, participants in
             dailyChallengeViewModel.refreshParticipants(participants)
         }
+        // The answer flow is a full-screen cover that zooms out of the card that opened
+        // it (covering the floating tab bar). Reduce Motion drops the zoom for the
+        // cover's plain cross-fade. The streak-restore offer is presented from within
+        // the cover so it can sit over the full-screen flow.
+        .fullScreenCover(isPresented: $isAnswerFlowPresented) {
+            DailyChallengeAnswerFlow(
+                viewModel: dailyChallengeViewModel,
+                onClose: closeAnswerFlow,
+                onRestore: { showStreakRestoreInFlow = true },
+                onOpenPartnerQuestions: openQuestionsTabFromAnswerFlow
+            )
+            .zoomTransition(dailyFlowSource.zoomSourceID, in: zoomNamespace, enabled: !reduceMotion)
+            .sheet(isPresented: $showStreakRestoreInFlow) {
+                streakRestoreSheet(isPresented: $showStreakRestoreInFlow)
+            }
+            .environment(bannerCenter)
+        }
+        // The single-question partner-answer flow zooms out of the tapped card.
+        .fullScreenCover(item: $partnerAnswerQuestion) { question in
+            DailyPartnerAnswerFlow(
+                question: question,
+                viewModel: dailyChallengeViewModel,
+                onClose: closePartnerAnswerFlow
+            )
+            .zoomTransition(question.id, in: zoomNamespace, enabled: !reduceMotion)
+            .environment(bannerCenter)
+        }
+        // The card streak pills open the same offer from outside the answer flow.
         .sheet(isPresented: $showStreakRestore) {
-            streakRestoreSheet
+            streakRestoreSheet(isPresented: $showStreakRestore)
         }
     }
 
@@ -152,14 +159,14 @@ struct MainTabView: View {
         showStreakRestore = true
     }
 
-    private var streakRestoreSheet: some View {
+    private func streakRestoreSheet(isPresented: Binding<Bool>) -> some View {
         StreakRestoreView(
             viewModel: StreakRestoreViewModel(
                 streak: dailyChallengeViewModel.streak,
                 userID: currentUserID?.uuidString,
                 onRestored: { _ in await dailyChallengeViewModel.refreshStreak() }
             ),
-            onClose: { showStreakRestore = false }
+            onClose: { isPresented.wrappedValue = false }
         )
         .presentationDetents([.large])
         .presentationBackground(.paeoniaSurfacePrimary)
@@ -202,7 +209,7 @@ struct MainTabView: View {
                 partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
                 dailyChallengeCardState: dailyChallengeViewModel.homeCardState,
                 dailyChallengeStreak: streakPillState,
-                dailyChallengeMorphNamespace: morphNamespace(for: .home),
+                zoomNamespace: zoomNamespace,
                 locationMapState: locationMapState,
                 onPromptCurrentLocation: {
                     Task { await locationViewModel.promptForCurrentLocation() }
@@ -211,8 +218,8 @@ struct MainTabView: View {
                 onOpenDailyChallenge: openDailyChallengeFromHome,
                 onOpenWidgetDrawing: onOpenWidgetDrawing,
                 onRefresh: {
+                    await refreshDailyChallenge()
                     await onHomeRefresh()
-                    await dailyChallengeViewModel.reload()
                 }
             )
             .navigationBarTitleDisplayMode(.inline)
@@ -228,60 +235,24 @@ struct MainTabView: View {
         NavigationStack {
             DailyChallengeScreen(
                 viewModel: dailyChallengeViewModel,
-                morphNamespace: morphNamespace(for: .questions),
-                partnerMorphNamespace: partnerCardNamespace,
-                onOpenAnswerFlow: openAnswerFlow,
+                zoomNamespace: zoomNamespace,
+                onOpenAnswerFlow: { openAnswerFlow(source: .questions) },
                 onTapStreak: openStreakRestore,
                 onRefresh: {
-                    await onDailyChallengeRefresh()
-                    await dailyChallengeViewModel.reload()
+                    await refreshDailyChallenge()
                 },
                 onAnswerPartnerQuestion: openPartnerAnswerFlow
             )
         }
     }
 
-    /// The card only owns the shared morph ids while it is the visible entry point
-    /// and the flow is collapsed. While expanding (or collapsing) the card releases
-    /// the ids so the flow's elements travel; the card reclaims them as the flow
-    /// collapses so they glide back home. Reduce Motion opts out of the glide
-    /// entirely (a plain cross-fade is used instead).
-    private func morphNamespace(for tab: MainTab) -> Namespace.ID? {
-        guard !reduceMotion, !isAnswerFlowExpanded, selection.wrappedValue == tab else { return nil }
-        return dailyChallengeMorph
-    }
-
-    /// The flow owns the morph ids only while it is open. It releases them the moment
-    /// a close begins (so the card can reclaim them and glide the elements back), and
-    /// never claims them under Reduce Motion.
-    private var flowNamespace: Namespace.ID? {
-        (reduceMotion || !isAnswerFlowExpanded) ? nil : dailyChallengeMorph
-    }
-
-    /// Namespace for the morphing surface, which — unlike the gliding hero elements —
-    /// must keep travelling through the close. The flow stays attached to it for its
-    /// whole life (open and closing); the card supplies the collapsed target through
-    /// `morphNamespace(for:)`, and `isSource` on each side decides which end the
-    /// surface settles toward. Off under Reduce Motion.
-    private var surfaceFlowNamespace: Namespace.ID? {
-        reduceMotion ? nil : dailyChallengeMorph
-    }
-
-    /// How the answering flow enters and leaves.
-    ///
-    /// Under motion the flow uses `.identity`: it never fades as a whole. Its own
-    /// surface, content reveal, and element glide all animate from inside the flow
-    /// (and it only unmounts once already invisible), so the card reads as growing
-    /// and shrinking rather than the screen dissolving over it. Reduce Motion drops
-    /// the glide for a plain cross-fade in both directions.
-    private var answerFlowTransition: AnyTransition {
-        reduceMotion ? .opacity : .identity
-    }
-
-    /// Spring that carries the morph. A plain, short cross-fade replaces it under
-    /// Reduce Motion.
-    private var morphAnimation: Animation? {
-        reduceMotion ? .easeInOut(duration: PaeoniaMotion.motionDefault) : PaeoniaMotion.heroMorph
+    /// Keep the daily challenge refresh visually responsive. Read the challenge first
+    /// so partner answers and day rollover appear without waiting for broader app sync,
+    /// then sync and read once more in case that sync flushed a queued local answer.
+    private func refreshDailyChallenge() async {
+        await dailyChallengeViewModel.reload()
+        await onDailyChallengeRefresh()
+        await dailyChallengeViewModel.reload()
     }
 
     private func openDailyChallengeFromHome() {
@@ -291,87 +262,35 @@ struct MainTabView: View {
             return
         }
 
-        openAnswerFlow()
+        openAnswerFlow(source: .home)
     }
 
     /// Today's questions are created lazily, so opening the flow before the couple
     /// has started kicks off that one-time setup; the flow shows a brief loading
     /// state until the questions arrive.
-    private func openAnswerFlow() {
+    private func openAnswerFlow(source: DailyFlowSource) {
         if dailyChallengeViewModel.homeCardState.kind == .noChallenge {
             Task { await dailyChallengeViewModel.startToday() }
         }
-        // Mount and open together so the flow appears already expanded — the elements
-        // glide from the card and the surface wipes open, with no intermediate frame.
-        withAnimation(morphAnimation) {
-            isAnswerFlowPresented = true
-            isAnswerFlowExpanded = true
-        }
+        dailyFlowSource = source
+        isAnswerFlowPresented = true
     }
 
     private func openQuestionsTabFromAnswerFlow() {
         selection.wrappedValue = .questions
-        closeAnswerFlow()
+        isAnswerFlowPresented = false
     }
 
     private func closeAnswerFlow() {
-        guard !reduceMotion else {
-            // No glide to wait for: cross-fade the whole flow out and unmount at once.
-            withAnimation(morphAnimation) {
-                isAnswerFlowExpanded = false
-                isAnswerFlowPresented = false
-            }
-            return
-        }
-        // Begin the collapse now (the flow wipes shut and the elements glide home),
-        // then unmount once the spring settles — unless the user reopened meanwhile.
-        withAnimation(morphAnimation) {
-            isAnswerFlowExpanded = false
-        } completion: {
-            if !isAnswerFlowExpanded { isAnswerFlowPresented = false }
-        }
-    }
-
-    /// Answerable partner cards own their per-question morph ids while collapsed, so a
-    /// tapped card's CTA can glide into the flow; they release on expand (and never
-    /// claim them under Reduce Motion).
-    private var partnerCardNamespace: Namespace.ID? {
-        (reduceMotion || isPartnerAnswerExpanded) ? nil : partnerAnswerMorph
-    }
-
-    /// The partner flow owns the CTA id only while open, mirroring `flowNamespace`.
-    private var partnerFlowNamespace: Namespace.ID? {
-        (reduceMotion || !isPartnerAnswerExpanded) ? nil : partnerAnswerMorph
-    }
-
-    /// Surface namespace for the partner flow, mirroring `surfaceFlowNamespace`: held
-    /// for the flow's whole life so its surface can grow and shrink. Off under Reduce
-    /// Motion.
-    private var partnerSurfaceFlowNamespace: Namespace.ID? {
-        reduceMotion ? nil : partnerAnswerMorph
+        isAnswerFlowPresented = false
     }
 
     private func openPartnerAnswerFlow(_ question: DailyChallengeQuestion) {
         partnerAnswerQuestion = question
-        withAnimation(morphAnimation) {
-            isPartnerAnswerPresented = true
-            isPartnerAnswerExpanded = true
-        }
     }
 
     private func closePartnerAnswerFlow() {
-        guard !reduceMotion else {
-            withAnimation(morphAnimation) {
-                isPartnerAnswerExpanded = false
-                isPartnerAnswerPresented = false
-            }
-            return
-        }
-        withAnimation(morphAnimation) {
-            isPartnerAnswerExpanded = false
-        } completion: {
-            if !isPartnerAnswerExpanded { isPartnerAnswerPresented = false }
-        }
+        partnerAnswerQuestion = nil
     }
 
     private var youTab: some View {
@@ -413,6 +332,7 @@ struct MainTabView: View {
         widgetDrawingPresented: .constant(false),
         onOpenWidgetDrawing: {}
     )
+    .environment(PaeoniaBannerCenter())
     .preferredColorScheme(.dark)
 }
 #endif

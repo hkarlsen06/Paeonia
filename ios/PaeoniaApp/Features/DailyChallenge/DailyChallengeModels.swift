@@ -308,6 +308,10 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Sendable {
     let ownAnswerDetail: DailyQuestionAnswerDetail?
     let partnerAnswerDetail: DailyQuestionAnswerDetail?
     let origin: DailyQuestionOrigin
+    /// Whether this row belongs to the active day returned by the backend. Carried
+    /// unresolved exchanges from older days stay visible in the Questions tab, but
+    /// they must not affect today's Home card or own-question progress.
+    let isCurrentDay: Bool
 
     var hasOwnAnswer: Bool {
         ownAnswer != nil
@@ -461,6 +465,9 @@ nonisolated struct DailyChallengeCardState: Equatable, Sendable {
 
 nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
     let currentUserID: UUID?
+    /// The active day represented by this snapshot. When the backend returns only
+    /// carried-over unresolved rows and no active-day rows, this is nil so the Home
+    /// card correctly shows that today's challenge has not started.
     let coupleDayID: UUID?
     let questions: [DailyChallengeQuestion]
     let refreshedAt: Date
@@ -475,26 +482,87 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
     }
 
     var ownQuestions: [DailyChallengeQuestion] {
-        questions
+        currentDayQuestions
             .filter { $0.origin == .own }
             .sorted { $0.slotNumber < $1.slotNumber }
+    }
+
+    private var allOwnQuestions: [DailyChallengeQuestion] {
+        questions
+            .filter { $0.origin == .own }
+            .sorted(by: readOverviewDayOrder)
     }
 
     var partnerStartedQuestions: [DailyChallengeQuestion] {
         questions
             .filter { $0.origin == .partner && ($0.hasPartnerAnswer || $0.hasOwnAnswer) }
-            .sorted {
-                let lhsDate = $0.partnerAnswer?.answeredAt ?? $0.ownAnswer?.answeredAt ?? .distantPast
-                let rhsDate = $1.partnerAnswer?.answeredAt ?? $1.ownAnswer?.answeredAt ?? .distantPast
-                if lhsDate == rhsDate {
-                    return $0.slotNumber < $1.slotNumber
-                }
-                return lhsDate < rhsDate
+            .sorted(by: readOverviewDayOrder)
+    }
+
+    private var currentDayQuestions: [DailyChallengeQuestion] {
+        guard let coupleDayID else { return [] }
+        return questions.filter { $0.coupleDayID == coupleDayID && $0.isCurrentDay }
+    }
+
+    private var currentDayVisibleQuestions: [DailyChallengeQuestion] {
+        currentDayQuestions.filter(\.isVisibleToCurrentUser)
+    }
+
+    private func readOverviewDayOrder(
+        _ lhs: DailyChallengeQuestion,
+        _ rhs: DailyChallengeQuestion
+    ) -> Bool {
+        if lhs.isCurrentDay != rhs.isCurrentDay {
+            return lhs.isCurrentDay
+        }
+        if lhs.startsAt != rhs.startsAt {
+            return lhs.startsAt > rhs.startsAt
+        }
+        if lhs.origin != rhs.origin {
+            return lhs.origin == .own
+        }
+
+        switch (lhs.origin, rhs.origin) {
+        case (.partner, .partner):
+            let lhsAnswerable = lhs.isAvailableToAnswer
+            let rhsAnswerable = rhs.isAvailableToAnswer
+            if lhsAnswerable != rhsAnswerable {
+                return lhsAnswerable
             }
+            if lhsAnswerable {
+                let lhsDate = lhs.partnerAnswer?.answeredAt ?? lhs.ownAnswer?.answeredAt ?? .distantPast
+                let rhsDate = rhs.partnerAnswer?.answeredAt ?? rhs.ownAnswer?.answeredAt ?? .distantPast
+                if lhsDate != rhsDate { return lhsDate < rhsDate }
+            } else {
+                let lhsDate = lhs.ownAnswer?.answeredAt ?? .distantPast
+                let rhsDate = rhs.ownAnswer?.answeredAt ?? .distantPast
+                if lhsDate != rhsDate { return lhsDate > rhsDate }
+            }
+        case (.own, .own):
+            let lhsHasPartnerAnswer = lhs.hasPartnerAnswer
+            let rhsHasPartnerAnswer = rhs.hasPartnerAnswer
+            if lhsHasPartnerAnswer != rhsHasPartnerAnswer {
+                return lhsHasPartnerAnswer
+            }
+            if lhsHasPartnerAnswer {
+                let lhsDate = lhs.partnerAnswer?.answeredAt ?? .distantPast
+                let rhsDate = rhs.partnerAnswer?.answeredAt ?? .distantPast
+                if lhsDate != rhsDate { return lhsDate > rhsDate }
+            }
+        default:
+            break
+        }
+
+        if lhs.slotNumber != rhs.slotNumber {
+            return lhs.slotNumber < rhs.slotNumber
+        }
+        return lhs.id.uuidString < rhs.id.uuidString
     }
 
     var visibleQuestions: [DailyChallengeQuestion] {
-        (ownQuestions + partnerStartedQuestions).filter(\.isVisibleToCurrentUser)
+        questions
+            .filter(\.isVisibleToCurrentUser)
+            .sorted(by: readOverviewDayOrder)
     }
 
     var answerablePartnerQuestions: [DailyChallengeQuestion] {
@@ -506,39 +574,15 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
     }
 
     var hasPartnerAnswersForToday: Bool {
-        visibleQuestions.contains(where: \.hasPartnerAnswer)
+        currentDayVisibleQuestions.contains(where: \.hasPartnerAnswer)
     }
 
     var partnerQuestionsForReadOverview: [DailyChallengeQuestion] {
-        // Still-answerable cards stay on top (they carry the CTA). The rest are the
-        // revealed exchanges, ordered by when *you* answered them — the moment the
-        // reply unlocked — newest first, so recent activity surfaces.
-        let answerable = partnerStartedQuestions.filter(\.isAvailableToAnswer)
-        let answered = partnerStartedQuestions
-            .filter { !$0.isAvailableToAnswer }
-            .sorted { lhs, rhs in
-                let left = lhs.ownAnswer?.answeredAt ?? .distantPast
-                let right = rhs.ownAnswer?.answeredAt ?? .distantPast
-                if left == right { return lhs.slotNumber < rhs.slotNumber }
-                return left > right
-            }
-        return answerable + answered
+        partnerStartedQuestions
     }
 
     var ownQuestionsForReadOverview: [DailyChallengeQuestion] {
-        // Questions your partner has answered come first, ordered by when *they*
-        // answered yours — the moment it was revealed — newest first. The ones still
-        // waiting on the partner follow, in their natural slot order.
-        let withPartnerAnswers = ownQuestions
-            .filter(\.hasPartnerAnswer)
-            .sorted { lhs, rhs in
-                let left = lhs.partnerAnswer?.answeredAt ?? .distantPast
-                let right = rhs.partnerAnswer?.answeredAt ?? .distantPast
-                if left == right { return lhs.slotNumber < rhs.slotNumber }
-                return left > right
-            }
-        let withoutPartnerAnswers = ownQuestions.filter { !$0.hasPartnerAnswer }
-        return withPartnerAnswers + withoutPartnerAnswers
+        allOwnQuestions
     }
 
     /// Questions surfaced inside the focused answering flow, in the order the
@@ -561,8 +605,12 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         !visibleQuestions.isEmpty
     }
 
+    var hasAnyCurrentDayQuestions: Bool {
+        !currentDayVisibleQuestions.isEmpty
+    }
+
     var homeCardState: DailyChallengeCardState {
-        if !hasAnyQuestions {
+        if !hasAnyCurrentDayQuestions {
             return DailyChallengeCardState(
                 kind: .noChallenge,
                 answeredCount: progress.ownAnsweredCount,
@@ -647,14 +695,22 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
                     canViewPartnerAnswer: row.canViewPartnerAnswer,
                     ownAnswerDetail: row.ownAnswerID.flatMap { detailsByAnswerID[$0] },
                     partnerAnswerDetail: row.partnerAnswerID.flatMap { detailsByAnswerID[$0] },
-                    origin: row.seededForUserID == currentUserID ? .own : .partner
+                    origin: row.seededForUserID == currentUserID ? .own : .partner,
+                    isCurrentDay: row.isCurrentDay ?? true
                 )
             }
             .filter(\.isVisibleToCurrentUser)
 
+        let currentCoupleDayID: UUID?
+        if rows.contains(where: { $0.isCurrentDay != nil }) {
+            currentCoupleDayID = rows.first(where: { $0.isCurrentDay == true })?.coupleDayID
+        } else {
+            currentCoupleDayID = rows.first?.coupleDayID
+        }
+
         return DailyChallengeSnapshot(
             currentUserID: currentUserID,
-            coupleDayID: rows.first?.coupleDayID,
+            coupleDayID: currentCoupleDayID,
             questions: questions,
             refreshedAt: refreshedAt
         )

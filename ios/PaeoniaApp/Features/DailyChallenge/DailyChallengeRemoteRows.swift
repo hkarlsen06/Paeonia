@@ -23,6 +23,10 @@ nonisolated struct DailyQuestionRow: Decodable, Equatable, Sendable {
     let partnerAnswerID: UUID?
     let partnerAnsweredAt: Date?
     let canViewPartnerAnswer: Bool
+    /// Present only on the "today" read model once it includes carried-over
+    /// unresolved exchanges. Older backend responses omit it; those rows are
+    /// treated as current-day rows for compatibility.
+    let isCurrentDay: Bool?
 
     enum CodingKeys: String, CodingKey {
         case coupleDayID = "couple_day_id"
@@ -47,6 +51,7 @@ nonisolated struct DailyQuestionRow: Decodable, Equatable, Sendable {
         case partnerAnswerID = "partner_answer_id"
         case partnerAnsweredAt = "partner_answered_at"
         case canViewPartnerAnswer = "can_view_partner_answer"
+        case isCurrentDay = "is_current_day"
     }
 
     func prompt(for locale: Locale) -> String {

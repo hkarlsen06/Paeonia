@@ -83,11 +83,14 @@ struct DailyPhotoAnswerComposer: View {
     private func pickedPhoto(_ uiImage: UIImage) -> some View {
         VStack(spacing: PaeoniaSpacing.space8) {
             ZStack(alignment: .topTrailing) {
+                // Flexible height: caps at 220 when there's room, but compresses toward
+                // 120 when the step is tight (a long question paired with a text field),
+                // so the whole question-photo-field cluster fits without a scroll view.
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
                     .frame(maxWidth: .infinity)
-                    .frame(height: 220)
+                    .frame(minHeight: 120, maxHeight: 220)
                     .clipped()
                     .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
 

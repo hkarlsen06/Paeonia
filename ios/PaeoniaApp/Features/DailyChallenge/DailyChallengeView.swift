@@ -7,11 +7,10 @@ import SwiftUI
 /// Answering itself happens in `DailyChallengeAnswerFlow`, never inline here.
 struct DailyChallengeScreen: View {
     let viewModel: DailyChallengeViewModel
-    var morphNamespace: Namespace.ID?
-    /// Namespace for the per-card partner-answer morph; the parent passes it only
-    /// while collapsed (and not under Reduce Motion) so the tapped card's CTA glides
-    /// into the answer flow.
-    var partnerMorphNamespace: Namespace.ID?
+    /// Namespace for the Daily Challenge zoom transition. The hero card and each
+    /// answerable partner card mark themselves as zoom sources in it, so the tapped
+    /// card appears to grow into its full-screen answer flow.
+    var zoomNamespace: Namespace.ID?
     var onOpenAnswerFlow: () -> Void = {}
     var onTapStreak: () -> Void = {}
     var onRefresh: (() async -> Void)?
@@ -23,9 +22,11 @@ struct DailyChallengeScreen: View {
     /// The card order is captured once per visit and held steady while the tab stays
     /// open, so answering a question (which changes its sort position) doesn't yank
     /// the card out from under the user — it stays put, with the partner's reply now
-    /// revealed in place. The order only refreshes on a full re-entry of the tab.
+    /// revealed in place. The order refreshes on a full re-entry or when a new active
+    /// day arrives, so carried-over questions stay under today's questions.
     @State private var frozenPartnerOrder: [UUID] = []
     @State private var frozenOwnOrder: [UUID] = []
+    @State private var frozenCoupleDayID: UUID?
     @State private var hasFrozenOrder = false
 
     var body: some View {
@@ -43,7 +44,7 @@ struct DailyChallengeScreen: View {
                         // finished their own three, including answers saved locally
                         // and still sending.
                         isOwnChallengeComplete: viewModel.hasCompletedRequiredDailyQuestions,
-                        morphNamespace: partnerMorphNamespace,
+                        zoomNamespace: zoomNamespace,
                         onAnswer: onAnswerPartnerQuestion
                     )
                 }
@@ -79,7 +80,10 @@ struct DailyChallengeScreen: View {
         // re-entry of the tab (leaving and coming back) clears it so it re-sorts.
         .onAppear { freezeOrderIfNeeded() }
         .onChange(of: viewModel.snapshot) { _, _ in freezeOrderIfNeeded() }
-        .onDisappear { hasFrozenOrder = false }
+        .onDisappear {
+            hasFrozenOrder = false
+            frozenCoupleDayID = nil
+        }
     }
 
     /// Partner-started questions surface first, with unanswered bonus replies at
@@ -113,15 +117,20 @@ struct DailyChallengeScreen: View {
     }
 
     /// Snapshots the current sort order once data is available. Skips if already
-    /// frozen this visit, or if there's nothing to capture yet (so the real order is
-    /// taken once questions have loaded, not while empty).
+    /// frozen for this active day, or if there's nothing to capture yet (so the real
+    /// order is taken once questions have loaded, not while empty).
     private func freezeOrderIfNeeded() {
+        let coupleDayID = viewModel.snapshot.coupleDayID
+        if hasFrozenOrder, frozenCoupleDayID != coupleDayID {
+            hasFrozenOrder = false
+        }
         guard !hasFrozenOrder else { return }
         let partner = viewModel.snapshot.partnerQuestionsForReadOverview
         let own = viewModel.snapshot.ownQuestionsForReadOverview
         guard !partner.isEmpty || !own.isEmpty else { return }
         frozenPartnerOrder = partner.map(\.id)
         frozenOwnOrder = own.map(\.id)
+        frozenCoupleDayID = coupleDayID
         hasFrozenOrder = true
     }
 
@@ -143,10 +152,10 @@ struct DailyChallengeScreen: View {
         DailyPromptCard(
             state: viewModel.homeCardState,
             streak: StreakPillState(viewModel.streak),
-            morphNamespace: morphNamespace,
             onAnswer: onOpenAnswerFlow,
             onTapStreak: onTapStreak
         )
+        .zoomSource(DailyFlowZoom.questions, in: zoomNamespace)
     }
 
     private func showBanner(for notice: DailyChallengeViewModel.Notice?) {
@@ -182,9 +191,9 @@ private struct DailyChallengeReadSection: View {
     /// Whether the user has finished their own three questions. Until then a partner
     /// question's CTA is locked. Defaults to true so the own section is unaffected.
     var isOwnChallengeComplete = true
-    /// Partner-answer morph namespace and tap handler; both default to off so the own
-    /// section (which never offers an answer CTA) is unaffected.
-    var morphNamespace: Namespace.ID?
+    /// Zoom-source namespace and tap handler; both default to off so the own section
+    /// (which never offers an answer CTA) is unaffected.
+    var zoomNamespace: Namespace.ID?
     var onAnswer: (DailyChallengeQuestion) -> Void = { _ in }
 
     var body: some View {
@@ -200,7 +209,7 @@ private struct DailyChallengeReadSection: View {
                         participants: participants,
                         sending: sendingPreview(question),
                         isOwnChallengeComplete: isOwnChallengeComplete,
-                        morphNamespace: morphNamespace,
+                        zoomNamespace: zoomNamespace,
                         onAnswer: { onAnswer(question) }
                     )
                 }
@@ -214,7 +223,7 @@ private struct DailyChallengeReadCard: View {
     var participants = DailyChallengeParticipants()
     var sending: DailySendingPreview?
     var isOwnChallengeComplete = true
-    var morphNamespace: Namespace.ID?
+    var zoomNamespace: Namespace.ID?
     var onAnswer: () -> Void = {}
 
     /// A partner question the user can still answer to reveal the reply. When sending,
@@ -238,12 +247,6 @@ private struct DailyChallengeReadCard: View {
                     .foregroundStyle(.paeoniaTextPrimary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    // Cards that can open the flow morph their question into it;
-                    // locked cards stay put since tapping does nothing yet.
-                    .dailyChallengeMorph(
-                        DailyChallengeMorph.partnerAnswerPrompt(question.id),
-                        in: canOpenAnswerFlow ? morphNamespace : nil
-                    )
 
                 if let sending {
                     // Still saving: shows whatever was saved (photo, pick, and/or
@@ -268,32 +271,21 @@ private struct DailyChallengeReadCard: View {
                 }
             }
         }
-        // The collapsed anchor for this card's surface morph, matching the prompt card:
-        // an invisible source pinned to the card so the flow's surface grows from here
-        // and shrinks back. Only cards that can open the flow carry it.
-        .background {
-            Color.clear
-                .dailyChallengeMorph(
-                    DailyChallengeMorph.partnerAnswerSurface(question.id),
-                    in: canOpenAnswerFlow ? morphNamespace : nil
-                )
-        }
+        // Answerable cards are the source the single-question flow zooms out of, so the
+        // tapped card appears to grow into the full-screen flow. Only cards that can
+        // open the flow carry it.
+        .zoomSource(question.id, in: canOpenAnswerFlow ? zoomNamespace : nil)
     }
 
     /// The same primary CTA the daily prompt card uses. When the user still has their
     /// own questions to finish it stays visible but disabled, so it reads as a clear
-    /// "do yours first" rather than disappearing. Once unlocked it carries this
-    /// question's morph id so tapping it expands the card into the answer flow.
+    /// "do yours first" rather than disappearing.
     private var answerButton: some View {
         Button(action: onAnswer) {
             Text(canOpenAnswerFlow ? .dailyChallengePartnerAnswerCta : .dailyChallengePartnerLockedCta)
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
         .disabled(!canOpenAnswerFlow)
-        .dailyChallengeMorph(
-            DailyChallengeMorph.partnerAnswerButton(question.id),
-            in: canOpenAnswerFlow ? morphNamespace : nil
-        )
     }
 }
 
@@ -427,7 +419,8 @@ nonisolated func previewDailyQuestion(
         canViewPartnerAnswer: false,
         ownAnswerDetail: nil,
         partnerAnswerDetail: nil,
-        origin: origin
+        origin: origin,
+        isCurrentDay: true
     )
 }
 #endif

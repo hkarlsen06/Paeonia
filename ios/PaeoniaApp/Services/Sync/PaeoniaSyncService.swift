@@ -153,6 +153,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         }
 
         hasStarted = true
+        needsFollowUpSync = false
         isSyncing = true
 
         let result = await drainSyncRuns(startingReason: reason)
@@ -177,6 +178,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         }
 
         isSyncing = true
+        needsFollowUpSync = false
         scheduleGeneration &+= 1
         let generation = scheduleGeneration
         scheduledTask?.cancel()
@@ -205,8 +207,6 @@ actor PaeoniaSyncService: PaeoniaSyncing {
                 return lastResult ?? .skippedNoSession()
             }
 
-            needsFollowUpSync = false
-
             if shouldSkipForInterval(reason: nextReason, now: Date()) {
                 return lastResult ?? .skippedInterval()
             }
@@ -218,7 +218,10 @@ actor PaeoniaSyncService: PaeoniaSyncing {
                 return result
             }
 
-            if needsFollowUpSync {
+            let shouldRunFollowUpSync = needsFollowUpSync
+            needsFollowUpSync = false
+
+            if shouldRunFollowUpSync {
                 nextReason = .localChange
             } else {
                 return result

@@ -253,7 +253,7 @@ struct RootView: View {
                     selection: mainTabSelection,
                     widgetDrawingPresented: widgetDrawingPresented,
                     onOpenWidgetDrawing: { viewModel.openWidgetDrawing() },
-                    onHomeRefresh: { await refreshHomeFromPull() },
+                    onHomeRefresh: { await refreshHomeSurfacesFromPull() },
                     onDailyChallengeRefresh: { await viewModel.refreshFromHomePull() },
                     onDailyChallengeLocalChange: { await viewModel.syncAfterLocalChange() }
                 )
@@ -494,10 +494,10 @@ struct RootView: View {
         }
     }
 
-    /// Pull-to-refresh on Home: refreshes shared local surfaces and widget sync.
-    private func refreshHomeFromPull() async {
+    /// Pull-to-refresh on Home after the Daily Challenge refresh has run: refreshes
+    /// shared local surfaces and widget sync without delaying the challenge rollover.
+    private func refreshHomeSurfacesFromPull() async {
         await locationViewModel.refreshOwnLocationIfSharingEnabled(source: .manualRefresh)
-        await viewModel.refreshFromHomePull()
         await performWidgetSyncIfPaired(viewModel.state)
         await locationViewModel.reload()
     }

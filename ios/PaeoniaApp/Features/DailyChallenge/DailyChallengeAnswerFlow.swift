@@ -1,94 +1,39 @@
 import SwiftUI
 
-/// Identifiers for the elements that morph (PowerPoint-style) between the compact
-/// prompt card and the full answering flow. The card tags these elements while it
-/// is the active, collapsed entry point; the flow tags the same ids once expanded,
-/// so SwiftUI glides each one from its card position into its flow position.
-enum DailyChallengeMorph {
-    static let eyebrow = "dailyChallenge.morph.eyebrow"
-    static let stepBar = "dailyChallenge.morph.stepBar"
-    static let primaryButton = "dailyChallenge.morph.primaryButton"
-    /// The card's plum surface as it swells into the full-screen flow (and shrinks
-    /// back), so the card itself appears to grow rather than a background fading in.
-    static let surface = "dailyChallenge.morph.surface"
-
-    /// Per-question id for the partner-answer morph in the Questions tab, so each
-    /// answerable partner card glides its own CTA into the single-question flow.
-    static func partnerAnswerButton(_ questionID: UUID) -> String {
-        "dailyChallenge.morph.partnerAnswer.\(questionID.uuidString)"
-    }
-
-    /// Per-question id for the question prompt morphing from a partner card into the
-    /// full-screen flow, so the question text transforms into its fullscreen position.
-    static func partnerAnswerPrompt(_ questionID: UUID) -> String {
-        "dailyChallenge.morph.partnerAnswerPrompt.\(questionID.uuidString)"
-    }
-
-    /// Per-question id for the partner card's surface swelling into the single-question
-    /// flow, mirroring `surface` for each answerable partner card.
-    static func partnerAnswerSurface(_ questionID: UUID) -> String {
-        "dailyChallenge.morph.partnerAnswerSurface.\(questionID.uuidString)"
-    }
+/// Stable source ids for the Daily Challenge zoom transition. The Home prompt card and
+/// the Questions-tab hero card each tag themselves with one of these via
+/// `.matchedTransitionSource`, and `MainTabView` zooms the answer flow's full-screen
+/// cover out of whichever card opened it. (Partner-answer cards use their question id.)
+enum DailyFlowZoom {
+    static let home = "dailyFlow.home"
+    static let questions = "dailyFlow.questions"
 }
 
 extension View {
-    /// Applies `matchedGeometryEffect` only when a namespace is provided. A nil
-    /// namespace means "don't take part in the morph" — used so the card stops
-    /// owning the shared ids while the flow is expanded (and vice versa), which is
-    /// what lets the elements travel instead of staying pinned to one side.
-    ///
-    /// `isSource` defaults to `true`, matching the simple toggle the gliding hero
-    /// elements use. The morphing surface flips it so a single travelling view can
-    /// grow toward the flow when open and shrink toward the card when closing.
+    /// Marks this view as the source the answer flow zooms out of, but only when a
+    /// namespace is provided. A nil namespace passes through untouched — used by
+    /// previews (which present no flow) and to skip the source under Reduce Motion.
     @ViewBuilder
-    func dailyChallengeMorph(_ id: String, in namespace: Namespace.ID?, isSource: Bool = true) -> some View {
+    func zoomSource(_ id: some Hashable, in namespace: Namespace.ID?) -> some View {
         if let namespace {
-            matchedGeometryEffect(id: id, in: namespace, properties: .frame, anchor: .center, isSource: isSource)
+            matchedTransitionSource(id: id, in: namespace)
         } else {
             self
         }
     }
-}
 
-/// The card's surface as it swells into (and collapses back out of) the full-screen
-/// answering flow.
-///
-/// A single rounded rectangle travels via `matchedGeometryEffect`: collapsed it sits
-/// exactly over the tapped card (plum surface, card corner radius); expanded it fills
-/// the screen as the background. `revealProgress` — the same value that uncovers the
-/// flow's content — drives the fill from the card surface to the background and rounds
-/// the corners off in lockstep with the frame, so the card reads as growing into the
-/// screen rather than a background fading in over it.
-///
-/// `isSource` is `true` while the flow is the open destination (this view defines the
-/// full-screen target the card grows toward) and `false` while collapsing (the card
-/// reclaims the id and this view shrinks back onto it).
-struct DailyChallengeMorphSurface: View {
-    /// 0 collapsed (card surface, card radius) … 1 expanded (background, square edges).
-    let revealProgress: Double
-    let morphID: String
-    var namespace: Namespace.ID?
-    var isSource: Bool
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .fill(fillColor)
-            .ignoresSafeArea()
-            .dailyChallengeMorph(morphID, in: namespace, isSource: isSource)
+    /// Zooms a presentation out of its matching `zoomSource(_:in:)`, so the source card
+    /// appears to grow into the full-screen cover. When `enabled` is false (Reduce
+    /// Motion) or no namespace is provided, the cover keeps its default transition.
+    @ViewBuilder
+    func zoomTransition(_ id: some Hashable, in namespace: Namespace.ID?, enabled: Bool) -> some View {
+        if enabled, let namespace {
+            navigationTransition(.zoom(sourceID: id, in: namespace))
+        } else {
+            self
+        }
     }
 
-    private var progress: Double { min(max(revealProgress, 0), 1) }
-
-    private var cornerRadius: CGFloat {
-        PaeoniaRadius.radius20 * (1 - progress)
-    }
-
-    private var fillColor: Color {
-        Color.paeoniaSurfacePrimary.mix(with: .paeoniaBackgroundPrimary, by: progress)
-    }
-}
-
-extension View {
     /// Dismisses the keyboard when the user taps anywhere on the view that isn't an
     /// interactive control. This is a convenience for sighted users, not an
     /// accessibility control, so it intentionally does not advertise a button trait
@@ -99,66 +44,15 @@ extension View {
     }
 }
 
-/// A vertical wipe that uncovers (and re-covers) its content from the centre out.
-///
-/// During the hero morph the step bar glides up and the primary button glides down;
-/// wiping the region open from the centre — its top edge travelling toward the bar,
-/// its bottom edge toward the button — makes the two elements read as *parting to
-/// reveal* the content between them, rather than sliding over a body that was already
-/// there. On close it runs in reverse, drawing the content shut as the elements glide
-/// home. `progress` is the open fraction (0 hidden, 1 shown). Under Reduce Motion the
-/// wipe is dropped for a plain fade, since the elements no longer travel.
-///
-/// Shared by the daily challenge flow and the Questions-tab partner-answer flow.
-struct VerticalReveal: ViewModifier {
-    let progress: Double
-    let enabled: Bool
-
-    func body(content: Content) -> some View {
-        if enabled {
-            content.mask(alignment: .center) {
-                Rectangle().scaleEffect(x: 1, y: CGFloat(progress), anchor: .center)
-            }
-        } else {
-            content.opacity(progress)
-        }
-    }
-}
-
-extension View {
-    /// Applies `VerticalReveal` only when `active`; otherwise passes through
-    /// untouched. Lets one part of a layout wipe while a sibling (e.g. a morphing
-    /// prompt) is excluded, without the false-`enabled` opacity fallback kicking in.
-    @ViewBuilder
-    func verticalReveal(progress: Double, enabled: Bool, active: Bool) -> some View {
-        if active {
-            modifier(VerticalReveal(progress: progress, enabled: enabled))
-        } else {
-            self
-        }
-    }
-}
-
 /// The focused, full-screen answering experience for today's daily challenge.
 ///
-/// It expands out of the Us-tab prompt card (and the Questions overview) with a
-/// hero morph: the eyebrow, the three-step bar, and the primary button travel from
-/// their card positions into this screen, while the question body and composer
-/// cross-fade in. The body steps through one question at a time, a quiet "Skip"
-/// swaps an unanswered question for a fresh one (the backend caps swaps per day),
-/// and a left-edge swipe-right — or the Close button — shrinks it back.
+/// It is presented as a full-screen cover that zooms out of the card that opened it
+/// (the Us-tab prompt card or the Questions overview hero card), so the card appears to
+/// grow into the screen. The body steps through one question at a time, a quiet "Skip"
+/// swaps an unanswered question for a fresh one (the backend caps swaps per day), and
+/// the Close button — or a drag-down — shrinks it back into the card.
 struct DailyChallengeAnswerFlow: View {
     let viewModel: DailyChallengeViewModel
-    var namespace: Namespace.ID?
-    /// Namespace for the morphing surface. Unlike `namespace` (which the flow releases
-    /// the instant a close begins, handing the gliding hero elements back to the card),
-    /// this stays attached for the flow's whole life so the single surface view can both
-    /// grow open and shrink shut. Direction is chosen by `isExpanded` via `isSource`.
-    var surfaceNamespace: Namespace.ID?
-    /// Whether the flow is open. Driven by the parent: it flips to `false` the moment
-    /// a close begins (while the flow is still mounted) so the content can collapse
-    /// its reveal in step with the elements gliding back to the card.
-    var isExpanded = true
     var onClose: () -> Void = {}
     /// Opens the streak-restore offer from the completion screen when a lost
     /// streak can still be bought back.
@@ -172,36 +66,7 @@ struct DailyChallengeAnswerFlow: View {
     @State private var index = 0
     @State private var didSetInitialIndex = false
     @State private var didCelebrate = false
-    /// How far the surface and supporting content are uncovered, 0 (hidden behind a
-    /// collapsed mask) to 1 (fully revealed). The gliding step bar and button appear
-    /// to wipe this open as they travel into place, and wipe it shut on close.
-    @State private var revealProgress: Double = 0
-    /// Opacity of the morphing hero elements (eyebrow, step bar, primary button).
-    /// They stay fully opaque while gliding in — only their position and size move —
-    /// and fade out on close, where they can no longer glide (the card reclaims them).
-    /// Initialised from `isExpanded` so they are solid on the very first frame and
-    /// never flicker at the start of the open glide.
-    @State private var heroOpacity: Double
     @FocusState private var isComposerFocused: Bool
-
-    init(
-        viewModel: DailyChallengeViewModel,
-        namespace: Namespace.ID? = nil,
-        surfaceNamespace: Namespace.ID? = nil,
-        isExpanded: Bool = true,
-        onClose: @escaping () -> Void = {},
-        onRestore: @escaping () -> Void = {},
-        onOpenPartnerQuestions: @escaping () -> Void = {}
-    ) {
-        self.viewModel = viewModel
-        self.namespace = namespace
-        self.surfaceNamespace = surfaceNamespace
-        self.isExpanded = isExpanded
-        self.onClose = onClose
-        self.onRestore = onRestore
-        self.onOpenPartnerQuestions = onOpenPartnerQuestions
-        _heroOpacity = State(initialValue: isExpanded ? 1 : 0)
-    }
 
     private enum Phase {
         case loading
@@ -262,13 +127,6 @@ struct DailyChallengeAnswerFlow: View {
 
     var body: some View {
         ZStack {
-            DailyChallengeMorphSurface(
-                revealProgress: revealProgress,
-                morphID: DailyChallengeMorph.surface,
-                namespace: surfaceNamespace,
-                isSource: isExpanded
-            )
-
             switch phase {
             case .complete:
                 DailyChallengeCompletionView(
@@ -288,17 +146,10 @@ struct DailyChallengeAnswerFlow: View {
                 answeringState
             }
         }
-        .simultaneousGesture(swipeToDismiss)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.paeoniaBackgroundPrimary)
         .animation(celebrateAnimation, value: didCelebrate)
-        .onAppear {
-            setInitialIndexIfNeeded()
-            openReveal()
-        }
-        .onChange(of: isExpanded) { _, expanded in
-            // Reopening can arrive while a close is still collapsing (the flow stays
-            // mounted until the spring settles), so handle both directions here.
-            if expanded { openReveal() } else { closeReveal() }
-        }
+        .onAppear { setInitialIndexIfNeeded() }
         .onChange(of: questions.count) { _, newCount in
             setInitialIndexIfNeeded()
             // Keep the selected step valid if the list shrinks under us.
@@ -312,15 +163,12 @@ struct DailyChallengeAnswerFlow: View {
 
     // MARK: - States
 
-    /// Eyebrow + step bar. Both carry the morph ids so they fly in from the card,
-    /// and they render the same way in every phase so those morph targets always
-    /// exist while the screen opens. The step bar is a progress meter only — moving
-    /// between questions is deliberate, via the button. Close lives in the bottom
-    /// action bar, within thumb reach.
+    /// Eyebrow + step bar. The step bar is a progress meter only — moving between
+    /// questions is deliberate, via the button. Close lives in the bottom action bar,
+    /// within thumb reach.
     private var header: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             PaeoniaCardEyebrow(.dailyChallengeFlowEyebrow)
-                .dailyChallengeMorph(DailyChallengeMorph.eyebrow, in: namespace)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             DailyChallengeStepBar(
@@ -330,27 +178,24 @@ struct DailyChallengeAnswerFlow: View {
                 height: 8,
                 onSelect: requiredQuestions.isEmpty ? nil : { (step: Int) in goToRequiredStep(step) }
             )
-            .dailyChallengeMorph(DailyChallengeMorph.stepBar, in: namespace)
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.space8)
-        .opacity(heroOpacity)
     }
 
     private var answeringState: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
+            // The header stays put while the keyboard is up. It anchors the top of the
+            // screen, so the question doesn't jump when the field focuses — room for the
+            // composer comes from the Send button folding away below and (for photo
+            // questions) the picked photo folding away, not from moving the top.
             header
 
             if let question = currentQuestion {
-                // The body is what the bar and button uncover as they glide apart: it
-                // wipes open from the centre in step with the morph, instead of
-                // sitting there fully visible while they slide over it.
                 DailyChallengeAnswerStep(
                     question: question,
                     viewModel: viewModel,
-                    isFocused: $isComposerFocused,
-                    revealProgress: revealProgress,
-                    revealEnabled: !reduceMotion
+                    isFocused: $isComposerFocused
                 )
                 .id(question.id)
                 // Neutral fade: the user can move forward (Send) or jump to any
@@ -360,6 +205,7 @@ struct DailyChallengeAnswerFlow: View {
 
             actionBar
         }
+        .animation(PaeoniaMotion.stateChange, value: isComposerFocused)
         // Tap the question or any empty space to put the keyboard away. The field
         // and buttons keep their own taps; this only catches what they don't.
         .dismissesKeyboardOnTap { isComposerFocused = false }
@@ -370,12 +216,10 @@ struct DailyChallengeAnswerFlow: View {
             primaryTitle: primaryActionTitle,
             isPrimaryBusy: isSubmittingCurrent,
             isPrimaryDisabled: isPrimaryDisabled,
+            hidesPrimary: isComposerFocused,
             canSkip: canSkipCurrent,
             isSkipBusy: isShufflingCurrent,
             isSkipDisabled: isShufflingCurrent || hasDraftForCurrent,
-            morphNamespace: namespace,
-            chromeOpacity: revealProgress,
-            primaryButtonOpacity: heroOpacity,
             onPrimary: handlePrimary,
             onClose: handleClose,
             onSkip: { Task { await skipCurrent() } }
@@ -389,7 +233,6 @@ struct DailyChallengeAnswerFlow: View {
             ProgressView()
                 .controlSize(.large)
                 .tint(.paeoniaAccentPrimary)
-                .opacity(revealProgress)
             Spacer()
         }
     }
@@ -404,7 +247,6 @@ struct DailyChallengeAnswerFlow: View {
                 systemImage: "sparkles"
             )
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .opacity(revealProgress)
             Spacer()
             Button(action: onClose) {
                 Text(.dailyChallengeFlowDoneButton)
@@ -412,7 +254,6 @@ struct DailyChallengeAnswerFlow: View {
             .buttonStyle(PaeoniaSecondaryButtonStyle())
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.bottom, PaeoniaSpacing.space16)
-            .opacity(revealProgress)
         }
     }
 
@@ -572,23 +413,6 @@ struct DailyChallengeAnswerFlow: View {
         }
     }
 
-    /// Swipe right from the left edge to leave — the familiar iOS "back" gesture.
-    /// It's a pure trigger: the screen doesn't follow the finger. A qualifying swipe
-    /// gives a light haptic and closes exactly like the Close button (morphing back
-    /// into the card). Starting at the edge keeps it clear of text selection.
-    private var swipeToDismiss: some Gesture {
-        DragGesture(minimumDistance: 20)
-            .onEnded { value in
-                guard
-                    value.startLocation.x < 24,
-                    value.translation.width > 80,
-                    abs(value.translation.width) > abs(value.translation.height)
-                else { return }
-                PaeoniaHaptics.selection()
-                dismiss()
-            }
-    }
-
     private func submitCurrent() async {
         guard let question = currentQuestion else { return }
 
@@ -690,31 +514,6 @@ struct DailyChallengeAnswerFlow: View {
         }
     }
 
-    /// Wipes the surface and content open once the flow is on screen, in step with
-    /// the elements gliding in from the card. Under Reduce Motion there is no glide,
-    /// so the parent's plain cross-fade handles the entrance and this just snaps the
-    /// content visible.
-    private func openReveal() {
-        guard revealProgress < 1 else { return }
-        heroOpacity = 1
-        if reduceMotion {
-            revealProgress = 1
-        } else {
-            withAnimation(PaeoniaMotion.heroMorph) { revealProgress = 1 }
-        }
-    }
-
-    /// Wipes the surface and content shut as the elements glide back to the card.
-    /// Only runs under motion; with Reduce Motion the parent cross-fades the whole
-    /// flow out instead.
-    private func closeReveal() {
-        guard !reduceMotion else { return }
-        withAnimation(PaeoniaMotion.heroMorph) {
-            revealProgress = 0
-            heroOpacity = 0
-        }
-    }
-
     /// Turns the screen over to the streak celebration. The haptics are deliberately
     /// left to `PaeoniaStreakFlame`, which owns the full crescendo — soft ticks rising
     /// with the count, then a firm payoff as the flame fills. Firing a success here too
@@ -745,20 +544,6 @@ struct DailyChallengeAnswerStep: View {
     let question: DailyChallengeQuestion
     let viewModel: DailyChallengeViewModel
     var isFocused: FocusState<Bool>.Binding
-    /// How far the step bar / button have uncovered this content (0–1), and whether
-    /// the wipe is used at all (off under Reduce Motion). The wipe runs across the
-    /// whole region between the bar and button and opens from the centre, so both
-    /// gliding elements read as parting to reveal the body between them.
-    var revealProgress: Double = 1
-    var revealEnabled = false
-    /// When set, the question prompt is a morphing hero element (it glides in from a
-    /// card via `matchedGeometryEffect`) rather than part of the wipe. The partner-
-    /// answer flow turns this on; the daily flow leaves it off (its prompt wipes in).
-    var morphsPrompt = false
-    var promptMorphID = ""
-    var promptMorphNamespace: Namespace.ID?
-    /// Opacity of the morphing prompt: solid while it glides, fading on close.
-    var promptOpacity: Double = 1
 
     var body: some View {
         // The question always sits at the top. The answer-method picker is pinned
@@ -776,51 +561,32 @@ struct DailyChallengeAnswerStep: View {
                     selection: viewModel.composeKind(for: question),
                     onSelect: { viewModel.setComposeKind($0, for: question.id) }
                 )
-                .verticalReveal(progress: revealProgress, enabled: revealEnabled, active: morphsPrompt)
             }
 
             if showsPartnerWaitingNote {
                 DailyPartnerWaitingNote()
-                    .verticalReveal(progress: revealProgress, enabled: revealEnabled, active: morphsPrompt)
             }
 
             if hasBottomComposer {
                 Spacer(minLength: PaeoniaSpacing.space24)
             }
 
-            // In morph mode the prompt is excluded from the wipe (it glides instead),
-            // so only the composer wipes; otherwise the whole cluster wipes together.
             answerSection
-                .verticalReveal(progress: revealProgress, enabled: revealEnabled, active: morphsPrompt)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        // Wipe the full bar-to-button gap (not just the text block) so the band's top
-        // edge travels with the bar and its bottom edge with the button.
-        .verticalReveal(progress: revealProgress, enabled: revealEnabled, active: !morphsPrompt)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.space24)
         .padding(.bottom, PaeoniaSpacing.space8)
         .onAppear(perform: seedEditDraftIfNeeded)
     }
 
-    /// The question text. In morph mode it carries the shared id so it transforms
-    /// from the tapped card into this position, and stays crisp (only its frame
-    /// moves) rather than being wiped.
-    @ViewBuilder
+    /// The question text, sitting at the top of the step.
     private var promptView: some View {
-        let prompt = Text(question.prompt)
+        Text(question.prompt)
             .font(PaeoniaTypography.heroTitle)
             .foregroundStyle(.paeoniaTextPrimary)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
-
-        if morphsPrompt {
-            prompt
-                .dailyChallengeMorph(promptMorphID, in: promptMorphNamespace)
-                .opacity(promptOpacity)
-        } else {
-            prompt
-        }
     }
 
     /// The kind of composer currently on screen, or nil when the step is showing a
@@ -917,33 +683,44 @@ struct DailyChallengeAnswerStep: View {
         }
     }
 
-
     /// For questions that accept text alongside a photo or partner pick, both
     /// composers show together — each optional — so the user can add one, the other,
-    /// or both. The text field sits below so it lands just above the keyboard.
+    /// or both. The text field sits below so it lands just above the keyboard. While
+    /// the field is focused the photo / partner pick folds away so the text composer
+    /// owns the shorter height, and returns once the field is dismissed.
     @ViewBuilder
     private var combinedComposer: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            switch question.combinedSecondaryKind {
-            case .photo:
-                DailyPhotoAnswerComposer(
-                    imageData: viewModel.stagedMediaData(for: question.id),
-                    onPick: { viewModel.stagePhoto($0, for: question.id) },
-                    onRemove: { viewModel.removeStagedMedia(for: question.id) }
-                )
-            case .partnerChoice:
-                if let options = viewModel.participants.partnerChoiceOptions {
-                    DailyPartnerChoicePicker(
-                        options: options,
-                        selection: viewModel.partnerChoiceSelection(for: question.id),
-                        onSelect: { viewModel.setPartnerChoice($0, for: question.id) }
-                    )
-                }
-            default:
-                EmptyView()
+            if !isFocused.wrappedValue {
+                combinedSecondaryComposer
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
 
             DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
+        }
+    }
+
+    /// The non-text half of a combined question — a photo picker or partner pick —
+    /// shown above the text field and hidden while the field is focused.
+    @ViewBuilder
+    private var combinedSecondaryComposer: some View {
+        switch question.combinedSecondaryKind {
+        case .photo:
+            DailyPhotoAnswerComposer(
+                imageData: viewModel.stagedMediaData(for: question.id),
+                onPick: { viewModel.stagePhoto($0, for: question.id) },
+                onRemove: { viewModel.removeStagedMedia(for: question.id) }
+            )
+        case .partnerChoice:
+            if let options = viewModel.participants.partnerChoiceOptions {
+                DailyPartnerChoicePicker(
+                    options: options,
+                    selection: viewModel.partnerChoiceSelection(for: question.id),
+                    onSelect: { viewModel.setPartnerChoice($0, for: question.id) }
+                )
+            }
+        default:
+            EmptyView()
         }
     }
 
@@ -1064,34 +841,29 @@ struct DailyChallengeAnswerActionBar: View {
     let primaryTitle: LocalizedStringResource
     let isPrimaryBusy: Bool
     let isPrimaryDisabled: Bool
+    /// Folds the primary button away while the keyboard is up, leaving just the
+    /// Close/Skip row so the composer owns the shorter height. Dismissing the field
+    /// (Close, or a tap outside) brings the button back so the answer can be sent.
+    var hidesPrimary = false
     var canSkip = false
     var isSkipBusy = false
     var isSkipDisabled = false
-    var morphNamespace: Namespace.ID?
-    /// Morph id for the primary button. Defaults to the daily flow's shared button;
-    /// the partner-answer flow passes a per-question id instead.
-    var morphID = DailyChallengeMorph.primaryButton
-    /// Reveal for everything in the bar except the primary button — the Close/Skip
-    /// row and the bar's own backdrop, which uncover with the rest of the surface.
-    var chromeOpacity: Double = 1
-    /// Opacity of the primary button, a hero element: fully opaque while it glides in
-    /// from the card, fading only on close.
-    var primaryButtonOpacity: Double = 1
     let onPrimary: () -> Void
     let onClose: () -> Void
     var onSkip: () -> Void = {}
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            primaryButton
-                .opacity(primaryButtonOpacity)
+            if !hidesPrimary {
+                primaryButton
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
             secondaryRow
-                .opacity(chromeOpacity)
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.space12)
         .padding(.bottom, PaeoniaSpacing.space8)
-        .background(Color.paeoniaBackgroundPrimary.opacity(chromeOpacity))
+        .background(.paeoniaBackgroundPrimary)
     }
 
     private var primaryButton: some View {
@@ -1104,17 +876,20 @@ struct DailyChallengeAnswerActionBar: View {
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
         .disabled(isPrimaryDisabled || isPrimaryBusy)
-        .dailyChallengeMorph(morphID, in: morphNamespace)
     }
 
     // Close sits on the left, Skip on the right, with a thin divider between them.
+    // While the keyboard is up the left action becomes "Done": that's where the thumb
+    // lands when the user finishes typing, and tapping it just puts the keyboard away
+    // (one more tap, or the keyboard down, then leaves the screen).
     private var secondaryRow: some View {
         HStack(spacing: 0) {
             Button(action: onClose) {
                 Label {
-                    Text(.dailyChallengeFlowClose)
+                    Text(hidesPrimary ? .dailyChallengeFlowDoneButton : .dailyChallengeFlowClose)
                 } icon: {
-                    Image(systemName: "xmark").accessibilityHidden(true)
+                    Image(systemName: hidesPrimary ? "keyboard.chevron.compact.down" : "xmark")
+                        .accessibilityHidden(true)
                 }
             }
             .buttonStyle(PaeoniaQuietButtonStyle())

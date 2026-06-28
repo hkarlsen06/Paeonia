@@ -514,7 +514,7 @@ private struct LiveRelativeTimestampText: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: refreshInterval)) { context in
-            Text(displayDate(asOf: context.date).formatted(Self.relativeStyle))
+            Text(displayDate(asOf: context.date).formatted(Self.relativeStyle).capitalizedFirstLetter)
         }
     }
 
@@ -525,6 +525,16 @@ private struct LiveRelativeTimestampText: View {
 
     private func displayDate(asOf referenceDate: Date) -> Date {
         min(capturedAt, referenceDate)
+    }
+}
+
+private extension String {
+    /// Uppercases only the first character, leaving the rest untouched. Relative
+    /// date styles like "for 3 t siden" come back lowercased, but as a standalone
+    /// badge it should read like a label ("For 3 t siden").
+    var capitalizedFirstLetter: String {
+        guard let first else { return self }
+        return first.uppercased() + String(dropFirst())
     }
 }
 

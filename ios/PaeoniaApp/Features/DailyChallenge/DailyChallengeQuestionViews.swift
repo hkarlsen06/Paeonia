@@ -10,6 +10,7 @@ struct DailyQuestionStatusView: View {
                     systemImage: line.systemImage,
                     title: line.title,
                     date: line.date,
+                    includesDateWhenNotToday: line.includesDateWhenNotToday,
                     tint: line.tint
                 )
             }
@@ -33,6 +34,7 @@ struct DailyQuestionStatusView: View {
                     systemImage: question.canViewPartnerAnswer ? "heart.circle.fill" : "lock.circle.fill",
                     title: .dailyChallengePartnerHidden,
                     date: partnerAnswer.answeredAt,
+                    includesDateWhenNotToday: true,
                     tint: question.canViewPartnerAnswer ? .paeoniaAccentPrimary : .paeoniaTextTertiary
                 )
             )
@@ -45,6 +47,7 @@ struct DailyQuestionStatusView: View {
                     systemImage: "checkmark.circle.fill",
                     title: .dailyChallengeYouAnswered,
                     date: ownAnswer.answeredAt,
+                    includesDateWhenNotToday: false,
                     tint: .paeoniaSuccess
                 )
             )
@@ -55,6 +58,7 @@ struct DailyQuestionStatusView: View {
                     systemImage: "circle",
                     title: .dailyChallengeNotAnswered,
                     date: nil,
+                    includesDateWhenNotToday: false,
                     tint: .paeoniaTextTertiary
                 )
             )
@@ -76,6 +80,7 @@ private struct DailyStatusLineModel: Identifiable {
     let systemImage: String
     let title: LocalizedStringResource
     let date: Date?
+    let includesDateWhenNotToday: Bool
     let tint: Color
 }
 
@@ -83,6 +88,7 @@ private struct DailyStatusLine: View {
     let systemImage: String
     let title: LocalizedStringResource
     let date: Date?
+    let includesDateWhenNotToday: Bool
     let tint: Color
 
     var body: some View {
@@ -97,11 +103,27 @@ private struct DailyStatusLine: View {
                 .foregroundStyle(.paeoniaTextSecondary)
 
             if let date {
-                Text(date, format: .dateTime.hour().minute())
+                timestampText(for: date)
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextTertiary)
             }
         }
+    }
+
+    private func timestampText(for targetDate: Date) -> Text {
+        guard includesDateWhenNotToday else {
+            return Text(targetDate, style: .time)
+        }
+
+        return Text(targetDate, format: relativeDateFormat)
+            + Text(verbatim: " ")
+            + Text(targetDate, style: .time)
+    }
+
+    private var relativeDateFormat: Date.RelativeFormatStyle {
+        var format = Date.RelativeFormatStyle(presentation: .named)
+        format.capitalizationContext = .beginningOfSentence
+        return format
     }
 }
 

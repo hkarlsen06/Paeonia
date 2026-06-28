@@ -3,88 +3,38 @@ import SwiftUI
 /// The focused, full-screen flow for answering one question your partner has already
 /// answered, opened from its card in the Questions tab.
 ///
-/// It reuses the daily challenge's hero morph — the card's CTA glides into the bottom
-/// action bar while the prompt and composer wipe open from the centre — but without
-/// the multi-question chrome (no eyebrow, step bar, or skip). Sending your answer
-/// closes the flow, collapsing back into the card, which now reveals both replies.
+/// It is presented as a full-screen cover that zooms out of the tapped card, so the
+/// card appears to grow into the screen. It reuses the daily challenge's prompt and
+/// composer, but without the multi-question chrome (no eyebrow, step bar, or skip).
+/// Sending your answer closes the flow, shrinking back into the card, which now reveals
+/// both replies.
 struct DailyPartnerAnswerFlow: View {
     let question: DailyChallengeQuestion
     let viewModel: DailyChallengeViewModel
-    var namespace: Namespace.ID?
-    /// Namespace for the morphing surface. It stays attached for the flow's whole life
-    /// (unlike `namespace`, released the instant a close begins) so the single surface
-    /// view can grow open and shrink shut; `isExpanded` picks the direction via
-    /// `isSource`.
-    var surfaceNamespace: Namespace.ID?
-    /// Whether the flow is open. The parent flips it to `false` the moment a close
-    /// begins (while still mounted) so the content can collapse in step with the CTA
-    /// gliding back to its card.
-    var isExpanded = true
     var onClose: () -> Void = {}
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// How far the surface and content are uncovered, 0 (hidden) to 1 (shown). The
-    /// gliding button wipes this open as it travels into place, and shut on close.
-    @State private var revealProgress: Double = 0
-    /// Opacity of the morphing CTA button: solid while it glides, fading only on a
-    /// close where the card's CTA is gone (after answering) and it can't glide home.
-    @State private var heroOpacity: Double
     /// True from when the answer is queued until the partner's reply has loaded, so the
     /// Send button keeps its busy state while we hold for the reveal before closing.
     @State private var isFinishing = false
     @FocusState private var isComposerFocused: Bool
 
-    init(
-        question: DailyChallengeQuestion,
-        viewModel: DailyChallengeViewModel,
-        namespace: Namespace.ID? = nil,
-        surfaceNamespace: Namespace.ID? = nil,
-        isExpanded: Bool = true,
-        onClose: @escaping () -> Void = {}
-    ) {
-        self.question = question
-        self.viewModel = viewModel
-        self.namespace = namespace
-        self.surfaceNamespace = surfaceNamespace
-        self.isExpanded = isExpanded
-        self.onClose = onClose
-        _heroOpacity = State(initialValue: isExpanded ? 1 : 0)
-    }
-
     var body: some View {
-        ZStack {
-            DailyChallengeMorphSurface(
-                revealProgress: revealProgress,
-                morphID: DailyChallengeMorph.partnerAnswerSurface(question.id),
-                namespace: surfaceNamespace,
-                isSource: isExpanded
+        VStack(spacing: PaeoniaSpacing.space16) {
+            DailyChallengeAnswerStep(
+                question: question,
+                viewModel: viewModel,
+                isFocused: $isComposerFocused
             )
 
-            VStack(spacing: PaeoniaSpacing.space16) {
-                DailyChallengeAnswerStep(
-                    question: question,
-                    viewModel: viewModel,
-                    isFocused: $isComposerFocused,
-                    revealProgress: revealProgress,
-                    revealEnabled: !reduceMotion,
-                    morphsPrompt: !reduceMotion,
-                    promptMorphID: DailyChallengeMorph.partnerAnswerPrompt(question.id),
-                    promptMorphNamespace: namespace,
-                    promptOpacity: heroOpacity
-                )
-
-                actionBar
-            }
-            .padding(.top, PaeoniaSpacing.space8)
-            // Tap the question or any empty space to put the keyboard away.
-            .dismissesKeyboardOnTap { isComposerFocused = false }
+            actionBar
         }
-        .simultaneousGesture(swipeToDismiss)
-        .onAppear { openReveal() }
-        .onChange(of: isExpanded) { _, expanded in
-            if expanded { openReveal() } else { closeReveal() }
-        }
+        .padding(.top, PaeoniaSpacing.space8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.paeoniaBackgroundPrimary)
+        .animation(PaeoniaMotion.stateChange, value: isComposerFocused)
+        // Tap the question or any empty space to put the keyboard away.
+        .dismissesKeyboardOnTap { isComposerFocused = false }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
     }
 
@@ -93,10 +43,7 @@ struct DailyPartnerAnswerFlow: View {
             primaryTitle: .dailyChallengeSubmitButton,
             isPrimaryBusy: isSubmitting,
             isPrimaryDisabled: isPrimaryDisabled,
-            morphNamespace: namespace,
-            morphID: DailyChallengeMorph.partnerAnswerButton(question.id),
-            chromeOpacity: revealProgress,
-            primaryButtonOpacity: heroOpacity,
+            hidesPrimary: isComposerFocused,
             onPrimary: { Task { await submit() } },
             onClose: handleClose
         )
@@ -152,42 +99,6 @@ struct DailyPartnerAnswerFlow: View {
             isComposerFocused = false
         } else {
             dismiss()
-        }
-    }
-
-    /// Swipe right from the left edge to leave — the familiar iOS "back" gesture.
-    private var swipeToDismiss: some Gesture {
-        DragGesture(minimumDistance: 20)
-            .onEnded { value in
-                guard
-                    value.startLocation.x < 24,
-                    value.translation.width > 80,
-                    abs(value.translation.width) > abs(value.translation.height)
-                else { return }
-                PaeoniaHaptics.selection()
-                dismiss()
-            }
-    }
-
-    /// Wipes the surface and content open once on screen, in step with the CTA gliding
-    /// in. Under Reduce Motion the parent's plain cross-fade handles the entrance.
-    private func openReveal() {
-        guard revealProgress < 1 else { return }
-        heroOpacity = 1
-        if reduceMotion {
-            revealProgress = 1
-        } else {
-            withAnimation(PaeoniaMotion.heroMorph) { revealProgress = 1 }
-        }
-    }
-
-    /// Wipes the surface and content shut as the CTA glides home. Only under motion;
-    /// Reduce Motion cross-fades the whole flow out via the parent instead.
-    private func closeReveal() {
-        guard !reduceMotion else { return }
-        withAnimation(PaeoniaMotion.heroMorph) {
-            revealProgress = 0
-            heroOpacity = 0
         }
     }
 

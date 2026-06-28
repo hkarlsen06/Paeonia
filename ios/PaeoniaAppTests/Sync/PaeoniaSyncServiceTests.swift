@@ -74,6 +74,45 @@ struct PaeoniaSyncServiceTests {
         ])
     }
 
+    @Test func scheduledStartupDrainsImmediateCoalescedFollowUpBeforeReturning() async {
+        let relationshipStream = BlockingFirstPullSyncStream(streamKey: .relationship)
+        let coordinator = PaeoniaSyncService(
+            streams: [relationshipStream],
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository()
+        )
+        await coordinator.configure(session: .test())
+
+        await coordinator.start()
+        let coalescedProbe = AsyncCompletionProbe()
+        let coalescedRun = Task {
+            let result = await coordinator.runOnce(reason: .manualRefresh)
+            await coalescedProbe.markCompleted()
+            return result
+        }
+
+        await relationshipStream.waitForFirstPull()
+        for _ in 0..<1_000 {
+            if await coalescedProbe.isCompleted {
+                break
+            }
+            await Task.yield()
+        }
+        let completedBeforeRelease = await coalescedProbe.isCompleted
+        #expect(!completedBeforeRelease)
+
+        await relationshipStream.releaseFirstPull()
+        let coalescedResult = await coalescedRun.value
+
+        #expect(coalescedResult.status == .coalesced)
+        #expect(await relationshipStream.events == [
+            "relationship.pull.startup",
+            "relationship.push.startup",
+            "relationship.pull.local_change",
+            "relationship.push.local_change",
+        ])
+    }
+
     @Test func runOnceSchedulesPendingOperationRetry() async throws {
         let ownerUserID = UUID.testUserID
         let operation = SyncClientOperation(

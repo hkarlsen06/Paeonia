@@ -7,7 +7,7 @@ struct PairedHomeView: View {
     let partnerProfilePhotoAssetID: UUID?
     let dailyChallengeCardState: DailyChallengeCardState
     let dailyChallengeStreak: StreakPillState
-    let dailyChallengeMorphNamespace: Namespace.ID?
+    let zoomNamespace: Namespace.ID?
     let locationMapState: CoupleMapState
     let onPromptCurrentLocation: () -> Void
     var onTapStreak: (() -> Void)?
@@ -27,7 +27,7 @@ struct PairedHomeView: View {
             totalCount: DailyChallengeProgress.requiredOwnQuestionCount
         ),
         dailyChallengeStreak: StreakPillState = .hidden,
-        dailyChallengeMorphNamespace: Namespace.ID? = nil,
+        zoomNamespace: Namespace.ID? = nil,
         locationMapState: CoupleMapState,
         onPromptCurrentLocation: @escaping () -> Void = {},
         onTapStreak: (() -> Void)? = nil,
@@ -41,7 +41,7 @@ struct PairedHomeView: View {
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.dailyChallengeCardState = dailyChallengeCardState
         self.dailyChallengeStreak = dailyChallengeStreak
-        self.dailyChallengeMorphNamespace = dailyChallengeMorphNamespace
+        self.zoomNamespace = zoomNamespace
         self.locationMapState = locationMapState
         self.onPromptCurrentLocation = onPromptCurrentLocation
         self.onTapStreak = onTapStreak
@@ -120,11 +120,11 @@ struct PairedHomeView: View {
         DailyPromptCard(
             state: dailyChallengeCardState,
             streak: dailyChallengeStreak,
-            morphNamespace: dailyChallengeMorphNamespace,
             prefersPartnerAnswersWhenComplete: true,
             onAnswer: onOpenDailyChallenge,
             onTapStreak: onTapStreak
         )
+        .zoomSource(DailyFlowZoom.home, in: zoomNamespace)
     }
 
     private var currentName: String {

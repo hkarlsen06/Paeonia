@@ -26,6 +26,49 @@ struct DailyChallengeMappingTests {
         #expect(viewModel.homeCardState.kind == .noChallenge)
     }
 
+    @MainActor
+    @Test func reloadClearsCompletedChallengeWhenNewDayHasNoStartedQuestions() async throws {
+        let completedSnapshot = makeSnapshot(rows: [
+            questionRow(
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID()
+            ),
+            questionRow(
+                slotNumber: 2,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID()
+            ),
+            questionRow(
+                slotNumber: 3,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID()
+            ),
+        ])
+        let service = RecordingDailyChallengeService(
+            snapshots: [
+                completedSnapshot,
+                .empty(currentUserID: TestDailyChallengeIDs.currentUser),
+            ],
+            advancesSnapshotsOnLoad: true
+        )
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider()
+        )
+
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        #expect(viewModel.homeCardState.kind == .complete)
+
+        await viewModel.reload()
+
+        #expect(!viewModel.snapshot.hasAnyQuestions)
+        #expect(viewModel.homeCardState.kind == .noChallenge)
+    }
+
     @Test func unansweredOwnQuestionsAreVisibleAndAnswerable() {
         let snapshot = makeSnapshot(rows: [
             questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
@@ -287,6 +330,82 @@ struct DailyChallengeMappingTests {
         #expect(snapshot.ownQuestionsForReadOverview.map(\.slotNumber) == [4, 3])
     }
 
+    @Test func carriedForwardQuestionsSortBelowCurrentDayQuestions() {
+        let previousStart = TestDailyChallengeIDs.startsAt.addingTimeInterval(-86_400)
+        let previousEnd = TestDailyChallengeIDs.startsAt
+        let currentPartnerAnswer = TestDailyChallengeIDs.answerDate.addingTimeInterval(60)
+        let olderPartnerAnswer = TestDailyChallengeIDs.answerDate.addingTimeInterval(-86_400)
+
+        let snapshot = makeSnapshot(rows: [
+            questionRow(
+                coupleDayID: TestDailyChallengeIDs.previousCoupleDay,
+                localDate: "2026-06-26",
+                startsAt: previousStart,
+                endsAt: previousEnd,
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: olderPartnerAnswer,
+                isCurrentDay: false
+            ),
+            questionRow(
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: currentPartnerAnswer,
+                isCurrentDay: true
+            ),
+            questionRow(
+                coupleDayID: TestDailyChallengeIDs.previousCoupleDay,
+                localDate: "2026-06-26",
+                startsAt: previousStart,
+                endsAt: previousEnd,
+                slotNumber: 2,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID(),
+                ownAnsweredAt: olderPartnerAnswer,
+                isCurrentDay: false
+            ),
+            questionRow(
+                slotNumber: 2,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID(),
+                ownAnsweredAt: currentPartnerAnswer,
+                isCurrentDay: true
+            ),
+        ])
+
+        #expect(snapshot.partnerQuestionsForReadOverview.map(\.isCurrentDay) == [true, false])
+        #expect(snapshot.ownQuestionsForReadOverview.map(\.isCurrentDay) == [true, false])
+        #expect(snapshot.answerFlowQuestions.map(\.isCurrentDay) == [true, true, false])
+    }
+
+    @Test func homeCardIgnoresCarriedForwardQuestionsWhenTodayHasNotStarted() {
+        let previousStart = TestDailyChallengeIDs.startsAt.addingTimeInterval(-86_400)
+        let previousEnd = TestDailyChallengeIDs.startsAt
+
+        let snapshot = makeSnapshot(rows: [
+            questionRow(
+                coupleDayID: TestDailyChallengeIDs.previousCoupleDay,
+                localDate: "2026-06-26",
+                startsAt: previousStart,
+                endsAt: previousEnd,
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: previousStart.addingTimeInterval(600),
+                isCurrentDay: false
+            ),
+        ])
+
+        #expect(snapshot.hasAnyQuestions)
+        #expect(!snapshot.hasAnyCurrentDayQuestions)
+        #expect(snapshot.partnerQuestionsForReadOverview.count == 1)
+        #expect(snapshot.homeCardState.kind == .noChallenge)
+    }
+
     @Test func answerFlowOrdersOwnQuestionsThenAnswerablePartnerQuestions() {
         let snapshot = makeSnapshot(rows: [
             questionRow(slotNumber: 3, seededForUserID: TestDailyChallengeIDs.currentUser),
@@ -380,6 +499,58 @@ struct DailyChallengeMappingTests {
         #expect(viewModel.streak.longestCount == 9)
         #expect(viewModel.streak.lastQualifiedDate == "2026-06-27")
         #expect(await service.streakLoadCount == 1)
+    }
+
+    @Test func serviceLoadsAnswerDetailsForEveryReturnedCoupleDay() async throws {
+        let currentAnswerID = UUID()
+        let previousAnswerID = UUID()
+        let previousStart = TestDailyChallengeIDs.startsAt.addingTimeInterval(-86_400)
+        let previousEnd = TestDailyChallengeIDs.startsAt
+        let rows = [
+            questionRow(
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: currentAnswerID,
+                ownAnsweredAt: TestDailyChallengeIDs.answerDate,
+                isCurrentDay: true
+            ),
+            questionRow(
+                coupleDayID: TestDailyChallengeIDs.previousCoupleDay,
+                localDate: "2026-06-26",
+                startsAt: previousStart,
+                endsAt: previousEnd,
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: previousAnswerID,
+                ownAnsweredAt: previousStart.addingTimeInterval(600),
+                isCurrentDay: false
+            ),
+        ]
+        let gateway = RecordingDailyChallengeReadGateway(
+            rows: rows,
+            detailsByCoupleDayID: [
+                TestDailyChallengeIDs.coupleDay: [
+                    answerDetail(answerID: currentAnswerID, isOwnAnswer: true, textBody: "Today"),
+                ],
+                TestDailyChallengeIDs.previousCoupleDay: [
+                    answerDetail(answerID: previousAnswerID, isOwnAnswer: true, textBody: "Yesterday"),
+                ],
+            ]
+        )
+        let service = SupabaseDailyChallengeService(gateway: gateway, locale: Locale(identifier: "en_US"))
+
+        let snapshot = try await service.loadToday(currentUserID: TestDailyChallengeIDs.currentUser)
+
+        #expect(await gateway.loadedAnswerDetailCoupleDayIDs == [
+            TestDailyChallengeIDs.coupleDay,
+            TestDailyChallengeIDs.previousCoupleDay,
+        ])
+        #expect(snapshot.ownQuestionsForReadOverview.map { $0.ownAnswerDetail?.textBody } == [
+            "Today",
+            "Yesterday",
+        ])
     }
 
     @MainActor
@@ -1633,6 +1804,7 @@ private enum TestDailyChallengeIDs {
     static let partnerUser = fixedUUID("22222222-2222-2222-2222-222222222222")
     static let couple = fixedUUID("33333333-3333-3333-3333-333333333333")
     static let coupleDay = fixedUUID("44444444-4444-4444-4444-444444444444")
+    static let previousCoupleDay = fixedUUID("55555555-5555-5555-5555-555555555555")
     static let startsAt = Date(timeIntervalSince1970: 1_782_432_000)
     static let endsAt = Date(timeIntervalSince1970: 1_782_518_400)
     static let answerDate = Date(timeIntervalSince1970: 1_782_450_000)
@@ -1652,6 +1824,10 @@ private func makeSnapshot(
 }
 
 private func questionRow(
+    coupleDayID: UUID = TestDailyChallengeIDs.coupleDay,
+    localDate: String = "2026-06-27",
+    startsAt: Date = TestDailyChallengeIDs.startsAt,
+    endsAt: Date = TestDailyChallengeIDs.endsAt,
     slotNumber: Int,
     seededForUserID: UUID,
     status: String = "active",
@@ -1661,14 +1837,15 @@ private func questionRow(
     ownAnsweredAt: Date? = nil,
     partnerAnswerID: UUID? = nil,
     partnerAnsweredAt: Date? = nil,
-    canViewPartnerAnswer: Bool = false
+    canViewPartnerAnswer: Bool = false,
+    isCurrentDay: Bool? = nil
 ) -> DailyQuestionRow {
     DailyQuestionRow(
-        coupleDayID: TestDailyChallengeIDs.coupleDay,
+        coupleDayID: coupleDayID,
         coupleID: TestDailyChallengeIDs.couple,
-        localDate: "2026-06-27",
-        startsAt: TestDailyChallengeIDs.startsAt,
-        endsAt: TestDailyChallengeIDs.endsAt,
+        localDate: localDate,
+        startsAt: startsAt,
+        endsAt: endsAt,
         instanceID: UUID(),
         seededForUserID: seededForUserID,
         slotNumber: slotNumber,
@@ -1685,7 +1862,8 @@ private func questionRow(
         ownAnsweredAt: ownAnsweredAt,
         partnerAnswerID: partnerAnswerID,
         partnerAnsweredAt: partnerAnsweredAt,
-        canViewPartnerAnswer: canViewPartnerAnswer
+        canViewPartnerAnswer: canViewPartnerAnswer,
+        isCurrentDay: isCurrentDay
     )
 }
 
@@ -1716,6 +1894,7 @@ private func answerDetail(
 
 private actor RecordingDailyChallengeService: DailyChallengeServicing {
     private var snapshots: [DailyChallengeSnapshot]
+    private let advancesSnapshotsOnLoad: Bool
     private let shuffleSnapshot: DailyChallengeSnapshot?
     private let shuffleError: Error?
     private let editError: Error?
@@ -1729,6 +1908,7 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
 
     init(
         snapshots: [DailyChallengeSnapshot],
+        advancesSnapshotsOnLoad: Bool = false,
         shuffleSnapshot: DailyChallengeSnapshot? = nil,
         shuffleError: Error? = nil,
         editError: Error? = nil,
@@ -1736,6 +1916,7 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
         streak: CoupleStreak = .none
     ) {
         self.snapshots = snapshots
+        self.advancesSnapshotsOnLoad = advancesSnapshotsOnLoad
         self.shuffleSnapshot = shuffleSnapshot
         self.shuffleError = shuffleError
         self.editError = editError
@@ -1747,6 +1928,9 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
         loadCount += 1
         if let loadError {
             throw loadError
+        }
+        if advancesSnapshotsOnLoad, !snapshots.isEmpty {
+            return snapshots.removeFirst()
         }
         return snapshots.first ?? .empty(currentUserID: currentUserID)
     }
@@ -1797,6 +1981,69 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
             throw shuffleError
         }
         return shuffleSnapshot ?? snapshots.first ?? .empty(currentUserID: currentUserID)
+    }
+}
+
+private actor RecordingDailyChallengeReadGateway: SupabaseDailyChallengeGateway {
+    private let rows: [DailyQuestionRow]
+    private let detailsByCoupleDayID: [UUID: [DailyAnswerDetailRow]]
+    private(set) var loadedAnswerDetailCoupleDayIDs: [UUID] = []
+
+    init(
+        rows: [DailyQuestionRow],
+        detailsByCoupleDayID: [UUID: [DailyAnswerDetailRow]] = [:]
+    ) {
+        self.rows = rows
+        self.detailsByCoupleDayID = detailsByCoupleDayID
+    }
+
+    func loadTodayQuestions() async throws -> [DailyQuestionRow] {
+        rows
+    }
+
+    func startDailyChallenge(operation _: SyncClientOperation) async throws -> [DailyQuestionRow] {
+        rows
+    }
+
+    func loadCoupleStreak() async throws -> CoupleStreak {
+        .none
+    }
+
+    func loadAnswerDetails(coupleDayID: UUID) async throws -> [DailyAnswerDetailRow] {
+        loadedAnswerDetailCoupleDayIDs.append(coupleDayID)
+        return detailsByCoupleDayID[coupleDayID] ?? []
+    }
+
+    func submitAnswer(
+        instanceID _: UUID,
+        answerID: UUID,
+        payload _: DailyAnswerPayload,
+        operation _: SyncClientOperation
+    ) async throws -> UUID {
+        answerID
+    }
+
+    func editTextAnswer(
+        instanceID _: UUID,
+        text _: String,
+        operation _: SyncClientOperation
+    ) async throws -> UUID {
+        UUID()
+    }
+
+    func editPartnerChoice(
+        instanceID _: UUID,
+        selectedUserID _: UUID,
+        operation _: SyncClientOperation
+    ) async throws -> UUID {
+        UUID()
+    }
+
+    func shuffleQuestion(
+        slotNumber _: Int,
+        operation _: SyncClientOperation
+    ) async throws -> [DailyQuestionRow] {
+        rows
     }
 }
 

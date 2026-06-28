@@ -2,14 +2,14 @@ import SwiftUI
 
 /// Compact entry point for today's Daily Challenge on the Us tab.
 ///
-/// When `morphNamespace` is set, the eyebrow, the step bar, and the primary button
-/// take part in the hero morph that expands this card into the answering flow.
+/// The card is the source the answering flow zooms out of; its parent marks it with
+/// `.matchedTransitionSource`, so the card itself appears to grow into the full-screen
+/// flow when tapped.
 struct DailyPromptCard: View {
     let state: DailyChallengeCardState
     /// The couple's streak chip. Hidden when there's nothing to show; switches to
     /// a tappable "broken" look when a lost streak can be bought back.
     var streak: StreakPillState = .hidden
-    var morphNamespace: Namespace.ID?
     var prefersPartnerAnswersWhenComplete = false
     var onAnswer: () -> Void = {}
     /// Called when the user taps the chip while a restore is offered.
@@ -20,7 +20,6 @@ struct DailyPromptCard: View {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 HStack(alignment: .center) {
                     PaeoniaCardEyebrow(.homeDailyPromptEyebrow)
-                        .dailyChallengeMorph(DailyChallengeMorph.eyebrow, in: morphNamespace)
 
                     Spacer(minLength: PaeoniaSpacing.space12)
 
@@ -40,20 +39,11 @@ struct DailyPromptCard: View {
                     total: state.totalCount,
                     completed: state.answeredCount
                 )
-                .dailyChallengeMorph(DailyChallengeMorph.stepBar, in: morphNamespace)
 
                 titleBlock
 
                 actionButton
             }
-        }
-        // The collapsed anchor for the surface morph: an invisible match-frame source
-        // pinned to the card, so the flow's growing surface knows where to expand from
-        // and shrink back to. Held only while the card owns the morph ids (collapsed /
-        // closing on the active tab); released while the flow is expanded.
-        .background {
-            Color.clear
-                .dailyChallengeMorph(DailyChallengeMorph.surface, in: morphNamespace)
         }
     }
 
@@ -76,7 +66,6 @@ struct DailyPromptCard: View {
         }
         .buttonStyle(style)
         .disabled(!state.isActionEnabled)
-        .dailyChallengeMorph(DailyChallengeMorph.primaryButton, in: morphNamespace)
     }
 
     /// A review action (neutral, not a CTA) once the day is complete — unless the
