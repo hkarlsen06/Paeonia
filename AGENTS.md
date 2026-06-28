@@ -45,6 +45,19 @@ Use `api.paeonia.no` as the canonical Supabase API domain for production client 
 
 Do not create placeholder directories or files unless they are needed for the current task.
 
+## Agent Orientation
+
+Previous Codex and Claude sessions repeatedly looked up the same ownership map before making changes. Before broad `rg` exploration, check `docs/implementation-map.md` for the current source map for launch/readiness, Daily Challenge, widget drawing, localization, design-system primitives, sync/access/location, Supabase, and marketing.
+
+Keep `AGENTS.md` for durable rules and constraints. Put feature ownership maps, implementation slices, and command references in focused docs instead:
+
+- `docs/implementation-map.md`: first stop for "which file owns this behavior?"
+- `docs/phase-3-data-contract.md`: product/data-model decisions before schema work.
+- `docs/phase-3-migration-checklist.md`: Supabase migration slice plan and RLS helper checklist.
+- `docs/couple-question-guidelines.md`: required reading before writing, seeding, localizing, or versioning couple questions.
+- `docs/marketing-app-contract.md`: public routes, Universal Links, Cloudflare static files, and marketing app structure.
+- `supabase/README.md`: backend working rules, local command examples, and question catalog notes.
+
 ## Agent Behavior Guidelines
 
 ### Parallel Agent Safety
