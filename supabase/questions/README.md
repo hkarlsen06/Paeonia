@@ -26,14 +26,15 @@ supabase/questions/
 ```
 
 `<question_key>` maps to `public.questions.key` and should stay stable for the
-same prompt intent. Version folders map to `public.question_versions.version_number`
-using zero-padded names such as `v001` and `v002`.
+same prompt intent. Version folders map to
+`public.question_versions.version_number` using zero-padded names such as `v001`
+and `v002`.
 
-Each version should track its answer kind contract in `version.md`. Locale files
-map to `public.question_version_localizations` and must include both required
-locales, `en` and `nb`, with the full prompt and short prompt.
+Each version tracks its answer-kind contract in `version.md`. Locale files map to
+`public.question_version_localizations` and must include the required locales,
+`en` and `nb`, with full and short prompts.
 
-When a prompt meaning, short prompt meaning, answer kinds, or meaningful
+When prompt meaning, short prompt meaning, answer kinds, or meaningful
 localization changes, add a new version folder instead of editing a historical
 version in place.
 
@@ -41,11 +42,32 @@ version in place.
 
 Use YAML front matter in each file:
 
-- `question.md`: `collection`, `key`, `status`, `resurfaceable`, and
+- `question.md`: `collection`, `key`, `status`, `resurfaceable`,
   `resurface_after_months`.
-- `version.md`: `version_number`, `status`, `active_from`, `retired_at`, and
+- `version.md`: `version_number`, `status`, `active_from`, `retired_at`,
   `answer_kinds`.
-- `locales/<locale>.md`: `locale`, `prompt`, and `short_prompt`.
+- `locales/<locale>.md`: `locale`, `prompt`, `short_prompt`.
 
 Keep generated database metadata intact when backfilling existing rows. For new
-drafts, use the same fields with draft status until the content is applied.
+drafts, use the same fields with draft status until content is applied.
+
+## Sync Script
+
+Use `scripts/sync-question-catalog` from the repository root to validate and
+upload source-controlled question content.
+
+```bash
+scripts/sync-question-catalog --linked
+scripts/sync-question-catalog --linked --apply
+scripts/sync-question-catalog --database-url "$SUPABASE_DB_URL"
+scripts/sync-question-catalog --database-url "$SUPABASE_DB_URL" --apply
+```
+
+The default mode is a dry run: it reads the database, reports new question keys,
+new version folders, missing localizations, and status changes, but does not
+write. `--apply` uploads pending changes with one transaction. For MCP or
+SQL-editor workflows, use `scripts/sync-question-catalog --emit-sql`.
+
+Existing version prompts, short prompts, and answer kinds are immutable. If the
+script reports drift for an existing version, create the next `vNNN` folder
+instead of editing the old version in place.
