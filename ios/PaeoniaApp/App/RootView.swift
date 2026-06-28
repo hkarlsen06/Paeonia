@@ -15,6 +15,7 @@ struct RootView: View {
     private let widgetCanvasService: any WidgetCanvasManaging
     private let widgetCanvasSync: any WidgetCanvasSyncing
     private let pushAuthorization: any PushAuthorizationProviding
+    private let widgetPushRegistration: any WidgetPushRegistering
     private let partnerAvatarSharing: (any PartnerAvatarSharing)?
 
     @MainActor
@@ -28,6 +29,7 @@ struct RootView: View {
         widgetCanvasService: (any WidgetCanvasManaging)? = nil,
         widgetCanvasSync: (any WidgetCanvasSyncing)? = nil,
         pushAuthorization: (any PushAuthorizationProviding)? = nil,
+        widgetPushRegistration: (any WidgetPushRegistering)? = nil,
         partnerAvatarSharing: (any PartnerAvatarSharing)? = nil
     ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
@@ -39,6 +41,7 @@ struct RootView: View {
         self.widgetCanvasService = widgetCanvasService ?? WidgetCanvasService.shared
         self.widgetCanvasSync = widgetCanvasSync ?? WidgetCanvasSyncServiceFactory.makeDefault()
         self.pushAuthorization = pushAuthorization ?? PushAuthorizationService()
+        self.widgetPushRegistration = widgetPushRegistration ?? WidgetPushRegistrationServiceFactory.makeDefault()
         self.partnerAvatarSharing = partnerAvatarSharing ?? PartnerAvatarSharingServiceFactory.makeDefault()
     }
 
@@ -88,23 +91,22 @@ struct RootView: View {
                 syncWidgetIfPaired(state)
                 requestPushAuthorizationIfPaired(state)
             }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
-                syncWidgetIfPaired(viewModel.state)
-                Task {
-                    await locationViewModel.refreshOwnLocationIfSharingEnabled(source: .foregroundOpen)
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    registerForRemoteNotificationsIfSignedIn(viewModel.currentSession?.id)
+                    syncWidgetIfPaired(viewModel.state)
+                    Task {
+                        await locationViewModel.refreshOwnLocationIfSharingEnabled(source: .foregroundOpen)
                     await viewModel.refreshAfterForegroundActivation()
                     await locationViewModel.reload()
                 }
             }
         }
-            .onChange(of: viewModel.currentSession?.id) { _, sessionID in
+        .onChange(of: viewModel.currentSession?.id, initial: true) { _, sessionID in
                 // Once signed in, get an APNs token so the backend can send the
                 // silent push that wakes us to sync a partner's drawing.
-                if sessionID != nil {
-                    UIApplication.shared.registerForRemoteNotifications()
-                }
-            }
+            registerForRemoteNotificationsIfSignedIn(sessionID)
+        }
             .paeoniaTopBanner(bannerCenter) {
                 // Tapping a partner-update notice opens the drawing screen, the
                 // same destination the notification tap routes to.
@@ -474,9 +476,21 @@ struct RootView: View {
         // drawing with the right nickname even when no view is alive.
         WidgetSyncIdentityStore.shared.save(identity)
         await widgetCanvasSync.sync(identity: identity)
+        await WidgetCenterReloader().reloadWidget()
         // Stage the partner's avatar so the alert can render it as a
         // communication notification while the app is in the background.
         await partnerAvatarSharing?.cachePartnerAvatar(assetID: viewModel.currentPartnerProfilePhotoAssetID)
+    }
+
+    private func registerForRemoteNotificationsIfSignedIn(_ sessionID: String?) {
+        guard sessionID != nil else {
+            return
+        }
+
+        UIApplication.shared.registerForRemoteNotifications()
+        Task {
+            await widgetPushRegistration.registerCurrentWidgetPushToken()
+        }
     }
 
     /// Pull-to-refresh on Home: refreshes shared local surfaces and widget sync.

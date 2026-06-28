@@ -10,23 +10,13 @@ struct PaeoniaWidgetEntryView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            openDrawingBackgroundLink
             overlayContent
             refreshButtonLayer
         }
+        .widgetURL(PaeoniaWidgetURL.drawing)
         // `.contain` (not `.combine`) so the interactive refresh button stays a
         // separately actionable accessibility element.
         .accessibilityElement(children: .contain)
-    }
-
-    private var openDrawingBackgroundLink: some View {
-        Link(destination: PaeoniaWidgetURL.drawing) {
-            Rectangle()
-                .fill(.clear)
-                .contentShape(Rectangle())
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .accessibilityLabel(Text(footerAction))
     }
 
     private var overlayContent: some View {

@@ -8,11 +8,12 @@ struct PaeoniaWidget: Widget {
         StaticConfiguration(kind: kind, provider: PaeoniaWidgetTimelineProvider()) { entry in
             PaeoniaWidgetEntryView(entry: entry)
                 .containerBackground(.paeoniaWidgetBackground, for: .widget)
-        }
-        .configurationDisplayName(String(localized: .widgetTitle))
-        .description(String(localized: .widgetDescription))
-        .supportedFamilies([.systemSmall, .systemLarge])
-        .contentMarginsDisabled()
+            }
+            .configurationDisplayName(String(localized: .widgetTitle))
+            .description(String(localized: .widgetDescription))
+            .pushHandler(PaeoniaWidgetPushHandler.self)
+            .supportedFamilies([.systemSmall, .systemLarge])
+            .contentMarginsDisabled()
     }
 }
 

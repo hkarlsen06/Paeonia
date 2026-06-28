@@ -58,6 +58,7 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         didReceiveRemoteNotification userInfo: [AnyHashable: Any]
     ) async -> UIBackgroundFetchResult {
         await widgetSync.sync(identity: identityStore.load())
+        await WidgetCenterReloader().reloadWidget()
         return .newData
     }
 
