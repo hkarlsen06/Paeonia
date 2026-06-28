@@ -160,7 +160,9 @@ struct LocationPendingOperationHandlerTests {
         let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
         try await ownLocationStore.save(newerLocal)
         let handler = LatestPartnerLocationPendingOperationHandler(
-            gateway: RecordingLocationGateway(locationError: StaleLocationError()),
+            gateway: RecordingLocationGateway(
+                locationError: StaleLocationError(description: "stale location update was rejected")
+            ),
             ownLocationStore: ownLocationStore
         )
         let stalePayload = LatestPartnerLocationOperationPayload(
@@ -184,6 +186,64 @@ struct LocationPendingOperationHandlerTests {
         )
 
         #expect(result == .terminalFailure("Stale location update rejected"))
+        let stored = try await ownLocationStore.load(ownerUserID: ownerUserID, coupleID: coupleID)
+        #expect(stored == newerLocal)
+    }
+
+    @Test func staleLocationSuccessDoesNotOverwriteNewerLocalLocation() async throws {
+        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let operation = try operation(id: "33333333-3333-3333-3333-333333333333")
+        let newerLocal = OwnLocationSnapshot(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            location: LocationPoint(
+                latitude: 60,
+                longitude: 11,
+                capturedAt: Date(timeIntervalSince1970: 300)
+            ),
+            source: .manualRefresh,
+            pendingOperationID: nil,
+            updatedAt: Date(timeIntervalSince1970: 301)
+        )
+        let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
+        try await ownLocationStore.save(newerLocal)
+        let handler = LatestPartnerLocationPendingOperationHandler(
+            gateway: RecordingLocationGateway(
+                locationResponse: LatestPartnerLocationUpdateResponse(
+                    coupleID: coupleID,
+                    userID: ownerUserID,
+                    latitude: 59,
+                    longitude: 10,
+                    accuracyMeters: nil,
+                    capturedAt: Date(timeIntervalSince1970: 250),
+                    receivedAt: Date(timeIntervalSince1970: 251),
+                    updatedAt: Date(timeIntervalSince1970: 252)
+                )
+            ),
+            ownLocationStore: ownLocationStore
+        )
+        let stalePayload = LatestPartnerLocationOperationPayload(
+            coupleID: coupleID,
+            location: LocationPoint(
+                latitude: 58,
+                longitude: 9,
+                capturedAt: Date(timeIntervalSince1970: 200)
+            ),
+            source: .foregroundOpen
+        )
+
+        let result = try await handler.send(
+            pendingOperation(
+                ownerUserID: ownerUserID,
+                operation: operation,
+                kind: .updateLatestPartnerLocation,
+                payload: stalePayload
+            ),
+            context: syncContext(ownerUserID: ownerUserID, coupleID: coupleID)
+        )
+
+        #expect(result == .succeeded)
         let stored = try await ownLocationStore.load(ownerUserID: ownerUserID, coupleID: coupleID)
         #expect(stored == newerLocal)
     }
@@ -401,7 +461,7 @@ private actor RecordingLocationGateway: SupabaseLocationGateway {
 }
 
 private struct StaleLocationError: Error, CustomStringConvertible {
-    let description = "stale location update rejected"
+    let description: String
 }
 
 @MainActor

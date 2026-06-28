@@ -187,21 +187,13 @@ private struct CoupleMapSnapshot: View {
     let partnerCapturedAt: Date
     let onLongPress: () -> Void
 
-    /// How much bigger than the pins' own bounding box the framed area is, so the
-    /// avatars (and their timestamps) sit well inside the card edges. Tuned for the
-    /// wide tile: tighter framing pushes the avatars closer to the edges and fills
-    /// the side space a square card didn't have.
-    private static let paddingFactor = 1.8
-    /// How far south to nudge the camera (as a share of the framed span), lifting
-    /// both pins up just enough to balance the asymmetry between them: the top pin
-    /// only needs room for its avatar, while the bottom pin also needs room *below*
-    /// it for its timestamp badge. A small lift leaves the bottom badge clear of the
-    /// edge without leaving a big gap beneath it.
- private static let southwardShiftFraction = 0.05
- private static let maximumSnapshotLatitude: CLLocationDegrees = 85
- private static let maximumLongitudeDelta: CLLocationDegrees = 359
- private static let minimumCoordinateDelta: CLLocationDegrees = 0.01
- private static let scrimHeight: CGFloat = 52
+    /// How much larger than the pins' own span the framed area is, leaving an even
+    /// margin around the avatars.
+    private static let paddingFactor = 1.7
+    /// Smallest framed span (meters) so same-city couples still get a sensible zoom
+    /// instead of diving to street level.
+    private static let minimumSpanMeters: CLLocationDegrees = 4_000
+    private static let scrimHeight: CGFloat = 52
     /// Hard cap on simultaneous tap-spawned hearts, so rapid tapping can make a
     /// little chaos without growing unbounded work or memory.
     private static let maxConcurrentTapKisses = 16
@@ -266,6 +258,10 @@ private struct CoupleMapSnapshot: View {
                         tint: .paeoniaPartnerTwo,
                         capturedAt: partnerCapturedAt,
                         showsTimestamp: true,
+                        // Hang the badge toward the other pin (the map interior) so it
+                        // never reaches the card edge: below when the partner is the
+                        // upper pin, above when it's the lower one.
+                        badgeBelow: snapshot.partnerPoint.y <= snapshot.currentPoint.y,
                         point: snapshot.partnerPoint,
                         containerWidth: proxy.size.width
                     )
@@ -384,7 +380,7 @@ private struct CoupleMapSnapshot: View {
         configuration.pointOfInterestFilter = .excludingAll
 
         let options = MKMapSnapshotter.Options()
-        options.region = fittingRegion()
+        options.region = fittingRegion(aspectRatio: size.width / size.height)
         options.size = size
         options.traitCollection = UITraitCollection(userInterfaceStyle: .dark)
         options.preferredConfiguration = configuration
@@ -401,70 +397,40 @@ private struct CoupleMapSnapshot: View {
         )
     }
 
-    /// A square map rect that contains both pins, padded so the avatars sit near the
-    /// card edges, and nudged slightly south so the bottom pin's timestamp badge
-    /// stays clear of the bottom edge. Working in projected map points (rather than
-    /// lat/lon degrees) keeps the framing square, so MapKit doesn't add its own
-    /// aspect padding.
-    private func fittingRegion() -> MKCoordinateRegion {
-        let currentPoint = MKMapPoint(currentCoordinate)
-        let partnerPoint = MKMapPoint(partnerCoordinate)
+    /// A map rect that contains both pins, built to the card's aspect ratio so MapKit
+    /// renders it as-is. (A square rect was being re-expanded by MapKit to fill the
+    /// wide card, which undid the framing and made tuning feel like it did nothing.)
+    /// Working in projected map points keeps the math uniform; intersecting `.world`
+    /// keeps the region inside valid Mercator bounds.
+    private func fittingRegion(aspectRatio: Double) -> MKCoordinateRegion {
+        let current = MKMapPoint(currentCoordinate)
+        let partner = MKMapPoint(partnerCoordinate)
 
-        let centerX = (currentPoint.x + partnerPoint.x) / 2
-        let centerY = (currentPoint.y + partnerPoint.y) / 2
-
-        // Floor the span so very-close coordinates still get a sensible zoom
-        // instead of diving to street level.
         let midLatitude = (currentCoordinate.latitude + partnerCoordinate.latitude) / 2
-        let minimumSpan = 2_000 * MKMapPointsPerMeterAtLatitude(midLatitude)
-        let pinsSpan = max(abs(currentPoint.x - partnerPoint.x), abs(currentPoint.y - partnerPoint.y))
-        let side = max(pinsSpan, minimumSpan) * Self.paddingFactor
+        let minimumHalf = Self.minimumSpanMeters / 2 * MKMapPointsPerMeterAtLatitude(midLatitude)
 
-        // Move the framed center slightly south of the pins (larger y) so both ride
-        // up just enough that the bottom pin's timestamp badge clears the edge.
-        let shiftedCenterY = centerY + side * Self.southwardShiftFraction
+        var halfWidth = max(abs(current.x - partner.x) / 2, minimumHalf) * Self.paddingFactor
+        var halfHeight = max(abs(current.y - partner.y) / 2, minimumHalf) * Self.paddingFactor
 
+        // Grow the short side to the card's shape so the framed rect matches the
+        // image; otherwise MapKit expands it and re-centers the pins.
+        if halfWidth / halfHeight < aspectRatio {
+            halfWidth = halfHeight * aspectRatio
+        } else {
+            halfHeight = halfWidth / aspectRatio
+        }
+
+        // Center on both pins so each avatar sits the same distance from its edge.
+        // The timestamp badge keeps clear of the edges by flipping to the map-facing
+        // side of its avatar (see MapAvatarPin), so the framing needs no bias.
         let rect = MKMapRect(
-            x: centerX - side / 2,
-            y: shiftedCenterY - side / 2,
-            width: side,
-            height: side
+            x: (current.x + partner.x) / 2 - halfWidth,
+            y: (current.y + partner.y) / 2 - halfHeight,
+            width: halfWidth * 2,
+            height: halfHeight * 2
         )
- let clampedRect = rect.intersection(.world)
- if clampedRect.size.width > 0, clampedRect.size.height > 0 {
- return tileSafeRegion(MKCoordinateRegion(clampedRect))
- }
-
- return MKCoordinateRegion(center: currentCoordinate, latitudinalMeters: 50_000, longitudinalMeters: 50_000)
- }
-
- /// MapKit's tile renderer logs invalid-coordinate warnings when a snapshot
- /// region's center/span implies north or south edges beyond valid Mercator
- /// latitude, even if the source coordinates themselves are valid.
- private func tileSafeRegion(_ region: MKCoordinateRegion) -> MKCoordinateRegion {
- let maximumCenterLatitude = Self.maximumSnapshotLatitude - Self.minimumCoordinateDelta
- let centerLatitude = min(
- max(region.center.latitude, -maximumCenterLatitude),
- maximumCenterLatitude
- )
- let maximumLatitudeDelta = max(
- Self.minimumCoordinateDelta,
- 2 * (Self.maximumSnapshotLatitude - abs(centerLatitude)) - Self.minimumCoordinateDelta
- )
- let latitudeDelta = min(
- max(region.span.latitudeDelta, Self.minimumCoordinateDelta),
- maximumLatitudeDelta
- )
- let longitudeDelta = min(
- max(region.span.longitudeDelta, Self.minimumCoordinateDelta),
- Self.maximumLongitudeDelta
- )
-
- return MKCoordinateRegion(
- center: CLLocationCoordinate2D(latitude: centerLatitude, longitude: region.center.longitude),
- span: MKCoordinateSpan(latitudeDelta: latitudeDelta, longitudeDelta: longitudeDelta)
- )
- }
+        return MKCoordinateRegion(rect.intersection(.world))
+    }
 }
 
 /// A partner's avatar pin: the same tinted, ringed avatar shown in the Home
@@ -478,6 +444,9 @@ private struct MapAvatarPin: View {
     let tint: Color
     let capturedAt: Date
     let showsTimestamp: Bool
+    /// Whether the timestamp badge hangs below the avatar (toward the bottom) or
+    /// above it. Set so the badge always points into the map, never at a card edge.
+    var badgeBelow: Bool = true
     let point: CGPoint
     let containerWidth: CGFloat
 
@@ -491,8 +460,14 @@ private struct MapAvatarPin: View {
         Self.avatarDiameter
     }
 
+    /// Offset that pushes the badge just past the avatar so a small gap shows
+    /// between them, applied downward when below and upward when above.
+    private var badgeDrop: CGFloat {
+        diameter + PaeoniaSpacing.space4
+    }
+
     /// Slides the badge horizontally so it stays inset from both card edges, while
-    /// staying centered under the avatar whenever there is room.
+    /// staying centered on the avatar whenever there is room.
     private var badgeOffsetX: CGFloat {
         guard badgeWidth > 0, containerWidth > 0 else {
             return 0
@@ -513,7 +488,7 @@ private struct MapAvatarPin: View {
             tint: tint,
             size: diameter
         )
-        .overlay(alignment: .top) {
+        .overlay(alignment: badgeBelow ? .top : .bottom) {
             if showsTimestamp {
                 LiveRelativeTimestampText(
                     capturedAt: capturedAt,
@@ -527,7 +502,7 @@ private struct MapAvatarPin: View {
                 .padding(.vertical, 2)
                 .background(Capsule().fill(.black.opacity(0.5)))
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { badgeWidth = $0 }
-                .offset(x: badgeOffsetX, y: diameter + PaeoniaSpacing.space4)
+                .offset(x: badgeOffsetX, y: badgeBelow ? badgeDrop : -badgeDrop)
             }
         }
     }

@@ -68,6 +68,19 @@ struct LatestPartnerLocationPendingOperationHandler: PendingSyncOperationHandlin
                 payload: payload,
                 operation: operation.operation
             ) {
+                let existing = try await ownLocationStore.load(
+                    ownerUserID: response.userID,
+                    coupleID: response.coupleID
+                )
+                if let existing, existing.location.capturedAt > response.capturedAt {
+                    try await ownLocationStore.clearPendingOperation(
+                        ownerUserID: operation.ownerUserID,
+                        coupleID: payload.coupleID,
+                        operationID: operation.operation.id
+                    )
+                    return .succeeded
+                }
+
                 try await ownLocationStore.save(
                     OwnLocationSnapshot(
                         ownerUserID: response.userID,
@@ -98,6 +111,8 @@ struct LatestPartnerLocationPendingOperationHandler: PendingSyncOperationHandlin
     }
 
     private static func isStaleLocationError(_ error: any Error) -> Bool {
-        String(describing: error).localizedCaseInsensitiveContains("stale location update rejected")
+        let description = String(describing: error).lowercased()
+        return description.contains("stale location update")
+            && description.contains("rejected")
     }
 }
