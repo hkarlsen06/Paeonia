@@ -2,12 +2,12 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-struct SyncCoordinatorTests {
+struct PaeoniaSyncServiceTests {
     @Test func runOncePullsBeforePushingEachStream() async {
         let relationshipStream = RecordingSyncStream(streamKey: .relationship)
         let profileStream = RecordingSyncStream(streamKey: .profile)
         let stateStore = InMemorySyncStateRepository()
-        let coordinator = SyncCoordinator(
+        let coordinator = PaeoniaSyncService(
             streams: [relationshipStream, profileStream],
             stateStore: stateStore,
             pendingOperationStore: InMemoryPendingSyncOperationRepository()
@@ -33,7 +33,7 @@ struct SyncCoordinatorTests {
 
     @Test func runOnceDrainsCoalescedFollowUpBeforeReturning() async {
         let relationshipStream = BlockingFirstPullSyncStream(streamKey: .relationship)
-        let coordinator = SyncCoordinator(
+        let coordinator = PaeoniaSyncService(
             streams: [relationshipStream],
             stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: InMemoryPendingSyncOperationRepository()
@@ -45,8 +45,23 @@ struct SyncCoordinatorTests {
         }
         await relationshipStream.waitForFirstPull()
 
-        let coalescedResult = await coordinator.runOnce(reason: .localChange)
+        let coalescedProbe = AsyncCompletionProbe()
+        let coalescedRun = Task {
+            let result = await coordinator.runOnce(reason: .localChange)
+            await coalescedProbe.markCompleted()
+            return result
+        }
+        for _ in 0..<1_000 {
+            if await coalescedProbe.isCompleted {
+                break
+            }
+            await Task.yield()
+        }
+        let completedBeforeRelease = await coalescedProbe.isCompleted
+        #expect(!completedBeforeRelease)
+
         await relationshipStream.releaseFirstPull()
+        let coalescedResult = await coalescedRun.value
         let result = await firstRun.value
 
         #expect(coalescedResult.status == .coalesced)
@@ -81,7 +96,7 @@ struct SyncCoordinatorTests {
             handlers: [handler],
             retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0)
         )
-        let coordinator = SyncCoordinator(
+        let coordinator = PaeoniaSyncService(
             streams: [stream],
             stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pendingStore
@@ -102,7 +117,7 @@ struct SyncCoordinatorTests {
 
     @Test func failedRunSchedulesRetry() async {
         let stream = FailOnceSyncStream(streamKey: .relationship)
-        let coordinator = SyncCoordinator(
+        let coordinator = PaeoniaSyncService(
             streams: [stream],
             stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: InMemoryPendingSyncOperationRepository(),
@@ -128,7 +143,7 @@ struct SyncCoordinatorTests {
         )
         let profileStream = RecordingSyncStream(streamKey: .profile)
         let stateStore = InMemorySyncStateRepository()
-        let coordinator = SyncCoordinator(
+        let coordinator = PaeoniaSyncService(
             streams: [relationshipStream, profileStream],
             stateStore: stateStore,
             pendingOperationStore: InMemoryPendingSyncOperationRepository(),
@@ -150,7 +165,7 @@ struct SyncCoordinatorTests {
     }
 
     @Test func runOnceWithoutSessionSkips() async {
-        let coordinator = SyncCoordinator(
+        let coordinator = PaeoniaSyncService(
             streams: [RecordingSyncStream(streamKey: .relationship)],
             stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: InMemoryPendingSyncOperationRepository()
@@ -184,7 +199,7 @@ struct SyncCoordinatorTests {
             at: Date(timeIntervalSince1970: 200)
         )
 
-        let coordinator = SyncCoordinator(
+        let coordinator = PaeoniaSyncService(
             streams: [RecordingSyncStream(streamKey: .relationship)],
             stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pendingStore
@@ -201,6 +216,18 @@ struct SyncCoordinatorTests {
         #expect(result.status == .succeeded)
         #expect(readyOperations.map(\.operation.id) == [operation.id])
         #expect(readyOperations.first?.status == .retrying)
+    }
+}
+
+private actor AsyncCompletionProbe {
+    private var completed = false
+
+    var isCompleted: Bool {
+        completed
+    }
+
+    func markCompleted() {
+        completed = true
     }
 }
 

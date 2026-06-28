@@ -47,6 +47,14 @@ struct DailyPromptCard: View {
                 actionButton
             }
         }
+        // The collapsed anchor for the surface morph: an invisible match-frame source
+        // pinned to the card, so the flow's growing surface knows where to expand from
+        // and shrink back to. Held only while the card owns the morph ids (collapsed /
+        // closing on the active tab); released while the flow is expanded.
+        .background {
+            Color.clear
+                .dailyChallengeMorph(DailyChallengeMorph.surface, in: morphNamespace)
+        }
     }
 
     /// The card's action. A real call to action while there's something to do

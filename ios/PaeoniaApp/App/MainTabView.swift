@@ -20,6 +20,7 @@ struct MainTabView: View {
     let widgetDrawingPresented: Binding<Bool>
     let onOpenWidgetDrawing: () -> Void
     var onHomeRefresh: () async -> Void = {}
+    var onDailyChallengeRefresh: () async -> Void = {}
     var onDailyChallengeLocalChange: @MainActor () async -> Void = {}
 
     @State private var dailyChallengeViewModel = DailyChallengeViewModel()
@@ -52,6 +53,7 @@ struct MainTabView: View {
         widgetDrawingPresented: Binding<Bool>,
         onOpenWidgetDrawing: @escaping () -> Void,
         onHomeRefresh: @escaping () async -> Void = {},
+        onDailyChallengeRefresh: @escaping () async -> Void = {},
         onDailyChallengeLocalChange: @escaping @MainActor () async -> Void = {}
     ) {
         self.currentUserID = currentUserID
@@ -67,6 +69,7 @@ struct MainTabView: View {
         self.widgetDrawingPresented = widgetDrawingPresented
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
         self.onHomeRefresh = onHomeRefresh
+        self.onDailyChallengeRefresh = onDailyChallengeRefresh
         self.onDailyChallengeLocalChange = onDailyChallengeLocalChange
     }
 
@@ -95,6 +98,7 @@ struct MainTabView: View {
                 DailyChallengeAnswerFlow(
                     viewModel: dailyChallengeViewModel,
                     namespace: flowNamespace,
+                    surfaceNamespace: surfaceFlowNamespace,
                     isExpanded: isAnswerFlowExpanded,
                     onClose: closeAnswerFlow,
                     onRestore: openStreakRestore,
@@ -111,6 +115,7 @@ struct MainTabView: View {
                     question: question,
                     viewModel: dailyChallengeViewModel,
                     namespace: partnerFlowNamespace,
+                    surfaceNamespace: partnerSurfaceFlowNamespace,
                     isExpanded: isPartnerAnswerExpanded,
                     onClose: closePartnerAnswerFlow
                 )
@@ -206,8 +211,8 @@ struct MainTabView: View {
                 onOpenDailyChallenge: openDailyChallengeFromHome,
                 onOpenWidgetDrawing: onOpenWidgetDrawing,
                 onRefresh: {
-                    await dailyChallengeViewModel.reload()
                     await onHomeRefresh()
+                    await dailyChallengeViewModel.reload()
                 }
             )
             .navigationBarTitleDisplayMode(.inline)
@@ -227,6 +232,10 @@ struct MainTabView: View {
                 partnerMorphNamespace: partnerCardNamespace,
                 onOpenAnswerFlow: openAnswerFlow,
                 onTapStreak: openStreakRestore,
+                onRefresh: {
+                    await onDailyChallengeRefresh()
+                    await dailyChallengeViewModel.reload()
+                },
                 onAnswerPartnerQuestion: openPartnerAnswerFlow
             )
         }
@@ -247,6 +256,15 @@ struct MainTabView: View {
     /// never claims them under Reduce Motion.
     private var flowNamespace: Namespace.ID? {
         (reduceMotion || !isAnswerFlowExpanded) ? nil : dailyChallengeMorph
+    }
+
+    /// Namespace for the morphing surface, which — unlike the gliding hero elements —
+    /// must keep travelling through the close. The flow stays attached to it for its
+    /// whole life (open and closing); the card supplies the collapsed target through
+    /// `morphNamespace(for:)`, and `isSource` on each side decides which end the
+    /// surface settles toward. Off under Reduce Motion.
+    private var surfaceFlowNamespace: Namespace.ID? {
+        reduceMotion ? nil : dailyChallengeMorph
     }
 
     /// How the answering flow enters and leaves.
@@ -324,6 +342,13 @@ struct MainTabView: View {
     /// The partner flow owns the CTA id only while open, mirroring `flowNamespace`.
     private var partnerFlowNamespace: Namespace.ID? {
         (reduceMotion || !isPartnerAnswerExpanded) ? nil : partnerAnswerMorph
+    }
+
+    /// Surface namespace for the partner flow, mirroring `surfaceFlowNamespace`: held
+    /// for the flow's whole life so its surface can grow and shrink. Off under Reduce
+    /// Motion.
+    private var partnerSurfaceFlowNamespace: Namespace.ID? {
+        reduceMotion ? nil : partnerAnswerMorph
     }
 
     private func openPartnerAnswerFlow(_ question: DailyChallengeQuestion) {

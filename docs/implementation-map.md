@@ -46,7 +46,7 @@ MVP drawing payloads are PencilKit-based. Do not replace them with hand-rolled s
 
 ## Sync, Access, And Location
 
-- `ios/PaeoniaApp/Services/Sync/SyncCoordinator.swift` and `SyncCoordinatorDefaults.swift`: orchestration for local-first sync work.
+- `ios/PaeoniaApp/Services/Sync/PaeoniaSyncService.swift` and `PaeoniaSyncServiceDefaults.swift`: orchestration for local-first sync work.
 - `ios/PaeoniaApp/Services/Sync/SyncClientOperation.swift` and `SyncTypes.swift`: queued operation envelope and shared sync types.
 - `ios/PaeoniaApp/Services/Sync/Streams/`: individual sync streams for access events, pending operation drain, relationship events, and location visibility.
 - `ios/PaeoniaApp/Services/Access/AccessRouteService.swift`, `AccessRoute.swift`, `SupabaseAccessGateway.swift`, and `SupabaseAccessDTOs.swift`: current relationship/access routing.

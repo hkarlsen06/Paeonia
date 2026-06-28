@@ -1,6 +1,6 @@
 import Foundation
 
-nonisolated enum SyncCoordinatorDefaults {
+nonisolated enum PaeoniaSyncServiceDefaults {
     typealias Stores = (
         stateStore: any SyncStatePersisting,
         pendingOperationStore: any PendingSyncOperationPersisting,

@@ -21,7 +21,7 @@ nonisolated final class PaeoniaWidgetPushTokenStore: @unchecked Sendable {
 
     private let defaults: UserDefaults
 
-    init(defaults: UserDefaults? = Self.makeAppGroupDefaults()) {
+    init(defaults: UserDefaults? = PaeoniaWidgetPushTokenStore.makeAppGroupDefaults()) {
         self.defaults = defaults ?? .standard
     }
 

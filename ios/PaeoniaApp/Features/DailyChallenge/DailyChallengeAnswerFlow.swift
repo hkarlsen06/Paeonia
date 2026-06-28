@@ -8,6 +8,9 @@ enum DailyChallengeMorph {
     static let eyebrow = "dailyChallenge.morph.eyebrow"
     static let stepBar = "dailyChallenge.morph.stepBar"
     static let primaryButton = "dailyChallenge.morph.primaryButton"
+    /// The card's plum surface as it swells into the full-screen flow (and shrinks
+    /// back), so the card itself appears to grow rather than a background fading in.
+    static let surface = "dailyChallenge.morph.surface"
 
     /// Per-question id for the partner-answer morph in the Questions tab, so each
     /// answerable partner card glides its own CTA into the single-question flow.
@@ -20,6 +23,12 @@ enum DailyChallengeMorph {
     static func partnerAnswerPrompt(_ questionID: UUID) -> String {
         "dailyChallenge.morph.partnerAnswerPrompt.\(questionID.uuidString)"
     }
+
+    /// Per-question id for the partner card's surface swelling into the single-question
+    /// flow, mirroring `surface` for each answerable partner card.
+    static func partnerAnswerSurface(_ questionID: UUID) -> String {
+        "dailyChallenge.morph.partnerAnswerSurface.\(questionID.uuidString)"
+    }
 }
 
 extension View {
@@ -27,13 +36,55 @@ extension View {
     /// namespace means "don't take part in the morph" — used so the card stops
     /// owning the shared ids while the flow is expanded (and vice versa), which is
     /// what lets the elements travel instead of staying pinned to one side.
+    ///
+    /// `isSource` defaults to `true`, matching the simple toggle the gliding hero
+    /// elements use. The morphing surface flips it so a single travelling view can
+    /// grow toward the flow when open and shrink toward the card when closing.
     @ViewBuilder
-    func dailyChallengeMorph(_ id: String, in namespace: Namespace.ID?) -> some View {
+    func dailyChallengeMorph(_ id: String, in namespace: Namespace.ID?, isSource: Bool = true) -> some View {
         if let namespace {
-            matchedGeometryEffect(id: id, in: namespace, properties: .frame, anchor: .center)
+            matchedGeometryEffect(id: id, in: namespace, properties: .frame, anchor: .center, isSource: isSource)
         } else {
             self
         }
+    }
+}
+
+/// The card's surface as it swells into (and collapses back out of) the full-screen
+/// answering flow.
+///
+/// A single rounded rectangle travels via `matchedGeometryEffect`: collapsed it sits
+/// exactly over the tapped card (plum surface, card corner radius); expanded it fills
+/// the screen as the background. `revealProgress` — the same value that uncovers the
+/// flow's content — drives the fill from the card surface to the background and rounds
+/// the corners off in lockstep with the frame, so the card reads as growing into the
+/// screen rather than a background fading in over it.
+///
+/// `isSource` is `true` while the flow is the open destination (this view defines the
+/// full-screen target the card grows toward) and `false` while collapsing (the card
+/// reclaims the id and this view shrinks back onto it).
+struct DailyChallengeMorphSurface: View {
+    /// 0 collapsed (card surface, card radius) … 1 expanded (background, square edges).
+    let revealProgress: Double
+    let morphID: String
+    var namespace: Namespace.ID?
+    var isSource: Bool
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(fillColor)
+            .ignoresSafeArea()
+            .dailyChallengeMorph(morphID, in: namespace, isSource: isSource)
+    }
+
+    private var progress: Double { min(max(revealProgress, 0), 1) }
+
+    private var cornerRadius: CGFloat {
+        PaeoniaRadius.radius20 * (1 - progress)
+    }
+
+    private var fillColor: Color {
+        Color.paeoniaSurfacePrimary.mix(with: .paeoniaBackgroundPrimary, by: progress)
     }
 }
 
@@ -99,6 +150,11 @@ extension View {
 struct DailyChallengeAnswerFlow: View {
     let viewModel: DailyChallengeViewModel
     var namespace: Namespace.ID?
+    /// Namespace for the morphing surface. Unlike `namespace` (which the flow releases
+    /// the instant a close begins, handing the gliding hero elements back to the card),
+    /// this stays attached for the flow's whole life so the single surface view can both
+    /// grow open and shrink shut. Direction is chosen by `isExpanded` via `isSource`.
+    var surfaceNamespace: Namespace.ID?
     /// Whether the flow is open. Driven by the parent: it flips to `false` the moment
     /// a close begins (while the flow is still mounted) so the content can collapse
     /// its reveal in step with the elements gliding back to the card.
@@ -131,6 +187,7 @@ struct DailyChallengeAnswerFlow: View {
     init(
         viewModel: DailyChallengeViewModel,
         namespace: Namespace.ID? = nil,
+        surfaceNamespace: Namespace.ID? = nil,
         isExpanded: Bool = true,
         onClose: @escaping () -> Void = {},
         onRestore: @escaping () -> Void = {},
@@ -138,6 +195,7 @@ struct DailyChallengeAnswerFlow: View {
     ) {
         self.viewModel = viewModel
         self.namespace = namespace
+        self.surfaceNamespace = surfaceNamespace
         self.isExpanded = isExpanded
         self.onClose = onClose
         self.onRestore = onRestore
@@ -185,11 +243,31 @@ struct DailyChallengeAnswerFlow: View {
         )
     }
 
+    /// Drives the answering → completion swap. A gentle celebratory bloom under
+    /// motion; a plain timed cross-fade when Reduce Motion is on.
+    private var celebrateAnimation: Animation {
+        reduceMotion
+            ? .easeInOut(duration: PaeoniaMotion.motionDefault)
+            : PaeoniaMotion.celebrationReveal
+    }
+
+    /// The completion surface grows in from slightly smaller as the question fades
+    /// out, so the streak screen reads as a reward arriving rather than a swap.
+    /// Reduce Motion drops the scale and keeps only the cross-fade.
+    private var completionTransition: AnyTransition {
+        reduceMotion
+            ? .opacity
+            : .opacity.combined(with: .scale(scale: 0.92))
+    }
+
     var body: some View {
         ZStack {
-            Color.paeoniaBackgroundPrimary
-                .ignoresSafeArea()
-                .opacity(revealProgress)
+            DailyChallengeMorphSurface(
+                revealProgress: revealProgress,
+                morphID: DailyChallengeMorph.surface,
+                namespace: surfaceNamespace,
+                isSource: isExpanded
+            )
 
             switch phase {
             case .complete:
@@ -201,7 +279,7 @@ struct DailyChallengeAnswerFlow: View {
                     onOpenPartnerQuestions: onOpenPartnerQuestions,
                     onDone: dismiss
                 )
-                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .transition(completionTransition)
             case .loading:
                 loadingState
             case .unavailable:
@@ -211,7 +289,7 @@ struct DailyChallengeAnswerFlow: View {
             }
         }
         .simultaneousGesture(swipeToDismiss)
-        .animation(PaeoniaMotion.cardReveal, value: didCelebrate)
+        .animation(celebrateAnimation, value: didCelebrate)
         .onAppear {
             setInitialIndexIfNeeded()
             openReveal()
@@ -637,10 +715,14 @@ struct DailyChallengeAnswerFlow: View {
         }
     }
 
+    /// Turns the screen over to the streak celebration. The haptics are deliberately
+    /// left to `PaeoniaStreakFlame`, which owns the full crescendo — soft ticks rising
+    /// with the count, then a firm payoff as the flame fills. Firing a success here too
+    /// would pre-empt that build (and would be wrong for a slipped streak, which the
+    /// flame keeps silent).
     private func celebrate() {
         isComposerFocused = false
-        PaeoniaHaptics.answerRevealed()
-        withAnimation(PaeoniaMotion.cardReveal) { didCelebrate = true }
+        withAnimation(celebrateAnimation) { didCelebrate = true }
     }
 
     private func showBanner(for notice: DailyChallengeViewModel.Notice?) {
@@ -1076,6 +1158,12 @@ private struct DailyChallengeCompletionView: View {
     var onOpenPartnerQuestions: () -> Void = {}
     let onDone: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Holds the supporting copy and actions back for a beat so the flame lands
+    /// first, then lifts them in. The flame itself is always present so its count-up
+    /// starts the instant the screen arrives.
+    @State private var showDetails = false
+
     private var isRestorable: Bool { restorableCount != nil }
 
     var body: some View {
@@ -1095,14 +1183,30 @@ private struct DailyChallengeCompletionView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .multilineTextAlignment(.center)
+            .modifier(StreakDetailReveal(shown: showDetails))
 
             Spacer()
 
             actions
+                .modifier(StreakDetailReveal(shown: showDetails))
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear(perform: revealDetails)
+    }
+
+    /// Lifts the copy and actions in shortly after the flame appears. Under Reduce
+    /// Motion they are simply shown, with no delay or movement.
+    private func revealDetails() {
+        guard !showDetails else { return }
+        if reduceMotion {
+            showDetails = true
+        } else {
+            withAnimation(PaeoniaMotion.meaningfulMoment.delay(0.28)) {
+                showDetails = true
+            }
+        }
     }
 
     @ViewBuilder
@@ -1161,6 +1265,19 @@ private struct DailyChallengeCompletionView: View {
     private enum PartnerQuestionsButtonStyle {
         case primary
         case secondary
+    }
+}
+
+/// Fades and lifts the streak screen's supporting copy and actions in after the
+/// flame has landed. Toggling `shown` (animated by the caller) plays the entrance;
+/// the small offset gives the content a gentle rise rather than a flat fade.
+private struct StreakDetailReveal: ViewModifier {
+    let shown: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .offset(y: shown ? 0 : PaeoniaSpacing.space12)
     }
 }
 

@@ -67,7 +67,7 @@ The first release should be reliable, emotionally clear, and narrow. Cut feature
 - App launches offline.
 - Existing relationship state, memories, answers, drawings, voice notes, countdowns, and widget payloads are readable offline when cached locally.
 - New local changes should be saved immediately and marked pending/dirty.
-- A SyncCoordinator-style system handles background upload/download.
+- PaeoniaSyncService handles background upload/download.
 - Pending writes sync later without losing user content.
 - Sync state should be visible where it matters, but ordinary use should not feel blocked by the network.
 

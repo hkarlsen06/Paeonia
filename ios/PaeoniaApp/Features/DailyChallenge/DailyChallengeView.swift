@@ -14,6 +14,7 @@ struct DailyChallengeScreen: View {
     var partnerMorphNamespace: Namespace.ID?
     var onOpenAnswerFlow: () -> Void = {}
     var onTapStreak: () -> Void = {}
+    var onRefresh: (() async -> Void)?
     /// Opens the single-question answer flow for a partner-answered question.
     var onAnswerPartnerQuestion: (DailyChallengeQuestion) -> Void = { _ in }
 
@@ -63,7 +64,11 @@ struct DailyChallengeScreen: View {
         }
         .background(.paeoniaBackgroundPrimary)
         .refreshable {
-            await viewModel.reload()
+            if let onRefresh {
+                await onRefresh()
+            } else {
+                await viewModel.reload()
+            }
         }
         .navigationTitle(Text(.mainTabQuestions))
         .navigationBarTitleDisplayMode(.inline)
@@ -262,6 +267,16 @@ private struct DailyChallengeReadCard: View {
                     }
                 }
             }
+        }
+        // The collapsed anchor for this card's surface morph, matching the prompt card:
+        // an invisible source pinned to the card so the flow's surface grows from here
+        // and shrinks back. Only cards that can open the flow carry it.
+        .background {
+            Color.clear
+                .dailyChallengeMorph(
+                    DailyChallengeMorph.partnerAnswerSurface(question.id),
+                    in: canOpenAnswerFlow ? morphNamespace : nil
+                )
         }
     }
 

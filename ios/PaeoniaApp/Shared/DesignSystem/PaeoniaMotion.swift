@@ -14,6 +14,12 @@ enum PaeoniaMotion {
     static let meaningfulMoment = Animation.easeInOut(duration: motionSlow)
     static let pairedScreenTransition = Animation.spring(duration: motionCelebration, bounce: 0.16)
 
+    /// Blooms a celebratory reward surface — the daily-challenge streak screen — into
+    /// place. A gentle, slightly-settling spring, slower than `cardReveal`, so the
+    /// content arrives like a reward growing in rather than snapping. Paced to give
+    /// the streak flame's own count-up room to take over once it lands.
+    static let celebrationReveal = Animation.spring(duration: motionCelebration, bounce: 0.18)
+
     /// Drives the hero morph that expands the daily prompt card into the full
     /// answering flow. A smooth spring with only a hint of settle, so the morphing
     /// eyebrow, progress bar, and button glide into their new positions and sizes

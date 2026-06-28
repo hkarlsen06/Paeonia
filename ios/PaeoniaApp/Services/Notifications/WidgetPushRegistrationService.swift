@@ -29,7 +29,7 @@ actor SupabaseWidgetPushRegistrationService: WidgetPushRegistering {
     }
 
     func registerCurrentWidgetPushToken() async {
-        guard let token = currentWidgetPushToken() else {
+        guard let token = await currentWidgetPushToken() else {
             return
         }
 
@@ -55,8 +55,8 @@ actor SupabaseWidgetPushRegistrationService: WidgetPushRegistering {
         }
     }
 
-    private func currentWidgetPushToken() -> String? {
-        if let pushInfo = WidgetCenter.shared.currentPushInfo {
+    private func currentWidgetPushToken() async -> String? {
+        if let pushInfo = await WidgetCenter.shared.currentPushInfo {
             let token = pushInfo.token.paeoniaHexString
             tokenStore.save(token: token, widgetKinds: [PaeoniaAppGroup.widgetKind])
             return token

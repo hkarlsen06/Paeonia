@@ -254,6 +254,7 @@ struct RootView: View {
                     widgetDrawingPresented: widgetDrawingPresented,
                     onOpenWidgetDrawing: { viewModel.openWidgetDrawing() },
                     onHomeRefresh: { await refreshHomeFromPull() },
+                    onDailyChallengeRefresh: { await viewModel.refreshFromHomePull() },
                     onDailyChallengeLocalChange: { await viewModel.syncAfterLocalChange() }
                 )
                 .transition(

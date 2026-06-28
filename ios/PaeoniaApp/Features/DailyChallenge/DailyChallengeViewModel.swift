@@ -121,6 +121,24 @@ final class DailyChallengeViewModel {
         }
     }
 
+    /// Best-effort wait for a just-sent answer to finish sending and the snapshot to
+    /// reload — the reload that unlocks a partner's reply once both have answered. A flow
+    /// closing after a send can await this so the card it collapses into shows both
+    /// answers at once instead of popping the partner's in a beat later.
+    ///
+    /// Polls the sending state rather than the network, so it returns the instant the
+    /// send settles and is capped so a slow or offline connection never holds the UI
+    /// open; the background send keeps running regardless. Cancellation-aware via the
+    /// sleeps.
+    func awaitAnswerReveal(for instanceID: UUID) async {
+        guard isSending(instanceID) else { return }
+        let deadline = ContinuousClock.now.advanced(by: .seconds(1.2))
+        while ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(80))
+            if Task.isCancelled || !isSending(instanceID) { return }
+        }
+    }
+
     func configure(currentUserID: UUID?) async {
         await configure(participants: DailyChallengeParticipants(currentUserID: currentUserID))
     }

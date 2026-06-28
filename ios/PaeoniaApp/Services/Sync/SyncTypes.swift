@@ -1,6 +1,6 @@
 import Foundation
 
-nonisolated protocol SyncCoordinating: Actor {
+nonisolated protocol PaeoniaSyncing: Actor {
     func configure(session: SyncSession?)
     func start()
     func requestSync(reason: SyncRequestReason)

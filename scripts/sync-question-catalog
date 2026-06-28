@@ -1,0 +1,686 @@
+#!/usr/bin/env python3
+"""
+Sync source-controlled question catalog content to Postgres.
+
+The script treats supabase/questions as the source of truth for question keys and
+version folders. Existing version prompt/answer contracts are immutable: if a
+version already exists in the database with different localizations or answer
+kinds, create a new vNNN folder instead of editing the old one.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CATALOG_ROOT = ROOT / "supabase" / "questions"
+REQUIRED_LOCALES = ("en", "nb")
+COLLECTION_KINDS = {"system", "custom", "mini_game"}
+STATUSES = {"draft", "active", "retired", "archived"}
+VERSION_STATUSES = {"draft", "active", "retired"}
+ANSWER_KINDS = {"text", "photo", "voice", "partner_choice"}
+KEY_RE = re.compile(r"^[a-z][a-z0-9_]{2,120}$")
+VERSION_DIR_RE = re.compile(r"^v(\d{3})$")
+
+
+@dataclass(frozen=True)
+class Localization:
+    locale: str
+    prompt: str
+    short_prompt: str
+
+
+@dataclass(frozen=True)
+class Version:
+    number: int
+    status: str
+    active_from: str | None
+    retired_at: str | None
+    answer_kinds: tuple[str, ...]
+    localizations: dict[str, Localization]
+    path: Path
+
+
+@dataclass(frozen=True)
+class Question:
+    collection: str
+    key: str
+    status: str
+    resurfaceable: bool
+    resurface_after_months: int | None
+    versions: tuple[Version, ...]
+    path: Path
+
+
+def fail(message: str) -> None:
+    print(f"error: {message}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def parse_front_matter(path: Path) -> dict[str, Any]:
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        fail(f"{path} is missing YAML front matter")
+    try:
+        _, body, rest = text.split("---", 2)
+    except ValueError:
+        fail(f"{path} has unterminated YAML front matter")
+    if rest.strip():
+        fail(f"{path} should contain only YAML front matter")
+
+    result: dict[str, Any] = {}
+    lines = body.strip("\n").splitlines()
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if not line.strip():
+            index += 1
+            continue
+        if line.startswith(" "):
+            fail(f"{path} has unexpected indentation near: {line}")
+        if ":" not in line:
+            fail(f"{path} has invalid YAML line: {line}")
+        key, raw_value = line.split(":", 1)
+        key = key.strip()
+        value = raw_value.strip()
+        if value == ">-":
+            index += 1
+            block_lines: list[str] = []
+            while index < len(lines) and lines[index].startswith("  "):
+                block_lines.append(lines[index][2:])
+                index += 1
+            result[key] = " ".join(part.strip() for part in block_lines).strip()
+            continue
+        if value == "":
+            index += 1
+            items: list[str] = []
+            while index < len(lines) and lines[index].startswith("  - "):
+                items.append(parse_scalar(lines[index][4:].strip()))
+                index += 1
+            if not items:
+                fail(f"{path} has empty list value for {key}")
+            result[key] = items
+            continue
+        result[key] = parse_scalar(value)
+        index += 1
+    return result
+
+
+def parse_scalar(value: str) -> Any:
+    if value == "null":
+        return None
+    if value == "true":
+        return True
+    if value == "false":
+        return False
+    if value.startswith('"') and value.endswith('"'):
+        return value[1:-1]
+    if re.fullmatch(r"-?\d+", value):
+        return int(value)
+    return value
+
+
+def require_keys(path: Path, data: dict[str, Any], keys: tuple[str, ...]) -> None:
+    missing = [key for key in keys if key not in data]
+    if missing:
+        fail(f"{path} is missing required fields: {', '.join(missing)}")
+
+
+def parse_catalog(root: Path) -> list[Question]:
+    questions: list[Question] = []
+    for collection_dir in sorted(path for path in root.iterdir() if path.is_dir()):
+        collection = collection_dir.name
+        if collection not in COLLECTION_KINDS:
+            continue
+        for question_dir in sorted(path for path in collection_dir.iterdir() if path.is_dir()):
+            question_path = question_dir / "question.md"
+            if not question_path.exists():
+                fail(f"{question_dir} is missing question.md")
+            question_data = parse_front_matter(question_path)
+            require_keys(
+                question_path,
+                question_data,
+                ("collection", "key", "status", "resurfaceable", "resurface_after_months"),
+            )
+            key = str(question_data["key"])
+            if question_data["collection"] != collection:
+                fail(f"{question_path} collection does not match folder name")
+            if key != question_dir.name:
+                fail(f"{question_path} key does not match folder name")
+            if not KEY_RE.fullmatch(key):
+                fail(f"{question_path} has invalid key: {key}")
+            status = str(question_data["status"])
+            if status not in STATUSES:
+                fail(f"{question_path} has invalid status: {status}")
+
+            versions_dir = question_dir / "versions"
+            if not versions_dir.exists():
+                fail(f"{question_dir} is missing versions/")
+            versions = tuple(parse_version(path) for path in sorted(versions_dir.iterdir()) if path.is_dir())
+            if not versions:
+                fail(f"{question_dir} must contain at least one version")
+            active_versions = [version for version in versions if version.status == "active"]
+            if status == "active" and len(active_versions) != 1:
+                fail(f"{question_dir} active questions must have exactly one active version")
+
+            questions.append(
+                Question(
+                    collection=collection,
+                    key=key,
+                    status=status,
+                    resurfaceable=bool(question_data["resurfaceable"]),
+                    resurface_after_months=question_data["resurface_after_months"],
+                    versions=versions,
+                    path=question_dir,
+                )
+            )
+    return questions
+
+
+def parse_version(version_dir: Path) -> Version:
+    match = VERSION_DIR_RE.fullmatch(version_dir.name)
+    if not match:
+        fail(f"{version_dir} must be named like v001")
+    expected_number = int(match.group(1))
+    version_path = version_dir / "version.md"
+    if not version_path.exists():
+        fail(f"{version_dir} is missing version.md")
+    data = parse_front_matter(version_path)
+    require_keys(version_path, data, ("version_number", "status", "active_from", "retired_at", "answer_kinds"))
+    if data["version_number"] != expected_number:
+        fail(f"{version_path} version_number does not match folder name")
+    status = str(data["status"])
+    if status not in VERSION_STATUSES:
+        fail(f"{version_path} has invalid status: {status}")
+    answer_kinds = tuple(str(kind) for kind in data["answer_kinds"])
+    if not 1 <= len(answer_kinds) <= 2:
+        fail(f"{version_path} must have one or two answer_kinds")
+    invalid_answer_kinds = sorted(set(answer_kinds) - ANSWER_KINDS)
+    if invalid_answer_kinds:
+        fail(f"{version_path} has invalid answer kinds: {', '.join(invalid_answer_kinds)}")
+    if len(set(answer_kinds)) != len(answer_kinds):
+        fail(f"{version_path} has duplicate answer_kinds")
+
+    locales_dir = version_dir / "locales"
+    localizations: dict[str, Localization] = {}
+    for locale in REQUIRED_LOCALES:
+        locale_path = locales_dir / f"{locale}.md"
+        if not locale_path.exists():
+            fail(f"{version_dir} is missing locales/{locale}.md")
+        locale_data = parse_front_matter(locale_path)
+        require_keys(locale_path, locale_data, ("locale", "prompt", "short_prompt"))
+        if locale_data["locale"] != locale:
+            fail(f"{locale_path} locale does not match file name")
+        prompt = str(locale_data["prompt"]).strip()
+        short_prompt = str(locale_data["short_prompt"]).strip()
+        if not 3 <= len(prompt) <= 500:
+            fail(f"{locale_path} prompt must be 3-500 characters")
+        if not 3 <= len(short_prompt) <= 160:
+            fail(f"{locale_path} short_prompt must be 3-160 characters")
+        localizations[locale] = Localization(locale=locale, prompt=prompt, short_prompt=short_prompt)
+
+    return Version(
+        number=expected_number,
+        status=status,
+        active_from=data["active_from"],
+        retired_at=data["retired_at"],
+        answer_kinds=answer_kinds,
+        localizations=localizations,
+        path=version_dir,
+    )
+
+
+def sql_string(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def sql_nullable_string(value: str | None) -> str:
+    return "null" if value is None else sql_string(value)
+
+
+def sql_timestamptz(value: str | None) -> str:
+    return "null" if value is None else f"{sql_string(value)}::timestamptz"
+
+
+def sql_bool(value: bool) -> str:
+    return "true" if value else "false"
+
+
+def sql_int(value: int | None) -> str:
+    return "null" if value is None else str(value)
+
+
+def sql_text_array(values: tuple[str, ...]) -> str:
+    return "array[" + ", ".join(sql_string(value) for value in values) + "]::text[]"
+
+
+def build_sync_sql(questions: list[Question]) -> str:
+    lines = [
+        "do $$",
+        "declare",
+        "  target_collection_id uuid;",
+        "  target_question_id uuid;",
+        "  target_version_id uuid;",
+        "  seed_answer_kind text;",
+        "begin",
+    ]
+
+    for question in questions:
+        lines.extend(
+            [
+                "",
+                f"  -- {question.collection}/{question.key}",
+                "  select collection.id",
+                "  into target_collection_id",
+                "  from public.question_collections collection",
+                f"  where collection.kind = {sql_string(question.collection)}",
+                "    and collection.couple_id is null",
+                "    and collection.created_by_user_id is null",
+                "  order by collection.created_at",
+                "  limit 1;",
+                "",
+                "  if target_collection_id is null then",
+                "    insert into public.question_collections (kind, status)",
+                f"    values ({sql_string(question.collection)}, 'draft')",
+                "    returning id into target_collection_id;",
+                "  end if;",
+                "",
+                "  select question.id",
+                "  into target_question_id",
+                "  from public.questions question",
+                "  where question.collection_id = target_collection_id",
+                f"    and question.key = {sql_string(question.key)};",
+                "",
+                "  if target_question_id is null then",
+                "    insert into public.questions (",
+                "      collection_id,",
+                "      key,",
+                "      status,",
+                "      resurfaceable,",
+                "      resurface_after_months",
+                "    )",
+                "    values (",
+                "      target_collection_id,",
+                f"      {sql_string(question.key)},",
+                "      'draft',",
+                f"      {sql_bool(question.resurfaceable)},",
+                f"      {sql_int(question.resurface_after_months)}",
+                "    )",
+                "    returning id into target_question_id;",
+                "  else",
+                "    update public.questions",
+                "    set",
+                f"      resurfaceable = {sql_bool(question.resurfaceable)},",
+                f"      resurface_after_months = {sql_int(question.resurface_after_months)}",
+                "    where id = target_question_id;",
+                "  end if;",
+            ]
+        )
+
+        for version in question.versions:
+            lines.extend(
+                [
+                    "",
+                    f"  -- {question.key} v{version.number:03d}",
+                    "  select version.id",
+                    "  into target_version_id",
+                    "  from public.question_versions version",
+                    "  where version.question_id = target_question_id",
+                    f"    and version.version_number = {version.number};",
+                    "",
+                    "  if target_version_id is null then",
+                    "    insert into public.question_versions (",
+                    "      question_id,",
+                    "      version_number,",
+                    "      status,",
+                    "      active_from,",
+                    "      retired_at",
+                    "    )",
+                    "    values (",
+                    "      target_question_id,",
+                    f"      {version.number},",
+                    "      'draft',",
+                    f"      {sql_timestamptz(version.active_from) if version.active_from is not None else 'now()'},",
+                    "      null",
+                    "    )",
+                    "    returning id into target_version_id;",
+                    "  end if;",
+                ]
+            )
+            for localization in version.localizations.values():
+                lines.extend(
+                    [
+                        "",
+                        "  insert into public.question_version_localizations (",
+                        "    question_version_id,",
+                        "    locale,",
+                        "    prompt,",
+                        "    short_prompt",
+                        "  )",
+                        "  values (",
+                        "    target_version_id,",
+                        f"    {sql_string(localization.locale)},",
+                        f"    {sql_string(localization.prompt)},",
+                        f"    {sql_string(localization.short_prompt)}",
+                        "  )",
+                        "  on conflict (question_version_id, locale) do nothing;",
+                    ]
+                )
+            lines.extend(
+                [
+                    "",
+                    f"  foreach seed_answer_kind in array {sql_text_array(version.answer_kinds)} loop",
+                    "    insert into public.question_answer_kinds (",
+                    "      question_version_id,",
+                    "      answer_kind",
+                    "    )",
+                    "    values (target_version_id, seed_answer_kind)",
+                    "    on conflict (question_version_id, answer_kind) do nothing;",
+                    "  end loop;",
+                ]
+            )
+
+            if version.status == "active":
+                active_from = sql_timestamptz(version.active_from)
+                lines.extend(
+                    [
+                        "",
+                        "  update public.question_versions",
+                        "  set",
+                        "    status = 'retired',",
+                        "    retired_at = coalesce(retired_at, now())",
+                        "  where question_id = target_question_id",
+                        "    and id <> target_version_id",
+                        "    and status = 'active';",
+                        "",
+                        "  update public.question_versions",
+                        "  set",
+                        "    status = 'active',",
+                        f"    active_from = coalesce(active_from, {active_from}, now()),",
+                        "    retired_at = null",
+                        "  where id = target_version_id;",
+                    ]
+                )
+            elif version.status == "retired":
+                retired_at = sql_timestamptz(version.retired_at)
+                lines.extend(
+                    [
+                        "",
+                        "  update public.question_versions",
+                        "  set",
+                        "    status = 'retired',",
+                        f"    retired_at = coalesce(retired_at, {retired_at}, now())",
+                        "  where id = target_version_id;",
+                    ]
+                )
+            else:
+                lines.extend(
+                    [
+                        "",
+                        "  update public.question_versions",
+                        f"  set status = {sql_string(version.status)}",
+                        "  where id = target_version_id;",
+                    ]
+                )
+
+        lines.extend(
+            [
+                "",
+                "  update public.questions",
+                "  set status = " + sql_string(question.status),
+                "  where id = target_question_id;",
+                "",
+                "  update public.question_collections",
+                "  set status = case",
+                f"    when status = 'draft' and {sql_string(question.status)} = 'active' then 'active'",
+                "    else status",
+                "  end",
+                "  where id = target_collection_id;",
+            ]
+        )
+
+    lines.extend(["end;", "$$;"])
+    return "\n".join(lines) + "\n"
+
+
+def run_psql(database_url: str, sql: str) -> str:
+    command = [
+        "psql",
+        "--no-psqlrc",
+        "--set",
+        "ON_ERROR_STOP=1",
+        "--tuples-only",
+        "--no-align",
+        "--command",
+        sql,
+        database_url,
+    ]
+    completed = subprocess.run(command, check=False, text=True, capture_output=True)
+    if completed.returncode != 0:
+        sys.stderr.write(completed.stderr)
+        fail("psql command failed")
+    return completed.stdout.strip()
+
+
+def run_linked_query(sql: str) -> str:
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".sql", delete=False) as sql_file:
+        sql_file.write(sql)
+        sql_path = sql_file.name
+    try:
+        command = [
+            "supabase",
+            "db",
+            "query",
+            "--linked",
+            "--file",
+            sql_path,
+        ]
+        completed = subprocess.run(
+            command,
+            check=False,
+            text=True,
+            capture_output=True,
+            cwd=ROOT,
+        )
+    finally:
+        Path(sql_path).unlink(missing_ok=True)
+
+    if completed.returncode != 0:
+        sys.stderr.write(completed.stderr)
+        fail("supabase db query --linked failed")
+
+    output = completed.stdout.strip()
+    json_start = output.find("{")
+    if json_start < 0:
+        return ""
+    payload = json.loads(output[json_start:])
+    rows = payload.get("rows") or []
+    if not rows:
+        return ""
+    first_row = rows[0]
+    if not first_row:
+        return ""
+    return str(next(iter(first_row.values())))
+
+
+def run_database_sql(sql: str, *, database_url: str | None, linked: bool) -> str:
+    if linked:
+        return run_linked_query(sql)
+    if database_url is None:
+        fail("provide --database-url, SUPABASE_DB_URL, DATABASE_URL, --linked, or use --emit-sql")
+    return run_psql(database_url, sql)
+
+
+def fetch_remote_catalog(
+    *,
+    database_url: str | None,
+    linked: bool,
+) -> dict[tuple[str, str, int], dict[str, Any]]:
+    sql = """
+select coalesce(
+  jsonb_agg(
+    jsonb_build_object(
+      'collection', collection.kind,
+      'question_key', question.key,
+      'question_status', question.status,
+      'version_number', version.version_number,
+      'version_status', version.status,
+      'answer_kinds', coalesce(
+        (
+          select jsonb_agg(answer_kind.answer_kind order by answer_kind.answer_kind)
+          from public.question_answer_kinds answer_kind
+          where answer_kind.question_version_id = version.id
+        ),
+        '[]'::jsonb
+      ),
+      'localizations', coalesce(
+        (
+          select jsonb_object_agg(
+            localization.locale,
+            jsonb_build_object(
+              'prompt', localization.prompt,
+              'short_prompt', localization.short_prompt
+            )
+            order by localization.locale
+          )
+          from public.question_version_localizations localization
+          where localization.question_version_id = version.id
+        ),
+        '{}'::jsonb
+      )
+    )
+    order by collection.kind, question.key, version.version_number
+  ),
+  '[]'::jsonb
+)::text
+from public.question_collections collection
+join public.questions question
+  on question.collection_id = collection.id
+join public.question_versions version
+  on version.question_id = question.id;
+"""
+    rows = json.loads(run_database_sql(sql, database_url=database_url, linked=linked) or "[]")
+    return {
+        (row["collection"], row["question_key"], int(row["version_number"])): row
+        for row in rows
+    }
+
+
+def compare_catalog(
+    questions: list[Question],
+    remote: dict[tuple[str, str, int], dict[str, Any]],
+) -> tuple[list[str], list[str]]:
+    changes: list[str] = []
+    errors: list[str] = []
+    remote_question_keys = {(collection, key) for collection, key, _ in remote}
+
+    for question in questions:
+        question_key = (question.collection, question.key)
+        if question_key not in remote_question_keys:
+            changes.append(f"new question {question.collection}/{question.key}")
+            continue
+        for version in question.versions:
+            remote_version = remote.get((question.collection, question.key, version.number))
+            if remote_version is None:
+                changes.append(f"new version {question.collection}/{question.key}/v{version.number:03d}")
+                continue
+            if remote_version.get("question_status") != question.status:
+                changes.append(f"status update for {question.collection}/{question.key}")
+            if remote_version.get("version_status") != version.status:
+                changes.append(f"status update for {question.collection}/{question.key}/v{version.number:03d}")
+            remote_answer_kinds = tuple(remote_version.get("answer_kinds") or [])
+            if remote_answer_kinds != tuple(sorted(version.answer_kinds)):
+                errors.append(
+                    f"{question.collection}/{question.key}/v{version.number:03d} answer_kinds differ; "
+                    "create a new version instead of editing an existing one"
+                )
+            remote_localizations = remote_version.get("localizations") or {}
+            for locale, localization in version.localizations.items():
+                remote_localization = remote_localizations.get(locale)
+                if remote_localization is None:
+                    changes.append(f"missing locale {locale} for {question.collection}/{question.key}/v{version.number:03d}")
+                    continue
+                if (
+                    remote_localization.get("prompt") != localization.prompt
+                    or remote_localization.get("short_prompt") != localization.short_prompt
+                ):
+                    errors.append(
+                        f"{question.collection}/{question.key}/v{version.number:03d}/{locale} differs; "
+                        "create a new version instead of editing an existing one"
+                    )
+    return changes, errors
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Sync supabase/questions catalog content to Postgres.")
+    parser.add_argument(
+        "--catalog-root",
+        type=Path,
+        default=DEFAULT_CATALOG_ROOT,
+        help="Path to the question catalog tree.",
+    )
+    parser.add_argument(
+        "--database-url",
+        default=os.environ.get("SUPABASE_DB_URL") or os.environ.get("DATABASE_URL"),
+        help="Postgres connection URL. Defaults to SUPABASE_DB_URL or DATABASE_URL.",
+    )
+    parser.add_argument(
+        "--linked",
+        action="store_true",
+        help="Query/apply against the linked Supabase project with `supabase db query --linked`.",
+    )
+    parser.add_argument("--apply", action="store_true", help="Apply pending changes with psql.")
+    parser.add_argument("--emit-sql", action="store_true", help="Print the generated sync SQL and exit.")
+    args = parser.parse_args()
+
+    questions = parse_catalog(args.catalog_root)
+    sql = build_sync_sql(questions)
+
+    if args.emit_sql:
+        print(sql, end="")
+        return
+
+    if args.linked and args.database_url:
+        fail("use either --linked or --database-url, not both")
+
+    remote = fetch_remote_catalog(database_url=args.database_url, linked=args.linked)
+    changes, errors = compare_catalog(questions, remote)
+    if errors:
+        for error in errors:
+            print(f"error: {error}", file=sys.stderr)
+        raise SystemExit(1)
+
+    if not changes:
+        print("No catalog changes found.")
+        return
+
+    print("Pending catalog changes:")
+    for change in changes:
+        print(f"- {change}")
+
+    if not args.apply:
+        print("\nDry run only. Re-run with --apply to upload these changes.")
+        return
+
+    run_database_sql(sql, database_url=args.database_url, linked=args.linked)
+    print("Catalog sync applied.")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except BrokenPipeError:
+        try:
+            sys.stdout.close()
+        finally:
+            raise SystemExit(0)

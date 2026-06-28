@@ -11,6 +11,11 @@ struct DailyPartnerAnswerFlow: View {
     let question: DailyChallengeQuestion
     let viewModel: DailyChallengeViewModel
     var namespace: Namespace.ID?
+    /// Namespace for the morphing surface. It stays attached for the flow's whole life
+    /// (unlike `namespace`, released the instant a close begins) so the single surface
+    /// view can grow open and shrink shut; `isExpanded` picks the direction via
+    /// `isSource`.
+    var surfaceNamespace: Namespace.ID?
     /// Whether the flow is open. The parent flips it to `false` the moment a close
     /// begins (while still mounted) so the content can collapse in step with the CTA
     /// gliding back to its card.
@@ -25,18 +30,23 @@ struct DailyPartnerAnswerFlow: View {
     /// Opacity of the morphing CTA button: solid while it glides, fading only on a
     /// close where the card's CTA is gone (after answering) and it can't glide home.
     @State private var heroOpacity: Double
+    /// True from when the answer is queued until the partner's reply has loaded, so the
+    /// Send button keeps its busy state while we hold for the reveal before closing.
+    @State private var isFinishing = false
     @FocusState private var isComposerFocused: Bool
 
     init(
         question: DailyChallengeQuestion,
         viewModel: DailyChallengeViewModel,
         namespace: Namespace.ID? = nil,
+        surfaceNamespace: Namespace.ID? = nil,
         isExpanded: Bool = true,
         onClose: @escaping () -> Void = {}
     ) {
         self.question = question
         self.viewModel = viewModel
         self.namespace = namespace
+        self.surfaceNamespace = surfaceNamespace
         self.isExpanded = isExpanded
         self.onClose = onClose
         _heroOpacity = State(initialValue: isExpanded ? 1 : 0)
@@ -44,9 +54,12 @@ struct DailyPartnerAnswerFlow: View {
 
     var body: some View {
         ZStack {
-            Color.paeoniaBackgroundPrimary
-                .ignoresSafeArea()
-                .opacity(revealProgress)
+            DailyChallengeMorphSurface(
+                revealProgress: revealProgress,
+                morphID: DailyChallengeMorph.partnerAnswerSurface(question.id),
+                namespace: surfaceNamespace,
+                isSource: isExpanded
+            )
 
             VStack(spacing: PaeoniaSpacing.space16) {
                 DailyChallengeAnswerStep(
@@ -92,7 +105,7 @@ struct DailyPartnerAnswerFlow: View {
     // MARK: - State
 
     private var isSubmitting: Bool {
-        viewModel.submittingQuestionID == question.id
+        viewModel.submittingQuestionID == question.id || isFinishing
     }
 
     private var isPrimaryDisabled: Bool {
@@ -106,14 +119,23 @@ struct DailyPartnerAnswerFlow: View {
 
         await viewModel.submitAnswer(for: question)
 
-        // Close once the answer has landed locally (or staged to send for media). A
-        // failure leaves the draft in place and surfaces a banner instead.
+        // The answer has landed locally (or staged to send for media). A failure
+        // leaves the draft in place and surfaces a banner instead.
         let didAnswer = (viewModel.snapshot.questions
             .first(where: { $0.id == question.id })?.hasOwnAnswer ?? false)
             || viewModel.isSending(question.id)
         guard didAnswer else { return }
 
         isComposerFocused = false
+
+        // Keep the flow up, Send still busy, just long enough for the partner's
+        // now-unlocked reply to load, so collapsing back into the card reveals both
+        // answers at once instead of popping the partner's in a beat later. Capped, so
+        // a slow connection never holds it open.
+        isFinishing = true
+        await viewModel.awaitAnswerReveal(for: question.id)
+        isFinishing = false
+
         PaeoniaHaptics.answerRevealed()
         onClose()
     }

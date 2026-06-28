@@ -113,7 +113,7 @@ struct DailyAnswerDetailsView: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             if let detail = question.ownAnswerDetail {
                 DailyVisibleAnswerBlock(
-                    title: .dailyChallengeYourAnswerTitle,
+                    title: participants.currentName,
                     detail: detail,
                     participants: participants,
                     mediaKind: question.mediaAnswerKind
@@ -122,7 +122,7 @@ struct DailyAnswerDetailsView: View {
 
             if let detail = question.partnerAnswerDetail, detail.canViewAnswer {
                 DailyVisibleAnswerBlock(
-                    title: .dailyChallengePartnerAnswerTitle,
+                    title: participants.partnerName,
                     detail: detail,
                     participants: participants,
                     mediaKind: question.mediaAnswerKind
@@ -138,7 +138,9 @@ struct DailyAnswerDetailsView: View {
 }
 
 private struct DailyVisibleAnswerBlock: View {
-    let title: LocalizedStringResource
+    /// The person's name heading this answer (their nickname, or a "You"/"Partner"
+    /// fallback) — data, so it renders verbatim rather than as a localization key.
+    let title: String
     let detail: DailyQuestionAnswerDetail
     var participants = DailyChallengeParticipants()
     var mediaKind: DailyChallengeAnswerKind = .photo
@@ -147,7 +149,7 @@ private struct DailyVisibleAnswerBlock: View {
         // A combined answer can carry several parts at once, so each present part is
         // shown — media first, then a partner pick, then the text caption beneath.
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(title)
+            Text(verbatim: title)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextSecondary)
 
@@ -160,10 +162,12 @@ private struct DailyVisibleAnswerBlock: View {
             }
 
             if let selectedUserID = detail.selectedUserID {
-                // A partner-choice answer reveals as the chosen person's name.
-                Text(participants.name(for: selectedUserID))
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextPrimary)
+                // A partner-choice answer reveals as the chosen person's avatar and
+                // name — the same avatar shown while answering.
+                DailyChosenPersonView(
+                    option: participants.option(for: selectedUserID),
+                    fallbackName: participants.name(for: selectedUserID)
+                )
             }
 
             if let textBody = detail.textBody, !textBody.isEmpty {
@@ -177,6 +181,28 @@ private struct DailyVisibleAnswerBlock: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.paeoniaSurfaceSecondary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+    }
+}
+
+/// A revealed partner-choice answer: the chosen person's avatar beside their name,
+/// using the same avatar component as the picker shown while answering.
+private struct DailyChosenPersonView: View {
+    let option: DailyChallengeParticipants.Option?
+    let fallbackName: String
+
+    var body: some View {
+        HStack(spacing: PaeoniaSpacing.space12) {
+            PaeoniaProfilePhotoAvatar(
+                mediaAssetID: option?.profilePhotoAssetID,
+                name: option?.avatarName ?? fallbackName,
+                tint: .paeoniaAccentPrimary,
+                size: 44
+            )
+
+            Text(option?.label ?? fallbackName)
+                .font(PaeoniaTypography.body.weight(.semibold))
+                .foregroundStyle(.paeoniaTextPrimary)
+        }
     }
 }
 

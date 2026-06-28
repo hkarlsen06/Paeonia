@@ -28,10 +28,10 @@ struct PaeoniaAppTests {
 
     @MainActor
     @Test func startRoutesMissingSessionToSignedOut() async throws {
-        let syncCoordinator = TestSyncCoordinator()
+        let syncService = TestPaeoniaSyncService()
         let authService = AuthServiceSpy()
         let viewModel = RootViewModel(
-            syncCoordinator: syncCoordinator,
+            syncService: syncService,
             authService: authService
         )
 
@@ -40,13 +40,13 @@ struct PaeoniaAppTests {
         #expect(viewModel.state == .unauthenticated)
         #expect(viewModel.authRoute == .signedOut)
         #expect(viewModel.currentSession == nil)
-        #expect(await syncCoordinator.startCallCount == 0)
+        #expect(await syncService.startCallCount == 0)
     }
 
     @MainActor
     @Test func startRoutesIncompleteProfileToOnboarding() async {
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .needsOnboarding))
         )
 
@@ -61,7 +61,7 @@ struct PaeoniaAppTests {
     @Test func completedProfileUsesAccessRouteForVisibleState() async {
         let accessRouteService = StaticAccessRouteService(route: .unpaired)
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService
         )
@@ -75,9 +75,9 @@ struct PaeoniaAppTests {
 
     @MainActor
     @Test func localLocationChangeRunsImmediateLocalChangeSync() async {
-        let syncCoordinator = TestSyncCoordinator()
+        let syncService = TestPaeoniaSyncService()
         let viewModel = RootViewModel(
-            syncCoordinator: syncCoordinator,
+            syncService: syncService,
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: StaticAccessRouteService(route: .paired)
         )
@@ -85,14 +85,14 @@ struct PaeoniaAppTests {
 
     await viewModel.syncAfterLocalLocationChange()
 
-    #expect(await syncCoordinator.runOnceReasons == [.localChange])
+    #expect(await syncService.runOnceReasons == [.localChange])
     }
 
     @MainActor
     @Test func homePullRefreshRunsManualSync() async {
-        let syncCoordinator = TestSyncCoordinator()
+        let syncService = TestPaeoniaSyncService()
         let viewModel = RootViewModel(
-            syncCoordinator: syncCoordinator,
+            syncService: syncService,
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: StaticAccessRouteService(route: .paired),
             accessSnapshotStore: InMemoryAccessSyncSnapshotRepository()
@@ -101,17 +101,17 @@ struct PaeoniaAppTests {
 
         await viewModel.refreshFromHomePull()
 
-        #expect(await syncCoordinator.runOnceReasons == [.manualRefresh])
+        #expect(await syncService.runOnceReasons == [.manualRefresh])
     }
 
     @MainActor
     @Test func cachedAccessSnapshotCanRecoverAccessRouteAfterSync() async throws {
         let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let coupleID = try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333"))
-        let syncCoordinator = TestSyncCoordinator()
+        let syncService = TestPaeoniaSyncService()
         let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
         let viewModel = RootViewModel(
-            syncCoordinator: syncCoordinator,
+            syncService: syncService,
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated),
             accessSnapshotStore: accessSnapshotStore
@@ -127,8 +127,8 @@ struct PaeoniaAppTests {
 
         #expect(viewModel.state == .paired)
         #expect(viewModel.currentPartnerDisplayName == "Riley")
-        #expect(await syncCoordinator.runOnceReasons == [.foreground])
-        let configuredSessions = await syncCoordinator.configuredSessions
+        #expect(await syncService.runOnceReasons == [.foreground])
+        let configuredSessions = await syncService.configuredSessions
         let latestSession = configuredSessions.last ?? nil
         #expect(latestSession?.activeCoupleID == coupleID)
     }
@@ -141,7 +141,7 @@ struct PaeoniaAppTests {
             .testPaired(ownerUserID: ownerUserID, partnerDisplayName: "Riley")
         )
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: FailingAccessRouteService(),
             accessSnapshotStore: accessSnapshotStore
@@ -159,7 +159,7 @@ struct PaeoniaAppTests {
             resolution: .test(route: .paired, partnerDisplayName: "Riley")
         )
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService
         )
@@ -173,7 +173,7 @@ struct PaeoniaAppTests {
     @MainActor
     @Test func widgetDrawingRoutePresentsOnlyWhenPaired() async {
         let pairedViewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: StaticAccessRouteService(route: .paired)
         )
@@ -192,7 +192,7 @@ struct PaeoniaAppTests {
         #expect(pairedViewModel.presentedDestination == nil)
 
         let unpairedViewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: StaticAccessRouteService(route: .unpaired)
         )
@@ -206,7 +206,7 @@ struct PaeoniaAppTests {
     @MainActor
     @Test func widgetDrawingRouteWaitsForPairedColdLaunch() async {
         let pairedViewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: StaticAccessRouteService(route: .paired)
         )
@@ -222,7 +222,7 @@ struct PaeoniaAppTests {
         #expect(pairedViewModel.selectedMainTab == .home)
 
         let unpairedViewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: StaticAccessRouteService(route: .unpaired)
         )
@@ -237,7 +237,7 @@ struct PaeoniaAppTests {
     @Test func completedProfilePassesPendingInviteToAccessRoute() async {
         let accessRouteService = StaticAccessRouteService(route: .invitePending)
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService,
             inviteStore: TestPairingInviteStore(invite: .test())
@@ -256,7 +256,7 @@ struct PaeoniaAppTests {
             blockedCallIndex: 2
         )
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService,
             inviteStore: TestPairingInviteStore(invite: .test())
@@ -286,7 +286,7 @@ struct PaeoniaAppTests {
             blockedCallIndex: 2
         )
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService,
             inviteStore: TestPairingInviteStore(invite: .test())
@@ -323,7 +323,7 @@ struct PaeoniaAppTests {
             pairID: pairID
         )
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService,
             inviteStore: TestPairingInviteStore(invite: .test()),
@@ -359,7 +359,7 @@ struct PaeoniaAppTests {
             pairID: pairID
         )
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService,
             pairingCelebrationStore: pairingCelebrationStore
@@ -399,7 +399,7 @@ struct PaeoniaAppTests {
             pairID: pairID
         )
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService,
             pairingCelebrationStore: pairingCelebrationStore
@@ -434,7 +434,7 @@ struct PaeoniaAppTests {
             pairID: pairID
         )
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService,
             inviteStore: TestPairingInviteStore(invite: .test()),
@@ -457,7 +457,7 @@ struct PaeoniaAppTests {
             resolution: .test(route: .paired, partnerDisplayName: "Riley", pairID: pairID)
         )
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService,
             pairingCelebrationStore: pairingCelebrationStore
@@ -482,7 +482,7 @@ struct PaeoniaAppTests {
             resolution: .test(route: .paired, partnerDisplayName: "Riley", pairID: pairID)
         )
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService,
             pairingCelebrationStore: pairingCelebrationStore
@@ -497,9 +497,9 @@ struct PaeoniaAppTests {
 
     @MainActor
     @Test func developmentSignInCanCompleteOnboarding() async {
-        let syncCoordinator = TestSyncCoordinator()
+        let syncService = TestPaeoniaSyncService()
         let viewModel = RootViewModel(
-            syncCoordinator: syncCoordinator,
+            syncService: syncService,
             authService: AuthServiceSpy(),
             accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
@@ -519,13 +519,13 @@ struct PaeoniaAppTests {
         #expect(viewModel.state == .limitedAuthenticated)
         #expect(viewModel.currentSession?.profileStatus == .complete)
         #expect(viewModel.currentSession?.timeZoneID == "Europe/Oslo")
-        #expect(await syncCoordinator.startCallCount == 1)
+        #expect(await syncService.startCallCount == 1)
     }
 
     @MainActor
     @Test func googleSignInRoutesToOnboarding() async {
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy()
         )
 
@@ -539,7 +539,7 @@ struct PaeoniaAppTests {
     @MainActor
     @Test func cancelledGoogleSignInDoesNotShowFailureNotice() async {
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy()
         )
 
@@ -556,7 +556,7 @@ struct PaeoniaAppTests {
     @Test func signOutClearsSession() async throws {
         let authService = AuthServiceSpy(session: .test(profileStatus: .complete))
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: authService,
             accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
@@ -573,7 +573,7 @@ struct PaeoniaAppTests {
     @Test func deleteAccountShowsDeletingStateBeforeClearingSession() async throws {
         let authService = BlockingDeleteAuthService()
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: authService,
             accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
@@ -603,7 +603,7 @@ struct PaeoniaAppTests {
             failingOperations: [.requestAccountDeletion]
         )
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: authService,
             accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
@@ -624,7 +624,7 @@ struct PaeoniaAppTests {
         )
         let accessRouteService = StaticAccessRouteService(route: .unpaired)
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: authService,
             accessRouteService: accessRouteService
         )
@@ -642,7 +642,7 @@ struct PaeoniaAppTests {
     @MainActor
     @Test func failedSessionLoadFallsBackToSignedOut() async {
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(failingOperations: [.restoreSession])
         )
 
@@ -656,7 +656,7 @@ struct PaeoniaAppTests {
     @MainActor
     @Test func dismissNoticeClearsNotice() async {
         let viewModel = RootViewModel(
-            syncCoordinator: TestSyncCoordinator(),
+            syncService: TestPaeoniaSyncService(),
             authService: AuthServiceSpy(failingOperations: [.restoreSession])
         )
 
@@ -671,9 +671,9 @@ struct PaeoniaAppTests {
     @Test func startRestoresAuthBeforeStartingSync() async {
         let recorder = StartupOrderRecorder()
         let authService = OrderedAuthService(recorder: recorder)
-        let syncCoordinator = OrderedSyncCoordinator(recorder: recorder)
+        let syncService = OrderedPaeoniaSyncService(recorder: recorder)
         let viewModel = RootViewModel(
-            syncCoordinator: syncCoordinator,
+            syncService: syncService,
             authService: authService,
             accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
@@ -685,7 +685,7 @@ struct PaeoniaAppTests {
     }
 }
 
-private actor TestSyncCoordinator: SyncCoordinating {
+private actor TestPaeoniaSyncService: PaeoniaSyncing {
     private(set) var startCallCount = 0
     private(set) var requestedReasons: [SyncRequestReason] = []
     private(set) var runOnceReasons: [SyncRequestReason] = []
@@ -990,7 +990,7 @@ private final class StartupOrderRecorder: @unchecked Sendable {
     }
 }
 
-private actor OrderedSyncCoordinator: SyncCoordinating {
+private actor OrderedPaeoniaSyncService: PaeoniaSyncing {
     private let recorder: StartupOrderRecorder
 
     init(recorder: StartupOrderRecorder) {

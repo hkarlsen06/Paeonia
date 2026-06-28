@@ -87,7 +87,7 @@ final class RootViewModel {
         }
     }
 
-    private let syncCoordinator: any SyncCoordinating
+    private let syncService: any PaeoniaSyncing
     private let authService: any AuthServicing
     private let accessRouteService: (any AccessRouteServicing)?
     private let accessSnapshotStore: (any AccessSyncSnapshotPersisting)?
@@ -150,14 +150,14 @@ final class RootViewModel {
     private(set) var pendingPairingCelebration = false
 
     init(
-        syncCoordinator: (any SyncCoordinating)? = nil,
+        syncService: (any PaeoniaSyncing)? = nil,
         authService: (any AuthServicing)? = nil,
         accessRouteService: (any AccessRouteServicing)? = nil,
         accessSnapshotStore: (any AccessSyncSnapshotPersisting)? = nil,
         inviteStore: (any PairingInviteStoring)? = nil,
         pairingCelebrationStore: (any PairingCelebrationStoring)? = nil
     ) {
-        self.syncCoordinator = syncCoordinator ?? SyncCoordinator()
+        self.syncService = syncService ?? PaeoniaSyncService()
         self.authService = authService ?? AuthServiceFactory.makeDefault()
         self.accessRouteService = accessRouteService ?? (try? SupabaseAccessRouteService.live())
         self.accessSnapshotStore = accessSnapshotStore ?? Self.makeDefaultAccessSnapshotStore()
@@ -276,7 +276,7 @@ final class RootViewModel {
             clearPairingCelebrationPresentation()
             clearPendingWidgetDrawingOpen()
             route = .signedOut
-            await syncCoordinator.resetForUserChange()
+            await syncService.resetForUserChange()
             hasStartedSync = false
             configuredSyncSession = nil
         }
@@ -300,7 +300,7 @@ final class RootViewModel {
             invalidateAccessResolution()
             clearPairingCelebrationPresentation()
             route = .signedOut
-            await syncCoordinator.resetForUserChange()
+            await syncService.resetForUserChange()
             hasStartedSync = false
             configuredSyncSession = nil
         } catch {
@@ -343,7 +343,7 @@ final class RootViewModel {
             return
         }
 
-        _ = await syncCoordinator.runOnce(reason: .foreground)
+        _ = await syncService.runOnce(reason: .foreground)
         await applySyncedAccessSnapshotIfAvailable()
     }
 
@@ -360,7 +360,7 @@ final class RootViewModel {
             return
         }
 
-        _ = await syncCoordinator.runOnce(reason: .localChange)
+        _ = await syncService.runOnce(reason: .localChange)
     }
 
     /// Pull-to-refresh on Home. The widget sync is triggered alongside this from
@@ -372,7 +372,7 @@ final class RootViewModel {
             return
         }
 
-        _ = await syncCoordinator.runOnce(reason: .manualRefresh)
+        _ = await syncService.runOnce(reason: .manualRefresh)
         await applySyncedAccessSnapshotIfAvailable()
     }
 
@@ -725,12 +725,12 @@ final class RootViewModel {
 
             let syncSession = SyncSession(userID: userID, activeCoupleID: currentActiveCoupleID)
             if configuredSyncSession != syncSession {
-                await syncCoordinator.configure(session: syncSession)
+                await syncService.configure(session: syncSession)
                 configuredSyncSession = syncSession
             }
 
             if !hasStartedSync {
-                await syncCoordinator.start()
+                await syncService.start()
                 hasStartedSync = true
             }
         }

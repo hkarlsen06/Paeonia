@@ -1,6 +1,6 @@
 import Foundation
 
-actor SyncCoordinator: SyncCoordinating {
+actor PaeoniaSyncService: PaeoniaSyncing {
     private let streams: [any SyncStream]
     private let stateStore: any SyncStatePersisting
     private let pendingOperationStore: any PendingSyncOperationPersisting
@@ -12,6 +12,7 @@ actor SyncCoordinator: SyncCoordinating {
     private var hasStarted = false
     private var isSyncing = false
     private var needsFollowUpSync = false
+    private var activeRunWaiters: [CheckedContinuation<Void, Never>] = []
     private var scheduledTask: Task<Void, Never>?
     private var retryTask: Task<Void, Never>?
     private var scheduleGeneration: UInt64 = 0
@@ -40,7 +41,7 @@ actor SyncCoordinator: SyncCoordinating {
         let needsDefaultStores = stateStore == nil
             || pendingOperationStore == nil
             || needsDefaultStreamStores
-        let fallbackStores = needsDefaultStores ? SyncCoordinatorDefaults.makeStores() : nil
+        let fallbackStores = needsDefaultStores ? PaeoniaSyncServiceDefaults.makeStores() : nil
         if streams.isEmpty {
             guard let resolvedAccessSnapshotStore = accessSnapshotStore ?? fallbackStores?.accessSnapshotStore,
                   let resolvedRelationshipEventStore = relationshipEventStore ?? fallbackStores?.relationshipEventStore,
@@ -49,7 +50,7 @@ actor SyncCoordinator: SyncCoordinating {
                 preconditionFailure("Default sync streams require persistent sync stores")
             }
 
-            self.streams = SyncCoordinatorDefaults.makeStreams(
+            self.streams = PaeoniaSyncServiceDefaults.makeStreams(
                 accessSnapshotStore: resolvedAccessSnapshotStore,
                 relationshipEventStore: resolvedRelationshipEventStore,
                 locationVisibilityStore: resolvedLocationVisibilityStore,
@@ -62,7 +63,7 @@ actor SyncCoordinator: SyncCoordinating {
 
         guard let resolvedStateStore = stateStore ?? fallbackStores?.stateStore,
             let resolvedPendingOperationStore = pendingOperationStore ?? fallbackStores?.pendingOperationStore else {
-            preconditionFailure("SyncCoordinator requires sync state and pending operation stores")
+            preconditionFailure("PaeoniaSyncService requires sync state and pending operation stores")
         }
 
         self.stateStore = resolvedStateStore
@@ -84,6 +85,7 @@ actor SyncCoordinator: SyncCoordinating {
             retryTask = nil
             isSyncing = false
             needsFollowUpSync = false
+            resumeActiveRunWaiters()
             lastForegroundSyncAt = nil
         }
 
@@ -123,6 +125,7 @@ actor SyncCoordinator: SyncCoordinating {
         hasStarted = false
         isSyncing = false
         needsFollowUpSync = false
+        resumeActiveRunWaiters()
     }
 
     func resetForUserChange() {
@@ -141,6 +144,7 @@ actor SyncCoordinator: SyncCoordinating {
     func runOnce(reason: SyncRequestReason) async -> SyncRunResult {
         guard !isSyncing else {
             needsFollowUpSync = true
+            await waitForActiveRunToFinish()
             return .coalesced()
         }
 
@@ -153,6 +157,7 @@ actor SyncCoordinator: SyncCoordinating {
 
         let result = await drainSyncRuns(startingReason: reason)
         isSyncing = false
+        resumeActiveRunWaiters()
 
         if result.status != .cancelled {
             await scheduleRetryIfNeeded(after: result)
@@ -228,6 +233,25 @@ actor SyncCoordinator: SyncCoordinating {
 
         isSyncing = false
         scheduledTask = nil
+        resumeActiveRunWaiters()
+    }
+
+    private func waitForActiveRunToFinish() async {
+        guard isSyncing else {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            activeRunWaiters.append(continuation)
+        }
+    }
+
+    private func resumeActiveRunWaiters() {
+        let waiters = activeRunWaiters
+        activeRunWaiters.removeAll()
+        for waiter in waiters {
+            waiter.resume()
+        }
     }
 
     private func scheduleRetryIfNeeded(after result: SyncRunResult) async {

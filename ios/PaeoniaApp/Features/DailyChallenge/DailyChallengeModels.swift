@@ -222,7 +222,21 @@ nonisolated struct DailyChallengeParticipants: Equatable, Sendable {
         return partnerName
     }
 
-    private var partnerName: String {
+    /// The pickable person for a chosen user id, so a revealed partner-choice answer
+    /// can show the same avatar used while answering. Nil when identity isn't known.
+    func option(for userID: UUID) -> Option? {
+        partnerChoiceOptions?.first { $0.id == userID }
+    }
+
+    /// The current user's name for an answer header — their nickname, or a simple
+    /// "You" when it isn't known yet.
+    var currentName: String {
+        currentDisplayName ?? String(localized: .dailyChallengeChoiceYou)
+    }
+
+    /// The partner's name for an answer header or a revealed pick — their nickname, or
+    /// a neutral "Partner" fallback when it isn't known yet.
+    var partnerName: String {
         partnerDisplayName ?? String(localized: .dailyChallengeChoicePartnerFallback)
     }
 }
