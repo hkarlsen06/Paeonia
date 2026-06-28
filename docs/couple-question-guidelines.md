@@ -28,6 +28,7 @@ Good questions:
 
 - Take 1-3 minutes to answer.
 - Ask one clear thing.
+- Give the user a specific handle, such as a moment, object, message, choice, place, sound, plan, or timeframe.
 - Work asynchronously across time zones.
 - Make the relationship feel present without requiring a full conversation.
 - Leave room for the couple's own content to carry the feeling.
@@ -37,12 +38,40 @@ Good questions:
 Avoid questions that:
 
 - Sound like a partner wrote them.
+- Duplicate an existing question's intent, even if the wording is different.
 - Create guilt, pressure, jealousy, tests, or scorekeeping.
 - Assume gender, marriage, cohabitation, sex, religion, holidays, or a specific relationship stage.
 - Ask for sensitive disclosures that do not fit a lightweight daily ritual.
 - Try to diagnose the relationship or force conflict processing.
 - Depend on both partners being awake or available at the same time.
 - Expose private content in a short prompt, push, or compact card.
+- Ask the user to invent too much context before they can answer.
+
+## Originality And Specificity
+
+Before drafting a new question, inspect the existing catalog in
+`supabase/questions/system/` and, when needed, the live database catalog. Compare
+the stable key, full prompt, short prompt, answer kinds, and underlying user
+intent. Do not add near-duplicates. If the intent already exists, either skip the
+new question or version the existing question when the wording or answer contract
+really needs to change.
+
+Questions should feel easy to start answering. Give the user one concrete angle
+instead of asking them to imagine the whole situation from scratch. Specific does
+not mean long or narrow; it means the prompt has a clear object, scene, or
+constraint.
+
+Prefer:
+
+- "What TV series reminds you the most of the future you imagine with your partner?"
+
+Avoid:
+
+- "Record a voice note of something your partner would want to hear."
+
+The first prompt gives the user a concrete reference point and emotional angle.
+The second makes the user invent the context, the content, and the reason it
+should be a voice note before they can answer.
 
 ## Copy Shape
 
@@ -136,6 +165,10 @@ Do not insert daily instances directly for content authoring. The backend RPCs c
 ## Adding Questions
 
 Question catalog rows are content, not schema. For inserting, updating, retiring, or versioning questions, run SQL directly through the Supabase MCP `execute_sql` tool. Do not create migrations solely for question-content rows; that adds noise.
+
+Before writing SQL, check `supabase/questions/system/` and the target database
+for existing questions. Confirm the new prompt is original in intent, not only in
+wording, and record the new or changed content in `supabase/questions/`.
 
 Use migrations only when the change modifies schema, constraints, indexes, RPCs, triggers, policies, grants, or other database behavior that must be replayed through deployment history.
 
@@ -325,8 +358,11 @@ The backend excludes non-resurfaceable questions a user has already answered. Fo
 
 Before adding or changing questions, confirm:
 
+- Existing questions were checked and this is not a duplicate or near-duplicate.
+
 - No prompt sounds like it came from the partner.
 - Each prompt has one clear ask.
+- Each prompt gives a specific enough handle that the user can start answering quickly.
 - The answer kinds match the user action the app can actually support.
 - Both `en` and `nb` are present and natural.
 - The short prompt is calm, compact, and not misleading.

@@ -19,6 +19,12 @@ Current backend decisions:
 - Start with the migration order listed in `docs/phase-3-migration-checklist.md`.
 - Do not deploy or apply remote migrations until a project is intentionally linked.
 
+Content tracking:
+
+- `questions/` holds source-controlled structure for database-authored question
+  content, versions, and locales. Question catalog rows are content; migrations
+  are only for schema or database behavior changes.
+
 PostgREST implementation notes:
 
 - iOS table writes must always include an explicit row filter. RLS still enforces ownership, but production rejects unfiltered `UPDATE`/`DELETE` statements before RLS can scope them.
