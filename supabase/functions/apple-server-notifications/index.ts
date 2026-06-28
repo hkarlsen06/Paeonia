@@ -15,6 +15,7 @@ const APPLE_ROOT_CA_URLS = [APPLE_ROOT_CA_G2_URL, APPLE_ROOT_CA_G3_URL];
 const EXTERNAL_FETCH_TIMEOUT_MS = 15_000;
 const APPLE_APP_BUNDLE_ID = Deno.env.get("APPLE_APP_BUNDLE_ID") ??
   "no.paeonia.app";
+const STREAK_RESTORE_PRODUCT_ID = "no.paeonia.streak.restore";
 const APPLE_APP_APPLE_ID_RAW = Deno.env.get("APPLE_APP_APPLE_ID") ??
   Deno.env.get("APPLE_APP_ID") ??
   "";
@@ -130,6 +131,30 @@ Deno.serve(async (request: Request) => {
       verifier,
       notification.data?.signedRenewalInfo,
     );
+
+    // The streak-restore consumable lives outside the subscription tables, so
+    // route its notifications to the restore ledger instead of the entitlement
+    // path. Refunds are logged; the restored streak is intentionally kept.
+    if (transactionInfo?.productId === STREAK_RESTORE_PRODUCT_ID) {
+      const restoreResult = await persistStreakRestoreNotification(
+        notification,
+        transactionInfo,
+      );
+
+      if (restoreResult.ok !== true && (restoreResult.status ?? 500) >= 500) {
+        return jsonResponse(restoreResult.status ?? 500, {
+          received: false,
+          processed: false,
+          error: restoreResult.error ?? "Could not process Apple notification",
+        });
+      }
+
+      return jsonResponse(200, {
+        received: true,
+        duplicate: false,
+        processed: restoreResult.processed === true,
+      });
+    }
 
     const result = await persistNotification(
       notification,
@@ -352,6 +377,42 @@ async function decodeSignedRenewalInfo(
     );
     return null;
   }
+}
+
+async function persistStreakRestoreNotification(
+  notification: AppleNotificationPayload,
+  transactionInfo: AppleTransactionInfo,
+): Promise<RecordStoreKitNotificationResponse> {
+  const notificationType = requireString(
+    notification.notificationType,
+    "notificationType",
+  );
+
+  // Only refund/revoke matters for a consumable; everything else is a no-op ack.
+  if (notificationType !== "REFUND" && notificationType !== "REVOKE") {
+    return { ok: true, processed: false };
+  }
+
+  const supabaseAdmin = adminClient();
+  const { error } = await supabaseAdmin
+    .rpc("mark_streak_restore_refunded", {
+      p_environment: toDatabaseEnvironment(transactionInfo.environment),
+      p_transaction_id: transactionInfo.transactionId,
+    });
+
+  if (error) {
+    console.error(
+      "[apple-server-notifications] streak restore refund failed",
+      error,
+    );
+    return {
+      ok: false,
+      status: 500,
+      error: "Could not record streak restore refund",
+    };
+  }
+
+  return { ok: true, processed: true };
 }
 
 async function persistNotification(

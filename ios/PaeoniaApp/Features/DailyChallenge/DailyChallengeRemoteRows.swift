@@ -68,12 +68,16 @@ nonisolated struct CoupleStreakRow: Decodable, Equatable, Sendable {
     let longestCount: Int
     let lastQualifiedDate: String?
     let restoreAvailable: Bool
+    let restorableCount: Int
+    let restoreDeadline: Date?
 
     enum CodingKeys: String, CodingKey {
         case currentCount = "current_count"
         case longestCount = "longest_count"
         case lastQualifiedDate = "last_qualified_date"
         case restoreAvailable = "restore_available"
+        case restorableCount = "restorable_count"
+        case restoreDeadline = "restore_deadline"
     }
 
     var streak: CoupleStreak {
@@ -81,7 +85,9 @@ nonisolated struct CoupleStreakRow: Decodable, Equatable, Sendable {
             currentCount: currentCount,
             longestCount: longestCount,
             lastQualifiedDate: lastQualifiedDate,
-            restoreAvailable: restoreAvailable
+            restoreAvailable: restoreAvailable,
+            restorableCount: restorableCount,
+            restoreDeadline: restoreDeadline
         )
     }
 }

@@ -18,7 +18,7 @@ final class DailyChallengeViewModel {
     private enum SendingAnswer: Equatable {
         case text(String)
         case partnerChoice(UUID)
-        case media(DailyAnswerMediaDraft)
+        case media(DailyAnswerMediaDraft, stagedData: Data?)
     }
 
     enum Notice: Equatable {
@@ -123,6 +123,7 @@ final class DailyChallengeViewModel {
         } catch {
             notice = .loadFailed
         }
+        await refreshStreak()
         await refreshSendingState()
         isLoading = false
     }
@@ -235,7 +236,7 @@ final class DailyChallengeViewModel {
     private func submitMediaAnswer(for question: DailyChallengeQuestion) async {
         guard
             let media = answerDrafts[question.id]?.media,
-            mediaDraftStore.stagedMediaData(instanceID: question.id) != nil,
+            let stagedData = mediaDraftStore.stagedMediaData(instanceID: question.id),
             let currentUserID
         else {
             notice = .emptyAnswer
@@ -248,14 +249,15 @@ final class DailyChallengeViewModel {
             instanceID: question.id,
             answerID: UUID(),
             content: .media(
-                DailySubmitAnswerOperationPayload.Media(
-                    draft: media,
-                    coupleID: question.coupleID,
-                    reserveOperation: operationProvider.makeOperation(),
-                    finalizeOperation: operationProvider.makeOperation()
+                    DailySubmitAnswerOperationPayload.Media(
+                        draft: media,
+                        coupleID: question.coupleID,
+                        reserveOperation: operationProvider.makeOperation(),
+                        finalizeOperation: operationProvider.makeOperation(),
+                        stagedData: stagedData
+                    )
                 )
             )
-        )
 
         do {
             try await pendingOperationStore.enqueue(
@@ -275,7 +277,7 @@ final class DailyChallengeViewModel {
 
         // Show it as sending right away; drop the editable draft (the staged bytes stay
         // for the upload), then ask the sync engine to send it now if we're online.
-        sendingAnswers[question.id] = .media(media)
+        sendingAnswers[question.id] = .media(media, stagedData: stagedData)
         clearDraft(for: question.id)
         submittingQuestionID = nil
         await localChangeSyncHandler?()
@@ -555,23 +557,25 @@ final class DailyChallengeViewModel {
             return .text(body)
         case let .partnerChoice(userID):
             return .partnerChoice(name: participants.name(for: userID))
-        case .media, nil:
+        case .media(_, stagedData: _), nil:
             return nil
         }
     }
 
     /// The staged media bytes for a still-sending media answer, for its "saved,
-    /// sending" preview. Reads the staged file directly, since the editable draft is
-    /// gone. Nil for text/partner-choice answers.
+    /// sending" preview. Reads the staged file first, then queued fallback bytes.
+    /// Nil for text/partner-choice answers.
     func sendingMediaData(for instanceID: UUID) -> Data? {
-        guard case .media = sendingAnswers[instanceID] else { return nil }
-        return mediaDraftStore.stagedMediaData(instanceID: instanceID)
+        guard case let .media(_, stagedData: stagedData) = sendingAnswers[instanceID] else { return nil }
+        return mediaDraftStore.stagedMediaData(instanceID: instanceID) ?? stagedData
     }
 
     /// The recorded length of a still-sending voice note, so its playback scrubber
     /// shows a duration before the local file finishes loading. Nil for photos.
     func sendingVoiceDurationMs(for instanceID: UUID) -> Int? {
-        guard case let .media(media) = sendingAnswers[instanceID], media.purpose == .voice else { return nil }
+        guard case let .media(media, stagedData: _) = sendingAnswers[instanceID],
+              media.purpose == .voice
+        else { return nil }
         return media.durationMs
     }
 
@@ -597,11 +601,11 @@ final class DailyChallengeViewModel {
                 switch payload.content {
                 case let .text(body):
                     return (payload.instanceID, .text(body))
-                case let .partnerChoice(userID):
-                    return (payload.instanceID, .partnerChoice(userID))
-                case let .media(media):
-                    return (payload.instanceID, .media(media.draft))
-                }
+            case let .partnerChoice(userID):
+                return (payload.instanceID, .partnerChoice(userID))
+            case let .media(media):
+                return (payload.instanceID, .media(media.draft, stagedData: media.stagedData))
+            }
             },
             uniquingKeysWith: { first, _ in first }
         )

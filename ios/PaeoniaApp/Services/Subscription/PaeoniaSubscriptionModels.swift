@@ -20,6 +20,13 @@ nonisolated enum PaeoniaBillingPeriod: String, CaseIterable, Sendable {
     case yearly
 }
 
+/// One-time (consumable) products. Kept separate from the subscription IDs so the
+/// restore-purchases flow, which only re-applies subscriptions, never trips over a
+/// consumable that Apple never lists in `Transaction.currentEntitlements`.
+nonisolated enum PaeoniaConsumableProductID: String, CaseIterable, Sendable {
+    case streakRestore = "no.paeonia.streak.restore"
+}
+
 nonisolated struct PaeoniaFreeTrial: Equatable, Sendable {
     enum Unit: Equatable, Sendable {
         case day
@@ -102,6 +109,9 @@ nonisolated enum PaeoniaPurchaseError: Error, Equatable {
     case purchaseLinkedToAnotherAccount
     case purchaseFailed
     case restoreFailed
+    /// The streak could not be brought back — the offer had already closed or
+    /// there was nothing to restore by the time the purchase was verified.
+    case streakNotRestorable
 }
 
 nonisolated struct PaeoniaStoreKitUploadRequest: Encodable, Equatable {
@@ -116,6 +126,24 @@ nonisolated struct PaeoniaStoreKitUploadRequest: Encodable, Equatable {
 nonisolated struct PaeoniaStoreKitUploadResponse: Decodable, Equatable {
     let ok: Bool?
     let error: String?
+
+    var isConfirmed: Bool {
+        ok == true && error == nil
+    }
+}
+
+nonisolated struct PaeoniaStreakRestoreUploadRequest: Encodable, Equatable {
+    let jws: String
+    let transactionId: String
+    let originalTransactionId: String
+    let productId: String
+    let environment: String
+}
+
+nonisolated struct PaeoniaStreakRestoreUploadResponse: Decodable, Equatable {
+    let ok: Bool?
+    let error: String?
+    let restoredCount: Int?
 
     var isConfirmed: Bool {
         ok == true && error == nil

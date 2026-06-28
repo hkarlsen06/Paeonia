@@ -403,6 +403,9 @@ deno_version = 2
 [functions.apple-verify-purchase]
 verify_jwt = false
 
+[functions.apple-redeem-streak-restore]
+verify_jwt = false
+
 [functions.apple-server-notifications]
 verify_jwt = false
 

@@ -18,6 +18,11 @@ import SwiftUI
 struct PaeoniaStreakFlame: View {
     let count: Int
     var playsCelebration: Bool = true
+    /// A broken streak that can be bought back: the flame renders cold and dim
+    /// (no fill, glow, embers, or celebration) so it reads as "slipped". The
+    /// `count` is then the lost streak length the restore would bring back. The
+    /// "get it back" action lives in the surrounding surface, not here.
+    var isBroken: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -71,45 +76,55 @@ struct PaeoniaStreakFlame: View {
             flame(level: level, phase: phase, flicker: flicker)
                 .frame(width: flameWidth, height: flameHeight)
                 .overlay {
-                    if emits {
+                    if emits, !isBroken {
                         StreakEmberField(start: animationStart)
                     }
                 }
                 .scaleEffect(flameScale)
-                .shadow(color: .paeoniaAccentPrimary.opacity(0.4 + 0.4 * glowFlare), radius: 22 + 26 * glowFlare)
-                .shadow(color: .paeoniaAccentSecondary.opacity(0.35 * glowFlare), radius: 10)
+                .shadow(color: glowShadowColor, radius: isBroken ? 8 : 22 + 26 * glowFlare)
+                .shadow(color: .paeoniaAccentSecondary.opacity(isBroken ? 0 : 0.35 * glowFlare), radius: 10)
 
             VStack(spacing: PaeoniaSpacing.space4) {
                 Text(verbatim: value.formatted())
                     .font(.system(size: numberSize, weight: .heavy, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(.paeoniaTextPrimary)
+                    .foregroundStyle(isBroken ? .paeoniaTextSecondary : .paeoniaTextPrimary)
 
                 Text(.homeStreakLabel)
                     .font(PaeoniaTypography.caption.weight(.semibold))
                     .textCase(.uppercase)
                     .tracking(1.6)
-                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .foregroundStyle(isBroken ? .paeoniaTextTertiary : .paeoniaAccentPrimary)
             }
         }
     }
 
+    private var glowShadowColor: Color {
+        isBroken
+            ? .black.opacity(0.18)
+            : .paeoniaAccentPrimary.opacity(0.4 + 0.4 * glowFlare)
+    }
+
     private func flame(level: CGFloat, phase: CGFloat, flicker: CGFloat) -> some View {
         ZStack {
-            aura(level: level)
+            if !isBroken {
+                aura(level: level)
+            }
 
             // The empty flame: a dim vessel waiting to be filled.
             FlameShape().fill(Self.emptyFlameStyle)
 
-            // The rising liquid, clipped to the flame outline.
-            StreakLiquidShape(level: level, phase: phase)
-                .fill(Self.liquidStyle)
+            // The rising liquid, clipped to the flame outline. A broken streak
+            // shows a low, cold pool instead of a warm, full flame.
+            StreakLiquidShape(level: isBroken ? 0.22 : level, phase: phase)
+                .fill(isBroken ? Self.brokenLiquidStyle : Self.liquidStyle)
                 .clipShape(FlameShape())
 
             // A bright rim so the flame edge reads against the plum surface.
-            FlameShape().stroke(Self.rimStyle, lineWidth: PaeoniaRadius.strokeEmphasis)
+            FlameShape().stroke(isBroken ? Self.brokenRimStyle : Self.rimStyle, lineWidth: PaeoniaRadius.strokeEmphasis)
         }
         // A faint living flicker — wider/shorter then back — anchored at the base.
+        // A broken flame is still, so the flicker is suppressed.
         .scaleEffect(x: 1 + flicker * 0.02, y: 1 - flicker * 0.015, anchor: .bottom)
     }
 
@@ -146,6 +161,18 @@ struct PaeoniaStreakFlame: View {
         endPoint: .bottom
     )
 
+    private static let brokenLiquidStyle = LinearGradient(
+        colors: [.paeoniaTextSecondary.opacity(0.5), .paeoniaSurfacePressed.opacity(0.7)],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
+    private static let brokenRimStyle = LinearGradient(
+        colors: [.paeoniaTextSecondary.opacity(0.55), .paeoniaSurfaceSecondary.opacity(0.5)],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
     private var accessibilityLabel: String {
         "\(count) \(String(localized: .homeStreakLabel))"
     }
@@ -156,10 +183,11 @@ struct PaeoniaStreakFlame: View {
         guard !hasStarted else { return }
         hasStarted = true
 
-        let animates = playsCelebration && !reduceMotion && count >= 1
+        let animates = playsCelebration && !reduceMotion && !isBroken && count >= 1
         guard animates else {
             isAnimating = false
-            if playsCelebration {
+            // A broken streak is not a celebration, so it stays silent.
+            if playsCelebration, !isBroken {
                 PaeoniaHaptics.streakContinued()
             }
             return

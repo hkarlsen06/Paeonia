@@ -13,12 +13,26 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
     /// just-sent answer has synced.
     var lastQualifiedDate: String?
     var restoreAvailable: Bool
+    /// The streak length a paid restore would bring back, or `0` when there is
+    /// nothing to restore. Shown to the user as "get your N-day streak back".
+    var restorableCount: Int
+    /// When the restore offer closes, or `nil` when nothing is restorable.
+    var restoreDeadline: Date?
+
+    /// True while a broken streak can still be bought back. Recomputed from the
+    /// deadline (not just the server flag) so the offer disappears the moment it
+    /// lapses, even while the app stays open.
+    var isRestorable: Bool {
+        restorableCount > 0 && (restoreDeadline.map { $0 > .now } ?? false)
+    }
 
     static let none = CoupleStreak(
         currentCount: 0,
         longestCount: 0,
         lastQualifiedDate: nil,
-        restoreAvailable: false
+        restoreAvailable: false,
+        restorableCount: 0,
+        restoreDeadline: nil
     )
 }
 

@@ -77,4 +77,49 @@ struct CoupleStreakTests {
 
         #expect(count == 8)
     }
+
+    // MARK: - Restore eligibility
+
+    @Test func restorableWhenCountPositiveAndDeadlineInFuture() {
+        let streak = CoupleStreak(
+            currentCount: 1,
+            longestCount: 30,
+            lastQualifiedDate: "2026-06-26",
+            restoreAvailable: true,
+            restorableCount: 30,
+            restoreDeadline: .now.addingTimeInterval(3_600)
+        )
+
+        #expect(streak.isRestorable)
+    }
+
+    @Test func notRestorableOnceDeadlineHasPassed() {
+        let streak = CoupleStreak(
+            currentCount: 1,
+            longestCount: 30,
+            lastQualifiedDate: "2026-06-26",
+            restoreAvailable: true,
+            restorableCount: 30,
+            restoreDeadline: .now.addingTimeInterval(-3_600)
+        )
+
+        #expect(!streak.isRestorable)
+    }
+
+    @Test func notRestorableWithoutARestorableCount() {
+        let streak = CoupleStreak(
+            currentCount: 5,
+            longestCount: 5,
+            lastQualifiedDate: "2026-06-28",
+            restoreAvailable: false,
+            restorableCount: 0,
+            restoreDeadline: .now.addingTimeInterval(3_600)
+        )
+
+        #expect(!streak.isRestorable)
+    }
+
+    @Test func noneIsNotRestorable() {
+        #expect(!CoupleStreak.none.isRestorable)
+    }
 }

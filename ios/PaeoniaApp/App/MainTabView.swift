@@ -23,7 +23,11 @@ struct MainTabView: View {
     var onDailyChallengeLocalChange: @MainActor () async -> Void = {}
 
     @State private var dailyChallengeViewModel = DailyChallengeViewModel()
+    /// `presented` keeps the flow mounted; `expanded` drives the open/close morph.
+    /// They differ only briefly during a close, while the flow plays its collapse.
+    @State private var isAnswerFlowPresented = false
     @State private var isAnswerFlowExpanded = false
+    @State private var showStreakRestore = false
     @Namespace private var dailyChallengeMorph
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -77,11 +81,16 @@ struct MainTabView: View {
 
             // The answering flow lives above the tab bar so the card can grow into
             // a full-screen surface (and the floating tab bar doesn't show through).
-            if isAnswerFlowExpanded {
+            // Mount (`presented`) and open (`expanded`) are separate so that on close
+            // the flow stays mounted long enough to play its reveal-collapse while the
+            // elements glide home, then unmounts once it's invisible.
+            if isAnswerFlowPresented {
                 DailyChallengeAnswerFlow(
                     viewModel: dailyChallengeViewModel,
-                    namespace: reduceMotion ? nil : dailyChallengeMorph,
-                    onClose: closeAnswerFlow
+                    namespace: flowNamespace,
+                    isExpanded: isAnswerFlowExpanded,
+                    onClose: closeAnswerFlow,
+                    onRestore: openStreakRestore
                 )
                 .zIndex(1)
                 .transition(answerFlowTransition)
@@ -92,6 +101,32 @@ struct MainTabView: View {
             dailyChallengeViewModel.setLocalChangeSyncHandler(onDailyChallengeLocalChange)
             await dailyChallengeViewModel.configure(participants: dailyChallengeParticipants)
         }
+        .sheet(isPresented: $showStreakRestore) {
+            streakRestoreSheet
+        }
+    }
+
+    /// The streak chip everywhere it appears: a flame when healthy, a tappable
+    /// "broken" chip advertising the lost streak while a restore is on offer.
+    private var streakPillState: StreakPillState {
+        StreakPillState(dailyChallengeViewModel.streak)
+    }
+
+    private func openStreakRestore() {
+        showStreakRestore = true
+    }
+
+    private var streakRestoreSheet: some View {
+        StreakRestoreView(
+            viewModel: StreakRestoreViewModel(
+                streak: dailyChallengeViewModel.streak,
+                userID: currentUserID?.uuidString,
+                onRestored: { _ in await dailyChallengeViewModel.refreshStreak() }
+            ),
+            onClose: { showStreakRestore = false }
+        )
+        .presentationDetents([.large])
+        .presentationBackground(.paeoniaSurfacePrimary)
     }
 
     /// Both partners' identity, used by the daily challenge to label partner-choice
@@ -130,11 +165,13 @@ struct MainTabView: View {
                 partnerDisplayName: partnerDisplayName,
                 partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
                 dailyChallengeCardState: dailyChallengeViewModel.homeCardState,
+                dailyChallengeStreak: streakPillState,
                 dailyChallengeMorphNamespace: morphNamespace(for: .home),
                 locationMapState: locationMapState,
                 onPromptCurrentLocation: {
                     Task { await locationViewModel.promptForCurrentLocation() }
                 },
+                onTapStreak: openStreakRestore,
                 onOpenDailyChallenge: openAnswerFlow,
                 onOpenWidgetDrawing: onOpenWidgetDrawing,
                 onRefresh: {
@@ -156,35 +193,42 @@ struct MainTabView: View {
             DailyChallengeScreen(
                 viewModel: dailyChallengeViewModel,
                 morphNamespace: morphNamespace(for: .questions),
-                onOpenAnswerFlow: openAnswerFlow
+                onOpenAnswerFlow: openAnswerFlow,
+                onTapStreak: openStreakRestore
             )
         }
     }
 
     /// The card only owns the shared morph ids while it is the visible entry point
-    /// and the flow is collapsed. Once expanded, both cards release the ids so the
-    /// flow becomes their sole owner and the elements travel into it. Reduce Motion
-    /// opts out of the glide entirely (a plain cross-fade is used instead).
+    /// and the flow is collapsed. While expanding (or collapsing) the card releases
+    /// the ids so the flow's elements travel; the card reclaims them as the flow
+    /// collapses so they glide back home. Reduce Motion opts out of the glide
+    /// entirely (a plain cross-fade is used instead).
     private func morphNamespace(for tab: MainTab) -> Namespace.ID? {
         guard !reduceMotion, !isAnswerFlowExpanded, selection.wrappedValue == tab else { return nil }
         return dailyChallengeMorph
     }
 
-    /// How the answering flow enters and leaves.
-    ///
-    /// Expanding uses `.identity` so the morphing card elements stay fully opaque and
-    /// only *glide* (via `matchedGeometryEffect`) — the flow's own surface and
-    /// supporting content fade in from inside the flow, so the card reads as growing
-    /// rather than the whole screen dissolving over the card still showing behind it.
-    /// Collapsing fades the surface back out as those elements glide home. Reduce
-    /// Motion drops the glide for a plain cross-fade in both directions.
-    private var answerFlowTransition: AnyTransition {
-        if reduceMotion { return .opacity }
-        return .asymmetric(insertion: .identity, removal: .opacity)
+    /// The flow owns the morph ids only while it is open. It releases them the moment
+    /// a close begins (so the card can reclaim them and glide the elements back), and
+    /// never claims them under Reduce Motion.
+    private var flowNamespace: Namespace.ID? {
+        (reduceMotion || !isAnswerFlowExpanded) ? nil : dailyChallengeMorph
     }
 
-    /// Spring that carries the morph (and the fade-out on close). A plain, short
-    /// cross-fade replaces it under Reduce Motion.
+    /// How the answering flow enters and leaves.
+    ///
+    /// Under motion the flow uses `.identity`: it never fades as a whole. Its own
+    /// surface, content reveal, and element glide all animate from inside the flow
+    /// (and it only unmounts once already invisible), so the card reads as growing
+    /// and shrinking rather than the screen dissolving over it. Reduce Motion drops
+    /// the glide for a plain cross-fade in both directions.
+    private var answerFlowTransition: AnyTransition {
+        reduceMotion ? .opacity : .identity
+    }
+
+    /// Spring that carries the morph. A plain, short cross-fade replaces it under
+    /// Reduce Motion.
     private var morphAnimation: Animation? {
         reduceMotion ? .easeInOut(duration: PaeoniaMotion.motionDefault) : PaeoniaMotion.heroMorph
     }
@@ -196,14 +240,29 @@ struct MainTabView: View {
         if dailyChallengeViewModel.homeCardState.kind == .noChallenge {
             Task { await dailyChallengeViewModel.startToday() }
         }
+        // Mount and open together so the flow appears already expanded — the elements
+        // glide from the card and the surface wipes open, with no intermediate frame.
         withAnimation(morphAnimation) {
+            isAnswerFlowPresented = true
             isAnswerFlowExpanded = true
         }
     }
 
     private func closeAnswerFlow() {
+        guard !reduceMotion else {
+            // No glide to wait for: cross-fade the whole flow out and unmount at once.
+            withAnimation(morphAnimation) {
+                isAnswerFlowExpanded = false
+                isAnswerFlowPresented = false
+            }
+            return
+        }
+        // Begin the collapse now (the flow wipes shut and the elements glide home),
+        // then unmount once the spring settles — unless the user reopened meanwhile.
         withAnimation(morphAnimation) {
             isAnswerFlowExpanded = false
+        } completion: {
+            if !isAnswerFlowExpanded { isAnswerFlowPresented = false }
         }
     }
 

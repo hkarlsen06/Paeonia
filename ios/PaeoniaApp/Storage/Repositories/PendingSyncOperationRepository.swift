@@ -49,6 +49,7 @@ protocol PendingSyncOperationPersisting: Actor {
         limit: Int,
         now: Date
     ) async throws -> [PendingSyncOperationSnapshot]
+    func nextPendingOperationDate(ownerUserID: UUID, now: Date) async throws -> Date?
 
     /// Operations of a kind that haven't finished yet — queued, sending, retrying, or
     /// waiting to retry. Used to show a "still sending" state that survives relaunch.
@@ -131,6 +132,28 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
             .prefix(limit)
 
         return operations.map(Self.snapshot(from:))
+    }
+
+    func nextPendingOperationDate(ownerUserID: UUID, now: Date) async throws -> Date? {
+        let context = ModelContext(container)
+        let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
+            predicate: #Predicate { operation in
+                operation.ownerUserID == ownerUserID
+            }
+        )
+
+        return try context.fetch(descriptor)
+            .compactMap { operation -> Date? in
+                switch operation.status {
+                case .retrying:
+                    return now
+                case .failedRetryable:
+                    return operation.nextRetryAt ?? now
+                case .queued, .sending, .failedTerminal, .succeeded:
+                    return nil
+                }
+            }
+            .min()
     }
 
     func inFlightOperations(
@@ -324,6 +347,22 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
             }
             .prefix(limit)
             .map { $0 }
+    }
+
+    func nextPendingOperationDate(ownerUserID: UUID, now: Date) async throws -> Date? {
+        operations.values
+            .filter { $0.ownerUserID == ownerUserID }
+            .compactMap { operation -> Date? in
+                switch operation.status {
+                case .retrying:
+                    return now
+                case .failedRetryable:
+                    return operation.nextRetryAt ?? now
+                case .queued, .sending, .failedTerminal, .succeeded:
+                    return nil
+                }
+            }
+            .min()
     }
 
     func inFlightOperations(

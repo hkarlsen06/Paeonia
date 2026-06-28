@@ -18,11 +18,9 @@ enum PaeoniaMotion {
     /// answering flow. A smooth spring with only a hint of settle, so the morphing
     /// eyebrow, progress bar, and button glide into their new positions and sizes
     /// without visibly overshooting — bouncier springs make morphing text wobble.
+    ///
+    /// The flow's content reveal is animated with this same curve so the surface
+    /// uncovers in lockstep with the gliding elements rather than drifting out of
+    /// sync with them.
     static let heroMorph = Animation.spring(duration: motionMorph, bounce: 0.1)
-
-    /// The surface-and-supporting-content fade that rides alongside `heroMorph`.
-    /// Kept short so the full-screen background has settled by the time the gliding
-    /// elements arrive, which keeps the card's growth reading as one clean motion
-    /// rather than a long cross-dissolve over the still-visible card behind it.
-    static let heroMorphChrome = Animation.easeOut(duration: motionDefault)
 }

@@ -6,9 +6,11 @@ struct PairedHomeView: View {
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
     let dailyChallengeCardState: DailyChallengeCardState
+    let dailyChallengeStreak: StreakPillState
     let dailyChallengeMorphNamespace: Namespace.ID?
     let locationMapState: CoupleMapState
     let onPromptCurrentLocation: () -> Void
+    var onTapStreak: (() -> Void)?
     var onOpenDailyChallenge: () -> Void = {}
     var onOpenWidgetDrawing: () -> Void = {}
     var onRefresh: () async -> Void = {}
@@ -24,9 +26,11 @@ struct PairedHomeView: View {
             answeredCount: 0,
             totalCount: DailyChallengeProgress.requiredOwnQuestionCount
         ),
+        dailyChallengeStreak: StreakPillState = .hidden,
         dailyChallengeMorphNamespace: Namespace.ID? = nil,
         locationMapState: CoupleMapState,
         onPromptCurrentLocation: @escaping () -> Void = {},
+        onTapStreak: (() -> Void)? = nil,
         onOpenDailyChallenge: @escaping () -> Void = {},
         onOpenWidgetDrawing: @escaping () -> Void = {},
         onRefresh: @escaping () async -> Void = {}
@@ -36,9 +40,11 @@ struct PairedHomeView: View {
         self.partnerDisplayName = partnerDisplayName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.dailyChallengeCardState = dailyChallengeCardState
+        self.dailyChallengeStreak = dailyChallengeStreak
         self.dailyChallengeMorphNamespace = dailyChallengeMorphNamespace
         self.locationMapState = locationMapState
         self.onPromptCurrentLocation = onPromptCurrentLocation
+        self.onTapStreak = onTapStreak
         self.onOpenDailyChallenge = onOpenDailyChallenge
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
         self.onRefresh = onRefresh
@@ -47,22 +53,22 @@ struct PairedHomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: PaeoniaSpacing.sectionSpacing) {
-                MilestoneCountdownCard()
-
-                dailyPromptCard
-
                 HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
-                    CoupleMapCard(
-                        currentName: currentName,
-                        currentProfilePhotoAssetID: currentProfilePhotoAssetID,
-                        partnerName: partnerName,
-                        partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                        state: locationMapState,
-                        onPromptCurrentLocation: onPromptCurrentLocation
-                    )
+                    MilestoneCountdownCard()
 
                     HomeWidgetCard(onOpen: onOpenWidgetDrawing)
                 }
+
+                dailyPromptCard
+
+                CoupleMapCard(
+                    currentName: currentName,
+                    currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                    partnerName: partnerName,
+                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                    state: locationMapState,
+                    onPromptCurrentLocation: onPromptCurrentLocation
+                )
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -113,8 +119,10 @@ struct PairedHomeView: View {
     private var dailyPromptCard: some View {
         DailyPromptCard(
             state: dailyChallengeCardState,
+            streak: dailyChallengeStreak,
             morphNamespace: dailyChallengeMorphNamespace,
-            onAnswer: onOpenDailyChallenge
+            onAnswer: onOpenDailyChallenge,
+            onTapStreak: onTapStreak
         )
     }
 

@@ -252,7 +252,9 @@ struct DailyChallengeMappingTests {
                 currentCount: 5,
                 longestCount: 9,
                 lastQualifiedDate: "2026-06-27",
-                restoreAvailable: true
+                restoreAvailable: true,
+                restorableCount: 0,
+                restoreDeadline: nil
             )
         )
         let viewModel = DailyChallengeViewModel(
@@ -672,6 +674,16 @@ struct DailyChallengeMappingTests {
         let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
         #expect(payload.instanceID == question.id)
         #expect(payload.content == .text("Thinking of you"))
+
+        let relaunched = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            pendingOperationStore: pendingStore
+        )
+        await relaunched.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        #expect(relaunched.isSending(question.id))
+        #expect(relaunched.sendingSimpleContent(for: question.id) == .text("Thinking of you"))
     }
 
     @MainActor
@@ -735,6 +747,22 @@ struct DailyChallengeMappingTests {
         let data = try #require(queued.first?.requestData)
         let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
         #expect(payload.content == .partnerChoice(TestDailyChallengeIDs.partnerUser))
+
+        let relaunched = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            pendingOperationStore: pendingStore
+        )
+        await relaunched.configure(
+            participants: DailyChallengeParticipants(
+                currentUserID: TestDailyChallengeIDs.currentUser,
+                partnerUserID: TestDailyChallengeIDs.partnerUser,
+                partnerDisplayName: "Oda"
+            )
+        )
+        #expect(relaunched.isSending(question.id))
+        #expect(relaunched.sendingSimpleContent(for: question.id) == .partnerChoice(name: "Oda"))
     }
 
     @Test func partnerChoiceParticipantsResolveNamesAndOptions() throws {
@@ -868,9 +896,28 @@ struct DailyChallengeMappingTests {
             kind: .submitDailyAnswer
         )
         #expect(queued.count == 1)
+        let queuedData = try #require(queued.first?.requestData)
+        let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: queuedData)
+        guard case let .media(media) = payload.content else {
+            Issue.record("Expected media content, got \(payload.content)")
+            return
+        }
+        #expect(media.stagedData != nil)
         #expect(viewModel.sendingMediaData(for: question.id) != nil)
         // A media answer previews from its staged bytes, not the simple-content path.
         #expect(viewModel.sendingSimpleContent(for: question.id) == nil)
+
+        let relaunched = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            mediaDraftStore: InMemoryDailyAnswerMediaDraftStore(),
+            pendingOperationStore: pendingStore
+        )
+        await relaunched.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        #expect(relaunched.isSending(question.id))
+        #expect(relaunched.sendingMediaData(for: question.id) != nil)
+        #expect(relaunched.sendingSimpleContent(for: question.id) == nil)
     }
 
     @MainActor
@@ -925,6 +972,51 @@ struct DailyChallengeMappingTests {
     }
 
     @MainActor
+    @Test func dailySubmitAnswerHandlerRestoresQueuedMediaBytesWhenStagedFileMissing() async throws {
+        let instanceID = UUID()
+        let answerID = UUID()
+        let assetID = UUID()
+        let mediaStore = InMemoryDailyAnswerMediaDraftStore()
+        let uploader = RecordingMediaUploadService(assetID: assetID)
+        let gateway = RecordingDailyChallengeGateway()
+        let handler = DailySubmitAnswerPendingOperationHandler(
+            mediaUploadService: uploader,
+            gateway: gateway,
+            mediaDraftStore: mediaStore
+        )
+
+        let queuedBytes = Data([0x07, 0x08, 0x09])
+        let payload = DailySubmitAnswerOperationPayload(
+            instanceID: instanceID,
+            answerID: answerID,
+            content: .media(
+                DailySubmitAnswerOperationPayload.Media(
+                    draft: DailyAnswerMediaDraft(
+                        purpose: .voice,
+                        mimeType: "audio/mp4",
+                        fileExtension: "m4a",
+                        width: nil,
+                        height: nil,
+                        durationMs: 1200
+                    ),
+                    coupleID: TestDailyChallengeIDs.couple,
+                    reserveOperation: fixedClientOperation(),
+                    finalizeOperation: fixedClientOperation(),
+                    stagedData: queuedBytes
+                )
+            )
+        )
+        let operation = pendingSnapshot(requestData: try JSONEncoder().encode(payload))
+
+        let result = try await handler.send(operation, context: dailyChallengeSyncContext())
+
+        #expect(result == .succeeded)
+        #expect(await uploader.uploadCount == 1)
+        #expect(await gateway.submittedPayloads == [.media([assetID])])
+        #expect(mediaStore.stagedMediaData(instanceID: instanceID) == nil)
+    }
+
+    @MainActor
     @Test func dailySubmitAnswerHandlerFailsTerminallyWhenStagedMediaMissing() async throws {
         let handler = DailySubmitAnswerPendingOperationHandler(
             mediaUploadService: RecordingMediaUploadService(assetID: UUID()),
@@ -954,11 +1046,11 @@ struct DailyChallengeMappingTests {
 
         let result = try await handler.send(operation, context: dailyChallengeSyncContext())
 
-        if case .terminalFailure = result {
-            // Expected: nothing to send once the staged photo is gone.
-        } else {
-            Issue.record("Expected terminal failure, got \(result)")
-        }
+    if case .terminalFailure = result {
+            // Expected: nothing to send once staged file and queued fallback are gone.
+    } else {
+        Issue.record("Expected terminal failure, got \(result)")
+    }
     }
 
     @MainActor
@@ -1068,6 +1160,7 @@ struct DailyChallengeMappingTests {
         }
         #expect(media.draft.purpose == .voice)
         #expect(media.draft.durationMs == 4200)
+        #expect(media.stagedData == Data([0x00, 0x01, 0x02, 0x03]))
     }
 
     @MainActor
@@ -1106,6 +1199,19 @@ struct DailyChallengeMappingTests {
         #expect(viewModel.stagedVoiceDurationMs(for: question.id) == nil)
         #expect(viewModel.sendingMediaData(for: question.id) != nil)
         #expect(viewModel.sendingVoiceDurationMs(for: question.id) == 4200)
+
+        let relaunched = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            mediaDraftStore: InMemoryDailyAnswerMediaDraftStore(),
+            pendingOperationStore: pendingStore
+        )
+        await relaunched.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        #expect(relaunched.isSending(question.id))
+        #expect(relaunched.stagedVoiceDurationMs(for: question.id) == nil)
+        #expect(relaunched.sendingMediaData(for: question.id) != nil)
+        #expect(relaunched.sendingVoiceDurationMs(for: question.id) == 4200)
     }
 
     @Test func stagedMediaDraftStoreRoundTripsAndClears() throws {
@@ -1119,6 +1225,8 @@ struct DailyChallengeMappingTests {
 
         try store.writeStagedMedia(data, instanceID: instanceID)
         #expect(store.stagedMediaData(instanceID: instanceID) == data)
+        let reopened = FileDailyAnswerMediaDraftStore(directoryURL: directory)
+        #expect(reopened.stagedMediaData(instanceID: instanceID) == data)
 
         store.removeStagedMedia(instanceID: instanceID)
         #expect(store.stagedMediaData(instanceID: instanceID) == nil)

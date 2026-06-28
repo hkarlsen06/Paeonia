@@ -10,8 +10,17 @@ protocol PaeoniaStoreKitServicing: AnyObject {
     func configure(userID: String)
     func loadProducts() async throws
     func product(for productID: PaeoniaSubscriptionProductID) -> Product?
+    func product(for productID: PaeoniaConsumableProductID) -> Product?
     func purchase(_ product: Product) async throws -> Bool
     func restorePurchases() async throws -> Bool
+    /// Buys the streak-restore consumable and asks the server to bring the streak
+    /// back. Returns the restored streak length, or `nil` if the user cancelled.
+    func redeemStreakRestore() async throws -> Int?
+    /// Re-applies any streak-restore purchase that was paid for but never
+    /// confirmed (e.g. the app died mid-flow). Idempotent on the server. Returns
+    /// the restored streak length if one was recovered.
+    @discardableResult
+    func recoverPendingStreakRestores() async -> Int?
 }
 
 @MainActor
@@ -39,12 +48,16 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
     }
 
     func loadProducts() async throws {
-        products = try await Product.products(
-            for: PaeoniaSubscriptionProductID.allCases.map(\.rawValue)
-        )
+        let productIDs = PaeoniaSubscriptionProductID.allCases.map(\.rawValue)
+            + PaeoniaConsumableProductID.allCases.map(\.rawValue)
+        products = try await Product.products(for: productIDs)
     }
 
     func product(for productID: PaeoniaSubscriptionProductID) -> Product? {
+        products.first { $0.id == productID.rawValue }
+    }
+
+    func product(for productID: PaeoniaConsumableProductID) -> Product? {
         products.first { $0.id == productID.rawValue }
     }
 
@@ -111,6 +124,76 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         return didConfirmPurchase
     }
 
+    func redeemStreakRestore() async throws -> Int? {
+        guard let product = product(for: .streakRestore) else {
+            throw PaeoniaPurchaseError.productUnavailable
+        }
+
+        let token = try await configuredAppAccountToken()
+        let purchaseResult: Product.PurchaseResult
+
+        do {
+            purchaseResult = try await product.purchase(options: [.appAccountToken(token)])
+        } catch {
+            throw PaeoniaPurchaseError.purchaseFailed
+        }
+
+        switch purchaseResult {
+        case let .success(verification):
+            guard case let .verified(transaction) = verification else {
+                throw PaeoniaPurchaseError.verificationFailed
+            }
+
+            let restoredCount = try await confirmStreakRestore(
+                transaction: transaction,
+                jwsRepresentation: verification.jwsRepresentation
+            )
+
+            // Only consume the purchase once the server has applied it.
+            await transaction.finish()
+
+            return restoredCount
+        case .pending, .userCancelled:
+            return nil
+        @unknown default:
+            return nil
+        }
+    }
+
+    @discardableResult
+    func recoverPendingStreakRestores() async -> Int? {
+        let token = try? await configuredAppAccountToken()
+        var recoveredCount: Int?
+
+        for await result in Transaction.unfinished {
+            guard case let .verified(transaction) = result else {
+                continue
+            }
+
+            guard PaeoniaConsumableProductID(rawValue: transaction.productID) != nil else {
+                continue
+            }
+
+            if let token, let transactionToken = transaction.appAccountToken, transactionToken != token {
+                continue
+            }
+
+            do {
+                recoveredCount = try await confirmStreakRestore(
+                    transaction: transaction,
+                    jwsRepresentation: result.jwsRepresentation
+                )
+                await transaction.finish()
+            } catch {
+                // Leave it unfinished so the next attempt can retry; the server
+                // restore is idempotent, so a replay never restores twice.
+                continue
+            }
+        }
+
+        return recoveredCount
+    }
+
     private func configuredAppAccountToken() async throws -> UUID {
         guard let userID else {
             throw PaeoniaPurchaseError.userNotConfigured
@@ -165,6 +248,48 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         } catch let error as FunctionsError {
             throw purchaseError(fromConfirmationReason: confirmationFailureReason(from: error))
         }
+    }
+
+    private func confirmStreakRestore(
+        transaction: Transaction,
+        jwsRepresentation: String
+    ) async throws -> Int {
+        do {
+            let client = try clientProvider.client()
+            let request = PaeoniaStreakRestoreUploadRequest(
+                jws: jwsRepresentation,
+                transactionId: String(transaction.id),
+                originalTransactionId: String(transaction.originalID),
+                productId: transaction.productID,
+                environment: environmentName(for: transaction)
+            )
+
+            let response: PaeoniaStreakRestoreUploadResponse = try await client.functions.invoke(
+                "apple-redeem-streak-restore",
+                options: FunctionInvokeOptions(body: request)
+            )
+
+            guard response.isConfirmed else {
+                throw streakRestoreError(fromConfirmationReason: response.error)
+            }
+
+            return response.restoredCount ?? 0
+        } catch let error as FunctionsError {
+            throw streakRestoreError(fromConfirmationReason: confirmationFailureReason(from: error))
+        }
+    }
+
+    private func streakRestoreError(fromConfirmationReason reason: String?) -> PaeoniaPurchaseError {
+        if reason == "Apple appAccountToken is not registered"
+            || reason == "Apple transaction belongs to a different user" {
+            return .purchaseLinkedToAnotherAccount
+        }
+
+        if reason == "No streak is available to restore" {
+            return .streakNotRestorable
+        }
+
+        return .serverConfirmationFailed(reason)
     }
 
     private func purchaseError(fromConfirmationReason reason: String?) -> PaeoniaPurchaseError {

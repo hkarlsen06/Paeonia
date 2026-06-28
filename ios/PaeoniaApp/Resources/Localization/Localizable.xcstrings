@@ -5674,6 +5674,114 @@
         }
       },
       "comment" : "Shown when microphone access is denied and a voice answer can't be recorded"
+    },
+    "streakRestore.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get your streak back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få tilbake rekken"
+          }
+        }
+      },
+      "comment" : "Title of the streak-restore offer and the button to open it"
+    },
+    "streakRestore.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your streak slipped, but you can still bring it back. Do it soon to keep going together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekken røk, men du kan fortsatt få den tilbake. Gjør det snart for å holde den i gang sammen."
+          }
+        }
+      },
+      "comment" : "Body on the streak-restore offer explaining what restore does"
+    },
+    "streakRestore.buyButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenopprett rekken"
+          }
+        }
+      },
+      "comment" : "Primary button to buy the streak restore; the price is appended after it"
+    },
+    "streakRestore.notNow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke nå"
+          }
+        }
+      },
+      "comment" : "Dismisses the streak-restore offer without buying"
+    },
+    "streakRestore.brokenAction" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get it back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få den tilbake"
+          }
+        }
+      },
+      "comment" : "Short action on the broken streak chip; doubles as a VoiceOver hint"
+    },
+    "streakRestore.error.notRestorable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That streak can't be brought back anymore."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den rekken kan ikke hentes tilbake lenger."
+          }
+        }
+      },
+      "comment" : "Error shown when a streak can no longer be restored"
     }
   },
   "version" : "1.0"

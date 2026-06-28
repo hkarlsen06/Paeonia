@@ -494,8 +494,11 @@ private final class PaywallStoreKitServiceSpy: PaeoniaStoreKitServicing {
     func configure(userID: String) {}
     func loadProducts() async throws {}
     func product(for productID: PaeoniaSubscriptionProductID) -> Product? { nil }
+    func product(for productID: PaeoniaConsumableProductID) -> Product? { nil }
     func purchase(_ product: Product) async throws -> Bool { false }
     func restorePurchases() async throws -> Bool { false }
+    func redeemStreakRestore() async throws -> Int? { nil }
+    func recoverPendingStreakRestores() async -> Int? { nil }
 }
 
 @MainActor
@@ -531,8 +534,11 @@ private final class BlockingPaywallStoreKitService: PaeoniaStoreKitServicing {
     }
 
     func product(for productID: PaeoniaSubscriptionProductID) -> Product? { nil }
+    func product(for productID: PaeoniaConsumableProductID) -> Product? { nil }
     func purchase(_ product: Product) async throws -> Bool { false }
     func restorePurchases() async throws -> Bool { false }
+    func redeemStreakRestore() async throws -> Int? { nil }
+    func recoverPendingStreakRestores() async -> Int? { nil }
 }
 
 @MainActor

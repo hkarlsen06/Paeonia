@@ -27,6 +27,24 @@ nonisolated struct DailySubmitAnswerOperationPayload: Codable, Sendable, Equatab
         let coupleID: UUID
         let reserveOperation: SyncClientOperation
         let finalizeOperation: SyncClientOperation
+        /// Fallback copy of the staged bytes. The staged file is still the
+        /// normal upload source, but this keeps media answers recoverable if
+        /// the file is unavailable after a relaunch.
+        let stagedData: Data?
+
+        init(
+            draft: DailyAnswerMediaDraft,
+            coupleID: UUID,
+            reserveOperation: SyncClientOperation,
+            finalizeOperation: SyncClientOperation,
+            stagedData: Data? = nil
+        ) {
+            self.draft = draft
+            self.coupleID = coupleID
+            self.reserveOperation = reserveOperation
+            self.finalizeOperation = finalizeOperation
+            self.stagedData = stagedData
+        }
     }
 }
 
@@ -76,14 +94,14 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
     }
 
     /// Uploads the staged bytes for a media answer, then submits the resulting asset.
-    /// Fails terminally — rather than retrying forever — when the staged file is gone
-    /// (e.g. cleared on sign-out), since there's nothing left to send.
+    /// If the staged file is unavailable after relaunch, falls back to the
+    /// copy embedded in the queued operation and restages it for later retries.
     private func sendMedia(
         _ media: DailySubmitAnswerOperationPayload.Media,
         payload: DailySubmitAnswerOperationPayload,
         operation: PendingSyncOperationSnapshot
     ) async throws -> PendingSyncOperationSendResult {
-        guard let bytes = mediaDraftStore.stagedMediaData(instanceID: payload.instanceID) else {
+        guard let bytes = restorableMediaData(media, instanceID: payload.instanceID) else {
             return .terminalFailure("Staged media missing")
         }
 
@@ -110,6 +128,22 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
         // The answer is sent; the staged copy is no longer needed.
         mediaDraftStore.removeStagedMedia(instanceID: payload.instanceID)
         return .succeeded
+    }
+
+    private func restorableMediaData(
+        _ media: DailySubmitAnswerOperationPayload.Media,
+        instanceID: UUID
+    ) -> Data? {
+        if let stagedData = mediaDraftStore.stagedMediaData(instanceID: instanceID) {
+            return stagedData
+        }
+
+        guard let stagedData = media.stagedData else {
+            return nil
+        }
+
+        try? mediaDraftStore.writeStagedMedia(stagedData, instanceID: instanceID)
+        return stagedData
     }
 
     private func submit(

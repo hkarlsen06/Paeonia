@@ -35,6 +35,30 @@ private extension View {
     }
 }
 
+/// A vertical wipe that uncovers (and re-covers) its content from the centre out.
+///
+/// During the hero morph the step bar glides up and the primary button glides down;
+/// wiping the region open from the centre — its top edge travelling toward the bar,
+/// its bottom edge toward the button — makes the two elements read as *parting to
+/// reveal* the content between them, rather than sliding over a body that was already
+/// there. On close it runs in reverse, drawing the content shut as the elements glide
+/// home. `progress` is the open fraction (0 hidden, 1 shown). Under Reduce Motion the
+/// wipe is dropped for a plain fade, since the elements no longer travel.
+private struct VerticalReveal: ViewModifier {
+    let progress: Double
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content.mask(alignment: .center) {
+                Rectangle().scaleEffect(x: 1, y: CGFloat(progress), anchor: .center)
+            }
+        } else {
+            content.opacity(progress)
+        }
+    }
+}
+
 /// The focused, full-screen answering experience for today's daily challenge.
 ///
 /// It expands out of the Us-tab prompt card (and the Questions overview) with a
@@ -46,19 +70,46 @@ private extension View {
 struct DailyChallengeAnswerFlow: View {
     let viewModel: DailyChallengeViewModel
     var namespace: Namespace.ID?
+    /// Whether the flow is open. Driven by the parent: it flips to `false` the moment
+    /// a close begins (while the flow is still mounted) so the content can collapse
+    /// its reveal in step with the elements gliding back to the card.
+    var isExpanded = true
     var onClose: () -> Void = {}
+    /// Opens the streak-restore offer from the completion screen when a lost
+    /// streak can still be bought back.
+    var onRestore: () -> Void = {}
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var index = 0
     @State private var didSetInitialIndex = false
     @State private var didCelebrate = false
-    /// Drives the entrance of everything that isn't a morphing hero element — the
-    /// full-screen surface and the supporting content fade up while the eyebrow,
-    /// step bar, and primary button glide in crisply from the card. Starts hidden so
-    /// the first frame matches the card, then animates up on appear.
-    @State private var chromeVisible = false
+    /// How far the surface and supporting content are uncovered, 0 (hidden behind a
+    /// collapsed mask) to 1 (fully revealed). The gliding step bar and button appear
+    /// to wipe this open as they travel into place, and wipe it shut on close.
+    @State private var revealProgress: Double = 0
+    /// Opacity of the morphing hero elements (eyebrow, step bar, primary button).
+    /// They stay fully opaque while gliding in — only their position and size move —
+    /// and fade out on close, where they can no longer glide (the card reclaims them).
+    /// Initialised from `isExpanded` so they are solid on the very first frame and
+    /// never flicker at the start of the open glide.
+    @State private var heroOpacity: Double
     @FocusState private var isComposerFocused: Bool
+
+    init(
+        viewModel: DailyChallengeViewModel,
+        namespace: Namespace.ID? = nil,
+        isExpanded: Bool = true,
+        onClose: @escaping () -> Void = {},
+        onRestore: @escaping () -> Void = {}
+    ) {
+        self.viewModel = viewModel
+        self.namespace = namespace
+        self.isExpanded = isExpanded
+        self.onClose = onClose
+        self.onRestore = onRestore
+        _heroOpacity = State(initialValue: isExpanded ? 1 : 0)
+    }
 
     private enum Phase {
         case loading
@@ -96,12 +147,17 @@ struct DailyChallengeAnswerFlow: View {
         ZStack {
             Color.paeoniaBackgroundPrimary
                 .ignoresSafeArea()
-                .opacity(chromeOpacity)
+                .opacity(revealProgress)
 
             switch phase {
             case .complete:
-                DailyChallengeCompletionView(streak: currentStreak, onDone: dismiss)
-                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                DailyChallengeCompletionView(
+                    streak: currentStreak,
+                    restorableCount: viewModel.streak.isRestorable ? viewModel.streak.restorableCount : nil,
+                    onRestore: onRestore,
+                    onDone: dismiss
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
             case .loading:
                 loadingState
             case .unavailable:
@@ -114,7 +170,12 @@ struct DailyChallengeAnswerFlow: View {
         .animation(PaeoniaMotion.cardReveal, value: didCelebrate)
         .onAppear {
             setInitialIndexIfNeeded()
-            revealChrome()
+            openReveal()
+        }
+        .onChange(of: isExpanded) { _, expanded in
+            // Reopening can arrive while a close is still collapsing (the flow stays
+            // mounted until the spring settles), so handle both directions here.
+            if expanded { openReveal() } else { closeReveal() }
         }
         .onChange(of: questions.count) { _, newCount in
             setInitialIndexIfNeeded()
@@ -151,6 +212,7 @@ struct DailyChallengeAnswerFlow: View {
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.space8)
+        .opacity(heroOpacity)
     }
 
     private var answeringState: some View {
@@ -158,18 +220,20 @@ struct DailyChallengeAnswerFlow: View {
             header
 
             if let question = currentQuestion {
+                // The body is what the bar and button uncover as they glide apart: it
+                // wipes open from the centre in step with the morph, instead of
+                // sitting there fully visible while they slide over it.
                 DailyChallengeAnswerStep(
                     question: question,
                     viewModel: viewModel,
-                    isFocused: $isComposerFocused
+                    isFocused: $isComposerFocused,
+                    revealProgress: revealProgress,
+                    revealEnabled: !reduceMotion
                 )
                 .id(question.id)
                 // Neutral fade: the user can move forward (Send) or jump to any
                 // step in the bar, so a directional slide would read wrong one way.
                 .transition(.opacity)
-                // Question body isn't a hero element, so it fades up with the surface
-                // while the eyebrow/step bar glide in over it.
-                .opacity(chromeOpacity)
             }
 
             actionBar
@@ -188,7 +252,8 @@ struct DailyChallengeAnswerFlow: View {
             isSkipBusy: isShufflingCurrent,
             isSkipDisabled: isShufflingCurrent || hasDraftForCurrent,
             morphNamespace: namespace,
-            chromeOpacity: chromeOpacity,
+            chromeOpacity: revealProgress,
+            primaryButtonOpacity: heroOpacity,
             onPrimary: handlePrimary,
             onClose: handleClose,
             onSkip: { Task { await skipCurrent() } }
@@ -202,7 +267,7 @@ struct DailyChallengeAnswerFlow: View {
             ProgressView()
                 .controlSize(.large)
                 .tint(.paeoniaAccentPrimary)
-                .opacity(chromeOpacity)
+                .opacity(revealProgress)
             Spacer()
         }
     }
@@ -217,7 +282,7 @@ struct DailyChallengeAnswerFlow: View {
                 systemImage: "sparkles"
             )
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .opacity(chromeOpacity)
+            .opacity(revealProgress)
             Spacer()
             Button(action: onClose) {
                 Text(.dailyChallengeFlowDoneButton)
@@ -225,7 +290,7 @@ struct DailyChallengeAnswerFlow: View {
             .buttonStyle(PaeoniaSecondaryButtonStyle())
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.bottom, PaeoniaSpacing.space16)
-            .opacity(chromeOpacity)
+            .opacity(revealProgress)
         }
     }
 
@@ -470,18 +535,28 @@ struct DailyChallengeAnswerFlow: View {
         }
     }
 
-    /// Opacity for the non-hero surface and supporting content. The hero elements
-    /// (eyebrow, step bar, primary button) ignore this and stay fully opaque so they
-    /// glide in crisply via `matchedGeometryEffect` rather than cross-fading.
-    private var chromeOpacity: Double { chromeVisible ? 1 : 0 }
+    /// Wipes the surface and content open once the flow is on screen, in step with
+    /// the elements gliding in from the card. Under Reduce Motion there is no glide,
+    /// so the parent's plain cross-fade handles the entrance and this just snaps the
+    /// content visible.
+    private func openReveal() {
+        guard revealProgress < 1 else { return }
+        heroOpacity = 1
+        if reduceMotion {
+            revealProgress = 1
+        } else {
+            withAnimation(PaeoniaMotion.heroMorph) { revealProgress = 1 }
+        }
+    }
 
-    /// Fades the surface and supporting content up once the flow is on screen. Under
-    /// Reduce Motion the outer cross-fade already handles the entrance, so this just
-    /// snaps to visible without a second, competing fade.
-    private func revealChrome() {
-        guard !chromeVisible else { return }
-        withAnimation(reduceMotion ? nil : PaeoniaMotion.heroMorphChrome) {
-            chromeVisible = true
+    /// Wipes the surface and content shut as the elements glide back to the card.
+    /// Only runs under motion; with Reduce Motion the parent cross-fades the whole
+    /// flow out instead.
+    private func closeReveal() {
+        guard !reduceMotion else { return }
+        withAnimation(PaeoniaMotion.heroMorph) {
+            revealProgress = 0
+            heroOpacity = 0
         }
     }
 
@@ -509,6 +584,12 @@ private struct DailyChallengeAnswerStep: View {
     let question: DailyChallengeQuestion
     let viewModel: DailyChallengeViewModel
     var isFocused: FocusState<Bool>.Binding
+    /// How far the step bar / button have uncovered this content (0–1), and whether
+    /// the wipe is used at all (off under Reduce Motion). The wipe runs across the
+    /// whole region between the bar and button and opens from the centre, so both
+    /// gliding elements read as parting to reveal the body between them.
+    var revealProgress: Double = 1
+    var revealEnabled = false
 
     var body: some View {
         // Text answers sit low so the field lands right under the question and just
@@ -524,6 +605,9 @@ private struct DailyChallengeAnswerStep: View {
             answerSection
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: pinsToBottom ? .bottom : .top)
+        // Wipe the full bar-to-button gap (not just the text block) so the band's top
+        // edge travels with the bar and its bottom edge with the button.
+        .modifier(VerticalReveal(progress: revealProgress, enabled: revealEnabled))
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, pinsToBottom ? 0 : PaeoniaSpacing.space24)
         .padding(.bottom, PaeoniaSpacing.space8)
@@ -729,10 +813,12 @@ private struct DailyChallengeAnswerActionBar: View {
     let isSkipBusy: Bool
     let isSkipDisabled: Bool
     var morphNamespace: Namespace.ID?
-    /// Fade for everything in the bar except the primary button during the open
-    /// morph — the Close/Skip row and the bar's own backdrop. The primary button is
-    /// a hero element and stays fully opaque so it glides in crisply from the card.
+    /// Reveal for everything in the bar except the primary button — the Close/Skip
+    /// row and the bar's own backdrop, which uncover with the rest of the surface.
     var chromeOpacity: Double = 1
+    /// Opacity of the primary button, a hero element: fully opaque while it glides in
+    /// from the card, fading only on close.
+    var primaryButtonOpacity: Double = 1
     let onPrimary: () -> Void
     let onClose: () -> Void
     let onSkip: () -> Void
@@ -740,6 +826,7 @@ private struct DailyChallengeAnswerActionBar: View {
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             primaryButton
+                .opacity(primaryButtonOpacity)
             secondaryRow
                 .opacity(chromeOpacity)
         }
@@ -804,20 +891,27 @@ private struct DailyChallengeAnswerActionBar: View {
 
 private struct DailyChallengeCompletionView: View {
     let streak: Int
+    /// The lost streak length when a restore is on offer; `nil` for a normal,
+    /// celebratory finish. When set, the flame reads "slipped" and a "get it back"
+    /// action is offered above Done.
+    var restorableCount: Int?
+    var onRestore: () -> Void = {}
     let onDone: () -> Void
+
+    private var isRestorable: Bool { restorableCount != nil }
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space32) {
             Spacer()
 
-            PaeoniaStreakFlame(count: streak)
+            PaeoniaStreakFlame(count: restorableCount ?? streak, isBroken: isRestorable)
 
             VStack(spacing: PaeoniaSpacing.space8) {
                 Text(.dailyChallengeFlowAllDoneTitle)
                     .font(PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(.dailyChallengeFlowAllDoneMessage)
+                Text(isRestorable ? .streakRestoreMessage : .dailyChallengeFlowAllDoneMessage)
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -826,14 +920,34 @@ private struct DailyChallengeCompletionView: View {
 
             Spacer()
 
+            actions
+        }
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.vertical, PaeoniaSpacing.space32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private var actions: some View {
+        if isRestorable {
+            VStack(spacing: PaeoniaSpacing.space12) {
+                Button(action: onRestore) {
+                    Text(.streakRestoreTitle)
+                }
+                .buttonStyle(PaeoniaPrimaryButtonStyle())
+
+                Button(action: onDone) {
+                    Text(.dailyChallengeFlowDoneButton)
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+            }
+        } else {
             Button(action: onDone) {
                 Text(.dailyChallengeFlowDoneButton)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
         }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.vertical, PaeoniaSpacing.space32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -843,7 +957,13 @@ private struct DailyChallengeCompletionView: View {
 }
 
 #Preview("Completion") {
-    DailyChallengeCompletionView(streak: 7, onDone: {})
+    DailyChallengeCompletionView(streak: 7, restorableCount: nil, onDone: {})
+        .background(.paeoniaBackgroundPrimary)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Completion · streak slipped") {
+    DailyChallengeCompletionView(streak: 1, restorableCount: 30, onRestore: {}, onDone: {})
         .background(.paeoniaBackgroundPrimary)
         .preferredColorScheme(.dark)
 }

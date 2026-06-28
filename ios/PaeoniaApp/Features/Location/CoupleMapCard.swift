@@ -89,7 +89,7 @@ struct CoupleMapCard: View {
     private func mapTile<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         content()
             .frame(maxWidth: .infinity)
-            .aspectRatio(1, contentMode: .fit)
+            .aspectRatio(2, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
@@ -188,11 +188,16 @@ private struct CoupleMapSnapshot: View {
     let onLongPress: () -> Void
 
     /// How much bigger than the pins' own bounding box the framed area is, so the
-    /// avatars (and their timestamps) sit well inside the card edges.
-    private static let paddingFactor = 2.4
-    /// How far south to nudge the camera (as a share of the framed span) so both
-    /// pins ride above the bottom distance scrim.
- private static let southwardShiftFraction = 0.09
+    /// avatars (and their timestamps) sit well inside the card edges. Tuned for the
+    /// wide tile: tighter framing pushes the avatars closer to the edges and fills
+    /// the side space a square card didn't have.
+    private static let paddingFactor = 1.8
+    /// How far south to nudge the camera (as a share of the framed span), lifting
+    /// both pins up just enough to balance the asymmetry between them: the top pin
+    /// only needs room for its avatar, while the bottom pin also needs room *below*
+    /// it for its timestamp badge. A small lift leaves the bottom badge clear of the
+    /// edge without leaving a big gap beneath it.
+ private static let southwardShiftFraction = 0.05
  private static let maximumSnapshotLatitude: CLLocationDegrees = 85
  private static let maximumLongitudeDelta: CLLocationDegrees = 359
  private static let minimumCoordinateDelta: CLLocationDegrees = 0.01
@@ -396,10 +401,11 @@ private struct CoupleMapSnapshot: View {
         )
     }
 
-    /// A square map rect that contains both pins with generous padding so the
-    /// avatars stay clear of the edges, nudged south so they ride above the bottom
-    /// distance scrim. Working in projected map points (rather than lat/lon degrees)
-    /// keeps the framing square, so MapKit doesn't add its own aspect padding.
+    /// A square map rect that contains both pins, padded so the avatars sit near the
+    /// card edges, and nudged slightly south so the bottom pin's timestamp badge
+    /// stays clear of the bottom edge. Working in projected map points (rather than
+    /// lat/lon degrees) keeps the framing square, so MapKit doesn't add its own
+    /// aspect padding.
     private func fittingRegion() -> MKCoordinateRegion {
         let currentPoint = MKMapPoint(currentCoordinate)
         let partnerPoint = MKMapPoint(partnerCoordinate)
@@ -414,8 +420,8 @@ private struct CoupleMapSnapshot: View {
         let pinsSpan = max(abs(currentPoint.x - partnerPoint.x), abs(currentPoint.y - partnerPoint.y))
         let side = max(pinsSpan, minimumSpan) * Self.paddingFactor
 
-        // Move the framed center south of the pins (larger y), so both avatars ride
-        // up toward the top and clear the bottom distance scrim.
+        // Move the framed center slightly south of the pins (larger y) so both ride
+        // up just enough that the bottom pin's timestamp badge clears the edge.
         let shiftedCenterY = centerY + side * Self.southwardShiftFraction
 
         let rect = MKMapRect(
@@ -755,16 +761,13 @@ private struct KissLayer: View {
 
 #if DEBUG
 #Preview {
-    HStack(spacing: PaeoniaSpacing.space16) {
-        CoupleMapCard(
-            currentName: "Hjalmar",
-            currentProfilePhotoAssetID: nil,
-            partnerName: "Oda",
-            partnerProfilePhotoAssetID: nil,
-            state: .partnerUnknown(.notSharing)
-        )
-        Color.clear
-    }
+    CoupleMapCard(
+        currentName: "Hjalmar",
+        currentProfilePhotoAssetID: nil,
+        partnerName: "Oda",
+        partnerProfilePhotoAssetID: nil,
+        state: .partnerUnknown(.notSharing)
+    )
     .padding(PaeoniaSpacing.screenHorizontalPadding)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .background(.paeoniaBackgroundPrimary)

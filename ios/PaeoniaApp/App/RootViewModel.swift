@@ -90,6 +90,7 @@ final class RootViewModel {
     private let syncCoordinator: any SyncCoordinating
     private let authService: any AuthServicing
     private let accessRouteService: (any AccessRouteServicing)?
+    private let accessSnapshotStore: (any AccessSyncSnapshotPersisting)?
     private let inviteStore: any PairingInviteStoring
     private let pairingCelebrationStore: any PairingCelebrationStoring
 
@@ -152,14 +153,24 @@ final class RootViewModel {
         syncCoordinator: (any SyncCoordinating)? = nil,
         authService: (any AuthServicing)? = nil,
         accessRouteService: (any AccessRouteServicing)? = nil,
+        accessSnapshotStore: (any AccessSyncSnapshotPersisting)? = nil,
         inviteStore: (any PairingInviteStoring)? = nil,
         pairingCelebrationStore: (any PairingCelebrationStoring)? = nil
     ) {
         self.syncCoordinator = syncCoordinator ?? SyncCoordinator()
         self.authService = authService ?? AuthServiceFactory.makeDefault()
         self.accessRouteService = accessRouteService ?? (try? SupabaseAccessRouteService.live())
+        self.accessSnapshotStore = accessSnapshotStore ?? Self.makeDefaultAccessSnapshotStore()
         self.inviteStore = inviteStore ?? UserDefaultsPairingInviteStore.shared
         self.pairingCelebrationStore = pairingCelebrationStore ?? UserDefaultsPairingCelebrationStore.shared
+    }
+
+    private static func makeDefaultAccessSnapshotStore() -> (any AccessSyncSnapshotPersisting)? {
+        guard let localStore = try? PaeoniaLocalStore() else {
+            return nil
+        }
+
+        return SwiftDataAccessSyncSnapshotRepository(container: localStore.container)
     }
 
     func start() async {
@@ -332,7 +343,8 @@ final class RootViewModel {
             return
         }
 
-        await syncCoordinator.requestSync(reason: .foreground)
+        _ = await syncCoordinator.runOnce(reason: .foreground)
+        await applySyncedAccessSnapshotIfAvailable()
     }
 
     func syncAfterLocalLocationChange() async {
@@ -355,6 +367,13 @@ final class RootViewModel {
     /// the view (see `RootView`).
     func refreshFromHomePull() async {
         await startSyncIfNeeded()
+
+        guard hasStartedSync, currentSession != nil else {
+            return
+        }
+
+        _ = await syncCoordinator.runOnce(reason: .manualRefresh)
+        await applySyncedAccessSnapshotIfAvailable()
     }
 
     private func refreshAuthRoute() async {
@@ -438,9 +457,13 @@ final class RootViewModel {
         route = .resolvingAccess(session, previous: previousAccessResolution)
 
         guard let accessRouteService else {
+            let fallbackResolution = await fallbackAccessResolution(
+                for: session,
+                previous: previousAccessResolution
+            )
             finishAccessResolution(generation) {
                 applyAccessResolution(
-                    fallbackAccessResolution(for: session),
+                    fallbackResolution,
                     for: session,
                     previous: previousAccessResolution
                 )
@@ -455,9 +478,13 @@ final class RootViewModel {
                 applyAccessResolution(accessResolution, for: session, previous: previousAccessResolution)
             }
         } catch {
+            let fallbackResolution = await fallbackAccessResolution(
+                for: session,
+                previous: previousAccessResolution
+            )
             finishAccessResolution(generation) {
                 applyAccessResolution(
-                    previousAccessResolution ?? fallbackAccessResolution(for: session),
+                    fallbackResolution,
                     for: session,
                     previous: previousAccessResolution
                 )
@@ -505,8 +532,66 @@ final class RootViewModel {
         }
     }
 
-    private func fallbackAccessResolution(for session: AuthSession) -> AccessRouteResolution {
+    private func applySyncedAccessSnapshotIfAvailable() async {
+        guard let session = currentSession else {
+            return
+        }
+
         let hasPendingInvite = inviteStore.loadInvite(for: session.id) != nil
+        guard let resolution = await syncedAccessResolution(
+            for: session,
+            hasPendingInvite: hasPendingInvite
+        ) else {
+            return
+        }
+
+        applyAccessResolution(resolution, for: session, previous: route.accessResolution)
+        await startSyncIfNeeded()
+    }
+
+    private func syncedAccessResolution(
+        for session: AuthSession,
+        hasPendingInvite: Bool
+    ) async -> AccessRouteResolution? {
+        guard let userID = UUID(uuidString: session.id),
+              let accessSnapshotStore
+        else {
+            return nil
+        }
+
+        guard let snapshot = try? await accessSnapshotStore.load(ownerUserID: userID) else {
+            return nil
+        }
+
+        let routeSnapshot = AccessRouteSnapshot(
+            userEntitlement: snapshot.userEntitlement,
+            coupleEntitlement: snapshot.coupleEntitlement,
+            relationshipState: snapshot.relationshipState,
+            hasPendingInvite: hasPendingInvite
+        )
+
+        return AccessRouteResolution(
+            route: AccessRouteResolver().route(for: routeSnapshot),
+            snapshot: routeSnapshot
+        )
+    }
+
+    private func fallbackAccessResolution(
+        for session: AuthSession,
+        previous: AccessRouteResolution?
+    ) async -> AccessRouteResolution {
+        let hasPendingInvite = inviteStore.loadInvite(for: session.id) != nil
+
+        if let syncedResolution = await syncedAccessResolution(
+            for: session,
+            hasPendingInvite: hasPendingInvite
+        ) {
+            return syncedResolution
+        }
+
+        if let previous {
+            return previous
+        }
 
         return AccessRouteResolution(
             route: hasPendingInvite ? .invitePending : .limitedAuthenticated,

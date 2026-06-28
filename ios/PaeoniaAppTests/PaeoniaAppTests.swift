@@ -83,9 +83,74 @@ struct PaeoniaAppTests {
         )
         await viewModel.start()
 
-        await viewModel.syncAfterLocalLocationChange()
+    await viewModel.syncAfterLocalLocationChange()
 
-        #expect(await syncCoordinator.runOnceReasons == [.localChange])
+    #expect(await syncCoordinator.runOnceReasons == [.localChange])
+    }
+
+    @MainActor
+    @Test func homePullRefreshRunsManualSync() async {
+        let syncCoordinator = TestSyncCoordinator()
+        let viewModel = RootViewModel(
+            syncCoordinator: syncCoordinator,
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: StaticAccessRouteService(route: .paired),
+            accessSnapshotStore: InMemoryAccessSyncSnapshotRepository()
+        )
+        await viewModel.start()
+
+        await viewModel.refreshFromHomePull()
+
+        #expect(await syncCoordinator.runOnceReasons == [.manualRefresh])
+    }
+
+    @MainActor
+    @Test func cachedAccessSnapshotCanRecoverAccessRouteAfterSync() async throws {
+        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let coupleID = try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333"))
+        let syncCoordinator = TestSyncCoordinator()
+        let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
+        let viewModel = RootViewModel(
+            syncCoordinator: syncCoordinator,
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated),
+            accessSnapshotStore: accessSnapshotStore
+        )
+        await viewModel.start()
+        #expect(viewModel.state == .limitedAuthenticated)
+
+        try await accessSnapshotStore.save(
+            .testPaired(ownerUserID: ownerUserID, coupleID: coupleID, partnerDisplayName: "Riley")
+        )
+
+        await viewModel.refreshAfterForegroundActivation()
+
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.currentPartnerDisplayName == "Riley")
+        #expect(await syncCoordinator.runOnceReasons == [.foreground])
+        let configuredSessions = await syncCoordinator.configuredSessions
+        let latestSession = configuredSessions.last ?? nil
+        #expect(latestSession?.activeCoupleID == coupleID)
+    }
+
+    @MainActor
+    @Test func cachedAccessSnapshotIsFallbackWhenLiveAccessFails() async throws {
+        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
+        try await accessSnapshotStore.save(
+            .testPaired(ownerUserID: ownerUserID, partnerDisplayName: "Riley")
+        )
+        let viewModel = RootViewModel(
+            syncCoordinator: TestSyncCoordinator(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: FailingAccessRouteService(),
+            accessSnapshotStore: accessSnapshotStore
+        )
+
+        await viewModel.start()
+
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.currentPartnerDisplayName == "Riley")
     }
 
     @MainActor
@@ -677,6 +742,16 @@ private actor StaticAccessRouteService: AccessRouteServicing {
     }
 }
 
+private enum AccessRouteServiceTestError: Error {
+    case unavailable
+}
+
+private actor FailingAccessRouteService: AccessRouteServicing {
+    func resolveAccess(hasPendingInvite _: Bool) async throws -> AccessRouteResolution {
+        throw AccessRouteServiceTestError.unavailable
+    }
+}
+
 private actor BlockingAccessRouteService: AccessRouteServicing {
     private let routes: [AccessRoute]
     private let blockedCallIndex: Int
@@ -724,6 +799,25 @@ private actor BlockingAccessRouteService: AccessRouteServicing {
 
         let routeIndex = min(callIndex - 1, routes.count - 1)
         return .test(route: routes[routeIndex], pairID: pairID)
+    }
+}
+
+private extension AccessSyncSnapshot {
+    static func testPaired(
+        ownerUserID: UUID,
+        coupleID: UUID = UUID(),
+        partnerDisplayName: String = "Partner"
+    ) -> AccessSyncSnapshot {
+        AccessSyncSnapshot(
+            ownerUserID: ownerUserID,
+            userEntitlement: .testEntitled(userID: ownerUserID),
+            coupleEntitlement: .testEntitled(coupleID: coupleID, coveringUserID: ownerUserID),
+            relationshipState: .test(
+                coupleID: coupleID,
+                partnerDisplayName: partnerDisplayName
+            ),
+            refreshedAt: Date(timeIntervalSince1970: 2_000_000_000)
+        )
     }
 }
 
@@ -777,14 +871,44 @@ private extension AccessRouteResolution {
     }
 }
 
+private extension SupabaseUserEntitlement {
+    static func testEntitled(userID: UUID) -> SupabaseUserEntitlement {
+        SupabaseUserEntitlement(
+            userID: userID,
+            isEntitled: true,
+            source: "storekit",
+            status: "active",
+            productID: UUID(),
+            currentPeriodEnd: Date(timeIntervalSince1970: 2_000_000_000),
+            updatedAt: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+    }
+}
+
+private extension SupabaseCoupleEntitlement {
+    static func testEntitled(coupleID: UUID, coveringUserID: UUID) -> SupabaseCoupleEntitlement {
+        SupabaseCoupleEntitlement(
+            coupleID: coupleID,
+            isEntitled: true,
+            coveringUserID: coveringUserID,
+            source: "storekit",
+            status: "active",
+            productID: UUID(),
+            currentPeriodEnd: Date(timeIntervalSince1970: 2_000_000_000),
+            updatedAt: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+    }
+}
+
 private extension SupabaseRelationshipState {
     static func test(
+        coupleID: UUID = UUID(),
         partnerDisplayName: String,
         partnerProfilePhotoAssetID: UUID? = nil,
         pairID: UUID? = nil
     ) -> SupabaseRelationshipState {
         SupabaseRelationshipState(
-            coupleID: UUID(),
+            coupleID: coupleID,
             pairID: pairID ?? UUID(),
             relationshipStatus: .active,
             memberStatus: .active,

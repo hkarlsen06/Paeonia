@@ -1,135 +1,19 @@
 import Foundation
 
-nonisolated protocol SyncCoordinating: Actor {
-    func configure(session: SyncSession?)
-    func start()
-    func requestSync(reason: SyncRequestReason)
-    func runOnce(reason: SyncRequestReason) async -> SyncRunResult
-    func stop()
-    func resetForUserChange()
-}
-
-nonisolated protocol SyncStream: Sendable {
-    var streamKey: SyncStreamKey { get }
-
-    func scope(for session: SyncSession) -> SyncStreamScope?
-    func pull(context: SyncContext) async throws -> SyncCursor?
-    func push(context: SyncContext) async throws
-}
-
-nonisolated struct SyncSession: Equatable, Sendable {
-    let userID: UUID
-    let activeCoupleID: UUID?
-
-    init(userID: UUID, activeCoupleID: UUID? = nil) {
-        self.userID = userID
-        self.activeCoupleID = activeCoupleID
-    }
-
-    init?(authSession: AuthSession, activeCoupleID: UUID? = nil) {
-        guard let userID = UUID(uuidString: authSession.id) else {
-            return nil
-        }
-
-        self.init(userID: userID, activeCoupleID: activeCoupleID)
-    }
-}
-
-nonisolated struct SyncContext: Sendable {
-    let session: SyncSession
-    let reason: SyncRequestReason
-    let startedAt: Date
-    let streamCursor: SyncCursor
-    let stateStore: any SyncStatePersisting
-    let pendingOperationStore: any PendingSyncOperationPersisting
-
-    init(
-        session: SyncSession,
-        reason: SyncRequestReason,
-        startedAt: Date = Date(),
-        streamCursor: SyncCursor = SyncCursor(),
-        stateStore: any SyncStatePersisting,
-        pendingOperationStore: any PendingSyncOperationPersisting
-    ) {
-        self.session = session
-        self.reason = reason
-        self.startedAt = startedAt
-        self.streamCursor = streamCursor
-        self.stateStore = stateStore
-        self.pendingOperationStore = pendingOperationStore
-    }
-}
-
-nonisolated enum SyncRunStatus: Equatable, Sendable {
-    case succeeded
-    case failed
-    case coalesced
-    case skippedNoSession
-    case skippedInterval
-    case cancelled
-    case timedOut
-}
-
-nonisolated struct SyncRunResult: Equatable, Sendable {
-    let status: SyncRunStatus
-    let attemptedStreamCount: Int
-    let completedStreamCount: Int
-    let failedStreamKey: SyncStreamKey?
-    let errorDescription: String?
-
-    static func coalesced() -> SyncRunResult {
-        SyncRunResult(
-            status: .coalesced,
-            attemptedStreamCount: 0,
-            completedStreamCount: 0,
-            failedStreamKey: nil,
-            errorDescription: nil
-        )
-    }
-
-    static func skippedNoSession() -> SyncRunResult {
-        SyncRunResult(
-            status: .skippedNoSession,
-            attemptedStreamCount: 0,
-            completedStreamCount: 0,
-            failedStreamKey: nil,
-            errorDescription: nil
-        )
-    }
-
-    static func skippedInterval() -> SyncRunResult {
-        SyncRunResult(
-            status: .skippedInterval,
-            attemptedStreamCount: 0,
-            completedStreamCount: 0,
-            failedStreamKey: nil,
-            errorDescription: nil
-        )
-    }
-
-    static func timedOut() -> SyncRunResult {
-        SyncRunResult(
-            status: .timedOut,
-            attemptedStreamCount: 0,
-            completedStreamCount: 0,
-            failedStreamKey: nil,
-            errorDescription: "Sync timed out"
-        )
-    }
-}
-
 actor SyncCoordinator: SyncCoordinating {
     private let streams: [any SyncStream]
     private let stateStore: any SyncStatePersisting
     private let pendingOperationStore: any PendingSyncOperationPersisting
     private let minimumForegroundSyncInterval: TimeInterval
     private let syncTimeoutNanoseconds: UInt64
+    private let failedRunRetryDelay: TimeInterval
 
     private var session: SyncSession?
     private var hasStarted = false
     private var isSyncing = false
     private var needsFollowUpSync = false
     private var scheduledTask: Task<Void, Never>?
+    private var retryTask: Task<Void, Never>?
     private var scheduleGeneration: UInt64 = 0
     private var lastForegroundSyncAt: Date?
 
@@ -143,7 +27,8 @@ actor SyncCoordinator: SyncCoordinating {
         ownLocationStore: (any OwnLocationSnapshotPersisting)? = nil,
         pendingOperationHandlers: [any PendingSyncOperationHandling] = [],
         minimumForegroundSyncInterval: TimeInterval = 60,
-        syncTimeoutNanoseconds: UInt64 = 30_000_000_000
+        syncTimeoutNanoseconds: UInt64 = 30_000_000_000,
+        failedRunRetryDelay: TimeInterval = 60
     ) {
         let needsDefaultStreamStores = streams.isEmpty
         && (
@@ -155,7 +40,7 @@ actor SyncCoordinator: SyncCoordinating {
         let needsDefaultStores = stateStore == nil
             || pendingOperationStore == nil
             || needsDefaultStreamStores
-        let fallbackStores = needsDefaultStores ? Self.makeDefaultStores() : nil
+        let fallbackStores = needsDefaultStores ? SyncCoordinatorDefaults.makeStores() : nil
         if streams.isEmpty {
             guard let resolvedAccessSnapshotStore = accessSnapshotStore ?? fallbackStores?.accessSnapshotStore,
                   let resolvedRelationshipEventStore = relationshipEventStore ?? fallbackStores?.relationshipEventStore,
@@ -164,7 +49,7 @@ actor SyncCoordinator: SyncCoordinating {
                 preconditionFailure("Default sync streams require persistent sync stores")
             }
 
-            self.streams = Self.makeDefaultStreams(
+            self.streams = SyncCoordinatorDefaults.makeStreams(
                 accessSnapshotStore: resolvedAccessSnapshotStore,
                 relationshipEventStore: resolvedRelationshipEventStore,
                 locationVisibilityStore: resolvedLocationVisibilityStore,
@@ -184,6 +69,7 @@ actor SyncCoordinator: SyncCoordinating {
         self.pendingOperationStore = resolvedPendingOperationStore
         self.minimumForegroundSyncInterval = minimumForegroundSyncInterval
         self.syncTimeoutNanoseconds = syncTimeoutNanoseconds
+        self.failedRunRetryDelay = failedRunRetryDelay
     }
 
     func configure(session: SyncSession?) {
@@ -194,6 +80,8 @@ actor SyncCoordinator: SyncCoordinating {
             scheduleGeneration &+= 1
             scheduledTask?.cancel()
             scheduledTask = nil
+            retryTask?.cancel()
+            retryTask = nil
             isSyncing = false
             needsFollowUpSync = false
             lastForegroundSyncAt = nil
@@ -230,6 +118,8 @@ actor SyncCoordinator: SyncCoordinating {
         scheduleGeneration &+= 1
         scheduledTask?.cancel()
         scheduledTask = nil
+        retryTask?.cancel()
+        retryTask = nil
         hasStarted = false
         isSyncing = false
         needsFollowUpSync = false
@@ -254,100 +144,21 @@ actor SyncCoordinator: SyncCoordinating {
             return .coalesced()
         }
 
-        guard let session else {
+        guard session != nil else {
             return .skippedNoSession()
-        }
-
-        if shouldSkipForInterval(reason: reason, now: Date()) {
-            return .skippedInterval()
         }
 
         hasStarted = true
         isSyncing = true
-        defer { isSyncing = false }
 
-        return await performRunWithTimeout(reason: reason, session: session)
-    }
+        let result = await drainSyncRuns(startingReason: reason)
+        isSyncing = false
 
-    private static func makeDefaultStores() -> (
-        stateStore: any SyncStatePersisting,
-        pendingOperationStore: any PendingSyncOperationPersisting,
-        accessSnapshotStore: any AccessSyncSnapshotPersisting,
-        relationshipEventStore: any RelationshipSyncEventPersisting,
-        locationVisibilityStore: any LocationVisibilitySnapshotPersisting,
-        ownLocationStore: any OwnLocationSnapshotPersisting
-    ) {
-        do {
-            let localStore = try PaeoniaLocalStore()
-            return (
-                SwiftDataSyncStateRepository(container: localStore.container),
-                SwiftDataPendingSyncOperationRepository(container: localStore.container),
-                SwiftDataAccessSyncSnapshotRepository(container: localStore.container),
-                SwiftDataRelationshipSyncEventRepository(container: localStore.container),
-                SwiftDataLocationVisibilitySnapshotRepository(container: localStore.container),
-                SwiftDataOwnLocationSnapshotRepository(container: localStore.container)
-            )
-        } catch {
-            preconditionFailure("Unable to create persistent sync store: \(error)")
-        }
-    }
-
-    private static func makeDefaultStreams(
-        accessSnapshotStore: any AccessSyncSnapshotPersisting,
-        relationshipEventStore: any RelationshipSyncEventPersisting,
-        locationVisibilityStore: any LocationVisibilitySnapshotPersisting,
-        ownLocationStore: any OwnLocationSnapshotPersisting,
-        pendingOperationHandlers: [any PendingSyncOperationHandling] = []
-    ) -> [any SyncStream] {
-        guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
-            return []
+        if result.status != .cancelled {
+            await scheduleRetryIfNeeded(after: result)
         }
 
-        let accessGateway = LiveSupabaseAccessGateway(client: client)
-        let locationGateway = LiveSupabaseLocationGateway(client: client)
-        let locationHandlers: [any PendingSyncOperationHandling] = [
-            LocationSharingPreferencePendingOperationHandler(
-                gateway: locationGateway,
-                visibilityStore: locationVisibilityStore
-            ),
-            LatestPartnerLocationPendingOperationHandler(
-                gateway: locationGateway,
-                ownLocationStore: ownLocationStore
-            ),
-            DailySubmitAnswerPendingOperationHandler(
-                mediaUploadService: LiveDailyAnswerMediaUploadService(client: client),
-                gateway: LiveSupabaseDailyChallengeGateway(client: client),
-                mediaDraftStore: FileDailyAnswerMediaDraftStore.live()
-            ),
-        ]
-        return [
-            AccessSyncStream(
-                gateway: accessGateway,
-                snapshotStore: accessSnapshotStore
-            ),
-            RelationshipSyncEventsStream(
-                gateway: accessGateway,
-                eventStore: relationshipEventStore
-            ),
-            PendingSyncOperationDrainStream(
-                handlers: Self.mergedHandlers(
-                    customHandlers: pendingOperationHandlers,
-                    defaultHandlers: locationHandlers
-                )
-            ),
-            LocationVisibilitySyncStream(
-                gateway: locationGateway,
-                visibilityStore: locationVisibilityStore
-            )
-        ]
-    }
-
-    private static func mergedHandlers(
-        customHandlers: [any PendingSyncOperationHandling],
-        defaultHandlers: [any PendingSyncOperationHandling]
-    ) -> [any PendingSyncOperationHandling] {
-        let customKinds = Set(customHandlers.map(\.operationKind))
-        return customHandlers + defaultHandlers.filter { !customKinds.contains($0.operationKind) }
+        return result
     }
 
     private func scheduleSync(reason: SyncRequestReason) {
@@ -364,39 +175,48 @@ actor SyncCoordinator: SyncCoordinating {
         scheduleGeneration &+= 1
         let generation = scheduleGeneration
         scheduledTask?.cancel()
+        retryTask?.cancel()
+        retryTask = nil
         scheduledTask = Task {
             await drainScheduledSync(reason: reason, generation: generation)
         }
     }
 
     private func drainScheduledSync(reason: SyncRequestReason, generation: UInt64) async {
-        var nextReason = reason
+        let result = await drainSyncRuns(startingReason: reason)
+        finishScheduledSync(generation: generation)
+
+        if result.status != .cancelled, !Task.isCancelled {
+            await scheduleRetryIfNeeded(after: result)
+        }
+    }
+
+    private func drainSyncRuns(startingReason: SyncRequestReason) async -> SyncRunResult {
+        var nextReason = startingReason
+        var lastResult: SyncRunResult?
 
         while true {
             guard let session else {
-                finishScheduledSync(generation: generation)
-                return
+                return lastResult ?? .skippedNoSession()
             }
 
             needsFollowUpSync = false
 
             if shouldSkipForInterval(reason: nextReason, now: Date()) {
-                finishScheduledSync(generation: generation)
-                return
+                return lastResult ?? .skippedInterval()
             }
 
-            _ = await performRunWithTimeout(reason: nextReason, session: session)
+            let result = await performRunWithTimeout(reason: nextReason, session: session)
+            lastResult = result
 
             if Task.isCancelled {
-                finishScheduledSync(generation: generation)
-                return
+                return result
             }
 
             if needsFollowUpSync {
                 nextReason = .localChange
             } else {
-                finishScheduledSync(generation: generation)
-                return
+                return result
             }
         }
     }
@@ -408,6 +228,61 @@ actor SyncCoordinator: SyncCoordinating {
 
         isSyncing = false
         scheduledTask = nil
+    }
+
+    private func scheduleRetryIfNeeded(after result: SyncRunResult) async {
+        guard !isSyncing, hasStarted, let session else {
+            return
+        }
+
+        let now = Date()
+        var retryDates: [Date] = []
+        if let nextRetryAt = try? await pendingOperationStore.nextPendingOperationDate(
+            ownerUserID: session.userID,
+            now: now
+        ) {
+            retryDates.append(nextRetryAt)
+        }
+
+        if result.status == .failed || result.status == .timedOut {
+            retryDates.append(now.addingTimeInterval(failedRunRetryDelay))
+        }
+
+        guard let retryAt = retryDates.min() else {
+            retryTask?.cancel()
+            retryTask = nil
+            return
+        }
+
+        scheduleRetry(at: retryAt, session: session, generation: scheduleGeneration)
+    }
+
+    private func scheduleRetry(at retryAt: Date, session: SyncSession, generation: UInt64) {
+        retryTask?.cancel()
+        retryTask = Task { [weak self] in
+            let delay = max(0, retryAt.timeIntervalSinceNow)
+            if delay > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            }
+
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await self?.runPendingOperationRetry(session: session, generation: generation)
+        }
+    }
+
+    private func runPendingOperationRetry(session: SyncSession, generation: UInt64) {
+        guard generation == scheduleGeneration,
+              hasStarted,
+              self.session == session
+        else {
+            return
+        }
+
+        retryTask = nil
+        scheduleSync(reason: .localChange)
     }
 
     private func shouldSkipForInterval(reason: SyncRequestReason, now: Date) -> Bool {

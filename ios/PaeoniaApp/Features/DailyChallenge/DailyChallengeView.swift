@@ -9,6 +9,7 @@ struct DailyChallengeScreen: View {
     let viewModel: DailyChallengeViewModel
     var morphNamespace: Namespace.ID?
     var onOpenAnswerFlow: () -> Void = {}
+    var onTapStreak: () -> Void = {}
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
@@ -74,8 +75,10 @@ struct DailyChallengeScreen: View {
     private var heroCard: some View {
         DailyPromptCard(
             state: viewModel.homeCardState,
+            streak: StreakPillState(viewModel.streak),
             morphNamespace: morphNamespace,
-            onAnswer: onOpenAnswerFlow
+            onAnswer: onOpenAnswerFlow,
+            onTapStreak: onTapStreak
         )
     }
 
@@ -231,7 +234,14 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
     }
 
     func loadStreak() async throws -> CoupleStreak {
-        CoupleStreak(currentCount: 6, longestCount: 12, lastQualifiedDate: "2026-06-26", restoreAvailable: false)
+        CoupleStreak(
+            currentCount: 6,
+            longestCount: 12,
+            lastQualifiedDate: "2026-06-26",
+            restoreAvailable: false,
+            restorableCount: 0,
+            restoreDeadline: nil
+        )
     }
 
     func submitAnswer(instanceID _: UUID, answerID _: UUID, payload _: DailyAnswerPayload, operation _: SyncClientOperation) async throws -> UUID {

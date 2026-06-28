@@ -133,12 +133,12 @@ struct PendingSyncOperationDrainStream: SyncStream {
 }
 
 nonisolated struct PendingSyncOperationRetryPolicy: Equatable, Sendable {
-    let maximumAttempts: Int
+    let maximumAttempts: Int?
     let baseDelaySeconds: TimeInterval
     let maximumDelaySeconds: TimeInterval
 
     init(
-        maximumAttempts: Int = 8,
+        maximumAttempts: Int? = nil,
         baseDelaySeconds: TimeInterval = 60,
         maximumDelaySeconds: TimeInterval = 3_600
     ) {
@@ -148,7 +148,11 @@ nonisolated struct PendingSyncOperationRetryPolicy: Equatable, Sendable {
     }
 
     func shouldMarkTerminal(attemptNumber: Int) -> Bool {
-        attemptNumber >= maximumAttempts
+        guard let maximumAttempts else {
+            return false
+        }
+
+        return attemptNumber >= maximumAttempts
     }
 
     func nextRetryDate(attemptNumber: Int, now: Date) -> Date {
