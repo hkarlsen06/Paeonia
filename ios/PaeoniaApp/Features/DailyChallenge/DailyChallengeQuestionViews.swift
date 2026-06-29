@@ -10,7 +10,7 @@ struct DailyQuestionStatusView: View {
                     systemImage: line.systemImage,
                     title: line.title,
                     date: line.date,
-                    includesDateWhenNotToday: line.includesDateWhenNotToday,
+                    usesRelativeTimestamp: line.usesRelativeTimestamp,
                     tint: line.tint
                 )
             }
@@ -34,7 +34,7 @@ struct DailyQuestionStatusView: View {
                     systemImage: question.canViewPartnerAnswer ? "heart.circle.fill" : "lock.circle.fill",
                     title: .dailyChallengePartnerHidden,
                     date: partnerAnswer.answeredAt,
-                    includesDateWhenNotToday: true,
+                    usesRelativeTimestamp: true,
                     tint: question.canViewPartnerAnswer ? .paeoniaAccentPrimary : .paeoniaTextTertiary
                 )
             )
@@ -47,7 +47,7 @@ struct DailyQuestionStatusView: View {
                     systemImage: "checkmark.circle.fill",
                     title: .dailyChallengeYouAnswered,
                     date: ownAnswer.answeredAt,
-                    includesDateWhenNotToday: false,
+                    usesRelativeTimestamp: false,
                     tint: .paeoniaSuccess
                 )
             )
@@ -58,7 +58,7 @@ struct DailyQuestionStatusView: View {
                     systemImage: "circle",
                     title: .dailyChallengeNotAnswered,
                     date: nil,
-                    includesDateWhenNotToday: false,
+                    usesRelativeTimestamp: false,
                     tint: .paeoniaTextTertiary
                 )
             )
@@ -80,7 +80,7 @@ private struct DailyStatusLineModel: Identifiable {
     let systemImage: String
     let title: LocalizedStringResource
     let date: Date?
-    let includesDateWhenNotToday: Bool
+    let usesRelativeTimestamp: Bool
     let tint: Color
 }
 
@@ -88,7 +88,7 @@ private struct DailyStatusLine: View {
     let systemImage: String
     let title: LocalizedStringResource
     let date: Date?
-    let includesDateWhenNotToday: Bool
+    let usesRelativeTimestamp: Bool
     let tint: Color
 
     var body: some View {
@@ -111,17 +111,15 @@ private struct DailyStatusLine: View {
     }
 
     private func timestampText(for targetDate: Date) -> Text {
-        guard includesDateWhenNotToday else {
+        guard usesRelativeTimestamp else {
             return Text(targetDate, style: .time)
         }
 
         return Text(targetDate, format: relativeDateFormat)
-            + Text(verbatim: " ")
-            + Text(targetDate, style: .time)
     }
 
     private var relativeDateFormat: Date.RelativeFormatStyle {
-        var format = Date.RelativeFormatStyle(presentation: .named)
+        var format = Date.RelativeFormatStyle(presentation: .named, unitsStyle: .abbreviated)
         format.capitalizationContext = .beginningOfSentence
         return format
     }
@@ -133,29 +131,53 @@ struct DailyAnswerDetailsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            if let detail = question.ownAnswerDetail {
+            if let detail = consolidatedChoiceDetail {
+                // Both people picked the same person and added nothing else, so the two
+                // answer rows would read identically. Collapse them into one block
+                // headed by both names rather than repeating the same pick twice.
                 DailyVisibleAnswerBlock(
-                    title: participants.currentName,
+                    title: bothAnswererTitle,
                     detail: detail,
                     participants: participants,
                     mediaKind: question.mediaAnswerKind
                 )
-            }
+            } else {
+                if let detail = question.ownAnswerDetail {
+                    DailyVisibleAnswerBlock(
+                        title: participants.currentName,
+                        detail: detail,
+                        participants: participants,
+                        mediaKind: question.mediaAnswerKind
+                    )
+                }
 
-            if let detail = question.partnerAnswerDetail, detail.canViewAnswer {
-                DailyVisibleAnswerBlock(
-                    title: participants.partnerName,
-                    detail: detail,
-                    participants: participants,
-                    mediaKind: question.mediaAnswerKind
-                )
-            } else if question.partnerAnswer != nil, !question.canViewPartnerAnswer {
-                Text(.dailyChallengePartnerHiddenMessage)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if let detail = question.partnerAnswerDetail, detail.canViewAnswer {
+                    DailyVisibleAnswerBlock(
+                        title: participants.partnerName,
+                        detail: detail,
+                        participants: participants,
+                        mediaKind: question.mediaAnswerKind
+                    )
+                } else if question.partnerAnswer != nil, !question.canViewPartnerAnswer {
+                    Text(.dailyChallengePartnerHiddenMessage)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
+    }
+
+    /// The own answer to render when both partners share one partner-choice pick — the
+    /// two answers are identical here, so either stands in for the single shared block.
+    private var consolidatedChoiceDetail: DailyQuestionAnswerDetail? {
+        guard question.sharedPartnerChoiceUserID != nil else { return nil }
+        return question.ownAnswerDetail
+    }
+
+    /// Both answerers' names for a shared answer's heading, e.g. "Hilde & Hjalmar".
+    private var bothAnswererTitle: String {
+        "\(participants.currentName) & \(participants.partnerName)"
     }
 }
 

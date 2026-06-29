@@ -5836,6 +5836,132 @@
         }
       },
       "comment" : "Disabled button on a partner-answered question, shown until the user has finished their own three daily questions"
+    },
+    "dailyChallenge.history.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question history"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmålshistorikk"
+          }
+        }
+      },
+      "comment" : "Accessibility label for the toolbar button that opens the questions history"
+    },
+    "dailyChallenge.history.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question history"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmålshistorikk"
+          }
+        }
+      },
+      "comment" : "Title of the screen showing past daily questions and answers"
+    },
+    "dailyChallenge.history.empty.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No history yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen historikk ennå"
+          }
+        }
+      },
+      "comment" : "Title shown when there are no past answered questions yet"
+    },
+    "dailyChallenge.history.empty.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer today's questions together and they'll show up here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på dagens spørsmål sammen, så dukker de opp her."
+          }
+        }
+      },
+      "comment" : "Message shown when there are no past answered questions yet"
+    },
+    "dailyChallenge.history.loadFailed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load history"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste historikk"
+          }
+        }
+      },
+      "comment" : "Title shown when the question history could not be loaded"
+    },
+    "dailyChallenge.history.loadFailed.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk internett og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Message shown when the question history could not be loaded"
+    },
+    "dailyChallenge.history.retryButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen"
+          }
+        }
+      },
+      "comment" : "Button to retry loading the question history after an error"
     }
   },
   "version" : "1.0"

@@ -139,6 +139,17 @@ final class DailyChallengeViewModel {
         }
     }
 
+    /// Builds the view model for the Questions history flow, sharing this screen's
+    /// service and current identity so the history reads through the same backend and
+    /// labels answers with the same two people.
+    func makeHistoryViewModel() -> DailyChallengeHistoryViewModel {
+        DailyChallengeHistoryViewModel(
+            service: service,
+            currentUserID: currentUserID,
+            participants: participants
+        )
+    }
+
     func configure(currentUserID: UUID?) async {
         await configure(participants: DailyChallengeParticipants(currentUserID: currentUserID))
     }

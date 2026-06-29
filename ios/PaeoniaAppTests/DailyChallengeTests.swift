@@ -378,7 +378,7 @@ struct DailyChallengeMappingTests {
         ])
 
         #expect(snapshot.partnerQuestionsForReadOverview.map(\.isCurrentDay) == [true, false])
-        #expect(snapshot.ownQuestionsForReadOverview.map(\.isCurrentDay) == [true, false])
+        #expect(snapshot.ownQuestionsForReadOverview.map(\.isCurrentDay) == [true])
         #expect(snapshot.answerFlowQuestions.map(\.isCurrentDay) == [true, true, false])
     }
 
@@ -547,10 +547,11 @@ struct DailyChallengeMappingTests {
             TestDailyChallengeIDs.coupleDay,
             TestDailyChallengeIDs.previousCoupleDay,
         ])
-        #expect(snapshot.ownQuestionsForReadOverview.map { $0.ownAnswerDetail?.textBody } == [
+        #expect(snapshot.visibleQuestions.map { $0.ownAnswerDetail?.textBody } == [
             "Today",
             "Yesterday",
         ])
+        #expect(snapshot.ownQuestionsForReadOverview.map { $0.ownAnswerDetail?.textBody } == ["Today"])
     }
 
     @MainActor
@@ -856,6 +857,84 @@ struct DailyChallengeMappingTests {
         #expect(own[0].canEditOwnAnswer)
         #expect(own[1].editableAnswerKind == nil)             // revealed once partner answered
         #expect(!own[1].canEditOwnAnswer)
+    }
+
+    @Test func sharedPartnerChoiceCollapsesOnlyWhenBothPickSamePersonWithNothingElse() throws {
+        func question(
+            ownSelection: UUID?,
+            partnerSelection: UUID?,
+            partnerCanView: Bool = true,
+            ownText: String? = nil
+        ) throws -> DailyChallengeQuestion {
+            let ownAnswerID = UUID()
+            let partnerAnswerID = UUID()
+            let snapshot = makeSnapshot(
+                rows: [
+                    questionRow(
+                        slotNumber: 1,
+                        seededForUserID: TestDailyChallengeIDs.currentUser,
+                        status: "answered",
+                        answerKinds: [.partnerChoice],
+                        ownAnswerID: ownAnswerID,
+                        ownAnsweredAt: TestDailyChallengeIDs.answerDate,
+                        partnerAnswerID: partnerAnswerID,
+                        partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
+                        canViewPartnerAnswer: partnerCanView
+                    ),
+                ],
+                details: [
+                    answerDetail(
+                        answerUserID: TestDailyChallengeIDs.currentUser,
+                        answerID: ownAnswerID,
+                        isOwnAnswer: true,
+                        textBody: ownText,
+                        selectedUserID: ownSelection
+                    ),
+                    answerDetail(
+                        answerUserID: TestDailyChallengeIDs.partnerUser,
+                        answerID: partnerAnswerID,
+                        isOwnAnswer: false,
+                        canViewAnswer: partnerCanView,
+                        selectedUserID: partnerSelection
+                    ),
+                ]
+            )
+            return try #require(snapshot.ownQuestions.first)
+        }
+
+        // Both picked the same person with nothing else: collapse into one shared row.
+        #expect(
+            try question(
+                ownSelection: TestDailyChallengeIDs.partnerUser,
+                partnerSelection: TestDailyChallengeIDs.partnerUser
+            ).sharedPartnerChoiceUserID == TestDailyChallengeIDs.partnerUser
+        )
+
+        // Different picks stay as two separate rows.
+        #expect(
+            try question(
+                ownSelection: TestDailyChallengeIDs.currentUser,
+                partnerSelection: TestDailyChallengeIDs.partnerUser
+            ).sharedPartnerChoiceUserID == nil
+        )
+
+        // Same pick but the partner's answer isn't viewable yet: nothing to merge.
+        #expect(
+            try question(
+                ownSelection: TestDailyChallengeIDs.partnerUser,
+                partnerSelection: TestDailyChallengeIDs.partnerUser,
+                partnerCanView: false
+            ).sharedPartnerChoiceUserID == nil
+        )
+
+        // Same pick but one side added a caption: the answers differ, so keep both.
+        #expect(
+            try question(
+                ownSelection: TestDailyChallengeIDs.partnerUser,
+                partnerSelection: TestDailyChallengeIDs.partnerUser,
+                ownText: "Always you."
+            ).sharedPartnerChoiceUserID == nil
+        )
     }
 
     @MainActor
@@ -1799,6 +1878,221 @@ struct DailyChallengeMappingTests {
     }
 }
 
+struct DailyChallengeHistoryTests {
+    private static let day1 = "2026-06-25"
+    private static let day2 = "2026-06-26"
+    private static let day3 = "2026-06-27"
+
+    /// An answered own-question row for `localDate`, answered at `answeredAt`.
+    private func answeredOwnRow(
+        localDate: String,
+        slotNumber: Int,
+        answeredAt: Date,
+        ownAnswerID: UUID = UUID()
+    ) -> DailyQuestionRow {
+        // A couple day is unique per date; grouping keys on localDate, so a fresh
+        // couple-day id per row keeps the fixtures realistic without affecting it.
+        questionRow(
+            coupleDayID: UUID(),
+            localDate: localDate,
+            slotNumber: slotNumber,
+            seededForUserID: TestDailyChallengeIDs.currentUser,
+            status: "answered",
+            ownAnswerID: ownAnswerID,
+            ownAnsweredAt: answeredAt
+        )
+    }
+
+    private func historyQuestions(_ rows: [DailyQuestionRow], details: [DailyAnswerDetailRow] = []) -> [DailyChallengeQuestion] {
+        DailyChallengeQuestion.list(
+            currentUserID: TestDailyChallengeIDs.currentUser,
+            rows: rows,
+            answerDetails: details,
+            locale: Locale(identifier: "en_US")
+        )
+    }
+
+    @Test func groupsByLocalDateNewestFirst() {
+        let questions = historyQuestions([
+            answeredOwnRow(localDate: Self.day1, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
+            answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
+            answeredOwnRow(localDate: Self.day2, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
+            answeredOwnRow(localDate: Self.day2, slotNumber: 2, answeredAt: TestDailyChallengeIDs.answerDate),
+        ])
+
+        let days = DailyChallengeHistory.grouped(questions)
+
+        #expect(days.map(\.localDate) == [Self.day3, Self.day2, Self.day1])
+        #expect(days.first(where: { $0.localDate == Self.day2 })?.questions.count == 2)
+        #expect(days.first(where: { $0.localDate == Self.day3 })?.questions.count == 1)
+    }
+
+    @Test func ordersQuestionsWithinADayByAnswerTimeEarliestFirst() {
+        let early = TestDailyChallengeIDs.answerDate
+        let late = early.addingTimeInterval(3_600)
+
+        // Slot 1 answered later than slot 2, so ordering must follow answer time, not slot.
+        let questions = historyQuestions([
+            answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: late),
+            answeredOwnRow(localDate: Self.day3, slotNumber: 2, answeredAt: early),
+        ])
+
+        let days = DailyChallengeHistory.grouped(questions)
+
+        #expect(days.count == 1)
+        #expect(days[0].questions.map(\.slotNumber) == [2, 1])
+    }
+
+    @Test func emptyQuestionsProduceNoDays() {
+        #expect(DailyChallengeHistory.grouped([]).isEmpty)
+    }
+
+    @Test func parsesLocalDateToUTCMidnight() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt
+        let expected = calendar.date(from: DateComponents(year: 2026, month: 6, day: 27))
+
+        #expect(DailyChallengeHistory.parseLocalDate("2026-06-27") == expected)
+        #expect(DailyChallengeHistory.parseLocalDate("not-a-date") == nil)
+    }
+
+    @Test func groupedDayCarriesParsedDateForFormatting() {
+        let questions = historyQuestions([
+            answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
+        ])
+
+        let day = DailyChallengeHistory.grouped(questions).first
+        #expect(day?.date == DailyChallengeHistory.parseLocalDate(Self.day3))
+    }
+
+    @Test func serviceLoadHistoryMergesRowsAndDetailsInTwoCalls() async throws {
+        let ownAnswerID = UUID()
+        let gateway = RecordingDailyChallengeReadGateway(
+            rows: [],
+            historyRows: [
+                answeredOwnRow(
+                    localDate: Self.day3,
+                    slotNumber: 1,
+                    answeredAt: TestDailyChallengeIDs.answerDate,
+                    ownAnswerID: ownAnswerID
+                ),
+            ],
+            historyDetails: [
+                answerDetail(answerID: ownAnswerID, isOwnAnswer: true, textBody: "A quiet morning together"),
+            ]
+        )
+        let service = SupabaseDailyChallengeService(gateway: gateway, locale: Locale(identifier: "en_US"))
+
+        let questions = try await service.loadHistory(currentUserID: TestDailyChallengeIDs.currentUser)
+
+        #expect(questions.count == 1)
+        #expect(questions.first?.ownAnswerDetail?.textBody == "A quiet morning together")
+        #expect(await gateway.historyQuestionLoadCount == 1)
+        #expect(await gateway.historyDetailLoadCount == 1)
+    }
+
+    @MainActor
+    @Test func viewModelLoadsGroupedContentAndBecomesReady() async {
+        let service = RecordingDailyChallengeService(
+            snapshots: [],
+            historyQuestions: historyQuestions([
+                answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
+                answeredOwnRow(localDate: Self.day1, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
+            ])
+        )
+        let viewModel = DailyChallengeHistoryViewModel(
+            service: service,
+            currentUserID: TestDailyChallengeIDs.currentUser
+        )
+
+        #expect(!viewModel.isPresentationReady)
+
+        await viewModel.load()
+
+        #expect(viewModel.isPresentationReady)
+        guard case let .content(days) = viewModel.state else {
+            Issue.record("Expected content state, got \(viewModel.state)")
+            return
+        }
+        #expect(days.map(\.localDate) == [Self.day3, Self.day1])
+    }
+
+    @MainActor
+    @Test func viewModelEmptyHistoryShowsEmptyState() async {
+        let service = RecordingDailyChallengeService(snapshots: [], historyQuestions: [])
+        let viewModel = DailyChallengeHistoryViewModel(
+            service: service,
+            currentUserID: TestDailyChallengeIDs.currentUser
+        )
+
+        await viewModel.load()
+
+        #expect(viewModel.state == .empty)
+        #expect(viewModel.isPresentationReady)
+    }
+
+    @MainActor
+    @Test func viewModelFirstLoadFailureShowsFailedStateWithoutBanner() async {
+        let service = RecordingDailyChallengeService(
+            snapshots: [],
+            historyError: URLError(.badServerResponse)
+        )
+        let viewModel = DailyChallengeHistoryViewModel(
+            service: service,
+            currentUserID: TestDailyChallengeIDs.currentUser
+        )
+
+        await viewModel.load()
+
+        #expect(viewModel.state == .failed)
+        #expect(viewModel.notice == nil)
+        #expect(viewModel.isPresentationReady)
+    }
+
+    @MainActor
+    @Test func viewModelReloadFailureKeepsContentAndShowsBanner() async {
+        let service = RecordingDailyChallengeService(
+            snapshots: [],
+            historyQuestions: historyQuestions([
+                answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
+            ]),
+            historyReloadError: URLError(.timedOut)
+        )
+        let viewModel = DailyChallengeHistoryViewModel(
+            service: service,
+            currentUserID: TestDailyChallengeIDs.currentUser
+        )
+
+        await viewModel.load()
+        await viewModel.load()
+
+        guard case let .content(days) = viewModel.state else {
+            Issue.record("Expected content to remain after a failed reload, got \(viewModel.state)")
+            return
+        }
+        #expect(days.count == 1)
+        #expect(viewModel.notice == .loadFailed)
+    }
+
+    @MainActor
+    @Test func viewModelCancellationIsSwallowed() async {
+        let service = RecordingDailyChallengeService(
+            snapshots: [],
+            historyError: CancellationError()
+        )
+        let viewModel = DailyChallengeHistoryViewModel(
+            service: service,
+            currentUserID: TestDailyChallengeIDs.currentUser
+        )
+
+        await viewModel.load()
+
+        // A cancelled first load leaves the loading surface up and never errors.
+        #expect(viewModel.state == .loading)
+        #expect(viewModel.notice == nil)
+    }
+}
+
 private enum TestDailyChallengeIDs {
     static let currentUser = fixedUUID("11111111-1111-1111-1111-111111111111")
     static let partnerUser = fixedUUID("22222222-2222-2222-2222-222222222222")
@@ -1899,12 +2193,16 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
     private let shuffleError: Error?
     private let editError: Error?
     private let loadError: Error?
+    private let historyQuestions: [DailyChallengeQuestion]
+    private let historyError: Error?
+    private let historyReloadError: Error?
     private let streak: CoupleStreak
     private(set) var editedTexts: [String] = []
     private(set) var editedChoices: [UUID] = []
     private(set) var shuffledSlots: [Int] = []
     private(set) var streakLoadCount = 0
     private(set) var loadCount = 0
+    private(set) var historyLoadCount = 0
 
     init(
         snapshots: [DailyChallengeSnapshot],
@@ -1913,6 +2211,9 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
         shuffleError: Error? = nil,
         editError: Error? = nil,
         loadError: Error? = nil,
+        historyQuestions: [DailyChallengeQuestion] = [],
+        historyError: Error? = nil,
+        historyReloadError: Error? = nil,
         streak: CoupleStreak = .none
     ) {
         self.snapshots = snapshots
@@ -1921,6 +2222,9 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
         self.shuffleError = shuffleError
         self.editError = editError
         self.loadError = loadError
+        self.historyQuestions = historyQuestions
+        self.historyError = historyError
+        self.historyReloadError = historyReloadError
         self.streak = streak
     }
 
@@ -1933,6 +2237,17 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
             return snapshots.removeFirst()
         }
         return snapshots.first ?? .empty(currentUserID: currentUserID)
+    }
+
+    func loadHistory(currentUserID _: UUID) async throws -> [DailyChallengeQuestion] {
+        historyLoadCount += 1
+        if historyLoadCount > 1, let historyReloadError {
+            throw historyReloadError
+        }
+        if let historyError {
+            throw historyError
+        }
+        return historyQuestions
     }
 
     func loadStreak() async throws -> CoupleStreak {
@@ -1987,14 +2302,22 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
 private actor RecordingDailyChallengeReadGateway: SupabaseDailyChallengeGateway {
     private let rows: [DailyQuestionRow]
     private let detailsByCoupleDayID: [UUID: [DailyAnswerDetailRow]]
+    private let historyRows: [DailyQuestionRow]
+    private let historyDetails: [DailyAnswerDetailRow]
     private(set) var loadedAnswerDetailCoupleDayIDs: [UUID] = []
+    private(set) var historyQuestionLoadCount = 0
+    private(set) var historyDetailLoadCount = 0
 
     init(
         rows: [DailyQuestionRow],
-        detailsByCoupleDayID: [UUID: [DailyAnswerDetailRow]] = [:]
+        detailsByCoupleDayID: [UUID: [DailyAnswerDetailRow]] = [:],
+        historyRows: [DailyQuestionRow] = [],
+        historyDetails: [DailyAnswerDetailRow] = []
     ) {
         self.rows = rows
         self.detailsByCoupleDayID = detailsByCoupleDayID
+        self.historyRows = historyRows
+        self.historyDetails = historyDetails
     }
 
     func loadTodayQuestions() async throws -> [DailyQuestionRow] {
@@ -2003,6 +2326,16 @@ private actor RecordingDailyChallengeReadGateway: SupabaseDailyChallengeGateway 
 
     func startDailyChallenge(operation _: SyncClientOperation) async throws -> [DailyQuestionRow] {
         rows
+    }
+
+    func loadHistoryQuestions() async throws -> [DailyQuestionRow] {
+        historyQuestionLoadCount += 1
+        return historyRows
+    }
+
+    func loadHistoryAnswerDetails() async throws -> [DailyAnswerDetailRow] {
+        historyDetailLoadCount += 1
+        return historyDetails
     }
 
     func loadCoupleStreak() async throws -> CoupleStreak {
@@ -2141,6 +2474,10 @@ private actor RecordingDailyChallengeGateway: SupabaseDailyChallengeGateway {
     func loadTodayQuestions() async throws -> [DailyQuestionRow] { [] }
 
     func startDailyChallenge(operation _: SyncClientOperation) async throws -> [DailyQuestionRow] { [] }
+
+    func loadHistoryQuestions() async throws -> [DailyQuestionRow] { [] }
+
+    func loadHistoryAnswerDetails() async throws -> [DailyAnswerDetailRow] { [] }
 
     func loadCoupleStreak() async throws -> CoupleStreak { .none }
 

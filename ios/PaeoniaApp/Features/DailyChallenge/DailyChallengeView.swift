@@ -28,6 +28,9 @@ struct DailyChallengeScreen: View {
     @State private var frozenOwnOrder: [UUID] = []
     @State private var frozenCoupleDayID: UUID?
     @State private var hasFrozenOrder = false
+    /// The Questions history cover. Built fresh from the screen's view model when the
+    /// History button is tapped, and presented by item so it carries its own state.
+    @State private var historyViewModel: DailyChallengeHistoryViewModel?
 
     var body: some View {
         ScrollView {
@@ -73,6 +76,22 @@ struct DailyChallengeScreen: View {
         }
         .navigationTitle(Text(.mainTabQuestions))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    historyViewModel = viewModel.makeHistoryViewModel()
+                } label: {
+                    Image(systemName: "clock.arrow.circlepath")
+                }
+                .accessibilityLabel(Text(.dailyChallengeHistoryButton))
+            }
+        }
+        // The history cover carries its own loading and error state; it routes
+        // recoverable errors into the same shared top banner.
+        .fullScreenCover(item: $historyViewModel) { historyViewModel in
+            DailyChallengeHistoryView(viewModel: historyViewModel)
+                .environment(bannerCenter)
+        }
         .onChange(of: viewModel.notice) { _, notice in
             showBanner(for: notice)
         }
@@ -170,17 +189,6 @@ struct DailyChallengeScreen: View {
     }
 }
 
-/// A "saved, sending" answer to keep visible in the read overview while it finishes
-/// sending: a photo/voice note plays from its staged bytes, a partner pick and/or text
-/// caption show what was chosen or written. Any combination can be present.
-private struct DailySendingPreview {
-    var mediaKind: DailyChallengeAnswerKind = .photo
-    var mediaData: Data?
-    var voiceDurationMs: Int?
-    var partnerChoiceName: String?
-    var text: String?
-}
-
 private struct DailyChallengeReadSection: View {
     let title: LocalizedStringResource
     let questions: [DailyChallengeQuestion]
@@ -215,77 +223,6 @@ private struct DailyChallengeReadSection: View {
                 }
             }
         }
-    }
-}
-
-private struct DailyChallengeReadCard: View {
-    let question: DailyChallengeQuestion
-    var participants = DailyChallengeParticipants()
-    var sending: DailySendingPreview?
-    var isOwnChallengeComplete = true
-    var zoomNamespace: Namespace.ID?
-    var onAnswer: () -> Void = {}
-
-    /// A partner question the user can still answer to reveal the reply. When sending,
-    /// the card shows the "saved, sending" preview instead, so this stays false.
-    private var isAnswerable: Bool {
-        sending == nil && question.origin == .partner && question.isAvailableToAnswer
-    }
-
-    /// Whether tapping the CTA can actually open the answer flow. Answering a
-    /// partner's question is gated behind finishing your own three first, so until
-    /// then the CTA is shown but locked (and doesn't morph into the flow).
-    private var canOpenAnswerFlow: Bool {
-        isAnswerable && isOwnChallengeComplete
-    }
-
-    var body: some View {
-        PaeoniaCard {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                Text(question.prompt)
-                    .font(PaeoniaTypography.title)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                if let sending {
-                    // Still saving: shows whatever was saved (photo, pick, and/or
-                    // caption), so the usual "not answered" status would only contradict it.
-                    DailySendingAnswerView(
-                        mediaKind: sending.mediaKind,
-                        mediaData: sending.mediaData,
-                        voiceDurationMs: sending.voiceDurationMs,
-                        partnerChoiceName: sending.partnerChoiceName,
-                        text: sending.text
-                    )
-                } else {
-                    DailyQuestionStatusView(question: question)
-
-                    if isAnswerable {
-                        // The CTA itself carries the call to action (answer to reveal,
-                        // or finish your own first), so no extra explanatory line.
-                        answerButton
-                    } else {
-                        DailyAnswerDetailsView(question: question, participants: participants)
-                    }
-                }
-            }
-        }
-        // Answerable cards are the source the single-question flow zooms out of, so the
-        // tapped card appears to grow into the full-screen flow. Only cards that can
-        // open the flow carry it.
-        .zoomSource(question.id, in: canOpenAnswerFlow ? zoomNamespace : nil)
-    }
-
-    /// The same primary CTA the daily prompt card uses. When the user still has their
-    /// own questions to finish it stays visible but disabled, so it reads as a clear
-    /// "do yours first" rather than disappearing.
-    private var answerButton: some View {
-        Button(action: onAnswer) {
-            Text(canOpenAnswerFlow ? .dailyChallengePartnerAnswerCta : .dailyChallengePartnerLockedCta)
-        }
-        .buttonStyle(PaeoniaPrimaryButtonStyle())
-        .disabled(!canOpenAnswerFlow)
     }
 }
 
@@ -357,6 +294,35 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
         try await loadToday(currentUserID: currentUserID)
     }
 
+    func loadHistory(currentUserID: UUID) async throws -> [DailyChallengeQuestion] {
+        [
+            previewHistoryQuestion(
+                localDate: "2026-06-27",
+                slot: 1,
+                seededFor: currentUserID,
+                prompt: "What small moment made you think of us today?",
+                ownText: "Your text came up on my lock screen mid-meeting.",
+                partnerText: "I saw a couple on the tram holding hands like we do."
+            ),
+            previewHistoryQuestion(
+                localDate: "2026-06-26",
+                slot: 1,
+                seededFor: currentUserID,
+                prompt: "What's one thing you're looking forward to together?",
+                ownText: "The long weekend with nothing planned.",
+                partnerText: "Cooking that pasta again, but slower this time."
+            ),
+            previewHistoryQuestion(
+                localDate: "2026-06-26",
+                slot: 2,
+                seededFor: partnerUserID,
+                prompt: "What made you laugh recently?",
+                ownText: "Your voice note where you forgot what you were saying.",
+                partnerText: "The dog video you sent at 1am."
+            ),
+        ]
+    }
+
     func loadStreak() async throws -> CoupleStreak {
         CoupleStreak(
             currentCount: 6,
@@ -421,6 +387,66 @@ nonisolated func previewDailyQuestion(
         partnerAnswerDetail: nil,
         origin: origin,
         isCurrentDay: true
+    )
+}
+
+/// A fully-answered question for the history preview: both people answered with text
+/// and both replies are revealed, so the read card shows a complete exchange.
+nonisolated func previewHistoryQuestion(
+    localDate: String,
+    slot: Int,
+    seededFor userID: UUID,
+    prompt: String,
+    ownText: String,
+    partnerText: String,
+    currentUserID: UUID = PreviewDailyChallengeService.userID
+) -> DailyChallengeQuestion {
+    let answeredAt = Date()
+    let ownAnswerID = UUID()
+    let partnerAnswerID = UUID()
+    let partnerUserID = userID == currentUserID ? UUID() : userID
+
+    return DailyChallengeQuestion(
+        id: UUID(),
+        coupleDayID: UUID(),
+        coupleID: UUID(),
+        localDate: localDate,
+        startsAt: answeredAt,
+        endsAt: answeredAt.addingTimeInterval(86_400),
+        seededForUserID: userID,
+        slotNumber: slot,
+        status: .answered,
+        questionID: UUID(),
+        questionVersionID: UUID(),
+        questionKey: "preview_history_question",
+        prompt: prompt,
+        shortPrompt: prompt,
+        answerKinds: [.text],
+        ownAnswer: DailyQuestionAnswerSummary(id: ownAnswerID, answeredAt: answeredAt),
+        partnerAnswer: DailyQuestionAnswerSummary(id: partnerAnswerID, answeredAt: answeredAt),
+        canViewPartnerAnswer: true,
+        ownAnswerDetail: DailyQuestionAnswerDetail(
+            answerUserID: currentUserID,
+            answerID: ownAnswerID,
+            answeredAt: answeredAt,
+            isOwnAnswer: true,
+            canViewAnswer: true,
+            textBody: ownText,
+            selectedUserID: nil,
+            mediaAssetIDs: []
+        ),
+        partnerAnswerDetail: DailyQuestionAnswerDetail(
+            answerUserID: partnerUserID,
+            answerID: partnerAnswerID,
+            answeredAt: answeredAt,
+            isOwnAnswer: false,
+            canViewAnswer: true,
+            textBody: partnerText,
+            selectedUserID: nil,
+            mediaAssetIDs: []
+        ),
+        origin: userID == currentUserID ? .own : .partner,
+        isCurrentDay: false
     )
 }
 #endif

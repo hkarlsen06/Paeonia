@@ -279,6 +279,13 @@ nonisolated struct DailyQuestionAnswerDetail: Equatable, Sendable {
     var hasMedia: Bool {
         !mediaAssetIDs.isEmpty
     }
+
+    /// A partner-choice answer carrying only the pick — no caption, no media — so the
+    /// only thing it renders is the chosen person. Used to decide when two identical
+    /// picks can collapse into one shared answer.
+    var isPurePartnerChoice: Bool {
+        selectedUserID != nil && (textBody?.isEmpty ?? true) && mediaAssetIDs.isEmpty
+    }
 }
 
 nonisolated enum DailyQuestionOrigin: Equatable, Sendable {
@@ -312,6 +319,24 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Sendable {
     /// unresolved exchanges from older days stay visible in the Questions tab, but
     /// they must not affect today's Home card or own-question progress.
     let isCurrentDay: Bool
+
+    /// The single person both partners picked when a partner-choice exchange has the
+    /// *same* viewable pick on both sides and nothing else to show. When set, the two
+    /// otherwise-identical answer rows collapse into one shared answer headed by both
+    /// names. Nil unless both answers are pure same-person picks and the partner's is
+    /// viewable, so any caption, media, or differing pick keeps the rows separate.
+    var sharedPartnerChoiceUserID: UUID? {
+        guard
+            let own = ownAnswerDetail,
+            let partner = partnerAnswerDetail,
+            partner.canViewAnswer,
+            let chosen = own.selectedUserID,
+            chosen == partner.selectedUserID,
+            own.isPurePartnerChoice,
+            partner.isPurePartnerChoice
+        else { return nil }
+        return chosen
+    }
 
     var hasOwnAnswer: Bool {
         ownAnswer != nil
@@ -410,6 +435,72 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Sendable {
     }
 }
 
+extension DailyChallengeQuestion {
+    /// Builds the domain questions from the backend read-model rows and the matching
+    /// answer detail rows. Shared by today's snapshot and the Questions history, so
+    /// both surfaces map rows the same way: shuffled instances are dropped, answer
+    /// details are attached by answer id, and only rows the current user can see
+    /// survive. The caller decides how to slice or group the result.
+    ///
+    /// `nonisolated` so the nonisolated `DailyChallengeSnapshot.make` and the
+    /// `SupabaseDailyChallengeService` actor can both build questions off the main
+    /// actor (an extension doesn't inherit the type's `nonisolated` by default).
+    nonisolated static func list(
+        currentUserID: UUID,
+        rows: [DailyQuestionRow],
+        answerDetails: [DailyAnswerDetailRow],
+        locale: Locale = .current
+    ) -> [DailyChallengeQuestion] {
+        let detailsByAnswerID = Dictionary(
+            answerDetails.map { ($0.answerID, $0.detail) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        return rows
+            .filter { DailyQuestionInstanceStatus(rawValue: $0.instanceStatus) != .shuffled }
+            .map { row in
+                let ownAnswer = row.ownAnswerID.map {
+                    DailyQuestionAnswerSummary(
+                        id: $0,
+                        answeredAt: row.ownAnsweredAt ?? row.startsAt
+                    )
+                }
+                let partnerAnswer = row.partnerAnswerID.map {
+                    DailyQuestionAnswerSummary(
+                        id: $0,
+                        answeredAt: row.partnerAnsweredAt ?? row.startsAt
+                    )
+                }
+
+                return DailyChallengeQuestion(
+                    id: row.instanceID,
+                    coupleDayID: row.coupleDayID,
+                    coupleID: row.coupleID,
+                    localDate: row.localDate,
+                    startsAt: row.startsAt,
+                    endsAt: row.endsAt,
+                    seededForUserID: row.seededForUserID,
+                    slotNumber: Int(row.slotNumber),
+                    status: DailyQuestionInstanceStatus(rawValue: row.instanceStatus),
+                    questionID: row.questionID,
+                    questionVersionID: row.questionVersionID,
+                    questionKey: row.questionKey,
+                    prompt: row.prompt(for: locale),
+                    shortPrompt: row.shortPrompt(for: locale),
+                    answerKinds: row.answerKinds,
+                    ownAnswer: ownAnswer,
+                    partnerAnswer: partnerAnswer,
+                    canViewPartnerAnswer: row.canViewPartnerAnswer,
+                    ownAnswerDetail: row.ownAnswerID.flatMap { detailsByAnswerID[$0] },
+                    partnerAnswerDetail: row.partnerAnswerID.flatMap { detailsByAnswerID[$0] },
+                    origin: row.seededForUserID == currentUserID ? .own : .partner,
+                    isCurrentDay: row.isCurrentDay ?? true
+                )
+            }
+            .filter(\.isVisibleToCurrentUser)
+    }
+}
+
 nonisolated struct DailyChallengeProgress: Equatable, Sendable {
     static let requiredOwnQuestionCount = 3
 
@@ -485,12 +576,6 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         currentDayQuestions
             .filter { $0.origin == .own }
             .sorted { $0.slotNumber < $1.slotNumber }
-    }
-
-    private var allOwnQuestions: [DailyChallengeQuestion] {
-        questions
-            .filter { $0.origin == .own }
-            .sorted(by: readOverviewDayOrder)
     }
 
     var partnerStartedQuestions: [DailyChallengeQuestion] {
@@ -581,8 +666,10 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         partnerStartedQuestions
     }
 
+    /// The main Questions tab's "Your three" section. Older own questions belong in
+    /// history so this section never shows more than today's three.
     var ownQuestionsForReadOverview: [DailyChallengeQuestion] {
-        allOwnQuestions
+        ownQuestions.sorted(by: readOverviewDayOrder)
     }
 
     /// Questions surfaced inside the focused answering flow, in the order the
@@ -652,54 +739,12 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         locale: Locale = .current,
         refreshedAt: Date = Date()
     ) -> DailyChallengeSnapshot {
-        let detailsByAnswerID = Dictionary(
-            uniqueKeysWithValues: answerDetails.map { row in
-                (row.answerID, row.detail)
-            }
+        let questions = DailyChallengeQuestion.list(
+            currentUserID: currentUserID,
+            rows: rows,
+            answerDetails: answerDetails,
+            locale: locale
         )
-
-        let questions = rows
-            .filter { DailyQuestionInstanceStatus(rawValue: $0.instanceStatus) != .shuffled }
-            .map { row in
-                let ownAnswer = row.ownAnswerID.map {
-                    DailyQuestionAnswerSummary(
-                        id: $0,
-                        answeredAt: row.ownAnsweredAt ?? row.startsAt
-                    )
-                }
-                let partnerAnswer = row.partnerAnswerID.map {
-                    DailyQuestionAnswerSummary(
-                        id: $0,
-                        answeredAt: row.partnerAnsweredAt ?? row.startsAt
-                    )
-                }
-
-                return DailyChallengeQuestion(
-                    id: row.instanceID,
-                    coupleDayID: row.coupleDayID,
-                    coupleID: row.coupleID,
-                    localDate: row.localDate,
-                    startsAt: row.startsAt,
-                    endsAt: row.endsAt,
-                    seededForUserID: row.seededForUserID,
-                    slotNumber: Int(row.slotNumber),
-                    status: DailyQuestionInstanceStatus(rawValue: row.instanceStatus),
-                    questionID: row.questionID,
-                    questionVersionID: row.questionVersionID,
-                    questionKey: row.questionKey,
-                    prompt: row.prompt(for: locale),
-                    shortPrompt: row.shortPrompt(for: locale),
-                    answerKinds: row.answerKinds,
-                    ownAnswer: ownAnswer,
-                    partnerAnswer: partnerAnswer,
-                    canViewPartnerAnswer: row.canViewPartnerAnswer,
-                    ownAnswerDetail: row.ownAnswerID.flatMap { detailsByAnswerID[$0] },
-                    partnerAnswerDetail: row.partnerAnswerID.flatMap { detailsByAnswerID[$0] },
-                    origin: row.seededForUserID == currentUserID ? .own : .partner,
-                    isCurrentDay: row.isCurrentDay ?? true
-                )
-            }
-            .filter(\.isVisibleToCurrentUser)
 
         let currentCoupleDayID: UUID?
         if rows.contains(where: { $0.isCurrentDay != nil }) {

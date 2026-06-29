@@ -4,6 +4,9 @@ import Supabase
 protocol DailyChallengeServicing: Actor {
     func loadToday(currentUserID: UUID) async throws -> DailyChallengeSnapshot
     func startToday(currentUserID: UUID, operation: SyncClientOperation) async throws -> DailyChallengeSnapshot
+    /// Every daily question the current user has answered, across all days, as a flat
+    /// chronological list. The caller groups it by day for the history overview.
+    func loadHistory(currentUserID: UUID) async throws -> [DailyChallengeQuestion]
     func loadStreak() async throws -> CoupleStreak
     func editTextAnswer(instanceID: UUID, text: String, operation: SyncClientOperation) async throws -> UUID
     func editPartnerChoice(instanceID: UUID, selectedUserID: UUID, operation: SyncClientOperation) async throws -> UUID
@@ -17,6 +20,8 @@ protocol DailyChallengeServicing: Actor {
 protocol SupabaseDailyChallengeGateway: Actor {
     func loadTodayQuestions() async throws -> [DailyQuestionRow]
     func startDailyChallenge(operation: SyncClientOperation) async throws -> [DailyQuestionRow]
+    func loadHistoryQuestions() async throws -> [DailyQuestionRow]
+    func loadHistoryAnswerDetails() async throws -> [DailyAnswerDetailRow]
     func loadCoupleStreak() async throws -> CoupleStreak
     func loadAnswerDetails(coupleDayID: UUID) async throws -> [DailyAnswerDetailRow]
     func submitAnswer(instanceID: UUID, answerID: UUID, payload: DailyAnswerPayload, operation: SyncClientOperation) async throws -> UUID
@@ -55,6 +60,23 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
     ) async throws -> DailyChallengeSnapshot {
         let rows = try await gateway.startDailyChallenge(operation: operation)
         return try await snapshot(currentUserID: currentUserID, rows: rows)
+    }
+
+    /// Reads the couple's full answered-question history in two parallel calls — the
+    /// question rows and the answer details — then merges them into domain questions
+    /// the same way today's snapshot does. The backend only returns instances the
+    /// viewer has answered, so every row carries the viewer's own answer.
+    func loadHistory(currentUserID: UUID) async throws -> [DailyChallengeQuestion] {
+        async let rowsTask = gateway.loadHistoryQuestions()
+        async let detailsTask = gateway.loadHistoryAnswerDetails()
+        let rows = try await rowsTask
+        let answerDetails = try await detailsTask
+        return DailyChallengeQuestion.list(
+            currentUserID: currentUserID,
+            rows: rows,
+            answerDetails: answerDetails,
+            locale: locale
+        )
     }
 
     func loadStreak() async throws -> CoupleStreak {
@@ -170,6 +192,20 @@ actor LiveSupabaseDailyChallengeGateway: SupabaseDailyChallengeGateway {
             .value
     }
 
+    func loadHistoryQuestions() async throws -> [DailyQuestionRow] {
+        try await client
+            .rpc("get_daily_questions_history")
+            .execute()
+            .value
+    }
+
+    func loadHistoryAnswerDetails() async throws -> [DailyAnswerDetailRow] {
+        try await client
+            .rpc("get_daily_answer_history_details")
+            .execute()
+            .value
+    }
+
     func loadCoupleStreak() async throws -> CoupleStreak {
         let rows: [CoupleStreakRow] = try await client
             .rpc("get_couple_streak")
@@ -280,6 +316,10 @@ private actor EmptyDailyChallengeService: DailyChallengeServicing {
         operation _: SyncClientOperation
     ) async throws -> DailyChallengeSnapshot {
         .empty(currentUserID: currentUserID)
+    }
+
+    func loadHistory(currentUserID _: UUID) async throws -> [DailyChallengeQuestion] {
+        []
     }
 
     func loadStreak() async throws -> CoupleStreak {

@@ -22,6 +22,10 @@ When a launch-time network call is cancelled with `NSURLErrorCancelled` / `URLEr
 - `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengeAnswerFlow.swift`: answering flow and text/photo/voice/partner-choice composition.
 - `ios/PaeoniaApp/Features/DailyChallenge/DailyPartnerAnswerFlow.swift`: answering partner-authored question instances.
 - `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengeQuestionViews.swift`: reusable question and answer UI pieces.
+- `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengeReadCard.swift`: the shared read-only question card (prompt + status + revealed answers), used by the Questions tab read sections and the history flow. `DailyChallengeQuestion.list` (in `DailyChallengeModels.swift`) is the shared row→question mapping behind both today's snapshot and history.
+- `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengeHistory.swift`: pure date-grouping for the history overview (`DailyChallengeHistoryDay`, newest-day-first grouping, local-date parsing).
+- `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengeHistoryViewModel.swift`: history load/state/readiness, banner-routed reload errors.
+- `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengeHistoryView.swift`: the History full-screen cover — title, close, centered date dividers, read cards, empty/loading/error states. Opened from the Questions-tab toolbar History button in `DailyChallengeView.swift`.
 - `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengeMediaViews.swift`: image/media display for answers.
 - `ios/PaeoniaApp/Features/DailyChallenge/DailyVoiceAnswerViews.swift`, `DailyVoiceRecorder.swift`, and `DailyVoiceAudioSession.swift`: voice recording/playback UI and audio session handling.
 - `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengeDraftStore.swift`: local answer draft persistence.
@@ -30,6 +34,8 @@ When a launch-time network call is cancelled with `NSURLErrorCancelled` / `URLEr
 - `ios/PaeoniaAppTests/DailyChallengeTests.swift`: main regression suite for question state, answer flow, reveal behavior, cancellation, and media handling.
 
 Question content is authored in `supabase/questions/`; read `docs/couple-question-guidelines.md` before changing prompts. For combined `text` + `photo` or `text` + `partner_choice` questions, both composers can be shown at once and each part is optional.
+
+Questions history reads through `public.get_daily_questions_history()` and `public.get_daily_answer_history_details()` (migration `20260628234249_add_daily_questions_history_rpcs.sql`): thin public wrappers over security-definer internal implementations, scoped to instances the viewer has answered, reusing the existing per-answer reveal rules.
 
 ## Widget Drawing
 
