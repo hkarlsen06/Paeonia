@@ -2,7 +2,7 @@
 
 **Pronunciation:** pay-OH-nee-uh
 
-Paeonia is a private relationship app for couples who want to feel close through distance. It is named after the botanical genus for peonies, one of the founder's girlfriend's favorite flowers, making the name both personal and emotionally rooted.
+Paeonia is a private relationship app for couples who want to feel close through distance. It is named after the botanical genus for peonies, one of the founder's favorite flowers, making the name both personal and emotionally rooted.
 
 **Canonical domain:** `paeonia.no`
 
