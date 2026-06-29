@@ -6,7 +6,7 @@ import OSLog
 #endif
 
 /// Identity needed to label a synced drawing with the right nickname.
-nonisolated struct WidgetSyncIdentity: Sendable {
+nonisolated struct WidgetSyncIdentity: Hashable, Sendable {
     let currentUserID: UUID?
     let currentDisplayName: String?
     let partnerDisplayName: String?
@@ -42,6 +42,8 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
     private let pendingUploader: (any WidgetCanvasUploading)?
     private let defaults: UserDefaults
     private let lastSyncedKey = "paeonia.widgetCanvas.lastSyncedRevisionID"
+    private var inFlightSync: (identity: WidgetSyncIdentity, task: Task<Void, Never>)?
+    private var pendingRerunIdentities: Set<WidgetSyncIdentity> = []
 
     #if DEBUG
     private let logger = Logger(
@@ -67,6 +69,33 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
     }
 
     func sync(identity: WidgetSyncIdentity) async {
+        // A matching run is already going. It may have already read the canvas state, so
+        // simply awaiting it could miss a revision committed after that read. Ask the
+        // running pass for one trailing re-run (all duplicates collapse into a single
+        // re-run) and wait for that pass to finish. A different identity still runs on
+        // its own, independently.
+        if let inFlightSync, inFlightSync.identity == identity {
+            pendingRerunIdentities.insert(identity)
+            await inFlightSync.task.value
+            return
+        }
+
+        // Run, then do one more pass for each generation of duplicates that arrived while
+        // we were busy, so the latest state is always observed before we settle. The
+        // re-run is cheap when nothing changed: it re-reads the canvas state and stops at
+        // the already-synced revision before downloading again.
+        repeat {
+            pendingRerunIdentities.remove(identity)
+            let syncTask = Task { await performSync(identity: identity) }
+            inFlightSync = (identity, syncTask)
+            await syncTask.value
+            if inFlightSync?.identity == identity {
+                inFlightSync = nil
+            }
+        } while pendingRerunIdentities.contains(identity)
+    }
+
+    private func performSync(identity: WidgetSyncIdentity) async {
         #if DEBUG
         logger.debug("Widget canvas sync started.")
         #endif
