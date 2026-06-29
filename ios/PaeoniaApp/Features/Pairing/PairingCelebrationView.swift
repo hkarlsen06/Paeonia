@@ -71,7 +71,7 @@ struct PairingCelebrationView: View { // swiftlint:disable:this type_body_length
         self.onIntroComplete = onIntroComplete
         self.onDismiss = onDismiss
         self.profilePhotoProvider = profilePhotoProvider
-            ?? (try? ProfilePhotoImageService.live())
+            ?? ProfilePhotoImageProviderFactory.shared
             ?? UnavailableProfilePhotoImageProvider()
     }
 

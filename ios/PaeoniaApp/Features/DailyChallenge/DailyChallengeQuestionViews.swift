@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DailyQuestionStatusView: View {
     let question: DailyChallengeQuestion
+    var participants = DailyChallengeParticipants()
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
@@ -10,17 +11,16 @@ struct DailyQuestionStatusView: View {
                     systemImage: line.systemImage,
                     title: line.title,
                     date: line.date,
-                    usesRelativeTimestamp: line.usesRelativeTimestamp,
                     tint: line.tint
                 )
             }
         }
     }
 
-    /// Both people's status for this question, ordered chronologically: answered
-    /// events (which carry a timestamp) come first, oldest to newest, and a still
-    /// "you haven't answered yet" line sits last as the unresolved present. In the
-    /// common case that puts "your partner answered" above "you haven't answered yet".
+    /// Both people's status for this question, with the partner always on top: their
+    /// line first (when they've answered), then yours. Putting the partner first means
+    /// once you reply you read their status before your own, rather than by whoever
+    /// happened to answer first.
     private var statusLines: [DailyStatusLineModel] {
         var lines: [DailyStatusLineModel] = []
 
@@ -32,9 +32,8 @@ struct DailyQuestionStatusView: View {
                 DailyStatusLineModel(
                     id: "partner",
                     systemImage: question.canViewPartnerAnswer ? "heart.circle.fill" : "lock.circle.fill",
-                    title: .dailyChallengePartnerHidden,
+                    title: .dailyChallengePartnerHidden(participants.partnerName),
                     date: partnerAnswer.answeredAt,
-                    usesRelativeTimestamp: true,
                     tint: question.canViewPartnerAnswer ? .paeoniaAccentPrimary : .paeoniaTextTertiary
                 )
             )
@@ -47,7 +46,6 @@ struct DailyQuestionStatusView: View {
                     systemImage: "checkmark.circle.fill",
                     title: .dailyChallengeYouAnswered,
                     date: ownAnswer.answeredAt,
-                    usesRelativeTimestamp: false,
                     tint: .paeoniaSuccess
                 )
             )
@@ -58,20 +56,12 @@ struct DailyQuestionStatusView: View {
                     systemImage: "circle",
                     title: .dailyChallengeNotAnswered,
                     date: nil,
-                    usesRelativeTimestamp: false,
                     tint: .paeoniaTextTertiary
                 )
             )
         }
 
-        return lines.sorted { lhs, rhs in
-            switch (lhs.date, rhs.date) {
-            case let (left?, right?): return left < right
-            case (.some, nil): return true
-            case (nil, .some): return false
-            case (nil, nil): return false
-            }
-        }
+        return lines
     }
 }
 
@@ -80,7 +70,6 @@ private struct DailyStatusLineModel: Identifiable {
     let systemImage: String
     let title: LocalizedStringResource
     let date: Date?
-    let usesRelativeTimestamp: Bool
     let tint: Color
 }
 
@@ -88,7 +77,6 @@ private struct DailyStatusLine: View {
     let systemImage: String
     let title: LocalizedStringResource
     let date: Date?
-    let usesRelativeTimestamp: Bool
     let tint: Color
 
     var body: some View {
@@ -103,19 +91,13 @@ private struct DailyStatusLine: View {
                 .foregroundStyle(.paeoniaTextSecondary)
 
             if let date {
-                timestampText(for: date)
+                // Both people's timestamps read the same relative way ("2 h ago"), so
+                // the line never mixes a clock time with a relative one.
+                Text(date, format: relativeDateFormat)
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextTertiary)
             }
         }
-    }
-
-    private func timestampText(for targetDate: Date) -> Text {
-        guard usesRelativeTimestamp else {
-            return Text(targetDate, style: .time)
-        }
-
-        return Text(targetDate, format: relativeDateFormat)
     }
 
     private var relativeDateFormat: Date.RelativeFormatStyle {
@@ -142,30 +124,59 @@ struct DailyAnswerDetailsView: View {
                     mediaKind: question.mediaAnswerKind
                 )
             } else {
-                if let detail = question.ownAnswerDetail {
+                // Partner always on top, then you — so once you reply you read their
+                // answer first, not what you just wrote.
+                ForEach(orderedAnswerBlocks) { block in
                     DailyVisibleAnswerBlock(
-                        title: participants.currentName,
-                        detail: detail,
+                        title: block.title,
+                        detail: block.detail,
                         participants: participants,
                         mediaKind: question.mediaAnswerKind
                     )
                 }
 
-                if let detail = question.partnerAnswerDetail, detail.canViewAnswer {
-                    DailyVisibleAnswerBlock(
-                        title: participants.partnerName,
-                        detail: detail,
-                        participants: participants,
-                        mediaKind: question.mediaAnswerKind
-                    )
-                } else if question.partnerAnswer != nil, !question.canViewPartnerAnswer {
-                    Text(.dailyChallengePartnerHiddenMessage)
+                if shouldShowPartnerHidden {
+                    Text(.dailyChallengePartnerHiddenMessage(participants.partnerName))
                         .font(PaeoniaTypography.caption)
                         .foregroundStyle(.paeoniaTextSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
+    }
+
+    /// One revealed answer paired with the name heading it. Identified by the answer
+    /// id so the ordered list stays stable across reloads.
+    private struct AnswerBlock: Identifiable {
+        let id: UUID
+        let title: String
+        let detail: DailyQuestionAnswerDetail
+    }
+
+    /// The visible answers with the partner always on top, then you. The partner's
+    /// answer shows only once it's viewable; your answer is headed "You" (never your
+    /// own name).
+    private var orderedAnswerBlocks: [AnswerBlock] {
+        var blocks: [AnswerBlock] = []
+
+        if let detail = question.partnerAnswerDetail, detail.canViewAnswer {
+            blocks.append(AnswerBlock(id: detail.answerID, title: participants.partnerName, detail: detail))
+        }
+
+        if let detail = question.ownAnswerDetail {
+            blocks.append(AnswerBlock(id: detail.answerID, title: youTitle, detail: detail))
+        }
+
+        return blocks
+    }
+
+    /// Shown when the partner has answered but their reply is still hidden behind your
+    /// own answer — so there's no revealed partner block to render in its place. Never
+    /// shown alongside a revealed partner block (that block always wins).
+    private var shouldShowPartnerHidden: Bool {
+        question.partnerAnswer != nil
+            && !question.canViewPartnerAnswer
+            && !(question.partnerAnswerDetail?.canViewAnswer ?? false)
     }
 
     /// The own answer to render when both partners share one partner-choice pick — the
@@ -175,9 +186,15 @@ struct DailyAnswerDetailsView: View {
         return question.ownAnswerDetail
     }
 
-    /// Both answerers' names for a shared answer's heading, e.g. "Hilde & Hjalmar".
+    /// The current user's heading — always "You", never their name.
+    private var youTitle: String {
+        String(localized: .dailyChallengeChoiceYou)
+    }
+
+    /// Both answerers' names for a shared answer's heading, partner first, e.g. "Oda &
+    /// You". The current user always reads as "You" rather than their name.
     private var bothAnswererTitle: String {
-        "\(participants.currentName) & \(participants.partnerName)"
+        "\(participants.partnerName) & \(youTitle)"
     }
 }
 

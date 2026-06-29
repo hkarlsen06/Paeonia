@@ -12,12 +12,14 @@ extension LocationMapViewModel.Notice {
         }
     }
 
-    var message: LocalizedStringResource {
+    /// Takes the partner's name so the permission-denied notice names the partner
+    /// ("…share it with Oda."); other notices ignore it.
+    func message(partnerName: String) -> LocalizedStringResource {
         switch self {
         case .saveFailed:
             .settingsLocationSaveErrorMessage
         case .permissionDenied:
-            .settingsLocationPermissionDeniedMessage
+            .settingsLocationPermissionDeniedMessage(partnerName)
         case .locationUnavailable:
             .settingsLocationUnavailableMessage
         }

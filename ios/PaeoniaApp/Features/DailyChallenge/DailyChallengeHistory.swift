@@ -18,17 +18,24 @@ nonisolated struct DailyChallengeHistoryDay: Identifiable, Equatable, Sendable {
 /// answered questions into day groups, newest day first. Kept free of SwiftUI and
 /// networking so the ordering rules are easy to unit test.
 nonisolated enum DailyChallengeHistory {
-    /// Groups answered questions by their couple-local date and returns the days
-    /// newest-first. Within a day, questions are ordered by their most recent answer
-    /// (latest first), then by slot, so the whole list reads most-recent-first and
-    /// stays stable and deterministic.
+    /// Groups answered questions by their effective couple-local date — the day of
+    /// their most recent answer — and returns the days newest-first. Within a day,
+    /// questions are ordered by their most recent answer (latest first), then by slot,
+    /// so the whole list reads most-recent-first and stays stable and deterministic.
+    ///
+    /// Grouping on `effectiveLocalDate` (not the instance's seed day) is what keeps a
+    /// late-night exchange — partner answered before midnight, you answered after —
+    /// under the day it was actually finished.
     static func grouped(_ questions: [DailyChallengeQuestion]) -> [DailyChallengeHistoryDay] {
-        Dictionary(grouping: questions, by: \.localDate)
-            .map { localDate, dayQuestions in
+        Dictionary(grouping: questions, by: \.effectiveLocalDate)
+            .map { effectiveLocalDate, dayQuestions in
                 DailyChallengeHistoryDay(
-                    localDate: localDate,
-                    date: parseLocalDate(localDate) ?? dayQuestions.first?.startsAt ?? .distantPast,
-                    questions: dayQuestions.sorted(by: withinDayOrder)
+                    localDate: effectiveLocalDate,
+                    date: parseLocalDate(effectiveLocalDate) ?? dayQuestions.first?.startsAt ?? .distantPast,
+                    // Most-recently-answered first within a day — the same ordering the
+                    // Questions tab's single list uses (`DailyChallengeQuestion`'s
+                    // `latestAnswerDate` is the shared sort key).
+                    questions: dayQuestions.sorted(by: DailyChallengeSnapshot.readOverviewOrder)
                 )
             }
             .sorted { $0.localDate > $1.localDate }
@@ -50,28 +57,5 @@ nonisolated enum DailyChallengeHistory {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt
         return calendar.date(from: DateComponents(year: year, month: month, day: day))
-    }
-
-    /// Most-recently-answered first within a day, then slot, then a stable id
-    /// tiebreak. A question's sort time is the *latest* of its two answers — when the
-    /// exchange was last completed — so an exchange the partner only just finished
-    /// rises above one both people wrapped up earlier in the day.
-    private static func withinDayOrder(
-        _ lhs: DailyChallengeQuestion,
-        _ rhs: DailyChallengeQuestion
-    ) -> Bool {
-        let lhsDate = latestAnswerDate(lhs)
-        let rhsDate = latestAnswerDate(rhs)
-        if lhsDate != rhsDate { return lhsDate > rhsDate }
-        if lhs.slotNumber != rhs.slotNumber { return lhs.slotNumber < rhs.slotNumber }
-        return lhs.id.uuidString < rhs.id.uuidString
-    }
-
-    /// The most recent answer time on a question — the later of the user's and the
-    /// partner's answer — falling back to the day's start when neither is set.
-    private static func latestAnswerDate(_ question: DailyChallengeQuestion) -> Date {
-        [question.ownAnswer?.answeredAt, question.partnerAnswer?.answeredAt]
-            .compactMap { $0 }
-            .max() ?? question.startsAt
     }
 }

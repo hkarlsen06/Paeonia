@@ -46,6 +46,8 @@ final class DailyChallengeViewModel {
     #endif
     private var localChangeSyncHandler: (@MainActor () async -> Void)?
     private var currentUserID: UUID?
+    private var reloadTask: Task<Void, Never>?
+    private var reloadTaskUserID: UUID?
     private var answerDrafts: [UUID: DailyAnswerDraft] = [:]
 
     private(set) var participants = DailyChallengeParticipants()
@@ -146,7 +148,14 @@ final class DailyChallengeViewModel {
         DailyChallengeHistoryViewModel(
             service: service,
             currentUserID: currentUserID,
-            participants: participants
+            participants: participants,
+            // The partner's still-unanswered questions are carried-forward exchanges
+            // that live in this snapshot, not the answered-history read model. Reading
+            // them live keeps the history's actionable cards identical to the Questions
+            // tab's, and answering one here updates both surfaces.
+            pendingPartnerQuestions: { [weak self] in
+                self?.snapshot.answerablePartnerQuestions ?? []
+            }
         )
     }
 
@@ -169,6 +178,10 @@ final class DailyChallengeViewModel {
         }
 
         self.currentUserID = newUserID
+        reloadTask?.cancel()
+        reloadTask = nil
+        reloadTaskUserID = nil
+        isLoading = false
         // Restore any drafts this person saved earlier so reopening — or relaunching
         // the app — keeps their half-written answers.
         answerDrafts = newUserID.map { draftStore.drafts(for: $0) } ?? [:]
@@ -190,19 +203,47 @@ final class DailyChallengeViewModel {
 
     func reload() async {
         guard let currentUserID else { return }
+        if let reloadTask, reloadTaskUserID == currentUserID {
+            await reloadTask.value
+            return
+        }
 
+        reloadTask?.cancel()
+        let taskUserID = currentUserID
+        let task = Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.performReload(currentUserID: taskUserID)
+        }
+        reloadTask = task
+        reloadTaskUserID = taskUserID
+
+        await task.value
+        if reloadTaskUserID == taskUserID {
+            reloadTask = nil
+            reloadTaskUserID = nil
+        }
+    }
+
+    private func performReload(currentUserID: UUID) async {
         isLoading = true
+        defer {
+            if self.currentUserID == currentUserID {
+                isLoading = false
+            }
+        }
+
         do {
-            snapshot = try await service.loadToday(currentUserID: currentUserID)
+            let result = try await service.loadToday(currentUserID: currentUserID)
+            guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
+            apply(result)
         } catch {
             if !isCancellation(error) {
                 logFailure("Loading today's challenge failed", error)
                 notice = .loadFailed
             }
         }
-        await refreshStreak()
+        guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
         await refreshSendingState()
-        isLoading = false
     }
 
     /// Refreshes the couple's streak from the server. Best-effort: on failure the
@@ -222,12 +263,14 @@ final class DailyChallengeViewModel {
     func startToday() async {
         guard let currentUserID, !isStarting else { return }
 
+        cancelInFlightReload()
         isStarting = true
         do {
-            snapshot = try await service.startToday(
+            let result = try await service.startToday(
                 currentUserID: currentUserID,
                 operation: operationProvider.makeOperation()
             )
+            apply(result)
         } catch {
             if !isCancellation(error) {
                 logFailure("Starting today's challenge failed", error)
@@ -496,13 +539,15 @@ final class DailyChallengeViewModel {
             let currentUserID
         else { return }
 
+        cancelInFlightReload()
         shufflingSlotNumber = question.slotNumber
         do {
-            snapshot = try await service.shuffleQuestion(
+            let result = try await service.shuffleQuestion(
                 currentUserID: currentUserID,
                 slotNumber: question.slotNumber,
                 operation: operationProvider.makeOperation()
             )
+            apply(result)
             clearDraft(for: question.id)
         } catch is DailyChallengeShuffleLimitError {
             notice = .shuffleLimitReached
@@ -721,6 +766,17 @@ final class DailyChallengeViewModel {
 
     func dismissNotice() {
         notice = nil
+    }
+
+    private func apply(_ result: DailyChallengeLoadResult) {
+        snapshot = result.snapshot
+        streak = result.streak
+    }
+
+    private func cancelInFlightReload() {
+        reloadTask?.cancel()
+        reloadTask = nil
+        reloadTaskUserID = nil
     }
 
     var hasCompletedRequiredDailyQuestions: Bool {

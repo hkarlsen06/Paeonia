@@ -22,7 +22,7 @@ struct PaeoniaProfilePhotoAvatar: View {
         self.tint = tint
         self.size = size
         self.profilePhotoProvider = profilePhotoProvider
-            ?? (try? ProfilePhotoImageService.live())
+            ?? ProfilePhotoImageProviderFactory.shared
             ?? EmptyProfilePhotoImageProvider()
     }
 

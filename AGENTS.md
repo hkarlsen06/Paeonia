@@ -511,7 +511,9 @@ Paeonia uses Supabase's GitHub integration for remote deploys. On push to `origi
 
 - Always create new migration files with `supabase migration new <migration_name>`, then edit the generated file.
 - Keep migration files in `supabase/migrations/`.
-- Do not push remote migrations with the Supabase CLI. Commit the migration files and let Supabase's Git integration apply them when the configured branch is pushed to `origin`.
+- Committed migrations apply automatically via Supabase's Git integration on push to the configured branch — that's the default path, and for most changes just committing is enough.
+- Pushing with the Supabase CLI is also fine when you need a migration live sooner than the next push (e.g. to unblock testing): run `supabase db push --linked` (add `--dry-run` first to preview, `--yes` to skip the prompt). The CLI applies only migrations missing from the remote history and records each under its file version, so a later Git push sees it already applied and skips it — the two paths don't conflict.
+- Either way, an already-applied migration must stay editable-safe: prefer `create or replace` / `drop ... if exists` so re-running is a no-op. To change a function's return type (which `create or replace` can't), `drop function if exists` then recreate.
 - Keep SQL source files in `supabase/sql/functions/` in sync with actual database definitions if that structure is added.
 - Use `supabase db pull` only when intentionally baselining or reconciling remote-first schema changes.
 

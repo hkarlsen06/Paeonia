@@ -1,18 +1,36 @@
 import SwiftUI
 
-/// A full-screen, read-only history of the couple's daily questions, grouped by the
-/// day they belong to (newest first) with a centered date divider between groups.
+/// A full-screen history of the couple's daily questions: the partner's questions
+/// still waiting for the user's answer sit at the top with the same answer CTA the
+/// Questions tab uses, and the completed exchanges follow, grouped by the day they
+/// belong to (newest first) with a centered date divider between groups.
 ///
-/// It reuses the same read-only question card the Questions tab shows, so a past
-/// exchange reads back exactly as it does on the day. Answering never happens here.
+/// It reuses the same question card the Questions tab shows, so a past exchange reads
+/// back exactly as it does on the day. Answering a waiting partner question opens the
+/// focused flow zoomed out of its card; the completed exchanges below are read-only.
 struct DailyChallengeHistoryView: View {
     @State private var viewModel: DailyChallengeHistoryViewModel
+    /// The shared daily challenge view model, used to answer a partner's waiting
+    /// question from here (the focused flow needs it) and to gate that CTA behind
+    /// finishing today's own questions — the same rule the Questions tab applies.
+    private let dailyChallengeViewModel: DailyChallengeViewModel
+    /// The question whose answer flow is open, presented over the history. Driving it
+    /// by item lets the flow zoom out of the tapped card and carry its own state.
+    @State private var answeringQuestion: DailyChallengeQuestion?
+    /// Source namespace for the answer flow's zoom-out transition; the tapped card marks
+    /// itself in it so the flow appears to grow from the card the user tapped.
+    @Namespace private var zoomNamespace
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
 
-    init(viewModel: DailyChallengeHistoryViewModel) {
+    init(
+        viewModel: DailyChallengeHistoryViewModel,
+        dailyChallengeViewModel: DailyChallengeViewModel
+    ) {
         _viewModel = State(initialValue: viewModel)
+        self.dailyChallengeViewModel = dailyChallengeViewModel
     }
 
     var body: some View {
@@ -36,6 +54,18 @@ struct DailyChallengeHistoryView: View {
         .preferredColorScheme(.dark)
         .task { await viewModel.load() }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
+        // Answering a waiting partner question zooms its card out into the focused
+        // flow. Sending updates the shared challenge, so on close we reload the history
+        // and the question moves from "waiting for you" into the completed timeline.
+        .fullScreenCover(item: $answeringQuestion) { question in
+            DailyPartnerAnswerFlow(
+                question: question,
+                viewModel: dailyChallengeViewModel,
+                onClose: closeAnswerFlow
+            )
+            .zoomTransition(question.id, in: zoomNamespace, enabled: !reduceMotion)
+            .environment(bannerCenter)
+        }
     }
 
     @ViewBuilder
@@ -51,15 +81,19 @@ struct DailyChallengeHistoryView: View {
             failedState
         case .empty:
             emptyState
-        case let .content(days):
-            timeline(days)
+        case let .content(content):
+            timeline(content)
         }
     }
 
-    private func timeline(_ days: [DailyChallengeHistoryDay]) -> some View {
+    private func timeline(_ content: DailyChallengeHistoryViewModel.Content) -> some View {
         ScrollView {
             LazyVStack(spacing: PaeoniaSpacing.sectionSpacing) {
-                ForEach(days) { day in
+                if !content.pendingPartnerQuestions.isEmpty {
+                    pendingSection(content.pendingPartnerQuestions)
+                }
+
+                ForEach(content.days) { day in
                     VStack(spacing: PaeoniaSpacing.space12) {
                         DailyChallengeHistoryDateDivider(date: day.date)
 
@@ -77,6 +111,28 @@ struct DailyChallengeHistoryView: View {
             .padding(.bottom, PaeoniaSpacing.space32)
         }
         .refreshable { await viewModel.load() }
+    }
+
+    /// The partner's questions still waiting for the user's answer, shown at the top
+    /// with the same CTA the Questions tab uses. The CTA stays visible but locked until
+    /// the user finishes their own questions for the day.
+    private func pendingSection(_ questions: [DailyChallengeQuestion]) -> some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            Text(.dailyChallengePartnerSectionTitle(viewModel.participants.partnerName))
+                .font(PaeoniaTypography.sectionTitle)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            ForEach(questions) { question in
+                DailyChallengeReadCard(
+                    question: question,
+                    participants: viewModel.participants,
+                    isOwnChallengeComplete: dailyChallengeViewModel.hasCompletedRequiredDailyQuestions,
+                    zoomNamespace: zoomNamespace,
+                    onAnswer: { answeringQuestion = question }
+                )
+            }
+        }
     }
 
     private var emptyState: some View {
@@ -102,6 +158,13 @@ struct DailyChallengeHistoryView: View {
             .buttonStyle(PaeoniaPrimaryButtonStyle())
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+    }
+
+    /// Closes the partner-answer flow and refreshes the history so the just-answered
+    /// question leaves the "waiting for you" section and joins the completed timeline.
+    private func closeAnswerFlow() {
+        answeringQuestion = nil
+        Task { await viewModel.load() }
     }
 
     private func showBanner(for notice: DailyChallengeHistoryViewModel.Notice?) {
@@ -156,6 +219,8 @@ struct DailyChallengeHistoryDateDivider: View {
 }
 
 private struct DailyChallengeHistoryPreviewHost: View {
+    @State private var dailyChallengeViewModel = DailyChallengeViewModel(service: PreviewDailyChallengeService())
+
     var body: some View {
         DailyChallengeHistoryView(
             viewModel: DailyChallengeHistoryViewModel(
@@ -167,10 +232,12 @@ private struct DailyChallengeHistoryPreviewHost: View {
                     partnerUserID: UUID(),
                     partnerDisplayName: "Oda"
                 )
-            )
+            ),
+            dailyChallengeViewModel: dailyChallengeViewModel
         )
         .environment(PaeoniaBannerCenter())
         .preferredColorScheme(.dark)
+        .task { await dailyChallengeViewModel.configure(currentUserID: PreviewDailyChallengeService.userID) }
     }
 }
 #endif

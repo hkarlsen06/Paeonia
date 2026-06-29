@@ -55,7 +55,7 @@ actor PartnerAvatarSharingService: PartnerAvatarSharing {
 
 nonisolated enum PartnerAvatarSharingServiceFactory {
     static func makeDefault() -> (any PartnerAvatarSharing)? {
-        guard let imageProvider = try? ProfilePhotoImageService.live() else {
+        guard let imageProvider = ProfilePhotoImageProviderFactory.shared else {
             return nil
         }
         return PartnerAvatarSharingService(imageProvider: imageProvider)

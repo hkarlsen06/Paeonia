@@ -16,12 +16,13 @@ nonisolated protocol DailyAnswerMediaCacheClearing: Sendable {
 /// Fetches and caches revealed daily-answer media. Mirrors the profile photo image
 /// service: check the on-disk cache first, otherwise resolve a signed URL through
 /// `get_media_signed_url`, download, and cache by media asset id.
-final class DailyAnswerMediaImageService: @unchecked Sendable, DailyAnswerMediaImageProviding, DailyAnswerMediaCacheClearing {
+actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerMediaCacheClearing {
     private let client: SupabaseClient
     private let directoryURL: URL
     private let expiresInSeconds = 3_600
+    private var inFlightDownloads: [UUID: Task<Data?, Never>] = [:]
 
-    nonisolated init(
+    init(
         client: SupabaseClient,
         directoryURL: URL = DailyAnswerMediaImageService.defaultDirectoryURL()
     ) {
@@ -42,6 +43,28 @@ final class DailyAnswerMediaImageService: @unchecked Sendable, DailyAnswerMediaI
             return cached
         }
 
+        if let inFlightDownload = inFlightDownloads[mediaAssetID] {
+            return await inFlightDownload.value
+        }
+
+        let download = Task { await fetchAndCache(mediaAssetID: mediaAssetID) }
+        inFlightDownloads[mediaAssetID] = download
+        let data = await download.value
+        inFlightDownloads[mediaAssetID] = nil
+        return data
+    }
+
+    func clearAll() async {
+        inFlightDownloads.values.forEach { $0.cancel() }
+        inFlightDownloads.removeAll()
+
+        guard FileManager.default.fileExists(atPath: directoryURL.path) else {
+            return
+        }
+        try? FileManager.default.removeItem(at: directoryURL)
+    }
+
+    private func fetchAndCache(mediaAssetID: UUID) async -> Data? {
         guard let signedURL = try? await signedURL(for: mediaAssetID) else {
             return nil
         }
@@ -62,13 +85,6 @@ final class DailyAnswerMediaImageService: @unchecked Sendable, DailyAnswerMediaI
         } catch {
             return nil
         }
-    }
-
-    func clearAll() async {
-        guard FileManager.default.fileExists(atPath: directoryURL.path) else {
-            return
-        }
-        try? FileManager.default.removeItem(at: directoryURL)
     }
 
     private func signedURL(for mediaAssetID: UUID) async throws -> URL? {

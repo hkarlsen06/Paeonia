@@ -36,7 +36,7 @@ struct CoupleMapCard: View {
                 )
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(.homeMapAccessibilityLabel))
+            .accessibilityLabel(Text(.homeMapAccessibilityLabel(partnerName)))
             .accessibilityHint(Text(.homeMapOpenHint))
             .accessibilityAddTraits(.isButton)
             .accessibilityAction {
@@ -62,7 +62,7 @@ struct CoupleMapCard: View {
             mapTile {
                 MapEmptyState(
                     title: partnerUnknownTitle(for: reason),
-                    message: .homeMapPartnerUnknownMessage,
+                    message: .homeMapPartnerUnknownMessage(partnerName),
                     systemImage: "location.slash.fill"
                 )
             }
@@ -103,7 +103,7 @@ struct CoupleMapCard: View {
         case .relationshipEnded:
             .homeMapRelationshipEndedTitle
         case .disabled, .notSharing, .visible, .unknown:
-            .homeMapPartnerUnknownTitle
+            .homeMapPartnerUnknownTitle(partnerName)
         }
     }
 }

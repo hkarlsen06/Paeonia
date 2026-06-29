@@ -228,12 +228,6 @@ nonisolated struct DailyChallengeParticipants: Equatable, Sendable {
         partnerChoiceOptions?.first { $0.id == userID }
     }
 
-    /// The current user's name for an answer header — their nickname, or a simple
-    /// "You" when it isn't known yet.
-    var currentName: String {
-        currentDisplayName ?? String(localized: .dailyChallengeChoiceYou)
-    }
-
     /// The partner's name for an answer header or a revealed pick — their nickname, or
     /// a neutral "Partner" fallback when it isn't known yet.
     var partnerName: String {
@@ -298,6 +292,11 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Sendable {
     let coupleDayID: UUID
     let coupleID: UUID
     let localDate: String
+    /// The couple-local date this question effectively belongs to — the day of its most
+    /// recent answer. Matches `localDate` for live/today questions; in history it can be
+    /// a later day when an exchange was finished after midnight. The history overview
+    /// groups on this so a late-night exchange shows under the day it was completed.
+    let effectiveLocalDate: String
     let startsAt: Date
     let endsAt: Date
     let seededForUserID: UUID
@@ -433,6 +432,16 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Sendable {
     var canEditOwnAnswer: Bool {
         editableAnswerKind != nil
     }
+
+    /// The most recent answer time on this question — the later of the user's and the
+    /// partner's answer — falling back to the day's start when neither is set. The
+    /// shared sort key for the read overviews (the Questions tab's single list and the
+    /// history's within-day order), so both read most-recent-first the same way.
+    var latestAnswerDate: Date {
+        [ownAnswer?.answeredAt, partnerAnswer?.answeredAt]
+            .compactMap { $0 }
+            .max() ?? startsAt
+    }
 }
 
 extension DailyChallengeQuestion {
@@ -477,6 +486,7 @@ extension DailyChallengeQuestion {
                     coupleDayID: row.coupleDayID,
                     coupleID: row.coupleID,
                     localDate: row.localDate,
+                    effectiveLocalDate: row.effectiveLocalDate ?? row.localDate,
                     startsAt: row.startsAt,
                     endsAt: row.endsAt,
                     seededForUserID: row.seededForUserID,
@@ -670,6 +680,30 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
     /// history so this section never shows more than today's three.
     var ownQuestionsForReadOverview: [DailyChallengeQuestion] {
         ownQuestions.sorted(by: readOverviewDayOrder)
+    }
+
+    /// The Questions tab's single read list: the partner's started questions and the
+    /// user's own current-day questions in one set, most recent answer first — the same
+    /// ordering the history screen uses within a day. The view applies the "answered or
+    /// still sending" filter (sending is view-model state) before showing the cards.
+    var readOverviewQuestions: [DailyChallengeQuestion] {
+        (partnerStartedQuestions + ownQuestions).sorted(by: Self.readOverviewOrder)
+    }
+
+    /// Orders read-overview questions by most recent answer first, then slot, then a
+    /// stable id tiebreak. Shared by the Questions tab's single list and the history's
+    /// within-day order so both read the same way.
+    static func readOverviewOrder(
+        _ lhs: DailyChallengeQuestion,
+        _ rhs: DailyChallengeQuestion
+    ) -> Bool {
+        if lhs.latestAnswerDate != rhs.latestAnswerDate {
+            return lhs.latestAnswerDate > rhs.latestAnswerDate
+        }
+        if lhs.slotNumber != rhs.slotNumber {
+            return lhs.slotNumber < rhs.slotNumber
+        }
+        return lhs.id.uuidString < rhs.id.uuidString
     }
 
     /// Questions surfaced inside the focused answering flow, in the order the

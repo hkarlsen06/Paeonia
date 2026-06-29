@@ -119,6 +119,7 @@ struct PairedHomeView: View {
     private var dailyPromptCard: some View {
         DailyPromptCard(
             state: dailyChallengeCardState,
+            partnerName: partnerName,
             streak: dailyChallengeStreak,
             prefersPartnerAnswersWhenComplete: true,
             onAnswer: onOpenDailyChallenge,

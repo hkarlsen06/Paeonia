@@ -131,6 +131,7 @@ struct DailyChallengeAnswerFlow: View {
             case .complete:
                 DailyChallengeCompletionView(
                     streak: currentStreak,
+                    partnerName: viewModel.participants.partnerName,
                     restorableCount: viewModel.streak.isRestorable ? viewModel.streak.restorableCount : nil,
                     onRestore: onRestore,
                     hasPartnerQuestionsToAnswer: hasPartnerQuestionsToAnswer,
@@ -529,7 +530,7 @@ struct DailyChallengeAnswerFlow: View {
         bannerCenter.show(
             .error(
                 title: String(localized: notice.title),
-                message: String(localized: notice.message)
+                message: String(localized: notice.message(partnerName: viewModel.participants.partnerName))
             )
         )
         viewModel.dismissNotice()
@@ -564,7 +565,7 @@ struct DailyChallengeAnswerStep: View {
             }
 
             if showsPartnerWaitingNote {
-                DailyPartnerWaitingNote()
+                DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
             }
 
             if hasBottomComposer {
@@ -642,7 +643,7 @@ struct DailyChallengeAnswerStep: View {
         } else if let editKind = question.editableAnswerKind {
             editComposer(kind: editKind)
         } else if question.hasOwnAnswer {
-            DailyQuestionStatusView(question: question)
+            DailyQuestionStatusView(question: question, participants: viewModel.participants)
             DailyAnswerDetailsView(question: question, participants: viewModel.participants)
         } else if question.canSubmitAnswer {
             // Just the input here — the kind picker and the "answer to see their
@@ -666,7 +667,7 @@ struct DailyChallengeAnswerStep: View {
         switch kind {
         case .partnerChoice:
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                DailyQuestionStatusView(question: question)
+                DailyQuestionStatusView(question: question, participants: viewModel.participants)
 
                 if let options = viewModel.participants.partnerChoiceOptions {
                     DailyPartnerChoicePicker(
@@ -815,13 +816,15 @@ struct DailyChallengeAnswerStep: View {
 }
 
 private struct DailyPartnerWaitingNote: View {
+    let partnerName: String
+
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
             Image(systemName: "lock.circle.fill")
                 .foregroundStyle(.paeoniaAccentPrimary)
                 .accessibilityHidden(true)
 
-            Text(.dailyChallengePartnerHiddenMessage)
+            Text(.dailyChallengePartnerHiddenMessage(partnerName))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -924,6 +927,8 @@ struct DailyChallengeAnswerActionBar: View {
 
 private struct DailyChallengeCompletionView: View {
     let streak: Int
+    /// The partner's display name, so the finish copy and CTA name them.
+    let partnerName: String
     /// The lost streak length when a restore is on offer; `nil` for a normal,
     /// celebratory finish. When set, the flame reads "slipped" and a "get it back"
     /// action is offered above Done.
@@ -952,7 +957,11 @@ private struct DailyChallengeCompletionView: View {
                     .font(PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(isRestorable ? .streakRestoreMessage : .dailyChallengeFlowAllDoneMessage)
+                Text(
+                    isRestorable
+                        ? .streakRestoreMessage
+                        : .dailyChallengeFlowAllDoneMessage(partnerName)
+                )
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1025,12 +1034,12 @@ private struct DailyChallengeCompletionView: View {
             switch style {
             case .primary:
                 Button(action: onOpenPartnerQuestions) {
-                    Text(.dailyChallengeFlowPartnerQuestionsButton)
+                    Text(.dailyChallengeFlowPartnerQuestionsButton(partnerName))
                 }
                 .buttonStyle(PaeoniaPrimaryButtonStyle())
             case .secondary:
                 Button(action: onOpenPartnerQuestions) {
-                    Text(.dailyChallengeFlowPartnerQuestionsButton)
+                    Text(.dailyChallengeFlowPartnerQuestionsButton(partnerName))
                 }
                 .buttonStyle(PaeoniaSecondaryButtonStyle())
             }
@@ -1062,13 +1071,13 @@ private struct StreakDetailReveal: ViewModifier {
 }
 
 #Preview("Completion") {
-    DailyChallengeCompletionView(streak: 7, restorableCount: nil, onDone: {})
+    DailyChallengeCompletionView(streak: 7, partnerName: "Oda", restorableCount: nil, onDone: {})
         .background(.paeoniaBackgroundPrimary)
         .preferredColorScheme(.dark)
 }
 
 #Preview("Completion · streak slipped") {
-    DailyChallengeCompletionView(streak: 1, restorableCount: 30, onRestore: {}, onDone: {})
+    DailyChallengeCompletionView(streak: 1, partnerName: "Oda", restorableCount: 30, onRestore: {}, onDone: {})
         .background(.paeoniaBackgroundPrimary)
         .preferredColorScheme(.dark)
 }

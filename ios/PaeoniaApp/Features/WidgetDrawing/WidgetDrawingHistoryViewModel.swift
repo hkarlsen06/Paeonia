@@ -34,6 +34,12 @@ final class WidgetDrawingHistoryViewModel {
     /// True once the first load finished and there is nothing to show.
     var isEmpty: Bool { phase == .loaded && items.isEmpty }
 
+    /// The partner's display name for copy that names them (e.g. the empty state),
+    /// falling back to a neutral "Partner" before the nickname is known.
+    var partnerName: String {
+        identity.partnerDisplayName?.trimmedNonEmpty ?? String(localized: .pairingCelebrationPartnerName)
+    }
+
     private let gateway: any WidgetCanvasGateway
     private let identity: WidgetSyncIdentity
     private let pageSize: Int

@@ -295,7 +295,7 @@ struct MainTabView: View {
 
     private var youTab: some View {
         NavigationStack {
-            SettingsView(locationViewModel: locationViewModel)
+            SettingsView(locationViewModel: locationViewModel, partnerName: dailyChallengeParticipants.partnerName)
         }
     }
 

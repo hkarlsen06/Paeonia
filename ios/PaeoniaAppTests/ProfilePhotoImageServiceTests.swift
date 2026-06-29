@@ -18,6 +18,33 @@ struct ProfilePhotoImageServiceTests {
         #expect(data == cachedData)
         #expect(await urlProvider.requestedMediaAssetIDs.isEmpty)
     }
+
+    @Test func overlappingRequestsForSamePhotoShareSignedURLLookup() async throws {
+        let mediaAssetID = try #require(UUID(uuidString: "89B38D31-B105-42E0-AAB1-3766028D3487"))
+        let cache = FakeProfilePhotoCache()
+        let urlProvider = FakeProfilePhotoURLProvider(waitsForRelease: true)
+        let service = ProfilePhotoImageService(
+            cache: cache,
+            urlProvider: urlProvider
+        )
+
+        async let first = service.profilePhotoData(for: mediaAssetID)
+        while await urlProvider.requestedMediaAssetIDs.isEmpty {
+            await Task.yield()
+        }
+
+        async let second = service.profilePhotoData(for: mediaAssetID)
+        await Task.yield()
+
+        #expect(await urlProvider.requestedMediaAssetIDs == [mediaAssetID])
+
+        await urlProvider.release()
+        let (firstData, secondData) = await (first, second)
+
+        #expect(firstData == nil)
+        #expect(secondData == nil)
+        #expect(await urlProvider.requestedMediaAssetIDs == [mediaAssetID])
+    }
 }
 
 private actor FakeProfilePhotoCache: ProfilePhotoImageCaching {
@@ -46,9 +73,22 @@ private actor FakeProfilePhotoCache: ProfilePhotoImageCaching {
 
 private actor FakeProfilePhotoURLProvider: ProfilePhotoURLProviding {
     private(set) var requestedMediaAssetIDs: [UUID?] = []
+    private let waitsForRelease: Bool
+    private var isReleased = false
+
+    init(waitsForRelease: Bool = false) {
+        self.waitsForRelease = waitsForRelease
+    }
 
     func signedProfilePhotoURL(for mediaAssetID: UUID?) async throws -> URL? {
         requestedMediaAssetIDs.append(mediaAssetID)
+        while waitsForRelease && !isReleased {
+            await Task.yield()
+        }
         return nil
+    }
+
+    func release() {
+        isReleased = true
     }
 }

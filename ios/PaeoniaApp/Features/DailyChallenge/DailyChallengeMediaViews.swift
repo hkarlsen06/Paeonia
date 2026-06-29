@@ -224,12 +224,18 @@ struct DailySendingAnswerView: View {
                 DailyVoicePlaybackView(source: .data(mediaData), fallbackDurationMs: voiceDurationMs)
             }
         } else if let mediaData, let uiImage = UIImage(data: mediaData) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFill()
+            // Sized by the rectangle, with the photo as a clipped overlay — so a
+            // `scaledToFill` photo crops within these bounds rather than widening the
+            // card (same reason as `DailyAnswerImageView`).
+            RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+                .fill(.paeoniaSurfaceSecondary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 220)
-                .clipped()
+                .overlay {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                }
                 .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
         }
     }
@@ -262,10 +268,15 @@ struct DailyAnswerImageView: View {
     @State private var didFail = false
 
     var body: some View {
-        content
+        // The surface rectangle owns the size (full available width × fixed height), so
+        // the photo rides as a clipped overlay. A `scaledToFill` image used as the base
+        // view reports its oversized fill dimensions to layout and widens the whole
+        // card; as an overlay it fills and crops within these bounds instead.
+        RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+            .fill(.paeoniaSurfaceSecondary)
             .frame(maxWidth: .infinity)
             .frame(height: height)
-            .background(.paeoniaSurfaceSecondary)
+            .overlay { content }
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
             .task(id: mediaAssetID) { await load() }
             .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))

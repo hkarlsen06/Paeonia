@@ -62,7 +62,7 @@ struct DailyChallengeReadCard: View {
                         text: sending.text
                     )
                 } else {
-                    DailyQuestionStatusView(question: question)
+                    DailyQuestionStatusView(question: question, participants: participants)
 
                     if isAnswerable {
                         // The CTA itself carries the call to action (answer to reveal,

@@ -1,9 +1,14 @@
 import Foundation
 import Supabase
 
+nonisolated struct DailyChallengeLoadResult: Equatable, Sendable {
+    let snapshot: DailyChallengeSnapshot
+    let streak: CoupleStreak
+}
+
 protocol DailyChallengeServicing: Actor {
-    func loadToday(currentUserID: UUID) async throws -> DailyChallengeSnapshot
-    func startToday(currentUserID: UUID, operation: SyncClientOperation) async throws -> DailyChallengeSnapshot
+    func loadToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult
+    func startToday(currentUserID: UUID, operation: SyncClientOperation) async throws -> DailyChallengeLoadResult
     /// Every daily question the current user has answered, across all days, as a flat
     /// chronological list. The caller groups it by day for the history overview.
     func loadHistory(currentUserID: UUID) async throws -> [DailyChallengeQuestion]
@@ -14,12 +19,12 @@ protocol DailyChallengeServicing: Actor {
         currentUserID: UUID,
         slotNumber: Int,
         operation: SyncClientOperation
-    ) async throws -> DailyChallengeSnapshot
+    ) async throws -> DailyChallengeLoadResult
 }
 
 protocol SupabaseDailyChallengeGateway: Actor {
-    func loadTodayQuestions() async throws -> [DailyQuestionRow]
-    func startDailyChallenge(operation: SyncClientOperation) async throws -> [DailyQuestionRow]
+    func loadTodaySnapshot() async throws -> DailyChallengeRemoteSnapshotRow
+    func startDailyChallenge(operation: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow
     func loadHistoryQuestions() async throws -> [DailyQuestionRow]
     func loadHistoryAnswerDetails() async throws -> [DailyAnswerDetailRow]
     func loadCoupleStreak() async throws -> CoupleStreak
@@ -27,7 +32,7 @@ protocol SupabaseDailyChallengeGateway: Actor {
     func submitAnswer(instanceID: UUID, answerID: UUID, payload: DailyAnswerPayload, operation: SyncClientOperation) async throws -> UUID
     func editTextAnswer(instanceID: UUID, text: String, operation: SyncClientOperation) async throws -> UUID
     func editPartnerChoice(instanceID: UUID, selectedUserID: UUID, operation: SyncClientOperation) async throws -> UUID
-    func shuffleQuestion(slotNumber: Int, operation: SyncClientOperation) async throws -> [DailyQuestionRow]
+    func shuffleQuestion(slotNumber: Int, operation: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow
 }
 
 actor SupabaseDailyChallengeService: DailyChallengeServicing {
@@ -49,17 +54,17 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
         )
     }
 
-    func loadToday(currentUserID: UUID) async throws -> DailyChallengeSnapshot {
-        let rows = try await gateway.loadTodayQuestions()
-        return try await snapshot(currentUserID: currentUserID, rows: rows)
+    func loadToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
+        let remote = try await gateway.loadTodaySnapshot()
+        return makeResult(currentUserID: currentUserID, remote: remote)
     }
 
     func startToday(
         currentUserID: UUID,
         operation: SyncClientOperation
-    ) async throws -> DailyChallengeSnapshot {
-        let rows = try await gateway.startDailyChallenge(operation: operation)
-        return try await snapshot(currentUserID: currentUserID, rows: rows)
+    ) async throws -> DailyChallengeLoadResult {
+        let remote = try await gateway.startDailyChallenge(operation: operation)
+        return makeResult(currentUserID: currentUserID, remote: remote)
     }
 
     /// Reads the couple's full answered-question history in two parallel calls — the
@@ -129,10 +134,10 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
         currentUserID: UUID,
         slotNumber: Int,
         operation: SyncClientOperation
-    ) async throws -> DailyChallengeSnapshot {
-        let rows: [DailyQuestionRow]
+    ) async throws -> DailyChallengeLoadResult {
+        let remote: DailyChallengeRemoteSnapshotRow
         do {
-            rows = try await gateway.shuffleQuestion(slotNumber: slotNumber, operation: operation)
+            remote = try await gateway.shuffleQuestion(slotNumber: slotNumber, operation: operation)
         } catch {
             // The backend caps each person at a few swaps per day. Translate that
             // one specific case into a typed error so the UI can show a friendly,
@@ -142,28 +147,22 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
             }
             throw error
         }
-        return try await snapshot(currentUserID: currentUserID, rows: rows)
+        return makeResult(currentUserID: currentUserID, remote: remote)
     }
 
-    private func snapshot(
+    private func makeResult(
         currentUserID: UUID,
-        rows: [DailyQuestionRow]
-    ) async throws -> DailyChallengeSnapshot {
-        var seenCoupleDayIDs = Set<UUID>()
-        let coupleDayIDs = rows.map(\.coupleDayID).filter { seenCoupleDayIDs.insert($0).inserted }
-        guard !coupleDayIDs.isEmpty else {
-            return .empty(currentUserID: currentUserID)
-        }
-
-        var answerDetails: [DailyAnswerDetailRow] = []
-        for coupleDayID in coupleDayIDs {
-            answerDetails += try await gateway.loadAnswerDetails(coupleDayID: coupleDayID)
-        }
-        return DailyChallengeSnapshot.make(
-            currentUserID: currentUserID,
-            rows: rows,
-            answerDetails: answerDetails,
-            locale: locale
+        remote: DailyChallengeRemoteSnapshotRow
+    ) -> DailyChallengeLoadResult {
+        DailyChallengeLoadResult(
+            snapshot: DailyChallengeSnapshot.make(
+                currentUserID: currentUserID,
+                rows: remote.questions,
+                answerDetails: remote.answerDetails,
+                locale: locale,
+                refreshedAt: remote.generatedAt
+            ),
+            streak: remote.streak?.streak ?? .none
         )
     }
 }
@@ -175,21 +174,49 @@ actor LiveSupabaseDailyChallengeGateway: SupabaseDailyChallengeGateway {
         self.client = client
     }
 
-    func loadTodayQuestions() async throws -> [DailyQuestionRow] {
-        try await client
-            .rpc("get_today_daily_questions")
-            .execute()
-            .value
+    func loadTodaySnapshot() async throws -> DailyChallengeRemoteSnapshotRow {
+        try await snapshotRPC("get_today_daily_challenge_snapshot")
     }
 
-    func startDailyChallenge(operation: SyncClientOperation) async throws -> [DailyQuestionRow] {
-        try await client
+    func startDailyChallenge(operation: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow {
+        try await snapshotRPC(
+            "start_daily_challenge_snapshot",
+            params: DailyChallengeClientOperationRequest(operation: operation)
+        )
+    }
+
+    private func snapshotRPC(
+        _ name: String
+    ) async throws -> DailyChallengeRemoteSnapshotRow {
+        let rows: [DailyChallengeRemoteSnapshotRow] = try await client
+            .rpc(name)
+            .execute()
+            .value
+        return rows.first ?? DailyChallengeRemoteSnapshotRow(
+            questions: [],
+            answerDetails: [],
+            streak: nil,
+            generatedAt: Date()
+        )
+    }
+
+    private func snapshotRPC<Params: Encodable>(
+        _ name: String,
+        params: Params
+    ) async throws -> DailyChallengeRemoteSnapshotRow {
+        let rows: [DailyChallengeRemoteSnapshotRow] = try await client
             .rpc(
-                "start_daily_challenge",
-                params: DailyChallengeClientOperationRequest(operation: operation)
+                name,
+                params: params
             )
             .execute()
             .value
+        return rows.first ?? DailyChallengeRemoteSnapshotRow(
+            questions: [],
+            answerDetails: [],
+            streak: nil,
+            generatedAt: Date()
+        )
     }
 
     func loadHistoryQuestions() async throws -> [DailyQuestionRow] {
@@ -283,17 +310,14 @@ actor LiveSupabaseDailyChallengeGateway: SupabaseDailyChallengeGateway {
     func shuffleQuestion(
         slotNumber: Int,
         operation: SyncClientOperation
-    ) async throws -> [DailyQuestionRow] {
-        try await client
-            .rpc(
-                "shuffle_daily_question",
-                params: ShuffleDailyQuestionRequest(
-                    slotNumber: slotNumber,
-                    operation: operation
-                )
+    ) async throws -> DailyChallengeRemoteSnapshotRow {
+        try await snapshotRPC(
+            "shuffle_daily_question_snapshot",
+            params: ShuffleDailyQuestionRequest(
+                slotNumber: slotNumber,
+                operation: operation
             )
-            .execute()
-            .value
+        )
     }
 }
 
@@ -307,15 +331,15 @@ nonisolated enum DailyChallengeServiceFactory {
 }
 
 private actor EmptyDailyChallengeService: DailyChallengeServicing {
-    func loadToday(currentUserID: UUID) async throws -> DailyChallengeSnapshot {
-        .empty(currentUserID: currentUserID)
+    func loadToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
+        DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)
     }
 
     func startToday(
         currentUserID: UUID,
         operation _: SyncClientOperation
-    ) async throws -> DailyChallengeSnapshot {
-        .empty(currentUserID: currentUserID)
+    ) async throws -> DailyChallengeLoadResult {
+        DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)
     }
 
     func loadHistory(currentUserID _: UUID) async throws -> [DailyChallengeQuestion] {
@@ -346,8 +370,8 @@ private actor EmptyDailyChallengeService: DailyChallengeServicing {
         currentUserID: UUID,
         slotNumber _: Int,
         operation _: SyncClientOperation
-    ) async throws -> DailyChallengeSnapshot {
-        .empty(currentUserID: currentUserID)
+    ) async throws -> DailyChallengeLoadResult {
+        DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)
     }
 }
 

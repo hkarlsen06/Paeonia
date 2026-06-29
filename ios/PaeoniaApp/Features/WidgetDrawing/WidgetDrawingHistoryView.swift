@@ -105,7 +105,7 @@ struct WidgetDrawingHistoryView: View {
     private var emptyState: some View {
         PaeoniaEmptyStateView(
             title: .widgetHistoryEmptyTitle,
-            message: .widgetHistoryEmptyMessage,
+            message: .widgetHistoryEmptyMessage(viewModel.partnerName),
             systemImage: "photo.on.rectangle.angled"
         )
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)

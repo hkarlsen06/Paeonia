@@ -1227,19 +1227,19 @@
       }
     },
     "home.map.accessibilityLabel" : {
-      "comment" : "Accessibility label for the map showing where each partner is",
+      "comment" : "Accessibility label for the couple map. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A map showing where you and your partner are"
+            "value" : "A map showing where you and %@ are"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Et kart som viser hvor du og partneren din er"
+            "value" : "Et kart som viser hvor du og %@ er"
           }
         }
       }
@@ -1317,37 +1317,37 @@
       }
     },
     "home.map.partnerUnknown.message" : {
-      "comment" : "Message shown in the Home map tile when the partner location is not known.",
+      "comment" : "Map empty-state message. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask your partner to share location."
+            "value" : "Ask %@ to share location."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spør partneren din om å dele posisjon."
+            "value" : "Spør %@ om å dele posisjon."
           }
         }
       }
     },
     "home.map.partnerUnknown.title" : {
-      "comment" : "Title shown in the Home map tile when the partner location is missing or not shared.",
+      "comment" : "Map empty-state title asking the named partner to share location. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask your partner"
+            "value" : "Ask %@"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spør partneren din"
+            "value" : "Spør %@"
           }
         }
       }
@@ -3207,19 +3207,19 @@
       }
     },
     "settings.location.permissionDenied.message" : {
-      "comment" : "Top banner message when iOS location permission is denied.",
+      "comment" : "Shown when location permission is denied. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Allow location in Settings to share it with your partner."
+            "value" : "Allow location in Settings to share it with %@."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tillat posisjon i Innstillinger for å dele den med partneren din."
+            "value" : "Tillat posisjon i Innstillinger for å dele den med %@."
           }
         }
       }
@@ -3297,19 +3297,19 @@
       }
     },
     "settings.location.sharing.subtitle" : {
-      "comment" : "Settings toggle subtitle explaining foreground-only location sharing.",
+      "comment" : "Explains location sharing. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your partner can see your latest location while sharing is on."
+            "value" : "%@ can see your latest location while sharing is on."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Partneren din kan se den siste posisjonen din når deling er på."
+            "value" : "%@ kan se den siste posisjonen din når deling er på."
           }
         }
       }
@@ -3477,19 +3477,19 @@
       }
     },
     "settings.notifications.widgetAlerts.subtitle" : {
-      "comment" : "Explains what the drawing updates toggle does",
+      "comment" : "Explains the drawing-update notification. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a notification when your partner adds a new drawing."
+            "value" : "Get a notification when %@ adds a new drawing."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få et varsel når partneren din lager en ny tegning."
+            "value" : "Få et varsel når %@ lager en ny tegning."
           }
         }
       }
@@ -3621,19 +3621,19 @@
       }
     },
     "widget.history.empty.message" : {
-      "comment" : "Message shown when there are no saved drawings yet",
+      "comment" : "Empty state for the drawing history. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Drawings you and your partner save will show up here."
+            "value" : "Drawings you and %@ save will show up here."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegninger du og partneren din lagrer, dukker opp her."
+            "value" : "Tegninger du og %@ lagrer, dukker opp her."
           }
         }
       }
@@ -4709,17 +4709,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your partner answered"
+            "value" : "%@ answered"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Partneren din har svart"
+            "value" : "%@ svarte"
           }
         }
       },
-      "comment" : "Status label indicating the partner has answered but the answer body is hidden"
+      "comment" : "Status label: the named partner answered. %@ is the partner's name."
     },
     "dailyChallenge.partnerHidden.message" : {
       "extractionState" : "manual",
@@ -4727,17 +4727,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Answer this question to see what your partner said."
+            "value" : "Answer this question to see what %@ said."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar på spørsmålet for å se hva partneren din skrev."
+            "value" : "Svar på spørsmålet for å se hva %@ skrev."
           }
         }
       },
-      "comment" : "Message explaining that the partner answer is hidden until the user answers the same daily question"
+      "comment" : "Explains a hidden partner answer. %@ is the partner's name."
     },
     "dailyChallenge.partnerSection.title" : {
       "extractionState" : "manual",
@@ -4745,17 +4745,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "From your partner"
+            "value" : "From %@"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fra partneren din"
+            "value" : "Fra %@"
           }
         }
       },
-      "comment" : "Section title for questions that started with the partner and are now available to answer"
+      "comment" : "Section heading for the partner's questions. %@ is the partner's name."
     },
     "dailyChallenge.progress.accessibilityLabel" : {
       "extractionState" : "manual",
@@ -5213,17 +5213,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nice. We'll let your partner know. Come back to see their answers when they reply."
+            "value" : "Nice. We'll let %@ know. Come back to see their answers when they reply."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fint. Vi gir partneren din beskjed. Kom tilbake for å se svarene deres når de svarer."
+            "value" : "Fint. Vi gir %@ beskjed. Kom tilbake for å se svarene deres når de svarer."
           }
         }
       },
-      "comment" : "Message shown after the user answers all of their daily questions"
+      "comment" : "Shown after finishing today's questions. %@ is the partner's name."
     },
     "dailyChallenge.flow.saveButton" : {
       "extractionState" : "manual",
@@ -5267,17 +5267,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your partner has answered, so this answer can't be changed now."
+            "value" : "%@ has answered, so this answer can't be changed now."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Partneren din har svart, så dette svaret kan ikke endres nå."
+            "value" : "%@ har svart, så dette svaret kan ikke endres nå."
           }
         }
       },
-      "comment" : "Message shown when an answer can no longer be edited because the partner has answered"
+      "comment" : "Why an answer can no longer be edited. %@ is the partner's name."
     },
     "dailyChallenge.editFailed.title" : {
       "extractionState" : "manual",
@@ -5753,17 +5753,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Answer to see your partner's answers"
+            "value" : "Answer to see %@'s answers"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar for å se partnerens svar"
+            "value" : "Svar for å se %@s svar"
           }
         }
       },
-      "comment" : "Button on the daily completion screen opens the Questions tab for optional questions the partner has already answered"
+      "comment" : "Button to go answer the partner's questions. %@ is the partner's name."
     },
     "dailyChallenge.seePartnerAnswersButton" : {
       "extractionState" : "manual",
@@ -5771,17 +5771,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "See partner's answers"
+            "value" : "See %@'s answers"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se partnerens svar"
+            "value" : "Se %@s svar"
           }
         }
       },
-      "comment" : "Button on the Us tab daily challenge card opens today's partner answers when the user's required questions are done"
+      "comment" : "Button to view the partner's answers. %@ is the partner's name."
     },
     "dailyChallenge.seeYourAnswersButton" : {
       "extractionState" : "manual",

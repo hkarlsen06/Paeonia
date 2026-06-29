@@ -11,6 +11,10 @@ nonisolated protocol ProfilePhotoImageProviding: Sendable {
     func profilePhotoData(for mediaAssetID: UUID?) async -> Data?
 }
 
+nonisolated enum ProfilePhotoImageProviderFactory {
+    static let shared: (any ProfilePhotoImageProviding)? = try? ProfilePhotoImageService.live()
+}
+
 final class FileProfilePhotoImageCache: @unchecked Sendable, ProfilePhotoImageCaching {
     private let directoryURL: URL
 
@@ -70,11 +74,12 @@ final class FileProfilePhotoImageCache: @unchecked Sendable, ProfilePhotoImageCa
     }
 }
 
-final class ProfilePhotoImageService: @unchecked Sendable, ProfilePhotoImageProviding {
+actor ProfilePhotoImageService: ProfilePhotoImageProviding {
     private let cache: any ProfilePhotoImageCaching
     private let urlProvider: any ProfilePhotoURLProviding
+    private var inFlightDownloads: [UUID: Task<Data?, Never>] = [:]
 
-    nonisolated init(
+    init(
         cache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
         urlProvider: any ProfilePhotoURLProviding
     ) {
@@ -95,6 +100,18 @@ final class ProfilePhotoImageService: @unchecked Sendable, ProfilePhotoImageProv
             return cachedData
         }
 
+        if let inFlightDownload = inFlightDownloads[mediaAssetID] {
+            return await inFlightDownload.value
+        }
+
+        let download = Task { await fetchAndCache(mediaAssetID: mediaAssetID) }
+        inFlightDownloads[mediaAssetID] = download
+        let data = await download.value
+        inFlightDownloads[mediaAssetID] = nil
+        return data
+    }
+
+    private func fetchAndCache(mediaAssetID: UUID) async -> Data? {
         guard let signedURL = try? await urlProvider.signedProfilePhotoURL(for: mediaAssetID) else {
             return nil
         }

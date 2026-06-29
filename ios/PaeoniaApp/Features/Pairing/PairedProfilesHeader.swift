@@ -30,7 +30,7 @@ struct PairedProfilesHeader: View {
         self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
         self.partnerName = partnerName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
-        self.profilePhotoProvider = profilePhotoProvider ?? (try? ProfilePhotoImageService.live())
+        self.profilePhotoProvider = profilePhotoProvider ?? ProfilePhotoImageProviderFactory.shared
     }
 
     private var photoLoadID: String {

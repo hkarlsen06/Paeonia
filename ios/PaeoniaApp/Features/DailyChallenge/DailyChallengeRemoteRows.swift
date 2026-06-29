@@ -1,9 +1,28 @@
 import Foundation
 
+nonisolated struct DailyChallengeRemoteSnapshotRow: Decodable, Equatable, Sendable {
+    let questions: [DailyQuestionRow]
+    let answerDetails: [DailyAnswerDetailRow]
+    let streak: CoupleStreakRow?
+    let generatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case questions
+        case answerDetails = "answer_details"
+        case streak
+        case generatedAt = "generated_at"
+    }
+}
+
 nonisolated struct DailyQuestionRow: Decodable, Equatable, Sendable {
     let coupleDayID: UUID
     let coupleID: UUID
     let localDate: String
+    /// The couple-local date the question effectively belongs to — the day of its most
+    /// recent answer. Returned by the history read model so an exchange completed after
+    /// midnight lands on the day it was finished, not the day its instance was seeded.
+    /// Absent on the "today" read model; callers fall back to `localDate`.
+    let effectiveLocalDate: String?
     let startsAt: Date
     let endsAt: Date
     let instanceID: UUID
@@ -32,6 +51,7 @@ nonisolated struct DailyQuestionRow: Decodable, Equatable, Sendable {
         case coupleDayID = "couple_day_id"
         case coupleID = "couple_id"
         case localDate = "local_date"
+        case effectiveLocalDate = "effective_local_date"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case instanceID = "instance_id"

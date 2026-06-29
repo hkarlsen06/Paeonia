@@ -6,12 +6,16 @@ import UIKit
 struct SettingsView: View {
     @State private var viewModel = SettingsViewModel()
     let locationViewModel: LocationMapViewModel
+    /// The partner's display name, so location/notification copy names the partner
+    /// instead of saying "your partner".
+    let partnerName: String
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.openURL) private var openURL
 
     @MainActor
-    init(locationViewModel: LocationMapViewModel) {
+    init(locationViewModel: LocationMapViewModel, partnerName: String) {
         self.locationViewModel = locationViewModel
+        self.partnerName = partnerName
     }
 
     var body: some View {
@@ -57,7 +61,7 @@ struct SettingsView: View {
                         Text(.settingsLocationSharingTitle)
                             .font(PaeoniaTypography.body)
                             .foregroundStyle(.paeoniaTextPrimary)
-                        Text(.settingsLocationSharingSubtitle)
+                        Text(.settingsLocationSharingSubtitle(partnerName))
                             .font(PaeoniaTypography.caption)
                             .foregroundStyle(.paeoniaTextSecondary)
                     }
@@ -81,7 +85,7 @@ struct SettingsView: View {
                             Text(.settingsNotificationsWidgetAlertsTitle)
                                 .font(PaeoniaTypography.body)
                                 .foregroundStyle(.paeoniaTextPrimary)
-                            Text(.settingsNotificationsWidgetAlertsSubtitle)
+                            Text(.settingsNotificationsWidgetAlertsSubtitle(partnerName))
                                 .font(PaeoniaTypography.caption)
                                 .foregroundStyle(.paeoniaTextSecondary)
                         }
@@ -141,7 +145,7 @@ struct SettingsView: View {
 
 #Preview {
     NavigationStack {
-        SettingsView(locationViewModel: LocationMapViewModel())
+        SettingsView(locationViewModel: LocationMapViewModel(), partnerName: "Oda")
     }
     .environment(PaeoniaBannerCenter())
     .preferredColorScheme(.dark)

@@ -16,9 +16,18 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
 
     enum ViewState: Equatable {
         case loading
-        case content([DailyChallengeHistoryDay])
+        case content(Content)
         case empty
         case failed
+    }
+
+    /// What the loaded history shows: the partner's questions still waiting for the
+    /// user's answer (actionable, shown at the top with a CTA) and the completed
+    /// exchanges grouped into days below. Either can be empty as long as the other
+    /// isn't — when both are empty the state is `.empty` instead.
+    struct Content: Equatable {
+        var pendingPartnerQuestions: [DailyChallengeQuestion]
+        var days: [DailyChallengeHistoryDay]
     }
 
     enum Notice: Equatable {
@@ -26,6 +35,11 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
     }
 
     private let service: any DailyChallengeServicing
+    /// The partner's questions the user can still answer, read live from the daily
+    /// challenge so the history shows the same actionable cards the Questions tab does.
+    /// These are carried-forward exchanges (partner answered, the user hasn't), not part
+    /// of the answered-history read model, so they come from here rather than the RPC.
+    private let pendingPartnerQuestionsProvider: () -> [DailyChallengeQuestion]
     let currentUserID: UUID?
     private(set) var participants: DailyChallengeParticipants
     #if DEBUG
@@ -41,11 +55,13 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
     init(
         service: any DailyChallengeServicing,
         currentUserID: UUID?,
-        participants: DailyChallengeParticipants = DailyChallengeParticipants()
+        participants: DailyChallengeParticipants = DailyChallengeParticipants(),
+        pendingPartnerQuestions: @escaping () -> [DailyChallengeQuestion] = { [] }
     ) {
         self.service = service
         self.currentUserID = currentUserID
         self.participants = participants
+        self.pendingPartnerQuestionsProvider = pendingPartnerQuestions
     }
 
     /// Ready once the first load has settled — to content, empty, or a final error —
@@ -72,7 +88,12 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
         do {
             let questions = try await service.loadHistory(currentUserID: currentUserID)
             let days = DailyChallengeHistory.grouped(questions)
-            state = days.isEmpty ? .empty : .content(days)
+            let pending = pendingPartnerQuestions(excluding: questions)
+            if days.isEmpty, pending.isEmpty {
+                state = .empty
+            } else {
+                state = .content(Content(pendingPartnerQuestions: pending, days: days))
+            }
         } catch {
             guard !isCancellation(error) else { return }
             logFailure("Loading the question history failed", error)
@@ -94,6 +115,25 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
 
     func dismissNotice() {
         notice = nil
+    }
+
+    /// The partner's still-unanswered questions for the top of the history, most recent
+    /// partner answer first. Any instance already present in the answered history is
+    /// dropped, so a question can never show as both "waiting for you" and "completed"
+    /// (e.g. mid-reload after you reply).
+    private func pendingPartnerQuestions(
+        excluding answered: [DailyChallengeQuestion]
+    ) -> [DailyChallengeQuestion] {
+        let answeredInstanceIDs = Set(answered.map(\.id))
+        return pendingPartnerQuestionsProvider()
+            .filter { !answeredInstanceIDs.contains($0.id) }
+            .sorted { lhs, rhs in
+                let lhsDate = lhs.partnerAnswer?.answeredAt ?? lhs.startsAt
+                let rhsDate = rhs.partnerAnswer?.answeredAt ?? rhs.startsAt
+                if lhsDate != rhsDate { return lhsDate > rhsDate }
+                if lhs.slotNumber != rhs.slotNumber { return lhs.slotNumber < rhs.slotNumber }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
     }
 
     private func logFailure(_ context: String, _ error: Error) {

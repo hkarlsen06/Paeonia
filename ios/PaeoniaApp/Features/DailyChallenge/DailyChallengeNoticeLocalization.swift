@@ -22,7 +22,9 @@ extension DailyChallengeViewModel.Notice {
         }
     }
 
-    var message: LocalizedStringResource {
+    /// The message takes the partner's name so notices that name the partner (e.g.
+    /// "Oda has answered…") read with the real name; other notices ignore it.
+    func message(partnerName: String) -> LocalizedStringResource {
         switch self {
         case .loadFailed:
             .dailyChallengeLoadFailedMessage
@@ -37,7 +39,7 @@ extension DailyChallengeViewModel.Notice {
         case .shuffleFailed:
             .dailyChallengeShuffleFailedMessage
         case .editLocked:
-            .dailyChallengeEditLockedMessage
+            .dailyChallengeEditLockedMessage(partnerName)
         case .editFailed:
             .dailyChallengeEditFailedMessage
         }

@@ -7,6 +7,9 @@ import SwiftUI
 /// flow when tapped.
 struct DailyPromptCard: View {
     let state: DailyChallengeCardState
+    /// The partner's display name, used by the "See %@'s answers" CTA so it names the
+    /// partner instead of saying "partner".
+    var partnerName: String
     /// The couple's streak chip. Hidden when there's nothing to show; switches to
     /// a tappable "broken" look when a lost streak can be bought back.
     var streak: StreakPillState = .hidden
@@ -134,7 +137,7 @@ struct DailyPromptCard: View {
             .dailyChallengeOpenButton
         case .complete:
             if showsPartnerAnswersCTA {
-                .dailyChallengeSeePartnerAnswersButton
+                .dailyChallengeSeePartnerAnswersButton(partnerName)
             } else {
                 .dailyChallengeSeeYourAnswersButton
             }
@@ -264,6 +267,7 @@ private struct DailyPromptProgressPill: View {
             answeredCount: 1,
             totalCount: 3
         ),
+        partnerName: "Oda",
         streak: StreakPillState(count: 12, isRestorable: false, restorableCount: 0)
     )
     .padding(PaeoniaSpacing.screenHorizontalPadding)
@@ -278,6 +282,7 @@ private struct DailyPromptProgressPill: View {
             answeredCount: 1,
             totalCount: 3
         ),
+        partnerName: "Oda",
         streak: StreakPillState(count: 1, isRestorable: true, restorableCount: 30),
         onTapStreak: {}
     )

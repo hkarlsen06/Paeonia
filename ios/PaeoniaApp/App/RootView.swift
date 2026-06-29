@@ -534,10 +534,12 @@ struct RootView: View {
             return
         }
 
+        let partnerName = viewModel.currentPartnerDisplayName?.trimmedNonEmpty
+            ?? String(localized: .pairingCelebrationPartnerName)
         bannerCenter.show(
             .error(
                 title: String(localized: notice.title),
-                message: String(localized: notice.message)
+                message: String(localized: notice.message(partnerName: partnerName))
             )
         )
         locationViewModel.dismissNotice()
