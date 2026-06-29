@@ -113,6 +113,14 @@ struct PairedHomeView: View {
                 )
                 .padding(.top, PaeoniaSpacing.space2)
             }
+
+            // The streak lives at the trailing edge of the bar, sized to match the brand
+            // mark and carried in the toolbar's standard background.
+            if dailyChallengeStreak.isVisible {
+                ToolbarItem(placement: .topBarTrailing) {
+                    DailyStreakToolbarLabel(state: dailyChallengeStreak, onTap: onTapStreak)
+                }
+            }
         }
     }
 
@@ -120,10 +128,8 @@ struct PairedHomeView: View {
         DailyPromptCard(
             state: dailyChallengeCardState,
             partnerName: partnerName,
-            streak: dailyChallengeStreak,
             prefersPartnerAnswersWhenComplete: true,
-            onAnswer: onOpenDailyChallenge,
-            onTapStreak: onTapStreak
+            onAnswer: onOpenDailyChallenge
         )
         .zoomSource(DailyFlowZoom.home, in: zoomNamespace)
     }

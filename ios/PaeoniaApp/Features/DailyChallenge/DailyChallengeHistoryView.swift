@@ -33,6 +33,13 @@ struct DailyChallengeHistoryView: View {
         self.dailyChallengeViewModel = dailyChallengeViewModel
     }
 
+    /// Keep full-screen cover insertion in the same transaction as the native zoom.
+    /// Without an explicit transaction, SwiftUI can briefly draw the destination at its
+    /// final full-screen size before the zoom animator takes over.
+    private var zoomPresentationAnimation: Animation? {
+        reduceMotion ? nil : PaeoniaMotion.heroMorph
+    }
+
     var body: some View {
         NavigationStack {
             content
@@ -129,7 +136,7 @@ struct DailyChallengeHistoryView: View {
                     participants: viewModel.participants,
                     isOwnChallengeComplete: dailyChallengeViewModel.hasCompletedRequiredDailyQuestions,
                     zoomNamespace: zoomNamespace,
-                    onAnswer: { answeringQuestion = question }
+                    onAnswer: { openAnswerFlow(for: question) }
                 )
             }
         }
@@ -165,6 +172,12 @@ struct DailyChallengeHistoryView: View {
     private func closeAnswerFlow() {
         answeringQuestion = nil
         Task { await viewModel.load() }
+    }
+
+    private func openAnswerFlow(for question: DailyChallengeQuestion) {
+        withAnimation(zoomPresentationAnimation) {
+            answeringQuestion = question
+        }
     }
 
     private func showBanner(for notice: DailyChallengeHistoryViewModel.Notice?) {

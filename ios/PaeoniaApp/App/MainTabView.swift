@@ -28,8 +28,12 @@ struct MainTabView: View {
     /// Which card the daily answer flow should zoom out of (the Home prompt card or the
     /// Questions-tab hero card), so the cover grows from the one the user tapped.
     @State private var dailyFlowSource: DailyFlowSource = .home
-    /// Streak-restore offer opened from a card's streak pill, outside the answer flow.
+    /// Streak-restore offer opened from the streak badge when a lost streak can still
+    /// be bought back, outside the answer flow.
     @State private var showStreakRestore = false
+    /// Read-only streak detail sheet, opened by tapping the streak badge while the
+    /// streak is healthy (nothing to restore).
+    @State private var showStreakDetail = false
     /// Streak-restore offer opened from inside the answer flow's completion screen. A
     /// separate binding because a sheet cannot present over its own full-screen cover,
     /// so the in-flow offer is presented from within the cover instead.
@@ -143,9 +147,18 @@ struct MainTabView: View {
             .zoomTransition(question.id, in: zoomNamespace, enabled: !reduceMotion)
             .environment(bannerCenter)
         }
-        // The card streak pills open the same offer from outside the answer flow.
+        // The streak badge opens the restore offer (broken) from outside the answer flow.
         .sheet(isPresented: $showStreakRestore) {
             streakRestoreSheet(isPresented: $showStreakRestore)
+        }
+        // …or the read-only detail sheet when the streak is healthy.
+        .sheet(isPresented: $showStreakDetail) {
+            StreakDetailView(
+                streak: dailyChallengeViewModel.streak,
+                onClose: { showStreakDetail = false }
+            )
+            .presentationDetents([.large])
+            .presentationBackground(.paeoniaSurfacePrimary)
         }
     }
 
@@ -155,8 +168,21 @@ struct MainTabView: View {
         StreakPillState(dailyChallengeViewModel.streak)
     }
 
-    private func openStreakRestore() {
-        showStreakRestore = true
+    /// Keep full-screen cover insertion in the same transaction as the native zoom.
+    /// Without an explicit transaction, SwiftUI can briefly draw the destination at its
+    /// final full-screen size before the zoom animator takes over.
+    private var zoomPresentationAnimation: Animation? {
+        reduceMotion ? nil : PaeoniaMotion.heroMorph
+    }
+
+    /// Tapping the streak badge. A broken streak that can still be bought back opens
+    /// the restore offer; an intact streak opens the read-only detail sheet.
+    private func openStreakDetails() {
+        if dailyChallengeViewModel.streak.isRestorable {
+            showStreakRestore = true
+        } else {
+            showStreakDetail = true
+        }
     }
 
     private func streakRestoreSheet(isPresented: Binding<Bool>) -> some View {
@@ -214,7 +240,7 @@ struct MainTabView: View {
                 onPromptCurrentLocation: {
                     Task { await locationViewModel.promptForCurrentLocation() }
                 },
-                onTapStreak: openStreakRestore,
+                onTapStreak: openStreakDetails,
                 onOpenDailyChallenge: openDailyChallengeFromHome,
                 onOpenWidgetDrawing: onOpenWidgetDrawing,
                 onRefresh: {
@@ -237,7 +263,7 @@ struct MainTabView: View {
                 viewModel: dailyChallengeViewModel,
                 zoomNamespace: zoomNamespace,
                 onOpenAnswerFlow: { openAnswerFlow(source: .questions) },
-                onTapStreak: openStreakRestore,
+                onTapStreak: openStreakDetails,
                 onRefresh: {
                     await refreshDailyChallenge()
                 },
@@ -272,8 +298,10 @@ struct MainTabView: View {
         if dailyChallengeViewModel.homeCardState.kind == .noChallenge {
             Task { await dailyChallengeViewModel.startToday() }
         }
-        dailyFlowSource = source
-        isAnswerFlowPresented = true
+        withAnimation(zoomPresentationAnimation) {
+            dailyFlowSource = source
+            isAnswerFlowPresented = true
+        }
     }
 
     private func openQuestionsTabFromAnswerFlow() {
@@ -286,7 +314,9 @@ struct MainTabView: View {
     }
 
     private func openPartnerAnswerFlow(_ question: DailyChallengeQuestion) {
-        partnerAnswerQuestion = question
+        withAnimation(zoomPresentationAnimation) {
+            partnerAnswerQuestion = question
+        }
     }
 
     private func closePartnerAnswerFlow() {

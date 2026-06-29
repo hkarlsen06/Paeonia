@@ -23,10 +23,18 @@ struct PaeoniaStreakFlame: View {
     /// `count` is then the lost streak length the restore would bring back. The
     /// "get it back" action lives in the surrounding surface, not here.
     var isBroken: Bool = false
+    /// Keeps the flame gently "alive" at rest — a breathing liquid level and the
+    /// living flicker — without the count-up celebration or its haptics. For
+    /// surfaces that show the streak on its own (e.g. the streak detail sheet),
+    /// not the earn-it moment. Ignored while celebrating, broken, or Reduce Motion.
+    var ambientMotion: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var isAnimating = false
+    /// True while running the calm continuous motion (vs. the count-up celebration),
+    /// so the timeline keeps the level high and breathing instead of filling from zero.
+    @State private var isAmbient = false
     @State private var hasStarted = false
     @State private var animationStart = Date()
     @State private var driver: Task<Void, Never>?
@@ -42,6 +50,11 @@ struct PaeoniaStreakFlame: View {
     private static let fillDuration: Double = 1.3
     /// How quickly the liquid surface ripples, in wave cycles per second.
     private static let waveSpeed: Double = 0.85
+    /// At-rest motion: a high liquid level that breathes a little, so the flame keeps
+    /// moving without reading as "filling up" again.
+    private static let ambientLevel: CGFloat = 0.9
+    private static let ambientBreath: CGFloat = 0.06
+    private static let ambientBreathSpeed: Double = 0.8
 
     private var flameWidth: CGFloat { flameHeight * 0.84 }
 
@@ -58,12 +71,14 @@ struct PaeoniaStreakFlame: View {
         if isAnimating {
             TimelineView(.animation) { timeline in
                 let elapsed = timeline.date.timeIntervalSince(animationStart)
-                let level = fillLevel(at: elapsed)
                 let phase = elapsed * Self.waveSpeed
                 let flicker = sin(elapsed * 6.3) * 0.5 + sin(elapsed * 11.7) * 0.2
-                let value = Int((Double(count) * Double(level)).rounded())
+                // Ambient stays high and breathing with the number settled; the
+                // celebration fills from empty while the number climbs.
+                let level = isAmbient ? Self.ambientFillLevel(at: elapsed) : fillLevel(at: elapsed)
+                let value = isAmbient ? count : Int((Double(count) * Double(level)).rounded())
 
-                layout(level: level, phase: CGFloat(phase), flicker: CGFloat(flicker), value: value, emits: true)
+                layout(level: level, phase: CGFloat(phase), flicker: CGFloat(flicker), value: value, emits: !isAmbient)
             }
         } else {
             // Reduce Motion, or a calm/static use: the full, settled flame.
@@ -183,20 +198,31 @@ struct PaeoniaStreakFlame: View {
         guard !hasStarted else { return }
         hasStarted = true
 
-        let animates = playsCelebration && !reduceMotion && !isBroken && count >= 1
-        guard animates else {
-            isAnimating = false
-            // A broken streak is not a celebration, so it stays silent.
-            if playsCelebration, !isBroken {
-                PaeoniaHaptics.streakContinued()
+        let celebrates = playsCelebration && !reduceMotion && !isBroken && count >= 1
+        if celebrates {
+            animationStart = Date()
+            isAmbient = false
+            isAnimating = true
+            driver = Task { @MainActor in
+                await runCountUp()
             }
             return
         }
 
-        animationStart = Date()
-        isAnimating = true
-        driver = Task { @MainActor in
-            await runCountUp()
+        // A calm, continuously "alive" flame for at-rest surfaces: no count-up and
+        // no haptics, just the breathing liquid and the living flicker.
+        let ambient = ambientMotion && !reduceMotion && !isBroken && count >= 1
+        if ambient {
+            animationStart = Date()
+            isAmbient = true
+            isAnimating = true
+            return
+        }
+
+        isAnimating = false
+        // A broken streak is not a celebration, so it stays silent.
+        if playsCelebration, !isBroken {
+            PaeoniaHaptics.streakContinued()
         }
     }
 
@@ -236,6 +262,12 @@ struct PaeoniaStreakFlame: View {
 
     private func fillLevel(at elapsed: TimeInterval) -> CGFloat {
         CGFloat(smoothstep(min(elapsed / Self.fillDuration, 1)))
+    }
+
+    /// The at-rest liquid level: high, with a slow gentle breath so the flame stays
+    /// alive without re-filling.
+    private static func ambientFillLevel(at elapsed: TimeInterval) -> CGFloat {
+        ambientLevel + ambientBreath * CGFloat(sin(elapsed * ambientBreathSpeed))
     }
 
     /// Sleeps for `seconds`, returning `false` if the count-up was cancelled.

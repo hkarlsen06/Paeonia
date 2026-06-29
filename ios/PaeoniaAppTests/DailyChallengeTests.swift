@@ -330,42 +330,44 @@ struct DailyChallengeMappingTests {
         #expect(snapshot.ownQuestionsForReadOverview.map(\.slotNumber) == [4, 3])
     }
 
-    @Test func readOverviewQuestionsAreOneListOrderedByLatestAnswerNewestFirst() {
+    @Test func readOverviewQuestionsPinAwaitingAnswerThenMostRecent() {
         let t1 = TestDailyChallengeIDs.answerDate
         let t2 = t1.addingTimeInterval(3_600)
         let t3 = t2.addingTimeInterval(3_600)
 
         let snapshot = makeSnapshot(rows: [
-            // The partner's question, answered most recently; the user hasn't replied.
+            // A partner question still waiting for the user — answered EARLIEST of all,
+            // so pure recency would bury it last. Pinning must float it to the top.
             questionRow(
                 slotNumber: 3,
                 seededForUserID: TestDailyChallengeIDs.partnerUser,
                 partnerAnswerID: UUID(),
-                partnerAnsweredAt: t3
+                partnerAnsweredAt: t1
             ),
-            // The user's own question, answered in the middle; the partner hasn't replied.
+            // The user's own question, answered most recently (no reply yet).
             questionRow(
                 slotNumber: 1,
                 seededForUserID: TestDailyChallengeIDs.currentUser,
                 status: "answered",
                 ownAnswerID: UUID(),
-                ownAnsweredAt: t2
+                ownAnsweredAt: t3
             ),
-            // The partner's question, both answered earliest.
+            // A finished partner exchange in the middle.
             questionRow(
                 slotNumber: 2,
                 seededForUserID: TestDailyChallengeIDs.partnerUser,
                 status: "answered",
                 ownAnswerID: UUID(),
-                ownAnsweredAt: t1,
+                ownAnsweredAt: t2,
                 partnerAnswerID: UUID(),
-                partnerAnsweredAt: t1,
+                partnerAnsweredAt: t2,
                 canViewPartnerAnswer: true
             ),
         ])
 
-        // One list, own and partner intermixed, ordered purely by most recent answer —
-        // not grouped by who, and not by slot.
+        // One list: the to-do (slot 3) is pinned on top despite being the oldest, then
+        // the rest by most recent answer (slot 1 at t3, slot 2 at t2). Pure recency
+        // would have been [1, 2, 3].
         #expect(snapshot.readOverviewQuestions.map(\.slotNumber) == [3, 1, 2])
     }
 

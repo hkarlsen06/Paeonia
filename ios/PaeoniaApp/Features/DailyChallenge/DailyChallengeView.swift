@@ -2,10 +2,12 @@ import SwiftUI
 
 /// The Questions tab: a calm overview of today's challenge. The hero card mirrors
 /// the Us-tab prompt card and opens the focused answering flow (zooming into it).
-/// Below it, every question — the user's own and the partner's — sits in one list,
-/// ordered by most recent answer first like the history screen. Most cards are
+/// Below it, every question — the user's own and the partner's — sits in one list:
+/// questions still waiting for the user's answer are pinned on top so they're never
+/// buried, then everything else follows by most recent answer. Most cards are
 /// read-only; a partner question the user can still answer carries a CTA that zooms
-/// into its single-question flow. Answering itself happens in the flow, never inline.
+/// into its single-question flow, where the reply is revealed on send. Answering
+/// itself happens in the flow, never inline.
 struct DailyChallengeScreen: View {
     let viewModel: DailyChallengeViewModel
     /// Namespace for the Daily Challenge zoom transition. The hero card and each
@@ -20,14 +22,6 @@ struct DailyChallengeScreen: View {
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
-    /// The card order is captured once per visit and held steady while the tab stays
-    /// open, so answering a question (which changes its sort position) doesn't yank
-    /// the card out from under the user — it stays put, with the partner's reply now
-    /// revealed in place. The order refreshes on a full re-entry or when a new active
-    /// day arrives, so it re-sorts by most recent answer.
-    @State private var frozenOrder: [UUID] = []
-    @State private var frozenCoupleDayID: UUID?
-    @State private var hasFrozenOrder = false
     /// The Questions history cover. Built fresh from the screen's view model when the
     /// History button is tapped, and presented by item so it carries its own state.
     @State private var historyViewModel: DailyChallengeHistoryViewModel?
@@ -39,11 +33,13 @@ struct DailyChallengeScreen: View {
 
                 if !readQuestions.isEmpty {
                     // One list for everything — the partner's questions and the user's
-                    // own — ordered by most recent answer first, like the history screen.
-                    // A partner question the user can still answer shows its CTA; every
-                    // other card is read-only. The CTA stays locked until the user
-                    // finishes their own three (answers saved locally and still sending
-                    // count), matching the answer flow's gating.
+                    // own. Questions still waiting for you are pinned on top (so the
+                    // actionable cards are never buried); everything else follows by most
+                    // recent answer. A partner question you can still answer shows its
+                    // CTA, locked until you finish your own three (answers saved locally
+                    // and still sending count), matching the answer flow's gating; every
+                    // other card is read-only. Answering one reveals the reply in the
+                    // flow itself, so it's fine that the card then re-sorts down here.
                     VStack(spacing: PaeoniaSpacing.space12) {
                         ForEach(readQuestions) { question in
                             DailyChallengeReadCard(
@@ -74,6 +70,14 @@ struct DailyChallengeScreen: View {
         .navigationTitle(Text(.mainTabQuestions))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            // The streak sits just before the History button, sized to match the brand
+            // mark and carried in the toolbar's standard background.
+            if streakPill.isVisible {
+                ToolbarItem(placement: .topBarTrailing) {
+                    DailyStreakToolbarLabel(state: streakPill, onTap: onTapStreak)
+                }
+            }
+
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     historyViewModel = viewModel.makeHistoryViewModel()
@@ -92,51 +96,15 @@ struct DailyChallengeScreen: View {
         .onChange(of: viewModel.notice) { _, notice in
             showBanner(for: notice)
         }
-        // Capture the order on entry, and again if data arrives just after; a full
-        // re-entry of the tab (leaving and coming back) clears it so it re-sorts.
-        .onAppear { freezeOrderIfNeeded() }
-        .onChange(of: viewModel.snapshot) { _, _ in freezeOrderIfNeeded() }
-        .onDisappear {
-            hasFrozenOrder = false
-            frozenCoupleDayID = nil
-        }
     }
 
     /// Every read card in one list — the partner's started questions plus the user's
-    /// own answered (or still-sending) questions — ordered by most recent answer first,
-    /// like the history screen. Held in the order captured on entry so answering one
-    /// doesn't make it jump away.
+    /// own answered (or still-sending) questions. The ordering (to-dos pinned on top,
+    /// then by most recent answer) lives in `DailyChallengeSnapshot.readOverviewQuestions`.
     private var readQuestions: [DailyChallengeQuestion] {
-        let current = viewModel.snapshot.readOverviewQuestions.filter { question in
+        viewModel.snapshot.readOverviewQuestions.filter { question in
             question.origin == .partner || question.hasOwnAnswer || viewModel.isSending(question.id)
         }
-        return stableOrdered(current)
-    }
-
-    /// Reorders the freshly-sorted `current` list to the order captured on entry,
-    /// keeping any questions that have since appeared at the end. Before the order is
-    /// frozen it returns `current` unchanged.
-    private func stableOrdered(_ current: [DailyChallengeQuestion]) -> [DailyChallengeQuestion] {
-        guard hasFrozenOrder else { return current }
-        let byID = Dictionary(current.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let frozenSet = Set(frozenOrder)
-        return frozenOrder.compactMap { byID[$0] } + current.filter { !frozenSet.contains($0.id) }
-    }
-
-    /// Snapshots the current sort order once data is available. Skips if already
-    /// frozen for this active day, or if there's nothing to capture yet (so the real
-    /// order is taken once questions have loaded, not while empty).
-    private func freezeOrderIfNeeded() {
-        let coupleDayID = viewModel.snapshot.coupleDayID
-        if hasFrozenOrder, frozenCoupleDayID != coupleDayID {
-            hasFrozenOrder = false
-        }
-        guard !hasFrozenOrder else { return }
-        let questions = viewModel.snapshot.readOverviewQuestions
-        guard !questions.isEmpty else { return }
-        frozenOrder = questions.map(\.id)
-        frozenCoupleDayID = coupleDayID
-        hasFrozenOrder = true
     }
 
     /// Resolves the "saved, sending" preview for a question, or nil when it has
@@ -153,13 +121,16 @@ struct DailyChallengeScreen: View {
         )
     }
 
+    /// The couple's streak for the toolbar badge — derived from the live server streak.
+    private var streakPill: StreakPillState {
+        StreakPillState(viewModel.streak)
+    }
+
     private var heroCard: some View {
         DailyPromptCard(
             state: viewModel.homeCardState,
             partnerName: viewModel.participants.partnerName,
-            streak: StreakPillState(viewModel.streak),
-            onAnswer: onOpenAnswerFlow,
-            onTapStreak: onTapStreak
+            onAnswer: onOpenAnswerFlow
         )
         .zoomSource(DailyFlowZoom.questions, in: zoomNamespace)
     }

@@ -148,7 +148,10 @@ struct DailyChallengeAnswerFlow: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.paeoniaBackgroundPrimary)
+        // Let the plum bleed under the keyboard's safe-area region too. Keyboard
+        // avoidance otherwise shrinks this surface above the keyboard, so the window's
+        // black showed through the keyboard's rounded top corners.
+        .background { Color.paeoniaBackgroundPrimary.ignoresSafeArea() }
         .animation(celebrateAnimation, value: didCelebrate)
         .onAppear { setInitialIndexIfNeeded() }
         .onChange(of: questions.count) { _, newCount in
@@ -890,6 +893,11 @@ struct DailyChallengeAnswerActionBar: View {
             Button(action: onClose) {
                 Label {
                     Text(hidesPrimary ? .dailyChallengeFlowDoneButton : .dailyChallengeFlowClose)
+                        // Swap the label instantly. Without this the keyboard-show
+                        // animation crossfades the two different-width strings, which
+                        // reads as a glitchy flicker; the icon's symbol transition is
+                        // clean, so only the text needs pinning.
+                        .contentTransition(.identity)
                 } icon: {
                     Image(systemName: hidesPrimary ? "keyboard.chevron.compact.down" : "xmark")
                         .accessibilityHidden(true)

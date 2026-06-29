@@ -5962,6 +5962,96 @@
         }
       },
       "comment" : "Button to retry loading the question history after an error"
+    },
+    "dailyChallenge.partnerReveal.eyebrow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deres svar"
+          }
+        }
+      },
+      "comment" : "Small label above the revealed partner answer shown after answering their question"
+    },
+    "streakDetail.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekken deres"
+          }
+        }
+      },
+      "comment" : "Title of the informative streak sheet opened by tapping the streak badge"
+    },
+    "streakDetail.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer your three daily questions each day to keep the flame going. Miss a day and it cools down — but you can always start again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på de tre daglige spørsmålene hver dag for å holde flammen i live. Hopper dere over en dag, kjølner den – men dere kan alltid begynne på nytt."
+          }
+        }
+      },
+      "comment" : "Short, forgiving explanation of how the daily streak works, on the streak sheet"
+    },
+    "streakDetail.longestLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Longest streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lengste rekke"
+          }
+        }
+      },
+      "comment" : "Caption under the couple's longest streak number on the streak sheet"
+    },
+    "streakDetail.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
+          }
+        }
+      },
+      "comment" : "Button that closes the informative streak sheet"
     }
   },
   "version" : "1.0"

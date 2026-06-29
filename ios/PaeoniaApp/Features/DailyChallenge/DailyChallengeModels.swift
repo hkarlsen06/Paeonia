@@ -433,6 +433,13 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Sendable {
         editableAnswerKind != nil
     }
 
+    /// A partner's question the user can still answer — a "to-do" that should surface
+    /// above already-handled cards in the Questions tab so it's never buried under the
+    /// recency timeline.
+    var isAwaitingCurrentUserAnswer: Bool {
+        origin == .partner && isAvailableToAnswer
+    }
+
     /// The most recent answer time on this question — the later of the user's and the
     /// partner's answer — falling back to the day's start when neither is set. The
     /// shared sort key for the read overviews (the Questions tab's single list and the
@@ -683,16 +690,32 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
     }
 
     /// The Questions tab's single read list: the partner's started questions and the
-    /// user's own current-day questions in one set, most recent answer first — the same
-    /// ordering the history screen uses within a day. The view applies the "answered or
-    /// still sending" filter (sending is view-model state) before showing the cards.
+    /// user's own current-day questions in one set. Questions still waiting for the
+    /// user's answer are pinned on top so they're never buried; everything else follows
+    /// by most recent answer. The view applies the "answered or still sending" filter
+    /// (sending is view-model state) before showing the cards.
     var readOverviewQuestions: [DailyChallengeQuestion] {
-        (partnerStartedQuestions + ownQuestions).sorted(by: Self.readOverviewOrder)
+        (partnerStartedQuestions + ownQuestions).sorted(by: Self.questionsTabOrder)
+    }
+
+    /// Questions tab order: a partner's question the user can still answer is pinned
+    /// above everything else (so the actionable cards never sink under the recency
+    /// timeline), and within each tier the shared `readOverviewOrder` applies. Answering
+    /// a pinned card drops it into the timeline — fine, because the reveal already
+    /// happened in the answer flow, so the user has seen what they were after.
+    static func questionsTabOrder(
+        _ lhs: DailyChallengeQuestion,
+        _ rhs: DailyChallengeQuestion
+    ) -> Bool {
+        if lhs.isAwaitingCurrentUserAnswer != rhs.isAwaitingCurrentUserAnswer {
+            return lhs.isAwaitingCurrentUserAnswer
+        }
+        return readOverviewOrder(lhs, rhs)
     }
 
     /// Orders read-overview questions by most recent answer first, then slot, then a
-    /// stable id tiebreak. Shared by the Questions tab's single list and the history's
-    /// within-day order so both read the same way.
+    /// stable id tiebreak. Shared by the Questions tab's list (as the within-tier order)
+    /// and the history's within-day order so both read the same way.
     static func readOverviewOrder(
         _ lhs: DailyChallengeQuestion,
         _ rhs: DailyChallengeQuestion

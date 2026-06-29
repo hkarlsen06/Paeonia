@@ -13,34 +13,50 @@ final class DailyVoicePlayer {
     private(set) var duration: TimeInterval = 0
 
     private var player: AVAudioPlayer?
+    private var playbackURL: URL?
     private var tickTask: Task<Void, Never>?
 
     func load(url: URL) {
-        stop()
-        do {
-            let player = try AVAudioPlayer(contentsOf: url)
-            player.prepareToPlay()
-            self.player = player
-            duration = player.duration
-            progress = 0
-        } catch {
-            player = nil
-        }
+        stop(clearPlaybackURL: false)
+        playbackURL = url
+        duration = 0
+        progress = 0
     }
 
     func togglePlay() {
-        guard let player else { return }
-        if player.isPlaying {
+        if player?.isPlaying == true {
             pause()
         } else {
             // Activate the session off the main thread (it blocks), then start.
             Task { @MainActor in
                 await Self.activatePlaybackSession()
-                guard let player = self.player, !player.isPlaying else { return }
+                guard let player = preparePlayerIfNeeded(), !player.isPlaying else { return }
+                duration = player.duration
+                progress = duration > 0 ? player.currentTime / duration : 0
                 player.play()
                 isPlaying = true
                 startTicking()
             }
+        }
+    }
+
+    private func preparePlayerIfNeeded() -> AVAudioPlayer? {
+        if let player {
+            return player
+        }
+
+        guard let playbackURL else {
+            return nil
+        }
+
+        do {
+            let player = try AVAudioPlayer(contentsOf: playbackURL)
+            player.prepareToPlay()
+            self.player = player
+            return player
+        } catch {
+            self.player = nil
+            return nil
         }
     }
 
@@ -58,8 +74,16 @@ final class DailyVoicePlayer {
     }
 
     func stop() {
+        stop(clearPlaybackURL: true)
+    }
+
+    private func stop(clearPlaybackURL: Bool) {
         player?.stop()
         player?.currentTime = 0
+        player = nil
+        if clearPlaybackURL {
+            playbackURL = nil
+        }
         isPlaying = false
         progress = 0
         tickTask?.cancel()
@@ -67,7 +91,14 @@ final class DailyVoicePlayer {
     }
 
     func seek(to fraction: Double) {
-        guard let player, duration > 0 else { return }
+        // Build the player on the first scrub too, not only on the first play, so the
+        // scrubber is live straight away. Without this the slider sits inert until play is
+        // tapped, since the player — and its duration — don't exist yet.
+        guard let player = preparePlayerIfNeeded() else { return }
+        if duration == 0 {
+            duration = player.duration
+        }
+        guard duration > 0 else { return }
         player.currentTime = fraction * duration
         progress = fraction
     }
@@ -138,7 +169,7 @@ struct DailyVoicePlaybackView: View {
     }
 
     private var timeLabel: String {
-        let total = player.duration > 0 ? player.duration : Double(fallbackDurationMs ?? 0) / 1000
+        let total = player.duration > 0 ? player.duration : Double(fallbackDurationMs ?? 0) / 1_000
         let current = player.duration > 0 ? player.progress * player.duration : 0
         return "\(formatted(current)) / \(formatted(total))"
     }
