@@ -699,16 +699,22 @@ private struct FlameFrontShape: Shape {
 /// Shared geometry for the sweep front so the mask and the flame line always agree on
 /// where the advancing, tilted line sits for a given progress.
 private enum SweepFront {
+    /// How far the flame's glow spreads beyond the bright line (outer stroke half-width
+    /// plus its blur). The front starts and ends this far *past* each edge so the glow
+    /// halo never bleeds onto the card before the line has actually swept in (or after it
+    /// has left) — it's only at the edge that the front carries a visible glow.
+    static let glowMargin: CGFloat = 30
+
     /// The x of the front where it meets the top and bottom edges. At `progress` 0 the
-    /// tilted line's leading (top) corner sits exactly on the leading edge, so the cover
-    /// fully covers the tile; at `progress` 1 its trailing (bottom) corner sits exactly
-    /// on the trailing edge, so the cover is fully gone. Travel is therefore `width +
-    /// slant` (not `width + 2·slant`) — the line never wanders past the tile, so the
-    /// reveal finishes precisely at the end with no overshoot or dead time.
+    /// tilted line — and its full glow — sits just past the leading edge, so the cover
+    /// fully covers the tile and nothing glows onto it; at `progress` 1 it sits just past
+    /// the trailing edge, fully gone. Travel spans `width + slant` plus a `glowMargin` of
+    /// off-tile run at each end so the glow clears the card cleanly without the line
+    /// wandering far enough to leave a dead stretch mid-card.
     static func edges(in rect: CGRect, progress: CGFloat, tilt: CGFloat) -> (top: CGFloat, bottom: CGFloat) {
         let slant = rect.height * tan(tilt)
-        let startCenter = rect.minX - slant / 2
-        let travel = rect.width + slant
+        let startCenter = rect.minX - slant / 2 - glowMargin
+        let travel = rect.width + slant + glowMargin * 2
         let center = startCenter + progress * travel
         return (top: center + slant / 2, bottom: center - slant / 2)
     }

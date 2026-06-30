@@ -14,6 +14,9 @@ struct MainTabView: View {
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
     let authorName: String?
+    /// The active couple, needed to create new memories. Cosmetic for the rest of the
+    /// tabs, so it must not be part of any load-bearing `.task(id:)` key.
+    let coupleID: UUID?
     let locationMapState: CoupleMapState
     let locationViewModel: LocationMapViewModel
     let selection: Binding<MainTab>
@@ -22,6 +25,7 @@ struct MainTabView: View {
     var onHomeRefresh: () async -> Void = {}
     var onDailyChallengeRefresh: () async -> Void = {}
     var onDailyChallengeLocalChange: @MainActor () async -> Void = {}
+    let onMemoriesLocalChange: @MainActor @Sendable () async -> Void
 
     @State private var dailyChallengeViewModel = DailyChallengeViewModel()
     @State private var isAnswerFlowPresented = false
@@ -66,6 +70,7 @@ struct MainTabView: View {
         partnerDisplayName: String?,
         partnerProfilePhotoAssetID: UUID?,
         authorName: String?,
+        coupleID: UUID?,
         locationMapState: CoupleMapState,
         locationViewModel: LocationMapViewModel,
         selection: Binding<MainTab>,
@@ -73,7 +78,8 @@ struct MainTabView: View {
         onOpenWidgetDrawing: @escaping () -> Void,
         onHomeRefresh: @escaping () async -> Void = {},
         onDailyChallengeRefresh: @escaping () async -> Void = {},
-        onDailyChallengeLocalChange: @escaping @MainActor () async -> Void = {}
+        onDailyChallengeLocalChange: @escaping @MainActor () async -> Void = {},
+        onMemoriesLocalChange: @escaping @MainActor @Sendable () async -> Void = {}
     ) {
         self.currentUserID = currentUserID
         self.currentDisplayName = currentDisplayName
@@ -82,6 +88,7 @@ struct MainTabView: View {
         self.partnerDisplayName = partnerDisplayName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.authorName = authorName
+        self.coupleID = coupleID
         self.locationMapState = locationMapState
         self.locationViewModel = locationViewModel
         self.selection = selection
@@ -90,6 +97,7 @@ struct MainTabView: View {
         self.onHomeRefresh = onHomeRefresh
         self.onDailyChallengeRefresh = onDailyChallengeRefresh
         self.onDailyChallengeLocalChange = onDailyChallengeLocalChange
+        self.onMemoriesLocalChange = onMemoriesLocalChange
     }
 
     var body: some View {
@@ -222,7 +230,21 @@ struct MainTabView: View {
         case .you:
             youTab
         case .memories:
-            placeholderTab(title: tab.title, systemImage: tab.systemImage)
+            memoriesTab
+        }
+    }
+
+    private var memoriesTab: some View {
+        let syncAfterLocalChange = onMemoriesLocalChange
+
+        return NavigationStack {
+            MemoriesScreen(
+                currentUserID: currentUserID,
+                coupleID: coupleID,
+                onLocalChange: { @MainActor @Sendable in
+                    await syncAfterLocalChange()
+                }
+            )
         }
     }
 
@@ -328,22 +350,6 @@ struct MainTabView: View {
             SettingsView(locationViewModel: locationViewModel, partnerName: dailyChallengeParticipants.partnerName)
         }
     }
-
-    private func placeholderTab(
-        title: LocalizedStringResource,
-        systemImage: String
-    ) -> some View {
-        NavigationStack {
-            PaeoniaEmptyStateView(
-                title: title,
-                message: .mainTabPlaceholderMessage,
-                systemImage: systemImage
-            )
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(.paeoniaBackgroundPrimary)
-        }
-    }
 }
 
 #if DEBUG
@@ -356,6 +362,7 @@ struct MainTabView: View {
         partnerDisplayName: "Oda",
         partnerProfilePhotoAssetID: nil,
         authorName: "Hjalmar",
+        coupleID: UUID(uuidString: "33333333-3333-3333-3333-333333333333"),
         locationMapState: .partnerUnknown(.notSharing),
         locationViewModel: LocationMapViewModel(),
         selection: .constant(.home),

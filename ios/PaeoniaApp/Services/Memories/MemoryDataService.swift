@@ -197,4 +197,13 @@ nonisolated enum MemoryDataServiceFactory {
             )
         }
     }
+
+    /// Wipes the signed-in user's locally cached memories when the relationship ends.
+    /// Memories are couple-private content, so losing access should remove the local
+    /// copy the same way the widget, daily, and media caches are cleared on un-pair.
+    static func clearForPrivacy(ownerUserID: UUID) async {
+        guard let localStore = try? PaeoniaLocalStore() else { return }
+        let repository = SwiftDataMemoryRecordRepository(container: localStore.container)
+        try? await repository.deleteAll(ownerUserID: ownerUserID)
+    }
 }

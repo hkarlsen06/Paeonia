@@ -248,6 +248,7 @@ struct RootView: View {
                     partnerDisplayName: viewModel.currentPartnerDisplayName,
                     partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
                     authorName: viewModel.currentSession?.displayName,
+                    coupleID: viewModel.currentActiveCoupleID,
                     locationMapState: locationViewModel.mapState,
                     locationViewModel: locationViewModel,
                     selection: mainTabSelection,
@@ -255,7 +256,8 @@ struct RootView: View {
                     onOpenWidgetDrawing: { viewModel.openWidgetDrawing() },
                     onHomeRefresh: { await refreshHomeSurfacesFromPull() },
                     onDailyChallengeRefresh: { await viewModel.refreshFromHomePull() },
-                    onDailyChallengeLocalChange: { await viewModel.syncAfterLocalChange() }
+                    onDailyChallengeLocalChange: { await viewModel.syncAfterLocalChange() },
+                    onMemoriesLocalChange: { await viewModel.syncAfterLocalChange() }
                 )
                 .transition(
                     .asymmetric(
@@ -453,6 +455,10 @@ struct RootView: View {
             FileDailyAnswerMediaDraftStore.live().clearAll()
             FileDailyChallengeSnapshotCache.live().clearAll()
             await (try? DailyAnswerMediaImageService.live())?.clearAll()
+            await (try? MemoryMediaImageService.live())?.clearAll()
+            if let ownerUserID = viewModel.currentSession.flatMap({ UUID(uuidString: $0.id) }) {
+                await MemoryDataServiceFactory.clearForPrivacy(ownerUserID: ownerUserID)
+            }
         }
     }
 

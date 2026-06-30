@@ -20,6 +20,16 @@ struct DailyChallengeHistoryView: View {
     /// Source namespace for the answer flow's zoom-out transition; the tapped card marks
     /// itself in it so the flow appears to grow from the card the user tapped.
     @Namespace private var zoomNamespace
+    /// How far the cover has followed a rightward exit swipe. Clamped to `>= 0` so the
+    /// cover only ever slides toward the trailing edge, mirroring the system back-swipe a
+    /// navigation push would give us — `fullScreenCover` has no interactive dismiss of its own.
+    @State private var dismissDragOffset: CGFloat = 0
+
+    /// Width of the leading-edge strip that arms the exit swipe, matching the system
+    /// back-swipe affordance so the gesture never competes with the timeline's scroll.
+    private static let edgeSwipeWidth: CGFloat = 20
+    /// How far the cover must travel (or be flung) before lifting the finger dismisses it.
+    private static let dismissThreshold: CGFloat = 96
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -41,22 +51,35 @@ struct DailyChallengeHistoryView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(.paeoniaBackgroundPrimary)
-                .navigationTitle(Text(.dailyChallengeHistoryTitle))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "xmark")
+        ZStack(alignment: .leading) {
+            // The brand background fills the gap the cover reveals as it slides right,
+            // so a part-way exit swipe never flashes black behind the content.
+            Color.paeoniaBackgroundPrimary
+                .ignoresSafeArea()
+
+            NavigationStack {
+                content
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(.paeoniaBackgroundPrimary)
+                    .navigationTitle(Text(.dailyChallengeHistoryTitle))
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button {
+                                dismiss()
+                            } label: {
+                                Image(systemName: "xmark")
+                            }
+                            .accessibilityLabel(Text(.dailyChallengeFlowClose))
                         }
-                        .accessibilityLabel(Text(.dailyChallengeFlowClose))
                     }
-                }
+            }
+            .offset(x: dismissDragOffset)
+            .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.86), value: dismissDragOffset)
+
+            // A fixed, transparent leading-edge strip owns the exit swipe so it stays clear
+            // of the timeline's vertical scroll and the cards' own taps.
+            edgeSwipeCatcher
         }
         .preferredColorScheme(.dark)
         .task { await viewModel.load() }
@@ -73,6 +96,37 @@ struct DailyChallengeHistoryView: View {
             .zoomTransition(question.id, in: zoomNamespace, enabled: !reduceMotion)
             .environment(bannerCenter)
         }
+    }
+
+    /// The transparent leading-edge target for the exit swipe. It sits outside the
+    /// offset content so it stays anchored at the edge and keeps receiving the drag even
+    /// as the cover slides away under the finger.
+    private var edgeSwipeCatcher: some View {
+        Color.clear
+            .frame(width: Self.edgeSwipeWidth)
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(exitSwipe)
+            .accessibilityHidden(true)
+    }
+
+    /// A rightward drag started from the leading edge: the cover follows the finger, and
+    /// releasing past the threshold (or with a fling) dismisses it like a navigation pop.
+    private var exitSwipe: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { value in
+                dismissDragOffset = max(0, value.translation.width)
+            }
+            .onEnded { value in
+                let traveled = value.translation.width
+                let flung = value.predictedEndTranslation.width
+                if traveled > Self.dismissThreshold || flung > Self.dismissThreshold * 3 {
+                    dismiss()
+                } else {
+                    // Didn't make it — settle the cover back into place.
+                    dismissDragOffset = 0
+                }
+            }
     }
 
     @ViewBuilder

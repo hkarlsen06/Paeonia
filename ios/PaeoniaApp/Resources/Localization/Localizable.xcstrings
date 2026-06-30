@@ -1,7 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {},
+    "" : {
+
+    },
+    "+%lld" : {
+
+    },
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -1172,6 +1177,1590 @@
         }
       }
     },
+    "dailyChallenge.answerKind.choice" : {
+      "comment" : "Short label for a daily challenge answer kind where the answer is a choice between partners",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choice"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valg"
+          }
+        }
+      }
+    },
+    "dailyChallenge.answerKind.other" : {
+      "comment" : "Short fallback label for an unknown daily challenge answer kind",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annet"
+          }
+        }
+      }
+    },
+    "dailyChallenge.answerKind.photo" : {
+      "comment" : "Short label for a daily challenge photo answer kind",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilde"
+          }
+        }
+      }
+    },
+    "dailyChallenge.answerKind.text" : {
+      "comment" : "Short label for a daily challenge text answer kind",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Words"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tekst"
+          }
+        }
+      }
+    },
+    "dailyChallenge.answerKind.voice" : {
+      "comment" : "Short label for a daily challenge voice note answer kind",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stemme"
+          }
+        }
+      }
+    },
+    "dailyChallenge.choice.partnerFallback" : {
+      "comment" : "Fallback name for the partner in a partner-choice answer when their display name is unknown",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din"
+          }
+        }
+      }
+    },
+    "dailyChallenge.choice.you" : {
+      "comment" : "Name shown for the current user as the chosen person in a partner-choice answer (picker option and reveal)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deg"
+          }
+        }
+      }
+    },
+    "dailyChallenge.editFailed.message" : {
+      "comment" : "Message shown when saving an edit to an answer did not work",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your text is still here. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teksten din er fortsatt her. Prøv igjen."
+          }
+        }
+      }
+    },
+    "dailyChallenge.editFailed.title" : {
+      "comment" : "Title shown when saving an edit to an answer did not work",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We could not save your changes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke lagre endringene dine"
+          }
+        }
+      }
+    },
+    "dailyChallenge.editLocked.message" : {
+      "comment" : "Why an answer can no longer be edited. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ has answered, so this answer can't be changed now."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har svart, så dette svaret kan ikke endres nå."
+          }
+        }
+      }
+    },
+    "dailyChallenge.editLocked.title" : {
+      "comment" : "Title shown when an answer can no longer be edited because the partner has answered",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Already shared"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allerede delt"
+          }
+        }
+      }
+    },
+    "dailyChallenge.empty.message" : {
+      "comment" : "Message shown when the daily challenge has not been started yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer three small questions. Your partner can answer theirs too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på tre små spørsmål. Partneren din kan svare på sine også."
+          }
+        }
+      }
+    },
+    "dailyChallenge.empty.title" : {
+      "comment" : "Title shown when the daily challenge has not been started yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start questions for today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start dagens spørsmål"
+          }
+        }
+      }
+    },
+    "dailyChallenge.emptyAnswer.message" : {
+      "comment" : "Banner message shown when the user tries to submit an empty daily challenge text answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a short answer before sending."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv et kort svar før du sender."
+          }
+        }
+      }
+    },
+    "dailyChallenge.emptyAnswer.title" : {
+      "comment" : "Banner title shown when the user tries to submit an empty daily challenge text answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write something first"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv noe først"
+          }
+        }
+      }
+    },
+    "dailyChallenge.flow.allDone.message" : {
+      "comment" : "Shown after finishing today's questions. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nice. We'll let %@ know. Come back to see their answers when they reply."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fint. Vi gir %@ beskjed. Kom tilbake for å se svarene deres når de svarer."
+          }
+        }
+      }
+    },
+    "dailyChallenge.flow.allDone.title" : {
+      "comment" : "Celebration title shown after the user answers all of their daily questions",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All answered"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alt besvart"
+          }
+        }
+      }
+    },
+    "dailyChallenge.flow.close" : {
+      "comment" : "Accessibility label for the button that closes the daily questions screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lukk"
+          }
+        }
+      }
+    },
+    "dailyChallenge.flow.doneButton" : {
+      "comment" : "Button that closes the daily questions screen when finished",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
+          }
+        }
+      }
+    },
+    "dailyChallenge.flow.nextButton" : {
+      "comment" : "Button that moves to the next daily question",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste"
+          }
+        }
+      }
+    },
+    "dailyChallenge.flow.partnerQuestionsButton" : {
+      "comment" : "Button to go answer the partner's questions. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer to see %@'s answers"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar for å se %@s svar"
+          }
+        }
+      }
+    },
+    "dailyChallenge.flow.saveButton" : {
+      "comment" : "Button that saves edits to an answer the user already sent",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        }
+      }
+    },
+    "dailyChallenge.history.button" : {
+      "comment" : "Accessibility label for the toolbar button that opens the questions history",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question history"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmålshistorikk"
+          }
+        }
+      }
+    },
+    "dailyChallenge.history.empty.message" : {
+      "comment" : "Message shown when there are no past answered questions yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer today's questions together and they'll show up here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på dagens spørsmål sammen, så dukker de opp her."
+          }
+        }
+      }
+    },
+    "dailyChallenge.history.empty.title" : {
+      "comment" : "Title shown when there are no past answered questions yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No history yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen historikk ennå"
+          }
+        }
+      }
+    },
+    "dailyChallenge.history.loadFailed.message" : {
+      "comment" : "Message shown when the question history could not be loaded",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "dailyChallenge.history.loadFailed.title" : {
+      "comment" : "Title shown when the question history could not be loaded",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load history"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste historikk"
+          }
+        }
+      }
+    },
+    "dailyChallenge.history.retryButton" : {
+      "comment" : "Button to retry loading the question history after an error",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen"
+          }
+        }
+      }
+    },
+    "dailyChallenge.history.title" : {
+      "comment" : "Title of the screen showing past daily questions and answers",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question history"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmålshistorikk"
+          }
+        }
+      }
+    },
+    "dailyChallenge.home.active.title" : {
+      "comment" : "Title on the Home daily challenge card when questions are available",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questions for today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dagens spørsmål"
+          }
+        }
+      }
+    },
+    "dailyChallenge.home.complete.message" : {
+      "comment" : "Message on the Home daily challenge card when the user three daily questions are answered",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your three questions are answered."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De tre spørsmålene dine er besvart."
+          }
+        }
+      }
+    },
+    "dailyChallenge.home.complete.title" : {
+      "comment" : "Title on the Home daily challenge card when the user three daily questions are answered",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your part is done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din del er ferdig"
+          }
+        }
+      }
+    },
+    "dailyChallenge.home.loading.title" : {
+      "comment" : "Title on the Home daily challenge card while questions are loading",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading questions for today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laster dagens spørsmål"
+          }
+        }
+      }
+    },
+    "dailyChallenge.home.noChallenge.message" : {
+      "comment" : "Message on the Home daily challenge card before the challenge is started",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start your three questions for today."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start de tre spørsmålene dine for i dag."
+          }
+        }
+      }
+    },
+    "dailyChallenge.home.noChallenge.title" : {
+      "comment" : "Title on the Home daily challenge card before the challenge is started",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready for today?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klar for i dag?"
+          }
+        }
+      }
+    },
+    "dailyChallenge.kind.choice" : {
+      "comment" : "Kind-picker pill: answer by picking a person",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg"
+          }
+        }
+      }
+    },
+    "dailyChallenge.kind.photo" : {
+      "comment" : "Kind-picker pill: answer with a photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilde"
+          }
+        }
+      }
+    },
+    "dailyChallenge.kind.text" : {
+      "comment" : "Kind-picker pill: answer by writing text",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv"
+          }
+        }
+      }
+    },
+    "dailyChallenge.kind.voice" : {
+      "comment" : "Kind-picker pill: answer with a voice note",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tale"
+          }
+        }
+      }
+    },
+    "dailyChallenge.loadFailed.message" : {
+      "comment" : "Banner message shown when the daily challenge could not be loaded",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettet og prøv igjen."
+          }
+        }
+      }
+    },
+    "dailyChallenge.loadFailed.title" : {
+      "comment" : "Banner title shown when the daily challenge could not be loaded",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We could not load questions for today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke laste dagens spørsmål"
+          }
+        }
+      }
+    },
+    "dailyChallenge.mediaAnswer.summary" : {
+      "comment" : "Summary shown for a revealed daily challenge answer that contains media instead of text",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A photo or voice answer was sent."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et bilde- eller stemmesvar ble sendt."
+          }
+        }
+      }
+    },
+    "dailyChallenge.needsPhoto.message" : {
+      "comment" : "Message shown if a daily challenge question only accepts photo answers",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This question needs a photo answer."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette spørsmålet trenger et bildesvar."
+          }
+        }
+      }
+    },
+    "dailyChallenge.needsVoice.message" : {
+      "comment" : "Message shown if a daily challenge question only accepts voice note answers",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This question needs a voice answer."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette spørsmålet trenger et stemmesvar."
+          }
+        }
+      }
+    },
+    "dailyChallenge.notAnswered" : {
+      "comment" : "Status label for the current user's own unanswered daily challenge question",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You haven't answered yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du har ikke svart ennå"
+          }
+        }
+      }
+    },
+    "dailyChallenge.openButton" : {
+      "comment" : "Button that opens the Daily Challenge screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne spørsmål"
+          }
+        }
+      }
+    },
+    "dailyChallenge.ownSection.title" : {
+      "comment" : "Section title for the current user seeded daily questions",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your three"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dine tre"
+          }
+        }
+      }
+    },
+    "dailyChallenge.partner.answerCta" : {
+      "comment" : "Button on a partner-answered question that opens the answer flow; answering reveals the partner's reply",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer to see their reply"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar for å se deres svar"
+          }
+        }
+      }
+    },
+    "dailyChallenge.partner.lockedCta" : {
+      "comment" : "Disabled button on a partner-answered question, shown until the user has finished their own three daily questions",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish your questions first"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fullfør dine spørsmål først"
+          }
+        }
+      }
+    },
+    "dailyChallenge.partnerAnswer.title" : {
+      "comment" : "Title above the partner revealed daily challenge answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partner answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partnerens svar"
+          }
+        }
+      }
+    },
+    "dailyChallenge.partnerHidden" : {
+      "comment" : "Status label: the named partner answered. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ answered"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ svarte"
+          }
+        }
+      }
+    },
+    "dailyChallenge.partnerHidden.message" : {
+      "comment" : "Explains a hidden partner answer. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer this question to see what %@ said."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på spørsmålet for å se hva %@ skrev."
+          }
+        }
+      }
+    },
+    "dailyChallenge.partnerReveal.eyebrow" : {
+      "comment" : "Small label above the revealed partner answer shown after answering their question",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deres svar"
+          }
+        }
+      }
+    },
+    "dailyChallenge.partnerSection.title" : {
+      "comment" : "Section heading for the partner's questions. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra %@"
+          }
+        }
+      }
+    },
+    "dailyChallenge.photo.add" : {
+      "comment" : "Button to add a photo to a daily answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til et bilde"
+          }
+        }
+      }
+    },
+    "dailyChallenge.photo.change" : {
+      "comment" : "Button to replace the chosen photo on a daily answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bytt bilde"
+          }
+        }
+      }
+    },
+    "dailyChallenge.photo.label" : {
+      "comment" : "Label above the photo answer composer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildet ditt"
+          }
+        }
+      }
+    },
+    "dailyChallenge.photo.remove" : {
+      "comment" : "Button to remove the chosen photo from a daily answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern bilde"
+          }
+        }
+      }
+    },
+    "dailyChallenge.photo.take" : {
+      "comment" : "Button to capture a photo answer with the camera",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta et bilde"
+          }
+        }
+      }
+    },
+    "dailyChallenge.photoAnswer.accessibility" : {
+      "comment" : "Accessibility label for a revealed photo answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildesvar"
+          }
+        }
+      }
+    },
+    "dailyChallenge.progress.accessibilityLabel" : {
+      "comment" : "Accessibility label for the daily challenge progress pill",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily challenge progress"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fremdrift for dagens spørsmål"
+          }
+        }
+      }
+    },
+    "dailyChallenge.progress.completeMessage" : {
+      "comment" : "Message shown when the current user has answered their three seeded daily questions",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your part is done for today."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din del er ferdig for i dag."
+          }
+        }
+      }
+    },
+    "dailyChallenge.progress.message" : {
+      "comment" : "Message shown above the daily challenge question list",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer your three questions for today."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på de tre spørsmålene dine for i dag."
+          }
+        }
+      }
+    },
+    "dailyChallenge.progress.title" : {
+      "comment" : "Title for the daily challenge progress header",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily challenge"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dagens spørsmål"
+          }
+        }
+      }
+    },
+    "dailyChallenge.seePartnerAnswersButton" : {
+      "comment" : "Button to view the partner's answers. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See %@'s answers"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se %@s svar"
+          }
+        }
+      }
+    },
+    "dailyChallenge.seeYourAnswersButton" : {
+      "comment" : "Button on the daily challenge card opens the user's completed daily answers",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See your answers"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se svarene dine"
+          }
+        }
+      }
+    },
+    "dailyChallenge.sending.message" : {
+      "comment" : "Shown under a photo answer that is saved locally and uploading in the background",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved on this phone. We'll send it when you're online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret på denne telefonen. Vi sender det når du er på nett."
+          }
+        }
+      }
+    },
+    "dailyChallenge.shuffleFailed.message" : {
+      "comment" : "Message shown when swapping a daily question did not work",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettet og prøv igjen."
+          }
+        }
+      }
+    },
+    "dailyChallenge.shuffleFailed.title" : {
+      "comment" : "Title shown when swapping a daily question did not work",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We could not switch the question"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke bytte spørsmålet"
+          }
+        }
+      }
+    },
+    "dailyChallenge.shuffleLimit.message" : {
+      "comment" : "Message shown when the user has used all of today's question swaps",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've used all your skips for today. Try answering one of these."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du har brukt opp byttene dine for i dag. Prøv å svare på et av disse."
+          }
+        }
+      }
+    },
+    "dailyChallenge.shuffleLimit.title" : {
+      "comment" : "Title shown when the user has used all of today's question swaps",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No more skips today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen flere bytter i dag"
+          }
+        }
+      }
+    },
+    "dailyChallenge.skipButton" : {
+      "comment" : "Button that swaps today's question for a different one",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hopp over"
+          }
+        }
+      }
+    },
+    "dailyChallenge.startButton" : {
+      "comment" : "Button that starts the daily challenge",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start spørsmål"
+          }
+        }
+      }
+    },
+    "dailyChallenge.startFailed.message" : {
+      "comment" : "Banner message shown when the daily challenge could not be started",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettet og prøv igjen."
+          }
+        }
+      }
+    },
+    "dailyChallenge.startFailed.title" : {
+      "comment" : "Banner title shown when the daily challenge could not be started",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We could not start questions for today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke starte dagens spørsmål"
+          }
+        }
+      }
+    },
+    "dailyChallenge.submitButton" : {
+      "comment" : "Button that submits a daily challenge answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send svar"
+          }
+        }
+      }
+    },
+    "dailyChallenge.submitFailed.message" : {
+      "comment" : "Banner message shown when a daily challenge answer could not be sent",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your text is still here. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teksten din er fortsatt her. Prøv igjen."
+          }
+        }
+      }
+    },
+    "dailyChallenge.submitFailed.title" : {
+      "comment" : "Banner title shown when a daily challenge answer could not be sent",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We could not send your answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke sende svaret ditt"
+          }
+        }
+      }
+    },
+    "dailyChallenge.textAnswer.label" : {
+      "comment" : "Label above the daily challenge text answer input",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ditt svar"
+          }
+        }
+      }
+    },
+    "dailyChallenge.textAnswer.placeholder" : {
+      "comment" : "Placeholder shown in the daily challenge text answer input",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write something honest and simple."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv noe ærlig og enkelt."
+          }
+        }
+      }
+    },
+    "dailyChallenge.unsupportedAnswer.message" : {
+      "comment" : "Message shown if a daily challenge question needs an answer kind that is not available in this first text submission slice",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This question needs another kind of answer."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette spørsmålet trenger en annen type svar."
+          }
+        }
+      }
+    },
+    "dailyChallenge.voice.label" : {
+      "comment" : "Label above the voice answer recorder/preview",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your voice note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talemeldingen din"
+          }
+        }
+      }
+    },
+    "dailyChallenge.voice.permissionDenied" : {
+      "comment" : "Shown when microphone access is denied and a voice answer can't be recorded",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow microphone access in Settings to record a voice answer."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi tilgang til mikrofonen i Innstillinger for å spille inn et lydsvar."
+          }
+        }
+      }
+    },
+    "dailyChallenge.voice.play" : {
+      "comment" : "Accessibility label for the voice answer play button",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill av"
+          }
+        }
+      }
+    },
+    "dailyChallenge.voice.record" : {
+      "comment" : "Prompt on the button to start recording a voice answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to record"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk for å spille inn"
+          }
+        }
+      }
+    },
+    "dailyChallenge.voice.reRecord" : {
+      "comment" : "Button to discard a recorded voice answer and record again",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Re-record"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill inn på nytt"
+          }
+        }
+      }
+    },
+    "dailyChallenge.youAnswered" : {
+      "comment" : "Status label indicating the current user answered a daily challenge question",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You answered"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du svarte"
+          }
+        }
+      }
+    },
+    "dailyChallenge.yourAnswer.title" : {
+      "comment" : "Title above the current user own daily challenge answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ditt svar"
+          }
+        }
+      }
+    },
     "home.dailyPrompt.answer" : {
       "comment" : "Button that opens today's shared question to answer it",
       "extractionState" : "manual",
@@ -1240,6 +2829,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Et kart som viser hvor du og %@ er"
+          }
+        }
+      }
+    },
+    "home.map.currentUnknown.button" : {
+      "comment" : "Button in the Home map tile that asks iOS for this user's location and turns on sharing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share location"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del posisjon"
           }
         }
       }
@@ -1600,6 +3207,708 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Meg"
+          }
+        }
+      }
+    },
+    "memories.add.accessibility" : {
+      "comment" : "Accessibility label for the toolbar button that opens the new-memory form.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til et minne"
+          }
+        }
+      }
+    },
+    "memories.delete.action" : {
+      "comment" : "Destructive confirm button that deletes a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett"
+          }
+        }
+      }
+    },
+    "memories.delete.message" : {
+      "comment" : "Body of the confirmation alert before deleting a memory; states it affects both partners and cannot be undone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This removes the memory for both of you. You can't undo this."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette fjerner minnet for dere begge. Du kan ikke angre dette."
+          }
+        }
+      }
+    },
+    "memories.delete.title" : {
+      "comment" : "Title of the confirmation alert before deleting a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this memory?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slette dette minnet?"
+          }
+        }
+      }
+    },
+    "memories.detail.addNote" : {
+      "comment" : "Button to add the current user's note to a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add your note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til notatet ditt"
+          }
+        }
+      }
+    },
+    "memories.detail.addPhotos" : {
+      "comment" : "Menu action to add more photos to an existing memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til bilder"
+          }
+        }
+      }
+    },
+    "memories.detail.delete" : {
+      "comment" : "Menu action to delete a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett minne"
+          }
+        }
+      }
+    },
+    "memories.detail.editDetails" : {
+      "comment" : "Menu action to edit a memory's title and date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit details"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rediger detaljer"
+          }
+        }
+      }
+    },
+    "memories.detail.editNote" : {
+      "comment" : "Button to edit the current user's existing note on a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit your note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rediger notatet ditt"
+          }
+        }
+      }
+    },
+    "memories.detail.menu" : {
+      "comment" : "Accessibility label for the memory detail overflow menu.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More options"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere valg"
+          }
+        }
+      }
+    },
+    "memories.detail.partnerNote" : {
+      "comment" : "Heading above the partner's note on a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notatet deres"
+          }
+        }
+      }
+    },
+    "memories.detail.yourNote" : {
+      "comment" : "Heading above the current user's own note on a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notatet ditt"
+          }
+        }
+      }
+    },
+    "memories.editDetails.save" : {
+      "comment" : "Button that saves edits to a memory's title and date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        }
+      }
+    },
+    "memories.editDetails.title" : {
+      "comment" : "Navigation title for the sheet that edits a memory's title and date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rediger minne"
+          }
+        }
+      }
+    },
+    "memories.editor.addPhoto" : {
+      "comment" : "Button to pick a photo from the library for a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til bilde"
+          }
+        }
+      }
+    },
+    "memories.editor.dateLabel" : {
+      "comment" : "Field label for a memory's date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dato"
+          }
+        }
+      }
+    },
+    "memories.editor.newTitle" : {
+      "comment" : "Navigation title for the new-memory form.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nytt minne"
+          }
+        }
+      }
+    },
+    "memories.editor.noteLabel" : {
+      "comment" : "Field label for the optional note on a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notat"
+          }
+        }
+      }
+    },
+    "memories.editor.notePlaceholder" : {
+      "comment" : "Placeholder for the memory note field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write something about this moment"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv noe om dette øyeblikket"
+          }
+        }
+      }
+    },
+    "memories.editor.photosLabel" : {
+      "comment" : "Field label for the photos attached to a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilder"
+          }
+        }
+      }
+    },
+    "memories.editor.save" : {
+      "comment" : "Primary button that saves a new memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre minne"
+          }
+        }
+      }
+    },
+    "memories.editor.takePhoto" : {
+      "comment" : "Button to capture a new photo with the camera for a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta bilde"
+          }
+        }
+      }
+    },
+    "memories.editor.titleLabel" : {
+      "comment" : "Field label for a memory's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tittel"
+          }
+        }
+      }
+    },
+    "memories.editor.titlePlaceholder" : {
+      "comment" : "Placeholder for the memory title field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give this memory a name"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi dette minnet et navn"
+          }
+        }
+      }
+    },
+    "memories.empty.action" : {
+      "comment" : "Button on the Memories empty state that opens the new-memory form.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til et minne"
+          }
+        }
+      }
+    },
+    "memories.empty.message" : {
+      "comment" : "Empty-state body on the Memories tab inviting the user to save a moment.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save a small moment from today."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre et lite øyeblikk fra i dag."
+          }
+        }
+      }
+    },
+    "memories.empty.title" : {
+      "comment" : "Empty-state title on the Memories tab when no memories exist yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No memories yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen minner ennå"
+          }
+        }
+      }
+    },
+    "memories.note.save" : {
+      "comment" : "Button that saves the user's note on a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        }
+      }
+    },
+    "memories.note.title" : {
+      "comment" : "Navigation title for the sheet where the user writes their note on a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notatet ditt"
+          }
+        }
+      }
+    },
+    "memories.notice.createFailed.title" : {
+      "comment" : "Error banner title shown when saving a new memory failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save your memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å lagre minnet"
+          }
+        }
+      }
+    },
+    "memories.notice.deleteFailed.title" : {
+      "comment" : "Error banner title shown when deleting a memory failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't delete that memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å slette minnet"
+          }
+        }
+      }
+    },
+    "memories.notice.noteFailed.title" : {
+      "comment" : "Error banner title shown when saving a note on a memory failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save your note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å lagre notatet"
+          }
+        }
+      }
+    },
+    "memories.notice.photoFailed.message" : {
+      "comment" : "Error banner body shown when photo upload failed, suggesting a connection check.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      }
+    },
+    "memories.notice.photoFailed.title" : {
+      "comment" : "Error banner title shown when adding photos to a memory failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't add your photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å legge til bildene"
+          }
+        }
+      }
+    },
+    "memories.notice.retry.message" : {
+      "comment" : "Generic recoverable-error banner body inviting the user to try again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong. Please try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt. Prøv igjen."
+          }
+        }
+      }
+    },
+    "memories.photo.accessibility" : {
+      "comment" : "Accessibility label for a photo shown inside a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Memory photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minnebilde"
+          }
+        }
+      }
+    },
+    "memories.photo.remove" : {
+      "comment" : "Accessibility label for the control that removes a picked photo before saving.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern bilde"
+          }
+        }
+      }
+    },
+    "memories.photo.removeAction" : {
+      "comment" : "Destructive confirm button that removes a photo from a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern"
+          }
+        }
+      }
+    },
+    "memories.photo.removeTitle" : {
+      "comment" : "Title of the confirmation alert before removing a photo from a memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove this photo?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjerne dette bildet?"
           }
         }
       }
@@ -3512,6 +5821,186 @@
         }
       }
     },
+    "streakDetail.done" : {
+      "comment" : "Button that closes the informative streak sheet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
+          }
+        }
+      }
+    },
+    "streakDetail.longestLabel" : {
+      "comment" : "Caption under the couple's longest streak number on the streak sheet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Longest streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lengste rekke"
+          }
+        }
+      }
+    },
+    "streakDetail.message" : {
+      "comment" : "Short, forgiving explanation of how the daily streak works, on the streak sheet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer your three daily questions each day to keep the flame going. Miss a day and it cools down — but you can always start again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på de tre daglige spørsmålene hver dag for å holde flammen i live. Hopper dere over en dag, kjølner den – men dere kan alltid begynne på nytt."
+          }
+        }
+      }
+    },
+    "streakDetail.title" : {
+      "comment" : "Title of the informative streak sheet opened by tapping the streak badge",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekken deres"
+          }
+        }
+      }
+    },
+    "streakRestore.brokenAction" : {
+      "comment" : "Short action on the broken streak chip; doubles as a VoiceOver hint",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get it back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få den tilbake"
+          }
+        }
+      }
+    },
+    "streakRestore.buyButton" : {
+      "comment" : "Primary button to buy the streak restore; the price is appended after it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenopprett rekken"
+          }
+        }
+      }
+    },
+    "streakRestore.error.notRestorable" : {
+      "comment" : "Error shown when a streak can no longer be restored",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That streak can't be brought back anymore."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den rekken kan ikke hentes tilbake lenger."
+          }
+        }
+      }
+    },
+    "streakRestore.message" : {
+      "comment" : "Body on the streak-restore offer explaining what restore does",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your streak slipped, but you can still bring it back. Do it soon to keep going together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekken røk, men du kan fortsatt få den tilbake. Gjør det snart for å holde den i gang sammen."
+          }
+        }
+      }
+    },
+    "streakRestore.notNow" : {
+      "comment" : "Dismisses the streak-restore offer without buying",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke nå"
+          }
+        }
+      }
+    },
+    "streakRestore.title" : {
+      "comment" : "Title of the streak-restore offer and the button to open it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get your streak back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få tilbake rekken"
+          }
+        }
+      }
+    },
     "sync.status.failed" : {
       "comment" : "Short sync status label for a failed send.",
       "extractionState" : "manual",
@@ -4252,1788 +6741,6 @@
           }
         }
       }
-    },
-    "home.map.currentUnknown.button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Share location"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Del posisjon"
-          }
-        }
-      },
-      "comment" : "Button in the Home map tile that asks iOS for this user's location and turns on sharing."
-    },
-    "dailyChallenge.answerKind.choice" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choice"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Valg"
-          }
-        }
-      },
-      "comment" : "Short label for a daily challenge answer kind where the answer is a choice between partners"
-    },
-    "dailyChallenge.answerKind.other" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Other"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Annet"
-          }
-        }
-      },
-      "comment" : "Short fallback label for an unknown daily challenge answer kind"
-    },
-    "dailyChallenge.answerKind.photo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bilde"
-          }
-        }
-      },
-      "comment" : "Short label for a daily challenge photo answer kind"
-    },
-    "dailyChallenge.answerKind.text" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Words"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tekst"
-          }
-        }
-      },
-      "comment" : "Short label for a daily challenge text answer kind"
-    },
-    "dailyChallenge.answerKind.voice" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Voice"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stemme"
-          }
-        }
-      },
-      "comment" : "Short label for a daily challenge voice note answer kind"
-    },
-    "dailyChallenge.emptyAnswer.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add a short answer before sending."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skriv et kort svar før du sender."
-          }
-        }
-      },
-      "comment" : "Banner message shown when the user tries to submit an empty daily challenge text answer"
-    },
-    "dailyChallenge.emptyAnswer.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Write something first"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skriv noe først"
-          }
-        }
-      },
-      "comment" : "Banner title shown when the user tries to submit an empty daily challenge text answer"
-    },
-    "dailyChallenge.empty.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer three small questions. Your partner can answer theirs too."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar på tre små spørsmål. Partneren din kan svare på sine også."
-          }
-        }
-      },
-      "comment" : "Message shown when the daily challenge has not been started yet"
-    },
-    "dailyChallenge.empty.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start questions for today"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start dagens spørsmål"
-          }
-        }
-      },
-      "comment" : "Title shown when the daily challenge has not been started yet"
-    },
-    "dailyChallenge.home.active.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Questions for today"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dagens spørsmål"
-          }
-        }
-      },
-      "comment" : "Title on the Home daily challenge card when questions are available"
-    },
-    "dailyChallenge.home.complete.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your three questions are answered."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "De tre spørsmålene dine er besvart."
-          }
-        }
-      },
-      "comment" : "Message on the Home daily challenge card when the user three daily questions are answered"
-    },
-    "dailyChallenge.home.complete.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your part is done"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Din del er ferdig"
-          }
-        }
-      },
-      "comment" : "Title on the Home daily challenge card when the user three daily questions are answered"
-    },
-    "dailyChallenge.home.loading.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loading questions for today"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Laster dagens spørsmål"
-          }
-        }
-      },
-      "comment" : "Title on the Home daily challenge card while questions are loading"
-    },
-    "dailyChallenge.home.noChallenge.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start your three questions for today."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start de tre spørsmålene dine for i dag."
-          }
-        }
-      },
-      "comment" : "Message on the Home daily challenge card before the challenge is started"
-    },
-    "dailyChallenge.home.noChallenge.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ready for today?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Klar for i dag?"
-          }
-        }
-      },
-      "comment" : "Title on the Home daily challenge card before the challenge is started"
-    },
-    "dailyChallenge.loadFailed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check your internet and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekk nettet og prøv igjen."
-          }
-        }
-      },
-      "comment" : "Banner message shown when the daily challenge could not be loaded"
-    },
-    "dailyChallenge.loadFailed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We could not load questions for today"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi kunne ikke laste dagens spørsmål"
-          }
-        }
-      },
-      "comment" : "Banner title shown when the daily challenge could not be loaded"
-    },
-    "dailyChallenge.mediaAnswer.summary" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A photo or voice answer was sent."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Et bilde- eller stemmesvar ble sendt."
-          }
-        }
-      },
-      "comment" : "Summary shown for a revealed daily challenge answer that contains media instead of text"
-    },
-    "dailyChallenge.needsPhoto.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This question needs a photo answer."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dette spørsmålet trenger et bildesvar."
-          }
-        }
-      },
-      "comment" : "Message shown if a daily challenge question only accepts photo answers"
-    },
-    "dailyChallenge.needsVoice.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This question needs a voice answer."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dette spørsmålet trenger et stemmesvar."
-          }
-        }
-      },
-      "comment" : "Message shown if a daily challenge question only accepts voice note answers"
-    },
-    "dailyChallenge.notAnswered" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You haven't answered yet"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du har ikke svart ennå"
-          }
-        }
-      },
-      "comment" : "Status label for the current user's own unanswered daily challenge question"
-    },
-    "dailyChallenge.openButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open questions"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Åpne spørsmål"
-          }
-        }
-      },
-      "comment" : "Button that opens the Daily Challenge screen"
-    },
-    "dailyChallenge.ownSection.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your three"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dine tre"
-          }
-        }
-      },
-      "comment" : "Section title for the current user seeded daily questions"
-    },
-    "dailyChallenge.partnerAnswer.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partner answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partnerens svar"
-          }
-        }
-      },
-      "comment" : "Title above the partner revealed daily challenge answer"
-    },
-    "dailyChallenge.partnerHidden" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ answered"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ svarte"
-          }
-        }
-      },
-      "comment" : "Status label: the named partner answered. %@ is the partner's name."
-    },
-    "dailyChallenge.partnerHidden.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer this question to see what %@ said."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar på spørsmålet for å se hva %@ skrev."
-          }
-        }
-      },
-      "comment" : "Explains a hidden partner answer. %@ is the partner's name."
-    },
-    "dailyChallenge.partnerSection.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "From %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fra %@"
-          }
-        }
-      },
-      "comment" : "Section heading for the partner's questions. %@ is the partner's name."
-    },
-    "dailyChallenge.progress.accessibilityLabel" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Daily challenge progress"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fremdrift for dagens spørsmål"
-          }
-        }
-      },
-      "comment" : "Accessibility label for the daily challenge progress pill"
-    },
-    "dailyChallenge.progress.completeMessage" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your part is done for today."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Din del er ferdig for i dag."
-          }
-        }
-      },
-      "comment" : "Message shown when the current user has answered their three seeded daily questions"
-    },
-    "dailyChallenge.progress.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer your three questions for today."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar på de tre spørsmålene dine for i dag."
-          }
-        }
-      },
-      "comment" : "Message shown above the daily challenge question list"
-    },
-    "dailyChallenge.progress.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Daily challenge"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dagens spørsmål"
-          }
-        }
-      },
-      "comment" : "Title for the daily challenge progress header"
-    },
-    "dailyChallenge.startButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start questions"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start spørsmål"
-          }
-        }
-      },
-      "comment" : "Button that starts the daily challenge"
-    },
-    "dailyChallenge.startFailed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check your internet and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekk nettet og prøv igjen."
-          }
-        }
-      },
-      "comment" : "Banner message shown when the daily challenge could not be started"
-    },
-    "dailyChallenge.startFailed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We could not start questions for today"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi kunne ikke starte dagens spørsmål"
-          }
-        }
-      },
-      "comment" : "Banner title shown when the daily challenge could not be started"
-    },
-    "dailyChallenge.submitButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send svar"
-          }
-        }
-      },
-      "comment" : "Button that submits a daily challenge answer"
-    },
-    "dailyChallenge.submitFailed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your text is still here. Try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teksten din er fortsatt her. Prøv igjen."
-          }
-        }
-      },
-      "comment" : "Banner message shown when a daily challenge answer could not be sent"
-    },
-    "dailyChallenge.submitFailed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We could not send your answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi kunne ikke sende svaret ditt"
-          }
-        }
-      },
-      "comment" : "Banner title shown when a daily challenge answer could not be sent"
-    },
-    "dailyChallenge.textAnswer.label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ditt svar"
-          }
-        }
-      },
-      "comment" : "Label above the daily challenge text answer input"
-    },
-    "dailyChallenge.textAnswer.placeholder" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Write something honest and simple."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skriv noe ærlig og enkelt."
-          }
-        }
-      },
-      "comment" : "Placeholder shown in the daily challenge text answer input"
-    },
-    "dailyChallenge.youAnswered" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You answered"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du svarte"
-          }
-        }
-      },
-      "comment" : "Status label indicating the current user answered a daily challenge question"
-    },
-    "dailyChallenge.yourAnswer.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ditt svar"
-          }
-        }
-      },
-      "comment" : "Title above the current user own daily challenge answer"
-    },
-    "dailyChallenge.unsupportedAnswer.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This question needs another kind of answer."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dette spørsmålet trenger en annen type svar."
-          }
-        }
-      },
-      "comment" : "Message shown if a daily challenge question needs an answer kind that is not available in this first text submission slice"
-    },
-    "dailyChallenge.skipButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skip"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hopp over"
-          }
-        }
-      },
-      "comment" : "Button that swaps today's question for a different one"
-    },
-    "dailyChallenge.shuffleLimit.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No more skips today"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingen flere bytter i dag"
-          }
-        }
-      },
-      "comment" : "Title shown when the user has used all of today's question swaps"
-    },
-    "dailyChallenge.shuffleLimit.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You've used all your skips for today. Try answering one of these."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du har brukt opp byttene dine for i dag. Prøv å svare på et av disse."
-          }
-        }
-      },
-      "comment" : "Message shown when the user has used all of today's question swaps"
-    },
-    "dailyChallenge.shuffleFailed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We could not switch the question"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi kunne ikke bytte spørsmålet"
-          }
-        }
-      },
-      "comment" : "Title shown when swapping a daily question did not work"
-    },
-    "dailyChallenge.shuffleFailed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check your internet and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekk nettet og prøv igjen."
-          }
-        }
-      },
-      "comment" : "Message shown when swapping a daily question did not work"
-    },
-    "dailyChallenge.flow.close" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Close"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lukk"
-          }
-        }
-      },
-      "comment" : "Accessibility label for the button that closes the daily questions screen"
-    },
-    "dailyChallenge.flow.nextButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neste"
-          }
-        }
-      },
-      "comment" : "Button that moves to the next daily question"
-    },
-    "dailyChallenge.flow.doneButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Done"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ferdig"
-          }
-        }
-      },
-      "comment" : "Button that closes the daily questions screen when finished"
-    },
-    "dailyChallenge.flow.allDone.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "All answered"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alt besvart"
-          }
-        }
-      },
-      "comment" : "Celebration title shown after the user answers all of their daily questions"
-    },
-    "dailyChallenge.flow.allDone.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nice. We'll let %@ know. Come back to see their answers when they reply."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fint. Vi gir %@ beskjed. Kom tilbake for å se svarene deres når de svarer."
-          }
-        }
-      },
-      "comment" : "Shown after finishing today's questions. %@ is the partner's name."
-    },
-    "dailyChallenge.flow.saveButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre"
-          }
-        }
-      },
-      "comment" : "Button that saves edits to an answer the user already sent"
-    },
-    "dailyChallenge.editLocked.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Already shared"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Allerede delt"
-          }
-        }
-      },
-      "comment" : "Title shown when an answer can no longer be edited because the partner has answered"
-    },
-    "dailyChallenge.editLocked.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ has answered, so this answer can't be changed now."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ har svart, så dette svaret kan ikke endres nå."
-          }
-        }
-      },
-      "comment" : "Why an answer can no longer be edited. %@ is the partner's name."
-    },
-    "dailyChallenge.editFailed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We could not save your changes"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi kunne ikke lagre endringene dine"
-          }
-        }
-      },
-      "comment" : "Title shown when saving an edit to an answer did not work"
-    },
-    "dailyChallenge.editFailed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your text is still here. Try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teksten din er fortsatt her. Prøv igjen."
-          }
-        }
-      },
-      "comment" : "Message shown when saving an edit to an answer did not work"
-    },
-    "dailyChallenge.choice.you" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deg"
-          }
-        }
-      },
-      "comment" : "Name shown for the current user as the chosen person in a partner-choice answer (picker option and reveal)"
-    },
-    "dailyChallenge.choice.partnerFallback" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your partner"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partneren din"
-          }
-        }
-      },
-      "comment" : "Fallback name for the partner in a partner-choice answer when their display name is unknown"
-    },
-    "dailyChallenge.kind.text" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Write"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skriv"
-          }
-        }
-      },
-      "comment" : "Kind-picker pill: answer by writing text"
-    },
-    "dailyChallenge.kind.photo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bilde"
-          }
-        }
-      },
-      "comment" : "Kind-picker pill: answer with a photo"
-    },
-    "dailyChallenge.kind.voice" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Voice"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tale"
-          }
-        }
-      },
-      "comment" : "Kind-picker pill: answer with a voice note"
-    },
-    "dailyChallenge.kind.choice" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pick"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg"
-          }
-        }
-      },
-      "comment" : "Kind-picker pill: answer by picking a person"
-    },
-    "dailyChallenge.photo.label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bildet ditt"
-          }
-        }
-      },
-      "comment" : "Label above the photo answer composer"
-    },
-    "dailyChallenge.photo.add" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add a photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legg til et bilde"
-          }
-        }
-      },
-      "comment" : "Button to add a photo to a daily answer"
-    },
-    "dailyChallenge.photo.change" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Change photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bytt bilde"
-          }
-        }
-      },
-      "comment" : "Button to replace the chosen photo on a daily answer"
-    },
-    "dailyChallenge.photo.remove" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fjern bilde"
-          }
-        }
-      },
-      "comment" : "Button to remove the chosen photo from a daily answer"
-    },
-    "dailyChallenge.photoAnswer.accessibility" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photo answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bildesvar"
-          }
-        }
-      },
-      "comment" : "Accessibility label for a revealed photo answer"
-    },
-    "dailyChallenge.photo.take" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Take photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ta et bilde"
-          }
-        }
-      },
-      "comment" : "Button to capture a photo answer with the camera"
-    },
-    "dailyChallenge.sending.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved on this phone. We'll send it when you're online."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret på denne telefonen. Vi sender det når du er på nett."
-          }
-        }
-      },
-      "comment" : "Shown under a photo answer that is saved locally and uploading in the background"
-    },
-    "dailyChallenge.voice.label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your voice note"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Talemeldingen din"
-          }
-        }
-      },
-      "comment" : "Label above the voice answer recorder/preview"
-    },
-    "dailyChallenge.voice.record" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap to record"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trykk for å spille inn"
-          }
-        }
-      },
-      "comment" : "Prompt on the button to start recording a voice answer"
-    },
-    "dailyChallenge.voice.reRecord" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Re-record"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spill inn på nytt"
-          }
-        }
-      },
-      "comment" : "Button to discard a recorded voice answer and record again"
-    },
-    "dailyChallenge.voice.play" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Play"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spill av"
-          }
-        }
-      },
-      "comment" : "Accessibility label for the voice answer play button"
-    },
-    "dailyChallenge.voice.permissionDenied" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Allow microphone access in Settings to record a voice answer."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gi tilgang til mikrofonen i Innstillinger for å spille inn et lydsvar."
-          }
-        }
-      },
-      "comment" : "Shown when microphone access is denied and a voice answer can't be recorded"
-    },
-    "streakRestore.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get your streak back"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få tilbake rekken"
-          }
-        }
-      },
-      "comment" : "Title of the streak-restore offer and the button to open it"
-    },
-    "streakRestore.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your streak slipped, but you can still bring it back. Do it soon to keep going together."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rekken røk, men du kan fortsatt få den tilbake. Gjør det snart for å holde den i gang sammen."
-          }
-        }
-      },
-      "comment" : "Body on the streak-restore offer explaining what restore does"
-    },
-    "streakRestore.buyButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Restore streak"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gjenopprett rekken"
-          }
-        }
-      },
-      "comment" : "Primary button to buy the streak restore; the price is appended after it"
-    },
-    "streakRestore.notNow" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not now"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ikke nå"
-          }
-        }
-      },
-      "comment" : "Dismisses the streak-restore offer without buying"
-    },
-    "streakRestore.brokenAction" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get it back"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få den tilbake"
-          }
-        }
-      },
-      "comment" : "Short action on the broken streak chip; doubles as a VoiceOver hint"
-    },
-    "streakRestore.error.notRestorable" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "That streak can't be brought back anymore."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Den rekken kan ikke hentes tilbake lenger."
-          }
-        }
-      },
-      "comment" : "Error shown when a streak can no longer be restored"
-    },
-    "dailyChallenge.flow.partnerQuestionsButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer to see %@'s answers"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar for å se %@s svar"
-          }
-        }
-      },
-      "comment" : "Button to go answer the partner's questions. %@ is the partner's name."
-    },
-    "dailyChallenge.seePartnerAnswersButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See %@'s answers"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se %@s svar"
-          }
-        }
-      },
-      "comment" : "Button to view the partner's answers. %@ is the partner's name."
-    },
-    "dailyChallenge.seeYourAnswersButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See your answers"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se svarene dine"
-          }
-        }
-      },
-      "comment" : "Button on the daily challenge card opens the user's completed daily answers"
-    },
-    "dailyChallenge.partner.answerCta" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer to see their reply"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar for å se deres svar"
-          }
-        }
-      },
-      "comment" : "Button on a partner-answered question that opens the answer flow; answering reveals the partner's reply"
-    },
-    "dailyChallenge.partner.lockedCta" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Finish your questions first"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fullfør dine spørsmål først"
-          }
-        }
-      },
-      "comment" : "Disabled button on a partner-answered question, shown until the user has finished their own three daily questions"
-    },
-    "dailyChallenge.history.button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Question history"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spørsmålshistorikk"
-          }
-        }
-      },
-      "comment" : "Accessibility label for the toolbar button that opens the questions history"
-    },
-    "dailyChallenge.history.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Question history"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spørsmålshistorikk"
-          }
-        }
-      },
-      "comment" : "Title of the screen showing past daily questions and answers"
-    },
-    "dailyChallenge.history.empty.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No history yet"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingen historikk ennå"
-          }
-        }
-      },
-      "comment" : "Title shown when there are no past answered questions yet"
-    },
-    "dailyChallenge.history.empty.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer today's questions together and they'll show up here."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar på dagens spørsmål sammen, så dukker de opp her."
-          }
-        }
-      },
-      "comment" : "Message shown when there are no past answered questions yet"
-    },
-    "dailyChallenge.history.loadFailed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't load history"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke laste historikk"
-          }
-        }
-      },
-      "comment" : "Title shown when the question history could not be loaded"
-    },
-    "dailyChallenge.history.loadFailed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check your internet and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekk internett og prøv igjen."
-          }
-        }
-      },
-      "comment" : "Message shown when the question history could not be loaded"
-    },
-    "dailyChallenge.history.retryButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Try again"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prøv igjen"
-          }
-        }
-      },
-      "comment" : "Button to retry loading the question history after an error"
-    },
-    "dailyChallenge.partnerReveal.eyebrow" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deres svar"
-          }
-        }
-      },
-      "comment" : "Small label above the revealed partner answer shown after answering their question"
-    },
-    "streakDetail.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your streak"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rekken deres"
-          }
-        }
-      },
-      "comment" : "Title of the informative streak sheet opened by tapping the streak badge"
-    },
-    "streakDetail.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer your three daily questions each day to keep the flame going. Miss a day and it cools down — but you can always start again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar på de tre daglige spørsmålene hver dag for å holde flammen i live. Hopper dere over en dag, kjølner den – men dere kan alltid begynne på nytt."
-          }
-        }
-      },
-      "comment" : "Short, forgiving explanation of how the daily streak works, on the streak sheet"
-    },
-    "streakDetail.longestLabel" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Longest streak"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lengste rekke"
-          }
-        }
-      },
-      "comment" : "Caption under the couple's longest streak number on the streak sheet"
-    },
-    "streakDetail.done" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Done"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ferdig"
-          }
-        }
-      },
-      "comment" : "Button that closes the informative streak sheet"
     }
   },
   "version" : "1.0"
