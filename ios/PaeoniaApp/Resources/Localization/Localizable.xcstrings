@@ -1,7 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {},
+    "" : {
+
+    },
     "%lld / %lld" : {
       "localizations" : {
         "en" : {
@@ -12,7 +14,9 @@
         }
       }
     },
-    "+%lld" : {},
+    "+%lld" : {
+
+    },
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -362,13 +366,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This removes the test account from this phone."
+            "value" : "This deletes your Paeonia account and removes you from this relationship. This cannot be undone."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dette fjerner testkontoen fra denne telefonen."
+            "value" : "Dette sletter Paeonia-kontoen din og fjerner deg fra dette forholdet. Dette kan ikke angres."
           }
         }
       }
@@ -380,13 +384,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Delete this account?"
+            "value" : "Delete your account?"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Slette denne kontoen?"
+            "value" : "Slette kontoen din?"
           }
         }
       }
@@ -434,13 +438,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We could not delete this account. Try again."
+            "value" : "Your account was not deleted. Check your connection and try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke slette denne kontoen. Prøv igjen."
+            "value" : "Kontoen din ble ikke slettet. Sjekk tilkoblingen og prøv igjen."
           }
         }
       }
@@ -531,6 +535,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Oppsettet ble ikke lagret"
+          }
+        }
+      }
+    },
+    "auth.notice.relationshipEndedAcknowledgeFailed.message" : {
+      "comment" : "Alert message shown when confirming the relationship-ended notice fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      }
+    },
+    "auth.notice.relationshipEndedAcknowledgeFailed.title" : {
+      "comment" : "Alert title shown when confirming the relationship-ended notice fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't close this"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klarte ikke å lukke dette"
           }
         }
       }
@@ -650,67 +690,67 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Finish setup"
+            "value" : "Continue"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fullfør oppsett"
+            "value" : "Fortsett"
           }
         }
       }
     },
     "auth.onboarding.displayName.label" : {
-      "comment" : "Label for the display name text field during profile setup.",
+      "comment" : "Label for the profile name field.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "First name or nickname"
+            "value" : "Name your partner will see"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fornavn eller kallenavn"
+            "value" : "Navnet partneren din ser"
           }
         }
       }
     },
     "auth.onboarding.displayName.placeholder" : {
-      "comment" : "Placeholder for the display name field during profile setup.",
+      "comment" : "Placeholder for the profile name field.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "First name or nickname"
+            "value" : "Mina or Eli"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fornavn eller kallenavn"
+            "value" : "Mina eller Eli"
           }
         }
       }
     },
     "auth.onboarding.displayName.singleWordHint" : {
-      "comment" : "Hint shown when the profile name field contains more than one word.",
+      "comment" : "Hint explaining the one-word display-name rule.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use one word only."
+            "value" : "Use a short name, like Mina or Eli."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bruk bare ett ord."
+            "value" : "Bruk et kort navn, som Mina eller Eli."
           }
         }
       }
@@ -859,38 +899,92 @@
         }
       }
     },
-    "auth.routeUnavailable.message" : {
-      "comment" : "Message shown for app routes that are not implemented yet.",
+    "auth.relationshipEnded.acknowledgeButton" : {
+      "comment" : "Button that confirms the user has read the relationship-ended notice and returns them to the unpaired state.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The app will show this screen when the next feature is ready."
+            "value" : "Understood"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Appen viser denne skjermen når neste funksjon er klar."
+            "value" : "Forstått"
+          }
+        }
+      }
+    },
+    "auth.relationshipEnded.message" : {
+      "comment" : "Message shown when the user no longer has access to a relationship.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You no longer have access to this relationship."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du har ikke lenger tilgang til dette forholdet."
+          }
+        }
+      }
+    },
+    "auth.relationshipEnded.title" : {
+      "comment" : "Title shown when the user no longer has access to a relationship.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This relationship is closed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette forholdet er avsluttet"
+          }
+        }
+      }
+    },
+    "auth.routeUnavailable.message" : {
+      "comment" : "Message shown for an unexpected unavailable app route.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Paeonia again in a moment. If this keeps happening, contact support."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Paeonia igjen om litt. Kontakt oss hvis dette fortsetter."
           }
         }
       }
     },
     "auth.routeUnavailable.title" : {
-      "comment" : "Title shown for app routes that are not implemented yet.",
+      "comment" : "Title shown for an unexpected unavailable app route.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This part is not ready yet"
+            "value" : "This screen is unavailable"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Denne delen er ikke klar ennå"
+            "value" : "Denne skjermen er ikke tilgjengelig"
           }
         }
       }
@@ -1197,6 +1291,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ferdig"
+          }
+        }
+      }
+    },
+    "common.openSettings" : {
+      "comment" : "Button that opens the system Settings app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Innstillinger"
           }
         }
       }
@@ -1568,13 +1680,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Answer to see %@'s answers"
+            "value" : "Answer %@'s questions"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar for å se %@s svar"
+            "value" : "Svar på spørsmålene til %@"
           }
         }
       }
@@ -2048,19 +2160,19 @@
       }
     },
     "dailyChallenge.partner.answerCta" : {
-      "comment" : "Button on a partner-answered question that opens the answer flow; answering reveals the partner's reply",
+      "comment" : "Button on a partner-answered question that opens the answer flow; answering reveals the partner reply",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Answer to see their reply"
+            "value" : "Answer to unlock it"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar for å se deres svar"
+            "value" : "Svar for å låse opp"
           }
         }
       }
@@ -2072,13 +2184,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Finish your questions first"
+            "value" : "Finish your three first"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fullfør dine spørsmål først"
+            "value" : "Fullfør dine tre først"
           }
         }
       }
@@ -2102,19 +2214,19 @@
       }
     },
     "dailyChallenge.partnerHidden" : {
-      "comment" : "Status label: the named partner answered. %@ is the partner's name.",
+      "comment" : "Status label shown when the named partner answered but their answer is still locked. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ answered"
+            "value" : "%@'s answer is waiting"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ svarte"
+            "value" : "Svaret til %@ venter"
           }
         }
       }
@@ -2126,13 +2238,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Answer this question to see what %@ said."
+            "value" : "Answer this question to unlock %@'s answer."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar på spørsmålet for å se hva %@ skrev."
+            "value" : "Svar på dette spørsmålet for å låse opp svaret til %@."
           }
         }
       }
@@ -2151,6 +2263,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Deres svar"
+          }
+        }
+      }
+    },
+    "dailyChallenge.partnerRevealed" : {
+      "comment" : "Status label shown when the named partner answered and their answer is visible. %@ is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ answered"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ svarte"
           }
         }
       }
@@ -2882,13 +3012,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Turn on sharing to see your distance here."
+            "value" : "Turn on sharing to show your distance here. You can turn it off anytime."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Slå på deling for å se avstanden deres her."
+            "value" : "Slå på deling for å vise avstanden deres her. Du kan slå det av når som helst."
           }
         }
       }
@@ -2948,37 +3078,37 @@
       }
     },
     "home.map.partnerUnknown.message" : {
-      "comment" : "Map empty-state message. %@ is the partner's name.",
+      "comment" : "Map empty-state message. %@ is the partner name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask %@ to share location."
+            "value" : "When %@ turns sharing on, your distance will appear here."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spør %@ om å dele posisjon."
+            "value" : "Når %@ slår på deling, vises avstanden deres her."
           }
         }
       }
     },
     "home.map.partnerUnknown.title" : {
-      "comment" : "Map empty-state title asking the named partner to share location. %@ is the partner's name.",
+      "comment" : "Map empty-state title when the named partner is not sharing location. %@ is the partner name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask %@"
+            "value" : "No location from %@"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spør %@"
+            "value" : "Ingen posisjon fra %@"
           }
         }
       }
@@ -2997,6 +3127,168 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Posisjon er av"
+          }
+        }
+      }
+    },
+    "home.milestone.title.days" : {
+      "comment" : "Milestone name shown under the day count on the Us-tab countdown card for a round day-count marker. Compound avoids repeating 'days'. %@ is the day count (e.g. 100, 1,000).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your %@-day milestone"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@-dagersmilepælen"
+          }
+        }
+      }
+    },
+    "home.milestone.title.firstAnniversary" : {
+      "comment" : "Milestone name shown under the day count on the Us-tab countdown card: the couple's first one-year anniversary",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your first anniversary"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deres første årsdag"
+          }
+        }
+      }
+    },
+    "home.milestone.title.firstMonth" : {
+      "comment" : "Milestone name shown under the day count on the Us-tab countdown card: the couple's first whole month together",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your first month together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deres første måned sammen"
+          }
+        }
+      }
+    },
+    "home.milestone.title.halfYear" : {
+      "comment" : "Milestone name shown under the day count on the Us-tab countdown card: six months, phrased as half a year",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Half a year together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et halvt år sammen"
+          }
+        }
+      }
+    },
+    "home.milestone.title.months" : {
+      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …'. %@ is the number of months (2–11, never 6).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ months together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ måneder sammen"
+          }
+        }
+      }
+    },
+    "home.milestone.title.years" : {
+      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …'. %@ is the number of years (2 or more).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ years together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ år sammen"
+          }
+        }
+      }
+    },
+    "home.milestone.today" : {
+      "comment" : "Shown in place of the day count on the milestone countdown card when the milestone is today",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I dag"
+          }
+        }
+      }
+    },
+    "home.milestone.until" : {
+      "comment" : "Follows the milestone countdown number, e.g. '25 days until'; the milestone subject continues on the next line. Plural.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days until"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager til"
+          }
+        }
+      }
+    },
+    "home.milestone.until.one" : {
+      "comment" : "Singular milestone countdown connector when exactly 1 day remains, e.g. '1 day until'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "day until"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dag til"
           }
         }
       }
@@ -3098,13 +3390,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia uses your location to show your partner where you are when you turn on location sharing."
+            "value" : "Paeonia uses your location only when you turn on sharing, so your partner can see your latest location."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia bruker posisjonen din til å vise partneren din hvor du er når du slår på posisjonsdeling."
+            "value" : "Paeonia bruker posisjonen din bare når du slår på deling, slik at partneren din kan se den nyeste posisjonen din."
           }
         }
       }
@@ -3146,19 +3438,19 @@
       }
     },
     "mainTab.placeholder.message" : {
-      "comment" : "Message shown on tabs that are not built yet",
+      "comment" : "Fallback message shown if a tab cannot be opened.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We're still building this part. Check back soon."
+            "value" : "This tab is unavailable right now."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi bygger fortsatt denne delen. Kom tilbake snart."
+            "value" : "Denne fanen er ikke tilgjengelig akkurat nå."
           }
         }
       }
@@ -4412,13 +4704,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start in 2 taps, cancel anytime."
+            "value" : "The App Store confirms before you pay. Cancel anytime."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start med 2 trykk, avslutt når som helst."
+            "value" : "App Store bekrefter før du betaler. Avslutt når som helst."
           }
         }
       }
@@ -4436,7 +4728,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start min gratise prøveperiode"
+            "value" : "Start min gratis prøveperiode"
           }
         }
       }
@@ -4466,13 +4758,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Continue"
+            "value" : "Continue to App Store"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fortsett"
+            "value" : "Fortsett til App Store"
           }
         }
       }
@@ -4724,7 +5016,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skriv inn den 6-tegns koden partneren din delte med deg."
+            "value" : "Skriv inn koden på 6 tegn som partneren din delte med deg."
           }
         }
       }
@@ -4934,13 +5226,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Invited? Enter key here"
+            "value" : "Have an invite code?"
           }
         },
         "nb" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Invitert? Skriv inn her"
+            "state" : "translated",
+            "value" : "Har du en invitasjonskode?"
           }
         }
       }
@@ -5630,19 +5922,19 @@
       }
     },
     "settings.location.sharing.subtitle" : {
-      "comment" : "Explains location sharing. %@ is the partner's name.",
+      "comment" : "Explains location sharing. %@ is the partner name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ can see your latest location while sharing is on."
+            "value" : "%@ can see only your latest location while this is on. Paeonia does not show location history."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ kan se den siste posisjonen din når deling er på."
+            "value" : "%@ kan bare se den nyeste posisjonen din når dette er på. Paeonia viser ikke posisjonshistorikk."
           }
         }
       }
@@ -6277,6 +6569,78 @@
         }
       }
     },
+    "widget.history.save.accessibility" : {
+      "comment" : "Accessibility label for the button that saves a past drawing to the phone's photos.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save this drawing to your photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre denne tegningen i bildene dine"
+          }
+        }
+      }
+    },
+    "widget.history.save.permission.message" : {
+      "comment" : "Message of the alert shown when the app can't save a drawing because photo access is turned off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To save drawings, turn on photo access for Paeonia in Settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For å lagre tegninger, slå på bildetilgang for Paeonia i Innstillinger."
+          }
+        }
+      }
+    },
+    "widget.history.save.permission.title" : {
+      "comment" : "Title of the alert shown when the app can't save a drawing because photo access is turned off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let Paeonia save to Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La Paeonia lagre i Bilder"
+          }
+        }
+      }
+    },
+    "widget.history.saved.accessibility" : {
+      "comment" : "Accessibility label shown after a past drawing has been saved to the phone's photos.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to your photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret i bildene dine"
+          }
+        }
+      }
+    },
     "widget.history.title" : {
       "comment" : "Title of the screen listing past saved drawings",
       "extractionState" : "manual",
@@ -6605,7 +6969,7 @@
       }
     },
     "widgetDrawing.save.button" : {
-      "comment" : "Primary button that saves the drawing and shows it on the Home Screen widget.",
+      "comment" : "Primary button that sends the drawing to the shared Home Screen widget.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -6616,80 +6980,80 @@
         },
         "nb" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Lagre"
           }
         }
       }
     },
     "widgetDrawing.save.error.message" : {
-      "comment" : "Banner message shown when saving a drawing fails.",
+      "comment" : "Banner message shown when sending a drawing fails.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Something went wrong while saving. Please try again."
+            "value" : "Your drawing is still here. Try sending again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Noe gikk galt under lagringen. Prøv igjen."
+            "value" : "Tegningen din er fortsatt her. Prøv å sende igjen."
           }
         }
       }
     },
     "widgetDrawing.save.error.title" : {
-      "comment" : "Banner title shown when saving a drawing fails.",
+      "comment" : "Banner title shown when sending a drawing fails.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Couldn't save"
+            "value" : "Could not send"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kunne ikke lagre"
+            "value" : "Kunne ikke sende"
           }
         }
       }
     },
     "widgetDrawing.saved" : {
-      "comment" : "Confirmation shown on the save button right after a drawing is saved.",
+      "comment" : "Confirmation shown on the save button right after a drawing is sent.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Saved"
+            "value" : "Sent"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lagret"
+            "value" : "Sendt"
           }
         }
       }
     },
     "widgetDrawing.saving" : {
-      "comment" : "Label shown on the save button while the drawing is being saved.",
+      "comment" : "Label shown on the save button while the drawing is being sent.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Saving …"
+            "value" : "Sending …"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lagrer …"
+            "value" : "Sender …"
           }
         }
       }
@@ -6719,13 +7083,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Drawing"
+            "value" : "Shared widget"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegning"
+            "value" : "Felles widget"
           }
         }
       }
@@ -6801,258 +7165,6 @@
           }
         }
       }
-    },
-    "widget.history.save.accessibility" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save this drawing to your photos"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre denne tegningen i bildene dine"
-          }
-        }
-      },
-      "comment" : "Accessibility label for the button that saves a past drawing to the phone's photos."
-    },
-    "widget.history.saved.accessibility" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved to your photos"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret i bildene dine"
-          }
-        }
-      },
-      "comment" : "Accessibility label shown after a past drawing has been saved to the phone's photos."
-    },
-    "widget.history.save.permission.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Let Paeonia save to Photos"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La Paeonia lagre i Bilder"
-          }
-        }
-      },
-      "comment" : "Title of the alert shown when the app can't save a drawing because photo access is turned off."
-    },
-    "widget.history.save.permission.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To save drawings, turn on photo access for Paeonia in Settings."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For å lagre tegninger, slå på bildetilgang for Paeonia i Innstillinger."
-          }
-        }
-      },
-      "comment" : "Message of the alert shown when the app can't save a drawing because photo access is turned off."
-    },
-    "common.openSettings" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Settings"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Åpne Innstillinger"
-          }
-        }
-      },
-      "comment" : "Button that opens the system Settings app."
-    },
-    "home.milestone.title.firstMonth" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your first month together"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "deres første måned sammen"
-          }
-        }
-      },
-      "comment" : "Milestone countdown subject on the Us tab, reads after the day-count line 'X days until …': the couple's first whole month together"
-    },
-    "home.milestone.title.months" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ months together"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ måneder sammen"
-          }
-        }
-      },
-      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …'. %@ is the number of months (2–11, never 6)."
-    },
-    "home.milestone.title.halfYear" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "half a year together"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "et halvt år sammen"
-          }
-        }
-      },
-      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …': six months, phrased as half a year"
-    },
-    "home.milestone.title.firstAnniversary" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your first anniversary"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "deres første årsdag"
-          }
-        }
-      },
-      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …': the couple's first one-year anniversary"
-    },
-    "home.milestone.title.years" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ years together"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ år sammen"
-          }
-        }
-      },
-      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …'. %@ is the number of years (2 or more)."
-    },
-    "home.milestone.title.days" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "your %@-day milestone"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@-dagersmilepælen"
-          }
-        }
-      },
-      "comment" : "Milestone countdown subject on the Us tab for a round day-count marker, reads after 'X days until …'. Compound avoids repeating 'days'. %@ is the day count (e.g. 100, 1,000)."
-    },
-    "home.milestone.until" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "days until"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "dager til"
-          }
-        }
-      },
-      "comment" : "Follows the milestone countdown number, e.g. '25 days until'; the milestone subject continues on the next line. Plural."
-    },
-    "home.milestone.until.one" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "day until"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "dag til"
-          }
-        }
-      },
-      "comment" : "Singular milestone countdown connector when exactly 1 day remains, e.g. '1 day until'."
-    },
-    "home.milestone.today" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Today"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I dag"
-          }
-        }
-      },
-      "comment" : "Shown in place of the day count on the milestone countdown card when the milestone is today"
     }
   },
   "version" : "1.0"

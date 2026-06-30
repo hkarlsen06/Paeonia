@@ -50,13 +50,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia uses your location to show your partner where you are when you turn on location sharing."
+            "value" : "Paeonia uses your location only when you turn on sharing, so your partner can see your latest location."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia bruker posisjonen din til å vise partneren din hvor du er når du slår på posisjonsdeling."
+            "value" : "Paeonia bruker posisjonen din bare når du slår på deling, slik at partneren din kan se den nyeste posisjonen din."
           }
         }
       }
