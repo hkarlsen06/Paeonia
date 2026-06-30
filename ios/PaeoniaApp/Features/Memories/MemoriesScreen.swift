@@ -13,6 +13,10 @@ struct MemoriesScreen: View {
 
     @State private var viewModel = MemoriesViewModel()
     @State private var isCreating = false
+    /// The in-progress new-memory form, held here rather than inside the sheet so an
+    /// accidental swipe-to-dismiss never throws away a half-written memory. Reopening
+    /// the form restores it; a successful save (or a deliberate Cancel) clears it.
+    @State private var draft = MemoryDraft()
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     init(
@@ -33,7 +37,7 @@ struct MemoriesScreen: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        isCreating = true
+                        openCreate()
                     } label: {
                         Image(systemName: "plus")
                     }
@@ -48,8 +52,12 @@ struct MemoriesScreen: View {
                 )
             }
             .sheet(isPresented: $isCreating) {
-                MemoryEditorView(allowsPhotos: viewModel.canAttachPhotos) { title, date, note, photos in
-                    await viewModel.createMemory(title: title, date: date, note: note, photos: photos)
+                MemoryEditorView(draft: $draft, allowsPhotos: viewModel.canAttachPhotos) { title, date, note, photos in
+                    let saved = await viewModel.createMemory(title: title, date: date, note: note, photos: photos)
+                    if saved {
+                        draft = MemoryDraft()
+                    }
+                    return saved
                 }
             }
             .task(id: currentUserID) {
@@ -102,7 +110,7 @@ struct MemoriesScreen: View {
                 systemImage: "memories"
             ) {
                 Button {
-                    isCreating = true
+                    openCreate()
                 } label: {
                     Text(.memoriesEmptyAction)
                 }
@@ -122,6 +130,15 @@ struct MemoriesScreen: View {
     /// stays clean without per-day dividers.
     private var memories: [MemoryRecord] {
         viewModel.timeline.flatMap(\.memories)
+    }
+
+    /// Opens the new-memory form. A fresh (empty) draft defaults its date to today;
+    /// a draft left over from an earlier dismissal is restored untouched.
+    private func openCreate() {
+        if draft.isEmpty {
+            draft.date = Date()
+        }
+        isCreating = true
     }
 
     private func showBanner(for notice: MemoriesViewModel.Notice?) {

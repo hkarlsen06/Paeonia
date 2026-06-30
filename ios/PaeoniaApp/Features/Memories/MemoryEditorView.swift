@@ -2,11 +2,30 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
+/// The in-progress contents of the new-memory form. Held by the presenting screen, not
+/// by the sheet, so dismissing the sheet — including an accidental swipe-down while
+/// reaching for the keyboard — keeps the work. Reopening restores it; a successful save
+/// (or a deliberate Cancel) resets it.
+struct MemoryDraft: Equatable {
+    var title: String = ""
+    var date: Date = Date()
+    var note: String = ""
+    var photos: [Data] = []
+
+    var isEmpty: Bool {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && photos.isEmpty
+    }
+}
+
 /// The focused form for creating a new memory. Title and date are required, plus at
 /// least a note or one photo, so a saved memory always carries something to remember.
 /// Photos are uploaded only when the memory is saved; the form just stages picked
-/// images until then.
+/// images until then. The editable contents live in a `MemoryDraft` binding owned by the
+/// presenting screen so the form survives an accidental dismissal.
 struct MemoryEditorView: View {
+    @Binding var draft: MemoryDraft
     /// Whether photo attachment is available (false in previews/tests without an
     /// uploader, or before the active couple is known). When false the photo controls
     /// are hidden and a note is required.
@@ -17,10 +36,6 @@ struct MemoryEditorView: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    @State private var title = ""
-    @State private var date = Date()
-    @State private var note = ""
-    @State private var photos: [Data] = []
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var isCameraPresented = false
     @State private var isSaving = false
@@ -57,7 +72,7 @@ struct MemoryEditorView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(role: .cancel) { dismiss() } label: {
+                    Button(role: .cancel) { discardAndDismiss() } label: {
                         Text(.commonCancel)
                     }
                     .disabled(isSaving)
@@ -81,7 +96,7 @@ struct MemoryEditorView: View {
             fieldLabel(.memoriesEditorTitleLabel)
 
             MemoryTextField(
-                text: $title,
+                text: $draft.title,
                 placeholder: .memoriesEditorTitlePlaceholder,
                 isFocused: $focusedField,
                 field: .title,
@@ -95,7 +110,7 @@ struct MemoryEditorView: View {
             fieldLabel(.memoriesEditorDateLabel)
             Spacer(minLength: PaeoniaSpacing.space16)
             DatePicker(
-                selection: $date,
+                selection: $draft.date,
                 displayedComponents: [.date]
             ) {
                 Text(.memoriesEditorDateLabel)
@@ -110,7 +125,7 @@ struct MemoryEditorView: View {
             fieldLabel(.memoriesEditorNoteLabel)
 
             MemoryTextField(
-                text: $note,
+                text: $draft.note,
                 placeholder: .memoriesEditorNotePlaceholder,
                 isFocused: $focusedField,
                 field: .note,
@@ -123,17 +138,17 @@ struct MemoryEditorView: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             fieldLabel(.memoriesEditorPhotosLabel)
 
-            if !photos.isEmpty {
+            if !draft.photos.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: PaeoniaSpacing.space8) {
-                        ForEach(Array(photos.enumerated()), id: \.offset) { index, data in
+                        ForEach(Array(draft.photos.enumerated()), id: \.offset) { index, data in
                             stagedThumbnail(data, index: index)
                         }
                     }
                 }
             }
 
-            if photos.count < maxPhotos {
+            if draft.photos.count < maxPhotos {
                 photoPickerControls
             }
         }
@@ -154,7 +169,7 @@ struct MemoryEditorView: View {
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
 
             Button(role: .destructive) {
-                photos.remove(at: index)
+                draft.photos.remove(at: index)
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.title3)
@@ -171,7 +186,7 @@ struct MemoryEditorView: View {
         HStack(spacing: PaeoniaSpacing.space8) {
             PhotosPicker(
                 selection: $pickerItems,
-                maxSelectionCount: maxPhotos - photos.count,
+                maxSelectionCount: maxPhotos - draft.photos.count,
                 matching: .images
             ) {
                 Label {
@@ -225,11 +240,18 @@ struct MemoryEditorView: View {
     // MARK: - Actions
 
     private var hasContent: Bool {
-        !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !photos.isEmpty
+        !draft.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !draft.photos.isEmpty
     }
 
     private var canSave: Bool {
-        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && hasContent
+        !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && hasContent
+    }
+
+    /// Deliberate abandon: clear the draft so reopening starts fresh. An accidental
+    /// swipe-down, by contrast, leaves the draft intact so the work is recoverable.
+    private func discardAndDismiss() {
+        draft = MemoryDraft()
+        dismiss()
     }
 
     private func save() async {
@@ -237,7 +259,7 @@ struct MemoryEditorView: View {
         isSaving = true
         defer { isSaving = false }
 
-        let saved = await onSave(title, dateString, note, photos)
+        let saved = await onSave(draft.title, dateString, draft.note, draft.photos)
         if saved {
             dismiss()
         }
@@ -246,7 +268,7 @@ struct MemoryEditorView: View {
     /// The chosen date as a `yyyy-MM-dd` string in the device's local calendar, matching
     /// how the day is displayed in the picker.
     private var dateString: String {
-        MemoryTimeline.currentLocalDateString(now: date)
+        MemoryTimeline.currentLocalDateString(now: draft.date)
     }
 
     private func loadPickedPhotos(_ items: [PhotosPickerItem]) {
@@ -258,15 +280,15 @@ struct MemoryEditorView: View {
                     loaded.append(data)
                 }
             }
-            let room = max(0, maxPhotos - photos.count)
-            photos.append(contentsOf: loaded.prefix(room))
+            let room = max(0, maxPhotos - draft.photos.count)
+            draft.photos.append(contentsOf: loaded.prefix(room))
             pickerItems = []
         }
     }
 
     private func appendPhoto(_ data: Data) {
-        guard photos.count < maxPhotos else { return }
-        photos.append(data)
+        guard draft.photos.count < maxPhotos else { return }
+        draft.photos.append(data)
     }
 }
 
