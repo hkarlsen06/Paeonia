@@ -6,6 +6,7 @@ struct RootView: View {
     @State private var viewModel: RootViewModel
     @State private var locationViewModel: LocationMapViewModel
     @State private var bannerCenter = PaeoniaBannerCenter()
+    @State private var lastKnownAuthenticatedUserID: UUID?
     @Binding private var widgetDeepLink: PaeoniaWidgetDeepLink?
     @Binding private var pendingJoinInviteCode: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -105,6 +106,7 @@ struct RootView: View {
         .onChange(of: viewModel.currentSession?.id, initial: true) { _, sessionID in
                 // Once signed in, get an APNs token so the backend can send the
                 // silent push that wakes us to sync a partner's drawing.
+            rememberAuthenticatedUser(sessionID)
             registerForRemoteNotificationsIfSignedIn(sessionID)
         }
             .paeoniaTopBanner(bannerCenter) {
@@ -449,6 +451,10 @@ struct RootView: View {
             return
         }
 
+        let ownerUserID = viewModel.currentSession
+            .flatMap { UUID(uuidString: $0.id) }
+            ?? lastKnownAuthenticatedUserID
+
         Task {
             await widgetCanvasService.clearForPrivacy()
             await partnerAvatarSharing?.clear()
@@ -456,10 +462,18 @@ struct RootView: View {
             FileDailyChallengeSnapshotCache.live().clearAll()
             await (try? DailyAnswerMediaImageService.live())?.clearAll()
             await (try? MemoryMediaImageService.live())?.clearAll()
-            if let ownerUserID = viewModel.currentSession.flatMap({ UUID(uuidString: $0.id) }) {
+            if let ownerUserID {
                 await MemoryDataServiceFactory.clearForPrivacy(ownerUserID: ownerUserID)
             }
         }
+    }
+
+    private func rememberAuthenticatedUser(_ sessionID: String?) {
+        guard let sessionID, let userID = UUID(uuidString: sessionID) else {
+            return
+        }
+
+        lastKnownAuthenticatedUserID = userID
     }
 
     /// Pulls the partner's latest drawing (and our own latest) into the widget
