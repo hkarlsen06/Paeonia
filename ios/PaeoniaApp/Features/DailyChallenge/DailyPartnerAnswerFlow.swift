@@ -87,7 +87,7 @@ struct DailyPartnerAnswerFlow: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     Text(question.prompt)
-                        .font(PaeoniaTypography.heroTitle)
+                        .font(PaeoniaTypography.title)
                         .foregroundStyle(.paeoniaTextPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)

@@ -167,24 +167,20 @@ struct DailyChallengeAnswerFlow: View {
 
     // MARK: - States
 
-    /// Eyebrow + step bar. The step bar is a progress meter only — moving between
-    /// questions is deliberate, via the button. Close lives in the bottom action bar,
-    /// within thumb reach.
+    /// Step bar. It's the top chrome now that the eyebrow is gone, and a progress
+    /// meter only — moving between questions is deliberate, via the button. Close lives
+    /// in the bottom action bar, within thumb reach. The top padding gives the thin bar
+    /// clearance from the safe area that the eyebrow's text height used to provide.
     private var header: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            PaeoniaCardEyebrow(.dailyChallengeFlowEyebrow)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            DailyChallengeStepBar(
-                total: DailyChallengeProgress.requiredOwnQuestionCount,
-                completed: answeredRequiredCount,
-                current: currentRequiredStep,
-                height: 8,
-                onSelect: requiredQuestions.isEmpty ? nil : { (step: Int) in goToRequiredStep(step) }
-            )
-        }
+        DailyChallengeStepBar(
+            total: DailyChallengeProgress.requiredOwnQuestionCount,
+            completed: answeredRequiredCount,
+            current: currentRequiredStep,
+            height: 8,
+            onSelect: requiredQuestions.isEmpty ? nil : { (step: Int) in goToRequiredStep(step) }
+        )
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.top, PaeoniaSpacing.space8)
+        .padding(.top, PaeoniaSpacing.screenTopSpacing)
     }
 
     private var answeringState: some View {
@@ -199,7 +195,10 @@ struct DailyChallengeAnswerFlow: View {
                 DailyChallengeAnswerStep(
                     question: question,
                     viewModel: viewModel,
-                    isFocused: $isComposerFocused
+                    isFocused: $isComposerFocused,
+                    // The progress bar above already sets the top spacing, so the
+                    // question only needs a small gap to sit grouped beneath it.
+                    topPadding: PaeoniaSpacing.space4
                 )
                 .id(question.id)
                 // Neutral fade: the user can move forward (Send) or jump to any
@@ -548,6 +547,11 @@ struct DailyChallengeAnswerStep: View {
     let question: DailyChallengeQuestion
     let viewModel: DailyChallengeViewModel
     var isFocused: FocusState<Bool>.Binding
+    /// Top inset for the question. Defaults to a full screen-top clearance for flows
+    /// where the question is the topmost element (the partner-answer flow). The
+    /// multi-question flow passes a smaller value because the progress bar sits just
+    /// above the question and already establishes the top spacing.
+    var topPadding: CGFloat = PaeoniaSpacing.space24
 
     var body: some View {
         // The question always sits at the top. The answer-method picker is pinned
@@ -579,7 +583,7 @@ struct DailyChallengeAnswerStep: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.top, PaeoniaSpacing.space24)
+        .padding(.top, topPadding)
         .padding(.bottom, PaeoniaSpacing.space8)
         .onAppear(perform: seedEditDraftIfNeeded)
     }
@@ -587,7 +591,7 @@ struct DailyChallengeAnswerStep: View {
     /// The question text, sitting at the top of the step.
     private var promptView: some View {
         Text(question.prompt)
-            .font(PaeoniaTypography.heroTitle)
+            .font(PaeoniaTypography.title)
             .foregroundStyle(.paeoniaTextPrimary)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
