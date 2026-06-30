@@ -170,19 +170,19 @@ ios/PaeoniaApp/
 
 Keep this feature-first structure as a hard maintainability rule. Do not flatten screens into one folder or mix feature implementation details into shared/global modules unless they are genuinely reusable.
 
-Within a substantial feature, prefer responsibility-based subfolders over a generic feature-local `Shared/` folder:
+Within a substantial feature, prefer responsibility-based subfolders over a generic feature-local `Shared/` folder. This is an example shape, not a literal template:
 
 ```text
 ios/PaeoniaApp/Features/FeatureName/
-├── Models/        # Feature-wide domain/UI models and remote DTOs
-├── Data/          # Feature services, repositories, caches, drafts, and sync adapters
-├── Components/    # Reusable UI pieces used by multiple flows in this feature
-├── PrimaryFlow/   # Main screen/view model and flow-specific subviews
-├── SecondaryFlow/ # Other distinct user flows, such as history or editing
-└── PureLogic/     # Named product logic areas, such as streaks or calculations
+├── Models/      # Feature-wide domain/UI models and remote DTOs
+├── Data/        # Feature services, repositories, caches, drafts, and sync adapters
+├── Components/  # Reusable UI pieces used by multiple flows in this feature
+├── Timeline/    # Example product surface folder; use the real surface name
+├── Editor/      # Example supporting flow folder; use the real flow name
+└── Milestones/  # Example product logic folder; use the real logic name
 ```
 
-Name flow and logic folders after the product responsibility they own, such as `AnswerFlow/`, `History/`, `Audio/`, or `Streak/`. Use `Shared/` inside a feature only when no more precise responsibility name fits; it should not become a miscellaneous bucket. Keep app-wide `Shared/` reserved for components, extensions, and design-system code that is genuinely reused across features.
+Name flow and logic folders after the product responsibility they own, such as `AnswerFlow/`, `History/`, `Audio/`, `Streak/`, `Timeline/`, `Canvas/`, `Offer/`, or `Invite/`. Do not create generic `PrimaryFlow/`, `SecondaryFlow/`, `PureLogic/`, or `Shared/` buckets when a more precise responsibility name fits. Keep app-wide `Shared/` reserved for components, extensions, and design-system code that is genuinely reused across features.
 
 ### MVVM Boundaries
 

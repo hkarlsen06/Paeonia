@@ -33,8 +33,8 @@ The highest priority is to remove or rewrite any UI that tells a real user they 
 
 Evidence:
 
-- `ios/PaeoniaApp/Features/Paywall/PaywallFooterActionsView.swift` exposes `Delete account` in the paywall footer.
-- `ios/PaeoniaApp/Features/Paywall/PaywallView.swift` and `ios/PaeoniaApp/Features/Auth/AuthBaselineViews.swift` both show the delete confirmation alert.
+- `ios/PaeoniaApp/Features/Paywall/Components/PaywallFooterActionsView.swift` exposes `Delete account` in the paywall footer.
+- `ios/PaeoniaApp/Features/Paywall/Offer/PaywallView.swift` and `ios/PaeoniaApp/Features/Auth/AuthBaselineViews.swift` both show the delete confirmation alert.
 - `ios/PaeoniaApp/Resources/Localization/Localizable.xcstrings` says: "This removes the test account from this phone."
 
 Why it matters:
@@ -69,7 +69,7 @@ Evidence:
 - `ios/PaeoniaApp/App/MainTab.swift` includes a `Memories` tab.
 - `ios/PaeoniaApp/App/MainTabView.swift` routes `.memories` to `placeholderTab`.
 - `mainTab.placeholder.message` says: "We're still building this part. Check back soon."
-- `ios/PaeoniaApp/Features/Countdown/MilestoneCountdownCard.swift` renders hardcoded placeholder values: "Your 6-month milestone", `12`, and "Saturday, 8 July".
+- `ios/PaeoniaApp/Features/Countdown/Components/MilestoneCountdownCard.swift` renders hardcoded placeholder values: "Your 6-month milestone", `12`, and "Saturday, 8 July".
 - `AuthUnavailableRouteView` uses "This part is not ready yet"; `RootView` can route `relationshipEndedNotice` into that fallback.
 - `AGENTS.md` explicitly says unfinished features should not be wired as placeholders unless the developer confirms that interim state.
 
