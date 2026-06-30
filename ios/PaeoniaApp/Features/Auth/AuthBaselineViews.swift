@@ -52,6 +52,7 @@ struct AuthOnboardingView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity, alignment: .top)
+        .keyboardDismissable()
     }
 
     private var onboardingMessage: LocalizedStringResource {

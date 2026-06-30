@@ -323,6 +323,7 @@ private struct MemoryNoteEditorView: View {
             }
             .background(.paeoniaBackgroundPrimary)
             .scrollDismissesKeyboard(.interactively)
+            .keyboardDismissable()
             .navigationTitle(Text(.memoriesNoteTitle))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -392,6 +393,7 @@ private struct MemoryDetailsEditorView: View {
                 .padding(.top, PaeoniaSpacing.space16)
             }
             .background(.paeoniaBackgroundPrimary)
+            .keyboardDismissable()
             .navigationTitle(Text(.memoriesEditDetailsTitle))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

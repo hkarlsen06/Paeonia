@@ -51,6 +51,7 @@ struct MemoryEditorView: View {
             }
             .background(.paeoniaBackgroundPrimary)
             .scrollDismissesKeyboard(.interactively)
+            .keyboardDismissable()
             .safeAreaInset(edge: .bottom) { saveBar }
             .navigationTitle(Text(.memoriesEditorNewTitle))
             .navigationBarTitleDisplayMode(.inline)

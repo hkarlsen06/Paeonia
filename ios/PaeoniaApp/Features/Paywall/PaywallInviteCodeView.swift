@@ -34,6 +34,9 @@ struct PaywallInviteCodeView: View {
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .frame(maxWidth: 430)
         .frame(maxWidth: .infinity)
+        // The segmented code field is focused by tapping its cells, so background-tap
+        // dismissal would fight that; offer the keyboard "Done" affordance only.
+        .keyboardDoneToolbar()
     }
 
     private var codeField: some View {

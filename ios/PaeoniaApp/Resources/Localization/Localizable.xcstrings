@@ -1,12 +1,8 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
-    "+%lld" : {
-
-    },
+    "" : {},
+    "+%lld" : {},
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -6741,6 +6737,24 @@
           }
         }
       }
+    },
+    "common.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
+          }
+        }
+      },
+      "comment" : "Generic button title that confirms input and dismisses the keyboard or a simple sheet."
     }
   },
   "version" : "1.0"
