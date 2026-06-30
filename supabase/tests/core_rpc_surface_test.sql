@@ -24,13 +24,20 @@ SELECT is(
         'create_pending_media_upload',
         'finalize_media_upload',
         'create_memory',
+        'update_memory',
+        'hide_memory',
+        'upsert_memory_note',
+        'attach_memory_media',
+        'remove_memory_media',
+        'create_memory_thread_with_message',
+        'get_memories',
         'submit_widget_drawing_revision',
         'update_location_sharing_preference',
         'submit_content_report',
         'request_account_deletion'
       )
   ),
-  16,
+  23,
   'core public RPC wrappers exist'
 );
 
@@ -54,6 +61,13 @@ SELECT is(
         'create_pending_media_upload',
         'finalize_media_upload',
         'create_memory',
+        'update_memory',
+        'hide_memory',
+        'upsert_memory_note',
+        'attach_memory_media',
+        'remove_memory_media',
+        'create_memory_thread_with_message',
+        'get_memories',
         'submit_widget_drawing_revision',
         'update_location_sharing_preference',
         'submit_content_report',
@@ -61,7 +75,7 @@ SELECT is(
       )
       AND p.prosecdef
   ),
-  16,
+  23,
   'core public RPC wrappers are security definer'
 );
 
@@ -85,6 +99,13 @@ SELECT is(
         'create_pending_media_upload',
         'finalize_media_upload',
         'create_memory',
+        'update_memory',
+        'hide_memory',
+        'upsert_memory_note',
+        'attach_memory_media',
+        'remove_memory_media',
+        'create_memory_thread_with_message',
+        'get_memories',
         'submit_widget_drawing_revision',
         'update_location_sharing_preference',
         'submit_content_report',
@@ -92,7 +113,7 @@ SELECT is(
       )
       AND has_function_privilege('authenticated', p.oid, 'execute')
   ),
-  16,
+  23,
   'authenticated can execute core public RPC wrappers'
 );
 
@@ -116,6 +137,13 @@ SELECT is(
         'create_pending_media_upload',
         'finalize_media_upload',
         'create_memory',
+        'update_memory',
+        'hide_memory',
+        'upsert_memory_note',
+        'attach_memory_media',
+        'remove_memory_media',
+        'create_memory_thread_with_message',
+        'get_memories',
         'submit_widget_drawing_revision',
         'update_location_sharing_preference',
         'submit_content_report',
