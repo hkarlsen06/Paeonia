@@ -51,7 +51,7 @@ extension MemoryDataService {
                         noteID: nil,
                         userID: ownerUserID,
                         body: $0,
-                        revision: nil,
+                        revision: 1,
                         updatedAt: now,
                         deletedAt: nil,
                         moderationStatus: .visible
@@ -93,9 +93,10 @@ extension MemoryDataService {
             throw MemoryDataServiceError.emptyTitle
         }
 
+        let resolvedRevision = max(expectedRevision, existing.snapshot.revision)
         let payload = UpdateMemoryOperationPayload(
             memoryID: memoryID,
-            expectedRevision: expectedRevision,
+            expectedRevision: resolvedRevision,
             title: normalizedTitle,
             memoryDate: memoryDate
         )
@@ -105,6 +106,7 @@ extension MemoryDataService {
             syncStatus: .dirty,
             title: payload.title,
             memoryDate: payload.memoryDate,
+            revision: resolvedRevision + 1,
             lastEditedByUserID: ownerUserID
         )
 
@@ -126,14 +128,16 @@ extension MemoryDataService {
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
         let existing = try await requireMemory(ownerUserID: ownerUserID, memoryID: memoryID)
+        let resolvedRevision = max(expectedRevision, existing.snapshot.revision)
         let payload = HideMemoryOperationPayload(
             memoryID: memoryID,
-            expectedRevision: expectedRevision
+            expectedRevision: resolvedRevision
         )
         let next = record(
             from: existing,
             operation: operation,
             syncStatus: .pendingDelete,
+            revision: resolvedRevision + 1,
             deletedAt: operation.localCreatedAt,
             lastEditedByUserID: ownerUserID
         )
@@ -162,7 +166,8 @@ extension MemoryDataService {
         }
 
         let existing = try await requireMemory(ownerUserID: ownerUserID, memoryID: memoryID)
-        let resolvedRevision = expectedRevision ?? existing.snapshot.ownNote?.revision ?? 0
+        let resolvedRevision = max(expectedRevision ?? 0, existing.snapshot.ownNote?.revision ?? 0)
+        let nextNoteRevision = resolvedRevision == 0 ? 1 : resolvedRevision + 1
         let payload = UpsertMemoryNoteOperationPayload(
             memoryID: memoryID,
             expectedRevision: resolvedRevision,
@@ -172,7 +177,7 @@ extension MemoryDataService {
             noteID: existing.snapshot.ownNote?.noteID,
             userID: ownerUserID,
             body: normalizedBody,
-            revision: existing.snapshot.ownNote?.revision,
+            revision: nextNoteRevision,
             updatedAt: operation.localCreatedAt,
             deletedAt: nil,
             moderationStatus: .visible

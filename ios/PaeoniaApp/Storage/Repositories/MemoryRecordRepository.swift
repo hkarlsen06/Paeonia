@@ -5,7 +5,7 @@ protocol MemoryRecordPersisting: Actor {
     func saveRemote(
         _ rows: [MemoryRemoteRow],
         ownerUserID: UUID,
-        preserveDirtyRecords: Bool
+        mergePolicy: MemoryRemoteMergePolicy
     ) async throws
     func saveLocal(_ record: MemoryRecord) async throws
     func load(
@@ -28,6 +28,16 @@ protocol MemoryRecordPersisting: Actor {
     func deleteAll(ownerUserID: UUID) async throws
 }
 
+nonisolated enum MemoryRemoteMergePolicy: Equatable, Sendable {
+    /// Normal pull behavior: keep any local record that still has unsent changes.
+    case preserveLocalChanges
+    /// Administrative or test behavior: accept the remote row even over local changes.
+    case overwriteLocalChanges
+    /// A pending operation just succeeded. Replace the local record only when that exact
+    /// operation is still the latest local change; preserve anything edited afterward.
+    case overwriteIfPendingOperationMatches(UUID)
+}
+
 actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
     private let container: ModelContainer
     private let encoder = JSONEncoder()
@@ -40,7 +50,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
     func saveRemote(
         _ rows: [MemoryRemoteRow],
         ownerUserID: UUID,
-        preserveDirtyRecords: Bool = true
+        mergePolicy: MemoryRemoteMergePolicy = .preserveLocalChanges
     ) async throws {
         let context = ModelContext(container)
 
@@ -54,7 +64,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
             )
 
             if let existing = try fetch(ownerUserID: ownerUserID, memoryID: row.memoryID, in: context) {
-                if preserveDirtyRecords, existing.syncStatusRawValue != SyncRecordStatus.clean.rawValue {
+                if shouldPreserveLocalRecord(existing, mergePolicy: mergePolicy) {
                     continue
                 }
                 existing.update(
@@ -230,6 +240,24 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         return try context.fetch(descriptor).first
     }
 
+    private func shouldPreserveLocalRecord(
+        _ existing: LocalMemoryRecord,
+        mergePolicy: MemoryRemoteMergePolicy
+    ) -> Bool {
+        guard existing.syncStatusRawValue != SyncRecordStatus.clean.rawValue else {
+            return false
+        }
+
+        switch mergePolicy {
+        case .preserveLocalChanges:
+            return true
+        case .overwriteLocalChanges:
+            return false
+        case let .overwriteIfPendingOperationMatches(operationID):
+            return existing.pendingOperationID != operationID
+        }
+    }
+
     private func encode<Value: Encodable>(_ value: Value) throws -> Data {
         try encoder.encode(value)
     }
@@ -267,11 +295,11 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
     func saveRemote(
         _ rows: [MemoryRemoteRow],
         ownerUserID: UUID,
-        preserveDirtyRecords: Bool = true
+        mergePolicy: MemoryRemoteMergePolicy = .preserveLocalChanges
     ) async throws {
         for row in rows {
             let key = key(ownerUserID: ownerUserID, memoryID: row.memoryID)
-            if preserveDirtyRecords, let existing = records[key], existing.syncStatus != .clean {
+            if let existing = records[key], shouldPreserveLocalRecord(existing, mergePolicy: mergePolicy) {
                 continue
             }
             records[key] = MemoryRecord(
@@ -343,5 +371,23 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
 
     private func key(ownerUserID: UUID, memoryID: UUID) -> String {
         LocalMemoryRecord.storageKey(ownerUserID: ownerUserID, memoryID: memoryID)
+    }
+
+    private func shouldPreserveLocalRecord(
+        _ existing: MemoryRecord,
+        mergePolicy: MemoryRemoteMergePolicy
+    ) -> Bool {
+        guard existing.syncStatus != .clean else {
+            return false
+        }
+
+        switch mergePolicy {
+        case .preserveLocalChanges:
+            return true
+        case .overwriteLocalChanges:
+            return false
+        case let .overwriteIfPendingOperationMatches(operationID):
+            return existing.pendingOperationID != operationID
+        }
     }
 }

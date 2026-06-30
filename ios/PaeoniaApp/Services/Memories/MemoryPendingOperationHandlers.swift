@@ -29,7 +29,8 @@ struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
             try await MemoryPendingOperationRefresh.refresh(
                 gateway: gateway,
                 memoryStore: memoryStore,
-                ownerUserID: operation.ownerUserID
+                ownerUserID: operation.ownerUserID,
+                confirmedOperationID: operation.operation.id
             )
             return .succeeded
         } catch {
@@ -76,7 +77,8 @@ struct UpdateMemoryPendingOperationHandler: PendingSyncOperationHandling {
             try await MemoryPendingOperationRefresh.refresh(
                 gateway: gateway,
                 memoryStore: memoryStore,
-                ownerUserID: operation.ownerUserID
+                ownerUserID: operation.ownerUserID,
+                confirmedOperationID: operation.operation.id
             )
             return .succeeded
         } catch {
@@ -123,7 +125,8 @@ struct HideMemoryPendingOperationHandler: PendingSyncOperationHandling {
             try await MemoryPendingOperationRefresh.refresh(
                 gateway: gateway,
                 memoryStore: memoryStore,
-                ownerUserID: operation.ownerUserID
+                ownerUserID: operation.ownerUserID,
+                confirmedOperationID: operation.operation.id
             )
             return .succeeded
         } catch {
@@ -170,7 +173,8 @@ struct UpsertMemoryNotePendingOperationHandler: PendingSyncOperationHandling {
             try await MemoryPendingOperationRefresh.refresh(
                 gateway: gateway,
                 memoryStore: memoryStore,
-                ownerUserID: operation.ownerUserID
+                ownerUserID: operation.ownerUserID,
+                confirmedOperationID: operation.operation.id
             )
             return .succeeded
         } catch {
@@ -215,7 +219,8 @@ struct AttachMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
         try await MemoryPendingOperationRefresh.refresh(
             gateway: gateway,
             memoryStore: memoryStore,
-            ownerUserID: operation.ownerUserID
+            ownerUserID: operation.ownerUserID,
+            confirmedOperationID: operation.operation.id
         )
         return .succeeded
     }
@@ -248,7 +253,8 @@ struct RemoveMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
         try await MemoryPendingOperationRefresh.refresh(
             gateway: gateway,
             memoryStore: memoryStore,
-            ownerUserID: operation.ownerUserID
+            ownerUserID: operation.ownerUserID,
+            confirmedOperationID: operation.operation.id
         )
         return .succeeded
     }
@@ -281,7 +287,8 @@ struct CreateMemoryThreadMessagePendingOperationHandler: PendingSyncOperationHan
         try await MemoryPendingOperationRefresh.refresh(
             gateway: gateway,
             memoryStore: memoryStore,
-            ownerUserID: operation.ownerUserID
+            ownerUserID: operation.ownerUserID,
+            confirmedOperationID: operation.operation.id
         )
         return .succeeded
     }
@@ -292,6 +299,7 @@ private enum MemoryPendingOperationRefresh {
         gateway: any SupabaseMemoryGateway,
         memoryStore: any MemoryRecordPersisting,
         ownerUserID: UUID,
+        confirmedOperationID: UUID,
         pageSize: Int = 100
     ) async throws {
         var cursor = SyncCursor()
@@ -310,7 +318,7 @@ private enum MemoryPendingOperationRefresh {
             try await memoryStore.saveRemote(
                 rows,
                 ownerUserID: ownerUserID,
-                preserveDirtyRecords: false
+                mergePolicy: .overwriteIfPendingOperationMatches(confirmedOperationID)
             )
 
             guard let last = rows.last, rows.count == pageSize else {

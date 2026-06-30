@@ -43,7 +43,7 @@ struct MemorySyncStream: SyncStream {
             try await memoryStore.saveRemote(
                 rows,
                 ownerUserID: context.session.userID,
-                preserveDirtyRecords: true
+                mergePolicy: .preserveLocalChanges
             )
 
             guard let last = rows.last else {
