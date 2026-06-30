@@ -1,5 +1,8 @@
+import Foundation
+
 protocol AccessRouteServicing: Actor {
     func resolveAccess(hasPendingInvite: Bool) async throws -> AccessRouteResolution
+    func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws
 }
 
 actor SupabaseAccessRouteService: AccessRouteServicing {
@@ -34,6 +37,10 @@ actor SupabaseAccessRouteService: AccessRouteServicing {
             route: resolver.route(for: snapshot),
             snapshot: snapshot
         )
+    }
+
+    func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws {
+        try await gateway.markRelationshipEndedNoticeSeen(coupleID: coupleID)
     }
 }
 

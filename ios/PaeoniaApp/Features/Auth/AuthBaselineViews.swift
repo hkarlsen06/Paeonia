@@ -403,3 +403,56 @@ struct AuthUnavailableRouteView: View {
         }
     }
 }
+
+struct RelationshipEndedNoticeView: View {
+    let isWorking: Bool
+    let onAcknowledge: () -> Void
+
+    var body: some View {
+        VStack(spacing: PaeoniaSpacing.space32) {
+            Spacer(minLength: PaeoniaSpacing.space16)
+
+            notice
+
+            Spacer(minLength: PaeoniaSpacing.space24)
+
+            acknowledgeButton
+        }
+        .frame(maxWidth: .infinity)
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private var notice: some View {
+        VStack(spacing: PaeoniaSpacing.space20) {
+            Image(systemName: "heart.slash.fill")
+                .font(.system(size: 48, weight: .semibold))
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .accessibilityHidden(true)
+
+            VStack(spacing: PaeoniaSpacing.space8) {
+                Text(.authRelationshipEndedTitle)
+                    .font(PaeoniaTypography.title)
+                    .foregroundStyle(.paeoniaTextPrimary)
+
+                Text(.authRelationshipEndedMessage)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    // Keep the supporting copy a touch narrower than the title so
+                    // the two wrapped lines stay balanced instead of a long line
+                    // followed by a short orphan.
+                    .padding(.horizontal, PaeoniaSpacing.space24)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var acknowledgeButton: some View {
+        Button(action: onAcknowledge) {
+            Text(.authRelationshipEndedAcknowledgeButton)
+        }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
+        .disabled(isWorking)
+    }
+}

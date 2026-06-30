@@ -174,6 +174,8 @@ struct RootView: View {
             pairingScaffold
         case .paired:
             pairedScaffold
+        case .relationshipEndedNotice:
+            relationshipEndedScaffold
         default:
             scaffold
         }
@@ -222,6 +224,25 @@ struct RootView: View {
                 PairingInviteView(
                     session: viewModel.currentSession,
                     onRefreshAccess: refreshPairing
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            }
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.screenTopSpacing)
+            .padding(.bottom, PaeoniaSpacing.space16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(.paeoniaBackgroundPrimary)
+        }
+    }
+
+    private var relationshipEndedScaffold: some View {
+        NavigationStack {
+            VStack(spacing: PaeoniaSpacing.sectionSpacing) {
+                header
+
+                RelationshipEndedNoticeView(
+                    isWorking: viewModel.isWorking,
+                    onAcknowledge: acknowledgeRelationshipEnded
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
@@ -366,9 +387,11 @@ struct RootView: View {
             // Handled by `pairedScaffold`; never shown here.
             EmptyView()
         case .pairedPaywalled,
-             .entitlementLost,
-             .relationshipEndedNotice:
+             .entitlementLost:
             AuthUnavailableRouteView()
+        case .relationshipEndedNotice:
+            // Handled by `relationshipEndedScaffold`; never shown here.
+            EmptyView()
         }
     }
 
@@ -431,6 +454,12 @@ struct RootView: View {
     private func refreshPairing() {
         Task {
             await viewModel.refreshAfterPairingChange()
+        }
+    }
+
+    private func acknowledgeRelationshipEnded() {
+        Task {
+            await viewModel.acknowledgeRelationshipEnded()
         }
     }
 

@@ -11,6 +11,7 @@ enum RootNotice: Equatable {
     case onboardingFailed
     case signOutFailed
     case deleteAccountFailed
+    case relationshipEndedAcknowledgeFailed
 }
 
 enum RootPresentedDestination: Equatable {
@@ -338,6 +339,33 @@ final class RootViewModel {
     func refreshAfterPairingChange() async {
         await refreshAuthRoute()
         await startSyncIfNeeded()
+    }
+
+    /// Confirms the user has read the relationship-ended notice. Marks the notice
+    /// seen on the backend so it does not reappear after the next sync, then
+    /// re-resolves access to land on the user's real next state (usually unpaired).
+    /// On failure the notice stays put and a banner explains what happened.
+    func acknowledgeRelationshipEnded() async {
+        guard !isWorking,
+              case let .access(session, resolution) = route,
+              resolution.route == .relationshipEndedNotice,
+              let coupleID = resolution.activeCoupleID
+        else {
+            return
+        }
+
+        isWorking = true
+        notice = nil
+
+        do {
+            try await accessRouteService?.markRelationshipEndedNoticeSeen(coupleID: coupleID)
+            await resolveAccessRoute(for: session)
+            await startSyncIfNeeded()
+        } catch {
+            notice = .relationshipEndedAcknowledgeFailed
+        }
+
+        isWorking = false
     }
 
     func refreshAfterForegroundActivation() async {

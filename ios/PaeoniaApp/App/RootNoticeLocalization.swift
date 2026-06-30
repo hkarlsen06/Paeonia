@@ -16,6 +16,8 @@ extension RootNotice {
             .authNoticeSignOutFailedTitle
         case .deleteAccountFailed:
             .authNoticeDeleteAccountFailedTitle
+        case .relationshipEndedAcknowledgeFailed:
+            .authNoticeRelationshipEndedAcknowledgeFailedTitle
         }
     }
 
@@ -31,6 +33,8 @@ extension RootNotice {
             .authNoticeSignOutFailedMessage
         case .deleteAccountFailed:
             .authNoticeDeleteAccountFailedMessage
+        case .relationshipEndedAcknowledgeFailed:
+            .authNoticeRelationshipEndedAcknowledgeFailedMessage
         }
     }
 }

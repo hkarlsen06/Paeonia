@@ -87,6 +87,46 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
+    @Test func acknowledgingRelationshipEndedMarksNoticeSeenAndResolvesToUnpaired() async {
+        let coupleID = UUID()
+        let accessRouteService = RelationshipEndedAccessRouteService(coupleID: coupleID)
+        let viewModel = RootViewModel(
+            syncService: TestPaeoniaSyncService(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService
+        )
+
+        await viewModel.start()
+        #expect(viewModel.state == .relationshipEndedNotice)
+
+        await viewModel.acknowledgeRelationshipEnded()
+
+        #expect(viewModel.state == .unpaired)
+        #expect(viewModel.notice == nil)
+        #expect(viewModel.isWorking == false)
+        #expect(await accessRouteService.markedCoupleIDs == [coupleID])
+    }
+
+    @MainActor
+    @Test func acknowledgingRelationshipEndedKeepsNoticeWhenMarkSeenFails() async {
+        let accessRouteService = RelationshipEndedAccessRouteService(failsMark: true)
+        let viewModel = RootViewModel(
+            syncService: TestPaeoniaSyncService(),
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: accessRouteService
+        )
+
+        await viewModel.start()
+        #expect(viewModel.state == .relationshipEndedNotice)
+
+        await viewModel.acknowledgeRelationshipEnded()
+
+        #expect(viewModel.state == .relationshipEndedNotice)
+        #expect(viewModel.notice == .relationshipEndedAcknowledgeFailed)
+        #expect(viewModel.isWorking == false)
+    }
+
+    @MainActor
     @Test func localLocationChangeRunsImmediateLocalChangeSync() async {
         let syncService = TestPaeoniaSyncService()
         let viewModel = RootViewModel(
@@ -753,6 +793,8 @@ private actor StaticAccessRouteService: AccessRouteServicing {
         receivedHasPendingInvite.append(hasPendingInvite)
         return resolution
     }
+
+    func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
 }
 
 private enum AccessRouteServiceTestError: Error {
@@ -761,6 +803,10 @@ private enum AccessRouteServiceTestError: Error {
 
 private actor FailingAccessRouteService: AccessRouteServicing {
     func resolveAccess(hasPendingInvite _: Bool) async throws -> AccessRouteResolution {
+        throw AccessRouteServiceTestError.unavailable
+    }
+
+    func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {
         throw AccessRouteServiceTestError.unavailable
     }
 }
@@ -812,6 +858,63 @@ private actor BlockingAccessRouteService: AccessRouteServicing {
 
         let routeIndex = min(callIndex - 1, routes.count - 1)
         return .test(route: routes[routeIndex], pairID: pairID)
+    }
+
+    func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
+}
+
+/// Drives the relationship-ended acknowledge flow: resolves to the ended notice
+/// until the notice is marked seen, then resolves to `.unpaired`, recording each
+/// couple id passed to the mark call (and optionally failing the mark).
+private actor RelationshipEndedAccessRouteService: AccessRouteServicing {
+    let coupleID: UUID
+    private let failsMark: Bool
+    private var noticeSeen = false
+    private(set) var markedCoupleIDs: [UUID] = []
+    private(set) var resolveCallCount = 0
+
+    init(coupleID: UUID = UUID(), failsMark: Bool = false) {
+        self.coupleID = coupleID
+        self.failsMark = failsMark
+    }
+
+    func resolveAccess(hasPendingInvite _: Bool) async throws -> AccessRouteResolution {
+        resolveCallCount += 1
+        return resolution(route: noticeSeen ? .unpaired : .relationshipEndedNotice)
+    }
+
+    func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws {
+        markedCoupleIDs.append(coupleID)
+
+        if failsMark {
+            throw AccessRouteServiceTestError.unavailable
+        }
+
+        noticeSeen = true
+    }
+
+    private func resolution(route: AccessRoute) -> AccessRouteResolution {
+        AccessRouteResolution(
+            route: route,
+            snapshot: AccessRouteSnapshot(
+                userEntitlement: nil,
+                coupleEntitlement: nil,
+                relationshipState: SupabaseRelationshipState(
+                    coupleID: coupleID,
+                    pairID: UUID(),
+                    relationshipStatus: .ended,
+                    memberStatus: noticeSeen ? .endedNoticeSeen : .endedNoticePending,
+                    partnerUserID: UUID(),
+                    partnerDisplayName: "Partner",
+                    partnerProfilePhotoAssetID: nil,
+                    startedOn: "2026-06-24",
+                    endedAt: Date(timeIntervalSince1970: 1_900_000_000),
+                    deleteAfter: nil,
+                    endedNoticeSeenAt: noticeSeen ? Date(timeIntervalSince1970: 1_950_000_000) : nil
+                ),
+                hasPendingInvite: false
+            )
+        )
     }
 }
 

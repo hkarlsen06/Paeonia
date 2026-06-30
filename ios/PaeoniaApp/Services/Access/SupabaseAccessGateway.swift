@@ -7,6 +7,7 @@ protocol SupabaseAccessGateway: Actor {
         after cursor: SyncCursor,
         limit: Int
     ) async throws -> [SupabaseRelationshipSyncEvent]
+    func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws
 }
 
 actor LiveSupabaseAccessGateway: SupabaseAccessGateway {
@@ -56,9 +57,30 @@ actor LiveSupabaseAccessGateway: SupabaseAccessGateway {
             .value
     }
 
+    func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws {
+        // Needs an authenticated session: the backend keys the update on
+        // auth.uid(), so an anonymous request would silently mark nothing.
+        _ = try await client.auth.session
+
+        try await client
+            .rpc(
+                "mark_relationship_ended_notice_seen",
+                params: MarkRelationshipEndedNoticeSeenRequest(coupleID: coupleID)
+            )
+            .execute()
+    }
+
     private static func postgrestTimestamp(_ date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter.string(from: date)
+    }
+}
+
+nonisolated private struct MarkRelationshipEndedNoticeSeenRequest: Encodable {
+    let coupleID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case coupleID = "p_couple_id"
     }
 }
