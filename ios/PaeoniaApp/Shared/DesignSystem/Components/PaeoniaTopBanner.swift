@@ -82,8 +82,47 @@ final class PaeoniaBannerCenter {
 struct PaeoniaTopBanner: View {
     let content: PaeoniaBannerContent
     let onDismiss: () -> Void
+    var onTap: (() -> Void)?
 
     var body: some View {
+        HStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
+            mainContent
+            dismissButton
+        }
+        .padding(.horizontal, PaeoniaSpacing.space16)
+        .padding(.vertical, PaeoniaSpacing.space12)
+        .frame(maxWidth: 430)
+        // Liquid Glass so the banner reads as a translucent layer over the
+        // content behind it, tinted by the style's accent.
+        .glassEffect(
+            .regular.tint(accentColor.opacity(0.16)),
+            in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
+                .stroke(accentColor.opacity(0.35), lineWidth: PaeoniaRadius.strokeDefault)
+        }
+        .shadow(color: .black.opacity(0.26), radius: 24, x: 0, y: 14)
+        .accessibilityElement(children: .contain)
+        .accessibilityAction(named: Text(.appBannerDismissButton)) {
+            onDismiss()
+        }
+    }
+
+    @ViewBuilder
+    private var mainContent: some View {
+        if let onTap {
+            Button(action: onTap) {
+                mainContentLabel
+            }
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(.isButton)
+        } else {
+            mainContentLabel
+        }
+    }
+
+    private var mainContentLabel: some View {
         HStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
             leadingIcon
 
@@ -101,26 +140,8 @@ struct PaeoniaTopBanner: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, PaeoniaSpacing.space16)
-        .padding(.vertical, PaeoniaSpacing.space12)
-        .frame(maxWidth: 430)
-        // Liquid Glass so the banner reads as a translucent layer over the
-        // content behind it, tinted by the style's accent.
-        .glassEffect(
-            .regular.tint(accentColor.opacity(0.16)),
-            in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
-                .stroke(accentColor.opacity(0.35), lineWidth: PaeoniaRadius.strokeDefault)
-        }
-        .shadow(color: .black.opacity(0.26), radius: 24, x: 0, y: 14)
-        .accessibilityElement(children: .combine)
-        // No visible close control anymore (swipe up to dismiss), so expose an
-        // explicit dismiss action for assistive technologies.
-        .accessibilityAction(named: Text(.appBannerDismissButton)) {
-            onDismiss()
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     @ViewBuilder
@@ -142,6 +163,19 @@ struct PaeoniaTopBanner: View {
                 .frame(width: 24, height: 24)
                 .accessibilityHidden(true)
         }
+    }
+
+    private var dismissButton: some View {
+        Button(action: onDismiss) {
+            Image(systemName: "xmark")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.paeoniaTextSecondary)
+                .frame(width: 32, height: 32)
+                .background(Color.paeoniaSurfacePrimary.opacity(0.28))
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(.appBannerDismissButton))
     }
 
     private var iconName: String {
@@ -211,20 +245,17 @@ private struct PaeoniaTopBannerPresentation: View {
 
     @ViewBuilder
     private var tappableBanner: some View {
-        let banner = PaeoniaTopBanner(content: content, onDismiss: center.dismiss)
-            .contentShape(Rectangle())
-            .offset(y: dragOffset)
-
-        if content.isTappable {
-            banner
-                .onTapGesture {
+        PaeoniaTopBanner(
+            content: content,
+            onDismiss: center.dismiss,
+            onTap: content.isTappable
+                ? {
                     center.dismiss()
                     onTap()
                 }
-                .accessibilityAddTraits(.isButton)
-        } else {
-            banner
-        }
+                : nil
+        )
+        .offset(y: dragOffset)
     }
 
     private var swipeUpToDismiss: some Gesture {
