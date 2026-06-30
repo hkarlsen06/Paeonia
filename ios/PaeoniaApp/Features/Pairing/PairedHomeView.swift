@@ -54,13 +54,13 @@ struct PairedHomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: PaeoniaSpacing.sectionSpacing) {
+                dailyPromptCard
+
                 HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
                     MilestoneCountdownCard()
 
                     HomeWidgetCard(onOpen: onOpenWidgetDrawing)
                 }
-
-                dailyPromptCard
 
                 CoupleMapCard(
                     currentName: currentName,

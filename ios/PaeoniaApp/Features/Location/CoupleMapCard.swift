@@ -301,13 +301,6 @@ private struct CoupleMapSnapshot: View {
                         tapKisses: tapKisses
                     )
                 }
-
-                VStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    distanceLabel
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .background(scrim)
-                }
             }
             .frame(width: size.width, height: size.height)
             .contentShape(Rectangle())
@@ -319,9 +312,9 @@ private struct CoupleMapSnapshot: View {
         }
     }
 
-    /// The full revealed unit: the duotone map with both avatar pins placed on it. The
-    /// reveal masks this as a whole, so a partner's avatar is hidden at its old position
-    /// and uncovered at its new one as the flame passes.
+    /// The full revealed unit: the duotone map with both avatar pins and the distance
+    /// pill placed on it. The reveal masks this as a whole, so the avatars and the
+    /// distance are all uncovered together as the flame passes — none of them pop in.
     @ViewBuilder
     private func mapContent(_ snap: SnapshotResult, size: CGSize) -> some View {
         ZStack {
@@ -352,6 +345,16 @@ private struct CoupleMapSnapshot: View {
                 containerWidth: size.width
             )
             .position(snap.partnerPoint)
+
+            // The distance pill (scrim + number + icon) lives inside the revealed unit
+            // too, so the sweep uncovers it along with the map and avatars instead of it
+            // sitting on top from the first frame.
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                distanceLabel
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .background(scrim)
+            }
         }
     }
 
@@ -629,9 +632,12 @@ private struct UnsweptRegionShape: Shape {
 
     func path(in rect: CGRect) -> Path {
         let (topX, bottomX) = SweepFront.edges(in: rect, progress: progress, tilt: tilt)
-        // Over-extend to the right so the un-swept region always reaches the trailing
-        // edge; the angled left boundary is the advancing front.
-        let rightEdge = max(topX, bottomX) + rect.width
+        // Anchor the right side a full width past the trailing edge — NOT relative to the
+        // front. At the start the front sits off the leading edge (a negative x), so a
+        // front-relative right edge would fall short of the card's right edge and leave a
+        // sliver of map uncovered there; pinning it past `maxX` keeps the un-swept region
+        // covering the whole card-to-the-right at every step.
+        let rightEdge = rect.maxX + rect.width
 
         var path = Path()
         path.move(to: CGPoint(x: topX, y: rect.minY))
