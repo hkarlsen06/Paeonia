@@ -62,6 +62,9 @@ struct DailyStreakToolbarLabel: View {
 
             Text(state.displayCount, format: .number)
                 .monospacedDigit()
+                // A slipped streak reads as cancelled — its count is the lost streak
+                // you'd buy back, so cross it out (no draw-on here, unlike the sheet).
+                .strikethrough(state.isRestorable, color: .paeoniaTextSecondary)
         }
         .font(.system(.subheadline, design: .rounded).weight(.bold))
         .foregroundStyle(state.isRestorable ? .paeoniaTextSecondary : .paeoniaTextPrimary)

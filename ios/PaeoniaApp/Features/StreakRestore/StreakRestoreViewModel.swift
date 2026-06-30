@@ -14,8 +14,8 @@ final class StreakRestoreViewModel {
     private(set) var hasFinishedLoadingProducts = false
     private(set) var isPurchasing = false
     private(set) var error: StreakRestoreError?
-    /// Set once a restore lands (via purchase or recovery). The view dismisses
-    /// when this becomes non-nil; the streak flame re-ignites underneath.
+    /// Set once a restore lands (via purchase or recovery). The view switches to
+    /// a celebratory restored-streak state when this becomes non-nil.
     private(set) var restoredCount: Int?
 
     private let storeKitService: any PaeoniaStoreKitServicing

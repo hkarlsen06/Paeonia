@@ -5,36 +5,51 @@ import SwiftUI
 ///
 /// Opened by tapping the streak badge while the streak is healthy. A broken streak
 /// opens `StreakRestoreView` (the paid buy-it-back offer) instead, so this sheet stays
-/// purely informative and never sells anything.
+/// purely informative and never sells anything. The restore flow also reuses this
+/// surface with celebratory copy once a purchase brings the streak back.
 struct StreakDetailView: View {
     let streak: CoupleStreak
+    var title: LocalizedStringResource = .streakDetailTitle
+    var message: LocalizedStringResource = .streakDetailMessage
+    var playsCelebration = false
+    var ambientMotion = true
     var onClose: () -> Void = {}
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var showCelebrationDetails = false
+
+    private var shouldShowDetails: Bool {
+        !playsCelebration || showCelebrationDetails
+    }
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space24) {
             Spacer()
 
-            // A gently alive flame — breathing liquid and a soft flicker — without the
-            // count-up celebration or its haptics. This is a quiet peek, not the moment
-            // a streak is earned.
-            PaeoniaStreakFlame(count: streak.currentCount, playsCelebration: false, ambientMotion: true)
+            PaeoniaStreakFlame(
+                count: streak.currentCount,
+                playsCelebration: playsCelebration,
+                ambientMotion: ambientMotion && !playsCelebration
+            )
 
             VStack(spacing: PaeoniaSpacing.space8) {
-                Text(.streakDetailTitle)
+                Text(title)
                     .font(PaeoniaTypography.heroTitle)
                     .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(.streakDetailMessage)
+                Text(message)
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .multilineTextAlignment(.center)
+            .modifier(StreakDetailReveal(shown: shouldShowDetails))
 
             // Their record, shown only when it beats the current run so it adds
             // something the hero flame doesn't already say.
             if streak.longestCount > streak.currentCount {
                 longestStat
+                    .modifier(StreakDetailReveal(shown: shouldShowDetails))
             }
 
             Spacer()
@@ -44,11 +59,13 @@ struct StreakDetailView: View {
             }
             .buttonStyle(PaeoniaQuietButtonStyle())
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+            .modifier(StreakDetailReveal(shown: shouldShowDetails))
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.paeoniaSurfacePrimary)
+        .onAppear(perform: revealCelebrationDetails)
     }
 
     private var longestStat: some View {
@@ -65,6 +82,29 @@ struct StreakDetailView: View {
                 .foregroundStyle(.paeoniaTextSecondary)
         }
         .accessibilityElement(children: .combine)
+    }
+
+    private func revealCelebrationDetails() {
+        guard playsCelebration, !showCelebrationDetails else { return }
+        if reduceMotion {
+            showCelebrationDetails = true
+        } else {
+            withAnimation(PaeoniaMotion.meaningfulMoment.delay(0.28)) {
+                showCelebrationDetails = true
+            }
+        }
+    }
+}
+
+/// Fades and lifts the streak sheet's supporting copy and actions in after the
+/// flame has had a beat to land.
+private struct StreakDetailReveal: ViewModifier {
+    let shown: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .offset(y: shown ? 0 : PaeoniaSpacing.space12)
     }
 }
 
@@ -93,6 +133,24 @@ struct StreakDetailView: View {
             restorableCount: 0,
             restoreDeadline: nil
         )
+    )
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Restored") {
+    StreakDetailView(
+        streak: CoupleStreak(
+            currentCount: 30,
+            longestCount: 30,
+            lastQualifiedDate: "2026-06-28",
+            restoreAvailable: false,
+            restorableCount: 0,
+            restoreDeadline: nil
+        ),
+        title: .streakRestoreSuccessTitle,
+        message: .streakRestoreSuccessMessage,
+        playsCelebration: true,
+        ambientMotion: false
     )
     .preferredColorScheme(.dark)
 }

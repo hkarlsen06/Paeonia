@@ -735,7 +735,7 @@ Checklist:
 - [ ] Disabling location deletes latest location row.
 - [ ] Relationship end deletes both latest location rows.
 - [ ] Reject stale offline location retry when `captured_at` is older than stored row.
-- [ ] Streak day expires after midnight in the latest partner timezone.
+- [ ] Streak next activity deadline falls after midnight in the latest partner timezone.
 - [ ] Activity events include qualifying actions and couple_day linkage.
 - [ ] Notification outbox stores one row per target device.
 - [ ] Push payloads use IDs/routing hints, not sensitive content.

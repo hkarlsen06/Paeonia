@@ -83,6 +83,58 @@ struct StreakRestoreViewModelTests {
         #expect(viewModel.restoredCount == 21)
         #expect(restoredTo == 21)
     }
+
+    @Test func deadlineStateIsUnavailableWithoutDeadline() {
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        #expect(StreakRestoreDeadlineState.resolve(deadline: nil, now: now) == .unavailable)
+        #expect(!StreakRestoreDeadlineState.resolve(deadline: nil, now: now).blocksPurchase)
+    }
+
+    @Test func deadlineStateIsActiveBeforeDeadline() {
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        let state = StreakRestoreDeadlineState.resolve(
+            deadline: now.addingTimeInterval(60),
+            now: now
+        )
+
+        #expect(state == .active)
+        #expect(!state.blocksPurchase)
+    }
+
+    @Test func deadlineStateExpiresAtDeadline() {
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        #expect(StreakRestoreDeadlineState.resolve(deadline: now, now: now) == .expired)
+        #expect(StreakRestoreDeadlineState.resolve(deadline: now.addingTimeInterval(-1), now: now) == .expired)
+        #expect(StreakRestoreDeadlineState.resolve(deadline: now, now: now).blocksPurchase)
+    }
+
+    @Test func countdownTextCountsDownBySecond() {
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        #expect(
+            StreakRestoreCountdownText.format(
+                deadline: now.addingTimeInterval(3_661),
+                now: now
+            ) == "01:01:01"
+        )
+        #expect(
+            StreakRestoreCountdownText.format(
+                deadline: now.addingTimeInterval((27 * 3_600) + 5),
+                now: now
+            ) == "27:00:05"
+        )
+    }
+
+    @Test func countdownTextShowsZeroWhenExpired() {
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        #expect(StreakRestoreCountdownText.format(deadline: now, now: now) == "00:00:00")
+        #expect(StreakRestoreCountdownText.format(deadline: now.addingTimeInterval(-10), now: now) == "00:00:00")
+        #expect(StreakRestoreCountdownText.format(deadline: nil, now: now) == nil)
+    }
 }
 
 private extension CoupleStreak {

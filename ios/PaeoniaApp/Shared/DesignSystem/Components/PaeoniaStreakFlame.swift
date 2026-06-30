@@ -35,9 +35,15 @@ struct PaeoniaStreakFlame: View {
     /// True while running the calm continuous motion (vs. the count-up celebration),
     /// so the timeline keeps the level high and breathing instead of filling from zero.
     @State private var isAmbient = false
+    /// True while running the one-shot drain that turns a full flame into the cold,
+    /// frozen broken pool when a slipped streak first appears.
+    @State private var isBreaking = false
     @State private var hasStarted = false
     @State private var animationStart = Date()
     @State private var driver: Task<Void, Never>?
+    /// The wave phase the drain settles on, so the static frozen pool matches the
+    /// last animated frame instead of snapping to a different ripple.
+    @State private var frozenPhase: CGFloat = 0
 
     // Payoff accents, nudged by the driver the instant the flame fills.
     @State private var flameScale: CGFloat = 1
@@ -55,6 +61,14 @@ struct PaeoniaStreakFlame: View {
     private static let ambientLevel: CGFloat = 0.9
     private static let ambientBreath: CGFloat = 0.06
     private static let ambientBreathSpeed: Double = 0.8
+    /// A slipped streak doesn't start broken — when the restore surface opens it
+    /// drains from a full, warm flame down to the cold pool over this long.
+    private static let breakDuration: Double = 1.6
+    /// The flame begins full when it slips, then settles at the low frozen pool.
+    private static let brokenStartLevel: CGFloat = 1
+    private static let brokenLevel: CGFloat = 0.22
+    /// The surface sloshes at this speed as it drains, easing to a standstill.
+    private static let breakWaveSpeed: Double = 1.4
 
     private var flameWidth: CGFloat { flameHeight * 0.84 }
 
@@ -71,75 +85,124 @@ struct PaeoniaStreakFlame: View {
         if isAnimating {
             TimelineView(.animation) { timeline in
                 let elapsed = timeline.date.timeIntervalSince(animationStart)
-                let phase = elapsed * Self.waveSpeed
-                let flicker = sin(elapsed * 6.3) * 0.5 + sin(elapsed * 11.7) * 0.2
-                // Ambient stays high and breathing with the number settled; the
-                // celebration fills from empty while the number climbs.
-                let level = isAmbient ? Self.ambientFillLevel(at: elapsed) : fillLevel(at: elapsed)
-                let value = isAmbient ? count : Int((Double(count) * Double(level)).rounded())
+                if isBreaking {
+                    breakingLayout(elapsed: elapsed)
+                } else {
+                    let phase = elapsed * Self.waveSpeed
+                    let flicker = sin(elapsed * 6.3) * 0.5 + sin(elapsed * 11.7) * 0.2
+                    // Ambient stays high and breathing with the number settled; the
+                    // celebration fills from empty while the number climbs.
+                    let level = isAmbient ? Self.ambientFillLevel(at: elapsed) : fillLevel(at: elapsed)
+                    let value = isAmbient ? count : Int((Double(count) * Double(level)).rounded())
 
-                layout(level: level, phase: CGFloat(phase), flicker: CGFloat(flicker), value: value, emits: !isAmbient)
+                    layout(level: level, phase: CGFloat(phase), flicker: CGFloat(flicker), value: value, emits: !isAmbient, brokenness: 0)
+                }
             }
         } else {
-            // Reduce Motion, or a calm/static use: the full, settled flame.
-            layout(level: 1, phase: 0, flicker: 0, value: count, emits: false)
+            // Reduce Motion, a calm/static use, or the settled end of a drain: the
+            // full settled flame, or the cold frozen pool once a streak has slipped.
+            layout(
+                level: isBroken ? Self.brokenLevel : 1,
+                phase: isBroken ? frozenPhase : 0,
+                flicker: 0,
+                value: count,
+                emits: false,
+                brokenness: isBroken ? 1 : 0
+            )
         }
     }
 
-    private func layout(level: CGFloat, phase: CGFloat, flicker: CGFloat, value: Int, emits: Bool) -> some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            flame(level: level, phase: phase, flicker: flicker)
+    /// One frame of the drain: the flame falls from full to the cold pool while the
+    /// wave eases to a freeze and the warm color bleeds out to grey.
+    private func breakingLayout(elapsed: TimeInterval) -> some View {
+        let progress = CGFloat(smoothstep(min(elapsed / Self.breakDuration, 1)))
+        let level = Self.brokenStartLevel + (Self.brokenLevel - Self.brokenStartLevel) * progress
+        let phase = Self.breakPhase(at: elapsed)
+        // The living flicker fades out as the flame goes still.
+        let flicker = (sin(elapsed * 6.3) * 0.5 + sin(elapsed * 11.7) * 0.2) * Double(1 - progress)
+        return layout(level: level, phase: phase, flicker: CGFloat(flicker), value: count, emits: false, brokenness: progress)
+    }
+
+    /// Renders a single flame frame. `brokenness` (0 alive → 1 slipped) crossfades
+    /// the warm flame into the cold frozen pool, so the same layout serves the
+    /// living flame, the static broken state, and every frame of the drain between.
+    private func layout(level: CGFloat, phase: CGFloat, flicker: CGFloat, value: Int, emits: Bool, brokenness: CGFloat) -> some View {
+        let alive = Double(1 - brokenness)
+        return VStack(spacing: PaeoniaSpacing.space12) {
+            flame(level: level, phase: phase, flicker: flicker, brokenness: brokenness)
                 .frame(width: flameWidth, height: flameHeight)
                 .overlay {
-                    if emits, !isBroken {
+                    if emits {
                         StreakEmberField(start: animationStart)
                     }
                 }
                 .scaleEffect(flameScale)
-                .shadow(color: glowShadowColor, radius: isBroken ? 8 : 22 + 26 * glowFlare)
-                .shadow(color: .paeoniaAccentSecondary.opacity(isBroken ? 0 : 0.35 * glowFlare), radius: 10)
+                // The warm glow shrinks and fades out as the flame cools, with a
+                // faint dark shadow fading in to anchor the spent pool.
+                .shadow(
+                    color: .paeoniaAccentPrimary.opacity((0.4 + 0.4 * Double(glowFlare)) * alive),
+                    radius: (22 + 26 * glowFlare) * (1 - brokenness) + 8 * brokenness
+                )
+                .shadow(color: .black.opacity(0.18 * Double(brokenness)), radius: 8)
+                .shadow(color: .paeoniaAccentSecondary.opacity(0.35 * Double(glowFlare) * alive), radius: 10)
 
             VStack(spacing: PaeoniaSpacing.space4) {
                 Text(verbatim: value.formatted())
                     .font(.system(size: numberSize, weight: .heavy, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(isBroken ? .paeoniaTextSecondary : .paeoniaTextPrimary)
+                    .foregroundStyle(Color.paeoniaTextPrimary.mix(with: .paeoniaTextSecondary, by: Double(brokenness)))
+                    .overlay { strikethrough(brokenness: brokenness) }
 
                 Text(.homeStreakLabel)
                     .font(PaeoniaTypography.caption.weight(.semibold))
                     .textCase(.uppercase)
                     .tracking(1.6)
-                    .foregroundStyle(isBroken ? .paeoniaTextTertiary : .paeoniaAccentPrimary)
+                    .foregroundStyle(Color.paeoniaAccentPrimary.mix(with: .paeoniaTextTertiary, by: Double(brokenness)))
             }
         }
     }
 
-    private var glowShadowColor: Color {
-        isBroken
-            ? .black.opacity(0.18)
-            : .paeoniaAccentPrimary.opacity(0.4 + 0.4 * glowFlare)
+    /// The cross-out struck through the streak number when it has slipped. It draws
+    /// on from the leading edge as the flame drains and sits fully drawn once frozen,
+    /// so the lost count reads as cancelled. Healthy flames pass `brokenness: 0`, so
+    /// the line scales to nothing and stays hidden.
+    private func strikethrough(brokenness: CGFloat) -> some View {
+        Capsule()
+            .fill(Color.paeoniaTextSecondary)
+            .frame(height: max(numberSize * 0.07, 2))
+            .scaleEffect(x: brokenness, y: 1, anchor: .leading)
     }
 
-    private func flame(level: CGFloat, phase: CGFloat, flicker: CGFloat) -> some View {
-        ZStack {
-            if !isBroken {
-                aura(level: level)
-            }
+    private func flame(level: CGFloat, phase: CGFloat, flicker: CGFloat, brokenness: CGFloat) -> some View {
+        let alive = Double(1 - brokenness)
+        return ZStack {
+            aura(level: level)
+                .opacity(alive)
 
             // The empty flame: a dim vessel waiting to be filled.
             FlameShape().fill(Self.emptyFlameStyle)
 
-            // The rising liquid, clipped to the flame outline. A broken streak
-            // shows a low, cold pool instead of a warm, full flame.
-            StreakLiquidShape(level: isBroken ? 0.22 : level, phase: phase)
-                .fill(isBroken ? Self.brokenLiquidStyle : Self.liquidStyle)
+            // The rising liquid, clipped to the flame outline. As a streak slips the
+            // warm fill drains and cools, the cold pool crossfading in over it.
+            StreakLiquidShape(level: level, phase: phase)
+                .fill(Self.liquidStyle)
                 .clipShape(FlameShape())
+                .opacity(alive)
 
-            // A bright rim so the flame edge reads against the plum surface.
-            FlameShape().stroke(isBroken ? Self.brokenRimStyle : Self.rimStyle, lineWidth: PaeoniaRadius.strokeEmphasis)
+            StreakLiquidShape(level: level, phase: phase)
+                .fill(Self.brokenLiquidStyle)
+                .clipShape(FlameShape())
+                .opacity(Double(brokenness))
+
+            // A bright rim so the flame edge reads against the plum surface,
+            // dimming to a cold edge as it breaks.
+            FlameShape().stroke(Self.rimStyle, lineWidth: PaeoniaRadius.strokeEmphasis)
+                .opacity(alive)
+            FlameShape().stroke(Self.brokenRimStyle, lineWidth: PaeoniaRadius.strokeEmphasis)
+                .opacity(Double(brokenness))
         }
         // A faint living flicker — wider/shorter then back — anchored at the base.
-        // A broken flame is still, so the flicker is suppressed.
+        // It fades out as the flame freezes, so a settled broken flame is still.
         .scaleEffect(x: 1 + flicker * 0.02, y: 1 - flicker * 0.015, anchor: .bottom)
     }
 
@@ -209,6 +272,19 @@ struct PaeoniaStreakFlame: View {
             return
         }
 
+        // A slipped streak drains from a full, warm flame down to the cold frozen
+        // pool when the restore surface opens, instead of appearing already broken.
+        let breaks = isBroken && !reduceMotion && count >= 1
+        if breaks {
+            animationStart = Date()
+            isBreaking = true
+            isAnimating = true
+            driver = Task { @MainActor in
+                await runBreak()
+            }
+            return
+        }
+
         // A calm, continuously "alive" flame for at-rest surfaces: no count-up and
         // no haptics, just the breathing liquid and the living flicker.
         let ambient = ambientMotion && !reduceMotion && !isBroken && count >= 1
@@ -258,6 +334,25 @@ struct PaeoniaStreakFlame: View {
         withAnimation(.easeOut(duration: 0.9).delay(0.12)) {
             glowFlare = 0
         }
+    }
+
+    /// Holds the drain on screen for its full duration, then settles the flame into
+    /// the static frozen pool so the timeline can stop redrawing.
+    @MainActor
+    private func runBreak() async {
+        frozenPhase = Self.breakPhase(at: Self.breakDuration)
+        try? await Task.sleep(for: .seconds(Self.breakDuration))
+        guard !Task.isCancelled else { return }
+        isBreaking = false
+        isAnimating = false
+    }
+
+    /// The wave phase during the drain. The surface sloshes at `breakWaveSpeed` and
+    /// eases to a standstill by `breakDuration`, freezing the liquid mid-ripple.
+    private static func breakPhase(at elapsed: TimeInterval) -> CGFloat {
+        let time = min(elapsed, breakDuration)
+        // Integral of a speed that decays linearly from breakWaveSpeed to zero.
+        return CGFloat(breakWaveSpeed * (time - time * time / (2 * breakDuration)))
     }
 
     private func fillLevel(at elapsed: TimeInterval) -> CGFloat {

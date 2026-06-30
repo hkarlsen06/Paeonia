@@ -13,7 +13,7 @@ struct PaywallFooterActionsView: View {
                 .background(.paeoniaSurfacePressed)
                 .padding(.bottom, PaeoniaSpacing.space4)
             restoreButton
-            paywallLinks
+            PaeoniaLegalLinksView()
             accountActions
         }
         .frame(maxWidth: 430)
@@ -30,26 +30,6 @@ struct PaywallFooterActionsView: View {
         .buttonStyle(.plain)
         .foregroundStyle(.paeoniaAccentPrimary)
         .disabled(isPurchasing || isLoading)
-    }
-
-    private var paywallLinks: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            if let termsURL = Self.termsURL {
-                Link(destination: termsURL) {
-                    footerLabel(.authSignInLegalTerms)
-                }
-            }
-
-            separator
-
-            if let privacyURL = Self.privacyURL {
-                Link(destination: privacyURL) {
-                    footerLabel(.authSignInLegalPrivacy)
-                }
-            }
-        }
-        .font(PaeoniaTypography.caption)
-        .foregroundStyle(.paeoniaTextSecondary)
     }
 
     private var accountActions: some View {
@@ -96,7 +76,4 @@ struct PaywallFooterActionsView: View {
             .foregroundStyle(.paeoniaTextTertiary)
             .accessibilityHidden(true)
     }
-
-    private static let termsURL = URL(string: "https://paeonia.no/terms")
-    private static let privacyURL = URL(string: "https://paeonia.no/privacy")
 }

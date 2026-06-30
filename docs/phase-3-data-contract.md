@@ -2048,6 +2048,7 @@ streak_states
 - current_count
 - longest_count
 - last_qualified_date
+- next_activity_deadline_at
 - restore_available
 - updated_at
 
@@ -2069,7 +2070,9 @@ Qualifying activity:
 Rules:
 
 - A couple-day is kept alive when at least one qualifying activity event exists for that `couple_day`.
-- The streak should not expire before midnight in the latest partner timezone.
+- The next activity deadline should not fall before midnight in the latest partner timezone.
+- A streak breaks after that next activity day has fully elapsed: `next_activity_deadline_at + 1 day`.
+- A paid streak restore stays available for 24 hours after the break point.
 - Include a graceful restore button.
 - Do not add manipulative purchase-to-restore behavior in MVP.
 - `couple_activity_events` should be append-only enough to audit streak behavior.

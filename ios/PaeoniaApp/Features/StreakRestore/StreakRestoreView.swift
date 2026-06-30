@@ -1,14 +1,18 @@
+import Foundation
 import SwiftUI
 
 /// The streak-restore offer: a calm, paywall-styled surface that shows the lost
 /// streak as a dim "broken" flame and lets either partner buy it back. On success
-/// it dismisses; the streak flame on the screen behind re-ignites at the restored
-/// count.
+/// it turns into a celebratory streak detail screen with the restored count.
 struct StreakRestoreView: View {
     @State private var viewModel: StreakRestoreViewModel
     var onClose: () -> Void = {}
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+
+    private var restoreDeadline: Date? {
+        viewModel.streak.restoreDeadline
+    }
 
     init(viewModel: StreakRestoreViewModel, onClose: @escaping () -> Void = {}) {
         _viewModel = State(initialValue: viewModel)
@@ -16,7 +20,29 @@ struct StreakRestoreView: View {
     }
 
     var body: some View {
+        Group {
+            if let restoredCount = viewModel.restoredCount {
+                restoredContent(count: restoredCount)
+            } else {
+                restoreOffer
+            }
+        }
+        .task { await viewModel.load() }
+        .onChange(of: viewModel.error) { _, error in
+            showBanner(for: error)
+        }
+    }
+
+    private var restoreOffer: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            restoreOfferContent(now: context.date)
+        }
+    }
+
+    private func restoreOfferContent(now: Date) -> some View {
         VStack(spacing: PaeoniaSpacing.space24) {
+            deadlineCountdown(now: now)
+
             Spacer()
 
             PaeoniaStreakFlame(
@@ -39,22 +65,50 @@ struct StreakRestoreView: View {
 
             Spacer()
 
-            actions
+            actions(now: now)
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.paeoniaSurfacePrimary)
-        .task { await viewModel.load() }
-        .onChange(of: viewModel.restoredCount) { _, count in
-            if count != nil { onClose() }
-        }
-        .onChange(of: viewModel.error) { _, error in
-            showBanner(for: error)
+    }
+
+    private func restoredContent(count: Int) -> some View {
+        StreakDetailView(
+            streak: restoredStreak(count: count),
+            title: .streakRestoreSuccessTitle,
+            message: .streakRestoreSuccessMessage,
+            playsCelebration: true,
+            ambientMotion: false,
+            onClose: onClose
+        )
+    }
+
+    private func restoredStreak(count: Int) -> CoupleStreak {
+        CoupleStreak(
+            currentCount: count,
+            longestCount: max(viewModel.streak.longestCount, count),
+            lastQualifiedDate: viewModel.streak.lastQualifiedDate,
+            restoreAvailable: false,
+            restorableCount: 0,
+            restoreDeadline: nil
+        )
+    }
+
+    @ViewBuilder
+    private func deadlineCountdown(now: Date) -> some View {
+        if let text = StreakRestoreCountdownText.format(deadline: restoreDeadline, now: now) {
+            Text(verbatim: text)
+                .font(.system(.title3, design: .rounded).weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(.paeoniaTextSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .accessibilityLabel(Text(verbatim: text))
         }
     }
 
-    private var actions: some View {
+    private func actions(now: Date) -> some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             Button(action: restore) {
                 if viewModel.isPurchasing {
@@ -64,7 +118,10 @@ struct StreakRestoreView: View {
                 }
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
-            .disabled(viewModel.isPurchasing)
+            .disabled(
+                viewModel.isPurchasing
+                    || StreakRestoreDeadlineState.resolve(deadline: restoreDeadline, now: now).blocksPurchase
+            )
 
             Button(action: onClose) {
                 Text(.streakRestoreNotNow)
@@ -72,6 +129,8 @@ struct StreakRestoreView: View {
             .buttonStyle(PaeoniaQuietButtonStyle())
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
             .disabled(viewModel.isPurchasing)
+
+            PaeoniaLegalLinksView()
         }
     }
 
@@ -82,7 +141,6 @@ struct StreakRestoreView: View {
     }
 
     private func restore() {
-        // Success dismisses via the `restoredCount` change handler above.
         Task { _ = await viewModel.purchase() }
     }
 
@@ -90,6 +148,34 @@ struct StreakRestoreView: View {
         guard let error else { return }
         bannerCenter.show(.error(message: error.message))
         viewModel.clearError()
+    }
+}
+
+nonisolated enum StreakRestoreDeadlineState: Equatable {
+    case unavailable
+    case active
+    case expired
+
+    static func resolve(deadline: Date?, now: Date) -> StreakRestoreDeadlineState {
+        guard let deadline else { return .unavailable }
+        return deadline > now ? .active : .expired
+    }
+
+    var blocksPurchase: Bool {
+        self == .expired
+    }
+}
+
+nonisolated enum StreakRestoreCountdownText {
+    static func format(deadline: Date?, now: Date) -> String? {
+        guard let deadline else { return nil }
+
+        let secondsRemaining = max(0, Int(ceil(deadline.timeIntervalSince(now))))
+        let hours = secondsRemaining / 3_600
+        let minutes = (secondsRemaining % 3_600) / 60
+        let seconds = secondsRemaining % 60
+
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
 }
 
