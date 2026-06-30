@@ -80,6 +80,12 @@ nonisolated struct AccessRouteResolution: Equatable, Sendable {
         snapshot.relationshipState?.partnerProfilePhotoAssetID
     }
 
+    /// The day the relationship started (`couples.started_on`) as an `yyyy-MM-dd`
+    /// string, used to count down to the couple's next milestone.
+    var relationshipStartedOn: String? {
+        snapshot.relationshipState?.startedOn
+    }
+
     var pairingCelebrationPairID: UUID? {
         snapshot.relationshipState?.pairID
     }

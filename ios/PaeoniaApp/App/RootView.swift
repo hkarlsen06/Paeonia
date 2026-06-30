@@ -274,6 +274,7 @@ struct RootView: View {
                     partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
                     authorName: viewModel.currentSession?.displayName,
                     coupleID: viewModel.currentActiveCoupleID,
+                    relationshipStartedOn: viewModel.currentRelationshipStartedOn,
                     locationMapState: locationViewModel.mapState,
                     locationViewModel: locationViewModel,
                     selection: mainTabSelection,

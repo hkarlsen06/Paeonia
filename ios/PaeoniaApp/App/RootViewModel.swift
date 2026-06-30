@@ -132,6 +132,10 @@ final class RootViewModel {
         route.accessResolution?.activeCoupleID
     }
 
+    var currentRelationshipStartedOn: String? {
+        route.accessResolution?.relationshipStartedOn
+    }
+
     var currentProfilePhotoAssetID: UUID? {
         currentSession?.profilePhotoAssetID
     }

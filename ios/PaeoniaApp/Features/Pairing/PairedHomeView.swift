@@ -5,6 +5,8 @@ struct PairedHomeView: View {
     let currentProfilePhotoAssetID: UUID?
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
+    /// The day the relationship started (`yyyy-MM-dd`), driving the milestone countdown.
+    let relationshipStartedOn: String?
     let dailyChallengeCardState: DailyChallengeCardState
     let dailyChallengeStreak: StreakPillState
     let zoomNamespace: Namespace.ID?
@@ -22,6 +24,7 @@ struct PairedHomeView: View {
         currentProfilePhotoAssetID: UUID? = nil,
         partnerDisplayName: String?,
         partnerProfilePhotoAssetID: UUID? = nil,
+        relationshipStartedOn: String? = nil,
         dailyChallengeCardState: DailyChallengeCardState = DailyChallengeCardState(
             kind: .loading,
             answeredCount: 0,
@@ -40,6 +43,7 @@ struct PairedHomeView: View {
         self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
         self.partnerDisplayName = partnerDisplayName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
+        self.relationshipStartedOn = relationshipStartedOn
         self.dailyChallengeCardState = dailyChallengeCardState
         self.dailyChallengeStreak = dailyChallengeStreak
         self.zoomNamespace = zoomNamespace
@@ -57,7 +61,7 @@ struct PairedHomeView: View {
                 dailyPromptCard
 
                 HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
-                    MilestoneCountdownCard()
+                    MilestoneCountdownCard(startedOn: relationshipStartedOn)
 
                     HomeWidgetCard(onOpen: onOpenWidgetDrawing)
                 }
@@ -155,6 +159,7 @@ struct PairedHomeView: View {
         PairedHomeView(
             currentDisplayName: "Hjalmar",
             partnerDisplayName: "Oda",
+            relationshipStartedOn: "2026-01-08",
             locationMapState: .partnerUnknown(.notSharing)
         )
     }

@@ -53,6 +53,12 @@ A daily question belongs to the couple-local day of its *latest* answer, not its
 
 Memory photos require an online upload at save time: `MemoryMediaUploading` reserves/uploads/finalizes and returns a real `mediaAssetID`, which the create/attach calls embed as optimistic media. Note-only memories are fully offline/local-first. If any photo upload fails, nothing is saved and the form stays put — content is never partially dropped. Memory thread messages (`createMemoryThreadMessage`) are write-only in the data layer (the snapshot exposes only `threadID`, no message read model), so there is intentionally no thread/conversation UI yet.
 
+## Countdown / Milestones
+
+- `ios/PaeoniaApp/Features/Countdown/RelationshipMilestone.swift`: pure milestone schedule. `RelationshipMilestoneCalculator.nextMilestone(startedOn:now:)` parses `couples.started_on` (`yyyy-MM-dd`) and returns the single soonest upcoming `RelationshipMilestone` (`.firstMonth`, `.months`, `.halfYear`, `.firstAnniversary`, `.years`, `.days`) with its date and `daysRemaining`. Months carry the first year, then yearly anniversaries plus round day counts (100, 500, then every 1,000) fill the gaps. No SwiftUI; unit-tested in `RelationshipMilestoneTests.swift`.
+- `ios/PaeoniaApp/Features/Countdown/MilestoneCountdownCard.swift`: the Us-tab square tile. Number-led layout: the day count + "days until" connector (`home.milestone.until`/`.one`, or "Today" at 0 days) leads, then the milestone subject phrase that completes the sentence (`home.milestone.title.*`, written lowercase as mid-sentence objects; day-count markers use a compound like "your 100-day milestone" so the count line doesn't repeat "days"), then a `FormatStyle` date pinned to the bottom. No card eyebrow. `started_on` flows in as a display-only value: `RootViewModel.currentRelationshipStartedOn` → `RootView` → `MainTabView` → `PairedHomeView` → the card. It is never part of a `.task(id:)` key.
+- `ios/PaeoniaAppTests/RelationshipMilestoneTests.swift`: schedule coverage across each life stage (new couple, monthly, 100/500/1,000 days, half-year, first/later anniversaries, on-the-day, unparseable date).
+
 ## Widget Drawing
 
 - `ios/PaeoniaApp/Features/WidgetDrawing/WidgetDrawingView.swift`: drawing screen composition.

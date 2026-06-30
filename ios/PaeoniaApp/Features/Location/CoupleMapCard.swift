@@ -269,19 +269,27 @@ private struct CoupleMapSnapshot: View {
         }
     }
 
+    /// The map currently visible under the reveal cover. Keeping it in one stable
+    /// view slot preserves the avatar image state when a sweep finishes.
+    private var visibleSnapshot: SnapshotResult? {
+        incoming ?? snapshot
+    }
+
     var body: some View {
         GeometryReader { proxy in
             let size = proxy.size
             ZStack {
                 Color.paeoniaBackgroundSecondary
 
-                if isRevealing, let incoming {
-                    mapContent(incoming, size: size)
+                if let visibleSnapshot {
+                    mapContent(visibleSnapshot, size: size)
                         .mask(alignment: .topLeading) {
-                            SweptRegionShape(progress: sweep, tilt: Self.tiltRadians)
+                            if isRevealing {
+                                SweptRegionShape(progress: sweep, tilt: Self.tiltRadians)
+                            } else {
+                                Rectangle()
+                            }
                         }
-                } else if let snapshot {
-                    mapContent(snapshot, size: size)
                 }
 
                 // The burning cover: the old map + old avatars (or the backdrop on first

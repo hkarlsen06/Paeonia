@@ -3001,42 +3001,6 @@
         }
       }
     },
-    "home.milestone.dayUnit" : {
-      "comment" : "Unit shown next to the milestone countdown number, e.g. 12 days",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "days"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "dager"
-          }
-        }
-      }
-    },
-    "home.milestone.eyebrow" : {
-      "comment" : "Small overline above the milestone countdown on the Us tab",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Counting down to"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teller ned til"
-          }
-        }
-      }
-    },
     "home.streak.label" : {
       "comment" : "Label under the streak number on the Us tab, e.g. 12 day streak",
       "extractionState" : "manual",
@@ -6927,6 +6891,168 @@
         }
       },
       "comment" : "Button that opens the system Settings app."
+    },
+    "home.milestone.title.firstMonth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your first month together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "deres første måned sammen"
+          }
+        }
+      },
+      "comment" : "Milestone countdown subject on the Us tab, reads after the day-count line 'X days until …': the couple's first whole month together"
+    },
+    "home.milestone.title.months" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ months together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ måneder sammen"
+          }
+        }
+      },
+      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …'. %@ is the number of months (2–11, never 6)."
+    },
+    "home.milestone.title.halfYear" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "half a year together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "et halvt år sammen"
+          }
+        }
+      },
+      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …': six months, phrased as half a year"
+    },
+    "home.milestone.title.firstAnniversary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your first anniversary"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "deres første årsdag"
+          }
+        }
+      },
+      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …': the couple's first one-year anniversary"
+    },
+    "home.milestone.title.years" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ years together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ år sammen"
+          }
+        }
+      },
+      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …'. %@ is the number of years (2 or more)."
+    },
+    "home.milestone.title.days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your %@-day milestone"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@-dagersmilepælen"
+          }
+        }
+      },
+      "comment" : "Milestone countdown subject on the Us tab for a round day-count marker, reads after 'X days until …'. Compound avoids repeating 'days'. %@ is the day count (e.g. 100, 1,000)."
+    },
+    "home.milestone.until" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days until"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager til"
+          }
+        }
+      },
+      "comment" : "Follows the milestone countdown number, e.g. '25 days until'; the milestone subject continues on the next line. Plural."
+    },
+    "home.milestone.until.one" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "day until"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dag til"
+          }
+        }
+      },
+      "comment" : "Singular milestone countdown connector when exactly 1 day remains, e.g. '1 day until'."
+    },
+    "home.milestone.today" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I dag"
+          }
+        }
+      },
+      "comment" : "Shown in place of the day count on the milestone countdown card when the milestone is today"
     }
   },
   "version" : "1.0"

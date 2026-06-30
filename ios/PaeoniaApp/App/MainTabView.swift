@@ -17,6 +17,9 @@ struct MainTabView: View {
     /// The active couple, needed to create new memories. Cosmetic for the rest of the
     /// tabs, so it must not be part of any load-bearing `.task(id:)` key.
     let coupleID: UUID?
+    /// The day the relationship started (`yyyy-MM-dd`), used by the Us-tab milestone
+    /// countdown. Display-only, so it never keys a load.
+    let relationshipStartedOn: String?
     let locationMapState: CoupleMapState
     let locationViewModel: LocationMapViewModel
     let selection: Binding<MainTab>
@@ -71,6 +74,7 @@ struct MainTabView: View {
         partnerProfilePhotoAssetID: UUID?,
         authorName: String?,
         coupleID: UUID?,
+        relationshipStartedOn: String?,
         locationMapState: CoupleMapState,
         locationViewModel: LocationMapViewModel,
         selection: Binding<MainTab>,
@@ -89,6 +93,7 @@ struct MainTabView: View {
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.authorName = authorName
         self.coupleID = coupleID
+        self.relationshipStartedOn = relationshipStartedOn
         self.locationMapState = locationMapState
         self.locationViewModel = locationViewModel
         self.selection = selection
@@ -255,6 +260,7 @@ struct MainTabView: View {
                 currentProfilePhotoAssetID: currentProfilePhotoAssetID,
                 partnerDisplayName: partnerDisplayName,
                 partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                relationshipStartedOn: relationshipStartedOn,
                 dailyChallengeCardState: dailyChallengeViewModel.homeCardState,
                 dailyChallengeStreak: streakPillState,
                 zoomNamespace: zoomNamespace,
@@ -363,6 +369,7 @@ struct MainTabView: View {
         partnerProfilePhotoAssetID: nil,
         authorName: "Hjalmar",
         coupleID: UUID(uuidString: "33333333-3333-3333-3333-333333333333"),
+        relationshipStartedOn: "2026-01-08",
         locationMapState: .partnerUnknown(.notSharing),
         locationViewModel: LocationMapViewModel(),
         selection: .constant(.home),
