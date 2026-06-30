@@ -210,9 +210,13 @@ private struct CoupleMapSnapshot: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// The current map + avatars, shown underneath — what the sweep reveals.
+    /// The current map + avatars after the latest completed reveal.
     @State private var snapshot: SnapshotResult?
-    /// The previous map + avatars, laid over the new one and burned away by the sweep.
+    /// The rendered map + avatars currently being swept in. This is intentionally
+    /// separate from `snapshot` so a newly rendered first map cannot appear in full
+    /// before the reveal mask has started.
+    @State private var incoming: SnapshotResult?
+    /// The previous map + avatars, laid over the incoming one and burned away by the sweep.
     /// Nil on the first load, where the cover falls back to the empty backdrop.
     @State private var outgoing: SnapshotResult?
     /// Whether a sweep is in progress (so the burning cover and flame are mounted).
@@ -271,8 +275,12 @@ private struct CoupleMapSnapshot: View {
             ZStack {
                 Color.paeoniaBackgroundSecondary
 
-                // The current map and avatars, shown underneath — what the sweep reveals.
-                if let snapshot {
+                if isRevealing, let incoming {
+                    mapContent(incoming, size: size)
+                        .mask(alignment: .topLeading) {
+                            SweptRegionShape(progress: sweep, tilt: Self.tiltRadians)
+                        }
+                } else if let snapshot {
                     mapContent(snapshot, size: size)
                 }
 
@@ -461,7 +469,7 @@ private struct CoupleMapSnapshot: View {
         // change, so re-entering the Us tab would otherwise re-render an identical
         // map. Skip the work when we already hold the image for this exact request.
         let request = snapshotRequest(size: size)
-        if snapshot != nil, lastRenderedRequest == request {
+        if (snapshot != nil || incoming != nil), lastRenderedRequest == request {
             return
         }
 
@@ -529,23 +537,18 @@ private struct CoupleMapSnapshot: View {
 
     // MARK: Reveal
 
-    /// Adopts a freshly rendered map + avatars. The new one always becomes the base
-    /// (shown underneath); when a partner has moved far enough — or on the first map — the
-    /// previous one is laid over it and burned away by the flame sweep. A same-place
-    /// re-render swaps silently and never disturbs a sweep already in flight.
+    /// Adopts a freshly rendered map + avatars. During a reveal the new map is held as
+    /// `incoming` and shown only through the swept mask; it becomes the fully visible
+    /// `snapshot` after the sweep completes. That keeps the first map from flashing in
+    /// full before the blank cover is burned away.
     private func adopt(_ new: SnapshotResult) {
-        let previous = snapshot
+        let previous = incoming ?? snapshot
         let isFirstMap = previous == nil
         let movedEnough = hasMovedEnough()
 
-        // The new map + avatars become the base immediately and stay put; the cover is
-        // laid over them and burned away. Promoting the base up front (not at the end) is
-        // what keeps the finish seamless.
-        snapshot = new
-
         // Reduce Motion never sweeps: show the new map outright, dropping any cover.
         if reduceMotion {
-            endReveal()
+            adoptSilently(new, updatesSweepBaseline: true)
             return
         }
 
@@ -554,6 +557,7 @@ private struct CoupleMapSnapshot: View {
         // that would snap it straight to its end. If nothing is sweeping the state is
         // already clean. The sweep baseline is left alone so small drifts accumulate.
         guard isFirstMap || movedEnough else {
+            updateVisibleTargetSilently(new)
             return
         }
 
@@ -568,11 +572,16 @@ private struct CoupleMapSnapshot: View {
         let token = revealToken
 
         // Mount the burning cover (old content, or the backdrop on first load) at the
-        // hidden start, then animate on the next tick — a same-tick reset-then-animate
-        // would interpolate from the previous value and skip the sweep entirely.
-        outgoing = previous
-        isRevealing = true
-        sweep = 0
+        // hidden start while keeping the incoming map masked to the swept region. The
+        // reset is deliberately non-animated; only the forward sweep animates.
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            outgoing = previous
+            incoming = new
+            sweep = 0
+            isRevealing = true
+        }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(16))
             guard revealToken == token else { return }
@@ -604,12 +613,49 @@ private struct CoupleMapSnapshot: View {
             .distance(from: CLLocation(latitude: rhs.latitude, longitude: rhs.longitude))
     }
 
+    private func adoptSilently(_ new: SnapshotResult, updatesSweepBaseline: Bool) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            snapshot = new
+            incoming = nil
+            outgoing = nil
+            isRevealing = false
+            sweep = 1
+        }
+
+        if updatesSweepBaseline {
+            updateSweepBaseline()
+        }
+    }
+
+    private func updateVisibleTargetSilently(_ new: SnapshotResult) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            if isRevealing {
+                incoming = new
+            } else {
+                snapshot = new
+            }
+        }
+    }
+
+    private func updateSweepBaseline() {
+        sweptCurrent = currentCoordinate
+        sweptPartner = partnerCoordinate
+    }
+
     /// Tears down the burning cover without animation, leaving the already-revealed new
     /// map clean with no residual mask or flame.
     private func endReveal() {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) {
+            if let incoming {
+                snapshot = incoming
+            }
+            incoming = nil
             isRevealing = false
             outgoing = nil
             sweep = 1
@@ -644,6 +690,32 @@ private struct UnsweptRegionShape: Shape {
         path.addLine(to: CGPoint(x: rightEdge, y: rect.minY))
         path.addLine(to: CGPoint(x: rightEdge, y: rect.maxY))
         path.addLine(to: CGPoint(x: bottomX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// The region the flame front HAS reached: everything from the leading edge to the
+/// advancing front. Masks the incoming map, so at `progress` 0 the incoming map is
+/// fully hidden and cannot flash before the sweep starts.
+private struct SweptRegionShape: Shape {
+    var progress: CGFloat
+    let tilt: CGFloat
+
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let (topX, bottomX) = SweepFront.edges(in: rect, progress: progress, tilt: tilt)
+        let leftEdge = rect.minX - rect.width
+
+        var path = Path()
+        path.move(to: CGPoint(x: leftEdge, y: rect.minY))
+        path.addLine(to: CGPoint(x: topX, y: rect.minY))
+        path.addLine(to: CGPoint(x: bottomX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: leftEdge, y: rect.maxY))
         path.closeSubpath()
         return path
     }

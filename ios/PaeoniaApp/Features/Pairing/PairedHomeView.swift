@@ -73,7 +73,7 @@ struct PairedHomeView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.space12)
+            .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space16)
         }
         .scrollIndicators(.hidden)
