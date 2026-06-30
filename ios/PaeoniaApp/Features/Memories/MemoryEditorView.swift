@@ -25,20 +25,45 @@ struct MemoryDraft: Equatable {
 /// images until then. The editable contents live in a `MemoryDraft` binding owned by the
 /// presenting screen so the form survives an accidental dismissal.
 struct MemoryEditorView: View {
+    enum Mode: Equatable {
+        case create
+        case edit
+
+        var title: LocalizedStringResource {
+            switch self {
+            case .create:
+                .memoriesEditorNewTitle
+            case .edit:
+                .memoriesEditorEditTitle
+            }
+        }
+    }
+
     @Binding var draft: MemoryDraft
+    var mode: Mode = .create
+    var existingMedia: [MemoryMediaSnapshot] = []
+    var currentUserID: UUID?
     /// Whether photo attachment is available (false in previews/tests without an
     /// uploader, or before the active couple is known). When false the photo controls
     /// are hidden and a note is required.
     let allowsPhotos: Bool
     /// Saves the memory. Returns whether it succeeded so the form can dismiss on success
     /// and stay put (with a banner already shown) on failure.
-    let onSave: (_ title: String, _ date: String, _ note: String, _ photos: [Data]) async -> Bool
+    let onSave: (
+        _ title: String,
+        _ date: String,
+        _ note: String,
+        _ photos: [Data],
+        _ removedMedia: [MemoryMediaSnapshot]
+    ) async -> Bool
 
     @Environment(\.dismiss) private var dismiss
 
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var isCameraPresented = false
     @State private var isSaving = false
+    @State private var imageViewerSelection: PaeoniaImageViewerSelection?
+    @State private var removedExistingMediaIDs: Set<UUID> = []
     @FocusState private var focusedField: Field?
 
     private enum Field {
@@ -56,7 +81,7 @@ struct MemoryEditorView: View {
                     dateField
                     noteField
 
-                    if allowsPhotos {
+                    if allowsPhotos || !existingMedia.isEmpty {
                         photosSection
                     }
                 }
@@ -68,11 +93,11 @@ struct MemoryEditorView: View {
             .scrollDismissesKeyboard(.interactively)
             .keyboardDismissable()
             .safeAreaInset(edge: .bottom) { saveBar }
-            .navigationTitle(Text(.memoriesEditorNewTitle))
+            .navigationTitle(Text(mode.title))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(role: .cancel) { discardAndDismiss() } label: {
+                    Button(role: .cancel) { cancel() } label: {
                         Text(.commonCancel)
                     }
                     .disabled(isSaving)
@@ -85,6 +110,7 @@ struct MemoryEditorView: View {
                 DailyCameraPicker(onCapture: appendPhoto)
                     .ignoresSafeArea()
             }
+            .paeoniaImageViewer(selection: $imageViewerSelection)
         }
         .presentationBackground(.paeoniaBackgroundPrimary)
     }
@@ -138,9 +164,12 @@ struct MemoryEditorView: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             fieldLabel(.memoriesEditorPhotosLabel)
 
-            if !draft.photos.isEmpty {
+            if !visibleExistingMedia.isEmpty || !draft.photos.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: PaeoniaSpacing.space8) {
+                        ForEach(visibleExistingMedia, id: \.memoryMediaID) { media in
+                            existingThumbnail(media)
+                        }
                         ForEach(Array(draft.photos.enumerated()), id: \.offset) { index, data in
                             stagedThumbnail(data, index: index)
                         }
@@ -148,8 +177,33 @@ struct MemoryEditorView: View {
                 }
             }
 
-            if draft.photos.count < maxPhotos {
+            if canAddPhotos {
                 photoPickerControls
+            }
+        }
+    }
+
+    private func existingThumbnail(_ media: MemoryMediaSnapshot) -> some View {
+        ZStack(alignment: .topTrailing) {
+            MemoryMediaImageView(
+                mediaAssetID: media.mediaAssetID,
+                height: 104,
+                cornerRadius: PaeoniaRadius.radius12
+            )
+            .frame(width: 104)
+
+            if media.ownerUserID == currentUserID {
+                Button(role: .destructive) {
+                    removedExistingMediaIDs.insert(media.memoryMediaID)
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .black.opacity(0.45))
+                        .accessibilityHidden(true)
+                }
+                .padding(PaeoniaSpacing.space4)
+                .accessibilityLabel(Text(.memoriesPhotoRemove))
             }
         }
     }
@@ -167,6 +221,12 @@ struct MemoryEditorView: View {
             }
             .frame(width: 104, height: 104)
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+            .onTapGesture {
+                presentStagedImage(data)
+            }
+            .accessibilityLabel(Text(.memoriesPhotoAccessibility))
+            .accessibilityAddTraits(.isButton)
 
             Button(role: .destructive) {
                 draft.photos.remove(at: index)
@@ -186,7 +246,7 @@ struct MemoryEditorView: View {
         HStack(spacing: PaeoniaSpacing.space8) {
             PhotosPicker(
                 selection: $pickerItems,
-                maxSelectionCount: maxPhotos - draft.photos.count,
+                maxSelectionCount: maxPhotos - ownVisiblePhotoCount - draft.photos.count,
                 matching: .images
             ) {
                 Label {
@@ -240,17 +300,46 @@ struct MemoryEditorView: View {
     // MARK: - Actions
 
     private var hasContent: Bool {
-        !draft.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !draft.photos.isEmpty
+        !draft.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !draft.photos.isEmpty
+            || !visibleExistingMedia.isEmpty
     }
 
     private var canSave: Bool {
-        !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && hasContent
+        guard !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return false
+        }
+
+        switch mode {
+        case .create:
+            return hasContent
+        case .edit:
+            return true
+        }
     }
 
-    /// Deliberate abandon: clear the draft so reopening starts fresh. An accidental
-    /// swipe-down, by contrast, leaves the draft intact so the work is recoverable.
-    private func discardAndDismiss() {
-        draft = MemoryDraft()
+    private var visibleExistingMedia: [MemoryMediaSnapshot] {
+        existingMedia.filter { !removedExistingMediaIDs.contains($0.memoryMediaID) }
+    }
+
+    private var removedExistingMedia: [MemoryMediaSnapshot] {
+        existingMedia.filter { removedExistingMediaIDs.contains($0.memoryMediaID) }
+    }
+
+    private var ownVisiblePhotoCount: Int {
+        visibleExistingMedia.filter { $0.ownerUserID == currentUserID }.count
+    }
+
+    private var canAddPhotos: Bool {
+        allowsPhotos && ownVisiblePhotoCount + draft.photos.count < maxPhotos
+    }
+
+    /// Deliberate abandon for new memories clears the draft so reopening starts fresh.
+    /// Edit mode leaves the caller-owned draft alone; it gets reset when the sheet opens.
+    private func cancel() {
+        if mode == .create {
+            draft = MemoryDraft()
+        }
         dismiss()
     }
 
@@ -259,7 +348,7 @@ struct MemoryEditorView: View {
         isSaving = true
         defer { isSaving = false }
 
-        let saved = await onSave(draft.title, dateString, draft.note, draft.photos)
+        let saved = await onSave(draft.title, dateString, draft.note, draft.photos, removedExistingMedia)
         if saved {
             dismiss()
         }
@@ -280,15 +369,20 @@ struct MemoryEditorView: View {
                     loaded.append(data)
                 }
             }
-            let room = max(0, maxPhotos - draft.photos.count)
+            let room = max(0, maxPhotos - ownVisiblePhotoCount - draft.photos.count)
             draft.photos.append(contentsOf: loaded.prefix(room))
             pickerItems = []
         }
     }
 
     private func appendPhoto(_ data: Data) {
-        guard draft.photos.count < maxPhotos else { return }
+        guard canAddPhotos else { return }
         draft.photos.append(data)
+    }
+
+    private func presentStagedImage(_ data: Data) {
+        guard let uiImage = UIImage(data: data) else { return }
+        imageViewerSelection = PaeoniaImageViewerSelection(image: uiImage)
     }
 }
 

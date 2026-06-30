@@ -2,6 +2,16 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {},
+    "%lld / %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld"
+          }
+        }
+      }
+    },
     "+%lld" : {},
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
@@ -1169,6 +1179,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Avbryt"
+          }
+        }
+      }
+    },
+    "common.done" : {
+      "comment" : "Generic button title that confirms input and dismisses the keyboard or a simple sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
           }
         }
       }
@@ -3351,6 +3379,24 @@
         }
       }
     },
+    "memories.detail.editMemory" : {
+      "comment" : "Menu action that opens the sheet for editing an existing memory",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rediger minne"
+          }
+        }
+      }
+    },
     "memories.detail.editNote" : {
       "comment" : "Button to edit the current user's existing note on a memory.",
       "extractionState" : "manual",
@@ -3491,6 +3537,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dato"
+          }
+        }
+      }
+    },
+    "memories.editor.editTitle" : {
+      "comment" : "Navigation title for the sheet where an existing memory is edited",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rediger minne"
           }
         }
       }
@@ -5979,6 +6043,42 @@
         }
       }
     },
+    "streakRestore.success.message" : {
+      "comment" : "Message shown after a streak restore purchase succeeds",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The flame is glowing again. Keep showing up together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flammen gløder igjen. Fortsett å møte opp sammen."
+          }
+        }
+      }
+    },
+    "streakRestore.success.title" : {
+      "comment" : "Title shown after a streak restore purchase succeeds",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your streak is back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekken er tilbake"
+          }
+        }
+      }
+    },
     "streakRestore.title" : {
       "comment" : "Title of the streak-restore offer and the button to open it",
       "extractionState" : "manual",
@@ -6737,24 +6837,6 @@
           }
         }
       }
-    },
-    "common.done" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Done"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ferdig"
-          }
-        }
-      },
-      "comment" : "Generic button title that confirms input and dismisses the keyboard or a simple sheet."
     }
   },
   "version" : "1.0"

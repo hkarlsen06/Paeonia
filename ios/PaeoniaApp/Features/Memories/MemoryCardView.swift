@@ -59,7 +59,8 @@ struct MemoryCardView: View {
                     MemoryMediaImageView(
                         mediaAssetID: assetID,
                         height: 96,
-                        cornerRadius: PaeoniaRadius.radius12
+                        cornerRadius: PaeoniaRadius.radius12,
+                        allowsViewing: false
                     )
 
                     if index == visiblePhotoAssetIDs.count - 1, overflowCount > 0 {

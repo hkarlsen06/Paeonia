@@ -41,6 +41,7 @@ final class MemoriesViewModel {
     private let memoryService: any MemoryDataServicing
     private let operationProvider: any SyncClientOperationProviding
     private let mediaUploader: (any MemoryMediaUploading)?
+    private let mediaImageCache: (any MemoryMediaImageCacheWriting)?
     private var localChangeSyncHandler: (@MainActor @Sendable () async -> Void)?
     #if DEBUG
     private let logger = Logger(
@@ -62,11 +63,13 @@ final class MemoriesViewModel {
     init(
         memoryService: (any MemoryDataServicing)? = nil,
         operationProvider: (any SyncClientOperationProviding)? = nil,
-        mediaUploader: (any MemoryMediaUploading)? = MemoriesViewModel.makeDefaultUploader()
+        mediaUploader: (any MemoryMediaUploading)? = MemoriesViewModel.makeDefaultUploader(),
+        mediaImageCache: (any MemoryMediaImageCacheWriting)? = MemoryMediaImageDiskCache()
     ) {
         self.memoryService = memoryService ?? MemoryDataServiceFactory.makeDefault()
         self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.mediaUploader = mediaUploader
+        self.mediaImageCache = mediaImageCache
     }
 
     private nonisolated static func makeDefaultUploader() -> (any MemoryMediaUploading)? {
@@ -311,8 +314,8 @@ final class MemoriesViewModel {
     }
 
     /// Removes one of the user's own photos from a memory.
-    func removePhoto(from record: MemoryRecord, media: MemoryMediaSnapshot) async {
-        guard let currentUserID else { return }
+    func removePhoto(from record: MemoryRecord, media: MemoryMediaSnapshot) async -> Bool {
+        guard let currentUserID else { return false }
 
         do {
             _ = try await memoryService.removeMemoryMedia(
@@ -324,11 +327,12 @@ final class MemoriesViewModel {
         } catch {
             logFailure("Removing a memory photo failed", error)
             notice = .deleteFailed
-            return
+            return false
         }
 
         await load()
         syncInBackground()
+        return true
     }
 
     /// Deletes (hides) a memory for both partners. Hidden immediately on the device and
@@ -404,6 +408,7 @@ final class MemoriesViewModel {
                     reserveOperation: operationProvider.makeOperation(),
                     finalizeOperation: operationProvider.makeOperation()
                 )
+                await mediaImageCache?.cacheImageData(compressed.data, for: result.mediaAssetID)
                 snapshots.append(
                     result.optimisticSnapshot(
                         ownerUserID: ownerUserID,

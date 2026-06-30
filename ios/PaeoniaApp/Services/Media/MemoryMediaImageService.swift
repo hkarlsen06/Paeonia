@@ -7,10 +7,57 @@ nonisolated protocol MemoryMediaImageProviding: Sendable {
     func imageData(for mediaAssetID: UUID?) async -> Data?
 }
 
+nonisolated protocol MemoryMediaImageCacheWriting: Sendable {
+    /// Stores bytes for a media asset that was just uploaded by this device, so the UI
+    /// can render it immediately without waiting for a signed download retry.
+    func cacheImageData(_ data: Data, for mediaAssetID: UUID) async
+}
+
 nonisolated protocol MemoryMediaImageCacheClearing: Sendable {
     /// Removes every cached memory photo. Used by the privacy cleanup when the user
     /// signs out, deletes their account, or loses access to the relationship.
     func clearAll() async
+}
+
+actor MemoryMediaImageDiskCache: MemoryMediaImageCacheWriting {
+    let directoryURL: URL
+
+    init(directoryURL: URL = MemoryMediaImageDiskCache.defaultDirectoryURL()) {
+        self.directoryURL = directoryURL
+    }
+
+    func imageData(for mediaAssetID: UUID?) -> Data? {
+        guard let mediaAssetID else {
+            return nil
+        }
+        return try? Data(contentsOf: fileURL(for: mediaAssetID))
+    }
+
+    func cacheImageData(_ data: Data, for mediaAssetID: UUID) async {
+        store(data, for: mediaAssetID)
+    }
+
+    func store(_ data: Data, for mediaAssetID: UUID) {
+        try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        try? data.write(to: fileURL(for: mediaAssetID), options: [.atomic])
+    }
+
+    func clearAll() {
+        guard FileManager.default.fileExists(atPath: directoryURL.path) else {
+            return
+        }
+        try? FileManager.default.removeItem(at: directoryURL)
+    }
+
+    func fileURL(for mediaAssetID: UUID) -> URL {
+        directoryURL.appendingPathComponent(mediaAssetID.uuidString.lowercased(), isDirectory: false)
+    }
+
+    nonisolated static func defaultDirectoryURL() -> URL {
+        FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("MemoryMedia", isDirectory: true)
+    }
 }
 
 /// Fetches and caches memory photos. Mirrors the daily-answer media service: check
@@ -19,7 +66,7 @@ nonisolated protocol MemoryMediaImageCacheClearing: Sendable {
 /// directory keeps memory photos isolated from daily-answer media.
 actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheClearing {
     private let client: SupabaseClient
-    private let directoryURL: URL
+    private let cache: MemoryMediaImageDiskCache
     private let expiresInSeconds = 3_600
     private var inFlightDownloads: [UUID: Task<Data?, Never>] = [:]
 
@@ -28,7 +75,7 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
         directoryURL: URL = MemoryMediaImageService.defaultDirectoryURL()
     ) {
         self.client = client
-        self.directoryURL = directoryURL
+        self.cache = MemoryMediaImageDiskCache(directoryURL: directoryURL)
     }
 
     nonisolated static func live() throws -> MemoryMediaImageService {
@@ -40,7 +87,7 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
             return nil
         }
 
-        if let cached = try? Data(contentsOf: fileURL(for: mediaAssetID)) {
+        if let cached = await cache.imageData(for: mediaAssetID) {
             return cached
         }
 
@@ -59,10 +106,7 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
         inFlightDownloads.values.forEach { $0.cancel() }
         inFlightDownloads.removeAll()
 
-        guard FileManager.default.fileExists(atPath: directoryURL.path) else {
-            return
-        }
-        try? FileManager.default.removeItem(at: directoryURL)
+        await cache.clearAll()
     }
 
     private func fetchAndCache(mediaAssetID: UUID) async -> Data? {
@@ -81,7 +125,7 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
                 return nil
             }
 
-            store(data, for: mediaAssetID)
+            await cache.store(data, for: mediaAssetID)
             return data
         } catch {
             return nil
@@ -112,19 +156,8 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
             )
     }
 
-    private func store(_ data: Data, for mediaAssetID: UUID) {
-        try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        try? data.write(to: fileURL(for: mediaAssetID), options: [.atomic])
-    }
-
-    private func fileURL(for mediaAssetID: UUID) -> URL {
-        directoryURL.appendingPathComponent(mediaAssetID.uuidString.lowercased(), isDirectory: false)
-    }
-
     nonisolated static func defaultDirectoryURL() -> URL {
-        FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("MemoryMedia", isDirectory: true)
+        MemoryMediaImageDiskCache.defaultDirectoryURL()
     }
 }
 

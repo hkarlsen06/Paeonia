@@ -49,6 +49,8 @@ struct MemoriesViewModelTests {
         #expect(record.snapshot.visibleMediaAssetIDs.count == 1)
         let uploadCount = await uploader.uploadCount
         #expect(uploadCount == 1)
+        let cachedAssetIDs = await env.imageCache.cachedMediaAssetIDs
+        #expect(cachedAssetIDs == record.snapshot.visibleMediaAssetIDs)
     }
 
     @Test func createMemoryFailsWhenPhotoUploadFails() async throws {
@@ -82,6 +84,23 @@ struct MemoriesViewModelTests {
         #expect(!saved)
         #expect(env.viewModel.timeline.isEmpty)
         #expect(env.viewModel.notice == nil)
+    }
+
+    @Test func addPhotosCachesUploadedImageForImmediateDisplay() async throws {
+        let uploader = StubMemoryMediaUploader()
+        let env = makeEnvironment(uploader: uploader)
+        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
+        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "First", photos: [])
+        let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
+
+        let added = await env.viewModel.addPhotos(to: record, photos: [makeImageData()])
+
+        #expect(added)
+        let updated = try #require(env.viewModel.timeline.flatMap(\.memories).first)
+        #expect(updated.snapshot.media.count == 1)
+        #expect(updated.snapshot.visibleMediaAssetIDs.count == 1)
+        let cachedAssetIDs = await env.imageCache.cachedMediaAssetIDs
+        #expect(cachedAssetIDs == updated.snapshot.visibleMediaAssetIDs)
     }
 
     @Test func deleteMemoryRemovesItFromTheTimeline() async throws {
@@ -125,6 +144,7 @@ struct MemoriesViewModelTests {
         let viewModel: MemoriesViewModel
         let pendingStore: InMemoryPendingSyncOperationRepository
         let memoryStore: InMemoryMemoryRecordRepository
+        let imageCache: StubMemoryMediaImageCache
         let userID: UUID
         let coupleID: UUID
     }
@@ -133,15 +153,18 @@ struct MemoriesViewModelTests {
         let memoryStore = InMemoryMemoryRecordRepository()
         let pendingStore = InMemoryPendingSyncOperationRepository()
         let service = MemoryDataService(memoryStore: memoryStore, pendingOperationStore: pendingStore)
+        let imageCache = StubMemoryMediaImageCache()
         let viewModel = MemoriesViewModel(
             memoryService: service,
             operationProvider: StubOperationProvider(),
-            mediaUploader: uploader
+            mediaUploader: uploader,
+            mediaImageCache: imageCache
         )
         return Environment(
             viewModel: viewModel,
             pendingStore: pendingStore,
             memoryStore: memoryStore,
+            imageCache: imageCache,
             userID: UUID(),
             coupleID: UUID()
         )
@@ -178,6 +201,15 @@ private final class StubOperationProvider: SyncClientOperationProviding {
     func makeOperation() -> SyncClientOperation {
         sequence += 1
         return SyncClientOperation(clientID: clientID, clientSequence: sequence)
+    }
+}
+
+private actor StubMemoryMediaImageCache: MemoryMediaImageCacheWriting {
+    private(set) var cachedMediaAssetIDs: [UUID] = []
+
+    func cacheImageData(_ data: Data, for mediaAssetID: UUID) async {
+        guard !data.isEmpty else { return }
+        cachedMediaAssetIDs.append(mediaAssetID)
     }
 }
 

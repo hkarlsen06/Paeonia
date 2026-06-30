@@ -52,7 +52,7 @@ struct MemoriesScreen: View {
                 )
             }
             .sheet(isPresented: $isCreating) {
-                MemoryEditorView(draft: $draft, allowsPhotos: viewModel.canAttachPhotos) { title, date, note, photos in
+                MemoryEditorView(draft: $draft, allowsPhotos: viewModel.canAttachPhotos) { title, date, note, photos, _ in
                     let saved = await viewModel.createMemory(title: title, date: date, note: note, photos: photos)
                     if saved {
                         draft = MemoryDraft()

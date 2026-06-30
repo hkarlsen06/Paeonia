@@ -1,8 +1,8 @@
-import PhotosUI
 import SwiftUI
+import UIKit
 
 /// A single memory, in full. Photos, both partners' notes, and the actions that change
-/// it (edit your note, edit the title/date, add or remove photos, delete). The record
+/// it through the edit sheet or delete confirmation. The record
 /// is re-read from the view model by id so the screen always reflects the latest local
 /// state and dismisses itself once the memory is deleted.
 struct MemoryDetailView: View {
@@ -12,14 +12,13 @@ struct MemoryDetailView: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    @State private var isEditingNote = false
-    @State private var isEditingDetails = false
-    @State private var isAddingPhotos = false
-    @State private var addPhotoItems: [PhotosPickerItem] = []
-    @State private var photoToRemove: MemoryMediaSnapshot?
+    @State private var isEditingMemory = false
+    @State private var editDraft = MemoryDraft()
     @State private var isConfirmingDelete = false
+    @State private var imageViewerSelection: PaeoniaImageViewerSelection?
+    @State private var loadedImagesByMediaAssetID: [UUID: UIImage] = [:]
 
-    private let maxPhotosPerPartner = 5
+    private let photoCarouselHeight: CGFloat = 280
 
     private var record: MemoryRecord? {
         viewModel.record(for: memoryID)
@@ -42,17 +41,7 @@ struct MemoryDetailView: View {
         .onChange(of: record == nil) { _, isGone in
             if isGone { dismiss() }
         }
-        .sheet(isPresented: $isEditingNote) { noteEditorSheet }
-        .sheet(isPresented: $isEditingDetails) { detailsEditorSheet }
-        .photosPicker(
-            isPresented: $isAddingPhotos,
-            selection: $addPhotoItems,
-            maxSelectionCount: max(1, remainingPhotoSlots),
-            matching: .images
-        )
-        .onChange(of: addPhotoItems) { _, items in
-            loadAndAddPhotos(items)
-        }
+        .sheet(isPresented: $isEditingMemory) { memoryEditorSheet }
         .alert(
             Text(.memoriesDeleteTitle),
             isPresented: $isConfirmingDelete
@@ -66,17 +55,7 @@ struct MemoryDetailView: View {
         } message: {
             Text(.memoriesDeleteMessage)
         }
-        .alert(
-            Text(.memoriesPhotoRemoveTitle),
-            isPresented: removePhotoAlertBinding
-        ) {
-            Button(role: .cancel) { photoToRemove = nil } label: { Text(.commonCancel) }
-            Button(role: .destructive) {
-                Task { await removePhoto() }
-            } label: {
-                Text(.memoriesPhotoRemoveAction)
-            }
-        }
+        .paeoniaImageViewer(selection: $imageViewerSelection)
     }
 
     private func content(for record: MemoryRecord) -> some View {
@@ -118,76 +97,35 @@ struct MemoryDetailView: View {
     }
 
     private func photoGallery(for record: MemoryRecord) -> some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            ForEach(visibleMedia(for: record), id: \.memoryMediaID) { media in
-                ZStack(alignment: .topTrailing) {
-                    MemoryMediaImageView(
-                        mediaAssetID: media.mediaAssetID,
-                        height: 280,
-                        cornerRadius: PaeoniaRadius.radius16
-                    )
-
-                    // Only the photo's owner can remove it; the control is visible so it's
-                    // discoverable, and removal is confirmed before it leaves for good.
-                    if media.ownerUserID == currentUserID {
-                        Button(role: .destructive) {
-                            photoToRemove = media
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title2)
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, .black.opacity(0.45))
-                                .accessibilityHidden(true)
-                        }
-                        .padding(PaeoniaSpacing.space8)
-                        .accessibilityLabel(Text(.memoriesPhotoRemove))
+        let mediaItems = visibleMedia(for: record)
+        return TabView {
+            ForEach(mediaItems, id: \.memoryMediaID) { media in
+                MemoryMediaImageView(
+                    mediaAssetID: media.mediaAssetID,
+                    height: photoCarouselHeight,
+                    cornerRadius: PaeoniaRadius.radius16,
+                    onTapImage: { mediaAssetID, image in
+                        presentImageViewer(
+                            initialMediaAssetID: mediaAssetID,
+                            image: image,
+                            record: record
+                        )
+                    },
+                    onImageLoaded: { mediaAssetID, image in
+                        loadedImagesByMediaAssetID[mediaAssetID] = image
                     }
-                }
+                )
+                .padding(.bottom, mediaItems.count > 1 ? PaeoniaSpacing.space20 : 0)
             }
         }
+        .tabViewStyle(.page(indexDisplayMode: mediaItems.count > 1 ? .automatic : .never))
+        .frame(height: mediaItems.count > 1 ? photoCarouselHeight + PaeoniaSpacing.space20 : photoCarouselHeight)
     }
 
     @ViewBuilder
     private func yourNoteSection(for record: MemoryRecord) -> some View {
         if let own = record.snapshot.ownNote, own.isVisible, let body = own.body, !body.isEmpty {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(.memoriesDetailYourNote)
-                        .font(PaeoniaTypography.caption.weight(.semibold))
-                        .foregroundStyle(.paeoniaTextSecondary)
-
-                    Spacer()
-
-                    Button {
-                        isEditingNote = true
-                    } label: {
-                        Image(systemName: "pencil")
-                            .font(PaeoniaTypography.body.weight(.semibold))
-                            .foregroundStyle(.paeoniaAccentPrimary)
-                            .padding(PaeoniaSpacing.space4)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text(.memoriesDetailEditNote))
-                }
-
-                Text(body)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        } else {
-            Button {
-                isEditingNote = true
-            } label: {
-                Label {
-                    Text(.memoriesDetailAddNote)
-                } icon: {
-                    Image(systemName: "square.and.pencil").accessibilityHidden(true)
-                }
-            }
-            .buttonStyle(PaeoniaSecondaryButtonStyle())
+            noteBlock(title: .memoriesDetailYourNote, body: body)
         }
     }
 
@@ -209,18 +147,10 @@ struct MemoryDetailView: View {
     private var toolbarMenu: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
-                if viewModel.canAttachPhotos, remainingPhotoSlots > 0 {
-                    Button {
-                        isAddingPhotos = true
-                    } label: {
-                        Label { Text(.memoriesDetailAddPhotos) } icon: { Image(systemName: "photo.badge.plus") }
-                    }
-                }
-
                 Button {
-                    isEditingDetails = true
+                    openMemoryEditor()
                 } label: {
-                    Label { Text(.memoriesDetailEditDetails) } icon: { Image(systemName: "pencil") }
+                    Label { Text(.memoriesDetailEditMemory) } icon: { Image(systemName: "pencil") }
                 }
 
                 Button(role: .destructive) {
@@ -236,36 +166,28 @@ struct MemoryDetailView: View {
     }
 
     @ViewBuilder
-    private var noteEditorSheet: some View {
+    private var memoryEditorSheet: some View {
         if let record {
-            MemoryNoteEditorView(
-                initialBody: record.snapshot.ownNote?.body ?? ""
-            ) { body in
-                await viewModel.saveNote(for: record, body: body)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var detailsEditorSheet: some View {
-        if let record {
-            MemoryDetailsEditorView(
-                initialTitle: record.snapshot.title ?? "",
-                initialDate: MemoryTimeline.parseLocalDate(record.snapshot.memoryDate) ?? record.snapshot.createdAt
-            ) { title, date in
-                await viewModel.updateDetails(for: record, title: title, date: date)
+            MemoryEditorView(
+                draft: $editDraft,
+                mode: .edit,
+                existingMedia: visibleMedia(for: record),
+                currentUserID: currentUserID,
+                allowsPhotos: viewModel.canAttachPhotos
+            ) { title, date, note, photos, removedMedia in
+                await saveMemoryEdits(
+                    record: record,
+                    title: title,
+                    date: date,
+                    note: note,
+                    photos: photos,
+                    removedMedia: removedMedia
+                )
             }
         }
     }
 
     // MARK: - Derived
-
-    private var removePhotoAlertBinding: Binding<Bool> {
-        Binding(
-            get: { photoToRemove != nil },
-            set: { if !$0 { photoToRemove = nil } }
-        )
-    }
 
     private func visibleMedia(for record: MemoryRecord) -> [MemoryMediaSnapshot] {
         record.snapshot.media.filter(\.isVisible).sortedForMemoryDisplay()
@@ -275,209 +197,102 @@ struct MemoryDetailView: View {
         MemoryTimeline.parseLocalDate(record.snapshot.memoryDate) ?? record.snapshot.createdAt
     }
 
-    /// How many more photos the current user may add (the backend caps each partner at
-    /// five). Counts only the user's own visible photos.
-    private var remainingPhotoSlots: Int {
-        guard let record else { return 0 }
-        let ownCount = record.snapshot.media
-            .filter { $0.isVisible && $0.ownerUserID == currentUserID }
-            .count
-        return max(0, maxPhotosPerPartner - ownCount)
-    }
-
     // MARK: - Actions
+
+    private func openMemoryEditor() {
+        guard let record else { return }
+        editDraft = MemoryDraft(
+            title: record.snapshot.title ?? "",
+            date: dayStartUTC(for: record),
+            note: record.snapshot.ownNote?.body ?? "",
+            photos: []
+        )
+        isEditingMemory = true
+    }
 
     private func deleteMemory() async {
         guard let record else { return }
         await viewModel.deleteMemory(record)
     }
 
-    private func removePhoto() async {
-        guard let record, let media = photoToRemove else { return }
-        photoToRemove = nil
-        await viewModel.removePhoto(from: record, media: media)
+    private func presentImageViewer(initialMediaAssetID: UUID?, image: UIImage, record: MemoryRecord) {
+        guard let initialMediaAssetID else {
+            imageViewerSelection = PaeoniaImageViewerSelection(image: image)
+            return
+        }
+
+        var items = visibleMedia(for: record).map { media in
+            imageViewerItem(for: media, initialMediaAssetID: initialMediaAssetID, image: image)
+        }
+
+        if !items.contains(where: { $0.id == initialMediaAssetID.uuidString }) {
+            items.insert(PaeoniaImageViewerItem(id: initialMediaAssetID, image: image), at: 0)
+        }
+
+        imageViewerSelection = PaeoniaImageViewerSelection(
+            items: items,
+            initialItemID: initialMediaAssetID.uuidString
+        )
     }
 
-    private func loadAndAddPhotos(_ items: [PhotosPickerItem]) {
-        guard !items.isEmpty, let record else { return }
-        Task {
-            var loaded: [Data] = []
-            for item in items {
-                if let data = try? await item.loadTransferable(type: Data.self) {
-                    loaded.append(data)
-                }
+    private func imageViewerItem(
+        for media: MemoryMediaSnapshot,
+        initialMediaAssetID: UUID,
+        image: UIImage
+    ) -> PaeoniaImageViewerItem {
+        let mediaAssetID = media.mediaAssetID
+        let provider = MemoryMediaImageProviderFactory.shared
+        let initialImage = mediaAssetID == initialMediaAssetID ? image : loadedImagesByMediaAssetID[mediaAssetID]
+
+        return PaeoniaImageViewerItem(id: mediaAssetID, image: initialImage) {
+            guard let data = await provider?.imageData(for: mediaAssetID) else {
+                return nil
             }
-            addPhotoItems = []
-            guard !loaded.isEmpty else { return }
-            _ = await viewModel.addPhotos(to: record, photos: loaded)
+            return UIImage(data: data)
         }
     }
-}
 
-/// A focused sheet for writing the current user's note on a memory.
-private struct MemoryNoteEditorView: View {
-    let initialBody: String
-    let onSave: (_ body: String) async -> Bool
+    private func saveMemoryEdits(
+        record: MemoryRecord,
+        title: String,
+        date: String,
+        note: String,
+        photos: [Data],
+        removedMedia: [MemoryMediaSnapshot]
+    ) async -> Bool {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else { return false }
 
-    @Environment(\.dismiss) private var dismiss
-    @State private var text = ""
-    @State private var isSaving = false
-    @FocusState private var isFocused: Bool?
+        var latestRecord = viewModel.record(for: record.snapshot.memoryID) ?? record
 
-    init(initialBody: String, onSave: @escaping (_ body: String) async -> Bool) {
-        self.initialBody = initialBody
-        self.onSave = onSave
-        _text = State(initialValue: initialBody)
-    }
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                MemoryTextField(
-                    text: $text,
-                    placeholder: .memoriesEditorNotePlaceholder,
-                    isFocused: $isFocused,
-                    field: true,
-                    lineLimit: 4...12
-                )
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.space16)
+        if trimmedTitle != (latestRecord.snapshot.title ?? "") || date != latestRecord.snapshot.memoryDate {
+            guard await viewModel.updateDetails(for: latestRecord, title: trimmedTitle, date: date) else {
+                return false
             }
-            .background(.paeoniaBackgroundPrimary)
-            .scrollDismissesKeyboard(.interactively)
-            .keyboardDismissable()
-            .navigationTitle(Text(.memoriesNoteTitle))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(role: .cancel) { dismiss() } label: { Text(.commonCancel) }
-                        .disabled(isSaving)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { Task { await save() } } label: {
-                        if isSaving {
-                            ProgressView()
-                        } else {
-                            Text(.memoriesNoteSave)
-                        }
-                    }
-                    .disabled(!canSave || isSaving)
-                }
-            }
-            .onAppear { isFocused = true }
+            latestRecord = viewModel.record(for: record.snapshot.memoryID) ?? latestRecord
         }
-        .presentationDetents([.medium, .large])
-        .presentationBackground(.paeoniaBackgroundPrimary)
-    }
 
-    private var canSave: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private func save() async {
-        guard canSave, !isSaving else { return }
-        isSaving = true
-        defer { isSaving = false }
-        if await onSave(text) {
-            dismiss()
-        }
-    }
-}
-
-/// A focused sheet for editing a memory's title and date.
-private struct MemoryDetailsEditorView: View {
-    let initialTitle: String
-    let initialDate: Date
-    let onSave: (_ title: String, _ date: String) async -> Bool
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var title = ""
-    @State private var date = Date()
-    @State private var isSaving = false
-    @FocusState private var isFocused: Bool?
-
-    init(initialTitle: String, initialDate: Date, onSave: @escaping (_ title: String, _ date: String) async -> Bool) {
-        self.initialTitle = initialTitle
-        self.initialDate = initialDate
-        self.onSave = onSave
-        _title = State(initialValue: initialTitle)
-        _date = State(initialValue: initialDate)
-    }
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                    titleField
-                    dateField
-                }
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.space16)
+        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedNote.isEmpty, trimmedNote != (latestRecord.snapshot.ownNote?.body ?? "") {
+            guard await viewModel.saveNote(for: latestRecord, body: trimmedNote) else {
+                return false
             }
-            .background(.paeoniaBackgroundPrimary)
-            .keyboardDismissable()
-            .navigationTitle(Text(.memoriesEditDetailsTitle))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(role: .cancel) { dismiss() } label: { Text(.commonCancel) }
-                        .disabled(isSaving)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { Task { await save() } } label: {
-                        if isSaving {
-                            ProgressView()
-                        } else {
-                            Text(.memoriesEditDetailsSave)
-                        }
-                    }
-                    .disabled(!canSave || isSaving)
-                }
+            latestRecord = viewModel.record(for: record.snapshot.memoryID) ?? latestRecord
+        }
+
+        for media in removedMedia {
+            guard await viewModel.removePhoto(from: latestRecord, media: media) else {
+                return false
+            }
+            latestRecord = viewModel.record(for: record.snapshot.memoryID) ?? latestRecord
+        }
+
+        if !photos.isEmpty {
+            guard await viewModel.addPhotos(to: latestRecord, photos: photos) else {
+                return false
             }
         }
-        .presentationDetents([.medium])
-        .presentationBackground(.paeoniaBackgroundPrimary)
-    }
 
-    private var titleField: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(.memoriesEditorTitleLabel)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextSecondary)
-            MemoryTextField(
-                text: $title,
-                placeholder: .memoriesEditorTitlePlaceholder,
-                isFocused: $isFocused,
-                field: true,
-                lineLimit: 1...2
-            )
-        }
-    }
-
-    private var dateField: some View {
-        HStack {
-            Text(.memoriesEditorDateLabel)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextSecondary)
-            Spacer(minLength: PaeoniaSpacing.space16)
-            DatePicker(selection: $date, displayedComponents: [.date]) {
-                Text(.memoriesEditorDateLabel)
-            }
-            .labelsHidden()
-            .tint(.paeoniaAccentPrimary)
-        }
-    }
-
-    private var canSave: Bool {
-        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private func save() async {
-        guard canSave, !isSaving else { return }
-        isSaving = true
-        defer { isSaving = false }
-        if await onSave(title, MemoryTimeline.currentLocalDateString(now: date)) {
-            dismiss()
-        }
+        return true
     }
 }

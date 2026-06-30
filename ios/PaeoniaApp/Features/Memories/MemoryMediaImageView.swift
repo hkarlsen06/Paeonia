@@ -17,9 +17,13 @@ struct MemoryMediaImageView: View {
     var provider: (any MemoryMediaImageProviding)? = MemoryMediaImageProviderFactory.shared
     var height: CGFloat = 240
     var cornerRadius: CGFloat = PaeoniaRadius.radius16
+    var allowsViewing = true
+    var onTapImage: ((UUID?, UIImage) -> Void)?
+    var onImageLoaded: ((UUID, UIImage) -> Void)?
 
     @State private var image: UIImage?
     @State private var didFail = false
+    @State private var imageViewerSelection: PaeoniaImageViewerSelection?
 
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -29,7 +33,11 @@ struct MemoryMediaImageView: View {
             .overlay { content }
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .task(id: mediaAssetID) { await load() }
+            .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .onTapGesture { presentImageViewer() }
             .accessibilityLabel(Text(.memoriesPhotoAccessibility))
+            .accessibilityAddTraits(image != nil && allowsViewing ? .isButton : [])
+            .paeoniaImageViewer(selection: $imageViewerSelection)
     }
 
     @ViewBuilder
@@ -61,8 +69,21 @@ struct MemoryMediaImageView: View {
         let data = await provider.imageData(for: mediaAssetID)
         if let data, let loaded = UIImage(data: data) {
             image = loaded
+            onImageLoaded?(mediaAssetID, loaded)
         } else {
             didFail = true
+        }
+    }
+
+    private func presentImageViewer() {
+        guard allowsViewing, let image else { return }
+
+        if let onTapImage {
+            onTapImage(mediaAssetID, image)
+        } else if let mediaAssetID {
+            imageViewerSelection = PaeoniaImageViewerSelection(id: mediaAssetID, image: image)
+        } else {
+            imageViewerSelection = PaeoniaImageViewerSelection(image: image)
         }
     }
 }

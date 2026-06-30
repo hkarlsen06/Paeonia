@@ -58,6 +58,7 @@ struct DailyPhotoAnswerComposer: View {
     @State private var selection: PhotosPickerItem?
     @State private var isLoading = false
     @State private var isCameraPresented = false
+    @State private var imageViewerSelection: PaeoniaImageViewerSelection?
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
@@ -78,6 +79,7 @@ struct DailyPhotoAnswerComposer: View {
             DailyCameraPicker(onCapture: onPick)
                 .ignoresSafeArea()
         }
+        .paeoniaImageViewer(selection: $imageViewerSelection)
     }
 
     private func pickedPhoto(_ uiImage: UIImage) -> some View {
@@ -93,6 +95,12 @@ struct DailyPhotoAnswerComposer: View {
                     .frame(minHeight: 120, maxHeight: 220)
                     .clipped()
                     .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+                    .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+                    .onTapGesture {
+                        imageViewerSelection = PaeoniaImageViewerSelection(image: uiImage)
+                    }
+                    .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
+                    .accessibilityAddTraits(.isButton)
 
                 Button(role: .destructive, action: onRemove) {
                     Image(systemName: "xmark.circle.fill")
@@ -194,6 +202,8 @@ struct DailySendingAnswerView: View {
     var partnerChoiceName: String? = nil
     var text: String? = nil
 
+    @State private var imageViewerSelection: PaeoniaImageViewerSelection?
+
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             mediaPreview
@@ -215,6 +225,7 @@ struct DailySendingAnswerView: View {
 
             DailySendingStatusLine()
         }
+        .paeoniaImageViewer(selection: $imageViewerSelection)
     }
 
     @ViewBuilder
@@ -237,6 +248,12 @@ struct DailySendingAnswerView: View {
                         .scaledToFill()
                 }
                 .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+                .onTapGesture {
+                    imageViewerSelection = PaeoniaImageViewerSelection(image: uiImage)
+                }
+                .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
+                .accessibilityAddTraits(.isButton)
         }
     }
 }
@@ -263,9 +280,11 @@ struct DailyAnswerImageView: View {
     let mediaAssetID: UUID?
     var provider: (any DailyAnswerMediaImageProviding)? = DailyAnswerMediaImageProviderFactory.shared
     var height: CGFloat = 220
+    var allowsViewing = true
 
     @State private var image: UIImage?
     @State private var didFail = false
+    @State private var imageViewerSelection: PaeoniaImageViewerSelection?
 
     var body: some View {
         // The surface rectangle owns the size (full available width × fixed height), so
@@ -279,7 +298,11 @@ struct DailyAnswerImageView: View {
             .overlay { content }
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
             .task(id: mediaAssetID) { await load() }
+            .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+            .onTapGesture { presentImageViewer() }
             .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
+            .accessibilityAddTraits(image != nil && allowsViewing ? .isButton : [])
+            .paeoniaImageViewer(selection: $imageViewerSelection)
     }
 
     @ViewBuilder
@@ -312,6 +335,15 @@ struct DailyAnswerImageView: View {
             image = loaded
         } else {
             didFail = true
+        }
+    }
+
+    private func presentImageViewer() {
+        guard allowsViewing, let image else { return }
+        if let mediaAssetID {
+            imageViewerSelection = PaeoniaImageViewerSelection(id: mediaAssetID, image: image)
+        } else {
+            imageViewerSelection = PaeoniaImageViewerSelection(image: image)
         }
     }
 }
