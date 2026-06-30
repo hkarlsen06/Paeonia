@@ -120,22 +120,27 @@ struct MemoryDetailView: View {
     private func photoGallery(for record: MemoryRecord) -> some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             ForEach(visibleMedia(for: record), id: \.memoryMediaID) { media in
-                MemoryMediaImageView(
-                    mediaAssetID: media.mediaAssetID,
-                    height: 280,
-                    cornerRadius: PaeoniaRadius.radius16
-                )
-                .contextMenu {
+                ZStack(alignment: .topTrailing) {
+                    MemoryMediaImageView(
+                        mediaAssetID: media.mediaAssetID,
+                        height: 280,
+                        cornerRadius: PaeoniaRadius.radius16
+                    )
+
+                    // Only the photo's owner can remove it; the control is visible so it's
+                    // discoverable, and removal is confirmed before it leaves for good.
                     if media.ownerUserID == currentUserID {
                         Button(role: .destructive) {
                             photoToRemove = media
                         } label: {
-                            Label {
-                                Text(.memoriesPhotoRemove)
-                            } icon: {
-                                Image(systemName: "trash")
-                            }
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title2)
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, .black.opacity(0.45))
+                                .accessibilityHidden(true)
                         }
+                        .padding(PaeoniaSpacing.space8)
+                        .accessibilityLabel(Text(.memoriesPhotoRemove))
                     }
                 }
             }
@@ -146,14 +151,31 @@ struct MemoryDetailView: View {
     private func yourNoteSection(for record: MemoryRecord) -> some View {
         if let own = record.snapshot.ownNote, own.isVisible, let body = own.body, !body.isEmpty {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                noteBlock(title: .memoriesDetailYourNote, body: body)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(.memoriesDetailYourNote)
+                        .font(PaeoniaTypography.caption.weight(.semibold))
+                        .foregroundStyle(.paeoniaTextSecondary)
 
-                Button {
-                    isEditingNote = true
-                } label: {
-                    Text(.memoriesDetailEditNote)
+                    Spacer()
+
+                    Button {
+                        isEditingNote = true
+                    } label: {
+                        Image(systemName: "pencil")
+                            .font(PaeoniaTypography.body.weight(.semibold))
+                            .foregroundStyle(.paeoniaAccentPrimary)
+                            .padding(PaeoniaSpacing.space4)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(.memoriesDetailEditNote))
                 }
-                .buttonStyle(PaeoniaQuietButtonStyle())
+
+                Text(body)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         } else {
             Button {
