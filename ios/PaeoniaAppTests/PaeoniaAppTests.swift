@@ -26,6 +26,19 @@ struct PaeoniaAppTests {
         ])
     }
 
+    @Test func mainTabSwipeOrderUsesVisibleTabOrder() {
+        #expect(MainTab.home.tab(offsetBy: 1) == .questions)
+        #expect(MainTab.questions.tab(offsetBy: 1) == .memories)
+        #expect(MainTab.memories.tab(offsetBy: 1) == .you)
+
+        #expect(MainTab.you.tab(offsetBy: -1) == .memories)
+        #expect(MainTab.memories.tab(offsetBy: -1) == .questions)
+        #expect(MainTab.questions.tab(offsetBy: -1) == .home)
+
+        #expect(MainTab.home.tab(offsetBy: -1) == nil)
+        #expect(MainTab.you.tab(offsetBy: 1) == nil)
+    }
+
     @MainActor
     @Test func startRoutesMissingSessionToSignedOut() async throws {
         let syncService = TestPaeoniaSyncService()

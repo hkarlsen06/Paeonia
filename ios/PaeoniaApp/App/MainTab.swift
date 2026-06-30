@@ -18,6 +18,15 @@ enum MainTab: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    func tab(offsetBy offset: Int) -> MainTab? {
+        guard let currentIndex = Self.allCases.firstIndex(of: self) else { return nil }
+
+        let destinationIndex = currentIndex + offset
+        guard Self.allCases.indices.contains(destinationIndex) else { return nil }
+
+        return Self.allCases[destinationIndex]
+    }
+
     var title: LocalizedStringResource {
         switch self {
         case .home: .mainTabHomeUs

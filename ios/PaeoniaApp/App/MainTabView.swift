@@ -27,6 +27,10 @@ struct MainTabView: View {
     var onDailyChallengeLocalChange: @MainActor () async -> Void = {}
     let onMemoriesLocalChange: @MainActor @Sendable () async -> Void
 
+    private static let tabSwipeMinimumDistance: CGFloat = 30
+    private static let tabSwipeThreshold: CGFloat = 70
+    private static let tabSwipeAxisRatio: CGFloat = 1.4
+
     @State private var dailyChallengeViewModel = DailyChallengeViewModel()
     @State private var isAnswerFlowPresented = false
     /// Which card the daily answer flow should zoom out of (the Home prompt card or the
@@ -115,6 +119,7 @@ struct MainTabView: View {
             }
         }
         .tint(.paeoniaAccentPrimary)
+        .simultaneousGesture(tabSwipeGesture)
         // Key the load on the signed-in user alone. The partner id, display names,
         // and profile photos all populate/refresh shortly after launch; if they were
         // in this id, every one of those changes would cancel and restart the task —
@@ -181,6 +186,33 @@ struct MainTabView: View {
     /// final full-screen size before the zoom animator takes over.
     private var zoomPresentationAnimation: Animation? {
         reduceMotion ? nil : PaeoniaMotion.heroMorph
+    }
+
+    private var tabSwipeAnimation: Animation? {
+        reduceMotion ? nil : PaeoniaMotion.stateChange
+    }
+
+    private var tabSwipeGesture: some Gesture {
+        DragGesture(minimumDistance: Self.tabSwipeMinimumDistance, coordinateSpace: .local)
+            .onEnded(handleTabSwipe)
+    }
+
+    private func handleTabSwipe(_ value: DragGesture.Value) {
+        let horizontalDistance = value.translation.width
+        let verticalDistance = value.translation.height
+
+        guard abs(horizontalDistance) >= Self.tabSwipeThreshold,
+              abs(horizontalDistance) > abs(verticalDistance) * Self.tabSwipeAxisRatio else {
+            return
+        }
+
+        let offset = horizontalDistance < 0 ? 1 : -1
+        guard let destination = selection.wrappedValue.tab(offsetBy: offset) else { return }
+
+        withAnimation(tabSwipeAnimation) {
+            selection.wrappedValue = destination
+        }
+        PaeoniaHaptics.selection()
     }
 
     /// Tapping the streak badge. A broken streak that can still be bought back opens
