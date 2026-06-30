@@ -395,6 +395,7 @@ final class WidgetDrawingViewModel {
         }
 
         isSaving = true
+        recentlySaved = false
         saveFailure = nil
         let drawingData = drawing.dataRepresentation()
         let savedAt = Date()

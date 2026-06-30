@@ -36,6 +36,7 @@ struct MemoryCardView: View {
                 }
             }
         }
+        .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 

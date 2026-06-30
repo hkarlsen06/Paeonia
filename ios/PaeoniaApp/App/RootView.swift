@@ -136,11 +136,34 @@ struct RootView: View {
         )
     }
 
-    @ViewBuilder
     private var rootContent: some View {
+        ZStack {
+            routedRootContent
+                .zIndex(0)
+
+            if isLaunching {
+                AuthLaunchingView()
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
+        }
+        .animation(launchSurfaceAnimation, value: isLaunching)
+    }
+
+    private var isLaunching: Bool {
+        viewModel.state == .launching
+    }
+
+    private var launchSurfaceAnimation: Animation? {
+        reduceMotion ? nil : PaeoniaMotion.meaningfulMoment
+    }
+
+    @ViewBuilder
+    private var routedRootContent: some View {
         switch viewModel.state {
         case .launching:
-            AuthLaunchingView()
+            Color.paeoniaBackgroundPrimary
+                .ignoresSafeArea()
         case .unauthenticated:
             signInScreen
         case .limitedAuthenticated, .pairedPaywalled, .entitlementLost:

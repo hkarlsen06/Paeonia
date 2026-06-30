@@ -18,6 +18,7 @@ struct WidgetDrawingHistoryView: View {
     @State private var viewModel: WidgetDrawingHistoryViewModel
     private let thumbnailLoader: any WidgetRevisionThumbnailLoading
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
 
     init(viewModel: WidgetDrawingHistoryViewModel, thumbnailLoader: any WidgetRevisionThumbnailLoading) {
         _viewModel = State(initialValue: viewModel)
@@ -28,12 +29,15 @@ struct WidgetDrawingHistoryView: View {
     /// the thumbnail loader, with the last-known nicknames for labeling.
     init() {
         let gateway = WidgetDrawingHistoryFactory.makeGateway()
+        let loader = WidgetRevisionThumbnailLoader(gateway: gateway)
         self.init(
             viewModel: WidgetDrawingHistoryViewModel(
                 gateway: gateway,
-                identity: WidgetSyncIdentityStore.shared.load()
+                identity: WidgetSyncIdentityStore.shared.load(),
+                exporter: loader,
+                photoSaver: PhotoLibrarySaver()
             ),
-            thumbnailLoader: WidgetRevisionThumbnailLoader(gateway: gateway)
+            thumbnailLoader: loader
         )
     }
 
@@ -60,6 +64,38 @@ struct WidgetDrawingHistoryView: View {
         .task {
             await viewModel.loadInitialIfNeeded()
         }
+        .alert(
+            Text(.widgetHistorySavePermissionTitle),
+            isPresented: saveAlertBinding
+        ) {
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    openURL(url)
+                }
+            } label: {
+                Text(.commonOpenSettings)
+            }
+
+            Button(role: .cancel) {} label: {
+                Text(.commonCancel)
+            }
+        } message: {
+            Text(.widgetHistorySavePermissionMessage)
+        }
+    }
+
+    /// Drives the centered permission alert. Permission denial is the one save
+    /// outcome the person must act on, so it gets an explicit dialog; other
+    /// failures just reset the button (see the view model).
+    private var saveAlertBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.saveAlert != nil },
+            set: { isPresented in
+                if !isPresented {
+                    viewModel.dismissSaveAlert()
+                }
+            }
+        )
     }
 
     @ViewBuilder
@@ -84,10 +120,15 @@ struct WidgetDrawingHistoryView: View {
         ScrollView {
             LazyVStack(spacing: PaeoniaSpacing.space24) {
                 ForEach(viewModel.items) { item in
-                    WidgetDrawingHistoryRow(item: item, loader: thumbnailLoader)
-                        .task {
-                            await viewModel.loadMoreIfNeeded(currentItem: item)
-                        }
+                    WidgetDrawingHistoryRow(
+                        item: item,
+                        loader: thumbnailLoader,
+                        saveState: viewModel.saveState(for: item.id),
+                        onSave: { Task { await viewModel.saveToDevice(item) } }
+                    )
+                    .task {
+                        await viewModel.loadMoreIfNeeded(currentItem: item)
+                    }
                 }
 
                 if viewModel.isLoadingMore {
@@ -134,6 +175,8 @@ struct WidgetDrawingHistoryView: View {
 private struct WidgetDrawingHistoryRow: View {
     let item: WidgetDrawingHistoryItem
     let loader: any WidgetRevisionThumbnailLoading
+    let saveState: WidgetDrawingHistoryViewModel.SaveButtonState
+    let onSave: () -> Void
 
     /// Roughly half the screen, leaving the opposite side open so the author is
     /// obvious at a glance.
@@ -145,15 +188,19 @@ private struct WidgetDrawingHistoryRow: View {
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)
 
-            WidgetDrawingHistoryThumbnail(item: item, loader: loader)
-                .containerRelativeFrame(.horizontal) { width, _ in width * Self.widthFraction }
+            WidgetDrawingHistoryThumbnail(
+                item: item,
+                loader: loader,
+                saveState: saveState,
+                onSave: onSave
+            )
+            .containerRelativeFrame(.horizontal) { width, _ in width * Self.widthFraction }
 
             Text(item.createdAt, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
         }
         .frame(maxWidth: .infinity, alignment: item.isMine ? .trailing : .leading)
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -162,6 +209,8 @@ private struct WidgetDrawingHistoryRow: View {
 private struct WidgetDrawingHistoryThumbnail: View {
     let item: WidgetDrawingHistoryItem
     let loader: any WidgetRevisionThumbnailLoading
+    let saveState: WidgetDrawingHistoryViewModel.SaveButtonState
+    let onSave: () -> Void
     @State private var imageData: Data?
 
     var body: some View {
@@ -187,6 +236,15 @@ private struct WidgetDrawingHistoryThumbnail: View {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
                     .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
             }
+            // Offer the save button only once the drawing is on screen, so the
+            // person can see what they're saving and we don't export a blank box.
+            // Sits in the top-trailing corner so it stays clear of centered ink.
+            .overlay(alignment: .topTrailing) {
+                if imageData != nil {
+                    WidgetDrawingSaveButton(state: saveState, action: onSave)
+                        .padding(PaeoniaSpacing.space4)
+                }
+            }
             .task(id: item.id) {
                 imageData = await loader.thumbnailPNG(
                     revisionID: item.id,
@@ -194,6 +252,54 @@ private struct WidgetDrawingHistoryThumbnail: View {
                     canvasSide: item.canvasSide
                 )
             }
-            .accessibilityHidden(true)
+    }
+}
+
+/// A small round button on a thumbnail's top edge: a download glyph that, once
+/// the drawing is saved to the device, latches to a checkmark.
+private struct WidgetDrawingSaveButton: View {
+    let state: WidgetDrawingHistoryViewModel.SaveButtonState
+    let action: () -> Void
+
+    private static let glyphSize: CGFloat = 32
+    private static let hitTarget: CGFloat = 44
+
+    var body: some View {
+        Button(action: action) {
+            glyph
+                .frame(width: Self.glyphSize, height: Self.glyphSize)
+                .glassEffect(.regular, in: Circle())
+                .frame(width: Self.hitTarget, height: Self.hitTarget)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        // Once saving starts the outcome is in motion; the saved state latches,
+        // so the button only accepts a tap while idle.
+        .disabled(state != .idle)
+        .animation(PaeoniaMotion.stateChange, value: state)
+        .accessibilityLabel(Text(
+            state == .saved ? .widgetHistorySavedAccessibility : .widgetHistorySaveAccessibility
+        ))
+    }
+
+    @ViewBuilder
+    private var glyph: some View {
+        switch state {
+        case .idle:
+            Image(systemName: "arrow.down")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(.paeoniaTextPrimary)
+                .accessibilityHidden(true)
+        case .saving:
+            ProgressView()
+                .controlSize(.small)
+                .tint(.paeoniaAccentPrimary)
+        case .saved:
+            Image(systemName: "checkmark")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(.paeoniaSuccess)
+                .transition(.scale.combined(with: .opacity))
+                .accessibilityHidden(true)
+        }
     }
 }

@@ -15,24 +15,29 @@ struct DailyPartnerAnswerFlow: View {
     var onClose: () -> Void = {}
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    /// True from when the answer is queued until the partner's reply has loaded, so the
-    /// Send button keeps its busy state while we hold for the reveal.
-    @State private var isFinishing = false
-    /// Flips to `.revealed` once the answer lands and the partner's reply is viewable,
-    /// turning the screen over to the revealed exchange.
-    @State private var phase: Phase = .answering
+    /// The single source of truth for what's on screen. The flow moves strictly forward
+    /// through these phases and the view switches on this value *alone* — never on the
+    /// incidental order in which `isSending` / snapshot signals arrive — so no
+    /// answered/"sending" frame can leak out between composing and the reveal.
+    @State private var phase: Phase = .composing
     @FocusState private var isComposerFocused: Bool
 
+    /// `.sending` holds the compose screen while the answer syncs and the partner's reply
+    /// loads; the screen then turns straight over to `.revealed`. There is intentionally
+    /// no separate "answered" phase here — the reveal is the one and only answered surface.
     private enum Phase {
-        case answering
+        case composing
+        case sending
         case revealed
     }
 
     var body: some View {
         ZStack {
             switch phase {
-            case .answering:
-                answering
+            case .composing:
+                composing
+            case .sending:
+                sending
             case .revealed:
                 revealed
                     .transition(.opacity)
@@ -45,12 +50,12 @@ struct DailyPartnerAnswerFlow: View {
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
     }
 
-    // MARK: - Answering
+    // MARK: - Composing
 
-    private var answering: some View {
+    private var composing: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             DailyChallengeAnswerStep(
-                question: question,
+                question: liveQuestion,
                 viewModel: viewModel,
                 isFocused: $isComposerFocused
             )
@@ -58,9 +63,79 @@ struct DailyPartnerAnswerFlow: View {
             actionBar
         }
         .padding(.top, PaeoniaSpacing.space8)
-        .animation(PaeoniaMotion.stateChange, value: isComposerFocused)
+        // No explicit animation on this stack: the composer is moved only by the
+        // keyboard, via SwiftUI's automatic keyboard-avoidance. Nothing here resizes on
+        // focus (the action bar is a constant-height row), so there's no second layout
+        // change to animate, and an explicit `.animation` would only re-time the
+        // keyboard's movement onto a fixed curve and make it bounce.
         // Tap the question or any empty space to put the keyboard away.
         .dismissesKeyboardOnTap { isComposerFocused = false }
+    }
+
+    // MARK: - Sending (holding for the reveal)
+
+    /// The held screen between Send and the reveal. It is its own phase — not the compose
+    /// step with a flag — so nothing it shows depends on live `isSending`/snapshot flags,
+    /// and it is the view that stays on screen (and fades out) as the reveal turns over.
+    private var sending: some View {
+        VStack(spacing: PaeoniaSpacing.space16) {
+            committedAnswer
+            actionBar
+        }
+        .padding(.top, PaeoniaSpacing.space8)
+    }
+
+    /// Keeps the *compose* look — the question up top and our just-sent answer read-only
+    /// in the same field below — so the screen holds steady until the reveal cross-fades
+    /// in. It never shows an answered/"saving" state; the reveal is the only answered
+    /// surface.
+    private var committedAnswer: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+            Text(question.prompt)
+                .font(PaeoniaTypography.title)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Keep the answer pinned to the bottom where the live field sat, so nothing
+            // jumps as the editable field becomes this read-only one.
+            Spacer(minLength: PaeoniaSpacing.space24)
+
+            committedAnswerField
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.top, PaeoniaSpacing.space24)
+        .padding(.bottom, PaeoniaSpacing.space8)
+    }
+
+    /// The just-sent answer shown read-only in the same labelled, bordered field the
+    /// composer used, so it reads as "your answer, still on screen" rather than a reveal.
+    /// Sources the content from the in-flight send, falling back to the live snapshot so
+    /// it stays filled across the moment the send settles and the reveal takes over.
+    private var committedAnswerField: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            Text(.dailyChallengeTextAnswerLabel)
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextSecondary)
+
+            DailySendingAnswerView(
+                mediaKind: liveQuestion.mediaAnswerKind,
+                mediaData: viewModel.sendingMediaData(for: question.id),
+                voiceDurationMs: viewModel.sendingVoiceDurationMs(for: question.id),
+                partnerChoiceName: viewModel.sendingPartnerChoiceName(for: question.id),
+                text: viewModel.sendingText(for: question.id) ?? liveQuestion.ownAnswerDetail?.textBody,
+                showsSendingStatus: false
+            )
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(PaeoniaSpacing.space12)
+            .background(.paeoniaBackgroundSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+            }
+        }
     }
 
     private var actionBar: some View {
@@ -68,9 +143,10 @@ struct DailyPartnerAnswerFlow: View {
             primaryTitle: .dailyChallengeSubmitButton,
             isPrimaryBusy: isSubmitting,
             isPrimaryDisabled: isPrimaryDisabled,
-            hidesPrimary: isComposerFocused,
+            isComposing: isComposerFocused,
             onPrimary: { Task { await submit() } },
-            onClose: handleClose
+            onClose: dismiss,
+            onDone: { isComposerFocused = false }
         )
     }
 
@@ -120,8 +196,15 @@ struct DailyPartnerAnswerFlow: View {
         viewModel.snapshot.questions.first { $0.id == question.id }
     }
 
+    /// The live snapshot copy of this question, carrying our just-sent answer once it
+    /// lands. Used while composing and to source the held answer; falls back to the
+    /// captured question before the snapshot has it.
+    private var liveQuestion: DailyChallengeQuestion {
+        revealedQuestion ?? question
+    }
+
     private var isSubmitting: Bool {
-        viewModel.submittingQuestionID == question.id || isFinishing
+        viewModel.submittingQuestionID == question.id || phase == .sending
     }
 
     private var isPrimaryDisabled: Bool {
@@ -142,14 +225,13 @@ struct DailyPartnerAnswerFlow: View {
 
         isComposerFocused = false
 
-        // Hold, Send still busy, just long enough for the partner's now-unlocked reply
-        // to load. Capped, so a slow connection never holds it open.
-        isFinishing = true
+        // Hold on the compose screen (Send still busy) just long enough for the partner's
+        // now-unlocked reply to load. Capped, so a slow connection never holds it open.
+        phase = .sending
         await viewModel.awaitAnswerReveal(for: question.id)
-        isFinishing = false
 
         if revealedQuestion?.canViewPartnerAnswer == true {
-            // The reply is viewable — turn the screen over to it.
+            // The reply is viewable — turn the screen straight over to it.
             PaeoniaHaptics.answerRevealed()
             withAnimation(PaeoniaMotion.meaningfulMoment) { phase = .revealed }
         } else {
@@ -162,16 +244,6 @@ struct DailyPartnerAnswerFlow: View {
     private func dismiss() {
         isComposerFocused = false
         onClose()
-    }
-
-    /// While typing, Close puts the keyboard away first and keeps the user on the
-    /// question; tapping again (or with the keyboard down) leaves the screen.
-    private func handleClose() {
-        if isComposerFocused {
-            isComposerFocused = false
-        } else {
-            dismiss()
-        }
     }
 
     private func showBanner(for notice: DailyChallengeViewModel.Notice?) {

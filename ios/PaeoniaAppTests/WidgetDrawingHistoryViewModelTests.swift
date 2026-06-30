@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 @testable import PaeoniaApp
@@ -111,6 +112,78 @@ struct WidgetDrawingHistoryViewModelTests {
         #expect(gateway.listCursors.count == 1)
     }
 
+    // MARK: - Save to device
+
+    @Test func saveToDeviceLatchesToSavedOnSuccess() async {
+        let shown = makeSummary(createdAt: date(100))
+        let saver = StubPhotoSaver(result: .saved)
+        let viewModel = makeViewModel(
+            gateway: StubGateway(canvasState: makeState(), pages: [[shown]]),
+            exporter: StubExporter(png: Data([0x1])),
+            photoSaver: saver
+        )
+        await viewModel.loadInitialIfNeeded()
+
+        await viewModel.saveToDevice(viewModel.items[0])
+
+        #expect(viewModel.saveState(for: shown.revisionID) == .saved)
+        #expect(viewModel.saveAlert == nil)
+        #expect(saver.saveCount == 1)
+    }
+
+    @Test func saveToDevicePermissionDeniedShowsAlertAndResets() async {
+        let shown = makeSummary(createdAt: date(100))
+        let viewModel = makeViewModel(
+            gateway: StubGateway(canvasState: makeState(), pages: [[shown]]),
+            exporter: StubExporter(png: Data([0x1])),
+            photoSaver: StubPhotoSaver(result: .permissionDenied)
+        )
+        await viewModel.loadInitialIfNeeded()
+
+        await viewModel.saveToDevice(viewModel.items[0])
+
+        #expect(viewModel.saveState(for: shown.revisionID) == .idle)
+        #expect(viewModel.saveAlert == .permissionDenied)
+
+        viewModel.dismissSaveAlert()
+        #expect(viewModel.saveAlert == nil)
+    }
+
+    @Test func saveToDeviceResetsToIdleWhenExportFails() async {
+        let shown = makeSummary(createdAt: date(100))
+        let saver = StubPhotoSaver(result: .saved)
+        let viewModel = makeViewModel(
+            gateway: StubGateway(canvasState: makeState(), pages: [[shown]]),
+            exporter: StubExporter(png: nil),
+            photoSaver: saver
+        )
+        await viewModel.loadInitialIfNeeded()
+
+        await viewModel.saveToDevice(viewModel.items[0])
+
+        #expect(viewModel.saveState(for: shown.revisionID) == .idle)
+        #expect(viewModel.saveAlert == nil)
+        // Never reached the photo library because there was nothing to save.
+        #expect(saver.saveCount == 0)
+    }
+
+    @Test func saveToDeviceIgnoresASecondTapOnceSaved() async {
+        let shown = makeSummary(createdAt: date(100))
+        let saver = StubPhotoSaver(result: .saved)
+        let viewModel = makeViewModel(
+            gateway: StubGateway(canvasState: makeState(), pages: [[shown]]),
+            exporter: StubExporter(png: Data([0x1])),
+            photoSaver: saver
+        )
+        await viewModel.loadInitialIfNeeded()
+
+        await viewModel.saveToDevice(viewModel.items[0])
+        await viewModel.saveToDevice(viewModel.items[0])
+
+        #expect(viewModel.saveState(for: shown.revisionID) == .saved)
+        #expect(saver.saveCount == 1)
+    }
+
     // MARK: - Helpers
 
     private func makeViewModel(
@@ -118,9 +191,17 @@ struct WidgetDrawingHistoryViewModelTests {
         identity: WidgetSyncIdentity = WidgetSyncIdentity(
             currentUserID: nil, currentDisplayName: nil, partnerDisplayName: nil
         ),
-        pageSize: Int = 30
+        pageSize: Int = 30,
+        exporter: any WidgetRevisionThumbnailLoading = StubExporter(png: nil),
+        photoSaver: any PhotoLibrarySaving = StubPhotoSaver(result: .saved)
     ) -> WidgetDrawingHistoryViewModel {
-        WidgetDrawingHistoryViewModel(gateway: gateway, identity: identity, pageSize: pageSize)
+        WidgetDrawingHistoryViewModel(
+            gateway: gateway,
+            identity: identity,
+            pageSize: pageSize,
+            exporter: exporter,
+            photoSaver: photoSaver
+        )
     }
 
     private func makeSummary(
@@ -207,4 +288,27 @@ private nonisolated final class StubGateway: WidgetCanvasGateway, @unchecked Sen
         throw WidgetCanvasGatewayError.emptyResponse
     }
     func signedPayloadURL(mediaAssetID: UUID) -> URL? { nil }
+}
+
+/// Returns the same canned PNG (or nil) for every export/thumbnail request.
+private nonisolated struct StubExporter: WidgetRevisionThumbnailLoading {
+    let png: Data?
+
+    func thumbnailPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) -> Data? { png }
+    func exportPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) -> Data? { png }
+}
+
+/// Records how many times a save was attempted and replays a fixed outcome.
+private nonisolated final class StubPhotoSaver: PhotoLibrarySaving, @unchecked Sendable {
+    let result: PhotoLibrarySaveResult
+    private(set) var saveCount = 0
+
+    init(result: PhotoLibrarySaveResult) {
+        self.result = result
+    }
+
+    func savePNG(_ data: Data) -> PhotoLibrarySaveResult {
+        saveCount += 1
+        return result
+    }
 }

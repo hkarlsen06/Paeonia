@@ -7,6 +7,10 @@ nonisolated protocol WidgetRevisionThumbnailLoading: Sendable {
     /// PNG data for a revision's thumbnail, or nil if it can't be built. Cached
     /// after the first successful render so re-scrolling is free.
     func thumbnailPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) async -> Data?
+
+    /// A full-quality PNG of a revision for saving to the device, rendered larger
+    /// than the timeline thumbnail. Not cached: saving is a one-off action.
+    func exportPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) async -> Data?
 }
 
 /// Downloads a revision's payload and rasterizes it into a thumbnail. Loads are
@@ -16,17 +20,20 @@ actor WidgetRevisionThumbnailLoader: WidgetRevisionThumbnailLoading {
     private let downloader: any WidgetPayloadDownloading
     private let rasterizer = WidgetDrawingRasterizer()
     private let pixelWidth: CGFloat
+    private let exportPixelWidth: CGFloat
     private var cache: [UUID: Data] = [:]
     private var inFlight: [UUID: Task<Data?, Never>] = [:]
 
     init(
         gateway: any WidgetCanvasGateway,
         downloader: any WidgetPayloadDownloading = URLSessionWidgetPayloadDownloader(),
-        pixelWidth: CGFloat = 240
+        pixelWidth: CGFloat = 240,
+        exportPixelWidth: CGFloat = 1_024
     ) {
         self.gateway = gateway
         self.downloader = downloader
         self.pixelWidth = pixelWidth
+        self.exportPixelWidth = exportPixelWidth
     }
 
     func thumbnailPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) async -> Data? {
@@ -37,7 +44,9 @@ actor WidgetRevisionThumbnailLoader: WidgetRevisionThumbnailLoading {
             return await existing.value
         }
 
-        let task = Task { await self.render(mediaAssetID: mediaAssetID, canvasSide: canvasSide) }
+        let task = Task {
+            await self.render(mediaAssetID: mediaAssetID, canvasSide: canvasSide, pixelWidth: pixelWidth)
+        }
         inFlight[revisionID] = task
         let data = await task.value
         inFlight[revisionID] = nil
@@ -47,7 +56,13 @@ actor WidgetRevisionThumbnailLoader: WidgetRevisionThumbnailLoading {
         return data
     }
 
-    private func render(mediaAssetID: UUID, canvasSide: CGFloat) async -> Data? {
+    func exportPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) async -> Data? {
+        // Render fresh at full quality; the small thumbnail cache isn't reused so
+        // the saved image is crisp rather than a 240pt preview blown up.
+        await render(mediaAssetID: mediaAssetID, canvasSide: canvasSide, pixelWidth: exportPixelWidth)
+    }
+
+    private func render(mediaAssetID: UUID, canvasSide: CGFloat, pixelWidth: CGFloat) async -> Data? {
         guard let url = try? await gateway.signedPayloadURL(mediaAssetID: mediaAssetID),
               let payload = try? await downloader.download(from: url) else {
             return nil
@@ -58,4 +73,11 @@ actor WidgetRevisionThumbnailLoader: WidgetRevisionThumbnailLoading {
             pixelWidth: pixelWidth
         )
     }
+}
+
+/// A loader that produces nothing — used as a default for previews and tests that
+/// never exercise thumbnail or export rendering.
+nonisolated struct NoOpWidgetRevisionThumbnailLoader: WidgetRevisionThumbnailLoading {
+    func thumbnailPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) -> Data? { nil }
+    func exportPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) -> Data? { nil }
 }

@@ -19,6 +19,7 @@ struct MemoryDetailView: View {
     @State private var loadedImagesByMediaAssetID: [UUID: UIImage] = [:]
 
     private let photoCarouselHeight: CGFloat = 280
+    private let photoCarouselPageControlInset: CGFloat = PaeoniaSpacing.space40
 
     private var record: MemoryRecord? {
         viewModel.record(for: memoryID)
@@ -115,11 +116,11 @@ struct MemoryDetailView: View {
                         loadedImagesByMediaAssetID[mediaAssetID] = image
                     }
                 )
-                .padding(.bottom, mediaItems.count > 1 ? PaeoniaSpacing.space20 : 0)
+                .padding(.bottom, mediaItems.count > 1 ? photoCarouselPageControlInset : 0)
             }
         }
         .tabViewStyle(.page(indexDisplayMode: mediaItems.count > 1 ? .automatic : .never))
-        .frame(height: mediaItems.count > 1 ? photoCarouselHeight + PaeoniaSpacing.space20 : photoCarouselHeight)
+        .frame(height: mediaItems.count > 1 ? photoCarouselHeight + photoCarouselPageControlInset : photoCarouselHeight)
     }
 
     @ViewBuilder

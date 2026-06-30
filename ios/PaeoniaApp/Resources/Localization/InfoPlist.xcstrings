@@ -79,6 +79,24 @@
         }
       }
     },
+    "NSPhotoLibraryAddUsageDescription" : {
+      "comment" : "Privacy - Photo Library Additions Usage Description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia saves a drawing to your photos when you tap save."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia lagrer en tegning i bildene dine når du trykker på lagre."
+          }
+        }
+      }
+    },
     "NSUserNotificationsUsageDescription" : {
       "comment" : "iOS notification permission prompt shown before enabling alerts for partner activity and relationship reminders.",
       "extractionState" : "manual",

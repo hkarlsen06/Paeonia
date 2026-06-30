@@ -26,18 +26,35 @@ struct MemoryMediaImageView: View {
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
 
     var body: some View {
-        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        imageSurface
+            .accessibilityLabel(Text(.memoriesPhotoAccessibility))
+            .accessibilityAddTraits(image != nil && allowsViewing ? .isButton : [])
+            .paeoniaImageViewer(selection: $imageViewerSelection)
+    }
+
+    @ViewBuilder
+    private var imageSurface: some View {
+        if allowsViewing {
+            baseImageSurface
+                .contentShape(imageShape)
+                .onTapGesture { presentImageViewer() }
+        } else {
+            baseImageSurface
+        }
+    }
+
+    private var baseImageSurface: some View {
+        imageShape
             .fill(.paeoniaSurfaceSecondary)
             .frame(maxWidth: .infinity)
             .frame(height: height)
             .overlay { content }
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .clipShape(imageShape)
             .task(id: mediaAssetID) { await load() }
-            .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .onTapGesture { presentImageViewer() }
-            .accessibilityLabel(Text(.memoriesPhotoAccessibility))
-            .accessibilityAddTraits(image != nil && allowsViewing ? .isButton : [])
-            .paeoniaImageViewer(selection: $imageViewerSelection)
+    }
+
+    private var imageShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
     }
 
     @ViewBuilder

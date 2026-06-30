@@ -194,6 +194,31 @@ struct WidgetDrawingViewModelTests {
         #expect(viewModel.canSave == false)
     }
 
+    @Test func startingAnotherSaveClearsPreviousConfirmationUntilSaveSucceeds() async {
+        let service = SuspendedWidgetCanvasService()
+        let viewModel = WidgetDrawingViewModel(service: service, uploader: NoOpWidgetCanvasUpload())
+        viewModel.drawing = makeNonEmptyDrawing()
+
+        await viewModel.save()
+        #expect(viewModel.recentlySaved)
+
+        await service.suspendNextSave()
+        viewModel.drawing = makeNonEmptyDrawing(seed: 48)
+
+        let saveTask = Task { @MainActor in
+            await viewModel.save()
+        }
+
+        await service.waitForSuspendedSaveToStart()
+
+        #expect(!viewModel.recentlySaved)
+
+        await service.releaseSuspendedSave()
+        await saveTask.value
+
+        #expect(viewModel.recentlySaved)
+    }
+
     @Test func saveEnqueuesUploadWithDrawingMetadata() async throws {
         let uploadSpy = WidgetCanvasUploadSpy()
         let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy(), uploader: uploadSpy)
@@ -503,6 +528,63 @@ private final class WidgetCanvasUploadSpy: WidgetCanvasUploading, @unchecked Sen
     func uploadPending(_ payload: WidgetDrawingUploadPayload) async throws {
         enqueued.append(payload)
     }
+}
+
+private actor SuspendedWidgetCanvasService: WidgetCanvasManaging {
+    private var shouldSuspendNextSave = false
+    private var suspendedSaveStarted = false
+    private var suspendedSaveStartedContinuation: CheckedContinuation<Void, Never>?
+    private var suspendedSaveReleaseContinuation: CheckedContinuation<Void, Never>?
+
+    func suspendNextSave() {
+        shouldSuspendNextSave = true
+        suspendedSaveStarted = false
+    }
+
+    func waitForSuspendedSaveToStart() async {
+        if suspendedSaveStarted {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            suspendedSaveStartedContinuation = continuation
+        }
+    }
+
+    func releaseSuspendedSave() {
+        suspendedSaveReleaseContinuation?.resume()
+        suspendedSaveReleaseContinuation = nil
+    }
+
+    func loadSavedDrawing() async -> Data? {
+        nil
+    }
+
+    func loadSavedSnapshot() async -> WidgetCanvasSnapshot? {
+        nil
+    }
+
+    func saveDrawing(
+        _: Data,
+        canvasSize _: CGSize,
+        authorName _: String?,
+        createdAt _: Date
+    ) async throws {
+        guard shouldSuspendNextSave else {
+            return
+        }
+
+        shouldSuspendNextSave = false
+        suspendedSaveStarted = true
+        suspendedSaveStartedContinuation?.resume()
+        suspendedSaveStartedContinuation = nil
+
+        await withCheckedContinuation { continuation in
+            suspendedSaveReleaseContinuation = continuation
+        }
+    }
+
+    func clearForPrivacy() async {}
 }
 
 private final class WidgetDrawingUndoTestTarget {}

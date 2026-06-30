@@ -19,6 +19,8 @@ struct WidgetDrawingView: View {
 
             WidgetDrawingColorControlsView(viewModel: viewModel)
 
+            canvasAttribution
+
             drawingCanvas
 
             bottomActions
@@ -67,7 +69,7 @@ struct WidgetDrawingView: View {
         }
         .onChange(of: viewModel.recentlySaved) { _, recentlySaved in
             if recentlySaved {
-                PaeoniaHaptics.drawingSent()
+                PaeoniaHaptics.drawingSaved()
             }
         }
         .onChange(of: viewModel.saveFailure) { _, failure in
@@ -158,15 +160,6 @@ struct WidgetDrawingView: View {
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
                 .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
         }
-        // Attribution for the saved drawing on the canvas: who drew it (top
-        // leading) and when (bottom trailing), in the widget's own type styles.
-        // Struck out the moment the canvas is edited, until the next save.
-        .overlay(alignment: .topLeading) {
-            canvasAuthorLabel
-        }
-        .overlay(alignment: .bottomTrailing) {
-            canvasTimestampLabel
-        }
         // Fill the space left by the controls and the bottom row as the largest
         // possible square, so freeing vertical space grows the canvas.
         .aspectRatio(1, contentMode: .fit)
@@ -174,32 +167,36 @@ struct WidgetDrawingView: View {
         .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
     }
 
+    // Attribution for the saved drawing, sitting above the canvas: who drew it
+    // (leading) and when (trailing), in the widget's own type styles. Struck out
+    // the moment the canvas is edited, until the next save.
     @ViewBuilder
-    private var canvasAuthorLabel: some View {
-        if viewModel.isShowingSavedAttribution,
-           let name = viewModel.savedDrawingAuthorName,
-           !name.isEmpty {
-            Text(verbatim: name)
-                .font(PaeoniaTypography.widgetPrimary)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .strikethrough(viewModel.hasUnsavedEdits)
-                .lineLimit(1)
-                .padding(PaeoniaSpacing.space16)
-                .allowsHitTesting(false)
-        }
-    }
+    private var canvasAttribution: some View {
+        if viewModel.isShowingSavedAttribution {
+            HStack(spacing: PaeoniaSpacing.space8) {
+                if let name = viewModel.savedDrawingAuthorName, !name.isEmpty {
+                    Text(verbatim: name)
+                        .font(PaeoniaTypography.widgetPrimary)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .lineLimit(1)
+                }
 
-    @ViewBuilder
-    private var canvasTimestampLabel: some View {
-        if viewModel.isShowingSavedAttribution,
-           let createdAt = viewModel.savedDrawingCreatedAt {
-            Text(Self.attributionTimestamp(createdAt))
-                .font(PaeoniaTypography.widgetSecondary)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .strikethrough(viewModel.hasUnsavedEdits)
-                .lineLimit(1)
-                .padding(PaeoniaSpacing.space16)
-                .allowsHitTesting(false)
+                Spacer(minLength: PaeoniaSpacing.space8)
+
+                if let createdAt = viewModel.savedDrawingCreatedAt {
+                    Text(Self.attributionTimestamp(createdAt))
+                        .font(PaeoniaTypography.widgetSecondary)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                        .lineLimit(1)
+                }
+            }
+            .strikethrough(viewModel.hasUnsavedEdits)
+            // Inset so the text tucks inside the canvas's rounded corners rather
+            // than sitting flush at the screen edges.
+            .padding(.horizontal, PaeoniaSpacing.space16)
+            // Pull the row down toward the canvas, tightening the VStack's
+            // default 16pt gap so the attribution reads as belonging to it.
+            .padding(.bottom, -PaeoniaSpacing.space8)
         }
     }
 

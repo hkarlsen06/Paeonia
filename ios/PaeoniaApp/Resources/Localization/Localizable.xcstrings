@@ -6837,6 +6837,96 @@
           }
         }
       }
+    },
+    "widget.history.save.accessibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save this drawing to your photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre denne tegningen i bildene dine"
+          }
+        }
+      },
+      "comment" : "Accessibility label for the button that saves a past drawing to the phone's photos."
+    },
+    "widget.history.saved.accessibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to your photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret i bildene dine"
+          }
+        }
+      },
+      "comment" : "Accessibility label shown after a past drawing has been saved to the phone's photos."
+    },
+    "widget.history.save.permission.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let Paeonia save to Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La Paeonia lagre i Bilder"
+          }
+        }
+      },
+      "comment" : "Title of the alert shown when the app can't save a drawing because photo access is turned off."
+    },
+    "widget.history.save.permission.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To save drawings, turn on photo access for Paeonia in Settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For å lagre tegninger, slå på bildetilgang for Paeonia i Innstillinger."
+          }
+        }
+      },
+      "comment" : "Message of the alert shown when the app can't save a drawing because photo access is turned off."
+    },
+    "common.openSettings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Innstillinger"
+          }
+        }
+      },
+      "comment" : "Button that opens the system Settings app."
     }
   },
   "version" : "1.0"

@@ -63,6 +63,25 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    static func drawingSaved() {
+        impact(.rigid, intensity: 0.78)
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(70))
+            guard !Task.isCancelled else {
+                return
+            }
+
+            impact(.soft, intensity: 0.55)
+            try? await Task.sleep(for: .milliseconds(45))
+            guard !Task.isCancelled else {
+                return
+            }
+
+            notify(.success)
+        }
+    }
+
     static func drawingSent() {
         impact(.light)
     }
@@ -79,7 +98,14 @@ enum PaeoniaHaptics {
         UINotificationFeedbackGenerator().notificationOccurred(type)
     }
 
-    private static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
-        UIImpactFeedbackGenerator(style: style).impactOccurred()
+    private static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle, intensity: CGFloat? = nil) {
+        let generator = UIImpactFeedbackGenerator(style: style)
+        generator.prepare()
+
+        if let intensity {
+            generator.impactOccurred(intensity: max(0, min(intensity, 1)))
+        } else {
+            generator.impactOccurred()
+        }
     }
 }

@@ -278,6 +278,20 @@ struct DailyAnswerTextField: View {
     @Binding var text: String
     var isFocused: FocusState<Bool>.Binding
 
+    /// Mirrors the focus ring's color/width so they can be driven by an explicit
+    /// `withAnimation` mutation instead of an `.animation(_:value:)` modifier. The
+    /// ring is drawn in an `.overlay`, so its *frame* always matches the field's —
+    /// which keeps moving as the keyboard rises, via SwiftUI's automatic keyboard
+    /// avoidance. Any `.animation(_:value:)` modifier on that overlay, even scoped to
+    /// just the stroke shape, still re-times that frame's keyboard-driven movement
+    /// onto its own fixed curve, fighting the keyboard's real timing and bouncing —
+    /// scoping it to "just the shape" doesn't help, because the shape's frame is the
+    /// thing bouncing. Driving these two plain values from `withAnimation` instead
+    /// touches nothing but the values themselves, so the keyboard-driven frame is
+    /// never part of the animated transaction.
+    @State private var strokeColor = Color.paeoniaSurfacePressed
+    @State private var strokeWidth = PaeoniaRadius.strokeDefault
+
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             Text(.dailyChallengeTextAnswerLabel)
@@ -300,12 +314,24 @@ struct DailyAnswerTextField: View {
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                    .stroke(
-                        isFocused.wrappedValue ? Color.paeoniaAccentPrimary : Color.paeoniaSurfacePressed,
-                        lineWidth: isFocused.wrappedValue ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
-                    )
+                    .stroke(strokeColor, lineWidth: strokeWidth)
             }
-            .animation(PaeoniaMotion.stateChange, value: isFocused.wrappedValue)
+        }
+        .onAppear { syncStroke(focused: isFocused.wrappedValue, animated: false) }
+        .onChange(of: isFocused.wrappedValue) { _, focused in
+            syncStroke(focused: focused, animated: true)
+        }
+    }
+
+    private func syncStroke(focused: Bool, animated: Bool) {
+        let apply = {
+            strokeColor = focused ? .paeoniaAccentPrimary : .paeoniaSurfacePressed
+            strokeWidth = focused ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
+        }
+        if animated {
+            withAnimation(PaeoniaMotion.stateChange, apply)
+        } else {
+            apply()
         }
     }
 }

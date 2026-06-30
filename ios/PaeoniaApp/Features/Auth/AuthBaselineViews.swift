@@ -7,10 +7,15 @@ import UIKit
 /// to explain work that the user will not have time to read.
 struct AuthLaunchingView: View {
     var body: some View {
-        Color.paeoniaBackgroundPrimary
-            .ignoresSafeArea()
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(.appStateLaunching))
+        ZStack {
+            Color.paeoniaBackgroundPrimary
+
+            Image(.paeoniaLaunchPetalMark)
+                .accessibilityHidden(true)
+        }
+        .ignoresSafeArea()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(.appStateLaunching))
     }
 }
 
