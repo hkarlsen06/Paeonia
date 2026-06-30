@@ -414,6 +414,11 @@ verify_jwt = false
 [functions.send-widget-push]
 verify_jwt = false
 
+# Drains media/report-snapshot storage delete queues. Invoked by a schedule or
+# trusted service caller guarded by the DRAIN_SECRET header.
+[functions.cleanup-media-storage]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

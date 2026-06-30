@@ -516,6 +516,7 @@ Paeonia uses Supabase's GitHub integration for remote deploys. On push to `origi
 - Either way, an already-applied migration must stay editable-safe: prefer `create or replace` / `drop ... if exists` so re-running is a no-op. To change a function's return type (which `create or replace` can't), `drop function if exists` then recreate.
 - Keep SQL source files in `supabase/sql/functions/` in sync with actual database definitions if that structure is added.
 - Use `supabase db pull` only when intentionally baselining or reconciling remote-first schema changes.
+- When local Supabase commands need Docker, use Orbstack's socket (`DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock`). If that socket is unavailable and local verification is needed, start Orbstack first, then rerun the command.
 
 ## Product-Specific Quality Bar
 
