@@ -7,7 +7,8 @@ nonisolated enum PaeoniaSyncServiceDefaults {
         accessSnapshotStore: any AccessSyncSnapshotPersisting,
         relationshipEventStore: any RelationshipSyncEventPersisting,
         locationVisibilityStore: any LocationVisibilitySnapshotPersisting,
-        ownLocationStore: any OwnLocationSnapshotPersisting
+        ownLocationStore: any OwnLocationSnapshotPersisting,
+        memoryStore: any MemoryRecordPersisting
     )
 
     static func makeStores() -> Stores {
@@ -19,7 +20,8 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 SwiftDataAccessSyncSnapshotRepository(container: localStore.container),
                 SwiftDataRelationshipSyncEventRepository(container: localStore.container),
                 SwiftDataLocationVisibilitySnapshotRepository(container: localStore.container),
-                SwiftDataOwnLocationSnapshotRepository(container: localStore.container)
+                SwiftDataOwnLocationSnapshotRepository(container: localStore.container),
+                SwiftDataMemoryRecordRepository(container: localStore.container)
             )
         } catch {
             preconditionFailure("Unable to create persistent sync store: \(error)")
@@ -31,6 +33,7 @@ nonisolated enum PaeoniaSyncServiceDefaults {
         relationshipEventStore: any RelationshipSyncEventPersisting,
         locationVisibilityStore: any LocationVisibilitySnapshotPersisting,
         ownLocationStore: any OwnLocationSnapshotPersisting,
+        memoryStore: any MemoryRecordPersisting,
         pendingOperationHandlers: [any PendingSyncOperationHandling] = []
     ) -> [any SyncStream] {
         guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
@@ -39,6 +42,7 @@ nonisolated enum PaeoniaSyncServiceDefaults {
 
         let accessGateway = LiveSupabaseAccessGateway(client: client)
         let locationGateway = LiveSupabaseLocationGateway(client: client)
+        let memoryGateway = LiveSupabaseMemoryGateway(client: client)
         let locationHandlers: [any PendingSyncOperationHandling] = [
             LocationSharingPreferencePendingOperationHandler(
                 gateway: locationGateway,
@@ -52,6 +56,34 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 mediaUploadService: LiveDailyAnswerMediaUploadService(client: client),
                 gateway: LiveSupabaseDailyChallengeGateway(client: client),
                 mediaDraftStore: FileDailyAnswerMediaDraftStore.live()
+            ),
+            CreateMemoryPendingOperationHandler(
+                gateway: memoryGateway,
+                memoryStore: memoryStore
+            ),
+            UpdateMemoryPendingOperationHandler(
+                gateway: memoryGateway,
+                memoryStore: memoryStore
+            ),
+            HideMemoryPendingOperationHandler(
+                gateway: memoryGateway,
+                memoryStore: memoryStore
+            ),
+            UpsertMemoryNotePendingOperationHandler(
+                gateway: memoryGateway,
+                memoryStore: memoryStore
+            ),
+            AttachMemoryMediaPendingOperationHandler(
+                gateway: memoryGateway,
+                memoryStore: memoryStore
+            ),
+            RemoveMemoryMediaPendingOperationHandler(
+                gateway: memoryGateway,
+                memoryStore: memoryStore
+            ),
+            CreateMemoryThreadMessagePendingOperationHandler(
+                gateway: memoryGateway,
+                memoryStore: memoryStore
             ),
         ]
 
@@ -69,6 +101,10 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                     customHandlers: pendingOperationHandlers,
                     defaultHandlers: locationHandlers
                 )
+            ),
+            MemorySyncStream(
+                gateway: memoryGateway,
+                memoryStore: memoryStore
             ),
             LocationVisibilitySyncStream(
                 gateway: locationGateway,

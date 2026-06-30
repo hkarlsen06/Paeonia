@@ -26,6 +26,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         relationshipEventStore: (any RelationshipSyncEventPersisting)? = nil,
         locationVisibilityStore: (any LocationVisibilitySnapshotPersisting)? = nil,
         ownLocationStore: (any OwnLocationSnapshotPersisting)? = nil,
+        memoryStore: (any MemoryRecordPersisting)? = nil,
         pendingOperationHandlers: [any PendingSyncOperationHandling] = [],
         minimumForegroundSyncInterval: TimeInterval = 60,
         syncTimeoutNanoseconds: UInt64 = 30_000_000_000,
@@ -37,6 +38,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
             || relationshipEventStore == nil
             || locationVisibilityStore == nil
             || ownLocationStore == nil
+            || memoryStore == nil
         )
         let needsDefaultStores = stateStore == nil
             || pendingOperationStore == nil
@@ -46,7 +48,8 @@ actor PaeoniaSyncService: PaeoniaSyncing {
             guard let resolvedAccessSnapshotStore = accessSnapshotStore ?? fallbackStores?.accessSnapshotStore,
                   let resolvedRelationshipEventStore = relationshipEventStore ?? fallbackStores?.relationshipEventStore,
                   let resolvedLocationVisibilityStore = locationVisibilityStore ?? fallbackStores?.locationVisibilityStore,
-                  let resolvedOwnLocationStore = ownLocationStore ?? fallbackStores?.ownLocationStore else {
+                  let resolvedOwnLocationStore = ownLocationStore ?? fallbackStores?.ownLocationStore,
+                  let resolvedMemoryStore = memoryStore ?? fallbackStores?.memoryStore else {
                 preconditionFailure("Default sync streams require persistent sync stores")
             }
 
@@ -55,6 +58,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
                 relationshipEventStore: resolvedRelationshipEventStore,
                 locationVisibilityStore: resolvedLocationVisibilityStore,
                 ownLocationStore: resolvedOwnLocationStore,
+                memoryStore: resolvedMemoryStore,
                 pendingOperationHandlers: pendingOperationHandlers
             )
         } else {
