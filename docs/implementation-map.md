@@ -29,6 +29,7 @@ When a launch-time network call is cancelled with `NSURLErrorCancelled` / `URLEr
 - `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengeMediaViews.swift`: image/media display for answers.
 - `ios/PaeoniaApp/Features/DailyChallenge/DailyVoiceAnswerViews.swift`, `DailyVoiceRecorder.swift`, and `DailyVoiceAudioSession.swift`: voice recording/playback UI and audio session handling.
 - `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengeDraftStore.swift`: local answer draft persistence.
+- `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengeSnapshotCache.swift`: local-first cold-launch cache. The live service writes the raw `DailyChallengeRemoteSnapshotRow` (keyed per user) on every successful snapshot load; `DailyChallengeViewModel.configure` seeds `snapshot`+`streak` from it via `DailyChallengeRemoteSnapshotRow.loadResult` before the network `reload()`, so returning users see real content (not placeholders) on the first frame. Cleared on un-pair in `RootView.clearWidgetIfNeeded` for privacy.
 - `ios/PaeoniaApp/Features/DailyChallenge/DailyChallengePendingOperationHandler.swift`: local-first retry handling for queued challenge writes.
 - `ios/PaeoniaApp/Services/Media/DailyAnswerMediaDraftStore.swift`, `DailyAnswerMediaUploadService.swift`, and `DailyAnswerMediaImageService.swift`: photo/voice draft storage, upload, and display support.
 - `ios/PaeoniaAppTests/DailyChallengeTests.swift`: main regression suite for question state, answer flow, reveal behavior, cancellation, and media handling.

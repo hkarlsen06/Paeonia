@@ -37,6 +37,7 @@ final class DailyChallengeViewModel {
     private let draftStore: any DailyChallengeDraftStoring
     private let mediaDraftStore: any DailyAnswerMediaDraftStoring
     private let pendingOperationStore: any PendingSyncOperationPersisting
+    private let snapshotCache: any DailyChallengeSnapshotCaching
     private let encoder = JSONEncoder()
     #if DEBUG
     private let logger = Logger(
@@ -49,6 +50,14 @@ final class DailyChallengeViewModel {
     private var reloadTask: Task<Void, Never>?
     private var reloadTaskUserID: UUID?
     private var answerDrafts: [UUID: DailyAnswerDraft] = [:]
+    /// Whether today's challenge has resolved for the current user — set once the
+    /// first load attempt has settled (applied a result or failed with a banner),
+    /// not merely while a request is in flight. The home card shows its loading
+    /// state until this is true, so the empty initial snapshot never flashes
+    /// "no challenge" before we actually know; and once resolved the card keeps the
+    /// real, last-known state through later refreshes instead of dropping back to
+    /// loading. Reset when the signed-in user changes.
+    private var hasResolvedTodayState = false
 
     private(set) var participants = DailyChallengeParticipants()
     private(set) var snapshot = DailyChallengeSnapshot.empty(currentUserID: nil)
@@ -71,13 +80,15 @@ final class DailyChallengeViewModel {
         operationProvider: (any SyncClientOperationProviding)? = nil,
         draftStore: (any DailyChallengeDraftStoring)? = nil,
         mediaDraftStore: (any DailyAnswerMediaDraftStoring)? = nil,
-        pendingOperationStore: (any PendingSyncOperationPersisting)? = nil
+        pendingOperationStore: (any PendingSyncOperationPersisting)? = nil,
+        snapshotCache: (any DailyChallengeSnapshotCaching)? = nil
     ) {
         self.service = service ?? DailyChallengeServiceFactory.makeDefault()
         self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.draftStore = draftStore ?? UserDefaultsDailyChallengeDraftStore.shared
         self.mediaDraftStore = mediaDraftStore ?? FileDailyAnswerMediaDraftStore.live()
         self.pendingOperationStore = pendingOperationStore ?? Self.makeDefaultPendingOperationStore()
+        self.snapshotCache = snapshotCache ?? FileDailyChallengeSnapshotCache.live()
     }
 
     private static func makeDefaultPendingOperationStore() -> any PendingSyncOperationPersisting {
@@ -182,12 +193,31 @@ final class DailyChallengeViewModel {
         reloadTask = nil
         reloadTaskUserID = nil
         isLoading = false
+        // A new user hasn't resolved today's state yet, so the card returns to its
+        // loading state until this user's first load settles.
+        hasResolvedTodayState = false
         // Restore any drafts this person saved earlier so reopening — or relaunching
         // the app — keeps their half-written answers.
         answerDrafts = newUserID.map { draftStore.drafts(for: $0) } ?? [:]
         snapshot = .empty(currentUserID: newUserID)
 
-        guard newUserID != nil else { return }
+        guard let newUserID else { return }
+
+        // Seed from the local cache so the first render uses real data instead of
+        // placeholders. The cache holds the last successful network load for this
+        // specific user, so a different signed-in user never sees stale content.
+        // `reload()` runs immediately after and replaces the seed with fresh data;
+        // the seed is only visible during that first network round-trip.
+        if let cached = snapshotCache.load(ownerUserID: newUserID) {
+            // Guard: only apply if currentUserID hasn't changed underneath us.
+            // Since `configure` is @MainActor and there is no suspension between
+            // the assignment above and here, this check is always true — but it
+            // documents the invariant explicitly.
+            if self.currentUserID == newUserID {
+                apply(cached.loadResult(currentUserID: newUserID, locale: .current))
+            }
+        }
+
         await reload()
     }
 
@@ -237,12 +267,21 @@ final class DailyChallengeViewModel {
             guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
             apply(result)
         } catch {
+            guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
             if !isCancellation(error) {
                 logFailure("Loading today's challenge failed", error)
-                notice = .loadFailed
+                if shouldSurfaceLoadFailureNotice {
+                    notice = .loadFailed
+                }
             }
         }
         guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
+        // The first load for this user has now settled — either it applied a result
+        // above or it failed (with the banner shown). Either way today's state is
+        // resolved, so the home card stops showing loading and won't drop back to it
+        // on later refreshes. A cancelled/superseded load returns before here and
+        // lets the load that replaced it resolve instead.
+        hasResolvedTodayState = true
         await refreshSendingState()
     }
 
@@ -773,6 +812,13 @@ final class DailyChallengeViewModel {
         streak = result.streak
     }
 
+    /// A refresh can fail after the screen already has a usable, previously-loaded
+    /// challenge. Keep that state quietly; the debug log still captures the network
+    /// failure, but the user should not see a banner for content that stayed usable.
+    private var shouldSurfaceLoadFailureNotice: Bool {
+        !(hasResolvedTodayState && snapshot.hasAnyQuestions)
+    }
+
     private func cancelInFlightReload() {
         reloadTask?.cancel()
         reloadTask = nil
@@ -790,7 +836,13 @@ final class DailyChallengeViewModel {
     }
 
     var homeCardState: DailyChallengeCardState {
-        if isLoading && !snapshot.hasAnyCurrentDayQuestions {
+        // Show loading until today's state first resolves for this user, so the empty
+        // initial snapshot never flashes "no challenge" before the load settles.
+        // Seeded current-day content shows immediately (it satisfies
+        // `hasAnyCurrentDayQuestions`); once resolved the card keeps the real,
+        // last-known state even while a refresh is in flight, so it never drops back
+        // to loading.
+        if !hasResolvedTodayState && !snapshot.hasAnyCurrentDayQuestions {
             return DailyChallengeCardState(
                 kind: .loading,
                 answeredCount: snapshot.progress.ownAnsweredCount,

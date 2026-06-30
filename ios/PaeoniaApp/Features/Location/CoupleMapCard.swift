@@ -197,10 +197,46 @@ private struct CoupleMapSnapshot: View {
     /// Hard cap on simultaneous tap-spawned hearts, so rapid tapping can make a
     /// little chaos without growing unbounded work or memory.
     private static let maxConcurrentTapKisses = 16
+    /// Lean of the sweep line away from vertical, so it cuts across on a diagonal.
+    private static let tiltRadians: CGFloat = 18 * .pi / 180
+    private static let sweepDuration: TimeInterval = 1.5
+    /// The reveal uses the app's standard ease-in-ease-out curve (`PaeoniaMotion`) at the
+    /// sweep duration, so the flame's motion matches the rest of the app.
+    private static let sweepCurve = PaeoniaMotion.standardCurve(duration: sweepDuration)
+    /// A partner must move at least this fraction of the framed span for the sweep to
+    /// play — below it the two maps look identical, so the new one swaps in silently.
+    /// The framed span is floored at `minimumSpanMeters`, the map's tightest framing.
+    private static let minimumMoveFraction: Double = 0.06
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The current map + avatars, shown underneath — what the sweep reveals.
     @State private var snapshot: SnapshotResult?
+    /// The previous map + avatars, laid over the new one and burned away by the sweep.
+    /// Nil on the first load, where the cover falls back to the empty backdrop.
+    @State private var outgoing: SnapshotResult?
+    /// Whether a sweep is in progress (so the burning cover and flame are mounted).
+    @State private var isRevealing = false
+    /// 0 → 1 as the flame front crosses the tile, burning the cover (old map + old
+    /// avatars) away to reveal the new map + new avatars beneath.
+    @State private var sweep: CGFloat = 1
+    /// Bumped each time a sweep starts; the deferred start and completion only act while
+    /// it still matches, so a superseding sweep wins and silent swaps don't disturb one.
+    @State private var revealToken = 0
+    /// The positions the on-screen map was last *swept* for. The next sweep is measured
+    /// from here (not the last silent swap), so a series of tiny drifts accumulates toward
+    /// the threshold instead of resetting each time.
+    @State private var sweptCurrent: CLLocationCoordinate2D?
+    @State private var sweptPartner: CLLocationCoordinate2D?
+    /// The request the current `snapshot` was rendered for. `.task` restarts each
+    /// time this tile reappears (e.g. switching back to the Us tab), so we keep this
+    /// to recognize an identical re-entry and skip the work instead of re-rendering.
+    @State private var lastRenderedRequest: SnapshotRequest?
     @State private var tapKisses: [TapKiss] = []
 
+    /// One rendered map plus the two avatar points on it. The whole thing is revealed as a
+    /// unit — map and avatars together — so the flame hides the old positions while
+    /// uncovering the new ones.
     private struct SnapshotResult {
         let image: UIImage
         let currentPoint: CGPoint
@@ -231,41 +267,39 @@ private struct CoupleMapSnapshot: View {
 
     var body: some View {
         GeometryReader { proxy in
+            let size = proxy.size
             ZStack {
-                background
+                Color.paeoniaBackgroundSecondary
 
+                // The current map and avatars, shown underneath — what the sweep reveals.
                 if let snapshot {
+                    mapContent(snapshot, size: size)
+                }
+
+                // The burning cover: the old map + old avatars (or the backdrop on first
+                // load), masked to the part the flame hasn't reached and burned away to
+                // reveal the new map + new avatars beneath. Avatars ride along inside the
+                // cover, so the old ones are hidden and the new ones uncovered by the line.
+                if isRevealing {
+                    revealCover(size: size)
+                        .mask(alignment: .topLeading) {
+                            UnsweptRegionShape(progress: sweep, tilt: Self.tiltRadians)
+                        }
+
+                    FlameSweepLine(progress: sweep, tilt: Self.tiltRadians)
+                        .allowsHitTesting(false)
+                }
+
+                // Hearts fly between the avatars — so only once the avatars are actually
+                // on screen. Suppressed during a sweep (the avatars are still being
+                // uncovered) and whenever there's no map yet, so a heart never flies over
+                // empty space.
+                if let snapshot, !isRevealing {
                     KissLayer(
                         start: snapshot.currentPoint,
                         end: snapshot.partnerPoint,
                         tapKisses: tapKisses
                     )
-
-                    MapAvatarPin(
-                        name: currentName,
-                        assetID: currentProfilePhotoAssetID,
-                        tint: .paeoniaPartnerOne,
-                        capturedAt: currentCapturedAt,
-                        showsTimestamp: false,
-                        point: snapshot.currentPoint,
-                        containerWidth: proxy.size.width
-                    )
-                    .position(snapshot.currentPoint)
-
-                    MapAvatarPin(
-                        name: partnerName,
-                        assetID: partnerProfilePhotoAssetID,
-                        tint: .paeoniaPartnerTwo,
-                        capturedAt: partnerCapturedAt,
-                        showsTimestamp: true,
-                        // Hang the badge toward the other pin (the map interior) so it
-                        // never reaches the card edge: below when the partner is the
-                        // upper pin, above when it's the lower one.
-                        badgeBelow: snapshot.partnerPoint.y <= snapshot.currentPoint.y,
-                        point: snapshot.partnerPoint,
-                        containerWidth: proxy.size.width
-                    )
-                    .position(snapshot.partnerPoint)
                 }
 
                 VStack(spacing: 0) {
@@ -275,26 +309,81 @@ private struct CoupleMapSnapshot: View {
                         .background(scrim)
                 }
             }
-            .frame(width: proxy.size.width, height: proxy.size.height)
+            .frame(width: size.width, height: size.height)
             .contentShape(Rectangle())
             .onTapGesture { spawnTapKiss() }
             .onLongPressGesture(minimumDuration: 0.4) { onLongPress() }
-            .task(
-                id: SnapshotRequest(
-                    size: proxy.size,
-                    currentCoordinate: currentCoordinate,
-                    partnerCoordinate: partnerCoordinate
-                )
-            ) {
-                await loadSnapshot(size: proxy.size)
+            .task(id: snapshotRequest(size: size)) {
+                await loadSnapshot(size: size)
             }
         }
+    }
+
+    /// The full revealed unit: the duotone map with both avatar pins placed on it. The
+    /// reveal masks this as a whole, so a partner's avatar is hidden at its old position
+    /// and uncovered at its new one as the flame passes.
+    @ViewBuilder
+    private func mapContent(_ snap: SnapshotResult, size: CGSize) -> some View {
+        ZStack {
+            duotone(snap.image, size)
+
+            MapAvatarPin(
+                name: currentName,
+                assetID: currentProfilePhotoAssetID,
+                tint: .paeoniaPartnerOne,
+                capturedAt: currentCapturedAt,
+                showsTimestamp: false,
+                point: snap.currentPoint,
+                containerWidth: size.width
+            )
+            .position(snap.currentPoint)
+
+            MapAvatarPin(
+                name: partnerName,
+                assetID: partnerProfilePhotoAssetID,
+                tint: .paeoniaPartnerTwo,
+                capturedAt: partnerCapturedAt,
+                showsTimestamp: true,
+                // Hang the badge toward the other pin (the map interior) so it never
+                // reaches the card edge: below when the partner is the upper pin, above
+                // when it's the lower one.
+                badgeBelow: snap.partnerPoint.y <= snap.currentPoint.y,
+                point: snap.partnerPoint,
+                containerWidth: size.width
+            )
+            .position(snap.partnerPoint)
+        }
+    }
+
+    /// The layer the flame burns away: the outgoing map + avatars when there is one,
+    /// otherwise the plain backdrop so the very first map still sweeps in.
+    @ViewBuilder
+    private func revealCover(size: CGSize) -> some View {
+        if let outgoing {
+            mapContent(outgoing, size: size)
+        } else {
+            Color.paeoniaBackgroundSecondary
+        }
+    }
+
+    /// The brand duotone: MapKit has no grayscale/tintable style, so desaturate the
+    /// snapshot and multiply the plum accent over it.
+    private func duotone(_ uiImage: UIImage, _ size: CGSize) -> some View {
+        Image(uiImage: uiImage)
+            .resizable()
+            .scaledToFill()
+            .frame(width: size.width, height: size.height)
+            .clipped()
+            .grayscale(1)
+            .colorMultiply(.paeoniaAccentPrimary)
     }
 
     /// Spawns a heart that flies between the avatars right now. Several can be in
     /// flight at once; a hard cap plus per-kiss auto-removal keep it bounded.
     private func spawnTapKiss() {
-        guard snapshot != nil else {
+        // No heart without visible avatars to fly between: ignore taps before the first
+        // map and while a sweep is still uncovering them.
+        guard snapshot != nil, !isRevealing else {
             return
         }
         if tapKisses.count >= Self.maxConcurrentTapKisses {
@@ -311,21 +400,6 @@ private struct CoupleMapSnapshot: View {
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(kiss.plan.flightDuration + 0.2))
             tapKisses.removeAll { $0.id == kiss.id }
-        }
-    }
-
-    @ViewBuilder
-    private var background: some View {
-        if let snapshot {
-            // MapKit has no grayscale or tintable map style, so desaturate the
-            // snapshot and multiply the brand color over it for a plum duotone map.
-            Image(uiImage: snapshot.image)
-                .resizable()
-                .scaledToFill()
-                .grayscale(1)
-                .colorMultiply(.paeoniaAccentPrimary)
-        } else {
-            Color.paeoniaBackgroundSecondary
         }
     }
 
@@ -366,13 +440,27 @@ private struct CoupleMapSnapshot: View {
             .formatted(.measurement(width: .abbreviated, usage: .road))
     }
 
+    private func snapshotRequest(size: CGSize) -> SnapshotRequest {
+        SnapshotRequest(
+            size: size,
+            currentCoordinate: currentCoordinate,
+            partnerCoordinate: partnerCoordinate
+        )
+    }
+
     @MainActor
     private func loadSnapshot(size: CGSize) async {
         guard size.width > 0, size.height > 0 else {
             return
         }
 
-        snapshot = nil
+        // The .task restarts whenever this tile reappears, not only when its inputs
+        // change, so re-entering the Us tab would otherwise re-render an identical
+        // map. Skip the work when we already hold the image for this exact request.
+        let request = snapshotRequest(size: size)
+        if snapshot != nil, lastRenderedRequest == request {
+            return
+        }
 
         // Muted standard config plays down roads, borders, and labels so the map
         // reads as a calm backdrop rather than a navigation map.
@@ -390,11 +478,15 @@ private struct CoupleMapSnapshot: View {
             return
         }
 
-        snapshot = SnapshotResult(
+        // Adopt the finished map+avatars. `adopt` keeps the last one visible and sweeps
+        // the new one in (or swaps silently for a small move), so a refresh never flashes.
+        let new = SnapshotResult(
             image: result.image,
             currentPoint: result.point(for: currentCoordinate),
             partnerPoint: result.point(for: partnerCoordinate)
         )
+        lastRenderedRequest = request
+        adopt(new)
     }
 
     /// A map rect that contains both pins, built to the card's aspect ratio so MapKit
@@ -430,6 +522,195 @@ private struct CoupleMapSnapshot: View {
             height: halfHeight * 2
         )
         return MKCoordinateRegion(rect.intersection(.world))
+    }
+
+    // MARK: Reveal
+
+    /// Adopts a freshly rendered map + avatars. The new one always becomes the base
+    /// (shown underneath); when a partner has moved far enough — or on the first map — the
+    /// previous one is laid over it and burned away by the flame sweep. A same-place
+    /// re-render swaps silently and never disturbs a sweep already in flight.
+    private func adopt(_ new: SnapshotResult) {
+        let previous = snapshot
+        let isFirstMap = previous == nil
+        let movedEnough = hasMovedEnough()
+
+        // The new map + avatars become the base immediately and stay put; the cover is
+        // laid over them and burned away. Promoting the base up front (not at the end) is
+        // what keeps the finish seamless.
+        snapshot = new
+
+        // Reduce Motion never sweeps: show the new map outright, dropping any cover.
+        if reduceMotion {
+            endReveal()
+            return
+        }
+
+        // A same-place update (small drift, rotation, or a sync re-read) just swaps the
+        // map underneath. Crucially, do NOT tear down a sweep that's already in flight —
+        // that would snap it straight to its end. If nothing is sweeping the state is
+        // already clean. The sweep baseline is left alone so small drifts accumulate.
+        guard isFirstMap || movedEnough else {
+            return
+        }
+
+        // This sweep's positions become the baseline the next move is measured against.
+        sweptCurrent = currentCoordinate
+        sweptPartner = partnerCoordinate
+
+        // Tag this sweep so its deferred start and completion only act if no newer sweep
+        // has begun — a silent swap mid-sweep must not make this one's completion bail
+        // (which would strand the cover and flame at the edge).
+        revealToken += 1
+        let token = revealToken
+
+        // Mount the burning cover (old content, or the backdrop on first load) at the
+        // hidden start, then animate on the next tick — a same-tick reset-then-animate
+        // would interpolate from the previous value and skip the sweep entirely.
+        outgoing = previous
+        isRevealing = true
+        sweep = 0
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(16))
+            guard revealToken == token else { return }
+            withAnimation(Self.sweepCurve) {
+                sweep = 1
+            } completion: {
+                guard revealToken == token else { return }
+                endReveal()
+            }
+        }
+    }
+
+    /// Whether either partner has moved far enough from the last-swept positions to look
+    /// different on the map. The threshold scales with how far apart the partners are (the
+    /// map's framing), so a small wobble that's invisible on a regional map never triggers
+    /// a sweep. No baseline yet means "not a move" — the first map is handled separately.
+    private func hasMovedEnough() -> Bool {
+        guard let sweptCurrent, let sweptPartner else {
+            return false
+        }
+        let currentMove = distanceMeters(currentCoordinate, sweptCurrent)
+        let partnerMove = distanceMeters(partnerCoordinate, sweptPartner)
+        let span = max(distanceMeters(currentCoordinate, partnerCoordinate), Self.minimumSpanMeters)
+        return max(currentMove, partnerMove) > span * Self.minimumMoveFraction
+    }
+
+    private func distanceMeters(_ lhs: CLLocationCoordinate2D, _ rhs: CLLocationCoordinate2D) -> CLLocationDistance {
+        CLLocation(latitude: lhs.latitude, longitude: lhs.longitude)
+            .distance(from: CLLocation(latitude: rhs.latitude, longitude: rhs.longitude))
+    }
+
+    /// Tears down the burning cover without animation, leaving the already-revealed new
+    /// map clean with no residual mask or flame.
+    private func endReveal() {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            isRevealing = false
+            outgoing = nil
+            sweep = 1
+        }
+    }
+}
+
+/// The region the flame front has NOT yet reached: everything from the advancing,
+/// angled front to the trailing edge. Masks the burning cover, so at `progress` 1 this
+/// region is empty and the cover is fully gone. Animatable so the mask recedes in step
+/// with the flame line.
+private struct UnsweptRegionShape: Shape {
+    var progress: CGFloat
+    let tilt: CGFloat
+
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let (topX, bottomX) = SweepFront.edges(in: rect, progress: progress, tilt: tilt)
+        // Over-extend to the right so the un-swept region always reaches the trailing
+        // edge; the angled left boundary is the advancing front.
+        let rightEdge = max(topX, bottomX) + rect.width
+
+        var path = Path()
+        path.move(to: CGPoint(x: topX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rightEdge, y: rect.minY))
+        path.addLine(to: CGPoint(x: rightEdge, y: rect.maxY))
+        path.addLine(to: CGPoint(x: bottomX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// The glowing pink line at the sweep front: three layered strokes — a soft outer bloom,
+/// a brighter inner glow, and a crisp core — all in the brand pink and full-strength the
+/// whole length, so it reads as one uniformly thick, glowing streak.
+private struct FlameSweepLine: View {
+    var progress: CGFloat
+    let tilt: CGFloat
+
+    var body: some View {
+        ZStack {
+            FlameFrontShape(progress: progress, tilt: tilt)
+                .stroke(outerGlow, style: StrokeStyle(lineWidth: 18, lineCap: .round))
+                .blur(radius: 10)
+                .blendMode(.screen)
+
+            FlameFrontShape(progress: progress, tilt: tilt)
+                .stroke(innerGlow, style: StrokeStyle(lineWidth: 7, lineCap: .round))
+                .blur(radius: 2.5)
+                .blendMode(.screen)
+
+            FlameFrontShape(progress: progress, tilt: tilt)
+                .stroke(core, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+        }
+    }
+
+    // A glowing line in the brand pink: a deeper-pink halo (paeoniaAccentSecondary)
+    // around the CTA pink (paeoniaAccentPrimary) core. Solid, full-strength colour the
+    // whole length so the line reads as one uniformly thick pink streak — the layered
+    // blur and screen blend give the glow, not a gradient.
+    private var outerGlow: Color { .paeoniaAccentSecondary }
+    private var innerGlow: Color { .paeoniaAccentPrimary }
+    private var core: Color { .paeoniaAccentPrimary }
+}
+
+/// The bare line at the sweep front, drawn slightly past the top and bottom edges so
+/// the flame's round caps stay out of frame. Animatable so it rides the sweep.
+private struct FlameFrontShape: Shape {
+    var progress: CGFloat
+    let tilt: CGFloat
+
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let (topX, bottomX) = SweepFront.edges(in: rect, progress: progress, tilt: tilt)
+        var path = Path()
+        path.move(to: CGPoint(x: topX, y: rect.minY - 8))
+        path.addLine(to: CGPoint(x: bottomX, y: rect.maxY + 8))
+        return path
+    }
+}
+
+/// Shared geometry for the sweep front so the mask and the flame line always agree on
+/// where the advancing, tilted line sits for a given progress.
+private enum SweepFront {
+    /// The x of the front where it meets the top and bottom edges. At `progress` 0 the
+    /// tilted line's leading (top) corner sits exactly on the leading edge, so the cover
+    /// fully covers the tile; at `progress` 1 its trailing (bottom) corner sits exactly
+    /// on the trailing edge, so the cover is fully gone. Travel is therefore `width +
+    /// slant` (not `width + 2·slant`) — the line never wanders past the tile, so the
+    /// reveal finishes precisely at the end with no overshoot or dead time.
+    static func edges(in rect: CGRect, progress: CGFloat, tilt: CGFloat) -> (top: CGFloat, bottom: CGFloat) {
+        let slant = rect.height * tan(tilt)
+        let startCenter = rect.minX - slant / 2
+        let travel = rect.width + slant
+        let center = startCenter + progress * travel
+        return (top: center + slant / 2, bottom: center - slant / 2)
     }
 }
 

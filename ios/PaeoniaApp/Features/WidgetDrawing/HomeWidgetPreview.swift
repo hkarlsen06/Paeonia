@@ -86,6 +86,7 @@ struct HomeWidgetCard: View {
 
     @State private var model = HomeWidgetPreviewModel()
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button(action: onOpen) {
@@ -115,6 +116,11 @@ struct HomeWidgetCard: View {
     private var widget: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             drawingSurface
+                // Crossfade between the placeholder sketch and the real drawing
+                // when the image first arrives or changes. The frame is already
+                // fixed by the parent's aspectRatio, so this is a content swap,
+                // not a layout shift. Instant under Reduce Motion.
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: model.image == nil)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             HStack(spacing: PaeoniaSpacing.space4) {
@@ -151,8 +157,10 @@ struct HomeWidgetCard: View {
                 .resizable()
                 .scaledToFit()
                 .accessibilityHidden(true)
+                .transition(.opacity)
         } else {
             HomeWidgetPlaceholderSketch()
+                .transition(.opacity)
         }
     }
 }

@@ -40,6 +40,8 @@ struct PairedProfilesHeader: View {
         ].joined(separator: "|")
     }
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         PairingCelebrationProfilesView(
             currentName: currentName,
@@ -52,6 +54,11 @@ struct PairedProfilesHeader: View {
             metrics: .compact,
             onPartnerSlotChange: { _ in }
         )
+        // Crossfade between initials and photo, and between different photos on
+        // reload. Keyed on the pair of asset IDs so the animation triggers only
+        // when the actual identity changes, not on every render.
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: currentPhotoData)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: partnerPhotoData)
         .task(id: photoLoadID) {
             await loadProfilePhotos()
         }
@@ -63,8 +70,13 @@ struct PairedProfilesHeader: View {
             return
         }
 
-        currentPhotoData = nil
-        partnerPhotoData = nil
+        // Do NOT clear the photos to nil before the new load completes.
+        // Clearing eagerly causes the avatar to flash back to initials on every
+        // reload (e.g. when photoLoadID changes because names refreshed). Instead
+        // we keep the last-known photo visible until the new value arrives, then
+        // replace it in one step. If the asset ID genuinely became nil the load
+        // returns nil and the initials appear once — after the crossfade — not
+        // before.
 
         async let current = profilePhotoProvider.profilePhotoData(for: currentProfilePhotoAssetID)
         async let partner = profilePhotoProvider.profilePhotoData(for: partnerProfilePhotoAssetID)

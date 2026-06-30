@@ -451,6 +451,7 @@ struct RootView: View {
             await widgetCanvasService.clearForPrivacy()
             await partnerAvatarSharing?.clear()
             FileDailyAnswerMediaDraftStore.live().clearAll()
+            FileDailyChallengeSnapshotCache.live().clearAll()
             await (try? DailyAnswerMediaImageService.live())?.clearAll()
         }
     }

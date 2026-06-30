@@ -1,6 +1,6 @@
 import Foundation
 
-nonisolated struct DailyChallengeRemoteSnapshotRow: Decodable, Equatable, Sendable {
+nonisolated struct DailyChallengeRemoteSnapshotRow: Codable, Equatable, Sendable {
     let questions: [DailyQuestionRow]
     let answerDetails: [DailyAnswerDetailRow]
     let streak: CoupleStreakRow?
@@ -14,7 +14,7 @@ nonisolated struct DailyChallengeRemoteSnapshotRow: Decodable, Equatable, Sendab
     }
 }
 
-nonisolated struct DailyQuestionRow: Decodable, Equatable, Sendable {
+nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
     let coupleDayID: UUID
     let coupleID: UUID
     let localDate: String
@@ -88,7 +88,7 @@ nonisolated struct DailyQuestionRow: Decodable, Equatable, Sendable {
     }
 }
 
-nonisolated struct CoupleStreakRow: Decodable, Equatable, Sendable {
+nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
     let currentCount: Int
     let longestCount: Int
     let lastQualifiedDate: String?
@@ -117,7 +117,7 @@ nonisolated struct CoupleStreakRow: Decodable, Equatable, Sendable {
     }
 }
 
-nonisolated struct DailyAnswerDetailRow: Decodable, Equatable, Sendable {
+nonisolated struct DailyAnswerDetailRow: Codable, Equatable, Sendable {
     let coupleDayID: UUID
     let instanceID: UUID
     let seededForUserID: UUID
@@ -156,6 +156,31 @@ nonisolated struct DailyAnswerDetailRow: Decodable, Equatable, Sendable {
             textBody: textBody,
             selectedUserID: selectedUserID,
             mediaAssetIDs: mediaAssetIDs
+        )
+    }
+}
+
+extension DailyChallengeRemoteSnapshotRow {
+    /// Converts the raw row into a `DailyChallengeLoadResult` using exactly the
+    /// same field mapping as `SupabaseDailyChallengeService.makeResult`. Extracting
+    /// this here lets both the live service and the local snapshot cache build
+    /// domain objects through a single path — no risk of the two diverging.
+    ///
+    /// `nonisolated` so it can be called from any isolation context (actors, tasks,
+    /// and the cache — which is not isolated).
+    nonisolated func loadResult(
+        currentUserID: UUID,
+        locale: Locale = .current
+    ) -> DailyChallengeLoadResult {
+        DailyChallengeLoadResult(
+            snapshot: DailyChallengeSnapshot.make(
+                currentUserID: currentUserID,
+                rows: questions,
+                answerDetails: answerDetails,
+                locale: locale,
+                refreshedAt: generatedAt
+            ),
+            streak: streak?.streak ?? .none
         )
     }
 }

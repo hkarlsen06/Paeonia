@@ -38,13 +38,20 @@ protocol SupabaseDailyChallengeGateway: Actor {
 actor SupabaseDailyChallengeService: DailyChallengeServicing {
     private let gateway: any SupabaseDailyChallengeGateway
     private let locale: Locale
+    /// Injected so tests can supply an in-memory stand-in; the live path uses
+    /// `FileDailyChallengeSnapshotCache.live()` by default. The cache is an
+    /// implementation detail of the live service — it is not part of the
+    /// `DailyChallengeServicing` protocol, which stays unchanged.
+    private let cache: any DailyChallengeSnapshotCaching
 
     init(
         gateway: any SupabaseDailyChallengeGateway,
-        locale: Locale = .current
+        locale: Locale = .current,
+        cache: (any DailyChallengeSnapshotCaching)? = nil
     ) {
         self.gateway = gateway
         self.locale = locale
+        self.cache = cache ?? FileDailyChallengeSnapshotCache.live()
     }
 
     static func live() throws -> SupabaseDailyChallengeService {
@@ -56,6 +63,9 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
 
     func loadToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
         let remote = try await gateway.loadTodaySnapshot()
+        // Persist the raw row so the view model can seed itself on the next cold
+        // launch before this network call returns.
+        cache.save(remote, ownerUserID: currentUserID)
         return makeResult(currentUserID: currentUserID, remote: remote)
     }
 
@@ -64,6 +74,7 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
         operation: SyncClientOperation
     ) async throws -> DailyChallengeLoadResult {
         let remote = try await gateway.startDailyChallenge(operation: operation)
+        cache.save(remote, ownerUserID: currentUserID)
         return makeResult(currentUserID: currentUserID, remote: remote)
     }
 
@@ -147,6 +158,7 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
             }
             throw error
         }
+        cache.save(remote, ownerUserID: currentUserID)
         return makeResult(currentUserID: currentUserID, remote: remote)
     }
 
@@ -154,16 +166,9 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
         currentUserID: UUID,
         remote: DailyChallengeRemoteSnapshotRow
     ) -> DailyChallengeLoadResult {
-        DailyChallengeLoadResult(
-            snapshot: DailyChallengeSnapshot.make(
-                currentUserID: currentUserID,
-                rows: remote.questions,
-                answerDetails: remote.answerDetails,
-                locale: locale,
-                refreshedAt: remote.generatedAt
-            ),
-            streak: remote.streak?.streak ?? .none
-        )
+        // Delegates to the shared helper on the row itself so the row→domain
+        // mapping is defined in exactly one place (DailyChallengeRemoteRows.swift).
+        remote.loadResult(currentUserID: currentUserID, locale: locale)
     }
 }
 

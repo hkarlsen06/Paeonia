@@ -15,6 +15,7 @@ struct PairedHomeView: View {
     var onOpenWidgetDrawing: () -> Void = {}
     var onRefresh: () async -> Void = {}
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         currentDisplayName: String?,
@@ -115,10 +116,16 @@ struct PairedHomeView: View {
             }
 
             // The streak lives at the trailing edge of the bar, sized to match the brand
-            // mark and carried in the toolbar's standard background.
+            // mark and carried in the toolbar's standard background. It fades in when
+            // the streak count becomes available rather than popping in abruptly.
+            // Reserving a fixed-width placeholder slot in the toolbar is not idiomatic
+            // SwiftUI, so we keep the conditional item and rely on an opacity transition
+            // instead. Instant under Reduce Motion.
             if dailyChallengeStreak.isVisible {
                 ToolbarItem(placement: .topBarTrailing) {
                     DailyStreakToolbarLabel(state: dailyChallengeStreak, onTap: onTapStreak)
+                        .transition(.opacity)
+                        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeStreak.isVisible)
                 }
             }
         }

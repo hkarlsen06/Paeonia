@@ -13,6 +13,8 @@ struct DailyPromptCard: View {
     var prefersPartnerAnswersWhenComplete = false
     var onAnswer: () -> Void = {}
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         PaeoniaCard {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
@@ -36,6 +38,13 @@ struct DailyPromptCard: View {
 
                 actionButton
             }
+            // Crossfade the changing content when the state changes — the title and
+            // button label swap via `.contentTransition(.opacity)` and the message
+            // line fades through its own opacity, all in this one transaction so
+            // loading → active → complete settles smoothly. Keyed on `state.kind`
+            // (not a sub-expression like the partner name that changes more often,
+            // which would re-trigger on every render). Instant under Reduce Motion.
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: state.kind)
         }
     }
 
@@ -55,6 +64,7 @@ struct DailyPromptCard: View {
     private func styledActionButton(_ style: some ButtonStyle) -> some View {
         Button(action: onAnswer) {
             Text(actionTitle)
+                .contentTransition(.opacity)
         }
         .buttonStyle(style)
         .disabled(!state.isActionEnabled)
@@ -80,13 +90,20 @@ struct DailyPromptCard: View {
                 .font(PaeoniaTypography.title)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .fixedSize(horizontal: false, vertical: true)
+                .contentTransition(.opacity)
 
-            if let message {
-                Text(message)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            // Reserve the message line's height in every state so the card never
+            // changes height when content transitions from loading to active.
+            // In the loading state we render an invisible placeholder occupying
+            // the same vertical space as a single caption line rather than
+            // conditionally showing/hiding the line.
+            Text(message ?? " ")
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                // Keep the placeholder invisible; use opacity so layout is
+                // identical whether or not the real string is present.
+                .opacity(message == nil ? 0 : 1)
         }
     }
 

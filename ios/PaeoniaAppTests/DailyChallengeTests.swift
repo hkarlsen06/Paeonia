@@ -664,6 +664,31 @@ struct DailyChallengeMappingTests {
     }
 
     @MainActor
+    @Test func refreshFailureWithExistingContentKeepsStateWithoutBanner() async throws {
+        // A manual refresh can lose the network after the app already has a valid
+        // challenge on screen. Keep that last-known state and log the failure, but do
+        // not show an error banner over usable content.
+        let snapshot = makeSnapshot(rows: [
+            questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
+        ])
+        let service = RecordingDailyChallengeService(
+            snapshots: [snapshot],
+            loadErrorsByAttempt: [2: URLError(.networkConnectionLost)]
+        )
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider()
+        )
+
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        await viewModel.reload()
+
+        #expect(viewModel.snapshot == snapshot)
+        #expect(viewModel.notice == nil)
+        #expect(await service.loadCount == 2)
+    }
+
+    @MainActor
     @Test func refreshingParticipantsUpdatesDisplayDataWithoutReloading() async throws {
         // Names and profile photos arrive/refresh after launch. Feeding them in must
         // update the rendered participants but must NOT re-fetch the questions — the
@@ -2439,6 +2464,7 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
     private let shuffleError: Error?
     private let editError: Error?
     private let loadError: Error?
+    private let loadErrorsByAttempt: [Int: Error]
     private let loadProbe: DailyChallengeSyncNudgeProbe?
     private let historyQuestions: [DailyChallengeQuestion]
     private let historyError: Error?
@@ -2458,6 +2484,7 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
         shuffleError: Error? = nil,
         editError: Error? = nil,
         loadError: Error? = nil,
+        loadErrorsByAttempt: [Int: Error] = [:],
         loadProbe: DailyChallengeSyncNudgeProbe? = nil,
         historyQuestions: [DailyChallengeQuestion] = [],
         historyError: Error? = nil,
@@ -2470,6 +2497,7 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
         self.shuffleError = shuffleError
         self.editError = editError
         self.loadError = loadError
+        self.loadErrorsByAttempt = loadErrorsByAttempt
         self.loadProbe = loadProbe
         self.historyQuestions = historyQuestions
         self.historyError = historyError
@@ -2480,6 +2508,9 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
     func loadToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
         loadCount += 1
         if let loadError {
+            throw loadError
+        }
+        if let loadError = loadErrorsByAttempt[loadCount] {
             throw loadError
         }
         await loadProbe?.blockUntilReleased()
