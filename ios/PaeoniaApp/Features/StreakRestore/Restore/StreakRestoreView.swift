@@ -9,6 +9,7 @@ struct StreakRestoreView: View {
     var onClose: () -> Void = {}
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var restoreDeadline: Date? {
         viewModel.streak.restoreDeadline
@@ -102,8 +103,9 @@ struct StreakRestoreView: View {
                 .font(.system(.title3, design: .rounded).weight(.semibold))
                 .monospacedDigit()
                 .foregroundStyle(.paeoniaTextSecondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.85)
                 .accessibilityLabel(Text(verbatim: text))
         }
     }

@@ -25,14 +25,13 @@ struct DailyQuestionStatusView: View {
         var lines: [DailyStatusLineModel] = []
 
         if let partnerAnswer = question.partnerAnswer {
-            // Same wording whether revealed or not — the timestamp shows when the
-            // partner answered, not when it became visible to you. Only the icon
-            // distinguishes a revealed answer (heart) from a still-hidden one (lock).
             lines.append(
                 DailyStatusLineModel(
                     id: "partner",
                     systemImage: question.canViewPartnerAnswer ? "heart.circle.fill" : "lock.circle.fill",
-                    title: .dailyChallengePartnerHidden(participants.partnerName),
+                    title: question.canViewPartnerAnswer
+                        ? .dailyChallengePartnerRevealed(participants.partnerName)
+                        : .dailyChallengePartnerHidden(participants.partnerName),
                     date: partnerAnswer.answeredAt,
                     tint: question.canViewPartnerAnswer ? .paeoniaAccentPrimary : .paeoniaTextTertiary
                 )

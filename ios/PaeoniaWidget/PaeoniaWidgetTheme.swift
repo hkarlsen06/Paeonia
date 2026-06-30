@@ -12,19 +12,39 @@ enum PaeoniaWidgetSpacing {
 
 enum PaeoniaWidgetTypography {
     static func wordmark(family: WidgetFamily) -> Font {
-        .system(size: family == .systemSmall ? 15 : 17, weight: .semibold, design: .serif)
+        switch family {
+        case .systemSmall:
+            .system(.callout, design: .serif).weight(.semibold)
+        default:
+            .system(.body, design: .serif).weight(.semibold)
+        }
     }
 
     static func metadata(family: WidgetFamily) -> Font {
-        .system(size: family == .systemSmall ? 10 : 11, weight: .medium, design: .default)
+        switch family {
+        case .systemSmall:
+            .caption2.weight(.medium)
+        default:
+            .caption.weight(.medium)
+        }
     }
 
     static func title(family: WidgetFamily) -> Font {
-        .system(size: family == .systemSmall ? 13 : 15, weight: .semibold, design: .default)
+        switch family {
+        case .systemSmall:
+            .caption.weight(.semibold)
+        default:
+            .callout.weight(.semibold)
+        }
     }
 
     static func action(family: WidgetFamily) -> Font {
-        .system(size: family == .systemSmall ? 10 : 12, weight: .semibold, design: .default)
+        switch family {
+        case .systemSmall:
+            .caption2.weight(.semibold)
+        default:
+            .caption.weight(.semibold)
+        }
     }
 }
 

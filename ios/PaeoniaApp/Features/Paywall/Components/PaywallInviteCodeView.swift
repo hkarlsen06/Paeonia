@@ -11,6 +11,8 @@ struct PaywallInviteCodeView: View {
     var focus: FocusState<Bool>.Binding
     let onSubmit: () -> Void
 
+    @ScaledMetric(relativeTo: .title2) private var codeCellHeight: CGFloat = 56
+
     private var isFocused: Bool { focus.wrappedValue }
 
     var body: some View {
@@ -83,10 +85,10 @@ struct PaywallInviteCodeView: View {
         let isCurrent = isFocused && index == characters.count
 
         return Text(character)
-            .font(.system(size: 22, weight: .semibold, design: .rounded))
+            .font(.system(.title2, design: .rounded).weight(.semibold))
             .foregroundStyle(.paeoniaTextPrimary)
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
+            .frame(minHeight: codeCellHeight)
             .background(Color.paeoniaBackgroundElevated)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay {

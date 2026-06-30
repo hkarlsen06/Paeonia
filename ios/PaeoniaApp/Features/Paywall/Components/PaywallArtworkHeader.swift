@@ -10,6 +10,9 @@ struct PaywallArtworkHeader: View {
     let topSafeAreaInset: CGFloat
     let height: CGFloat
 
+    @ScaledMetric(relativeTo: .largeTitle) private var markSize: CGFloat = 56
+    @ScaledMetric(relativeTo: .largeTitle) private var wordmarkSize: CGFloat = 36
+
     var body: some View {
         ZStack {
             Color.paeoniaAccentSecondary
@@ -37,13 +40,13 @@ struct PaywallArtworkHeader: View {
             Image(.paeoniaAppIconMark)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 56, height: 56)
+                .frame(width: markSize, height: markSize)
                 .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
                 .shadow(color: Color.paeoniaBackgroundSecondary.opacity(0.35), radius: 10, y: 5)
                 .accessibilityHidden(true)
 
             Text(.appTitle)
-                .font(PaeoniaTypography.wordmark(size: 36))
+                .font(PaeoniaTypography.wordmark(size: wordmarkSize))
                 .foregroundStyle(.paeoniaTextPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)

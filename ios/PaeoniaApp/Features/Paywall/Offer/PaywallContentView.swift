@@ -50,14 +50,13 @@ struct PaywallContentView: View {
     private var headlineBlock: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             Text(headlineTitle)
-                .font(.system(size: 30, weight: .bold))
+                .font(PaeoniaTypography.largeTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(.paywallSubtitle)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
-                .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(priceLine)

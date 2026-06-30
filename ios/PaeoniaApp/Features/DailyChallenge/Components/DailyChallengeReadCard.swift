@@ -65,8 +65,7 @@ struct DailyChallengeReadCard: View {
                     DailyQuestionStatusView(question: question, participants: participants)
 
                     if isAnswerable {
-                        // The CTA itself carries the call to action (answer to reveal,
-                        // or finish your own first), so no extra explanatory line.
+                        lockedPartnerAnswerHint
                         answerButton
                     } else {
                         DailyAnswerDetailsView(question: question, participants: participants)
@@ -89,5 +88,12 @@ struct DailyChallengeReadCard: View {
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
         .disabled(!canOpenAnswerFlow)
+    }
+
+    private var lockedPartnerAnswerHint: some View {
+        Text(.dailyChallengePartnerHiddenMessage(participants.partnerName))
+            .font(PaeoniaTypography.caption)
+            .foregroundStyle(.paeoniaTextSecondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }

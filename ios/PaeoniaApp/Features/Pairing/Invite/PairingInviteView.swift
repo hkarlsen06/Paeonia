@@ -221,8 +221,7 @@ struct PairingInviteView: View {
         Button(action: action) {
             Label {
                 Text(title)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.86)
+                    .multilineTextAlignment(.center)
             } icon: {
                 Image(systemName: systemImage)
                     .accessibilityHidden(true)
@@ -230,7 +229,7 @@ struct PairingInviteView: View {
             .font(PaeoniaTypography.button)
             .foregroundStyle(isDisabled ? .paeoniaTextTertiary : .paeoniaTextSecondary)
             .frame(maxWidth: .infinity)
-            .frame(height: 44)
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -272,6 +271,7 @@ struct PairingInviteView: View {
 
 private struct PairingInviteCodeCharacterTile: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ScaledMetric(relativeTo: .title2) private var inviteCodeTileHeight: CGFloat = 58
     @State private var isSettled = false
 
     let character: Character
@@ -280,11 +280,11 @@ private struct PairingInviteCodeCharacterTile: View {
 
     var body: some View {
         Text(String(character))
-            .font(.system(size: 26, weight: .bold, design: .rounded))
+            .font(.system(.title2, design: .rounded).weight(.bold))
             .monospacedDigit()
             .foregroundStyle(.paeoniaTextPrimary)
             .frame(maxWidth: .infinity)
-            .frame(height: 58)
+            .frame(minHeight: inviteCodeTileHeight)
             .background(.paeoniaBackgroundElevated)
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
             .scaleEffect(isSettled ? 1 : 0.72)

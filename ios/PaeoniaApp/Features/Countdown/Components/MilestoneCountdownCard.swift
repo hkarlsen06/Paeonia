@@ -16,6 +16,8 @@ struct MilestoneCountdownCard: View {
     /// The couple's start date as an `yyyy-MM-dd` string (`couples.started_on`).
     let startedOn: String?
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     private var milestone: RelationshipMilestone? {
         guard let startedOn else { return nil }
         // Built per read so it reflects the current calendar/time zone, and so the
@@ -40,22 +42,23 @@ struct MilestoneCountdownCard: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
             countdown(for: milestone)
 
+            // The target date sits right under the count, so "25 days until" and
+            // "Saturday 25 July" read together as the countdown.
+            Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextTertiary)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
+
             Spacer(minLength: PaeoniaSpacing.space8)
 
-            // The day count stands alone at the top; the milestone phrase completes
-            // the "… days until" sentence and groups with the date at the bottom,
-            // where it also lines up with the neighbouring tiles' captions.
+            // The milestone name anchors the bottom, lining up with the
+            // neighbouring tiles' captions.
             Text(Self.subject(for: milestone.kind))
                 .font(PaeoniaTypography.sectionTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
-
-            Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextTertiary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
         }
         // Match the side-by-side tiles in the same row: same fill, square footprint,
         // rounded corners, hairline stroke, and lift as the widget drawing tile.
@@ -79,27 +82,44 @@ struct MilestoneCountdownCard: View {
             Text(.homeMilestoneToday)
                 .font(PaeoniaTypography.countdownNumber)
                 .foregroundStyle(.paeoniaAccentPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
         } else {
             // Number leads as the hero; "days until" carries into the subject line.
-            HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
-                Text(milestone.daysRemaining, format: .number)
-                    .font(PaeoniaTypography.countdownNumber)
-                    .foregroundStyle(.paeoniaAccentPrimary)
+            ViewThatFits(in: .horizontal) {
+                countdownLine(for: milestone)
 
-                // Same size as the subject line below so "… days until <milestone>"
-                // reads as one sentence, leaving the number as the only large element.
-                Text(milestone.daysRemaining == 1 ? .homeMilestoneUntilOne : .homeMilestoneUntil)
-                    .font(PaeoniaTypography.sectionTitle)
-                    .foregroundStyle(.paeoniaTextSecondary)
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
+                    Text(milestone.daysRemaining, format: .number)
+                        .font(PaeoniaTypography.countdownNumber)
+                        .foregroundStyle(.paeoniaAccentPrimary)
+
+                    Text(milestone.daysRemaining == 1 ? .homeMilestoneUntilOne : .homeMilestoneUntil)
+                        .font(PaeoniaTypography.sectionTitle)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                        .lineLimit(2)
+                }
             }
-            .lineLimit(1)
-            .minimumScaleFactor(0.7)
+            .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
         }
     }
 
-    /// The milestone phrase that completes the countdown sentence ("… days until ___").
+    private func countdownLine(for milestone: RelationshipMilestone) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
+            Text(milestone.daysRemaining, format: .number)
+                .font(PaeoniaTypography.countdownNumber)
+                .foregroundStyle(.paeoniaAccentPrimary)
+
+            // Same size as the subject line below so "… days until <milestone>"
+            // reads as one sentence, leaving the number as the only large element.
+            Text(milestone.daysRemaining == 1 ? .homeMilestoneUntilOne : .homeMilestoneUntil)
+                .font(PaeoniaTypography.sectionTitle)
+                .foregroundStyle(.paeoniaTextSecondary)
+        }
+        .lineLimit(1)
+    }
+
+    /// The milestone name shown at the bottom of the card (e.g. "Your first month together").
     private static func subject(for kind: RelationshipMilestone.Kind) -> LocalizedStringResource {
         switch kind {
         case .firstMonth:

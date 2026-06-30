@@ -87,6 +87,7 @@ struct HomeWidgetCard: View {
     @State private var model = HomeWidgetPreviewModel()
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Button(action: onOpen) {
@@ -130,8 +131,9 @@ struct HomeWidgetCard: View {
 
                 Text(.homeWidgetCta)
                     .font(PaeoniaTypography.caption.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    .multilineTextAlignment(.leading)
+                    .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
             }
             .foregroundStyle(.paeoniaAccentPrimary)
         }

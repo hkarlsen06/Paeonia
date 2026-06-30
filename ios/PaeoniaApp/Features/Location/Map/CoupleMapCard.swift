@@ -122,6 +122,8 @@ private struct MapEmptyState: View {
     var actionSystemImage: String?
     var action: (() -> Void)?
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         ZStack {
             Color.paeoniaBackgroundSecondary
@@ -136,14 +138,14 @@ private struct MapEmptyState: View {
                     Text(title)
                         .font(PaeoniaTypography.caption.weight(.semibold))
                         .foregroundStyle(.paeoniaTextPrimary)
-                        .lineLimit(2)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                         .multilineTextAlignment(.center)
 
                     Text(message)
                         .font(PaeoniaTypography.caption)
                         .foregroundStyle(.paeoniaTextSecondary)
-                        .lineLimit(3)
-                        .minimumScaleFactor(0.8)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
+                        .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
                         .multilineTextAlignment(.center)
                 }
 
@@ -151,8 +153,8 @@ private struct MapEmptyState: View {
                     Button(action: action) {
                         Label {
                             Text(actionTitle)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.75)
+                                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                                .multilineTextAlignment(.center)
                         } icon: {
                             if let actionSystemImage {
                                 Image(systemName: actionSystemImage)
@@ -209,6 +211,7 @@ private struct CoupleMapSnapshot: View {
     private static let minimumMoveFraction: Double = 0.06
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// The current map + avatars after the latest completed reveal.
     @State private var snapshot: SnapshotResult?
@@ -432,8 +435,8 @@ private struct CoupleMapSnapshot: View {
 
             Text(verbatim: distanceText)
                 .font(PaeoniaTypography.caption.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
         }
         .foregroundStyle(.paeoniaAccentPrimary)
         .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
@@ -867,7 +870,7 @@ private struct MapAvatarPin: View {
                     capturedAt: capturedAt,
                     refreshInterval: Self.badgeRefreshInterval
                 )
-                .font(.system(size: 10, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(.paeoniaTextPrimary)
                 .lineLimit(1)
                 .fixedSize()

@@ -58,7 +58,6 @@ private struct PaywallTimelineRow: View {
                 Text(item.message)
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
-                    .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.top, PaeoniaSpacing.space4)

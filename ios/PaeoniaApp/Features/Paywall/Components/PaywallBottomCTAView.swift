@@ -31,13 +31,12 @@ struct PaywallBottomCTAView: View {
                 } else {
                     Text(title)
                         .font(PaeoniaTypography.button)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.82)
+                        .multilineTextAlignment(.center)
                 }
             }
             .foregroundStyle(isEnabled ? .paeoniaTextInverse : .paeoniaTextTertiary)
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
+            .frame(minHeight: 56)
             .background(primaryButtonBackground)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }

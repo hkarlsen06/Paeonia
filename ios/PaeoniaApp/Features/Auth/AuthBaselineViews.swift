@@ -95,11 +95,9 @@ struct AuthOnboardingView: View {
                 profilePhotoPicker
                 displayNameField
 
-                if hasMultipleDisplayNameWords {
-                    Text(.authOnboardingDisplayNameSingleWordHint)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextTertiary)
-                }
+                Text(.authOnboardingDisplayNameSingleWordHint)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextTertiary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -126,12 +124,6 @@ struct AuthOnboardingView: View {
 
     private var canCompleteOnboarding: Bool {
         !isWorking && AuthDisplayNamePolicy.validatedSingleName(from: displayName) != nil
-    }
-
-    private var hasMultipleDisplayNameWords: Bool {
-        displayName
-            .split(whereSeparator: \.isWhitespace)
-            .count > 1
     }
 
     private var displayNameField: some View {

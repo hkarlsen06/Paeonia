@@ -990,6 +990,8 @@ struct DailyChallengeAnswerActionBar: View {
         max(0, (slotsWidth - PaeoniaSpacing.space12 * 2) / 3)
     }
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         // Send sits in the middle at least a third wide (growing with its title); the
         // side actions are compact icons centered in the even slots either side of it.
@@ -1000,7 +1002,7 @@ struct DailyChallengeAnswerActionBar: View {
                 .frame(maxWidth: .infinity)
             primaryButton
                 .frame(minWidth: primaryMinWidth)
-                .fixedSize(horizontal: true, vertical: false)
+                .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: false)
             trailingButton
                 .frame(maxWidth: .infinity)
         }
@@ -1024,7 +1026,8 @@ struct DailyChallengeAnswerActionBar: View {
             // content-hugging pill doesn't shrink to the spinner the moment Send is
             // tapped.
             Text(primaryTitle)
-                .lineLimit(1)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .multilineTextAlignment(.center)
                 .opacity(isPrimaryBusy ? 0 : 1)
                 .overlay {
                     if isPrimaryBusy {

@@ -9,6 +9,8 @@ struct SignInView: View {
     let onGoogleSignIn: () -> Void
 
     private let contentMaxWidth: CGFloat = 430
+    @ScaledMetric(relativeTo: .largeTitle) private var brandMarkHeight: CGFloat = 52
+    @ScaledMetric(relativeTo: .largeTitle) private var brandWordmarkSize: CGFloat = 28
 
     /// The legal page currently shown in the in-app browser, if any.
     @State private var activeLegalLink: LegalLink?
@@ -73,11 +75,11 @@ struct SignInView: View {
             Image(.paeoniaMark)
                 .resizable()
                 .scaledToFit()
-                .frame(height: 52)
+                .frame(height: brandMarkHeight)
                 .accessibilityHidden(true)
 
             Text(.appTitle)
-                .font(PaeoniaTypography.wordmark(size: 28))
+                .font(PaeoniaTypography.wordmark(size: brandWordmarkSize))
                 .foregroundStyle(.paeoniaTextPrimary)
         }
         .frame(maxWidth: .infinity)
