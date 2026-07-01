@@ -4,35 +4,33 @@ import SwiftUI
 /// The cold-launch intro. It continues the system launch screen (the petal mark
 /// centered on the plum background) with no visible jump, then plays a short,
 /// deliberate sequence: the petal lifts to reveal the `Paeonia` wordmark, the pair
-/// holds for a beat, and finally the launch screen is unmasked — the right petal of
-/// the mark turns transparent and explodes open onto the app.
+/// holds for a beat, and finally the intro exits — the plum backdrop drops away (it
+/// is the same plum as the app, so the swap is seamless) and the logo fades out fast,
+/// uncovering the first app surface, which cascades its own content in (see
+/// `View.launchEntrance(order:)`).
 ///
-/// The whole launch surface (plum + mark + wordmark) is one composite drawn from the
-/// vector mark (`paeoniaMark`). On unmask the right petal is punched out of it as a
-/// growing transparent window, and at the same time the colored surface fades away,
-/// so the reveal is a soft cross-fade led by the exploding petal rather than a hard
-/// cut — and no colored seam is left behind. The sequencing/gating lives in
-/// `LaunchExperienceSequence`; this view owns only the timing and the SwiftUI
-/// presentation. The unmask waits for `contentReady`, so a slow auth/access resolve
-/// simply holds on the branded wordmark instead of flashing a half-loaded surface.
+/// The sequencing/gating lives in `LaunchExperienceSequence`; this view owns only the
+/// timing and the SwiftUI presentation. The reveal waits for `contentReady`, so a slow
+/// auth/access resolve simply holds on the branded wordmark instead of flashing a
+/// half-loaded surface.
 struct LaunchExperienceView: View {
     /// True once the routed first surface behind the overlay is ready to be shown
-    /// (auth/access has resolved). Drives the gate on the final unmask.
+    /// (auth/access has resolved). Drives the gate on the reveal.
     let contentReady: Bool
+    /// Called as the intro begins its exit, cueing the app surface to cascade its
+    /// content in while the logo fades out.
+    let onRevealContent: () -> Void
     /// Called once the reveal has fully played out and the overlay can be removed.
     let onFinished: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var sequence = LaunchExperienceSequence()
     @State private var wordmarkHeight: CGFloat = 0
-    /// The right-petal window: `holeScale` grows it, `eraserStrength` fades it in so
-    /// the petal turns from colored to transparent softly rather than snapping open.
-    @State private var holeScale: CGFloat = 1
-    @State private var eraserStrength: Double = 0
-    /// The whole colored surface's opacity. Fades to 0 alongside the exploding petal
-    /// so the reveal is a soft cross-fade and no colored remnant (seam, left petal)
-    /// lingers.
-    @State private var coverOpacity: Double = 1
+    /// The logo's exit: a fast fade out. `1` at rest.
+    @State private var logoOpacity: Double = 1
+    /// The plum backdrop that covers the app during the intro. Fades away (seamlessly —
+    /// same plum as the app) as the exit begins.
+    @State private var backdropOpacity: Double = 1
 
     // Layout — the mark matches the system launch screen's visible art exactly: the
     // `PaeoniaLaunchPetalMark` asset is a 150 pt square whose mark fills a centered
@@ -44,27 +42,21 @@ struct LaunchExperienceView: View {
     private let markRise: CGFloat = 30
     private let wordmarkGap: CGFloat = 10
     private let wordmarkSize: CGFloat = 40
-    /// The right wing's solid centroid within the full mark frame; the petal window
-    /// explodes from here so the app opens out of the right petal in place.
-    private let rightWingAnchor = UnitPoint(x: 0.74, y: 0.51)
-    /// How large the right petal swells. The simultaneous cover fade finishes the
-    /// reveal, so this only has to sell the burst, not cover the whole screen alone.
-    private static let petalExplosionScale: CGFloat = 18
 
     // Timing.
     private static let markHold: TimeInterval = 0.25
     private static let revealDuration: TimeInterval = 0.7
     private static let wordmarkHold: TimeInterval = 0.4
-    private static let unmaskDuration: TimeInterval = 0.45
+    /// A fast fade out: the logo and backdrop dim away quickly while the content cascade
+    /// carries the motion.
+    private static let exitDuration: TimeInterval = 0.22
 
     /// A gentle, graceful reveal of the wordmark — slower than the app's default so
     /// the lockup settles in rather than snapping.
     private static let revealAnimation = PaeoniaMotion.standardCurve(duration: revealDuration)
-    /// A fast, front-loaded burst so the petal explodes open rather than drifting.
-    private static let unmaskAnimation = Animation.timingCurve(0.16, 1, 0.3, 1, duration: unmaskDuration)
 
     var body: some View {
-        cover
+        overlay
             .animation(sequenceAnimation, value: sequence.phase)
             .task { await runScript() }
             .onChange(of: contentReady, initial: true) { _, ready in
@@ -79,39 +71,27 @@ struct LaunchExperienceView: View {
             .accessibilityLabel(Text(.appStateLaunching))
     }
 
-    /// The launch surface — plum, mark, and wordmark composited as one "image" — with
-    /// the right petal punched out of it as a transparent window that grows to uncover
-    /// the app behind, while the whole surface fades away at the same time.
-    private var cover: some View {
+    private var overlay: some View {
         ZStack {
             Color.paeoniaBackgroundPrimary
+                .opacity(backdropOpacity)
 
-            markArt
+            logo
+                .opacity(logoOpacity)
                 .offset(y: markOffsetY)
-
-            wordmarkLabel
-                .opacity(wordmarkOpacity)
-                .offset(y: markOffsetY + wordmarkCenterOffset)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .compositingGroup()
-        .opacity(coverOpacity)
-        .mask { petalRevealMask }
         .ignoresSafeArea()
     }
 
-    /// An inverse mask: the surface shows everywhere except where the right petal is
-    /// punched out (`destinationOut`) as a transparent window, which fades in
-    /// (`eraserStrength`) and grows (`holeScale`) to open onto the app.
-    private var petalRevealMask: some View {
-        Rectangle()
-            .overlay {
-                rightPetalWindow
-                    .opacity(eraserStrength)
-                    .scaleEffect(holeScale, anchor: rightWingAnchor)
-                    .offset(y: markOffsetY)
-                    .blendMode(.destinationOut)
-            }
-            .compositingGroup()
+    private var logo: some View {
+        ZStack {
+            markArt
+
+            wordmarkLabel
+                .opacity(wordmarkOpacity)
+                .offset(y: wordmarkCenterOffset)
+        }
     }
 
     private var markArt: some View {
@@ -119,21 +99,6 @@ struct LaunchExperienceView: View {
             .resizable()
             .scaledToFit()
             .frame(width: markWidth, height: markHeight)
-            .accessibilityHidden(true)
-    }
-
-    /// The solid right wing of the mark, isolated by keeping only the right half of
-    /// the (symmetric, seam-down-the-middle) art. It overlays the cover's own right
-    /// petal exactly at `holeScale == 1`, so opening it turns *that* petal transparent
-    /// in place — a single wing has no central seam, so the hole is clean.
-    private var rightPetalWindow: some View {
-        Image(.paeoniaMark)
-            .resizable()
-            .scaledToFit()
-            .frame(width: markWidth, height: markHeight)
-            .mask(alignment: .trailing) {
-                Rectangle().frame(width: markWidth * 0.5)
-            }
             .accessibilityHidden(true)
     }
 
@@ -163,8 +128,7 @@ struct LaunchExperienceView: View {
     }
 
     /// The mark sits dead-center (matching the system splash) until it lifts to make
-    /// room for the wordmark, then holds that raised position through the burst so the
-    /// reveal radiates from the logo. Reduce Motion keeps it centered.
+    /// room for the wordmark. Reduce Motion keeps it centered.
     private var markOffsetY: CGFloat {
         guard !reduceMotion, sequence.phase != .mark else {
             return 0
@@ -173,8 +137,8 @@ struct LaunchExperienceView: View {
         return -markRise
     }
 
-    /// The wordmark fades in once on reveal and then stays put — it is part of the
-    /// launch composite and dissolves with it, never fading out on its own.
+    /// The wordmark fades in once on reveal and then stays put until the whole logo
+    /// fades out on exit.
     private var wordmarkOpacity: Double {
         sequence.phase == .mark ? 0 : 1
     }
@@ -189,7 +153,7 @@ struct LaunchExperienceView: View {
             return nil
         case .wordmark:
             return Self.revealAnimation
-        case .unmasking, .finished:
+        case .revealing, .finished:
             return nil
         }
     }
@@ -206,8 +170,8 @@ struct LaunchExperienceView: View {
 
     private func handlePhaseChange(_ phase: LaunchExperienceSequence.Phase) {
         switch phase {
-        case .unmasking:
-            openPetalWindow()
+        case .revealing:
+            beginExit()
         case .finished:
             onFinished()
         case .mark, .wordmark:
@@ -215,23 +179,19 @@ struct LaunchExperienceView: View {
         }
     }
 
-    /// Explodes the right petal open while the colored surface fades away — one
-    /// simultaneous motion, so the petal turns transparent as it expands and no hard
-    /// cut or colored seam is left. Reduce Motion keeps just the cross-fade.
-    private func openPetalWindow() {
-        withAnimation(Self.unmaskAnimation) {
-            coverOpacity = 0
-            if !reduceMotion {
-                holeScale = Self.petalExplosionScale
-                eraserStrength = 1
-            }
+    /// Cues the content to cascade in and fades the logo and backdrop out fast. One
+    /// coordinated exit, then the overlay releases.
+    private func beginExit() {
+        onRevealContent()
+
+        withAnimation(.easeOut(duration: Self.exitDuration)) {
+            backdropOpacity = 0
+            logoOpacity = 0
         }
 
-        // Release the overlay once the burst has played out; the app is fully
-        // uncovered by then, so its removal is invisible.
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(Self.unmaskDuration))
-            sequence.finishUnmask()
+            try? await Task.sleep(for: .seconds(Self.exitDuration))
+            sequence.finishReveal()
         }
     }
 }
@@ -246,7 +206,7 @@ private struct WordmarkHeightPreferenceKey: PreferenceKey {
 
 #if DEBUG
 #Preview {
-    LaunchExperienceView(contentReady: true, onFinished: {})
+    LaunchExperienceView(contentReady: true, onRevealContent: {}, onFinished: {})
         .preferredColorScheme(.dark)
 }
 #endif

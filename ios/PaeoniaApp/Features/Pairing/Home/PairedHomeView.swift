@@ -59,12 +59,14 @@ struct PairedHomeView: View {
         ScrollView {
             VStack(spacing: PaeoniaSpacing.sectionSpacing) {
                 dailyPromptCard
+                    .launchEntrance(order: 0)
 
                 HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
                     MilestoneCountdownCard(startedOn: relationshipStartedOn)
 
                     HomeWidgetCard(onOpen: onOpenWidgetDrawing)
                 }
+                .launchEntrance(order: 1)
 
                 CoupleMapCard(
                     currentName: currentName,
@@ -74,6 +76,7 @@ struct PairedHomeView: View {
                     state: locationMapState,
                     onPromptCurrentLocation: onPromptCurrentLocation
                 )
+                .launchEntrance(order: 2)
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)

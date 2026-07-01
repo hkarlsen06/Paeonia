@@ -212,6 +212,7 @@ private struct CoupleMapSnapshot: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.launchIntroComplete) private var launchIntroComplete
 
     /// The current map + avatars after the latest completed reveal.
     @State private var snapshot: SnapshotResult?
@@ -230,6 +231,9 @@ private struct CoupleMapSnapshot: View {
     /// Bumped each time a sweep starts; the deferred start and completion only act while
     /// it still matches, so a superseding sweep wins and silent swaps don't disturb one.
     @State private var revealToken = 0
+    /// A sweep that's mounted but waiting for the cold-launch intro to finish before it
+    /// runs (holds its `revealToken`), so the first map sweeps in where it can be seen.
+    @State private var pendingLaunchReveal: Int?
     /// The positions the on-screen map was last *swept* for. The next sweep is measured
     /// from here (not the last silent swap), so a series of tiny drifts accumulates toward
     /// the threshold instead of resetting each time.
@@ -327,6 +331,11 @@ private struct CoupleMapSnapshot: View {
             .onLongPressGesture(minimumDuration: 0.4) { onLongPress() }
             .task(id: snapshotRequest(size: size)) {
                 await loadSnapshot(size: size)
+            }
+            .onChange(of: launchIntroComplete) { _, complete in
+                guard complete, let token = pendingLaunchReveal else { return }
+                pendingLaunchReveal = nil
+                startSweep(token: token)
             }
         }
     }
@@ -593,6 +602,20 @@ private struct CoupleMapSnapshot: View {
             sweep = 0
             isRevealing = true
         }
+
+        // Hold the sweep until the cold-launch intro has finished uncovering the app,
+        // so it plays where the user can see it rather than behind the overlay. Once
+        // the intro completes, `onChange(launchIntroComplete)` runs this token.
+        guard launchIntroComplete else {
+            pendingLaunchReveal = token
+            return
+        }
+        startSweep(token: token)
+    }
+
+    /// Runs the flame sweep for `token`, a beat after the cover mounts so the reset to
+    /// `sweep = 0` commits first. A superseding reveal (newer token) cancels it.
+    private func startSweep(token: Int) {
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(16))
             guard revealToken == token else { return }

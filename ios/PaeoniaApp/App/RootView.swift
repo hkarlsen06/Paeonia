@@ -7,6 +7,7 @@ struct RootView: View {
     @State private var locationViewModel: LocationMapViewModel
     @State private var bannerCenter = PaeoniaBannerCenter()
     @State private var isLaunchExperienceActive = true
+    @State private var launchContentRevealed = false
     @State private var lastKnownAuthenticatedUserID: UUID?
     @Binding private var widgetDeepLink: PaeoniaWidgetDeepLink?
     @Binding private var pendingJoinInviteCode: String?
@@ -140,15 +141,20 @@ struct RootView: View {
     private var rootContent: some View {
         ZStack {
             routedRootContent
+                // The intro cues the surface to cascade its content in as it exits, and
+                // the Home map's flame sweep waits until the intro is fully done so it
+                // doesn't play hidden behind the overlay.
+                .environment(\.launchContentRevealed, launchContentRevealed)
+                .environment(\.launchIntroComplete, !isLaunchExperienceActive)
                 .zIndex(0)
 
             if isLaunchExperienceActive {
-                // The intro plays its own reveal and tells us when it has fully
-                // uncovered the app, so the overlay stays mounted past the moment
-                // `state` leaves `.launching` (the reveal then unmasks the first
-                // real surface rendering underneath).
+                // The intro drives its own timeline and tells us when to cue the content
+                // (`onRevealContent`) and when it has fully exited (`onFinished`), so the
+                // overlay stays mounted past the moment `state` leaves `.launching`.
                 LaunchExperienceView(
                     contentReady: !isLaunching,
+                    onRevealContent: { launchContentRevealed = true },
                     onFinished: { isLaunchExperienceActive = false }
                 )
                 .transition(.identity)

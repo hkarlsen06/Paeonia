@@ -1,7 +1,7 @@
 import Testing
 @testable import PaeoniaApp
 
-/// Covers the cold-launch intro's gating rule: the app is only unmasked once *both*
+/// Covers the cold-launch intro's gating rule: the app is only revealed once *both*
 /// the scripted branded hold has played *and* the first real surface is ready, no
 /// matter which of the two finishes first. Getting this wrong either flashes a
 /// half-loaded screen or holds on a blank one.
@@ -27,12 +27,12 @@ struct LaunchExperienceSequenceTests {
         sequence.revealWordmark()
         sequence.markContentReady()
         sequence.markWordmarkHoldElapsed()
-        #expect(sequence.phase == .unmasking)
+        #expect(sequence.phase == .revealing)
 
-        // A late, stray reveal must not knock an in-progress unmask back to wordmark.
+        // A late, stray reveal must not knock an in-progress reveal back to wordmark.
         sequence.revealWordmark()
 
-        #expect(sequence.phase == .unmasking)
+        #expect(sequence.phase == .revealing)
     }
 
     @Test func holdElapsingBeforeContentReadyKeepsHoldingOnTheWordmark() {
@@ -46,7 +46,7 @@ struct LaunchExperienceSequenceTests {
 
         sequence.markContentReady()
 
-        #expect(sequence.phase == .unmasking)
+        #expect(sequence.phase == .revealing)
     }
 
     @Test func contentReadyBeforeHoldElapsedStillWaitsForTheHold() {
@@ -60,38 +60,38 @@ struct LaunchExperienceSequenceTests {
 
         sequence.markWordmarkHoldElapsed()
 
-        #expect(sequence.phase == .unmasking)
+        #expect(sequence.phase == .revealing)
     }
 
     @Test func contentReadyDuringTheMarkPhaseDoesNotSkipTheReveal() {
         var sequence = LaunchExperienceSequence()
 
         // A very fast launch can be ready before the wordmark is even revealed; the
-        // reveal beat must still play rather than jumping straight to the unmask.
+        // reveal beat must still play rather than jumping straight to the reveal.
         sequence.markContentReady()
         #expect(sequence.phase == .mark)
 
         sequence.revealWordmark()
         #expect(sequence.phase == .wordmark)
 
-        // The unmask only begins once the scripted hold reports in, after the reveal.
+        // The reveal only begins once the scripted hold reports in, after the reveal.
         sequence.markWordmarkHoldElapsed()
-        #expect(sequence.phase == .unmasking)
+        #expect(sequence.phase == .revealing)
     }
 
-    @Test func finishOnlyCompletesAnInProgressUnmask() {
+    @Test func finishOnlyCompletesAnInProgressReveal() {
         var sequence = LaunchExperienceSequence()
 
-        // Finishing before the unmask has begun is a no-op.
-        sequence.finishUnmask()
+        // Finishing before the reveal has begun is a no-op.
+        sequence.finishReveal()
         #expect(sequence.phase == .mark)
 
         sequence.revealWordmark()
         sequence.markWordmarkHoldElapsed()
         sequence.markContentReady()
-        #expect(sequence.phase == .unmasking)
+        #expect(sequence.phase == .revealing)
 
-        sequence.finishUnmask()
+        sequence.finishReveal()
         #expect(sequence.phase == .finished)
     }
 
@@ -103,10 +103,10 @@ struct LaunchExperienceSequenceTests {
         sequence.markWordmarkHoldElapsed()
         sequence.markWordmarkHoldElapsed()
 
-        #expect(sequence.phase == .unmasking)
+        #expect(sequence.phase == .revealing)
 
-        sequence.finishUnmask()
-        sequence.finishUnmask()
+        sequence.finishReveal()
+        sequence.finishReveal()
 
         #expect(sequence.phase == .finished)
     }
