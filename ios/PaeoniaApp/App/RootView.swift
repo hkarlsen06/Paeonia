@@ -6,6 +6,7 @@ struct RootView: View {
     @State private var viewModel: RootViewModel
     @State private var locationViewModel: LocationMapViewModel
     @State private var bannerCenter = PaeoniaBannerCenter()
+    @State private var isLaunchExperienceActive = true
     @State private var lastKnownAuthenticatedUserID: UUID?
     @Binding private var widgetDeepLink: PaeoniaWidgetDeepLink?
     @Binding private var pendingJoinInviteCode: String?
@@ -38,7 +39,7 @@ struct RootView: View {
         _widgetDeepLink = widgetDeepLink
         _pendingJoinInviteCode = pendingJoinInviteCode
         self.appleSignInProvider = appleSignInProvider ?? AppleSignInService()
-        self.googleSignInProvider = googleSignInProvider ?? GoogleSignInService()
+        self.googleSignInProvider = googleSignInProvider ?? GoogleSignInService.shared
         self.widgetCanvasService = widgetCanvasService ?? WidgetCanvasService.shared
         self.widgetCanvasSync = widgetCanvasSync ?? WidgetCanvasSyncServiceFactory.makeDefault()
         self.pushAuthorization = pushAuthorization ?? PushAuthorizationService()
@@ -141,21 +142,23 @@ struct RootView: View {
             routedRootContent
                 .zIndex(0)
 
-            if isLaunching {
-                AuthLaunchingView()
-                    .transition(.opacity)
-                    .zIndex(1)
+            if isLaunchExperienceActive {
+                // The intro plays its own reveal and tells us when it has fully
+                // uncovered the app, so the overlay stays mounted past the moment
+                // `state` leaves `.launching` (the reveal then unmasks the first
+                // real surface rendering underneath).
+                LaunchExperienceView(
+                    contentReady: !isLaunching,
+                    onFinished: { isLaunchExperienceActive = false }
+                )
+                .transition(.identity)
+                .zIndex(1)
             }
         }
-        .animation(launchSurfaceAnimation, value: isLaunching)
     }
 
     private var isLaunching: Bool {
         viewModel.state == .launching
-    }
-
-    private var launchSurfaceAnimation: Animation? {
-        reduceMotion ? nil : PaeoniaMotion.meaningfulMoment
     }
 
     @ViewBuilder
@@ -364,7 +367,7 @@ struct RootView: View {
     private var content: some View {
         switch viewModel.state {
         case .launching:
-            // Handled at the top level by `AuthLaunchingView`; never shown here.
+            // Handled at the top level by `LaunchExperienceView`; never shown here.
             EmptyView()
         case .unauthenticated:
             // Handled at the top level by `signInScreen`; never shown here.

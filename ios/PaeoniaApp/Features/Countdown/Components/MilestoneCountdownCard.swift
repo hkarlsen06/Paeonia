@@ -39,21 +39,20 @@ struct MilestoneCountdownCard: View {
     }
 
     private func card(for milestone: RelationshipMilestone) -> some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            countdown(for: milestone)
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                countdown(for: milestone)
 
-            // The target date sits right under the count, so "25 days until" and
-            // "Saturday 25 July" read together as the countdown.
-            Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextTertiary)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
+                // The target date sits right under the count, so "25 days until" and
+                // "Saturday 25 July" read together as the countdown.
+                Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextTertiary)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
+            }
 
-            Spacer(minLength: PaeoniaSpacing.space8)
-
-            // The milestone name anchors the bottom, lining up with the
-            // neighbouring tiles' captions.
+            // The milestone name follows as part of the same group.
             Text(Self.subject(for: milestone.kind))
                 .font(PaeoniaTypography.sectionTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
@@ -62,6 +61,9 @@ struct MilestoneCountdownCard: View {
         }
         // Match the side-by-side tiles in the same row: same fill, square footprint,
         // rounded corners, hairline stroke, and lift as the widget drawing tile.
+        // Centre the content vertically (no Spacer) so the count, date, and name read
+        // as one group with even space above and below, instead of being split to the
+        // top and bottom edges with a gap in the middle.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(PaeoniaSpacing.space16)
         .aspectRatio(1, contentMode: .fit)
@@ -119,7 +121,7 @@ struct MilestoneCountdownCard: View {
         .lineLimit(1)
     }
 
-    /// The milestone name shown at the bottom of the card (e.g. "Your first month together").
+    /// The milestone name shown under the countdown (e.g. "Your first month together").
     private static func subject(for kind: RelationshipMilestone.Kind) -> LocalizedStringResource {
         switch kind {
         case .firstMonth:

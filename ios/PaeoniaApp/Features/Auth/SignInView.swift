@@ -15,6 +15,11 @@ struct SignInView: View {
     /// The legal page currently shown in the in-app browser, if any.
     @State private var activeLegalLink: LegalLink?
 
+    /// Which provider the user tapped, so its button can show a spinner while the
+    /// sign-in finishes. After the provider's own consent sheet dismisses there is
+    /// still a token exchange to complete; without this the screen looks frozen.
+    @State private var pendingProvider: AuthSignInProvider?
+
     var body: some View {
         GeometryReader { proxy in
             ScrollView {
@@ -46,6 +51,14 @@ struct SignInView: View {
         .sheet(item: $activeLegalLink) { link in
             SafariView(url: link.url)
                 .ignoresSafeArea()
+        }
+        // Once the flow settles (success leaves this screen; failure or cancel
+        // returns control here), drop the spinner so the buttons are tappable
+        // again for a retry.
+        .onChange(of: isWorking) { _, isWorking in
+            if !isWorking {
+                pendingProvider = nil
+            }
         }
     }
 
@@ -111,12 +124,20 @@ struct SignInView: View {
     }
 
     private var appleButton: some View {
-        Button(action: onAppleSignIn) {
+        Button {
+            pendingProvider = .apple
+            onAppleSignIn()
+        } label: {
             Label {
                 Text(.authSignInAppleButton)
             } icon: {
-                Image(systemName: "apple.logo")
-                    .accessibilityHidden(true)
+                if pendingProvider == .apple {
+                    ProgressView()
+                        .tint(.paeoniaTextInverse)
+                } else {
+                    Image(systemName: "apple.logo")
+                        .accessibilityHidden(true)
+                }
             }
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
@@ -124,15 +145,23 @@ struct SignInView: View {
     }
 
     private var googleButton: some View {
-        Button(action: onGoogleSignIn) {
+        Button {
+            pendingProvider = .google
+            onGoogleSignIn()
+        } label: {
             Label {
                 Text(.authSignInGoogleButton)
             } icon: {
-                Image(.googleG)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 18, height: 18)
-                    .accessibilityHidden(true)
+                if pendingProvider == .google {
+                    ProgressView()
+                        .tint(.paeoniaTextPrimary)
+                } else {
+                    Image(.googleG)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 18, height: 18)
+                        .accessibilityHidden(true)
+                }
             }
         }
         .buttonStyle(PaeoniaSecondaryButtonStyle())
@@ -180,6 +209,13 @@ struct SignInView: View {
     }
 }
 
+/// The sign-in provider whose button is currently mid-flight, used only to show
+/// a per-button spinner.
+private enum AuthSignInProvider {
+    case apple
+    case google
+}
+
 /// A legal page Paeonia can show in its in-app browser. `Identifiable` so it can
 /// drive a `.sheet(item:)` presentation directly.
 private enum LegalLink: String, Identifiable {
@@ -220,4 +256,5 @@ private struct SafariView: UIViewControllerRepresentable {
         onGoogleSignIn: {}
     )
 }
+
 #endif
