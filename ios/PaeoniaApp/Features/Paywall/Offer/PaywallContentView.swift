@@ -7,9 +7,11 @@ struct PaywallContentView: View {
     @Binding var billingPeriod: PaeoniaBillingPeriod
 
     let headlineTitle: LocalizedStringResource
+    let subtitle: LocalizedStringResource
     let priceLine: String
     let timelineItems: [PaywallTimelineItem]
     let allowsInviteEntry: Bool
+    let showsArtworkHeader: Bool
     let onRevealInvite: () -> Void
 
     var body: some View {
@@ -20,7 +22,15 @@ struct PaywallContentView: View {
 
     private var aboveFold: some View {
         VStack(spacing: 0) {
-            PaywallArtworkHeader(topSafeAreaInset: topSafeAreaInset, height: heroHeight)
+            if showsArtworkHeader {
+                PaywallArtworkHeader(topSafeAreaInset: topSafeAreaInset, height: heroHeight)
+            } else {
+                // No brand hero here (the paired paywall drops it to make room for
+                // the longer copy). Reserve the status-bar area so the title still
+                // clears the notch, since the scroll view ignores the top safe area.
+                Color.clear
+                    .frame(height: topSafeAreaInset + PaeoniaSpacing.space8)
+            }
 
             VStack(alignment: .leading, spacing: 0) {
                 headlineBlock
@@ -54,7 +64,7 @@ struct PaywallContentView: View {
                 .foregroundStyle(.paeoniaTextPrimary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text(.paywallSubtitle)
+            Text(subtitle)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)

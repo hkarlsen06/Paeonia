@@ -755,7 +755,7 @@ final class RootViewModel {
                 return
             }
 
-            let syncSession = SyncSession(userID: userID, activeCoupleID: currentActiveCoupleID)
+            let syncSession = SyncSession(userID: userID, activeCoupleID: syncActiveCoupleID)
             if configuredSyncSession != syncSession {
                 await syncService.configure(session: syncSession)
                 configuredSyncSession = syncSession
@@ -766,5 +766,13 @@ final class RootViewModel {
                 hasStartedSync = true
             }
         }
+    }
+
+    private var syncActiveCoupleID: UUID? {
+        guard route.accessResolution?.route == .paired else {
+            return nil
+        }
+
+        return currentActiveCoupleID
     }
 }

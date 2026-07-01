@@ -17,6 +17,8 @@ protocol SupabasePairingGateway: Actor {
     ) async throws -> UUID
 
     func revokeInvite(id: UUID) async throws -> Bool
+
+    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool
 }
 
 actor LiveSupabasePairingGateway: SupabasePairingGateway {
@@ -83,6 +85,21 @@ actor LiveSupabasePairingGateway: SupabasePairingGateway {
             .rpc(
                 "revoke_pairing_invite",
                 params: RevokePairingInviteRequest(inviteID: id)
+            )
+            .execute()
+            .value
+    }
+
+    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
+        // The backend keys the leave on auth.uid(), so an anonymous request would
+        // silently leave nothing. Require an active session and let local-first
+        // retry handle a restored auth state instead of sending it unsigned.
+        _ = try await client.auth.session
+
+        return try await client
+            .rpc(
+                "leave_relationship",
+                params: LeaveRelationshipRequest(operation: operation)
             )
             .execute()
             .value
@@ -168,5 +185,26 @@ nonisolated private struct RevokePairingInviteRequest: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case inviteID = "p_invite_id"
+    }
+}
+
+nonisolated private struct LeaveRelationshipRequest: Encodable {
+    let clientOperationID: UUID
+    let clientID: UUID
+    let clientSequence: Int64
+    let localCreatedAt: Date
+
+    init(operation: PairingClientOperation) {
+        self.clientOperationID = operation.id
+        self.clientID = operation.clientID
+        self.clientSequence = operation.clientSequence
+        self.localCreatedAt = operation.localCreatedAt
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case clientOperationID = "p_client_operation_id"
+        case clientID = "p_client_id"
+        case clientSequence = "p_client_sequence"
+        case localCreatedAt = "p_local_created_at"
     }
 }

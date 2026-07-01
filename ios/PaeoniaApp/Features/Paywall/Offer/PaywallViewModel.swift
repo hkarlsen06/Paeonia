@@ -20,6 +20,7 @@ final class PaywallViewModel: PresentationReadinessProviding {
     private(set) var hasFinishedLoadingProducts = false
     private(set) var isPurchasing = false
     private(set) var isAcceptingInvite = false
+    private(set) var isLeavingRelationship = false
     private(set) var error: PaywallError?
     private(set) var purchaseSucceeded = false
 
@@ -173,6 +174,30 @@ final class PaywallViewModel: PresentationReadinessProviding {
         }
     }
 
+    /// Ends the current pairing. Used from the paired paywall footer, where a
+    /// couple is linked but no one has an active subscription. On success the root
+    /// re-resolves access and the user lands back in the unpaired flow.
+    func leaveRelationship() async -> Bool {
+        guard let pairingService else {
+            error = .unpairFailed
+            return false
+        }
+
+        isLeavingRelationship = true
+        error = nil
+
+        do {
+            let operation = operationProvider.makeOperation()
+            _ = try await pairingService.leaveRelationship(operation: operation)
+            isLeavingRelationship = false
+            return true
+        } catch {
+            self.error = .unpairFailed
+            isLeavingRelationship = false
+            return false
+        }
+    }
+
     func clearError() {
         error = nil
     }
@@ -222,6 +247,7 @@ enum PaywallError: Equatable {
     case restoreFailed
     case inviteInvalid
     case inviteAcceptFailed
+    case unpairFailed
 
     var message: String {
         switch self {
@@ -239,6 +265,8 @@ enum PaywallError: Equatable {
             String(localized: .paywallErrorInviteInvalid)
         case .inviteAcceptFailed:
             String(localized: .paywallErrorInviteAcceptFailed)
+        case .unpairFailed:
+            String(localized: .paywallErrorUnpairFailed)
         }
     }
 }

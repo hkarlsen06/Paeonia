@@ -3,8 +3,11 @@ import SwiftUI
 struct PaywallFooterActionsView: View {
     let isPurchasing: Bool
     let isLoading: Bool
+    let showsUnpair: Bool
+    let isLeavingRelationship: Bool
     let onRestorePurchases: () -> Void
     let onSignOut: () -> Void
+    let onRequestUnpair: () -> Void
     let onRequestDeleteAccount: () -> Void
 
     var body: some View {
@@ -36,12 +39,19 @@ struct PaywallFooterActionsView: View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: PaeoniaSpacing.space12) {
                 signOutButton
+                if showsUnpair {
+                    separator
+                    unpairButton
+                }
                 separator
                 deleteButton
             }
 
             VStack(spacing: 0) {
                 signOutButton
+                if showsUnpair {
+                    unpairButton
+                }
                 deleteButton
             }
         }
@@ -54,6 +64,14 @@ struct PaywallFooterActionsView: View {
             footerLabel(.authSignOutButton)
         }
         .buttonStyle(.plain)
+    }
+
+    private var unpairButton: some View {
+        Button(action: onRequestUnpair) {
+            footerLabel(.paywallUnpairButton)
+        }
+        .buttonStyle(.plain)
+        .disabled(isLeavingRelationship)
     }
 
     private var deleteButton: some View {

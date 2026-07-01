@@ -86,6 +86,24 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
+    @Test func paywalledPairStartsOnlyUserScopedSync() async {
+        let syncService = TestPaeoniaSyncService()
+        let viewModel = RootViewModel(
+            syncService: syncService,
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: StaticAccessRouteService(route: .pairedPaywalled)
+        )
+
+        await viewModel.start()
+
+        #expect(viewModel.state == .pairedPaywalled)
+        #expect(await syncService.startCallCount == 1)
+        let configuredSessions = await syncService.configuredSessions
+        let latestSession = configuredSessions.last ?? nil
+        #expect(latestSession?.activeCoupleID == nil)
+    }
+
+    @MainActor
     @Test func acknowledgingRelationshipEndedMarksNoticeSeenAndResolvesToUnpaired() async {
         let coupleID = UUID()
         let accessRouteService = RelationshipEndedAccessRouteService(coupleID: coupleID)

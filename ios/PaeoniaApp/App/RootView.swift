@@ -202,12 +202,25 @@ struct RootView: View {
         PaywallView(
             session: viewModel.currentSession,
             pendingInviteCode: $pendingJoinInviteCode,
+            audience: paywallAudience,
             onPurchaseConfirmed: subscriptionChanged,
             onInviteAccepted: inviteAccepted,
-            allowsInviteEntry: viewModel.state == .limitedAuthenticated,
             onSignOut: signOut,
+            onUnpaired: refreshPairing,
             onDeleteAccount: deleteAccount
         )
+    }
+
+    /// A paired-but-unentitled couple gets the paired paywall (clear partner
+    /// context plus an unpair action); everyone else on the paywall is a signed-in
+    /// user who is not paired yet.
+    private var paywallAudience: PaywallAudience {
+        switch viewModel.state {
+        case .pairedPaywalled:
+            .paired(partnerName: viewModel.currentPartnerDisplayName)
+        default:
+            .unpaired
+        }
     }
 
     private var scaffold: some View {

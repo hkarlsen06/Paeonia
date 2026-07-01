@@ -205,6 +205,21 @@ struct SupabasePairingServiceTests {
         #expect(await gateway.acceptedOperation == operation)
         #expect(await gateway.acceptedStartedOn == startedOn)
     }
+
+    @Test func leaveRelationshipForwardsOperationToGateway() async throws {
+        let clientID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let operation = PairingClientOperation(
+            clientID: clientID,
+            clientSequence: 12
+        )
+        let gateway = FakeSupabasePairingGateway(leaveResult: true)
+        let service = SupabasePairingService(gateway: gateway)
+
+        let didLeave = try await service.leaveRelationship(operation: operation)
+
+        #expect(didLeave)
+        #expect(await gateway.leftOperation == operation)
+    }
 }
 
 struct PaywallInviteAcceptanceTests {
@@ -247,6 +262,50 @@ struct PaywallInviteAcceptanceTests {
         #expect(!accepted)
         #expect(viewModel.error == .inviteInvalid)
         #expect(await pairingService.acceptCallCount == 0)
+    }
+}
+
+struct PaywallUnpairTests {
+    @MainActor
+    @Test func leavingRelationshipUsesOperationAndSucceeds() async throws {
+        let operation = PairingClientOperation(
+            id: try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333")),
+            clientID: try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
+            clientSequence: 11,
+            localCreatedAt: Date(timeIntervalSince1970: 50)
+        )
+        let pairingService = PaywallPairingServiceSpy()
+        let viewModel = PaywallViewModel(
+            userID: "11111111-1111-1111-1111-111111111111",
+            storeKitService: PaywallStoreKitServiceSpy(),
+            pairingService: pairingService,
+            operationProvider: StaticPairingOperationProvider(operation: operation)
+        )
+
+        let didLeave = await viewModel.leaveRelationship()
+
+        #expect(didLeave)
+        #expect(viewModel.error == nil)
+        #expect(!viewModel.isLeavingRelationship)
+        #expect(await pairingService.leftOperation == operation)
+    }
+
+    @MainActor
+    @Test func failedLeaveSurfacesUnpairErrorAndStopsWorking() async {
+        let pairingService = PaywallPairingServiceSpy(leaveShouldFail: true)
+        let viewModel = PaywallViewModel(
+            userID: "11111111-1111-1111-1111-111111111111",
+            storeKitService: PaywallStoreKitServiceSpy(),
+            pairingService: pairingService,
+            operationProvider: StaticPairingOperationProvider()
+        )
+
+        let didLeave = await viewModel.leaveRelationship()
+
+        #expect(!didLeave)
+        #expect(viewModel.error == .unpairFailed)
+        #expect(!viewModel.isLeavingRelationship)
+        #expect(await pairingService.leaveCallCount == 1)
     }
 }
 
@@ -387,6 +446,30 @@ struct PairingInviteViewModelTests {
     }
 }
 
+struct PaywallAudienceTests {
+    @Test func unpairedAudienceAllowsInviteEntryAndIsNotPaired() {
+        let audience = PaywallAudience.unpaired
+
+        #expect(audience.allowsInviteEntry)
+        #expect(!audience.isPaired)
+    }
+
+    @Test func pairedAudienceHidesInviteEntryAndIsPaired() {
+        let audience = PaywallAudience.paired(partnerName: "Riley")
+
+        #expect(!audience.allowsInviteEntry)
+        #expect(audience.isPaired)
+        #expect(audience.partnerNameForCopy == "Riley")
+    }
+
+    @Test func pairedAudienceFallsBackWhenPartnerNameMissingOrBlank() {
+        let fallback = String(localized: .paywallPairedPartnerFallback)
+
+        #expect(PaywallAudience.paired(partnerName: nil).partnerNameForCopy == fallback)
+        #expect(PaywallAudience.paired(partnerName: "   ").partnerNameForCopy == fallback)
+    }
+}
+
 struct PaywallErrorTests {
     @Test func purchaseConfirmationErrorMessageHidesTechnicalDiagnostics() {
         let message = PaywallError.purchaseNotConfirmed.message
@@ -411,6 +494,7 @@ private actor FakeSupabasePairingGateway: SupabasePairingGateway {
     private var createFailuresBeforeSuccess: Int
     private let preview: PairingInvitePreview?
     private let acceptedCoupleID: UUID
+    private let leaveResult: Bool
     private(set) var createdInviteCode: String?
     private(set) var createdInviteCodes: [String] = []
     private(set) var createdOperation: PairingClientOperation?
@@ -419,17 +503,20 @@ private actor FakeSupabasePairingGateway: SupabasePairingGateway {
     private(set) var acceptedInviteCode: String?
     private(set) var acceptedOperation: PairingClientOperation?
     private(set) var acceptedStartedOn: PairingStartDate?
+    private(set) var leftOperation: PairingClientOperation?
 
     init(
         createdInviteID: UUID = UUID(),
         createFailuresBeforeSuccess: Int = 0,
         preview: PairingInvitePreview? = nil,
-        acceptedCoupleID: UUID = UUID()
+        acceptedCoupleID: UUID = UUID(),
+        leaveResult: Bool = true
     ) {
         self.createdInviteID = createdInviteID
         self.createFailuresBeforeSuccess = createFailuresBeforeSuccess
         self.preview = preview
         self.acceptedCoupleID = acceptedCoupleID
+        self.leaveResult = leaveResult
     }
 
     func createInvite(
@@ -468,6 +555,11 @@ private actor FakeSupabasePairingGateway: SupabasePairingGateway {
 
     func revokeInvite(id: UUID) async throws -> Bool {
         true
+    }
+
+    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
+        leftOperation = operation
+        return leaveResult
     }
 }
 // swiftlint:enable async_without_await
@@ -565,6 +657,13 @@ private actor PaywallPairingServiceSpy: PairingServicing {
     private(set) var acceptCallCount = 0
     private(set) var acceptedCodeInput: String?
     private(set) var acceptedOperation: PairingClientOperation?
+    private(set) var leaveCallCount = 0
+    private(set) var leftOperation: PairingClientOperation?
+    private let leaveShouldFail: Bool
+
+    init(leaveShouldFail: Bool = false) {
+        self.leaveShouldFail = leaveShouldFail
+    }
 
     func createInvite(
         operation: PairingClientOperation,
@@ -595,6 +694,15 @@ private actor PaywallPairingServiceSpy: PairingServicing {
     }
 
     func revokeInvite(id: UUID) async throws -> Bool {
+        return true
+    }
+
+    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
+        leaveCallCount += 1
+        leftOperation = operation
+        if leaveShouldFail {
+            throw PairingInviteCreationError.inviteCodeCollision
+        }
         return true
     }
 }
@@ -676,6 +784,11 @@ private actor PendingCreatePairingService: PairingServicing {
         await Task.yield()
         return true
     }
+
+    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
+        await Task.yield()
+        return true
+    }
 }
 
 private actor FailingCreatePairingService: PairingServicing {
@@ -702,6 +815,11 @@ private actor FailingCreatePairingService: PairingServicing {
     }
 
     func revokeInvite(id: UUID) async throws -> Bool {
+        await Task.yield()
+        return true
+    }
+
+    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
         await Task.yield()
         return true
     }

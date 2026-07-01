@@ -21,6 +21,8 @@ protocol PairingServicing: Actor {
     ) async throws -> PairingAcceptedRelationship
 
     func revokeInvite(id: UUID) async throws -> Bool
+
+    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool
 }
 
 actor SupabasePairingService: PairingServicing {
@@ -97,5 +99,9 @@ actor SupabasePairingService: PairingServicing {
 
     func revokeInvite(id: UUID) async throws -> Bool {
         try await gateway.revokeInvite(id: id)
+    }
+
+    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
+        try await gateway.leaveRelationship(operation: operation)
     }
 }

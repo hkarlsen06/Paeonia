@@ -10,11 +10,13 @@ struct PaywallView: View {
 
     let onPurchaseConfirmed: () -> Void
     let onInviteAccepted: () -> Void
-    let allowsInviteEntry: Bool
+    let audience: PaywallAudience
     let onSignOut: () -> Void
+    let onUnpaired: () -> Void
     let onDeleteAccount: () -> Void
 
     @State private var isConfirmingDelete = false
+    @State private var isConfirmingUnpair = false
     @State private var inviteCode = ""
     @State private var showInviteOverlay = false
     @State private var hasPresentedPaywallContent = false
@@ -23,19 +25,25 @@ struct PaywallView: View {
     init(
         session: AuthSession?,
         pendingInviteCode: Binding<String?> = .constant(nil),
+        audience: PaywallAudience,
         onPurchaseConfirmed: @escaping () -> Void,
         onInviteAccepted: @escaping () -> Void,
-        allowsInviteEntry: Bool,
         onSignOut: @escaping () -> Void,
+        onUnpaired: @escaping () -> Void,
         onDeleteAccount: @escaping () -> Void
     ) {
         _viewModel = State(initialValue: PaywallViewModel(userID: session?.id))
         _pendingInviteCode = pendingInviteCode
+        self.audience = audience
         self.onPurchaseConfirmed = onPurchaseConfirmed
         self.onInviteAccepted = onInviteAccepted
-        self.allowsInviteEntry = allowsInviteEntry
         self.onSignOut = onSignOut
+        self.onUnpaired = onUnpaired
         self.onDeleteAccount = onDeleteAccount
+    }
+
+    private var allowsInviteEntry: Bool {
+        audience.allowsInviteEntry
     }
 
     var body: some View {
@@ -76,6 +84,20 @@ struct PaywallView: View {
             }
         } message: {
             Text(.authDeleteAccountConfirmMessage)
+        }
+        .alert(
+            Text(.paywallUnpairConfirmTitle(audience.partnerNameForCopy)),
+            isPresented: $isConfirmingUnpair
+        ) {
+            Button(role: .destructive, action: unpair) {
+                Text(.paywallUnpairConfirmAction)
+            }
+
+            Button(role: .cancel, action: {}) {
+                Text(.paywallUnpairConfirmCancel)
+            }
+        } message: {
+            Text(.paywallUnpairConfirmMessage(audience.partnerNameForCopy))
         }
     }
 
@@ -142,10 +164,12 @@ struct PaywallView: View {
             heroHeight: heroHeight(for: geometry),
             aboveFoldMinHeight: aboveFoldMinHeight(for: geometry),
             billingPeriod: $viewModel.billingPeriod,
-            headlineTitle: presentation.headlineTitle,
+            headlineTitle: headlineTitle,
+            subtitle: subtitle,
             priceLine: presentation.priceLine,
             timelineItems: presentation.timelineItems,
             allowsInviteEntry: allowsInviteEntry,
+            showsArtworkHeader: !audience.isPaired,
             onRevealInvite: {
                 withAnimation(.easeInOut(duration: 0.25)) {
                     showInviteOverlay = true
@@ -153,6 +177,20 @@ struct PaywallView: View {
                 inviteFieldFocused = true
             }
         )
+    }
+
+    /// Paired couples without an active subscription get copy that makes it clear
+    /// they are still linked; everyone else gets the standard acquisition headline.
+    private var headlineTitle: LocalizedStringResource {
+        if audience.isPaired {
+            return .paywallPairedTitle(audience.partnerNameForCopy)
+        }
+
+        return presentation.headlineTitle
+    }
+
+    private var subtitle: LocalizedStringResource {
+        audience.isPaired ? .paywallPairedSubtitle : .paywallSubtitle
     }
 
     private func submitInvite() {
@@ -289,8 +327,13 @@ struct PaywallView: View {
         PaywallFooterActionsView(
             isPurchasing: viewModel.isPurchasing,
             isLoading: viewModel.isLoading,
+            showsUnpair: audience.isPaired,
+            isLeavingRelationship: viewModel.isLeavingRelationship,
             onRestorePurchases: restorePurchases,
             onSignOut: onSignOut,
+            onRequestUnpair: {
+                isConfirmingUnpair = true
+            },
             onRequestDeleteAccount: {
                 isConfirmingDelete = true
             }
@@ -321,6 +364,16 @@ struct PaywallView: View {
             let didRestore = await viewModel.restorePurchases()
             if didRestore {
                 onPurchaseConfirmed()
+            }
+        }
+    }
+
+    private func unpair() {
+        Task {
+            let didLeave = await viewModel.leaveRelationship()
+            if didLeave {
+                bannerCenter.dismiss()
+                onUnpaired()
             }
         }
     }
@@ -362,10 +415,11 @@ struct PaywallView: View {
             profilePhotoAssetID: nil,
             profileStatus: .complete
         ),
+        audience: .unpaired,
         onPurchaseConfirmed: {},
         onInviteAccepted: {},
-        allowsInviteEntry: true,
         onSignOut: {},
+        onUnpaired: {},
         onDeleteAccount: {}
     )
     .preferredColorScheme(.dark)

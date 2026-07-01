@@ -4686,13 +4686,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The App Store confirms before you pay. Cancel anytime."
+            "value" : "Cancel anytime"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "App Store bekrefter før du betaler. Avslutt når som helst."
+            "value" : "Avslutt når som helst"
           }
         }
       }
@@ -4877,6 +4877,24 @@
         }
       }
     },
+    "paywall.error.unpairFailed" : {
+      "comment" : "Error banner shown when ending the pairing fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't unpair you just now. Please try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å koble deg fra akkurat nå. Prøv igjen."
+          }
+        }
+      }
+    },
     "paywall.feature.daily" : {
       "comment" : "Short paywall feature label for daily questions.",
       "extractionState" : "manual",
@@ -5053,6 +5071,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ett abonnement låser opp Paeonia for dere begge."
+          }
+        }
+      }
+    },
+    "paywall.paired.partnerFallback" : {
+      "comment" : "Fallback name used in paired paywall copy when the partner's name is unknown.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "partneren din"
+          }
+        }
+      }
+    },
+    "paywall.paired.subtitle" : {
+      "comment" : "Paywall subtitle for a paired couple whose subscription is not active.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your shared space is paused until one of you subscribes. Everything you've saved together is safe."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det felles rommet deres er satt på pause til en av dere abonnerer. Alt dere har lagret sammen er trygt."
+          }
+        }
+      }
+    },
+    "paywall.paired.title" : {
+      "comment" : "Paywall headline when the couple is paired but the couple has no active subscription. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're paired with %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er koblet sammen med %@"
           }
         }
       }
@@ -5665,6 +5737,96 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "år"
+          }
+        }
+      }
+    },
+    "paywall.unpair.button" : {
+      "comment" : "Footer action, alongside sign out and delete account, that ends the pairing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unpair"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble fra"
+          }
+        }
+      }
+    },
+    "paywall.unpair.confirm.action" : {
+      "comment" : "Destructive confirm button that ends the pairing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unpair"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble fra"
+          }
+        }
+      }
+    },
+    "paywall.unpair.confirm.cancel" : {
+      "comment" : "Cancel button that keeps the pairing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stay paired"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forbli koblet"
+          }
+        }
+      }
+    },
+    "paywall.unpair.confirm.message" : {
+      "comment" : "Message of the confirmation alert for ending the pairing. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll leave your shared space and %@ will be told. You'll both stop seeing your shared questions, memories, and widget. You can pair again later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du forlater det felles rommet deres, og %@ får beskjed. Dere slutter begge å se de felles spørsmålene, minnene og widgeten. Du kan koble deg til noen igjen senere."
+          }
+        }
+      }
+    },
+    "paywall.unpair.confirm.title" : {
+      "comment" : "Title of the confirmation alert for ending the pairing. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unpair from %@?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble fra %@?"
           }
         }
       }
