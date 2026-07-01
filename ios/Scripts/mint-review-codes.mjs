@@ -13,17 +13,28 @@
 // Because this deletes the previous cycle's demo couples, only run it when you
 // are starting a new review cycle (not while a review is mid-flight).
 //
-// Requires (never commit these):
-//   SUPABASE_URL                 e.g. https://api.paeonia.no
-//   SUPABASE_SERVICE_ROLE_KEY    service-role key
+// Reads credentials from the repo-root .env (git-ignored):
+//   SUPABASE_URL         e.g. https://api.paeonia.no
+//   SUPABASE_SECRET_KEY  Supabase secret/service-role key (SUPABASE_SERVICE_ROLE_KEY also accepted)
 //
 // Usage:
-//   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node ios/Scripts/mint-review-codes.mjs
+//   pnpm review-codes:mint
+//   (or: node ios/Scripts/mint-review-codes.mjs)
 
 import { randomBytes, randomInt } from "node:crypto";
+import { join } from "node:path";
+
+// Load the repo-root .env so the pnpm command and a bare `node ...` both work
+// without exporting vars by hand. A real shell/CI environment still works if the
+// file is absent.
+try {
+  process.loadEnvFile(join(import.meta.dirname, "..", "..", ".env"));
+} catch {
+  // No .env file — fall back to the ambient environment.
+}
 
 const SUPABASE_URL = requireEnv("SUPABASE_URL").replace(/\/+$/, "");
-const SERVICE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+const SERVICE_KEY = requireEnv("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY");
 
 const SLOT_COUNT = 3;
 // Neutral, non-partner-sounding demo names (the copy must never read like it came
@@ -190,11 +201,10 @@ function generateCode() {
   return code;
 }
 
-function requireEnv(name) {
-  const value = process.env[name];
-  if (!value) {
-    console.error(`Missing required environment variable: ${name}`);
-    process.exit(1);
+function requireEnv(...names) {
+  for (const name of names) {
+    if (process.env[name]) return process.env[name];
   }
-  return value;
+  console.error(`Missing required environment variable: ${names.join(" or ")}`);
+  process.exit(1);
 }

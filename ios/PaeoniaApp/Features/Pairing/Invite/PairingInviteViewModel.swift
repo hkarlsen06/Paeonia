@@ -14,6 +14,7 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     private let operationProvider: any PairingClientOperationProviding
     private let inviteStore: any PairingInviteStoring
     private let now: @MainActor () -> Date
+    private var cachedInvite: PairingInvite?
 
     init(
         userID: String?,
@@ -29,7 +30,7 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
         self.now = now
 
         if let userID {
-            invite = self.inviteStore.loadInvite(for: userID)
+            cachedInvite = self.inviteStore.loadInvite(for: userID)
         }
     }
 
@@ -39,6 +40,11 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
 
     func loadInviteIfNeeded() async {
         guard invite == nil, !isLoading else {
+            return
+        }
+
+        if let cachedInvite {
+            await validateCachedInvite(cachedInvite)
             return
         }
 
@@ -83,10 +89,6 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
         isRevoking = true
         error = nil
 
-        if let invite, let pairingService {
-            _ = try? await pairingService.revokeInvite(id: invite.id)
-        }
-
         guard let pairingService else {
             isRevoking = false
             if existingInvite == nil {
@@ -98,11 +100,21 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
         }
 
         do {
-            let createdInvite = try await pairingService.createInvite(
-                operation: operationProvider.makeOperation(),
-                expiresAt: inviteExpiryDate()
-            )
+            let createdInvite: PairingInvite
+            if let existingInvite {
+                createdInvite = try await pairingService.rotateInvite(
+                    currentInvite: existingInvite,
+                    operation: operationProvider.makeOperation(),
+                    expiresAt: inviteExpiryDate()
+                )
+            } else {
+                createdInvite = try await pairingService.createInvite(
+                    operation: operationProvider.makeOperation(),
+                    expiresAt: inviteExpiryDate()
+                )
+            }
             invite = createdInvite
+            cachedInvite = nil
             inviteStore.saveInvite(createdInvite, for: userID)
             isRevoking = false
             return true
@@ -124,6 +136,43 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     private func inviteExpiryDate() -> Date {
         Calendar.current.date(byAdding: .day, value: 7, to: now())
             ?? now().addingTimeInterval(7 * 24 * 60 * 60)
+    }
+
+    private func validateCachedInvite(_ cachedInvite: PairingInvite) async {
+        guard let userID, let pairingService else {
+            error = .createFailed
+            return
+        }
+
+        isLoading = true
+        error = nil
+
+        do {
+            let validation = try await pairingService.validateInvite(cachedInvite)
+            if validation.status == .pending,
+               let inviteID = validation.inviteID,
+               let expiresAt = validation.expiresAt {
+                let validatedInvite = PairingInvite(
+                    id: inviteID,
+                    code: cachedInvite.code,
+                    joinURL: cachedInvite.joinURL,
+                    expiresAt: expiresAt
+                )
+                invite = validatedInvite
+                self.cachedInvite = nil
+                inviteStore.saveInvite(validatedInvite, for: userID)
+                isLoading = false
+                return
+            }
+
+            self.cachedInvite = nil
+            inviteStore.clearInvite(for: userID)
+            isLoading = false
+            await createInvite()
+        } catch {
+            self.error = .createFailed
+            isLoading = false
+        }
     }
 }
 

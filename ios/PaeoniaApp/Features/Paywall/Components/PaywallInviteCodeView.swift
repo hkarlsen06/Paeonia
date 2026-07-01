@@ -9,6 +9,7 @@ struct PaywallInviteCodeView: View {
 
     @Binding var code: String
     var focus: FocusState<Bool>.Binding
+    let isSubmitting: Bool
     let onSubmit: () -> Void
 
     @ScaledMetric(relativeTo: .title2) private var codeCellHeight: CGFloat = 56
@@ -29,6 +30,8 @@ struct PaywallInviteCodeView: View {
             }
 
             codeField
+
+            submitSection
         }
         .padding(PaeoniaSpacing.space20)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -36,9 +39,6 @@ struct PaywallInviteCodeView: View {
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .frame(maxWidth: 430)
         .frame(maxWidth: .infinity)
-        // The segmented code field is focused by tapping its cells, so background-tap
-        // dismissal would fight that; offer the keyboard "Done" affordance only.
-        .keyboardDoneToolbar()
     }
 
     private var codeField: some View {
@@ -76,6 +76,34 @@ struct PaywallInviteCodeView: View {
         .accessibilityLabel(Text(.paywallInviteTitle))
         .accessibilityValue(Text(code))
         .accessibilityAddTraits(.isButton)
+    }
+
+    private var isComplete: Bool {
+        Self.sanitize(code).count == Self.codeLength
+    }
+
+    private var submitSection: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            Button(action: handleSubmit) {
+                Group {
+                    if isSubmitting {
+                        ProgressView()
+                            .tint(.paeoniaTextInverse)
+                            .accessibilityHidden(true)
+                    } else {
+                        Text(.paywallInviteAction)
+                    }
+                }
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .disabled(!isComplete || isSubmitting)
+            .sensoryFeedback(.impact(flexibility: .soft), trigger: isSubmitting)
+
+            Text(.paywallInviteCtaCaption)
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextTertiary)
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
     }
 
     private func characterCell(at index: Int) -> some View {
@@ -131,7 +159,7 @@ private struct PaywallInviteCodeViewPreview: View {
     @State private var code = ""
 
     var body: some View {
-        PaywallInviteCodeView(code: $code, focus: $focused, onSubmit: {})
+        PaywallInviteCodeView(code: $code, focus: $focused, isSubmitting: false, onSubmit: {})
             .padding()
             .background(.paeoniaSurfacePrimary)
             .preferredColorScheme(.dark)

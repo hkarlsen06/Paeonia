@@ -12,7 +12,15 @@ protocol PairingServicing: Actor {
         expiresAt: Date
     ) async throws -> PairingInvite
 
+    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation
+
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview?
+
+    func rotateInvite(
+        currentInvite: PairingInvite,
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> PairingInvite
 
     func acceptInvite(
         codeInput: String,
@@ -77,9 +85,50 @@ actor SupabasePairingService: PairingServicing {
         throw PairingInviteCreationError.inviteCodeCollision
     }
 
+    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
+        let inviteCode = try PairingInviteCode.normalized(invite.code)
+        return try await gateway.validateInvite(inviteID: invite.id, inviteCode: inviteCode)
+    }
+
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
         let inviteCode = try PairingInviteCode.normalized(codeInput)
         return try await gateway.previewInvite(inviteCode: inviteCode)
+    }
+
+    func rotateInvite(
+        currentInvite: PairingInvite,
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> PairingInvite {
+        var lastCollision: PairingInviteCreationError?
+
+        for _ in 1...maxCreateInviteAttempts {
+            let inviteCode = try PairingInviteCode.normalized(generateInviteCode())
+
+            do {
+                let inviteID = try await gateway.rotateInvite(
+                    currentInviteID: currentInvite.id,
+                    inviteCode: inviteCode,
+                    operation: operation,
+                    expiresAt: expiresAt
+                )
+
+                return PairingInvite(
+                    id: inviteID,
+                    code: inviteCode,
+                    joinURL: try PairingJoinURL.make(inviteCode: inviteCode),
+                    expiresAt: expiresAt
+                )
+            } catch PairingInviteCreationError.inviteCodeCollision {
+                lastCollision = .inviteCodeCollision
+            }
+        }
+
+        if let lastCollision {
+            throw lastCollision
+        }
+
+        throw PairingInviteCreationError.inviteCodeCollision
     }
 
     func acceptInvite(

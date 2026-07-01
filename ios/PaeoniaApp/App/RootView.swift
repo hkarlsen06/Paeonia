@@ -326,7 +326,8 @@ struct RootView: View {
                     onHomeRefresh: { await refreshHomeSurfacesFromPull() },
                     onDailyChallengeRefresh: { await viewModel.refreshFromHomePull() },
                     onDailyChallengeLocalChange: { await viewModel.syncAfterLocalChange() },
-                    onMemoriesLocalChange: { await viewModel.syncAfterLocalChange() }
+                    onMemoriesLocalChange: { await viewModel.syncAfterLocalChange() },
+                    onLeftRelationship: refreshPairing
                 )
                 .transition(
                     .asymmetric(

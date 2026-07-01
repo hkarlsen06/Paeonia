@@ -67,6 +67,71 @@ nonisolated struct PairingInvite: Equatable, Sendable {
     let expiresAt: Date
 }
 
+nonisolated enum PairingInviteValidationStatus: Codable, Equatable, Sendable {
+    case pending
+    case accepted
+    case revoked
+    case expired
+    case notFound
+    case unknown(String)
+
+    init(from decoder: Decoder) throws {
+        let rawValue = try decoder.singleValueContainer().decode(String.self)
+        self = Self(rawValue: rawValue)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    init(rawValue: String) {
+        switch rawValue {
+        case "pending":
+            self = .pending
+        case "accepted":
+            self = .accepted
+        case "revoked":
+            self = .revoked
+        case "expired":
+            self = .expired
+        case "not_found":
+            self = .notFound
+        default:
+            self = .unknown(rawValue)
+        }
+    }
+
+    var rawValue: String {
+        switch self {
+        case .pending:
+            "pending"
+        case .accepted:
+            "accepted"
+        case .revoked:
+            "revoked"
+        case .expired:
+            "expired"
+        case .notFound:
+            "not_found"
+        case let .unknown(rawValue):
+            rawValue
+        }
+    }
+}
+
+nonisolated struct PairingInviteValidation: Decodable, Equatable, Sendable {
+    let inviteID: UUID?
+    let status: PairingInviteValidationStatus
+    let expiresAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case inviteID = "invite_id"
+        case status
+        case expiresAt = "expires_at"
+    }
+}
+
 nonisolated struct PairingInvitePreview: Decodable, Equatable, Sendable {
     let inviteID: UUID
     let inviterUserID: UUID

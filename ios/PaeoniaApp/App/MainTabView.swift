@@ -29,6 +29,9 @@ struct MainTabView: View {
     var onDailyChallengeRefresh: () async -> Void = {}
     var onDailyChallengeLocalChange: @MainActor () async -> Void = {}
     let onMemoriesLocalChange: @MainActor @Sendable () async -> Void
+    /// Invoked after the user unpairs from the You tab, so the root re-resolves
+    /// access and moves them back to the unpaired flow.
+    var onLeftRelationship: () -> Void = {}
 
     @State private var dailyChallengeViewModel = DailyChallengeViewModel()
     @State private var isAnswerFlowPresented = false
@@ -83,7 +86,8 @@ struct MainTabView: View {
         onHomeRefresh: @escaping () async -> Void = {},
         onDailyChallengeRefresh: @escaping () async -> Void = {},
         onDailyChallengeLocalChange: @escaping @MainActor () async -> Void = {},
-        onMemoriesLocalChange: @escaping @MainActor @Sendable () async -> Void = {}
+        onMemoriesLocalChange: @escaping @MainActor @Sendable () async -> Void = {},
+        onLeftRelationship: @escaping () -> Void = {}
     ) {
         self.currentUserID = currentUserID
         self.currentDisplayName = currentDisplayName
@@ -103,6 +107,7 @@ struct MainTabView: View {
         self.onDailyChallengeRefresh = onDailyChallengeRefresh
         self.onDailyChallengeLocalChange = onDailyChallengeLocalChange
         self.onMemoriesLocalChange = onMemoriesLocalChange
+        self.onLeftRelationship = onLeftRelationship
     }
 
     var body: some View {
@@ -353,7 +358,11 @@ struct MainTabView: View {
 
     private var youTab: some View {
         NavigationStack {
-            SettingsView(locationViewModel: locationViewModel, partnerName: dailyChallengeParticipants.partnerName)
+            SettingsView(
+                locationViewModel: locationViewModel,
+                partnerName: dailyChallengeParticipants.partnerName,
+                onLeftRelationship: onLeftRelationship
+            )
         }
     }
 }

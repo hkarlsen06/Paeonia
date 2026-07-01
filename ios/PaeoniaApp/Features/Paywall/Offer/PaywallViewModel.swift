@@ -266,7 +266,7 @@ enum PaywallError: Equatable {
         case .inviteAcceptFailed:
             String(localized: .paywallErrorInviteAcceptFailed)
         case .unpairFailed:
-            String(localized: .paywallErrorUnpairFailed)
+            String(localized: .pairingUnpairFailed)
         }
     }
 }

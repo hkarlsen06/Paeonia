@@ -105,7 +105,7 @@ nonisolated struct AccessRouteResolver: Sendable {
             }
         }
 
-        if snapshot.hasPendingInvite {
+        if snapshot.hasPendingInvite && snapshot.userEntitlement?.isEntitled == true {
             return .invitePending
         }
 

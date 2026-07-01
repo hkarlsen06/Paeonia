@@ -10,6 +10,8 @@
     "lint": "pnpm --filter marketing exec tsc --noEmit",
     "test": "pnpm --filter marketing build",
     "open-ios": "open ios/Paeonia.xcodeproj",
+    "review-codes:mint": "node ios/Scripts/mint-review-codes.mjs",
+    "review-codes:revoke": "node ios/Scripts/revoke-review-codes.mjs",
     "swiftlint": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; for arg in \"$@\"; do if [ \"$arg\" = \"--fix\" ] || [ \"$arg\" = \"autocorrect\" ]; then echo \"swiftlint autocorrect is disabled in this repo. Use swift-format once configured.\"; exit 1; fi; done; swiftlint lint \"$@\"' --"
   }
 }

@@ -183,6 +183,69 @@ struct SupabasePairingServiceTests {
         #expect(await gateway.previewedInviteCode == canonicalCode)
     }
 
+    @Test func validateInviteNormalizesCachedCodeBeforeCallingGateway() async throws {
+        let inviteID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let validation = PairingInviteValidation(
+            inviteID: inviteID,
+            status: .pending,
+            expiresAt: Date(timeIntervalSince1970: 30)
+        )
+        let gateway = FakeSupabasePairingGateway(validation: validation)
+        let service = SupabasePairingService(gateway: gateway)
+        let invite = PairingInvite(
+            id: inviteID,
+            code: "01-ab-cd",
+            joinURL: try PairingJoinURL.make(inviteCode: canonicalCode),
+            expiresAt: Date(timeIntervalSince1970: 20)
+        )
+
+        let result = try await service.validateInvite(invite)
+
+        #expect(result == validation)
+        #expect(await gateway.validatedInviteID == inviteID)
+        #expect(await gateway.validatedInviteCode == canonicalCode)
+    }
+
+    @Test func rotateInviteRetriesCodeCollisionAndReturnsJoinURL() async throws {
+        let currentInviteID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let rotatedInviteID = try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444"))
+        let operation = PairingClientOperation(
+            clientID: try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
+            clientSequence: 7
+        )
+        let expiresAt = Date(timeIntervalSince1970: 20)
+        let currentInvite = PairingInvite(
+            id: currentInviteID,
+            code: canonicalCode,
+            joinURL: try PairingJoinURL.make(inviteCode: canonicalCode),
+            expiresAt: Date(timeIntervalSince1970: 10)
+        )
+        let gateway = FakeSupabasePairingGateway(
+            createFailuresBeforeSuccess: 1,
+            rotatedInviteID: rotatedInviteID
+        )
+        let generatedCodes = GeneratedInviteCodeSequence(["01ABCD", "02BCDE"])
+        let service = SupabasePairingService(
+            gateway: gateway,
+            generateInviteCode: { generatedCodes.next() }
+        )
+
+        let invite = try await service.rotateInvite(
+            currentInvite: currentInvite,
+            operation: operation,
+            expiresAt: expiresAt
+        )
+
+        #expect(invite.id == rotatedInviteID)
+        #expect(invite.code == "02BCDE")
+        #expect(invite.joinURL.absoluteString == "https://paeonia.no/join/02BCDE")
+        #expect(invite.expiresAt == expiresAt)
+        #expect(await gateway.rotatedCurrentInviteID == currentInviteID)
+        #expect(await gateway.rotatedInviteCodes == ["01ABCD", "02BCDE"])
+        #expect(await gateway.rotatedOperation == operation)
+        #expect(await gateway.rotatedExpiresAt == expiresAt)
+    }
+
     @Test func acceptInviteNormalizesCodeBeforeCallingGateway() async throws {
         let acceptedCoupleID = try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444"))
         let clientID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
@@ -379,6 +442,79 @@ struct PairingInviteViewModelTests {
     }
 
     @MainActor
+    @Test func cachedInviteValidationKeepsPresentationUnreadyUntilServerConfirms() async throws {
+        let userID = "11111111-1111-1111-1111-111111111111"
+        let currentInvite = try PairingInvite(
+            id: #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
+            code: "01ABCD",
+            joinURL: PairingJoinURL.make(inviteCode: "01ABCD"),
+            expiresAt: Date(timeIntervalSince1970: 20)
+        )
+        let pairingService = BlockingValidationPairingService(invite: currentInvite)
+        let viewModel = PairingInviteViewModel(
+            userID: userID,
+            pairingService: pairingService,
+            operationProvider: StaticPairingOperationProvider(),
+            inviteStore: PairingInviteStoreSpy(initialInvite: currentInvite)
+        )
+
+        let task = Task {
+            await viewModel.loadInviteIfNeeded()
+        }
+        await pairingService.waitForValidationToStart()
+
+        #expect(viewModel.invite == nil)
+        #expect(viewModel.isLoading)
+        #expect(!viewModel.isPresentationReady)
+
+        await pairingService.finishValidation()
+        await task.value
+
+        #expect(viewModel.invite == currentInvite)
+        #expect(!viewModel.isLoading)
+        #expect(viewModel.isPresentationReady)
+    }
+
+    @MainActor
+    @Test func revokedCachedInviteIsClearedBeforeCreatingReplacement() async throws {
+        let userID = "11111111-1111-1111-1111-111111111111"
+        let currentInvite = try PairingInvite(
+            id: #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
+            code: "01ABCD",
+            joinURL: PairingJoinURL.make(inviteCode: "01ABCD"),
+            expiresAt: Date(timeIntervalSince1970: 20)
+        )
+        let replacementInvite = try PairingInvite(
+            id: #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333")),
+            code: "02BCDE",
+            joinURL: PairingJoinURL.make(inviteCode: "02BCDE"),
+            expiresAt: Date(timeIntervalSince1970: 30)
+        )
+        let pairingService = CachedInviteRecoveryPairingService(
+            validation: PairingInviteValidation(
+                inviteID: currentInvite.id,
+                status: .revoked,
+                expiresAt: currentInvite.expiresAt
+            ),
+            createdInvite: replacementInvite
+        )
+        let inviteStore = PairingInviteStoreSpy(initialInvite: currentInvite)
+        let viewModel = PairingInviteViewModel(
+            userID: userID,
+            pairingService: pairingService,
+            operationProvider: StaticPairingOperationProvider(),
+            inviteStore: inviteStore
+        )
+
+        await viewModel.loadInviteIfNeeded()
+
+        #expect(await pairingService.validatedInvite == currentInvite)
+        #expect(viewModel.invite == replacementInvite)
+        #expect(inviteStore.didClearInvite)
+        #expect(inviteStore.savedInvite == replacementInvite)
+    }
+
+    @MainActor
     @Test func replacingInviteKeepsCurrentInviteUntilNewInviteIsReady() async throws {
         let userID = "11111111-1111-1111-1111-111111111111"
         let currentInvite = try PairingInvite(
@@ -401,6 +537,8 @@ struct PairingInviteViewModelTests {
             operationProvider: StaticPairingOperationProvider(),
             inviteStore: inviteStore
         )
+        await viewModel.loadInviteIfNeeded()
+        #expect(viewModel.invite == currentInvite)
 
         let task = Task {
             await viewModel.revokeAndCreateNewInvite()
@@ -436,6 +574,8 @@ struct PairingInviteViewModelTests {
             operationProvider: StaticPairingOperationProvider(),
             inviteStore: inviteStore
         )
+        await viewModel.loadInviteIfNeeded()
+        #expect(viewModel.invite == currentInvite)
 
         let createdNewInvite = await viewModel.revokeAndCreateNewInvite()
 
@@ -493,13 +633,22 @@ private actor FakeSupabasePairingGateway: SupabasePairingGateway {
     private let createdInviteID: UUID
     private var createFailuresBeforeSuccess: Int
     private let preview: PairingInvitePreview?
+    private let validation: PairingInviteValidation
     private let acceptedCoupleID: UUID
+    private let rotatedInviteID: UUID
     private let leaveResult: Bool
     private(set) var createdInviteCode: String?
     private(set) var createdInviteCodes: [String] = []
     private(set) var createdOperation: PairingClientOperation?
     private(set) var createdExpiresAt: Date?
+    private(set) var validatedInviteID: UUID?
+    private(set) var validatedInviteCode: String?
     private(set) var previewedInviteCode: String?
+    private(set) var rotatedCurrentInviteID: UUID?
+    private(set) var rotatedInviteCode: String?
+    private(set) var rotatedInviteCodes: [String] = []
+    private(set) var rotatedOperation: PairingClientOperation?
+    private(set) var rotatedExpiresAt: Date?
     private(set) var acceptedInviteCode: String?
     private(set) var acceptedOperation: PairingClientOperation?
     private(set) var acceptedStartedOn: PairingStartDate?
@@ -509,13 +658,21 @@ private actor FakeSupabasePairingGateway: SupabasePairingGateway {
         createdInviteID: UUID = UUID(),
         createFailuresBeforeSuccess: Int = 0,
         preview: PairingInvitePreview? = nil,
+        validation: PairingInviteValidation = PairingInviteValidation(
+            inviteID: nil,
+            status: .notFound,
+            expiresAt: nil
+        ),
         acceptedCoupleID: UUID = UUID(),
+        rotatedInviteID: UUID = UUID(),
         leaveResult: Bool = true
     ) {
         self.createdInviteID = createdInviteID
         self.createFailuresBeforeSuccess = createFailuresBeforeSuccess
         self.preview = preview
+        self.validation = validation
         self.acceptedCoupleID = acceptedCoupleID
+        self.rotatedInviteID = rotatedInviteID
         self.leaveResult = leaveResult
     }
 
@@ -537,9 +694,35 @@ private actor FakeSupabasePairingGateway: SupabasePairingGateway {
         return createdInviteID
     }
 
+    func validateInvite(inviteID: UUID, inviteCode: String) async throws -> PairingInviteValidation {
+        validatedInviteID = inviteID
+        validatedInviteCode = inviteCode
+        return validation
+    }
+
     func previewInvite(inviteCode: String) async throws -> PairingInvitePreview? {
         previewedInviteCode = inviteCode
         return preview
+    }
+
+    func rotateInvite(
+        currentInviteID: UUID,
+        inviteCode: String,
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> UUID {
+        rotatedCurrentInviteID = currentInviteID
+        rotatedInviteCode = inviteCode
+        rotatedInviteCodes.append(inviteCode)
+        rotatedOperation = operation
+        rotatedExpiresAt = expiresAt
+
+        if createFailuresBeforeSuccess > 0 {
+            createFailuresBeforeSuccess -= 1
+            throw PairingInviteCreationError.inviteCodeCollision
+        }
+
+        return rotatedInviteID
     }
 
     func acceptInvite(
@@ -677,9 +860,30 @@ private actor PaywallPairingServiceSpy: PairingServicing {
         )
     }
 
+    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
+        PairingInviteValidation(
+            inviteID: invite.id,
+            status: .pending,
+            expiresAt: invite.expiresAt
+        )
+    }
+
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
         await Task.yield()
         return nil
+    }
+
+    func rotateInvite(
+        currentInvite: PairingInvite,
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> PairingInvite {
+        PairingInvite(
+            id: UUID(),
+            code: "02BCDE",
+            joinURL: try PairingJoinURL.make(inviteCode: "02BCDE"),
+            expiresAt: expiresAt
+        )
     }
 
     func acceptInvite(
@@ -731,6 +935,131 @@ private final class PairingInviteStoreSpy: PairingInviteStoring {
     }
 }
 
+private actor BlockingValidationPairingService: PairingServicing {
+    private let invite: PairingInvite
+    private var validationContinuation: CheckedContinuation<PairingInviteValidation, any Error>?
+    private var validationStartedContinuation: CheckedContinuation<Void, Never>?
+
+    init(invite: PairingInvite) {
+        self.invite = invite
+    }
+
+    func createInvite(
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> PairingInvite {
+        fatalError("unused")
+    }
+
+    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
+        return try await withCheckedThrowingContinuation { continuation in
+            validationContinuation = continuation
+            validationStartedContinuation?.resume()
+            validationStartedContinuation = nil
+        }
+    }
+
+    func waitForValidationToStart() async {
+        if validationContinuation != nil {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            validationStartedContinuation = continuation
+        }
+    }
+
+    func finishValidation() {
+        validationContinuation?.resume(
+            returning: PairingInviteValidation(
+                inviteID: invite.id,
+                status: .pending,
+                expiresAt: invite.expiresAt
+            )
+        )
+        validationContinuation = nil
+    }
+
+    func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
+        fatalError("unused")
+    }
+
+    func rotateInvite(
+        currentInvite: PairingInvite,
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> PairingInvite {
+        fatalError("unused")
+    }
+
+    func acceptInvite(
+        codeInput: String,
+        operation: PairingClientOperation,
+        startedOn: PairingStartDate
+    ) async throws -> PairingAcceptedRelationship {
+        fatalError("unused")
+    }
+
+    func revokeInvite(id: UUID) async throws -> Bool {
+        fatalError("unused")
+    }
+
+    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
+        fatalError("unused")
+    }
+}
+
+private actor CachedInviteRecoveryPairingService: PairingServicing {
+    private let validation: PairingInviteValidation
+    private let createdInvite: PairingInvite
+    private(set) var validatedInvite: PairingInvite?
+
+    init(validation: PairingInviteValidation, createdInvite: PairingInvite) {
+        self.validation = validation
+        self.createdInvite = createdInvite
+    }
+
+    func createInvite(
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> PairingInvite {
+        createdInvite
+    }
+
+    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
+        validatedInvite = invite
+        return validation
+    }
+
+    func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
+        fatalError("unused")
+    }
+
+    func rotateInvite(
+        currentInvite: PairingInvite,
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> PairingInvite {
+        fatalError("unused")
+    }
+
+    func acceptInvite(
+        codeInput: String,
+        operation: PairingClientOperation,
+        startedOn: PairingStartDate
+    ) async throws -> PairingAcceptedRelationship {
+        fatalError("unused")
+    }
+
+    func revokeInvite(id: UUID) async throws -> Bool {
+        fatalError("unused")
+    }
+
+    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
+        fatalError("unused")
+    }
+}
+
 private actor PendingCreatePairingService: PairingServicing {
     private let invite: PairingInvite
     private var createContinuation: CheckedContinuation<PairingInvite, any Error>?
@@ -751,6 +1080,14 @@ private actor PendingCreatePairingService: PairingServicing {
         }
     }
 
+    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
+        PairingInviteValidation(
+            inviteID: invite.id,
+            status: .pending,
+            expiresAt: invite.expiresAt
+        )
+    }
+
     func waitForCreateToStart() async {
         if createContinuation != nil {
             return
@@ -769,6 +1106,18 @@ private actor PendingCreatePairingService: PairingServicing {
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
         await Task.yield()
         return nil
+    }
+
+    func rotateInvite(
+        currentInvite: PairingInvite,
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> PairingInvite {
+        return try await withCheckedThrowingContinuation { continuation in
+            createContinuation = continuation
+            createStartedContinuation?.resume()
+            createStartedContinuation = nil
+        }
     }
 
     func acceptInvite(
@@ -800,9 +1149,26 @@ private actor FailingCreatePairingService: PairingServicing {
         throw PairingInviteCreationError.inviteCodeCollision
     }
 
+    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
+        PairingInviteValidation(
+            inviteID: invite.id,
+            status: .pending,
+            expiresAt: invite.expiresAt
+        )
+    }
+
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
         await Task.yield()
         return nil
+    }
+
+    func rotateInvite(
+        currentInvite: PairingInvite,
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> PairingInvite {
+        await Task.yield()
+        throw PairingInviteCreationError.inviteCodeCollision
     }
 
     func acceptInvite(

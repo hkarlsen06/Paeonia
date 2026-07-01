@@ -1,9 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
+    "" : {},
     "%lld / %lld" : {
       "localizations" : {
         "en" : {
@@ -14,9 +12,7 @@
         }
       }
     },
-    "+%lld" : {
-
-    },
+    "+%lld" : {},
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -4877,8 +4873,8 @@
         }
       }
     },
-    "paywall.error.unpairFailed" : {
-      "comment" : "Error banner shown when ending the pairing fails.",
+    "pairing.unpair.failed" : {
+      "comment" : "Error banner shown when ending the pairing fails. Shared by the paywall footer and the You-tab leave action.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5759,8 +5755,8 @@
         }
       }
     },
-    "paywall.unpair.confirm.action" : {
-      "comment" : "Destructive confirm button that ends the pairing.",
+    "pairing.unpair.confirm.action" : {
+      "comment" : "Destructive confirm button that ends the pairing. Shared by the paywall footer and the You-tab leave action.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5777,8 +5773,8 @@
         }
       }
     },
-    "paywall.unpair.confirm.cancel" : {
-      "comment" : "Cancel button that keeps the pairing.",
+    "pairing.unpair.confirm.cancel" : {
+      "comment" : "Cancel button that keeps the pairing. Shared by the paywall footer and the You-tab leave action.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5795,8 +5791,8 @@
         }
       }
     },
-    "paywall.unpair.confirm.message" : {
-      "comment" : "Message of the confirmation alert for ending the pairing. %@ is the partner's name.",
+    "pairing.unpair.confirm.message" : {
+      "comment" : "Message of the confirmation alert for ending the pairing. %@ is the partner's name. Shared by the paywall footer and the You-tab leave action.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -5813,8 +5809,8 @@
         }
       }
     },
-    "paywall.unpair.confirm.title" : {
-      "comment" : "Title of the confirmation alert for ending the pairing. %@ is the partner's name.",
+    "pairing.unpair.confirm.title" : {
+      "comment" : "Title of the confirmation alert for ending the pairing. %@ is the partner's name. Shared by the paywall footer and the You-tab leave action.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7309,6 +7305,24 @@
           }
         }
       }
+    },
+    "settings.unpair.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave relationship"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forlat forholdet"
+          }
+        }
+      },
+      "comment" : "Button on the You tab that ends the pairing with the partner. Placed low and behind a confirmation so it is not tapped by accident."
     }
   },
   "version" : "1.0"

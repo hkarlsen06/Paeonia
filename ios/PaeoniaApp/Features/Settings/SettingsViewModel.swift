@@ -6,10 +6,13 @@ import Observation
 final class SettingsViewModel {
     enum Notice: Equatable {
         case saveFailed
+        case leaveFailed
     }
 
     private let preferences: (any NotificationPreferencesProviding)?
     private let authorization: any PushAuthorizationProviding
+    private let pairingService: (any PairingServicing)?
+    private let operationProvider: any PairingClientOperationProviding
 
     /// The widget drawing alert toggle. Defaults to the server default (on) until
     /// the real value loads, so the control never flickers off.
@@ -18,14 +21,21 @@ final class SettingsViewModel {
     /// True when the user has turned notifications off in iOS Settings, so the
     /// in-app toggle can explain why nothing arrives.
     private(set) var systemNotificationsDenied = false
+    /// True while the leave-relationship request is in flight, so the button can
+    /// disable and avoid a double tap.
+    private(set) var isLeavingRelationship = false
     private(set) var notice: Notice?
 
     init(
         preferences: (any NotificationPreferencesProviding)? = NotificationPreferencesServiceFactory.makeDefault(),
-        authorization: any PushAuthorizationProviding = PushAuthorizationService()
+        authorization: any PushAuthorizationProviding = PushAuthorizationService(),
+        pairingService: (any PairingServicing)? = nil,
+        operationProvider: (any PairingClientOperationProviding)? = nil
     ) {
         self.preferences = preferences
         self.authorization = authorization
+        self.pairingService = pairingService ?? (try? SupabasePairingService.live())
+        self.operationProvider = operationProvider ?? PairingClientOperationFactory.shared
     }
 
     func load() async {
@@ -61,6 +71,28 @@ final class SettingsViewModel {
         } catch {
             widgetAlertsEnabled = previous
             notice = .saveFailed
+        }
+    }
+
+    /// Ends the current pairing from the You tab. On success the root re-resolves
+    /// access and the user lands back in the unpaired flow; the caller is
+    /// responsible for asking the root to refresh.
+    func leaveRelationship() async -> Bool {
+        guard let pairingService else {
+            notice = .leaveFailed
+            return false
+        }
+
+        isLeavingRelationship = true
+        defer { isLeavingRelationship = false }
+
+        do {
+            let operation = operationProvider.makeOperation()
+            _ = try await pairingService.leaveRelationship(operation: operation)
+            return true
+        } catch {
+            notice = .leaveFailed
+            return false
         }
     }
 

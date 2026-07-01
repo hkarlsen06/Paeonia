@@ -34,6 +34,19 @@ struct AccessRouteResolverTests {
         #expect(route.allowsInviteAcceptance)
     }
 
+    @Test func pendingInviteWithoutEntitlementStaysLimitedAuthenticated() {
+        let route = resolver.route(
+            for: .test(
+                userEntitlement: .notEntitled(),
+                hasPendingInvite: true
+            )
+        )
+
+        #expect(route == .limitedAuthenticated)
+        #expect(route.appState == .limitedAuthenticated)
+        #expect(route.allowsInviteAcceptance)
+    }
+
     @Test func activeRelationshipWithCoupleEntitlementRoutesToPaired() {
         let route = resolver.route(
             for: .test(

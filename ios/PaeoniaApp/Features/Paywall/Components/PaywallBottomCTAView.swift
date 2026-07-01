@@ -5,9 +5,6 @@ struct PaywallBottomCTAView: View {
     let caption: LocalizedStringResource
     let isEnabled: Bool
     let isBusy: Bool
-    /// When the bar rides above the keyboard (invite mode) the backdrop must be
-    /// opaque — the fading gradient would otherwise show the keyboard through it.
-    let usesSolidBackground: Bool
     let action: () -> Void
 
     var body: some View {
@@ -71,23 +68,17 @@ struct PaywallBottomCTAView: View {
         )
     }
 
-    @ViewBuilder
     private var barBackground: some View {
-        if usesSolidBackground {
-            Color.paeoniaSurfacePrimary
-                .ignoresSafeArea()
-        } else {
-            LinearGradient(
-                stops: [
-                    .init(color: Color.paeoniaSurfacePrimary.opacity(0), location: 0),
-                    .init(color: Color.paeoniaSurfacePrimary.opacity(0.98), location: 0.22),
-                    .init(color: Color.paeoniaSurfacePrimary, location: 0.38),
-                    .init(color: Color.paeoniaSurfacePrimary, location: 1),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-        }
+        LinearGradient(
+            stops: [
+                .init(color: Color.paeoniaSurfacePrimary.opacity(0), location: 0),
+                .init(color: Color.paeoniaSurfacePrimary.opacity(0.98), location: 0.22),
+                .init(color: Color.paeoniaSurfacePrimary, location: 0.38),
+                .init(color: Color.paeoniaSurfacePrimary, location: 1),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
     }
 }

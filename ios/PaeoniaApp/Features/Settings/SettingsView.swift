@@ -9,13 +9,25 @@ struct SettingsView: View {
     /// The partner's display name, so location/notification copy names the partner
     /// instead of saying "your partner".
     let partnerName: String
+    /// Called after the couple is successfully unpaired, so the root can re-resolve
+    /// access and move the user back to the unpaired flow.
+    let onLeftRelationship: () -> Void
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.openURL) private var openURL
 
+    /// Gates the leave action behind a centered confirmation alert, so the pairing
+    /// can never end on a single stray tap.
+    @State private var isConfirmingLeave = false
+
     @MainActor
-    init(locationViewModel: LocationMapViewModel, partnerName: String) {
+    init(
+        locationViewModel: LocationMapViewModel,
+        partnerName: String,
+        onLeftRelationship: @escaping () -> Void = {}
+    ) {
         self.locationViewModel = locationViewModel
         self.partnerName = partnerName
+        self.onLeftRelationship = onLeftRelationship
     }
 
     var body: some View {
@@ -23,6 +35,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
                 locationSection
                 notificationsSection
+                leaveRelationshipSection
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
@@ -36,16 +49,25 @@ struct SettingsView: View {
             await viewModel.load()
         }
         .onChange(of: viewModel.notice) { _, notice in
-            guard notice != nil else {
+            guard let notice else {
                 return
             }
-            bannerCenter.show(
-                .error(
-                    title: String(localized: .settingsNotificationsSaveErrorTitle),
-                    message: String(localized: .settingsNotificationsSaveErrorMessage)
-                )
-            )
+            showBanner(for: notice)
             viewModel.dismissNotice()
+        }
+        .alert(
+            Text(.pairingUnpairConfirmTitle(partnerName)),
+            isPresented: $isConfirmingLeave
+        ) {
+            Button(role: .destructive, action: leaveRelationship) {
+                Text(.pairingUnpairConfirmAction)
+            }
+
+            Button(role: .cancel, action: {}) {
+                Text(.pairingUnpairConfirmCancel)
+            }
+        } message: {
+            Text(.pairingUnpairConfirmMessage(partnerName))
         }
     }
 
@@ -121,6 +143,48 @@ struct SettingsView: View {
                 Text(.settingsNotificationsOpenSettingsButton)
             }
             .buttonStyle(PaeoniaSecondaryButtonStyle())
+        }
+    }
+
+    /// The leave action lives at the very bottom, understated and unframed, so it
+    /// reads as a deliberate exit rather than an ordinary setting. Tapping it only
+    /// opens the confirmation alert; nothing happens until the user confirms there.
+    private var leaveRelationshipSection: some View {
+        Button {
+            isConfirmingLeave = true
+        } label: {
+            Text(.settingsUnpairButton)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaError)
+                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(viewModel.isLeavingRelationship)
+        .padding(.top, PaeoniaSpacing.space24)
+    }
+
+    private func leaveRelationship() {
+        Task {
+            let didLeave = await viewModel.leaveRelationship()
+            if didLeave {
+                bannerCenter.dismiss()
+                onLeftRelationship()
+            }
+        }
+    }
+
+    private func showBanner(for notice: SettingsViewModel.Notice) {
+        switch notice {
+        case .saveFailed:
+            bannerCenter.show(
+                .error(
+                    title: String(localized: .settingsNotificationsSaveErrorTitle),
+                    message: String(localized: .settingsNotificationsSaveErrorMessage)
+                )
+            )
+        case .leaveFailed:
+            bannerCenter.show(.error(message: String(localized: .pairingUnpairFailed)))
         }
     }
 

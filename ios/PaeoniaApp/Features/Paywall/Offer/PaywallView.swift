@@ -86,18 +86,18 @@ struct PaywallView: View {
             Text(.authDeleteAccountConfirmMessage)
         }
         .alert(
-            Text(.paywallUnpairConfirmTitle(audience.partnerNameForCopy)),
+            Text(.pairingUnpairConfirmTitle(audience.partnerNameForCopy)),
             isPresented: $isConfirmingUnpair
         ) {
             Button(role: .destructive, action: unpair) {
-                Text(.paywallUnpairConfirmAction)
+                Text(.pairingUnpairConfirmAction)
             }
 
             Button(role: .cancel, action: {}) {
-                Text(.paywallUnpairConfirmCancel)
+                Text(.pairingUnpairConfirmCancel)
             }
         } message: {
-            Text(.paywallUnpairConfirmMessage(audience.partnerNameForCopy))
+            Text(.pairingUnpairConfirmMessage(audience.partnerNameForCopy))
         }
     }
 
@@ -128,9 +128,14 @@ struct PaywallView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
+            // While the invite overlay is up, the card owns its own submit button,
+            // so the purchase CTA steps aside (it would otherwise draw on top of the
+            // dimmer, above the keyboard). Fade only — keep its height so the layout
+            // doesn't shift under the rising keyboard.
             bottomCTA
-                .opacity(paywallEntranceOpacity)
+                .opacity(showInviteOverlay ? 0 : paywallEntranceOpacity)
                 .offset(y: paywallEntranceOffset)
+                .allowsHitTesting(!showInviteOverlay)
         }
     }
 
@@ -149,6 +154,7 @@ struct PaywallView: View {
             PaywallInviteCodeView(
                 code: $inviteCode,
                 focus: $inviteFieldFocused,
+                isSubmitting: viewModel.isAcceptingInvite,
                 onSubmit: submitInvite
             )
             .padding(.horizontal, PaeoniaSpacing.space20)
@@ -238,17 +244,12 @@ struct PaywallView: View {
 
     private var bottomCTA: some View {
         PaywallBottomCTAView(
-            title: ctaTitle,
-            caption: ctaCaption,
-            isEnabled: ctaIsEnabled,
-            isBusy: isInviteMode ? viewModel.isAcceptingInvite : viewModel.isPurchasing,
-            usesSolidBackground: isInviteMode,
-            action: ctaAction
+            title: presentation.primaryButtonTitle,
+            caption: .paywallCancelAnytime,
+            isEnabled: presentation.primaryButtonIsEnabled,
+            isBusy: viewModel.isPurchasing,
+            action: purchase
         )
-    }
-
-    private var isInviteMode: Bool {
-        showInviteOverlay
     }
 
     private var paywallEntranceOpacity: Double {
@@ -257,30 +258,6 @@ struct PaywallView: View {
 
     private var paywallEntranceOffset: CGFloat {
         hasPresentedPaywallContent || reduceMotion ? 0 : -10
-    }
-
-    private var ctaTitle: LocalizedStringResource {
-        isInviteMode ? .paywallInviteAction : presentation.primaryButtonTitle
-    }
-
-    private var ctaCaption: LocalizedStringResource {
-        isInviteMode ? .paywallInviteCtaCaption : .paywallCancelAnytime
-    }
-
-    private var ctaIsEnabled: Bool {
-        if isInviteMode {
-            return PaywallInviteCodeView.sanitize(inviteCode).count == PaywallInviteCodeView.codeLength
-                && !viewModel.isAcceptingInvite
-        }
-        return presentation.primaryButtonIsEnabled
-    }
-
-    private func ctaAction() {
-        if isInviteMode {
-            submitInvite()
-        } else {
-            purchase()
-        }
     }
 
     private func redeemInvite(codeInput: String) {

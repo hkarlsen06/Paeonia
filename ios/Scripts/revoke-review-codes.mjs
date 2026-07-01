@@ -6,15 +6,27 @@
 // accounts and their registry entries are left in place for the next cycle; the
 // leftover demo couple data is unreachable and gets wiped by the next mint.
 //
-// Requires (never commit these):
-//   SUPABASE_URL                 e.g. https://api.paeonia.no
-//   SUPABASE_SERVICE_ROLE_KEY    service-role key
+// Reads credentials from the repo-root .env (git-ignored):
+//   SUPABASE_URL         e.g. https://api.paeonia.no
+//   SUPABASE_SECRET_KEY  Supabase secret/service-role key (SUPABASE_SERVICE_ROLE_KEY also accepted)
 //
 // Usage:
-//   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node ios/Scripts/revoke-review-codes.mjs
+//   pnpm review-codes:revoke
+//   (or: node ios/Scripts/revoke-review-codes.mjs)
+
+import { join } from "node:path";
+
+// Load the repo-root .env so the pnpm command and a bare `node ...` both work
+// without exporting vars by hand. A real shell/CI environment still works if the
+// file is absent.
+try {
+  process.loadEnvFile(join(import.meta.dirname, "..", "..", ".env"));
+} catch {
+  // No .env file — fall back to the ambient environment.
+}
 
 const SUPABASE_URL = requireEnv("SUPABASE_URL").replace(/\/+$/, "");
-const SERVICE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+const SERVICE_KEY = requireEnv("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY");
 
 main().catch((error) => {
   console.error(`\n✗ ${error.message}`);
@@ -47,11 +59,10 @@ async function rpc(fn, args) {
   return text ? JSON.parse(text) : null;
 }
 
-function requireEnv(name) {
-  const value = process.env[name];
-  if (!value) {
-    console.error(`Missing required environment variable: ${name}`);
-    process.exit(1);
+function requireEnv(...names) {
+  for (const name of names) {
+    if (process.env[name]) return process.env[name];
   }
-  return value;
+  console.error(`Missing required environment variable: ${names.join(" or ")}`);
+  process.exit(1);
 }

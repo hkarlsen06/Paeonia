@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import PaeoniaApp
 
@@ -59,6 +60,39 @@ struct SettingsViewModelTests {
 
         #expect(await preferences.setCallCount == 0)
     }
+
+    @Test func leaveRelationshipSucceeds() async {
+        let pairing = FakePairingService(leaveResult: .success(true))
+        let viewModel = SettingsViewModel(
+            preferences: FakeNotificationPreferences(enabled: true),
+            authorization: FakePushAuthorization(),
+            pairingService: pairing,
+            operationProvider: FakeOperationProvider()
+        )
+
+        let didLeave = await viewModel.leaveRelationship()
+
+        #expect(didLeave)
+        #expect(viewModel.notice == nil)
+        #expect(viewModel.isLeavingRelationship == false)
+        #expect(await pairing.leaveCallCount == 1)
+    }
+
+    @Test func leaveRelationshipFailureSurfacesNotice() async {
+        let pairing = FakePairingService(leaveResult: .failure(FakePreferencesError.failed))
+        let viewModel = SettingsViewModel(
+            preferences: FakeNotificationPreferences(enabled: true),
+            authorization: FakePushAuthorization(),
+            pairingService: pairing,
+            operationProvider: FakeOperationProvider()
+        )
+
+        let didLeave = await viewModel.leaveRelationship()
+
+        #expect(didLeave == false)
+        #expect(viewModel.notice == .leaveFailed)
+        #expect(viewModel.isLeavingRelationship == false)
+    }
 }
 
 private enum FakePreferencesError: Error {
@@ -98,5 +132,60 @@ private struct FakePushAuthorization: PushAuthorizationProviding {
 
     func isDenied() -> Bool {
         denied
+    }
+}
+
+/// A pairing service whose only exercised method is `leaveRelationship`; the rest
+/// of the protocol is unused by the You-tab flow.
+private actor FakePairingService: PairingServicing {
+    private let leaveResult: Result<Bool, Error>
+    private(set) var leaveCallCount = 0
+
+    init(leaveResult: Result<Bool, Error>) {
+        self.leaveResult = leaveResult
+    }
+
+    func createInvite(operation: PairingClientOperation, expiresAt: Date) async throws -> PairingInvite {
+        fatalError("unused")
+    }
+
+    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
+        fatalError("unused")
+    }
+
+    func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
+        fatalError("unused")
+    }
+
+    func rotateInvite(
+        currentInvite: PairingInvite,
+        operation: PairingClientOperation,
+        expiresAt: Date
+    ) async throws -> PairingInvite {
+        fatalError("unused")
+    }
+
+    func acceptInvite(
+        codeInput: String,
+        operation: PairingClientOperation,
+        startedOn: PairingStartDate
+    ) async throws -> PairingAcceptedRelationship {
+        fatalError("unused")
+    }
+
+    func revokeInvite(id: UUID) async throws -> Bool {
+        fatalError("unused")
+    }
+
+    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
+        leaveCallCount += 1
+        return try leaveResult.get()
+    }
+}
+
+@MainActor
+private final class FakeOperationProvider: PairingClientOperationProviding {
+    func makeOperation() -> PairingClientOperation {
+        SyncClientOperation(clientID: UUID(), clientSequence: 1)
     }
 }
