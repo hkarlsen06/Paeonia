@@ -78,9 +78,12 @@ struct DailyAnswerStepVisualHold: Equatable {
 struct DailyChallengeAnswerFlow: View {
     let viewModel: DailyChallengeViewModel
     var onClose: () -> Void = {}
-    /// Opens the streak-restore offer from the completion screen when a lost
-    /// streak can still be bought back.
-    var onRestore: () -> Void = {}
+    /// Builds the streak-restore purchase view model the completion screen uses to
+    /// buy a slipped streak back in place. Called once, lazily, the first time a
+    /// completion with a restorable streak appears.
+    var makeStreakRestoreViewModel: @MainActor () -> StreakRestoreViewModel = {
+        StreakRestoreViewModel(streak: .none, userID: nil)
+    }
     /// Opens the Questions tab so the user can pick up optional partner
     /// answers after their required streak questions are finished.
     var onOpenPartnerQuestions: () -> Void = {}
@@ -90,6 +93,10 @@ struct DailyChallengeAnswerFlow: View {
     @State private var index = 0
     @State private var didSetInitialIndex = false
     @State private var didCelebrate = false
+    /// The in-place streak-restore purchase driver, created only when a slipped
+    /// streak's completion appears. Drives the completion screen's buy button and the
+    /// revive-and-refill celebration once a purchase lands.
+    @State private var restoreViewModel: StreakRestoreViewModel?
     @State private var committedAnswerHold: DailyAnswerStepVisualHold?
     @FocusState private var isComposerFocused: Bool
 
@@ -158,7 +165,7 @@ struct DailyChallengeAnswerFlow: View {
                     streak: currentStreak,
                     partnerName: viewModel.participants.partnerName,
                     restorableCount: viewModel.streak.isRestorable ? viewModel.streak.restorableCount : nil,
-                    onRestore: onRestore,
+                    restoreViewModel: restoreViewModel,
                     hasPartnerQuestionsToAnswer: hasPartnerQuestionsToAnswer,
                     onOpenPartnerQuestions: onOpenPartnerQuestions,
                     onDone: dismiss
@@ -563,6 +570,11 @@ struct DailyChallengeAnswerFlow: View {
     /// flame keeps silent).
     private func celebrate() {
         isComposerFocused = false
+        // A slipped streak's completion offers to buy the streak back in place, so
+        // build the purchase driver before the completion screen renders.
+        if restoreViewModel == nil, viewModel.streak.isRestorable {
+            restoreViewModel = makeStreakRestoreViewModel()
+        }
         withAnimation(celebrateAnimation) { didCelebrate = true }
     }
 
@@ -1101,38 +1113,44 @@ private struct DailyChallengeCompletionView: View {
     /// The partner's display name, so the finish copy and CTA name them.
     let partnerName: String
     /// The lost streak length when a restore is on offer; `nil` for a normal,
-    /// celebratory finish. When set, the flame reads "slipped" and a "get it back"
-    /// action is offered above Done.
+    /// celebratory finish. When set (and not yet restored), the flame reads
+    /// "slipped" and a buy-it-back action is offered above Done.
     var restorableCount: Int?
-    var onRestore: () -> Void = {}
+    /// Drives the in-place restore purchase. Present only for a slipped streak's
+    /// completion; `nil` for a normal finish. Once its `restoredCount` lands the
+    /// screen turns celebratory and the flame reignites and refills.
+    var restoreViewModel: StreakRestoreViewModel?
     var hasPartnerQuestionsToAnswer = false
     var onOpenPartnerQuestions: () -> Void = {}
     let onDone: () -> Void
 
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Holds the supporting copy and actions back for a beat so the flame lands
     /// first, then lifts them in. The flame itself is always present so its count-up
     /// starts the instant the screen arrives.
     @State private var showDetails = false
 
-    private var isRestorable: Bool { restorableCount != nil }
+    /// The restored streak length once a purchase (or a recovered pending one) lands.
+    private var restoredCount: Int? { restoreViewModel?.restoredCount }
+    private var isRestored: Bool { restoredCount != nil }
+    /// A slipped streak that can still be bought back and hasn't been yet.
+    private var isRestorable: Bool { restorableCount != nil && !isRestored }
+    private var isPurchasing: Bool { restoreViewModel?.isPurchasing ?? false }
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space32) {
             Spacer()
 
-            PaeoniaStreakFlame(count: restorableCount ?? streak, isBroken: isRestorable)
+            flame
+                .transition(.opacity)
 
             VStack(spacing: PaeoniaSpacing.space8) {
-                Text(.dailyChallengeFlowAllDoneTitle)
+                Text(titleText)
                     .font(PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(
-                    isRestorable
-                        ? .streakRestoreMessage
-                        : .dailyChallengeFlowAllDoneMessage(partnerName)
-                )
+                Text(messageText)
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1148,7 +1166,48 @@ private struct DailyChallengeCompletionView: View {
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Reignite-and-refill the flame (and swap the copy) once a restore lands.
+        .animation(reduceMotion ? nil : PaeoniaMotion.celebrationReveal, value: restoredCount)
         .onAppear(perform: revealDetails)
+        .task {
+            // Load the price and re-apply any paid-but-unconfirmed restore, but only
+            // for a slipped streak's completion — a normal finish has no purchase.
+            guard restorableCount != nil else { return }
+            await restoreViewModel?.load()
+        }
+        .onChange(of: restoreViewModel?.error) { _, error in
+            guard let error else { return }
+            bannerCenter.show(.error(message: error.message))
+            restoreViewModel?.clearError()
+        }
+    }
+
+    /// The hero flame: slipped and cold before a restore, then a fresh warm flame
+    /// that fills from empty and counts up once the streak is bought back — the
+    /// "coming back to life" moment. Distinct ids so the restored flame is a new
+    /// view and replays its fill-up celebration.
+    @ViewBuilder
+    private var flame: some View {
+        if let restoredCount {
+            PaeoniaStreakFlame(count: restoredCount, playsCelebration: true)
+                .id("streak-restored")
+        } else if let restorableCount {
+            PaeoniaStreakFlame(count: restorableCount, isBroken: true)
+                .id("streak-broken")
+        } else {
+            PaeoniaStreakFlame(count: streak, playsCelebration: true)
+                .id("streak-earned")
+        }
+    }
+
+    private var titleText: LocalizedStringResource {
+        isRestored ? .streakRestoreSuccessTitle : .dailyChallengeFlowAllDoneTitle
+    }
+
+    private var messageText: LocalizedStringResource {
+        if isRestored { return .streakRestoreSuccessMessage }
+        if isRestorable { return .streakRestoreMessage }
+        return .dailyChallengeFlowAllDoneMessage(partnerName)
     }
 
     /// Lifts the copy and actions in shortly after the flame appears. Under Reduce
@@ -1167,21 +1226,42 @@ private struct DailyChallengeCompletionView: View {
     @ViewBuilder
     private var actions: some View {
         if isRestorable {
-            VStack(spacing: PaeoniaSpacing.space12) {
-                Button(action: onRestore) {
-                    Text(.streakRestoreTitle)
-                }
-                .buttonStyle(PaeoniaPrimaryButtonStyle())
+            restorableActions
+        } else {
+            finishedActions
+        }
+    }
 
-                partnerQuestionsButton(style: .secondary)
-
-                Button(action: onDone) {
-                    Text(.dailyChallengeFlowDoneButton)
+    /// The buy-it-back action for a slipped streak: a real purchase button (showing
+    /// the price once it loads) that calls StoreKit directly, rather than opening a
+    /// second, near-identical restore screen.
+    private var restorableActions: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            Button(action: purchase) {
+                if isPurchasing {
+                    ProgressView().tint(.paeoniaTextInverse)
+                } else {
+                    Text(verbatim: buyTitle)
                 }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
             }
-        } else if hasPartnerQuestionsToAnswer {
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .disabled(isPurchasing)
+
+            partnerQuestionsButton(style: .secondary)
+
+            Button(action: onDone) {
+                Text(.dailyChallengeFlowDoneButton)
+            }
+            .buttonStyle(PaeoniaQuietButtonStyle())
+            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+        }
+    }
+
+    /// Actions for a normal celebratory finish — and, after a restore, the revived
+    /// streak too: pick up optional partner questions, or just finish.
+    @ViewBuilder
+    private var finishedActions: some View {
+        if hasPartnerQuestionsToAnswer {
             VStack(spacing: PaeoniaSpacing.space12) {
                 partnerQuestionsButton(style: .primary)
 
@@ -1197,6 +1277,18 @@ private struct DailyChallengeCompletionView: View {
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
         }
+    }
+
+    /// The buy button's title: "Restore streak", with the price appended once the
+    /// consumable has loaded.
+    private var buyTitle: String {
+        let base = String(localized: .streakRestoreBuyButton)
+        guard let price = restoreViewModel?.priceText else { return base }
+        return "\(base) · \(price)"
+    }
+
+    private func purchase() {
+        Task { _ = await restoreViewModel?.purchase() }
     }
 
     @ViewBuilder
@@ -1244,13 +1336,31 @@ private struct StreakDetailReveal: ViewModifier {
 #Preview("Completion") {
     DailyChallengeCompletionView(streak: 7, partnerName: "Oda", restorableCount: nil, onDone: {})
         .background(.paeoniaBackgroundPrimary)
+        .environment(PaeoniaBannerCenter())
         .preferredColorScheme(.dark)
 }
 
 #Preview("Completion · streak slipped") {
-    DailyChallengeCompletionView(streak: 1, partnerName: "Oda", restorableCount: 30, onRestore: {}, onDone: {})
-        .background(.paeoniaBackgroundPrimary)
-        .preferredColorScheme(.dark)
+    DailyChallengeCompletionView(
+        streak: 1,
+        partnerName: "Oda",
+        restorableCount: 30,
+        restoreViewModel: StreakRestoreViewModel(
+            streak: CoupleStreak(
+                currentCount: 1,
+                longestCount: 30,
+                lastQualifiedDate: "2026-06-26",
+                restoreAvailable: true,
+                restorableCount: 30,
+                restoreDeadline: .now.addingTimeInterval(86_400)
+            ),
+            userID: nil
+        ),
+        onDone: {}
+    )
+    .background(.paeoniaBackgroundPrimary)
+    .environment(PaeoniaBannerCenter())
+    .preferredColorScheme(.dark)
 }
 
 private struct DailyChallengeAnswerFlowPreviewHost: View {

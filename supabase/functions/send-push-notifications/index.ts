@@ -9,8 +9,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
-  Deno.env.get("SUPABASE_SECRET_KEY") ?? "";
+const SERVICE_KEY = readSupabaseKeyDictionary(
+  "SUPABASE_SECRET_KEYS",
+  Deno.env.get("SUPABASE_SECRET_KEY_NAME") ?? "default",
+) ?? Deno.env.get("SUPABASE_SECRET_KEY") ??
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const DRAIN_SECRET = Deno.env.get("DRAIN_SECRET") ?? "";
 
 // Production credentials (App Store builds).
@@ -75,6 +78,46 @@ interface DrainStats {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function readSupabaseKeyDictionary(
+  envName: string,
+  keyName: string,
+): string | null {
+  const rawValue = Deno.env.get(envName);
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue) as Record<string, unknown>;
+    const namedValue = parsed[keyName] ?? parsed.default ??
+      Object.values(parsed)[0];
+    return typeof namedValue === "string" && namedValue.length > 0
+      ? namedValue
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+// Compares SHA-256 digests so the check is constant-time regardless of where
+// the provided value diverges from the configured secret.
+async function drainSecretMatches(
+  provided: string | null,
+  expected: string,
+): Promise<boolean> {
+  if (!provided || !expected) return false;
+  const encoder = new TextEncoder();
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(provided)),
+    crypto.subtle.digest("SHA-256", encoder.encode(expected)),
+  ]);
+  const left = new Uint8Array(a);
+  const right = new Uint8Array(b);
+  let diff = 0;
+  for (let i = 0; i < left.length; i++) diff |= left[i] ^ right[i];
+  return diff === 0;
 }
 
 function base64url(bytes: Uint8Array): string {
@@ -244,7 +287,10 @@ function buildAppApsPayload(
   notification: ClaimedNotification,
 ): Record<string, unknown> {
   if (notification.apns_push_type === "background") {
-    return { aps: { "content-available": 1 } };
+    return {
+      aps: { "content-available": 1 },
+      ...notification.payload,
+    };
   }
 
   const alert: Record<string, string> = { body: notification.body ?? "" };
@@ -515,7 +561,18 @@ Deno.serve(async (request) => {
     return new Response("method not allowed", { status: 405 });
   }
 
-  if (!DRAIN_SECRET || request.headers.get("x-drain-secret") !== DRAIN_SECRET) {
+  if (!DRAIN_SECRET) {
+    console.error("push delivery is not configured", {
+      missing: ["DRAIN_SECRET"],
+    });
+    return new Response("push delivery is not configured", { status: 500 });
+  }
+
+  const secretMatches = await drainSecretMatches(
+    request.headers.get("x-drain-secret"),
+    DRAIN_SECRET,
+  );
+  if (!secretMatches) {
     return new Response("unauthorized", { status: 401 });
   }
 
@@ -523,6 +580,16 @@ Deno.serve(async (request) => {
     !SUPABASE_URL || !SERVICE_KEY || !APNS_KEY_ID || !APNS_TEAM_ID ||
     !APNS_PRIVATE_KEY
   ) {
+    const missing = [
+      !SUPABASE_URL ? "SUPABASE_URL" : null,
+      !SERVICE_KEY ? "SUPABASE_SECRET_KEYS or SUPABASE_SERVICE_ROLE_KEY" : null,
+      !APNS_KEY_ID ? "APNS_KEY_ID" : null,
+      !APNS_TEAM_ID ? "APNS_TEAM_ID" : null,
+      !APNS_PRIVATE_KEY ? "APNS_PRIVATE_KEY" : null,
+    ].filter((value): value is string => value !== null);
+    console.error("push delivery is not configured", {
+      missing,
+    });
     return new Response("push delivery is not configured", { status: 500 });
   }
 

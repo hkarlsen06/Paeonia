@@ -11,7 +11,14 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     private var session: SyncSession?
     private var hasStarted = false
     private var isSyncing = false
-    private var needsFollowUpSync = false
+    // A follow-up pass is only needed when a *local write* was requested while a
+    // run was already in flight: that run may have already drained the pending-
+    // operations stream, so the new write needs another push. A foreground /
+    // manual / startup refresh that coalesces onto an in-flight run needs no
+    // second pass — the in-flight run already refreshes every read stream — so
+    // it must not set this flag (that was the source of duplicate pipeline runs
+    // on every scene activation).
+    private var needsLocalChangeFollowUp = false
     private var activeRunWaiters: [CheckedContinuation<Void, Never>] = []
     private var scheduledTask: Task<Void, Never>?
     private var retryTask: Task<Void, Never>?
@@ -88,7 +95,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
             retryTask?.cancel()
             retryTask = nil
             isSyncing = false
-            needsFollowUpSync = false
+            needsLocalChangeFollowUp = false
             resumeActiveRunWaiters()
             lastForegroundSyncAt = nil
         }
@@ -128,7 +135,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         retryTask = nil
         hasStarted = false
         isSyncing = false
-        needsFollowUpSync = false
+        needsLocalChangeFollowUp = false
         resumeActiveRunWaiters()
     }
 
@@ -147,7 +154,9 @@ actor PaeoniaSyncService: PaeoniaSyncing {
 
     func runOnce(reason: SyncRequestReason) async -> SyncRunResult {
         guard !isSyncing else {
-            needsFollowUpSync = true
+            if reason == .localChange {
+                needsLocalChangeFollowUp = true
+            }
             await waitForActiveRunToFinish()
             return .coalesced()
         }
@@ -157,7 +166,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         }
 
         hasStarted = true
-        needsFollowUpSync = false
+        needsLocalChangeFollowUp = false
         isSyncing = true
 
         let result = await drainSyncRuns(startingReason: reason)
@@ -173,7 +182,9 @@ actor PaeoniaSyncService: PaeoniaSyncing {
 
     private func scheduleSync(reason: SyncRequestReason) {
         guard !isSyncing else {
-            needsFollowUpSync = true
+            if reason == .localChange {
+                needsLocalChangeFollowUp = true
+            }
             return
         }
 
@@ -182,7 +193,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         }
 
         isSyncing = true
-        needsFollowUpSync = false
+        needsLocalChangeFollowUp = false
         scheduleGeneration &+= 1
         let generation = scheduleGeneration
         scheduledTask?.cancel()
@@ -222,8 +233,8 @@ actor PaeoniaSyncService: PaeoniaSyncing {
                 return result
             }
 
-            let shouldRunFollowUpSync = needsFollowUpSync
-            needsFollowUpSync = false
+            let shouldRunFollowUpSync = needsLocalChangeFollowUp
+            needsLocalChangeFollowUp = false
 
             if shouldRunFollowUpSync {
                 nextReason = .localChange

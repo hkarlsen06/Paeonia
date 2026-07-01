@@ -11,26 +11,39 @@ struct PaeoniaForegroundNotice: Equatable, Identifiable {
 
 /// Bridges a tapped notification (handled in the UIKit app delegate) to the
 /// SwiftUI deep-link state. The delegate cannot reach the app's `@State`
-/// directly, so it routes through this shared, observable relay; `PaeoniaApp`
-/// observes it and feeds the existing widget deep-link path. It also relays a
-/// foreground notice so a partner's update shows as an in-app banner instead of
-/// the system notification while the app is open.
+/// directly, so it routes through this shared, observable relay. It also relays
+/// a foreground notice so a partner's update shows as an in-app banner instead
+/// of the system notification while the app is open.
 @MainActor
 @Observable
 final class PaeoniaNotificationRouter {
     static let shared = PaeoniaNotificationRouter()
 
-    private(set) var pendingWidgetDeepLink: PaeoniaWidgetDeepLink?
+    private(set) var pendingDeepLink: PaeoniaDeepLink?
     private(set) var pendingForegroundNotice: PaeoniaForegroundNotice?
 
     private init() {}
 
-    func route(_ deepLink: PaeoniaWidgetDeepLink) {
-        pendingWidgetDeepLink = deepLink
+    func route(_ deepLink: PaeoniaDeepLink) {
+        pendingDeepLink = deepLink
     }
 
-    func consumePendingWidgetDeepLink() {
-        pendingWidgetDeepLink = nil
+    func route(_ widgetDeepLink: PaeoniaWidgetDeepLink) {
+        if let deepLink = PaeoniaDeepLink(widgetDeepLink) {
+            route(deepLink)
+        }
+    }
+
+    func routeNotification(userInfo: [AnyHashable: Any]) {
+        guard let deepLink = PaeoniaDeepLink(notificationUserInfo: userInfo) else {
+            return
+        }
+
+        route(deepLink)
+    }
+
+    func consumePendingDeepLink() {
+        pendingDeepLink = nil
     }
 
     func presentForegroundNotice(title: String?, message: String) {

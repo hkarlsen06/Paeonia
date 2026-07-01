@@ -65,6 +65,16 @@ final class NotificationService: UNNotificationServiceExtension {
             }
             // Group repeated widget alerts from the same partner together.
             mutable.threadIdentifier = "widget:\(senderID)"
+            // `updating(from:)` may replace the content object and drop the
+            // APNs custom payload. Put the original routing hints back so taps
+            // can still open the drawing screen.
+            var mergedUserInfo = mutable.userInfo
+            for (key, value) in content.userInfo {
+                mergedUserInfo[key] = value
+            }
+            mergedUserInfo["type"] = "widget_updated"
+            mergedUserInfo["route"] = "widget"
+            mutable.userInfo = mergedUserInfo
             return mutable
         } catch {
             return nil

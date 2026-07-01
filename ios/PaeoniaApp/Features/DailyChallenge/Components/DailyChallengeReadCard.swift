@@ -27,6 +27,7 @@ struct DailyChallengeReadCard: View {
     var sending: DailySendingPreview?
     var isOwnChallengeComplete = true
     var zoomNamespace: Namespace.ID?
+    var isHighlighted = false
     var onAnswer: () -> Void = {}
 
     /// A partner question the user can still answer to reveal the reply. When sending,
@@ -77,6 +78,12 @@ struct DailyChallengeReadCard: View {
         // tapped card appears to grow into the full-screen flow. Only cards that can
         // open the flow carry it.
         .zoomSource(question.id, in: canOpenAnswerFlow ? zoomNamespace : nil)
+        .overlay {
+            if isHighlighted {
+                RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
+                    .stroke(.paeoniaAccentPrimary, lineWidth: 2)
+            }
+        }
     }
 
     /// The same primary CTA the daily prompt card uses. When the user still has their

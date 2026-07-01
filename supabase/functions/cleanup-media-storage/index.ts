@@ -52,6 +52,25 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+// Compares SHA-256 digests so the check is constant-time regardless of where
+// the provided value diverges from the configured secret.
+async function drainSecretMatches(
+  provided: string | null,
+  expected: string,
+): Promise<boolean> {
+  if (!provided || !expected) return false;
+  const encoder = new TextEncoder();
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(provided)),
+    crypto.subtle.digest("SHA-256", encoder.encode(expected)),
+  ]);
+  const left = new Uint8Array(a);
+  const right = new Uint8Array(b);
+  let diff = 0;
+  for (let i = 0; i < left.length; i++) diff |= left[i] ^ right[i];
+  return diff === 0;
+}
+
 function positiveIntParam(
   request: Request,
   name: string,
@@ -187,7 +206,11 @@ Deno.serve(async (request) => {
     return new Response("method not allowed", { status: 405 });
   }
 
-  if (!DRAIN_SECRET || request.headers.get("x-drain-secret") !== DRAIN_SECRET) {
+  const secretMatches = await drainSecretMatches(
+    request.headers.get("x-drain-secret"),
+    DRAIN_SECRET,
+  );
+  if (!secretMatches) {
     return new Response("unauthorized", { status: 401 });
   }
 

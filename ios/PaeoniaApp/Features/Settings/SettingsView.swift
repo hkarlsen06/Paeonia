@@ -102,18 +102,29 @@ struct SettingsView: View {
 
             PaeoniaCard {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                    Toggle(isOn: widgetAlertsBinding) {
-                        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                            Text(.settingsNotificationsWidgetAlertsTitle)
-                                .font(PaeoniaTypography.body)
-                                .foregroundStyle(.paeoniaTextPrimary)
-                            Text(.settingsNotificationsWidgetAlertsSubtitle(partnerName))
-                                .font(PaeoniaTypography.caption)
-                                .foregroundStyle(.paeoniaTextSecondary)
-                        }
-                    }
-                    .tint(.paeoniaAccentPrimary)
-                    .disabled(!viewModel.isLoaded)
+                    notificationToggle(
+                        isOn: notificationBinding(.partnerAnswered),
+                        title: .settingsNotificationsPartnerAnsweredTitle,
+                        subtitle: .settingsNotificationsPartnerAnsweredSubtitle(partnerName)
+                    )
+
+                    notificationToggle(
+                        isOn: notificationBinding(.dailyChallenge),
+                        title: .settingsNotificationsDailyChallengeTitle,
+                        subtitle: .settingsNotificationsDailyChallengeSubtitle(partnerName)
+                    )
+
+                    notificationToggle(
+                        isOn: notificationBinding(.streakReminders),
+                        title: .settingsNotificationsStreakRemindersTitle,
+                        subtitle: .settingsNotificationsStreakRemindersSubtitle
+                    )
+
+                    notificationToggle(
+                        isOn: notificationBinding(.widgetUpdates),
+                        title: .settingsNotificationsWidgetAlertsTitle,
+                        subtitle: .settingsNotificationsWidgetAlertsSubtitle(partnerName)
+                    )
 
                     if viewModel.systemNotificationsDenied {
                         systemDisabledNote
@@ -188,11 +199,41 @@ struct SettingsView: View {
         }
     }
 
-    private var widgetAlertsBinding: Binding<Bool> {
+    private func notificationToggle(
+        isOn: Binding<Bool>,
+        title: LocalizedStringResource,
+        subtitle: LocalizedStringResource
+    ) -> some View {
+        Toggle(isOn: isOn) {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                Text(title)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                Text(subtitle)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+            }
+        }
+        .tint(.paeoniaAccentPrimary)
+        .disabled(!viewModel.isLoaded)
+    }
+
+    private func notificationBinding(_ kind: NotificationPreferenceKind) -> Binding<Bool> {
         Binding(
-            get: { viewModel.widgetAlertsEnabled },
+            get: {
+                switch kind {
+                case .streakReminders:
+                    viewModel.streakRemindersEnabled
+                case .dailyChallenge:
+                    viewModel.dailyChallengeEnabled
+                case .partnerAnswered:
+                    viewModel.partnerAnsweredEnabled
+                case .widgetUpdates:
+                    viewModel.widgetAlertsEnabled
+                }
+            },
             set: { newValue in
-                Task { await viewModel.setWidgetAlertsEnabled(newValue) }
+                Task { await viewModel.setNotificationPreference(kind, enabled: newValue) }
             }
         )
     }

@@ -74,7 +74,7 @@ struct PaeoniaSyncServiceTests {
         ])
     }
 
-    @Test func scheduledStartupDrainsImmediateCoalescedFollowUpBeforeReturning() async {
+    @Test func scheduledStartupSkipsFollowUpForCoalescedForegroundRefresh() async {
         let relationshipStream = BlockingFirstPullSyncStream(streamKey: .relationship)
         let coordinator = PaeoniaSyncService(
             streams: [relationshipStream],
@@ -86,7 +86,10 @@ struct PaeoniaSyncServiceTests {
         await coordinator.start()
         let coalescedProbe = AsyncCompletionProbe()
         let coalescedRun = Task {
-            let result = await coordinator.runOnce(reason: .manualRefresh)
+            // A foreground-ish refresh that coalesces onto the in-flight startup
+            // run must not queue a second full pipeline pass — the in-flight run
+            // already refreshes every read stream.
+            let result = await coordinator.runOnce(reason: .foreground)
             await coalescedProbe.markCompleted()
             return result
         }
@@ -108,8 +111,6 @@ struct PaeoniaSyncServiceTests {
         #expect(await relationshipStream.events == [
             "relationship.pull.startup",
             "relationship.push.startup",
-            "relationship.pull.local_change",
-            "relationship.push.local_change",
         ])
     }
 

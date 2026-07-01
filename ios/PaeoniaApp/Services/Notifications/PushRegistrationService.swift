@@ -22,6 +22,7 @@ actor SupabasePushRegistrationService: PushRegistering {
     }
 
     private let client: SupabaseClient
+    private let fingerprintStore: PushRegistrationFingerprintStore
 
     #if DEBUG
     private let logger = Logger(
@@ -30,11 +31,32 @@ actor SupabasePushRegistrationService: PushRegistering {
     )
     #endif
 
-    init(client: SupabaseClient) {
+    init(
+        client: SupabaseClient,
+        fingerprintStore: PushRegistrationFingerprintStore = PushRegistrationFingerprintStore(channel: .device)
+    ) {
         self.client = client
+        self.fingerprintStore = fingerprintStore
     }
 
     func registerDevice(pushToken: String) async {
+        // iOS re-delivers the APNs token on every foreground; without an active
+        // session there is nobody to register for, so skip rather than fire an
+        // anonymous RPC and let a later authenticated activation register.
+        guard let session = try? await client.auth.session else {
+            return
+        }
+
+        let fingerprint = fingerprint(userID: session.user.id, token: pushToken)
+        let now = Date()
+        guard PushRegistrationGate.shouldSend(
+            current: fingerprint,
+            lastSent: fingerprintStore.lastSent(),
+            now: now
+        ) else {
+            return
+        }
+
         do {
             let _: UUID = try await client
                 .rpc(
@@ -49,6 +71,7 @@ actor SupabasePushRegistrationService: PushRegistering {
                 )
                 .execute()
                 .value
+            fingerprintStore.recordSent(PushRegistrationRecord(fingerprint: fingerprint, sentAt: now))
         } catch {
             // Best effort: a failed registration just means no silent push yet;
             // on-open sync still delivers the partner's drawing.
@@ -56,6 +79,20 @@ actor SupabasePushRegistrationService: PushRegistering {
             logger.error("Device registration failed: \(String(describing: error))")
             #endif
         }
+    }
+
+    private func fingerprint(userID: UUID, token: String) -> String {
+        PushRegistrationGate.fingerprint(
+            PushRegistrationInputs(
+                userID: userID,
+                platform: "ios",
+                token: token,
+                apnsEnvironment: Self.apnsEnvironment,
+                locale: Locale.current.identifier,
+                timeZoneID: TimeZone.current.identifier,
+                appVersion: Self.appVersion
+            )
+        )
     }
 
     nonisolated static var appVersion: String? {

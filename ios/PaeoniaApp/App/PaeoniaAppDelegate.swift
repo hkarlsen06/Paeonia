@@ -106,7 +106,7 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         completionHandler([])
     }
 
-    /// Tapping a widget alert opens the drawing screen.
+    /// Tapping a notification routes through the typed SwiftUI deep-link relay.
     ///
     /// Uses the completion-handler form (not the `async` variant): UIKit calls it
     /// on the main thread and performs snapshot/state-restoration work right after
@@ -118,12 +118,13 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        let userInfo = response.notification.request.content.userInfo
-        let isWidgetUpdate = (userInfo["type"] as? String) == "widget_updated"
-            || (userInfo["route"] as? String) == "widget"
-        if isWidgetUpdate {
+        let content = response.notification.request.content
+        let userInfo = content.userInfo
+        let deepLink = PaeoniaDeepLink(notificationUserInfo: userInfo)
+            ?? PaeoniaDeepLink(notificationThreadIdentifier: content.threadIdentifier)
+        if let deepLink {
             Task { @MainActor in
-                PaeoniaNotificationRouter.shared.route(.drawing)
+                PaeoniaNotificationRouter.shared.route(deepLink)
             }
         }
         completionHandler()

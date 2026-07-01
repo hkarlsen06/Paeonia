@@ -14,6 +14,7 @@ struct DailyChallengeScreen: View {
     /// answerable partner card mark themselves as zoom sources in it, so the tapped
     /// card appears to grow into its full-screen answer flow.
     var zoomNamespace: Namespace.ID?
+    var focusedQuestionID: Binding<UUID?> = .constant(nil)
     var onOpenAnswerFlow: () -> Void = {}
     var onTapStreak: () -> Void = {}
     var onRefresh: (() async -> Void)?
@@ -25,48 +26,57 @@ struct DailyChallengeScreen: View {
     /// The Questions history cover. Built fresh from the screen's view model when the
     /// History button is tapped, and presented by item so it carries its own state.
     @State private var historyViewModel: DailyChallengeHistoryViewModel?
+    @State private var highlightedQuestionID: UUID?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                heroCard
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
+                    heroCard
 
-                if !readQuestions.isEmpty {
-                    // One list for everything — the partner's questions and the user's
-                    // own. Questions still waiting for you are pinned on top (so the
-                    // actionable cards are never buried); everything else follows by most
-                    // recent answer. A partner question you can still answer shows its
-                    // CTA, locked until you finish your own three (answers saved locally
-                    // and still sending count), matching the answer flow's gating; every
-                    // other card is read-only. Answering one reveals the reply in the
-                    // flow itself, so it's fine that the card then re-sorts down here.
-                    VStack(spacing: PaeoniaSpacing.space12) {
-                        ForEach(readQuestions) { question in
-                            DailyChallengeReadCard(
-                                question: question,
-                                participants: viewModel.participants,
-                                sending: sendingPreview(for: question),
-                                isOwnChallengeComplete: viewModel.hasCompletedRequiredDailyQuestions,
-                                zoomNamespace: zoomNamespace,
-                                onAnswer: { onAnswerPartnerQuestion(question) }
-                            )
+                    if !readQuestions.isEmpty {
+                        // One list for everything — the partner's questions and the user's
+                        // own. Questions still waiting for you are pinned on top (so the
+                        // actionable cards are never buried); everything else follows by most
+                        // recent answer. A partner question you can still answer shows its
+                        // CTA, locked until you finish your own three (answers saved locally
+                        // and still sending count), matching the answer flow's gating; every
+                        // other card is read-only. Answering one reveals the reply in the
+                        // flow itself, so it's fine that the card then re-sorts down here.
+                        VStack(spacing: PaeoniaSpacing.space12) {
+                            ForEach(readQuestions) { question in
+                                DailyChallengeReadCard(
+                                    question: question,
+                                    participants: viewModel.participants,
+                                    sending: sendingPreview(for: question),
+                                    isOwnChallengeComplete: viewModel.hasCompletedRequiredDailyQuestions,
+                                    zoomNamespace: zoomNamespace,
+                                    isHighlighted: highlightedQuestionID == question.id,
+                                    onAnswer: { onAnswerPartnerQuestion(question) }
+                                )
+                                .id(question.id)
+                            }
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.top, PaeoniaSpacing.space16)
+                .padding(.bottom, PaeoniaSpacing.space32)
+            }
+            .refreshable {
+                if let onRefresh {
+                    await onRefresh()
+                } else {
+                    await viewModel.reload()
+                }
+            }
+            .task(id: focusedQuestionID.wrappedValue) {
+                await focusQuestionIfNeeded(proxy)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.space16)
-            .padding(.bottom, PaeoniaSpacing.space32)
         }
         .background(.paeoniaBackgroundPrimary)
-        .refreshable {
-            if let onRefresh {
-                await onRefresh()
-            } else {
-                await viewModel.reload()
-            }
-        }
         .navigationTitle(Text(.mainTabQuestions))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -144,6 +154,34 @@ struct DailyChallengeScreen: View {
             )
         )
         viewModel.dismissNotice()
+    }
+
+    @MainActor
+    private func focusQuestionIfNeeded(_ proxy: ScrollViewProxy) async {
+        guard let questionID = focusedQuestionID.wrappedValue else {
+            return
+        }
+
+        guard readQuestions.contains(where: { $0.id == questionID }) else {
+            focusedQuestionID.wrappedValue = nil
+            return
+        }
+
+        withAnimation(PaeoniaMotion.stateChange) {
+            proxy.scrollTo(questionID, anchor: .center)
+            highlightedQuestionID = questionID
+        }
+
+        focusedQuestionID.wrappedValue = nil
+
+        try? await Task.sleep(for: .seconds(2))
+        guard highlightedQuestionID == questionID else {
+            return
+        }
+
+        withAnimation(PaeoniaMotion.stateChange) {
+            highlightedQuestionID = nil
+        }
     }
 }
 

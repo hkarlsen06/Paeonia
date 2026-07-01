@@ -7323,6 +7323,114 @@
         }
       },
       "comment" : "Button on the You tab that ends the pairing with the partner. Placed low and behind a confirmation so it is not tapped by accident."
+    },
+    "settings.notifications.partnerAnswered.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same-question reveals"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på samme spørsmål"
+          }
+        }
+      },
+      "comment" : "Toggle title: get notified when partner answers a question the user can reveal"
+    },
+    "settings.notifications.dailyChallenge.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a notification when %@ finishes today's questions."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få et varsel når %@ fullfører dagens spørsmål."
+          }
+        }
+      },
+      "comment" : "Explains daily challenge completion notifications. %@ is the partner's name."
+    },
+    "settings.notifications.dailyChallenge.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dagens spørsmål"
+          }
+        }
+      },
+      "comment" : "Toggle title: get notified when partner completes today's daily questions"
+    },
+    "settings.notifications.streakReminders.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a reminder before your shared check-in expires."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få en påminnelse før den felles innsjekken utløper."
+          }
+        }
+      },
+      "comment" : "Explains streak reminder notifications"
+    },
+    "settings.notifications.partnerAnswered.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a notification when %@ answers a question you can reveal."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få et varsel når %@ svarer på et spørsmål du kan se."
+          }
+        }
+      },
+      "comment" : "Explains same-question reveal notifications. %@ is the partner's name."
+    },
+    "settings.notifications.streakReminders.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-in reminders"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Innsjekkpåminnelser"
+          }
+        }
+      },
+      "comment" : "Toggle title: get notified before the shared check-in expires"
     }
   },
   "version" : "1.0"

@@ -165,9 +165,30 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         }
 
         do {
-            try await captureAndEnqueueOwnLocation(
+            let location = try await locationCapture.captureCurrentLocation()
+
+            // A routine foreground refresh only writes when the fix is stale or
+            // the user has actually moved; manual refresh and settings toggles
+            // always write. This keeps every app switch from queuing a partner
+            // location write (and the local-change sync that follows it).
+            if source == .foregroundOpen {
+                let lastSent = (try? await ownLocationStore.load(
+                    ownerUserID: currentUserID,
+                    coupleID: coupleID
+                ))?.location
+                guard RoutineLocationThrottle.shouldSend(
+                    lastSent: lastSent,
+                    current: location,
+                    now: Date()
+                ) else {
+                    return
+                }
+            }
+
+            try await saveAndEnqueueOwnLocation(
                 ownerUserID: currentUserID,
                 coupleID: coupleID,
+                location: location,
                 source: source
             )
             await syncAfterLocalChange()
@@ -230,20 +251,6 @@ final class LocationMapViewModel: PresentationReadinessProviding {
                 idempotencyScope: "location-preference:\(coupleID.uuidString.lowercased()):\(operation.id.uuidString.lowercased())",
                 requestData: try encoder.encode(payload)
             )
-        )
-    }
-
-    private func captureAndEnqueueOwnLocation(
-        ownerUserID: UUID,
-        coupleID: UUID,
-        source: LocationSharingSource
-    ) async throws {
-        let location = try await locationCapture.captureCurrentLocation()
-        try await saveAndEnqueueOwnLocation(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            location: location,
-            source: source
         )
     }
 

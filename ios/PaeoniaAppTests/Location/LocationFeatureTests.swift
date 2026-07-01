@@ -411,6 +411,76 @@ struct LocationMapViewModelTests {
         )
         #expect(readyOperations.isEmpty)
     }
+
+    @MainActor
+    @Test
+    func foregroundRefreshIsThrottledButManualRefreshAlwaysWrites() async throws {
+        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let viewModel = LocationMapViewModel(
+            visibilityStore: InMemoryLocationVisibilitySnapshotRepository(),
+            ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
+            pendingOperationStore: pendingStore,
+            operationProvider: UniqueOperationProvider(),
+            locationCapture: StubLocationCapture(
+                location: LocationPoint(
+                    latitude: 59.91,
+                    longitude: 10.75,
+                    capturedAt: Date()
+                )
+            )
+        )
+        await viewModel.configure(identity: LocationIdentity(currentUserID: ownerUserID, coupleID: coupleID))
+
+        // Enabling sharing captures and enqueues the first fix.
+        await viewModel.setSharingEnabled(true)
+        #expect(try await locationWriteCount(pendingStore, ownerUserID: ownerUserID) == 1)
+
+        // A foreground-open refresh moments later, from the same position, is throttled away.
+        await viewModel.refreshOwnLocationIfSharingEnabled(source: .foregroundOpen)
+        #expect(try await locationWriteCount(pendingStore, ownerUserID: ownerUserID) == 1)
+
+        // A manual pull-to-refresh always writes, even without moving.
+        await viewModel.refreshOwnLocationIfSharingEnabled(source: .manualRefresh)
+        #expect(try await locationWriteCount(pendingStore, ownerUserID: ownerUserID) == 2)
+    }
+}
+
+struct RoutineLocationThrottleTests {
+    private let oslo = LocationPoint(
+        latitude: 59.9139,
+        longitude: 10.7522,
+        capturedAt: Date(timeIntervalSince1970: 1_000)
+    )
+
+    @Test func sendsWhenNoPreviousFix() {
+        #expect(RoutineLocationThrottle.shouldSend(
+            lastSent: nil,
+            current: oslo,
+            now: Date(timeIntervalSince1970: 1_000)
+        ))
+    }
+
+    @Test func skipsWhenRecentAndBarelyMoved() {
+        let now = oslo.capturedAt.addingTimeInterval(60)
+        // ~70 m away.
+        let nearby = LocationPoint(latitude: 59.9145, longitude: 10.7525, capturedAt: now)
+        #expect(!RoutineLocationThrottle.shouldSend(lastSent: oslo, current: nearby, now: now))
+    }
+
+    @Test func sendsWhenMovedFarEvenIfRecent() {
+        let now = oslo.capturedAt.addingTimeInterval(60)
+        // ~2 km away.
+        let farAway = LocationPoint(latitude: 59.9319, longitude: 10.7522, capturedAt: now)
+        #expect(RoutineLocationThrottle.shouldSend(lastSent: oslo, current: farAway, now: now))
+    }
+
+    @Test func sendsWhenFixIsStaleEvenIfStationary() {
+        let now = oslo.capturedAt.addingTimeInterval(RoutineLocationThrottle.minimumInterval)
+        let sameSpot = LocationPoint(latitude: oslo.latitude, longitude: oslo.longitude, capturedAt: now)
+        #expect(RoutineLocationThrottle.shouldSend(lastSent: oslo, current: sameSpot, now: now))
+    }
 }
 
 private actor RecordingLocationGateway: SupabaseLocationGateway {
@@ -487,6 +557,31 @@ private final class FixedOperationProvider: SyncClientOperationProviding {
             localCreatedAt: Date(timeIntervalSince1970: TimeInterval(sequence))
         )
     }
+}
+
+@MainActor
+private final class UniqueOperationProvider: SyncClientOperationProviding {
+    private var sequence: Int64 = 0
+    private let clientID = testUUID("99999999-9999-9999-9999-999999999999")
+
+    func makeOperation() -> SyncClientOperation {
+        sequence += 1
+        return SyncClientOperation(
+            id: UUID(),
+            clientID: clientID,
+            clientSequence: sequence,
+            localCreatedAt: Date(timeIntervalSince1970: TimeInterval(sequence))
+        )
+    }
+}
+
+private func locationWriteCount(
+    _ store: InMemoryPendingSyncOperationRepository,
+    ownerUserID: UUID
+) async throws -> Int {
+    try await store.readyOperations(ownerUserID: ownerUserID, limit: 100, now: Date())
+        .filter { $0.operationKind == .updateLatestPartnerLocation }
+        .count
 }
 
 @MainActor

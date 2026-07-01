@@ -210,7 +210,9 @@ function clientSafeErrorMessage(error: unknown): string {
     return "Apple notification handling is not ready yet.";
   }
 
-  return error instanceof Error ? error.message : "Unexpected error";
+  // The caller is Apple's notification service; error detail stays in the
+  // server log (the catch site already logs the full error).
+  return "Unexpected error";
 }
 
 async function verifyAppleNotification(

@@ -411,7 +411,11 @@ verify_jwt = false
 
 # Drains the notification outbox to APNs. Invoked by a Database Webhook /
 # schedule, guarded by the DRAIN_SECRET header, so no user JWT is involved.
-[functions.send-widget-push]
+# Required secrets: DRAIN_SECRET, SUPABASE_SECRET_KEYS (preferred) or
+# SUPABASE_SERVICE_ROLE_KEY, APNS_KEY_ID, APNS_TEAM_ID, APNS_PRIVATE_KEY.
+# Optional overrides: SUPABASE_SECRET_KEY_NAME, APNS_SANDBOX_KEY_ID,
+# APNS_SANDBOX_PRIVATE_KEY, APNS_BUNDLE_ID.
+[functions.send-push-notifications]
 verify_jwt = false
 
 # Drains media/report-snapshot storage delete queues. Invoked by a schedule or

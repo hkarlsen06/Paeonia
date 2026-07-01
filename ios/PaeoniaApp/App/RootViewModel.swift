@@ -282,6 +282,7 @@ final class RootViewModel {
             clearPendingWidgetDrawingOpen()
             route = .signedOut
             await syncService.resetForUserChange()
+            PushRegistrationFingerprintStore.resetAll()
             hasStartedSync = false
             configuredSyncSession = nil
         }
@@ -306,6 +307,7 @@ final class RootViewModel {
             clearPairingCelebrationPresentation()
             route = .signedOut
             await syncService.resetForUserChange()
+            PushRegistrationFingerprintStore.resetAll()
             hasStartedSync = false
             configuredSyncSession = nil
         } catch {

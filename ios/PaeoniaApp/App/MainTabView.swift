@@ -24,6 +24,7 @@ struct MainTabView: View {
     let locationViewModel: LocationMapViewModel
     let selection: Binding<MainTab>
     let widgetDrawingPresented: Binding<Bool>
+    let deepLink: Binding<PaeoniaDeepLink?>
     let onOpenWidgetDrawing: () -> Void
     var onHomeRefresh: () async -> Void = {}
     var onDailyChallengeRefresh: () async -> Void = {}
@@ -44,13 +45,11 @@ struct MainTabView: View {
     /// Read-only streak detail sheet, opened by tapping the streak badge while the
     /// streak is healthy (nothing to restore).
     @State private var showStreakDetail = false
-    /// Streak-restore offer opened from inside the answer flow's completion screen. A
-    /// separate binding because a sheet cannot present over its own full-screen cover,
-    /// so the in-flow offer is presented from within the cover instead.
-    @State private var showStreakRestoreInFlow = false
     /// The Questions-tab single-question partner-answer flow. The tapped question drives
     /// presentation and is the card the cover zooms out of.
     @State private var partnerAnswerQuestion: DailyChallengeQuestion?
+    /// Question to scroll to and briefly highlight after a notification deep link.
+    @State private var focusedDailyQuestionID: UUID?
     @Namespace private var zoomNamespace
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -82,6 +81,7 @@ struct MainTabView: View {
         locationViewModel: LocationMapViewModel,
         selection: Binding<MainTab>,
         widgetDrawingPresented: Binding<Bool>,
+        deepLink: Binding<PaeoniaDeepLink?> = .constant(nil),
         onOpenWidgetDrawing: @escaping () -> Void,
         onHomeRefresh: @escaping () async -> Void = {},
         onDailyChallengeRefresh: @escaping () async -> Void = {},
@@ -102,6 +102,7 @@ struct MainTabView: View {
         self.locationViewModel = locationViewModel
         self.selection = selection
         self.widgetDrawingPresented = widgetDrawingPresented
+        self.deepLink = deepLink
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
         self.onHomeRefresh = onHomeRefresh
         self.onDailyChallengeRefresh = onDailyChallengeRefresh
@@ -138,21 +139,22 @@ struct MainTabView: View {
         .onChange(of: dailyChallengeParticipants) { _, participants in
             dailyChallengeViewModel.refreshParticipants(participants)
         }
+        .task(id: deepLink.wrappedValue) {
+            await handleDeepLink(deepLink.wrappedValue)
+        }
         // The answer flow is a full-screen cover that zooms out of the card that opened
         // it (covering the floating tab bar). Reduce Motion drops the zoom for the
-        // cover's plain cross-fade. The streak-restore offer is presented from within
-        // the cover so it can sit over the full-screen flow.
+        // cover's plain cross-fade. A slipped streak's completion screen buys the
+        // streak back in place (see `makeStreakRestoreViewModel`), rather than opening a
+        // second, near-identical restore screen over the cover.
         .fullScreenCover(isPresented: $isAnswerFlowPresented) {
             DailyChallengeAnswerFlow(
                 viewModel: dailyChallengeViewModel,
                 onClose: closeAnswerFlow,
-                onRestore: { showStreakRestoreInFlow = true },
+                makeStreakRestoreViewModel: makeStreakRestoreViewModel,
                 onOpenPartnerQuestions: openQuestionsTabFromAnswerFlow
             )
             .zoomTransition(dailyFlowSource.zoomSourceID, in: zoomNamespace, enabled: !reduceMotion)
-            .sheet(isPresented: $showStreakRestoreInFlow) {
-                streakRestoreSheet(isPresented: $showStreakRestoreInFlow)
-            }
             .environment(bannerCenter)
         }
         // The single-question partner-answer flow zooms out of the tapped card.
@@ -205,15 +207,22 @@ struct MainTabView: View {
 
     private func streakRestoreSheet(isPresented: Binding<Bool>) -> some View {
         StreakRestoreView(
-            viewModel: StreakRestoreViewModel(
-                streak: dailyChallengeViewModel.streak,
-                userID: currentUserID?.uuidString,
-                onRestored: { _ in await dailyChallengeViewModel.refreshStreak() }
-            ),
+            viewModel: makeStreakRestoreViewModel(),
             onClose: { isPresented.wrappedValue = false }
         )
         .presentationDetents([.large])
         .presentationBackground(.paeoniaSurfacePrimary)
+    }
+
+    /// Builds a streak-restore purchase view model bound to the current streak and
+    /// signed-in user. Shared by the badge-opened restore sheet and the answer flow's
+    /// completion screen, so a restore refreshes the streak whichever path bought it.
+    private func makeStreakRestoreViewModel() -> StreakRestoreViewModel {
+        StreakRestoreViewModel(
+            streak: dailyChallengeViewModel.streak,
+            userID: currentUserID?.uuidString,
+            onRestored: { _ in await dailyChallengeViewModel.refreshStreak() }
+        )
     }
 
     /// Both partners' identity, used by the daily challenge to label partner-choice
@@ -295,6 +304,7 @@ struct MainTabView: View {
             DailyChallengeScreen(
                 viewModel: dailyChallengeViewModel,
                 zoomNamespace: zoomNamespace,
+                focusedQuestionID: $focusedDailyQuestionID,
                 onOpenAnswerFlow: { openAnswerFlow(source: .questions) },
                 onTapStreak: openStreakDetails,
                 onRefresh: {
@@ -354,6 +364,34 @@ struct MainTabView: View {
 
     private func closePartnerAnswerFlow() {
         partnerAnswerQuestion = nil
+    }
+
+    @MainActor
+    private func handleDeepLink(_ deepLink: PaeoniaDeepLink?) async {
+        guard let deepLink else {
+            return
+        }
+
+        switch deepLink {
+        case .widgetDrawing:
+            onOpenWidgetDrawing()
+            self.deepLink.wrappedValue = nil
+        case .dailyReveal(let instanceID, _):
+            selection.wrappedValue = .questions
+            await refreshDailyChallenge()
+            focusedDailyQuestionID = instanceID
+            self.deepLink.wrappedValue = nil
+        case .dailyToday:
+            selection.wrappedValue = .questions
+            await refreshDailyChallenge()
+            if dailyChallengeViewModel.homeCardState.kind != .complete {
+                openAnswerFlow(source: .questions)
+            }
+            self.deepLink.wrappedValue = nil
+        case .streak:
+            selection.wrappedValue = .home
+            self.deepLink.wrappedValue = nil
+        }
     }
 
     private var youTab: some View {

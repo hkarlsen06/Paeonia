@@ -76,6 +76,12 @@ export class PurchaseVerifierConfigurationError extends Error {
   override name = "PurchaseVerifierConfigurationError";
 }
 
+// Error whose message is written for the app user and safe to return in a
+// response body. Anything else is logged server-side and reported generically.
+export class ClientFacingError extends Error {
+  override name = "ClientFacingError";
+}
+
 export function assertAppleEnvironmentConfigured() {
   const missing: string[] = [];
 
@@ -102,7 +108,11 @@ export function clientSafeErrorMessage(error: unknown): string {
     return "Purchase verification is not ready yet.";
   }
 
-  return error instanceof Error ? error.message : "Unexpected error";
+  if (error instanceof ClientFacingError) {
+    return error.message;
+  }
+
+  return "Unexpected error";
 }
 
 export async function getAuthenticatedUser(authHeader: string) {
@@ -142,7 +152,10 @@ export async function verifyTransactionWithApple(
     }
   }
 
-  throw new Error(lastError);
+  // Apple's error bodies can include request detail that clients should not
+  // see; keep them in the server log and return a stable message.
+  console.error("[appleStoreKit] transaction verification failed", lastError);
+  throw new ClientFacingError("Apple could not verify this purchase");
 }
 
 async function fetchAppleTransaction(
@@ -245,7 +258,7 @@ async function generateAppleJWT(): Promise<string> {
 export function decodeAppleJWS(jws: string): Record<string, unknown> {
   const parts = jws.split(".");
   if (parts.length !== 3) {
-    throw new Error("Invalid Apple JWS format");
+    throw new ClientFacingError("Invalid Apple JWS format");
   }
 
   const normalized = parts[1].replace(/-/g, "+").replace(/_/g, "/");
@@ -291,14 +304,14 @@ export async function readJsonBody(
   try {
     return await request.json();
   } catch {
-    throw new Error("Request body must be JSON");
+    throw new ClientFacingError("Request body must be JSON");
   }
 }
 
 export function requireString(value: unknown, name: string): string {
   const stringValue = stringOrNull(value);
   if (!stringValue) {
-    throw new Error(`Missing ${name}`);
+    throw new ClientFacingError(`Missing ${name}`);
   }
 
   return stringValue;

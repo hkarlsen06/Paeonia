@@ -9,7 +9,7 @@ struct RootView: View {
     @State private var isLaunchExperienceActive = true
     @State private var launchContentRevealed = false
     @State private var lastKnownAuthenticatedUserID: UUID?
-    @Binding private var widgetDeepLink: PaeoniaWidgetDeepLink?
+    @Binding private var deepLink: PaeoniaDeepLink?
     @Binding private var pendingJoinInviteCode: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -23,7 +23,7 @@ struct RootView: View {
 
     @MainActor
     init(
-        widgetDeepLink: Binding<PaeoniaWidgetDeepLink?> = .constant(nil),
+        deepLink: Binding<PaeoniaDeepLink?> = .constant(nil),
         pendingJoinInviteCode: Binding<String?> = .constant(nil),
         viewModel: RootViewModel? = nil,
         locationViewModel: LocationMapViewModel? = nil,
@@ -37,7 +37,7 @@ struct RootView: View {
     ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
         _locationViewModel = State(initialValue: locationViewModel ?? LocationMapViewModel())
-        _widgetDeepLink = widgetDeepLink
+        _deepLink = deepLink
         _pendingJoinInviteCode = pendingJoinInviteCode
         self.appleSignInProvider = appleSignInProvider ?? AppleSignInService()
         self.googleSignInProvider = googleSignInProvider ?? GoogleSignInService.shared
@@ -58,21 +58,21 @@ struct RootView: View {
                 await viewModel.start()
             }
             .preferredColorScheme(.dark)
-            // Handle widget deep links from an async task (fires on appear and
-            // whenever the link changes) so navigation state is never mutated
+            // Handle deep links from an async task (fires on appear and whenever
+            // the link changes) so navigation state is never mutated
             // synchronously during a view update.
-        .task(id: widgetDeepLink) {
-            handleWidgetDeepLink(widgetDeepLink)
-        }
-        .task(id: locationIdentity) {
-            await locationViewModel.configure(identity: locationIdentity)
-        }
-        .onChange(of: viewModel.notice) { _, notice in
-            showBanner(for: notice)
-        }
-        .onChange(of: locationViewModel.notice) { _, notice in
-            showBanner(for: notice)
-        }
+            .task(id: deepLink) {
+                handleDeepLink(deepLink)
+            }
+            .task(id: locationIdentity) {
+                await locationViewModel.configure(identity: locationIdentity)
+            }
+            .onChange(of: viewModel.notice) { _, notice in
+                showBanner(for: notice)
+            }
+            .onChange(of: locationViewModel.notice) { _, notice in
+                showBanner(for: notice)
+            }
             // A partner's widget update arrived while the app is open: the delegate
             // suppressed the system banner and relayed it here for the in-app one.
             .onChange(of: PaeoniaNotificationRouter.shared.pendingForegroundNotice) { _, notice in
@@ -95,22 +95,28 @@ struct RootView: View {
                 requestPushAuthorizationIfPaired(state)
             }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active {
-                    registerForRemoteNotificationsIfSignedIn(viewModel.currentSession?.id)
-                    syncWidgetIfPaired(viewModel.state)
-                    Task {
-                        await locationViewModel.refreshOwnLocationIfSharingEnabled(source: .foregroundOpen)
+                guard phase == .active else {
+                    return
+                }
+                // Re-arm APNs so a rotated token reaches registration; the
+                // fingerprint gate drops the RPC when nothing changed.
+                registerForRemoteNotificationsIfSignedIn(viewModel.currentSession?.id)
+                // One ordered pass per activation instead of four racing tasks:
+                // refresh our location, run a single foreground sync, reload the
+                // map, then pull the partner's widget drawing.
+                Task {
+                    await locationViewModel.refreshOwnLocationIfSharingEnabled(source: .foregroundOpen)
                     await viewModel.refreshAfterForegroundActivation()
                     await locationViewModel.reload()
+                    await performWidgetSyncIfPaired(viewModel.state)
                 }
             }
-        }
-        .onChange(of: viewModel.currentSession?.id, initial: true) { _, sessionID in
+            .onChange(of: viewModel.currentSession?.id, initial: true) { _, sessionID in
                 // Once signed in, get an APNs token so the backend can send the
                 // silent push that wakes us to sync a partner's drawing.
-            rememberAuthenticatedUser(sessionID)
-            registerForRemoteNotificationsIfSignedIn(sessionID)
-        }
+                rememberAuthenticatedUser(sessionID)
+                registerForRemoteNotificationsIfSignedIn(sessionID)
+            }
             .paeoniaTopBanner(bannerCenter) {
                 // Tapping a partner-update notice opens the drawing screen, the
                 // same destination the notification tap routes to.
@@ -322,6 +328,7 @@ struct RootView: View {
                     locationViewModel: locationViewModel,
                     selection: mainTabSelection,
                     widgetDrawingPresented: widgetDrawingPresented,
+                    deepLink: $deepLink,
                     onOpenWidgetDrawing: { viewModel.openWidgetDrawing() },
                     onHomeRefresh: { await refreshHomeSurfacesFromPull() },
                     onDailyChallengeRefresh: { await viewModel.refreshFromHomePull() },
@@ -503,17 +510,29 @@ struct RootView: View {
         return try? Data(contentsOf: url)
     }
 
-    private func handleWidgetDeepLink(_ deepLink: PaeoniaWidgetDeepLink?) {
+    @MainActor
+    private func handleDeepLink(_ deepLink: PaeoniaDeepLink?) {
         guard let deepLink else {
             return
         }
 
         switch deepLink {
-        case .drawing:
+        case .widgetDrawing:
             viewModel.openWidgetDrawing()
+            self.deepLink = nil
+        case .dailyReveal, .dailyToday:
+            switch viewModel.state {
+            case .paired, .launching:
+                viewModel.selectMainTab(.questions)
+            default:
+                self.deepLink = nil
+            }
+        case .streak:
+            if viewModel.state == .paired || viewModel.state == .launching {
+                viewModel.selectMainTab(.home)
+            }
+            self.deepLink = nil
         }
-
-        widgetDeepLink = nil
     }
 
     /// Keeps private content off the device the moment the app leaves the paired

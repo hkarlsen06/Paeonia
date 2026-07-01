@@ -149,6 +149,7 @@ Allowed notification purposes:
 - streak/check-in reminder before expiry
 - partner sent a drawing
 - partner answered a question the user already answered
+- partner finished today's questions
 
 Avoid guilt:
 

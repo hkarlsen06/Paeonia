@@ -12,6 +12,7 @@ nonisolated protocol WidgetPushRegistering: Sendable {
 actor SupabaseWidgetPushRegistrationService: WidgetPushRegistering {
     private let client: SupabaseClient
     private let tokenStore: PaeoniaWidgetPushTokenStore
+    private let fingerprintStore: PushRegistrationFingerprintStore
 
     #if DEBUG
     private let logger = Logger(
@@ -22,14 +23,32 @@ actor SupabaseWidgetPushRegistrationService: WidgetPushRegistering {
 
     init(
         client: SupabaseClient,
-        tokenStore: PaeoniaWidgetPushTokenStore = .shared
+        tokenStore: PaeoniaWidgetPushTokenStore = .shared,
+        fingerprintStore: PushRegistrationFingerprintStore = PushRegistrationFingerprintStore(channel: .widget)
     ) {
         self.client = client
         self.tokenStore = tokenStore
+        self.fingerprintStore = fingerprintStore
     }
 
     func registerCurrentWidgetPushToken() async {
         guard let token = await currentWidgetPushToken() else {
+            return
+        }
+
+        // No active session: don't send an anonymous registration; a later
+        // authenticated activation will register once auth is restored.
+        guard let session = try? await client.auth.session else {
+            return
+        }
+
+        let fingerprint = fingerprint(userID: session.user.id, token: token)
+        let now = Date()
+        guard PushRegistrationGate.shouldSend(
+            current: fingerprint,
+            lastSent: fingerprintStore.lastSent(),
+            now: now
+        ) else {
             return
         }
 
@@ -48,11 +67,26 @@ actor SupabaseWidgetPushRegistrationService: WidgetPushRegistering {
                 )
                 .execute()
                 .value
+            fingerprintStore.recordSent(PushRegistrationRecord(fingerprint: fingerprint, sentAt: now))
         } catch {
             #if DEBUG
             logger.error("Widget push registration failed: \(String(describing: error))")
             #endif
         }
+    }
+
+    private func fingerprint(userID: UUID, token: String) -> String {
+        PushRegistrationGate.fingerprint(
+            PushRegistrationInputs(
+                userID: userID,
+                platform: PaeoniaAppGroup.widgetKind,
+                token: token,
+                apnsEnvironment: SupabasePushRegistrationService.apnsEnvironment,
+                locale: Locale.current.identifier,
+                timeZoneID: TimeZone.current.identifier,
+                appVersion: SupabasePushRegistrationService.appVersion
+            )
+        )
     }
 
     private func currentWidgetPushToken() async -> String? {

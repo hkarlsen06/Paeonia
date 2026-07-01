@@ -5,7 +5,12 @@ import Testing
 @MainActor
 struct SettingsViewModelTests {
     @Test func loadReadsWidgetAlertsAndDeniedStatus() async {
-        let preferences = FakeNotificationPreferences(enabled: false)
+        let preferences = FakeNotificationPreferences(preferences: NotificationPreferences(
+            streakRemindersEnabled: false,
+            dailyChallengeEnabled: true,
+            partnerAnsweredEnabled: false,
+            widgetUpdatesEnabled: false
+        ))
         let viewModel = SettingsViewModel(
             preferences: preferences,
             authorization: FakePushAuthorization(denied: true)
@@ -14,49 +19,68 @@ struct SettingsViewModelTests {
         await viewModel.load()
 
         #expect(viewModel.isLoaded)
+        #expect(viewModel.streakRemindersEnabled == false)
+        #expect(viewModel.dailyChallengeEnabled)
+        #expect(viewModel.partnerAnsweredEnabled == false)
         #expect(viewModel.widgetAlertsEnabled == false)
         #expect(viewModel.systemNotificationsDenied)
     }
 
     @Test func togglePersistsThroughService() async {
-        let preferences = FakeNotificationPreferences(enabled: true)
+        let preferences = FakeNotificationPreferences()
         let viewModel = SettingsViewModel(
             preferences: preferences,
             authorization: FakePushAuthorization()
         )
         await viewModel.load()
 
-        await viewModel.setWidgetAlertsEnabled(false)
+        await viewModel.setNotificationPreference(.widgetUpdates, enabled: false)
 
         #expect(viewModel.widgetAlertsEnabled == false)
+        #expect(await preferences.lastSetKind == .widgetUpdates)
         #expect(await preferences.lastSetValue == false)
         #expect(viewModel.notice == nil)
     }
 
-    @Test func failedSaveRevertsAndShowsNotice() async {
-        let preferences = FakeNotificationPreferences(enabled: true, failOnSet: true)
+    @Test func togglePersistsPartnerAnswerPreference() async {
+        let preferences = FakeNotificationPreferences()
         let viewModel = SettingsViewModel(
             preferences: preferences,
             authorization: FakePushAuthorization()
         )
         await viewModel.load()
 
-        await viewModel.setWidgetAlertsEnabled(false)
+        await viewModel.setNotificationPreference(.partnerAnswered, enabled: false)
+
+        #expect(viewModel.partnerAnsweredEnabled == false)
+        #expect(await preferences.lastSetKind == .partnerAnswered)
+        #expect(await preferences.lastSetValue == false)
+    }
+
+    @Test func failedSaveRevertsAndShowsNotice() async {
+        let preferences = FakeNotificationPreferences(failOnSet: true)
+        let viewModel = SettingsViewModel(
+            preferences: preferences,
+            authorization: FakePushAuthorization()
+        )
+        await viewModel.load()
+
+        await viewModel.setNotificationPreference(.streakReminders, enabled: false)
 
         // The optimistic flip is rolled back and the failure surfaces.
-        #expect(viewModel.widgetAlertsEnabled == true)
+        #expect(viewModel.streakRemindersEnabled == true)
         #expect(viewModel.notice == .saveFailed)
     }
 
     @Test func unchangedValueDoesNotWrite() async {
-        let preferences = FakeNotificationPreferences(enabled: true)
+        let preferences = FakeNotificationPreferences()
         let viewModel = SettingsViewModel(
             preferences: preferences,
             authorization: FakePushAuthorization()
         )
         await viewModel.load()
 
-        await viewModel.setWidgetAlertsEnabled(true)
+        await viewModel.setNotificationPreference(.dailyChallenge, enabled: true)
 
         #expect(await preferences.setCallCount == 0)
     }
@@ -64,7 +88,7 @@ struct SettingsViewModelTests {
     @Test func leaveRelationshipSucceeds() async {
         let pairing = FakePairingService(leaveResult: .success(true))
         let viewModel = SettingsViewModel(
-            preferences: FakeNotificationPreferences(enabled: true),
+            preferences: FakeNotificationPreferences(),
             authorization: FakePushAuthorization(),
             pairingService: pairing,
             operationProvider: FakeOperationProvider()
@@ -81,7 +105,7 @@ struct SettingsViewModelTests {
     @Test func leaveRelationshipFailureSurfacesNotice() async {
         let pairing = FakePairingService(leaveResult: .failure(FakePreferencesError.failed))
         let viewModel = SettingsViewModel(
-            preferences: FakeNotificationPreferences(enabled: true),
+            preferences: FakeNotificationPreferences(),
             authorization: FakePushAuthorization(),
             pairingService: pairing,
             operationProvider: FakeOperationProvider()
@@ -101,27 +125,38 @@ private enum FakePreferencesError: Error {
 
 // An actor supplies the async-ness, so the sync bodies need no `async`/`await`.
 private actor FakeNotificationPreferences: NotificationPreferencesProviding {
-    private var enabled: Bool
+    private var preferences: NotificationPreferences
     private let failOnSet: Bool
     private(set) var setCallCount = 0
+    private(set) var lastSetKind: NotificationPreferenceKind?
     private(set) var lastSetValue: Bool?
 
-    init(enabled: Bool, failOnSet: Bool = false) {
-        self.enabled = enabled
+    init(preferences: NotificationPreferences = NotificationPreferences(), failOnSet: Bool = false) {
+        self.preferences = preferences
         self.failOnSet = failOnSet
     }
 
-    func loadWidgetAlertsEnabled() -> Bool {
-        enabled
+    func loadNotificationPreferences() -> NotificationPreferences {
+        preferences
     }
 
-    func setWidgetAlertsEnabled(_ value: Bool) throws {
+    func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled value: Bool) throws {
         setCallCount += 1
         if failOnSet {
             throw FakePreferencesError.failed
         }
+        lastSetKind = kind
         lastSetValue = value
-        enabled = value
+        switch kind {
+        case .streakReminders:
+            preferences.streakRemindersEnabled = value
+        case .dailyChallenge:
+            preferences.dailyChallengeEnabled = value
+        case .partnerAnswered:
+            preferences.partnerAnsweredEnabled = value
+        case .widgetUpdates:
+            preferences.widgetUpdatesEnabled = value
+        }
     }
 }
 

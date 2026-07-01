@@ -4,14 +4,14 @@ import SwiftUI
 @main
 struct PaeoniaApp: App {
     @UIApplicationDelegateAdaptor(PaeoniaAppDelegate.self) private var appDelegate
-    @State private var widgetDeepLink: PaeoniaWidgetDeepLink?
+    @State private var deepLink: PaeoniaDeepLink?
     @State private var pendingJoinInviteCode = UserDefaultsPairingJoinInviteStore.shared.loadInviteCode()
     @State private var notificationRouter = PaeoniaNotificationRouter.shared
 
     var body: some Scene {
         WindowGroup {
             RootView(
-                widgetDeepLink: $widgetDeepLink,
+                deepLink: $deepLink,
                 pendingJoinInviteCode: $pendingJoinInviteCode
             )
             .onOpenURL { url in
@@ -19,8 +19,8 @@ struct PaeoniaApp: App {
                     return
                 }
 
-                if let widgetDeepLink = PaeoniaWidgetDeepLink(url) {
-                    self.widgetDeepLink = widgetDeepLink
+                if let deepLink = PaeoniaDeepLink(url) {
+                    self.deepLink = deepLink
                     return
                 }
 
@@ -38,15 +38,15 @@ struct PaeoniaApp: App {
                     UserDefaultsPairingJoinInviteStore.shared.clearInviteCode()
                 }
             }
-            // A tapped widget alert routes through the same deep-link path as the
-            // Home Screen widget, so the drawing screen opens either way.
-            .onChange(of: notificationRouter.pendingWidgetDeepLink) { _, deepLink in
+            // Tapped notifications route through the same typed deep-link path
+            // as app URLs, so launches, widgets, and pushes share navigation.
+            .onChange(of: notificationRouter.pendingDeepLink, initial: true) { _, deepLink in
                 guard let deepLink else {
                     return
                 }
 
-                widgetDeepLink = deepLink
-                notificationRouter.consumePendingWidgetDeepLink()
+                self.deepLink = deepLink
+                notificationRouter.consumePendingDeepLink()
             }
         }
     }

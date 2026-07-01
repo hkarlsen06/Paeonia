@@ -104,13 +104,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia sends notifications for partner updates, streak reminders, and nudges from your partner."
+            "value" : "Paeonia sends notifications for partner drawings, answered questions, and check-in reminders."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia sender varsler om oppdateringer fra partneren din, påminnelser om dager på rad og små dytt."
+            "value" : "Paeonia sender varsler om tegninger fra partneren din, svarte spørsmål og påminnelser om å sjekke inn."
           }
         }
       }

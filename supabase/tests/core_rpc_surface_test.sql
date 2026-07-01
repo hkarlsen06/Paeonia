@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(37);
+SELECT plan(39);
 
 INSERT INTO internal.app_runtime_secrets (secret_name, secret_value)
 VALUES ('invite_code_pepper', 'test-pepper-value-for-pairing-invite-hashes');
@@ -175,6 +175,40 @@ SELECT is(
   ),
   1,
   'StoreKit notification webhook RPC is service-role only'
+);
+
+SELECT is(
+  (
+    SELECT count(*)::integer
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'internal'
+      AND p.prokind = 'f'
+      AND p.proname IN (
+        'has_due_push_notification_work',
+        'request_push_notification_drain',
+        'invoke_push_notification_drain',
+        'run_scheduled_push_notification_jobs'
+      )
+      AND has_function_privilege('service_role', p.oid, 'execute')
+      AND NOT has_function_privilege('authenticated', p.oid, 'execute')
+      AND NOT has_function_privilege('anon', p.oid, 'execute')
+  ),
+  4,
+  'scheduled push notification helpers are service-role only'
+);
+
+SELECT is(
+  (
+    SELECT count(*)::integer
+    FROM cron.job
+    WHERE jobname = 'paeonia-push-notification-drain'
+      AND schedule = '30 seconds'
+      AND active
+      AND command LIKE '%internal.run_scheduled_push_notification_jobs%'
+  ),
+  1,
+  'push notification scheduler wakes the drain every 30 seconds'
 );
 
 SELECT is(

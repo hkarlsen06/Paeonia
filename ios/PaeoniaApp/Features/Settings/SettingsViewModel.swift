@@ -14,8 +14,11 @@ final class SettingsViewModel {
     private let pairingService: (any PairingServicing)?
     private let operationProvider: any PairingClientOperationProviding
 
-    /// The widget drawing alert toggle. Defaults to the server default (on) until
-    /// the real value loads, so the control never flickers off.
+    /// Notification toggles default to the server defaults (on) until the real
+    /// values load, so controls never flicker off.
+    private(set) var streakRemindersEnabled = true
+    private(set) var dailyChallengeEnabled = true
+    private(set) var partnerAnsweredEnabled = true
     private(set) var widgetAlertsEnabled = true
     private(set) var isLoaded = false
     /// True when the user has turned notifications off in iOS Settings, so the
@@ -47,29 +50,29 @@ final class SettingsViewModel {
         }
 
         do {
-            widgetAlertsEnabled = try await preferences.loadWidgetAlertsEnabled()
+            apply(try await preferences.loadNotificationPreferences())
         } catch {
             // Keep the optimistic default visible; the next save still works.
         }
         isLoaded = true
     }
 
-    func setWidgetAlertsEnabled(_ enabled: Bool) async {
-        guard enabled != widgetAlertsEnabled else {
+    func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled: Bool) async {
+        guard enabled != value(for: kind) else {
             return
         }
 
-        let previous = widgetAlertsEnabled
-        widgetAlertsEnabled = enabled
+        let previous = value(for: kind)
+        setLocalValue(enabled, for: kind)
 
         guard let preferences else {
             return
         }
 
         do {
-            try await preferences.setWidgetAlertsEnabled(enabled)
+            try await preferences.setNotificationPreference(kind, enabled: enabled)
         } catch {
-            widgetAlertsEnabled = previous
+            setLocalValue(previous, for: kind)
             notice = .saveFailed
         }
     }
@@ -98,5 +101,38 @@ final class SettingsViewModel {
 
     func dismissNotice() {
         notice = nil
+    }
+
+    private func apply(_ preferences: NotificationPreferences) {
+        streakRemindersEnabled = preferences.streakRemindersEnabled
+        dailyChallengeEnabled = preferences.dailyChallengeEnabled
+        partnerAnsweredEnabled = preferences.partnerAnsweredEnabled
+        widgetAlertsEnabled = preferences.widgetUpdatesEnabled
+    }
+
+    private func value(for kind: NotificationPreferenceKind) -> Bool {
+        switch kind {
+        case .streakReminders:
+            streakRemindersEnabled
+        case .dailyChallenge:
+            dailyChallengeEnabled
+        case .partnerAnswered:
+            partnerAnsweredEnabled
+        case .widgetUpdates:
+            widgetAlertsEnabled
+        }
+    }
+
+    private func setLocalValue(_ enabled: Bool, for kind: NotificationPreferenceKind) {
+        switch kind {
+        case .streakReminders:
+            streakRemindersEnabled = enabled
+        case .dailyChallenge:
+            dailyChallengeEnabled = enabled
+        case .partnerAnswered:
+            partnerAnsweredEnabled = enabled
+        case .widgetUpdates:
+            widgetAlertsEnabled = enabled
+        }
     }
 }

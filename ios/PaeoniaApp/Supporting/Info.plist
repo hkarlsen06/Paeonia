@@ -66,7 +66,7 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Paeonia saves a drawing to your photos when you tap save.</string>
 	<key>NSUserNotificationsUsageDescription</key>
-	<string>Paeonia sends notifications for partner updates, streak reminders, and nudges from your partner.</string>
+	<string>Paeonia sends notifications for partner drawings, answered questions, and check-in reminders.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<!-- The partner widget-update alert is a communication notification (it
