@@ -14,7 +14,6 @@ struct PaeoniaAppTests {
             .unauthenticated,
             .onboarding,
             .limitedAuthenticated,
-            .reviewAccess,
             .unpaired,
             .invitePending,
             .paired,

@@ -215,24 +215,6 @@
         }
       }
     },
-    "app.state.reviewAccess" : {
-      "comment" : "Short status label for App Review access mode.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Review access"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tilgang for App Review"
-          }
-        }
-      }
-    },
     "app.state.unauthenticated" : {
       "comment" : "Short status label when the user is signed out.",
       "extractionState" : "manual",

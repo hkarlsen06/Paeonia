@@ -383,8 +383,7 @@ struct RootView: View {
             EmptyView()
         case .deletingAccount:
             AuthDeletingAccountView()
-        case .reviewAccess,
-             .entitlementRestored:
+        case .entitlementRestored:
             privateSpacePlaceholder
         case .paired:
             // Handled by `pairedScaffold`; never shown here.
