@@ -115,7 +115,7 @@ struct HomeWidgetCard: View {
     }
 
     private var widget: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+        VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
             drawingSurface
                 // Crossfade between the placeholder sketch and the real drawing
                 // when the image first arrives or changes. The frame is already
@@ -132,7 +132,7 @@ struct HomeWidgetCard: View {
                 Text(.homeWidgetCta)
                     .font(PaeoniaTypography.caption.weight(.semibold))
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                    .multilineTextAlignment(.leading)
+                    .multilineTextAlignment(.center)
                     .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
             }
             .foregroundStyle(.paeoniaAccentPrimary)

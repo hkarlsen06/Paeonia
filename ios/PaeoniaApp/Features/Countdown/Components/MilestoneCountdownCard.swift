@@ -39,8 +39,8 @@ struct MilestoneCountdownCard: View {
     }
 
     private func card(for milestone: RelationshipMilestone) -> some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+        VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
+            VStack(alignment: .center, spacing: PaeoniaSpacing.space4) {
                 countdown(for: milestone)
 
                 // The target date sits right under the count, so "25 days until" and
@@ -48,6 +48,7 @@ struct MilestoneCountdownCard: View {
                 Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextTertiary)
+                    .multilineTextAlignment(.center)
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                     .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
             }
@@ -56,15 +57,16 @@ struct MilestoneCountdownCard: View {
             Text(Self.subject(for: milestone.kind))
                 .font(PaeoniaTypography.sectionTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
+                .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
         }
         // Match the side-by-side tiles in the same row: same fill, square footprint,
         // rounded corners, hairline stroke, and lift as the widget drawing tile.
-        // Centre the content vertically (no Spacer) so the count, date, and name read
-        // as one group with even space above and below, instead of being split to the
-        // top and bottom edges with a gap in the middle.
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        // Centre the content both vertically (no Spacer) and horizontally so the count,
+        // date, and name read as one centred group with even space around it, instead of
+        // being pinned to the top and bottom edges or the leading edge.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .padding(PaeoniaSpacing.space16)
         .aspectRatio(1, contentMode: .fit)
         .background(.paeoniaBackgroundPrimary)
@@ -91,14 +93,15 @@ struct MilestoneCountdownCard: View {
             ViewThatFits(in: .horizontal) {
                 countdownLine(for: milestone)
 
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
+                VStack(alignment: .center, spacing: PaeoniaSpacing.space2) {
                     Text(milestone.daysRemaining, format: .number)
                         .font(PaeoniaTypography.countdownNumber)
                         .foregroundStyle(.paeoniaAccentPrimary)
 
                     Text(milestone.daysRemaining == 1 ? .homeMilestoneUntilOne : .homeMilestoneUntil)
                         .font(PaeoniaTypography.sectionTitle)
-                        .foregroundStyle(.paeoniaTextSecondary)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .multilineTextAlignment(.center)
                         .lineLimit(2)
                 }
             }
@@ -112,11 +115,12 @@ struct MilestoneCountdownCard: View {
                 .font(PaeoniaTypography.countdownNumber)
                 .foregroundStyle(.paeoniaAccentPrimary)
 
-            // Same size as the subject line below so "… days until <milestone>"
-            // reads as one sentence, leaving the number as the only large element.
+            // Same size and colour as the subject line below so "… days until
+            // <milestone>" reads as one sentence, leaving the number as the only
+            // large element.
             Text(milestone.daysRemaining == 1 ? .homeMilestoneUntilOne : .homeMilestoneUntil)
                 .font(PaeoniaTypography.sectionTitle)
-                .foregroundStyle(.paeoniaTextSecondary)
+                .foregroundStyle(.paeoniaTextPrimary)
         }
         .lineLimit(1)
     }
