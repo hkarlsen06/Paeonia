@@ -505,6 +505,16 @@ async function drainWidgetPushes(
 }
 
 Deno.serve(async (request) => {
+  if (request.method === "OPTIONS") {
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  if (request.method !== "POST") {
+    return new Response("method not allowed", { status: 405 });
+  }
+
   if (!DRAIN_SECRET || request.headers.get("x-drain-secret") !== DRAIN_SECRET) {
     return new Response("unauthorized", { status: 401 });
   }

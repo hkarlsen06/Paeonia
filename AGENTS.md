@@ -481,9 +481,9 @@ Prefer `mcp__supabase__.execute_sql` for database inspection and narrow, targete
 - Before user-scoped RPC writes from the iOS app, make sure the Supabase client has an active `client.auth.session`. If no session exists, fail locally and let local-first pending sync retry after auth is restored instead of sending anonymous PostgREST requests.
 - Keep public RPC wrappers for app-callable functions as thin wrappers around private `internal.*` implementations.
 
-#### Public RPC wrappers that call `internal.*` MUST be `security definer` (this keeps recurring)
+#### App-callable public RPC wrappers that call `internal.*` MUST be `security definer` (this keeps recurring)
 
-This is the single most common backend regression in this repo. A `public.*` RPC wrapper whose body calls any `internal.*` function **must** be declared `security definer` with a fixed `search_path`. `authenticated` has **no USAGE on the `internal` schema**, so a `security invoker` wrapper that reaches into `internal.*` fails for every signed-in user.
+This is the single most common backend regression in this repo. A `public.*` RPC wrapper callable by `authenticated` whose body calls any `internal.*` function **must** be declared `security definer` with a fixed `search_path`. `authenticated` has **no USAGE on the `internal` schema**, so a `security invoker` wrapper that reaches into `internal.*` fails for every signed-in user.
 
 - Symptom: PostgREST returns `permission denied for schema internal` with SQLSTATE `42501`; the Postgres log `context` reads `SQL function "<your_wrapper>" during startup`. The feature works for nobody and there is no client-side clue.
 - Default to copy for any new app-callable wrapper:
@@ -503,8 +503,9 @@ This is the single most common backend regression in this repo. A `public.*` RPC
   ```
 
 - `security definer` does **not** weaken auth here: `auth.uid()` reads the request JWT regardless of the executing role, so authorization stays enforced inside the `internal.*` implementation (via `auth.uid()` / `internal.get_current_entitled_couple_id()`). The wrapper is definer only so it can *reach* the private schema.
-- `security invoker` is only correct for a public wrapper whose body touches `public.*` / RLS-protected tables and never `internal.*`.
-- Before committing a new wrapper, grep the migration: if the body contains `internal.` and the function is not `security definer`, it is wrong. Prior offenders and the fix pattern: `20260627190239_reconcile_daily_rpc_security_definer.sql`, `20260625093000_harden_public_rpc_wrappers_after_relationship_state.sql`, `20260629000405_fix_daily_history_rpc_security_definer.sql`.
+- `security invoker` is correct for public wrappers whose body touches `public.*` / RLS-protected tables and never `internal.*`.
+- `security invoker` is also acceptable for service-role-only maintenance/drain wrappers that call `internal.*`, but only when all of these are true: `anon` and `authenticated` have no `execute`, `service_role` has `execute`, and `search_path` is pinned to `pg_catalog`. This keeps the wrapper unusable if someone accidentally grants it to app users later.
+- Before committing a new app-callable wrapper, grep the migration: if the body contains `internal.` and the function is callable by `authenticated` but is not `security definer`, it is wrong. Prior offenders and the fix pattern: `20260627190239_reconcile_daily_rpc_security_definer.sql`, `20260625093000_harden_public_rpc_wrappers_after_relationship_state.sql`, `20260629000405_fix_daily_history_rpc_security_definer.sql`.
 - An already-applied migration cannot be edited into production (the Git integration won't re-run it). Fix a deployed wrapper with a new migration that `create or replace`s it as `security definer`; leave the original migration as the historical record.
 
 ### GitHub Integration Deployments

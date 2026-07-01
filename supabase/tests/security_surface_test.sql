@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(18);
+SELECT plan(19);
 
 SELECT ok(
   NOT has_schema_privilege('anon', 'internal', 'usage'),
@@ -28,25 +28,25 @@ SELECT ok(
 
 SELECT is(
   (
-    SELECT count(*)::integer
+    SELECT coalesce(string_agg(p.oid::regprocedure::text, ', ' ORDER BY p.oid::regprocedure::text), '')
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'internal'
       AND has_function_privilege('authenticated', p.oid, 'execute')
   ),
-  0,
+  '',
   'authenticated cannot execute internal functions directly'
 );
 
 SELECT is(
   (
-    SELECT count(*)::integer
+    SELECT coalesce(string_agg(p.oid::regprocedure::text, ', ' ORDER BY p.oid::regprocedure::text), '')
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'internal'
       AND has_function_privilege('anon', p.oid, 'execute')
   ),
-  0,
+  '',
   'anon cannot execute internal functions directly'
 );
 
@@ -108,15 +108,37 @@ SELECT ok(
 
 SELECT is(
   (
-    SELECT count(*)::integer
+    SELECT coalesce(string_agg(p.oid::regprocedure::text, ', ' ORDER BY p.oid::regprocedure::text), '')
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
       AND p.prokind = 'f'
+      AND has_function_privilege('authenticated', p.oid, 'execute')
+      AND pg_get_functiondef(p.oid) LIKE '%internal.%'
       AND NOT p.prosecdef
   ),
-  0,
-  'public RPC wrappers are security definer'
+  '',
+  'authenticated public RPC wrappers that call internal helpers are security definer'
+);
+
+SELECT is(
+  (
+    SELECT coalesce(string_agg(p.oid::regprocedure::text, ', ' ORDER BY p.oid::regprocedure::text), '')
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.prokind = 'f'
+      AND pg_get_functiondef(p.oid) LIKE '%internal.%'
+      AND NOT p.prosecdef
+      AND (
+        has_function_privilege('anon', p.oid, 'execute')
+        OR has_function_privilege('authenticated', p.oid, 'execute')
+        OR NOT has_function_privilege('service_role', p.oid, 'execute')
+        OR NOT coalesce(p.proconfig @> ARRAY['search_path=pg_catalog'], false)
+      )
+  ),
+  '',
+  'security invoker public wrappers that call internal helpers are service-role only and pin search_path'
 );
 
 SELECT is(
