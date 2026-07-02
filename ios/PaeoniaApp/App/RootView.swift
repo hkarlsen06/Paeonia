@@ -180,7 +180,7 @@ struct RootView: View {
             Color.paeoniaBackgroundPrimary
                 .ignoresSafeArea()
         case .unauthenticated:
-            signInScreen
+            welcomeScreen
         case .limitedAuthenticated, .pairedPaywalled, .entitlementLost:
             paywallScreen
         case .onboarding:
@@ -196,11 +196,12 @@ struct RootView: View {
         }
     }
 
-    private var signInScreen: some View {
-        SignInView(
+    private var welcomeScreen: some View {
+        WelcomeView(
             isWorking: viewModel.isWorking,
             onAppleSignIn: signInWithApple,
-            onGoogleSignIn: signInWithGoogle
+            onGoogleSignIn: signInWithGoogle,
+            onSubmitInviteCode: captureInviteCode
         )
     }
 
@@ -334,7 +335,8 @@ struct RootView: View {
                     onDailyChallengeRefresh: { await viewModel.refreshFromHomePull() },
                     onDailyChallengeLocalChange: { await viewModel.syncAfterLocalChange() },
                     onMemoriesLocalChange: { await viewModel.syncAfterLocalChange() },
-                    onLeftRelationship: refreshPairing
+                    onLeftRelationship: refreshPairing,
+                    onLogout: signOut
                 )
                 .transition(
                     .asymmetric(
@@ -397,7 +399,7 @@ struct RootView: View {
             // Handled at the top level by `LaunchExperienceView`; never shown here.
             EmptyView()
         case .unauthenticated:
-            // Handled at the top level by `signInScreen`; never shown here.
+            // Handled at the top level by `welcomeScreen`; never shown here.
             EmptyView()
         case .onboarding:
             // Handled by `onboardingScaffold`; never shown here.
@@ -444,6 +446,14 @@ struct RootView: View {
         Task {
             await viewModel.signInWithGoogle(using: googleSignInProvider)
         }
+    }
+
+    /// Stashes an invite code a joining partner entered before signing in. Once they
+    /// sign in, the paywall reads this pending code so they join their partner instead
+    /// of paying. Persisted too, so the code survives the sign-in round trip.
+    private func captureInviteCode(_ code: String) {
+        pendingJoinInviteCode = code
+        UserDefaultsPairingJoinInviteStore.shared.saveInviteCode(code)
     }
 
     private func completeOnboarding(displayName: String, profilePhotoData: Data?) {

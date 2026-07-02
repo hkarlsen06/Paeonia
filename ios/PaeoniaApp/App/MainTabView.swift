@@ -33,6 +33,8 @@ struct MainTabView: View {
     /// Invoked after the user unpairs from the You tab, so the root re-resolves
     /// access and moves them back to the unpaired flow.
     var onLeftRelationship: () -> Void = {}
+    /// Invoked when the user logs out from the You tab, so the root ends the session.
+    var onLogout: () -> Void = {}
 
     @State private var dailyChallengeViewModel = DailyChallengeViewModel()
     @State private var isAnswerFlowPresented = false
@@ -87,7 +89,8 @@ struct MainTabView: View {
         onDailyChallengeRefresh: @escaping () async -> Void = {},
         onDailyChallengeLocalChange: @escaping @MainActor () async -> Void = {},
         onMemoriesLocalChange: @escaping @MainActor @Sendable () async -> Void = {},
-        onLeftRelationship: @escaping () -> Void = {}
+        onLeftRelationship: @escaping () -> Void = {},
+        onLogout: @escaping () -> Void = {}
     ) {
         self.currentUserID = currentUserID
         self.currentDisplayName = currentDisplayName
@@ -109,6 +112,7 @@ struct MainTabView: View {
         self.onDailyChallengeLocalChange = onDailyChallengeLocalChange
         self.onMemoriesLocalChange = onMemoriesLocalChange
         self.onLeftRelationship = onLeftRelationship
+        self.onLogout = onLogout
     }
 
     var body: some View {
@@ -399,7 +403,8 @@ struct MainTabView: View {
             SettingsView(
                 locationViewModel: locationViewModel,
                 partnerName: dailyChallengeParticipants.partnerName,
-                onLeftRelationship: onLeftRelationship
+                onLeftRelationship: onLeftRelationship,
+                onLogout: onLogout
             )
         }
     }

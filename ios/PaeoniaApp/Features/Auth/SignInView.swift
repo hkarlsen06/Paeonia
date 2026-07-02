@@ -7,6 +7,9 @@ struct SignInView: View {
     let isWorking: Bool
     let onAppleSignIn: () -> Void
     let onGoogleSignIn: () -> Void
+    /// Optional path for a partner who already has an invite code. When set, a quiet
+    /// "Have an invite code?" action appears under the sign-in buttons.
+    var onHaveInviteCode: (() -> Void)?
 
     private let contentMaxWidth: CGFloat = 430
     @ScaledMetric(relativeTo: .largeTitle) private var brandMarkHeight: CGFloat = 52
@@ -33,8 +36,15 @@ struct SignInView: View {
 
                     Spacer(minLength: PaeoniaSpacing.space24)
 
-                    VStack(spacing: PaeoniaSpacing.space32) {
-                        actions
+                    VStack(spacing: PaeoniaSpacing.space24) {
+                        VStack(spacing: PaeoniaSpacing.space16) {
+                            actions
+
+                            if let onHaveInviteCode {
+                                inviteCodeButton(onHaveInviteCode)
+                            }
+                        }
+
                         footer
                     }
                 }
@@ -165,6 +175,16 @@ struct SignInView: View {
             }
         }
         .buttonStyle(PaeoniaSecondaryButtonStyle())
+        .disabled(isWorking)
+    }
+
+    private func inviteCodeButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(.welcomeHaveInviteCode)
+                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PaeoniaQuietButtonStyle())
         .disabled(isWorking)
     }
 

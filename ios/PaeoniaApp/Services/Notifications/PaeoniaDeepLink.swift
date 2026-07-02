@@ -161,7 +161,7 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
 }
 
 private extension Array where Element == URLQueryItem {
-    func uuidValue(named name: String) -> UUID? {
+    nonisolated func uuidValue(named name: String) -> UUID? {
         guard let value = first(where: { $0.name == name })?.value else {
             return nil
         }
@@ -170,7 +170,7 @@ private extension Array where Element == URLQueryItem {
 }
 
 private extension Dictionary where Key == AnyHashable, Value == Any {
-    var deepLink: PaeoniaDeepLink? {
+    nonisolated var deepLink: PaeoniaDeepLink? {
         guard let deeplink = nonEmptyString(for: "deeplink"),
               let url = URL(string: deeplink)
         else {
@@ -179,7 +179,7 @@ private extension Dictionary where Key == AnyHashable, Value == Any {
         return PaeoniaDeepLink(url)
     }
 
-    func nonEmptyString(for key: String) -> String? {
+    nonisolated func nonEmptyString(for key: String) -> String? {
         guard let raw = self[key] else {
             return nil
         }
@@ -196,7 +196,7 @@ private extension Dictionary where Key == AnyHashable, Value == Any {
         return nil
     }
 
-    func uuidValue(for key: String) -> UUID? {
+    nonisolated func uuidValue(for key: String) -> UUID? {
         if let uuid = self[key] as? UUID {
             return uuid
         }

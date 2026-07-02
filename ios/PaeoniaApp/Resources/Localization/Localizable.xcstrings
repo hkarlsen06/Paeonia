@@ -7431,6 +7431,294 @@
         }
       },
       "comment" : "Toggle title: get notified before the shared check-in expires"
+    },
+    "welcome.doodle.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For the two of you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For dere to"
+          }
+        }
+      },
+      "comment" : "Welcome carousel screen 1: warm greeting headline"
+    },
+    "welcome.doodle.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome to Paeonia — a private little place to stay close, however far apart you are."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velkommen til Paeonia – et lite, privat sted for å være nær, uansett hvor langt fra hverandre dere er."
+          }
+        }
+      },
+      "comment" : "Welcome carousel screen 1: warm greeting line"
+    },
+    "welcome.dailyQuestions.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closer, every day"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nærmere, hver dag"
+          }
+        }
+      },
+      "comment" : "Welcome carousel screen 2: closeness headline"
+    },
+    "welcome.dailyQuestions.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The small things you share keep the two of you near."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De små tingene dere deler, holder dere to nær hverandre."
+          }
+        }
+      },
+      "comment" : "Welcome carousel screen 2: closeness line"
+    },
+    "welcome.countdown.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking forward, together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se fram til det sammen"
+          }
+        }
+      },
+      "comment" : "Welcome carousel screen 3: looking-forward headline"
+    },
+    "welcome.countdown.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Count down to your next visit and the milestones along the way."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell ned til neste gjensyn og milepælene på veien."
+          }
+        }
+      },
+      "comment" : "Welcome carousel screen 3: looking-forward line"
+    },
+    "welcome.skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hopp over"
+          }
+        }
+      },
+      "comment" : "Welcome carousel: skip to sign-in"
+    },
+    "welcome.next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste"
+          }
+        }
+      },
+      "comment" : "Welcome carousel: advance to the next screen"
+    },
+    "welcome.getStarted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get started"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kom i gang"
+          }
+        }
+      },
+      "comment" : "Welcome carousel: primary button on the last screen, leads to sign-in"
+    },
+    "welcome.haveInviteCode" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Have an invite code?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Har du en invitasjonskode?"
+          }
+        }
+      },
+      "comment" : "Welcome/sign-in: open invite code entry for a joining partner"
+    },
+    "welcome.inviteCode.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your invite code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv inn invitasjonskoden"
+          }
+        }
+      },
+      "comment" : "Welcome invite code sheet: title"
+    },
+    "welcome.inviteCode.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner already started Paeonia? Add their code, then sign in to join them."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Har partneren din allerede startet Paeonia? Legg inn koden deres, og logg inn for å bli med."
+          }
+        }
+      },
+      "comment" : "Welcome invite code sheet: explanation"
+    },
+    "welcome.inviteCode.continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      },
+      "comment" : "Welcome invite code sheet: submit button"
+    },
+    "settings.account.logoutButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log out"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logg ut"
+          }
+        }
+      },
+      "comment" : "Me tab: sign out of the app on this device"
+    },
+    "settings.notifications.expandedLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expanded"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utvidet"
+          }
+        }
+      },
+      "comment" : "Accessibility value announced when the notifications section is open"
+    },
+    "settings.notifications.collapsedLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collapsed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skjult"
+          }
+        }
+      },
+      "comment" : "Accessibility value announced when the notifications section is closed"
     }
   },
   "version" : "1.0"
