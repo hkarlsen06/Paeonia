@@ -139,4 +139,9 @@ pnpm open-ios
 ./scripts/xcode-build-agent.sh --json
 ```
 
+The shared App scheme and the repository build/test wrappers generate the
+git-ignored `ios/BuildNumber.xcconfig` before Xcode evaluates build settings.
+Keep using that timestamp-based setup for builds and archives; do not commit a
+static `CURRENT_PROJECT_VERSION`.
+
 If the build wrapper fails because schemes or target names differ, fix the project setup rather than changing the wrapper away from Tidex conventions.

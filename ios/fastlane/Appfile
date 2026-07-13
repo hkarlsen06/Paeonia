@@ -3,8 +3,9 @@
 # App Store Connect App Identifier
 app_identifier("no.paeonia.app")
 
-# Apple Developer Portal Team ID
-team_id(ENV.fetch("APPLE_TEAM_ID", "<DEV_TEAM_ID>"))
+# Apple Developer Portal Team ID. Keep the environment override for CI, while
+# defaulting to the same team used by the Xcode targets and Universal Links.
+team_id(ENV.fetch("APPLE_TEAM_ID", "48ZSLD4RMP"))
 
 # Apple ID email (optional, only needed for certain operations)
 # apple_id("<APPLE_ID_EMAIL>")

@@ -60,6 +60,8 @@ stop_heartbeat() {
   fi
 }
 
+./scripts/generate-ios-build-number.sh >&2
+
 set +e
 xcodebuild \
   -quiet \

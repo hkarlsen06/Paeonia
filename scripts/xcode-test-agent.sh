@@ -151,6 +151,8 @@ PY
 
 DESTINATION="$(resolve_destination)"
 
+./scripts/generate-ios-build-number.sh >&2
+
 set +e
 XCODEBUILD_ARGS=(
   -quiet

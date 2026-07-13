@@ -434,7 +434,7 @@ Known bad pairing:
 Known working beta toolchain:
 
 ```bash
-DEVELOPER_DIR="/Users/hjalmarkarlsen/Documents/Xcode-beta.app/Contents/Developer" xcodebuild ...
+DEVELOPER_DIR="/Applications/Xcode-beta.app/Contents/Developer" xcodebuild ...
 ```
 
 Failure symptom:
