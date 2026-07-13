@@ -1,6 +1,6 @@
 # Paeonia iOS
 
-Native iOS app workspace placeholder.
+Native iOS app workspace for the Paeonia app, widget, notification service extension, and test targets.
 
 Locked foundation decisions:
 
@@ -70,3 +70,8 @@ Tidex-style support files already exist:
 - `.swiftlint.yml`
 - root `scripts/xcode-build-agent.sh`
 - root `scripts/xcode-test-agent.sh`
+
+The shared App scheme and both Xcode wrappers run
+`scripts/generate-ios-build-number.sh` before Xcode evaluates the build. The
+generated `ios/BuildNumber.xcconfig` stays git-ignored; do not commit a build
+number or replace this with a static `CURRENT_PROJECT_VERSION`.

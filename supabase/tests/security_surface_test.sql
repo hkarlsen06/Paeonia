@@ -183,8 +183,8 @@ SELECT is(
     SELECT count(*)::integer
     FROM public.questions
   ),
-  12,
-  'initial question seed has 12 questions'
+  0,
+  'retired development questions are absent from a fresh schema'
 );
 
 SELECT is(
@@ -193,8 +193,8 @@ SELECT is(
     FROM public.question_version_localizations
     WHERE locale = 'en'
   ),
-  12,
-  'initial question seed has English localizations'
+  0,
+  'retired development English localizations are absent from a fresh schema'
 );
 
 SELECT is(
@@ -203,8 +203,8 @@ SELECT is(
     FROM public.question_version_localizations
     WHERE locale = 'nb'
   ),
-  12,
-  'initial question seed has Norwegian Bokmal localizations'
+  0,
+  'retired development Norwegian Bokmal localizations are absent from a fresh schema'
 );
 
 SELECT * FROM finish();

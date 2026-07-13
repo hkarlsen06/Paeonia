@@ -5,6 +5,20 @@ import UIKit
 @testable import PaeoniaApp
 
 struct WidgetCanvasServiceTests {
+    @Test func sharePayloadDefaultsToRedacted() {
+        let payload = WidgetSharePayload(
+            revisionID: UUID().uuidString,
+            authorName: nil,
+            createdAt: .now,
+            renderedAt: .now,
+            contentHash: "sha256-test",
+            previews: ["systemSmall": "Widget/previews/systemSmall.png"]
+        )
+
+        #expect(payload.privacyMode == .redacted)
+        #expect(payload.isRedacted)
+    }
+
     @Test func saveWritesCanonicalDrawingPreviewsAndPayload() async throws {
         let environment = TestEnvironment()
         let service = environment.makeService()
@@ -101,6 +115,27 @@ struct WidgetCanvasServiceTests {
         await service.clearForPrivacy()
 
         #expect(environment.reloader.reloadCount == 0)
+    }
+
+    @Test func temporaryPrivacyHidePreservesCanonicalDrawingButRemovesWidgetCopies() async throws {
+        let environment = TestEnvironment()
+        let service = environment.makeService()
+        let drawing = makeNonEmptyDrawing()
+
+        try await service.saveDrawing(
+            drawing.dataRepresentation(),
+            canvasSize: CGSize(width: 300, height: 300),
+            authorName: nil,
+            createdAt: Date()
+        )
+
+        await service.hideForPrivacy()
+
+        #expect(FileManager.default.fileExists(atPath: environment.canonicalURL.path))
+        #expect(!FileManager.default.fileExists(atPath: environment.payloadURL.path))
+        #expect(!FileManager.default.fileExists(atPath: environment.previewURL("systemSmall.png").path))
+        #expect(await service.loadSavedDrawing() == drawing.dataRepresentation())
+        #expect(environment.reloader.reloadCount == 2)
     }
 
     @MainActor

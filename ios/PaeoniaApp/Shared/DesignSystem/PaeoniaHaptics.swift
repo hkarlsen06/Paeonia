@@ -26,6 +26,11 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    /// The heart burst on the Us-tab card the day a relationship milestone lands.
+    static func milestoneReached() {
+        notify(.success)
+    }
+
     static func answerRevealed() {
         notify(.success)
     }

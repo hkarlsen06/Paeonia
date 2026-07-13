@@ -423,6 +423,15 @@ verify_jwt = false
 [functions.cleanup-media-storage]
 verify_jwt = false
 
+# Authenticates user calls inside the function so modern publishable keys work,
+# and also accepts a DRAIN_SECRET-protected retry call from pg_cron/pg_net.
+# Required: SUPABASE_PUBLISHABLE_KEYS, SUPABASE_SECRET_KEYS, DRAIN_SECRET.
+# Automatic Sign in with Apple revocation additionally requires
+# APPLE_SIGN_IN_TEAM_ID, APPLE_SIGN_IN_KEY_ID, APPLE_SIGN_IN_PRIVATE_KEY, and
+# APPLE_SIGN_IN_CLIENT_ID (defaults to no.paeonia.app).
+[functions.delete-account]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

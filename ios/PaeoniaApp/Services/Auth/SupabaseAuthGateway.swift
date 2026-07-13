@@ -14,6 +14,8 @@ nonisolated struct SupabaseProfile: Codable, Equatable, Sendable {
     let timeZoneUpdatedAt: Date?
     let onboardingCompletedAt: Date?
     let profilePhotoAssetID: UUID?
+    let providerProfilePhotoAssetID: UUID?
+    let providerProfilePhotoSource: String?
 
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
@@ -22,6 +24,8 @@ nonisolated struct SupabaseProfile: Codable, Equatable, Sendable {
         case timeZoneUpdatedAt = "time_zone_updated_at"
         case onboardingCompletedAt = "onboarding_completed_at"
         case profilePhotoAssetID = "profile_photo_asset_id"
+        case providerProfilePhotoAssetID = "provider_profile_photo_asset_id"
+        case providerProfilePhotoSource = "provider_profile_photo_source"
     }
 }
 
@@ -41,7 +45,17 @@ protocol SupabaseAuthGateway: Actor {
         timeZoneID: String,
         profilePhotoAssetID: UUID?
     ) async throws -> SupabaseProfile
-    func requestAccountDeletion() async throws
+    func updateProfile(
+        userID: String,
+        displayName: String,
+        profilePhotoAssetID: UUID?
+    ) async throws -> SupabaseProfile
+    func updateProviderProfilePhoto(
+        userID: String,
+        profilePhotoAssetID: UUID,
+        source: String
+    ) async throws -> SupabaseProfile
+    func requestAccountDeletion(appleAuthorizationCode: String?) async throws -> AccountDeletionOutcome
     func signOut() async throws
 }
 
@@ -53,7 +67,9 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
         time_zone_id,
         time_zone_updated_at,
         onboarding_completed_at,
-        profile_photo_asset_id
+        profile_photo_asset_id,
+        provider_profile_photo_asset_id,
+        provider_profile_photo_source
         """
 
     init(client: SupabaseClient) {
@@ -139,6 +155,48 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
             .value
     }
 
+    func updateProfile(
+        userID: String,
+        displayName: String,
+        profilePhotoAssetID: UUID?
+    ) async throws -> SupabaseProfile {
+        let profiles: [SupabaseProfile] = try await client
+            .rpc(
+                "update_own_profile",
+                params: UpdateOwnProfileRequest(
+                    displayName: displayName,
+                    profilePhotoAssetID: profilePhotoAssetID
+                )
+            )
+            .execute()
+            .value
+        guard let profile = profiles.first, profile.userID == userID else {
+            throw AuthServiceError.noActiveSession
+        }
+        return profile
+    }
+
+    func updateProviderProfilePhoto(
+        userID: String,
+        profilePhotoAssetID: UUID,
+        source: String
+    ) async throws -> SupabaseProfile {
+        let profiles: [SupabaseProfile] = try await client
+            .rpc(
+                "set_own_provider_profile_photo",
+                params: UpdateProviderProfilePhotoRequest(
+                    profilePhotoAssetID: profilePhotoAssetID,
+                    source: source
+                )
+            )
+            .execute()
+            .value
+        guard let profile = profiles.first, profile.userID == userID else {
+            throw AuthServiceError.noActiveSession
+        }
+        return profile
+    }
+
     // swiftlint:disable:next function_body_length
     func uploadProfilePhoto(
         userID: String,
@@ -200,10 +258,47 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
             .execute()
     }
 
-    func requestAccountDeletion() async throws {
-        try await client
-            .rpc("request_account_deletion")
-            .execute()
+    func requestAccountDeletion(
+        appleAuthorizationCode: String?
+    ) async throws -> AccountDeletionOutcome {
+        // The Edge Function owns the irreversible database transaction and Auth
+        // deletion as one operation. Do not start the RPC separately in the app:
+        // losing that first response could otherwise restore paired UI after the
+        // database had already tombstoned the account.
+        let providerBeforeAttempt = (try? await restoreSession())?.provider ?? .unknown
+        do {
+            return try await invokeAccountDeletion(
+                appleAuthorizationCode: appleAuthorizationCode
+            )
+        } catch {
+            // A dropped Edge response is ambiguous: its database stage may have
+            // committed. Confirm the idempotent tombstone directly before Root
+            // is allowed to restore paired UI, then retry the Edge worker once
+            // so a still-fresh Apple code gets another revocation attempt.
+            let start: AccountDeletionStartResponse
+            do {
+                start = try await startAccountDeletion()
+            } catch {
+                // If the first Edge call completed a hard Auth deletion before
+                // its response disappeared, the JWT can no longer confirm the
+                // idempotent RPC. Missing Auth is itself a completed boundary.
+                if await authUserIsAbsent() {
+                    return providerBeforeAttempt == .apple
+                        ? .manualAppleRevocationRequired
+                        : .completed
+                }
+                throw error
+            }
+            do {
+                return try await invokeAccountDeletion(
+                    appleAuthorizationCode: appleAuthorizationCode
+                )
+            } catch {
+                return start.authProvider == "apple"
+                    ? .manualAppleRevocationRequired
+                    : .queued
+            }
+        }
     }
 
     func signOut() async throws {
@@ -243,6 +338,79 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
 
         return candidates.compactMap { $0?.trimmedNonEmpty }.first
     }
+
+    private func startAccountDeletion() async throws -> AccountDeletionStartResponse {
+        var lastError: (any Error)?
+        for attempt in 0..<2 {
+            do {
+                let starts: [AccountDeletionStartResponse] = try await client
+                    .rpc("request_account_deletion")
+                    .execute()
+                    .value
+                guard let start = starts.first else {
+                    throw AuthServiceError.accountDeletionUnavailable
+                }
+                return start
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                lastError = error
+                if attempt == 0 {
+                    await Task.yield()
+                }
+            }
+        }
+
+        throw lastError ?? AuthServiceError.accountDeletionUnavailable
+    }
+
+    private func invokeAccountDeletion(
+        appleAuthorizationCode: String?
+    ) async throws -> AccountDeletionOutcome {
+        let response: AccountDeletionFunctionResponse = try await client.functions.invoke(
+            "delete-account",
+            options: FunctionInvokeOptions(
+                body: AccountDeletionFunctionRequest(
+                    appleAuthorizationCode: appleAuthorizationCode
+                )
+            )
+        )
+
+        if response.requiresManualAppleRevocation {
+            return .manualAppleRevocationRequired
+        }
+        return response.authDeleteStatus == "completed" ? .completed : .queued
+    }
+
+    private func authUserIsAbsent() async -> Bool {
+        do {
+            _ = try await client.auth.user()
+            return false
+        } catch AuthError.sessionMissing {
+            return true
+        } catch let AuthError.api(_, _, _, response) {
+            return response.statusCode == 401 || response.statusCode == 404
+        } catch {
+            return false
+        }
+    }
+}
+
+nonisolated private struct AccountDeletionStartResponse: Decodable {
+    let authProvider: String
+
+    enum CodingKeys: String, CodingKey {
+        case authProvider = "auth_provider"
+    }
+}
+
+nonisolated private struct AccountDeletionFunctionRequest: Encodable {
+    let appleAuthorizationCode: String?
+}
+
+nonisolated private struct AccountDeletionFunctionResponse: Decodable {
+    let authDeleteStatus: String
+    let requiresManualAppleRevocation: Bool
 }
 
 nonisolated private struct CompleteProfileOnboardingRequest: Encodable {
@@ -264,6 +432,38 @@ nonisolated private struct CompleteProfileOnboardingRequest: Encodable {
         try container.encode(timeZoneUpdatedAt, forKey: .timeZoneUpdatedAt)
         try container.encode(onboardingCompletedAt, forKey: .onboardingCompletedAt)
         try container.encodeIfPresent(profilePhotoAssetID, forKey: .profilePhotoAssetID)
+    }
+}
+
+nonisolated private struct UpdateOwnProfileRequest: Encodable {
+    let displayName: String
+    let profilePhotoAssetID: UUID?
+
+    enum CodingKeys: String, CodingKey {
+        case displayName = "p_display_name"
+        case profilePhotoAssetID = "p_profile_photo_asset_id"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(displayName, forKey: .displayName)
+        if let profilePhotoAssetID {
+            try container.encode(profilePhotoAssetID, forKey: .profilePhotoAssetID)
+        } else {
+            // Paired profile editing supports explicitly removing an existing
+            // private photo, so nil must be sent as SQL NULL rather than omitted.
+            try container.encodeNil(forKey: .profilePhotoAssetID)
+        }
+    }
+}
+
+nonisolated private struct UpdateProviderProfilePhotoRequest: Encodable {
+    let profilePhotoAssetID: UUID
+    let source: String
+
+    enum CodingKeys: String, CodingKey {
+        case profilePhotoAssetID = "p_profile_photo_asset_id"
+        case source = "p_source"
     }
 }
 

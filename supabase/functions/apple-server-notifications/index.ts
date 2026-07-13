@@ -67,6 +67,7 @@ interface AppleTransactionInfo {
   appAccountToken?: string;
   webOrderLineItemId?: string;
   offerType?: number;
+  offerDiscountType?: string;
   type?: string;
 }
 

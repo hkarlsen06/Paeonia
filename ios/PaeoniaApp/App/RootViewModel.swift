@@ -98,6 +98,9 @@ final class RootViewModel {
     private var route: RootRoute = .launching
     private(set) var isWorking = false
     private(set) var notice: RootNotice?
+    /// Set when Paeonia data deletion succeeded but Apple could not revoke the
+    /// Sign in with Apple authorization automatically.
+    private(set) var requiresManualAppleRevocation = false
     private(set) var presentedDestination: RootPresentedDestination?
     /// The selected paired tab. Owned here (rather than in the tab view) so that
     /// navigation intent can move the user to the right tab and present its
@@ -106,6 +109,7 @@ final class RootViewModel {
     private var hasStartedSync = false
     private var configuredSyncSession: SyncSession?
     private var accessResolutionGeneration = 0
+    @ObservationIgnored private var inFlightAccessPrivacyPurge: (id: UUID, task: Task<Void, Never>)?
     private var opensWidgetDrawingWhenPaired = false
     private var shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = false
 
@@ -139,6 +143,14 @@ final class RootViewModel {
 
     var currentProfilePhotoAssetID: UUID? {
         currentSession?.profilePhotoAssetID
+    }
+
+    var currentCustomProfilePhotoAssetID: UUID? {
+        currentSession?.customProfilePhotoAssetID
+    }
+
+    var currentProviderProfilePhotoAssetID: UUID? {
+        currentSession?.providerProfilePhotoAssetID
     }
 
     var currentPartnerProfilePhotoAssetID: UUID? {
@@ -288,7 +300,7 @@ final class RootViewModel {
         }
     }
 
-    func deleteAccount() async {
+    func deleteAccount(appleAuthorizationCode: String? = nil) async {
         guard !isWorking else {
             return
         }
@@ -296,13 +308,17 @@ final class RootViewModel {
         let previousRoute = route
         isWorking = true
         notice = nil
+        requiresManualAppleRevocation = false
         invalidateAccessResolution()
         clearPairingCelebrationPresentation()
         clearPendingWidgetDrawingOpen()
         route = .deletingAccount(previousRoute.session)
 
         do {
-            try await authService.requestAccountDeletion()
+            let outcome = try await authService.requestAccountDeletion(
+                appleAuthorizationCode: appleAuthorizationCode
+            )
+            requiresManualAppleRevocation = outcome == .manualAppleRevocationRequired
             invalidateAccessResolution()
             clearPairingCelebrationPresentation()
             route = .signedOut
@@ -321,9 +337,48 @@ final class RootViewModel {
         isWorking = false
     }
 
+    func dismissManualAppleRevocation() {
+        requiresManualAppleRevocation = false
+    }
+
     func refreshAfterSubscriptionChange() async {
         await refreshAuthRoute()
         await startSyncIfNeeded()
+    }
+
+    /// Saves the paired user's canonical profile while preserving the resolved
+    /// relationship route. The updated session is committed immediately so all
+    /// current-user labels and avatars refresh together, then a sync pass pulls
+    /// the latest partner/access snapshot without making the save depend on it.
+    func updateCurrentProfile(
+        displayName: String,
+        profilePhotoUpdate: AuthProfilePhotoUpdate
+    ) async -> Bool {
+        guard !isWorking,
+              state == .paired,
+              case let .access(_, resolution) = route
+        else {
+            return false
+        }
+
+        isWorking = true
+        notice = nil
+        defer { isWorking = false }
+
+        do {
+            let session = try await authService.updateProfile(
+                displayName: displayName,
+                profilePhotoUpdate: profilePhotoUpdate
+            )
+            route = .access(session, resolution)
+            await startSyncIfNeeded()
+            _ = await syncService.runOnce(reason: .localChange)
+            await resolveAccessRoute(for: session)
+            return true
+        } catch {
+            logAuthError(error, notice: nil)
+            return false
+        }
     }
 
     func refreshAfterInviteAccepted() async {
@@ -495,34 +550,35 @@ final class RootViewModel {
                 for: session,
                 previous: previousAccessResolution
             )
-            finishAccessResolution(generation) {
-                applyAccessResolution(
-                    fallbackResolution,
-                    for: session,
-                    previous: previousAccessResolution
-                )
-            }
+            await finishAccessResolution(
+                generation,
+                resolution: fallbackResolution,
+                for: session,
+                previous: previousAccessResolution
+            )
             return
         }
 
         do {
             let hasPendingInvite = inviteStore.loadInvite(for: session.id) != nil
             let accessResolution = try await accessRouteService.resolveAccess(hasPendingInvite: hasPendingInvite)
-            finishAccessResolution(generation) {
-                applyAccessResolution(accessResolution, for: session, previous: previousAccessResolution)
-            }
+            await finishAccessResolution(
+                generation,
+                resolution: accessResolution,
+                for: session,
+                previous: previousAccessResolution
+            )
         } catch {
             let fallbackResolution = await fallbackAccessResolution(
                 for: session,
                 previous: previousAccessResolution
             )
-            finishAccessResolution(generation) {
-                applyAccessResolution(
-                    fallbackResolution,
-                    for: session,
-                    previous: previousAccessResolution
-                )
-            }
+            await finishAccessResolution(
+                generation,
+                resolution: fallbackResolution,
+                for: session,
+                previous: previousAccessResolution
+            )
         }
     }
 
@@ -579,7 +635,14 @@ final class RootViewModel {
             return
         }
 
-        applyAccessResolution(resolution, for: session, previous: route.accessResolution)
+        let generation = accessResolutionGeneration
+        let previousAccessResolution = route.accessResolution
+        await finishAccessResolution(
+            generation,
+            resolution: resolution,
+            for: session,
+            previous: previousAccessResolution
+        )
         await startSyncIfNeeded()
     }
 
@@ -740,12 +803,132 @@ final class RootViewModel {
         accessResolutionGeneration += 1
     }
 
-    private func finishAccessResolution(_ generation: Int, action: () -> Void) {
+    private func finishAccessResolution(
+        _ generation: Int,
+        resolution: AccessRouteResolution,
+        for session: AuthSession,
+        previous: AccessRouteResolution?
+    ) async {
+        // Every access commit waits for an older privacy purge, including a
+        // newer `.paired` result. This prevents a stale ended/paywalled result
+        // from continuing to clear caches after the new route becomes visible.
+        if let pendingPurge = inFlightAccessPrivacyPurge {
+            await pendingPurge.task.value
+        }
+
         guard generation == accessResolutionGeneration else {
             return
         }
 
-        action()
+        await purgePrivateRelationshipDataIfNeeded(
+            for: resolution,
+            ownerSession: session,
+            previous: previous
+        )
+
+        // Privacy cleanup is asynchronous. A sign-out, user change, or newer
+        // access resolution may have won while it ran, so never let the older
+        // result restore a stale route afterwards.
+        guard generation == accessResolutionGeneration else {
+            return
+        }
+
+        applyAccessResolution(resolution, for: session, previous: previous)
+    }
+
+    private func purgePrivateRelationshipDataIfNeeded(
+        for resolution: AccessRouteResolution,
+        ownerSession: AuthSession,
+        previous: AccessRouteResolution?
+    ) async {
+        guard let ownerUserID = UUID(uuidString: ownerSession.id) else {
+            return
+        }
+
+        let permanently: Bool
+        switch resolution.route {
+        case .pairedPaywalled:
+            // Entitlement can return. Hide downloaded relationship surfaces,
+            // but keep canonical local drafts, memories, and pending writes.
+            permanently = false
+        case .relationshipEndedNotice:
+            permanently = true
+        case .limitedAuthenticated, .unpaired, .invitePending:
+            if let relationshipState = resolution.snapshot.relationshipState {
+                guard Self.isKnownEndedRelationship(relationshipState) else {
+                    return
+                }
+            } else {
+                // After retention removes the ended relationship row, the
+                // current snapshot is intentionally empty. The prior in-memory
+                // or persisted snapshot is the only cold-launch proof that this
+                // is access loss rather than a person who has never paired.
+                guard await hadPriorRelationship(
+                    ownerUserID: ownerUserID,
+                    previous: previous
+                ) else {
+                    return
+                }
+            }
+            permanently = true
+        case .paired:
+            return
+        }
+
+        let purgeID = UUID()
+        let purgeTask = Task {
+            await syncService.purgeRelationshipAccess(
+                ownerUserID: ownerUserID,
+                permanently: permanently
+            )
+        }
+        inFlightAccessPrivacyPurge = (purgeID, purgeTask)
+        await purgeTask.value
+        if inFlightAccessPrivacyPurge?.id == purgeID {
+            inFlightAccessPrivacyPurge = nil
+        }
+    }
+
+    private func hadPriorRelationship(
+        ownerUserID: UUID,
+        previous: AccessRouteResolution?
+    ) async -> Bool {
+        if previous?.snapshot.relationshipState != nil {
+            return true
+        }
+
+        guard let accessSnapshotStore else {
+            return false
+        }
+
+        do {
+            return try await accessSnapshotStore
+                .load(ownerUserID: ownerUserID)?
+                .relationshipState != nil
+        } catch {
+            // An unavailable history store is not proof of relationship loss.
+            // Keep local pending work rather than deleting it speculatively.
+            return false
+        }
+    }
+
+    private static func isKnownEndedRelationship(
+        _ relationshipState: SupabaseRelationshipState
+    ) -> Bool {
+        if relationshipState.endedAt != nil {
+            return true
+        }
+
+        return switch (relationshipState.relationshipStatus, relationshipState.memberStatus) {
+        case (.ended, _),
+             (.deleted, _),
+             (_, .left),
+             (_, .endedNoticePending),
+             (_, .endedNoticeSeen):
+            true
+        default:
+            false
+        }
     }
 
     private func startSyncIfNeeded() async {
@@ -757,7 +940,11 @@ final class RootViewModel {
                 return
             }
 
-            let syncSession = SyncSession(userID: userID, activeCoupleID: syncActiveCoupleID)
+            let syncSession = SyncSession(
+                userID: userID,
+                activeCoupleID: syncActiveCoupleID,
+                relationshipCoupleID: currentActiveCoupleID
+            )
             if configuredSyncSession != syncSession {
                 await syncService.configure(session: syncSession)
                 configuredSyncSession = syncSession

@@ -302,57 +302,92 @@ struct SupabaseLocationGatewayRequestEncodingTests {
 struct LocationMapViewModelTests {
     @Test
     func mapStateRequiresCurrentAndPartnerLocations() throws {
-        let current = OwnLocationSnapshot(
-            ownerUserID: try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111")),
-            coupleID: try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
-            location: LocationPoint(
-                latitude: 59,
-                longitude: 10,
-                capturedAt: Date(timeIntervalSince1970: 100)
-            ),
-            source: .foregroundOpen,
-            pendingOperationID: nil,
-            updatedAt: Date(timeIntervalSince1970: 101)
-        )
+        let current = ownLocationSnapshot()
         let visible = try visibilitySnapshot(
             visibilityState: .visible,
             partnerLocationIsStale: false
         )
-        let stale = try visibilitySnapshot(
-            visibilityState: .visible,
-            partnerLocationIsStale: true
-        )
-        let expired = try visibilitySnapshot(
-            visibilityState: .visible,
-            partnerLocationIsStale: true,
-            partnerLocationCapturedAt: Date(timeIntervalSince1970: 200)
-        )
-        let nowBeforeSevenDays = Date(timeIntervalSince1970: 200 + 6 * 24 * 60 * 60)
-        let nowAfterSevenDays = Date(timeIntervalSince1970: 200 + 7 * 24 * 60 * 60)
         let partnerLocation = try #require(visible.partnerLocation)
 
         #expect(LocationMapViewModel.resolveMapState(
             visibility: visible,
-            ownLocation: current,
-            now: nowBeforeSevenDays
+            ownLocation: current
         ) == .ready(
             current: current.location,
-            partner: partnerLocation
+            partner: partnerLocation,
+            partnerWasStaleAtLastRefresh: false
         ))
         #expect(LocationMapViewModel.resolveMapState(visibility: visible, ownLocation: nil) == .currentUnknown)
+    }
+
+    @Test
+    func mapStateKeepsStalePartnerLocationVisible() throws {
+        let current = ownLocationSnapshot()
+        let veryOld = try visibilitySnapshot(
+            visibilityState: .visible,
+            partnerLocationIsStale: true,
+            partnerLocationCapturedAt: Date(timeIntervalSince1970: 200)
+        )
+        let partnerLocation = try #require(veryOld.partnerLocation)
+
         #expect(LocationMapViewModel.resolveMapState(
-            visibility: stale,
-            ownLocation: current,
-            now: nowBeforeSevenDays
+            visibility: veryOld,
+            ownLocation: current
         ) == .ready(
             current: current.location,
-            partner: partnerLocation
+            partner: partnerLocation,
+            partnerWasStaleAtLastRefresh: true
         ))
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: expired,
-            ownLocation: current,
-            now: nowAfterSevenDays
-        ) == .partnerUnknown(.visible))
+    }
+
+    @Test
+    func previousIdentityReloadCannotPublishIntoNewCouple() async throws {
+        let firstUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let firstCoupleID = testUUID("22222222-2222-2222-2222-222222222222")
+        let secondUserID = testUUID("44444444-4444-4444-4444-444444444444")
+        let secondCoupleID = testUUID("55555555-5555-5555-5555-555555555555")
+        let firstSnapshot = try visibilitySnapshot(
+            ownerUserID: firstUserID,
+            coupleID: firstCoupleID,
+            visibilityState: .visible,
+            partnerLocationIsStale: false
+        )
+        let visibilityStore = IdentitySwitchVisibilityStore(
+            suspendedOwnerUserID: firstUserID,
+            suspendedSnapshot: firstSnapshot
+        )
+        let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
+        try await ownLocationStore.save(
+            OwnLocationSnapshot(
+                ownerUserID: firstUserID,
+                coupleID: firstCoupleID,
+                location: ownLocationSnapshot().location,
+                source: .foregroundOpen,
+                pendingOperationID: nil,
+                updatedAt: Date(timeIntervalSince1970: 101)
+            )
+        )
+        let viewModel = LocationMapViewModel(
+            visibilityStore: visibilityStore,
+            ownLocationStore: ownLocationStore,
+            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
+            operationProvider: UniqueOperationProvider(),
+            locationCapture: StubLocationCapture(error: ForegroundLocationCaptureError.unavailable)
+        )
+
+        let firstConfiguration = Task {
+            await viewModel.configure(
+                identity: LocationIdentity(currentUserID: firstUserID, coupleID: firstCoupleID)
+            )
+        }
+        await visibilityStore.waitUntilSuspendedLoadStarts()
+        await viewModel.configure(
+            identity: LocationIdentity(currentUserID: secondUserID, coupleID: secondCoupleID)
+        )
+        await visibilityStore.finishSuspendedLoad()
+        await firstConfiguration.value
+
+        #expect(viewModel.mapState == .partnerUnknown(.unknown("missing_visibility")))
     }
 
     @MainActor
@@ -412,6 +447,39 @@ struct LocationMapViewModelTests {
         #expect(readyOperations.isEmpty)
     }
 
+    @Test
+    func repeatedShareTapDoesNotStartCompetingLocationRequests() async throws {
+        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let locationCapture = SuspendedLocationCapture()
+        let viewModel = LocationMapViewModel(
+            visibilityStore: InMemoryLocationVisibilitySnapshotRepository(),
+            ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
+            operationProvider: UniqueOperationProvider(),
+            locationCapture: locationCapture
+        )
+        await viewModel.configure(
+            identity: LocationIdentity(currentUserID: ownerUserID, coupleID: coupleID)
+        )
+
+        let firstRequest = Task { await viewModel.promptForCurrentLocation() }
+        await locationCapture.waitUntilRequested()
+        await viewModel.promptForCurrentLocation()
+
+        #expect(locationCapture.requestCount == 1)
+
+        locationCapture.finish(
+            with: LocationPoint(
+                latitude: 59.91,
+                longitude: 10.75,
+                capturedAt: Date(timeIntervalSince1970: 100)
+            )
+        )
+        await firstRequest.value
+        #expect(viewModel.notice == nil)
+    }
+
     @MainActor
     @Test
     func foregroundRefreshIsThrottledButManualRefreshAlwaysWrites() async throws {
@@ -444,6 +512,37 @@ struct LocationMapViewModelTests {
         // A manual pull-to-refresh always writes, even without moving.
         await viewModel.refreshOwnLocationIfSharingEnabled(source: .manualRefresh)
         #expect(try await locationWriteCount(pendingStore, ownerUserID: ownerUserID) == 2)
+    }
+}
+
+struct LocationDisplayRecencyTests {
+    private let capturedAt = Date(timeIntervalSince1970: 1_000)
+
+    @Test func locationRemainsRecentBeforeTwentyFourHours() {
+        let now = capturedAt.addingTimeInterval(LocationDisplayRecency.staleAfter - 1)
+
+        #expect(LocationDisplayRecency.resolve(capturedAt: capturedAt, now: now) == .recent)
+    }
+
+    @Test func locationBecomesStaleAtTwentyFourHours() {
+        let now = capturedAt.addingTimeInterval(LocationDisplayRecency.staleAfter)
+
+        #expect(LocationDisplayRecency.resolve(capturedAt: capturedAt, now: now) == .stale)
+    }
+
+    @Test func futureCaptureTimeDoesNotAppearStale() {
+        #expect(LocationDisplayRecency.resolve(
+            capturedAt: capturedAt.addingTimeInterval(60),
+            now: capturedAt
+        ) == .recent)
+    }
+
+    @Test func serverStaleStateWinsWhenDeviceClockIsBehind() {
+        #expect(LocationDisplayRecency.resolve(
+            capturedAt: capturedAt,
+            now: capturedAt,
+            wasStaleAtLastRefresh: true
+        ) == .stale)
     }
 }
 
@@ -530,6 +629,49 @@ private actor RecordingLocationGateway: SupabaseLocationGateway {
     }
 }
 
+private actor IdentitySwitchVisibilityStore: LocationVisibilitySnapshotPersisting {
+    private let suspendedOwnerUserID: UUID
+    private let suspendedSnapshot: LocationVisibilitySnapshot
+    private var loadContinuation: CheckedContinuation<LocationVisibilitySnapshot?, Never>?
+
+    init(
+        suspendedOwnerUserID: UUID,
+        suspendedSnapshot: LocationVisibilitySnapshot
+    ) {
+        self.suspendedOwnerUserID = suspendedOwnerUserID
+        self.suspendedSnapshot = suspendedSnapshot
+    }
+
+    func save(_ snapshot: LocationVisibilitySnapshot) async throws {}
+
+    func load(ownerUserID: UUID, coupleID _: UUID) async throws -> LocationVisibilitySnapshot? {
+        guard ownerUserID == suspendedOwnerUserID else { return nil }
+        return await withCheckedContinuation { continuation in
+            loadContinuation = continuation
+        }
+    }
+
+    func setViewerSharingEnabled(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        isEnabled: Bool,
+        updatedAt: Date
+    ) async throws {}
+
+    func delete(ownerUserID: UUID, coupleID: UUID) async throws {}
+
+    func waitUntilSuspendedLoadStarts() async {
+        while loadContinuation == nil {
+            await Task.yield()
+        }
+    }
+
+    func finishSuspendedLoad() {
+        loadContinuation?.resume(returning: suspendedSnapshot)
+        loadContinuation = nil
+    }
+}
+
 private struct StaleLocationError: Error, CustomStringConvertible {
     let description: String
 }
@@ -607,6 +749,30 @@ private final class StubLocationCapture: ForegroundLocationCapturing {
     }
 }
 
+@MainActor
+private final class SuspendedLocationCapture: ForegroundLocationCapturing {
+    private var continuation: CheckedContinuation<LocationPoint, Never>?
+    private(set) var requestCount = 0
+
+    func captureCurrentLocation() async throws -> LocationPoint {
+        requestCount += 1
+        return await withCheckedContinuation { continuation in
+            self.continuation = continuation
+        }
+    }
+
+    func waitUntilRequested() async {
+        while continuation == nil {
+            await Task.yield()
+        }
+    }
+
+    func finish(with location: LocationPoint) {
+        continuation?.resume(returning: location)
+        continuation = nil
+    }
+}
+
 private func visibilitySnapshot(
     ownerUserID: UUID = testUUID("11111111-1111-1111-1111-111111111111"),
     coupleID: UUID = testUUID("22222222-2222-2222-2222-222222222222"),
@@ -632,6 +798,21 @@ private func visibilitySnapshot(
         partnerLocationIsStale: partnerLocationIsStale,
         updatedAt: Date(timeIntervalSince1970: 202),
         refreshedAt: Date(timeIntervalSince1970: 203)
+    )
+}
+
+private func ownLocationSnapshot() -> OwnLocationSnapshot {
+    OwnLocationSnapshot(
+        ownerUserID: testUUID("11111111-1111-1111-1111-111111111111"),
+        coupleID: testUUID("22222222-2222-2222-2222-222222222222"),
+        location: LocationPoint(
+            latitude: 59,
+            longitude: 10,
+            capturedAt: Date(timeIntervalSince1970: 100)
+        ),
+        source: .foregroundOpen,
+        pendingOperationID: nil,
+        updatedAt: Date(timeIntervalSince1970: 101)
     )
 }
 

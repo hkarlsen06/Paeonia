@@ -257,6 +257,84 @@ struct PaeoniaSyncServiceTests {
         #expect(readyOperations.map(\.operation.id) == [operation.id])
         #expect(readyOperations.first?.status == .retrying)
     }
+
+    @Test func privacyTransitionsUseTheExplicitOwnerAndDepartureScope() async {
+        let privacyPurger = RecordingSyncPrivacyPurger()
+        let coordinator = PaeoniaSyncService(
+            streams: [RecordingSyncStream(streamKey: .relationship)],
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
+            localPrivacyPurger: privacyPurger
+        )
+        await coordinator.configure(session: .test())
+
+        await coordinator.purgeRelationshipAccess(
+            ownerUserID: .testUserID,
+            permanently: false
+        )
+        await coordinator.purgeRelationshipAccess(
+            ownerUserID: .testUserID,
+            permanently: true
+        )
+        await coordinator.resetForUserChange()
+
+        #expect(
+            await privacyPurger.calls == [
+                SyncPrivacyPurgeCall(
+                    ownerUserID: .testUserID,
+                    scope: .relationshipAccessHidden
+                ),
+                SyncPrivacyPurgeCall(
+                    ownerUserID: .testUserID,
+                    scope: .relationshipContentPurged(clearAccessSnapshot: true)
+                ),
+                SyncPrivacyPurgeCall(ownerUserID: .testUserID, scope: .departingUser)
+            ]
+        )
+    }
+
+    @Test func departingPurgeWaitsForCancelledSyncWritesToSettle() async {
+        let stream = BlockingFirstPullSyncStream(streamKey: .relationship)
+        let privacyPurger = RecordingSyncPrivacyPurger()
+        let coordinator = PaeoniaSyncService(
+            streams: [stream],
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
+            localPrivacyPurger: privacyPurger
+        )
+        await coordinator.configure(session: .test())
+        let sync = Task { await coordinator.runOnce(reason: .manualRefresh) }
+        await stream.waitForFirstPull()
+
+        let reset = Task { await coordinator.resetForUserChange() }
+        for _ in 0..<100 {
+            await Task.yield()
+        }
+        #expect(await privacyPurger.calls.isEmpty)
+
+        await stream.releaseFirstPull()
+        await reset.value
+        _ = await sync.value
+
+        #expect(
+            await privacyPurger.calls == [
+                SyncPrivacyPurgeCall(ownerUserID: .testUserID, scope: .departingUser)
+            ]
+        )
+    }
+}
+
+private struct SyncPrivacyPurgeCall: Equatable, Sendable {
+    let ownerUserID: UUID
+    let scope: LocalPrivacyPurgeScope
+}
+
+private actor RecordingSyncPrivacyPurger: LocalPrivacyPurging {
+    private(set) var calls: [SyncPrivacyPurgeCall] = []
+
+    func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) {
+        calls.append(SyncPrivacyPurgeCall(ownerUserID: ownerUserID, scope: scope))
+    }
 }
 
 private actor AsyncCompletionProbe {

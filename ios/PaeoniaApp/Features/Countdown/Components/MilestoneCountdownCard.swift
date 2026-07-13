@@ -12,11 +12,36 @@ import SwiftUI
 /// `RelationshipMilestoneCalculator`, so it stays current: a new couple counts down
 /// to their first month, while a couple of years counts down to their next
 /// anniversary or their next round day count.
+///
+/// Tapping the card opens `RelationshipTimelineView` (days together, the milestones
+/// ahead, and the date editor). The heart burst is reserved for the milestone day
+/// itself and plays on its own when the card shows "Today".
 struct MilestoneCountdownCard: View {
     /// The couple's start date as an `yyyy-MM-dd` string (`couples.started_on`).
     let startedOn: String?
+    let isSaving: Bool
+    let onSave: (Date) async -> Bool
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isEditorPresented = false
+    @State private var isTimelinePresented = false
+    @State private var selectedDate = Date()
+    @State private var celebrationID = 0
+    @State private var isCelebrating = false
+    /// The milestone date last celebrated automatically, so re-renders on the
+    /// milestone day don't replay the burst.
+    @State private var celebratedMilestoneDate: Date?
+
+    init(
+        startedOn: String?,
+        isSaving: Bool = false,
+        onSave: @escaping (Date) async -> Bool = { _ in false }
+    ) {
+        self.startedOn = startedOn
+        self.isSaving = isSaving
+        self.onSave = onSave
+    }
 
     private var milestone: RelationshipMilestone? {
         guard let startedOn else { return nil }
@@ -26,57 +51,161 @@ struct MilestoneCountdownCard: View {
     }
 
     var body: some View {
-        if let milestone {
-            card(for: milestone)
-        } else {
-            // `started_on` is set when a couple pairs, so this is effectively
-            // unreachable for an active relationship. Hold the square footprint so
-            // the side-by-side tile grid doesn't reflow if it ever is missing.
-            Color.clear
-                .frame(maxWidth: .infinity)
-                .aspectRatio(1, contentMode: .fit)
+        Group {
+            if let milestone {
+                card(for: milestone)
+            } else {
+                setupCard
+            }
+        }
+        .sheet(isPresented: $isEditorPresented) {
+            RelationshipDateEditorView(
+                selectedDate: $selectedDate,
+                isEditing: milestone != nil,
+                isSaving: isSaving,
+                onSave: onSave
+            )
+        }
+        .sheet(isPresented: $isTimelinePresented) {
+            if let startedOn {
+                RelationshipTimelineView(
+                    startedOn: startedOn,
+                    isSaving: isSaving,
+                    onSave: onSave
+                )
+            }
         }
     }
 
     private func card(for milestone: RelationshipMilestone) -> some View {
-        VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
-            VStack(alignment: .center, spacing: PaeoniaSpacing.space4) {
-                countdown(for: milestone)
+        Button(action: { isTimelinePresented = true }) {
+            VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
+                VStack(alignment: .center, spacing: PaeoniaSpacing.space4) {
+                    countdown(for: milestone)
 
-                // The target date sits right under the count, so "25 days until" and
-                // "Saturday 25 July" read together as the countdown.
-                Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextTertiary)
+                    // The target date sits right under the count, so "25 days until"
+                    // and "Saturday 25 July" read together as the countdown.
+                    Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextTertiary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                        .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
+                }
+
+                // The milestone name follows as part of the same group.
+                Text(milestone.kind.displayName)
+                    .font(PaeoniaTypography.sectionTitle)
+                    .foregroundStyle(.paeoniaTextPrimary)
                     .multilineTextAlignment(.center)
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                    .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .accessibilityElement(children: .combine)
+            .milestoneTileChrome()
+            .overlay {
+                if isCelebrating {
+                    milestoneCelebration
+                        .id(celebrationID)
+                        .transition(.opacity)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(Text(.homeMilestoneTimelineAccessibilityHint))
+        .onAppear { celebrateIfMilestoneDay(milestone) }
+        .onChange(of: milestone) { _, milestone in
+            celebrateIfMilestoneDay(milestone)
+        }
+    }
 
-            // The milestone name follows as part of the same group.
-            Text(Self.subject(for: milestone.kind))
-                .font(PaeoniaTypography.sectionTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
+    private var setupCard: some View {
+        Button(action: presentEditor) {
+            VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
+                Image(systemName: "calendar.badge.plus")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .center, spacing: PaeoniaSpacing.space4) {
+                    Text(.homeMilestoneSetupTitle)
+                        .font(PaeoniaTypography.sectionTitle)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .multilineTextAlignment(.center)
+
+                    Text(.homeMilestoneSetupMessage)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
+                }
+            }
+            .milestoneTileChrome()
         }
-        // Match the side-by-side tiles in the same row: same fill, square footprint,
-        // rounded corners, hairline stroke, and lift as the widget drawing tile.
-        // Centre the content both vertically (no Spacer) and horizontally so the count,
-        // date, and name read as one centred group with even space around it, instead of
-        // being pinned to the top and bottom edges or the leading edge.
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .padding(PaeoniaSpacing.space16)
-        .aspectRatio(1, contentMode: .fit)
-        .background(.paeoniaBackgroundPrimary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-                .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+        .buttonStyle(.plain)
+        .accessibilityHint(Text(.homeMilestoneSetupAccessibilityHint))
+    }
+
+    private var milestoneCelebration: some View {
+        ZStack {
+            if reduceMotion {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 42, weight: .semibold))
+                    .foregroundStyle(.paeoniaAccentPrimary)
+            } else {
+                Circle()
+                    .fill(.paeoniaAccentPrimary.opacity(0.16))
+                    .frame(width: 92, height: 92)
+                    .blur(radius: 8)
+
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 42, weight: .semibold))
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .symbolEffect(.bounce, value: celebrationID)
+
+                ForEach(0..<8, id: \.self) { index in
+                    Image(systemName: index.isMultiple(of: 2) ? "heart.fill" : "sparkle")
+                        .font(.system(size: index.isMultiple(of: 2) ? 12 : 15, weight: .semibold))
+                        .foregroundStyle(index.isMultiple(of: 3) ? .paeoniaAccentSecondary : .paeoniaAccentPrimary)
+                        .offset(
+                            x: cos(Double(index) * .pi / 4) * 58,
+                            y: sin(Double(index) * .pi / 4) * 58
+                        )
+                }
+            }
         }
-        .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
-        .accessibilityElement(children: .combine)
+        .accessibilityHidden(true)
+        .allowsHitTesting(false)
+    }
+
+    /// Plays the heart burst once when the card is showing "Today" — the moment is
+    /// earned by reaching the milestone, not by tapping. Tapping opens the timeline.
+    private func celebrateIfMilestoneDay(_ milestone: RelationshipMilestone) {
+        guard milestone.daysRemaining == 0, celebratedMilestoneDate != milestone.date else { return }
+        celebratedMilestoneDate = milestone.date
+        celebrate()
+    }
+
+    private func celebrate() {
+        celebrationID += 1
+        PaeoniaHaptics.milestoneReached()
+        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : PaeoniaMotion.celebrationReveal) {
+            isCelebrating = true
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(reduceMotion ? 500 : 1_400))
+            withAnimation(.easeOut(duration: 0.2)) {
+                isCelebrating = false
+            }
+        }
+    }
+
+    private func presentEditor() {
+        selectedDate = startedOn
+            .flatMap { try? PairingStartDate(rawValue: $0) }
+            .flatMap { $0.date() }
+            ?? Date()
+        isEditorPresented = true
     }
 
     @ViewBuilder
@@ -124,23 +253,24 @@ struct MilestoneCountdownCard: View {
         }
         .lineLimit(1)
     }
+}
 
-    /// The milestone name shown under the countdown (e.g. "Your first month together").
-    private static func subject(for kind: RelationshipMilestone.Kind) -> LocalizedStringResource {
-        switch kind {
-        case .firstMonth:
-            .homeMilestoneTitleFirstMonth
-        case let .months(months):
-            .homeMilestoneTitleMonths(months.formatted())
-        case .halfYear:
-            .homeMilestoneTitleHalfYear
-        case .firstAnniversary:
-            .homeMilestoneTitleFirstAnniversary
-        case let .years(years):
-            .homeMilestoneTitleYears(years.formatted())
-        case let .days(days):
-            .homeMilestoneTitleDays(days.formatted())
-        }
+private extension View {
+    /// The Us-tab tile treatment shared with the widget drawing card in the same
+    /// row: square footprint, tile fill, rounded corners, hairline stroke, and
+    /// lift. Content is centred both ways so it reads as one group with even
+    /// space around it.
+    func milestoneTileChrome() -> some View {
+        frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .padding(PaeoniaSpacing.space16)
+            .aspectRatio(1, contentMode: .fit)
+            .background(.paeoniaBackgroundPrimary)
+            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
+                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+            }
+            .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
     }
 }
 

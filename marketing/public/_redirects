@@ -8,7 +8,7 @@
 /support /en/support/ 302
 /support/ /en/support/ 302
 
-# Invite links are served by the static join page until iOS universal links are wired.
+# Browsers that do not hand an invite to the installed app use the static join fallback.
 /join/* /join/ 200
 
 # Pass through Next/static assets.

@@ -25,17 +25,8 @@ struct PaeoniaAppTests {
         ])
     }
 
-    @Test func mainTabSwipeOrderUsesVisibleTabOrder() {
-        #expect(MainTab.home.tab(offsetBy: 1) == .questions)
-        #expect(MainTab.questions.tab(offsetBy: 1) == .memories)
-        #expect(MainTab.memories.tab(offsetBy: 1) == .you)
-
-        #expect(MainTab.you.tab(offsetBy: -1) == .memories)
-        #expect(MainTab.memories.tab(offsetBy: -1) == .questions)
-        #expect(MainTab.questions.tab(offsetBy: -1) == .home)
-
-        #expect(MainTab.home.tab(offsetBy: -1) == nil)
-        #expect(MainTab.you.tab(offsetBy: 1) == nil)
+    @Test func mainTabsRemainInVisibleOrder() {
+        #expect(MainTab.allCases == [.home, .questions, .memories, .you])
     }
 
     @MainActor
@@ -72,10 +63,13 @@ struct PaeoniaAppTests {
     @MainActor
     @Test func completedProfileUsesAccessRouteForVisibleState() async {
         let accessRouteService = StaticAccessRouteService(route: .unpaired)
+        let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
+        let syncService = TestPaeoniaSyncService()
         let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
+            syncService: syncService,
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: accessRouteService
+            accessRouteService: accessRouteService,
+            accessSnapshotStore: accessSnapshotStore
         )
 
         await viewModel.start()
@@ -83,10 +77,40 @@ struct PaeoniaAppTests {
         #expect(viewModel.authRoute.appState == .limitedAuthenticated)
         #expect(viewModel.state == .unpaired)
         #expect(await accessRouteService.resolveCallCount == 1)
+        // A person who has never paired has no stale relationship data to
+        // purge; preserving local invite work is intentional.
+        #expect(await syncService.relationshipAccessPurgePermanence.isEmpty)
     }
 
     @MainActor
-    @Test func paywalledPairStartsOnlyUserScopedSync() async {
+    @Test func coldLaunchPurgesStaleRelationshipWhenCurrentSnapshotIsUnpaired() async throws {
+        let ownerUserID = try #require(
+            UUID(uuidString: "11111111-1111-1111-1111-111111111111")
+        )
+        let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
+        try await accessSnapshotStore.save(
+            .testPaired(ownerUserID: ownerUserID)
+        )
+        let syncService = TestPaeoniaSyncService()
+        let viewModel = RootViewModel(
+            syncService: syncService,
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: StaticAccessRouteService(route: .unpaired),
+            accessSnapshotStore: accessSnapshotStore
+        )
+
+        await viewModel.start()
+
+        #expect(viewModel.state == .unpaired)
+        #expect(await syncService.relationshipAccessPurgePermanence == [true])
+        #expect(await syncService.relationshipAccessPurgeOwnerUserIDs == [ownerUserID])
+    }
+
+    @MainActor
+    @Test func paywalledPairStartsOnlyUserScopedSync() async throws {
+        let ownerUserID = try #require(
+            UUID(uuidString: "11111111-1111-1111-1111-111111111111")
+        )
         let syncService = TestPaeoniaSyncService()
         let viewModel = RootViewModel(
             syncService: syncService,
@@ -101,20 +125,28 @@ struct PaeoniaAppTests {
         let configuredSessions = await syncService.configuredSessions
         let latestSession = configuredSessions.last ?? nil
         #expect(latestSession?.activeCoupleID == nil)
+        #expect(latestSession?.relationshipCoupleID == viewModel.currentActiveCoupleID)
+        #expect(await syncService.relationshipAccessPurgePermanence == [false])
+        #expect(
+            await syncService.relationshipAccessPurgeOwnerUserIDs
+                == [ownerUserID]
+        )
     }
 
     @MainActor
     @Test func acknowledgingRelationshipEndedMarksNoticeSeenAndResolvesToUnpaired() async {
         let coupleID = UUID()
         let accessRouteService = RelationshipEndedAccessRouteService(coupleID: coupleID)
+        let syncService = TestPaeoniaSyncService()
         let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
+            syncService: syncService,
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
             accessRouteService: accessRouteService
         )
 
         await viewModel.start()
         #expect(viewModel.state == .relationshipEndedNotice)
+        #expect(await syncService.relationshipAccessPurgePermanence == [true])
 
         await viewModel.acknowledgeRelationshipEnded()
 
@@ -122,6 +154,9 @@ struct PaeoniaAppTests {
         #expect(viewModel.notice == nil)
         #expect(viewModel.isWorking == false)
         #expect(await accessRouteService.markedCoupleIDs == [coupleID])
+        // The acknowledged stale relationship still requires the same
+        // idempotent permanent purge before the unpaired route is committed.
+        #expect(await syncService.relationshipAccessPurgePermanence == [true, true])
     }
 
     @MainActor
@@ -642,8 +677,9 @@ struct PaeoniaAppTests {
     @MainActor
     @Test func deleteAccountShowsDeletingStateBeforeClearingSession() async throws {
         let authService = BlockingDeleteAuthService()
+        let syncService = TestPaeoniaSyncService()
         let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
+            syncService: syncService,
             authService: authService,
             accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
@@ -664,16 +700,67 @@ struct PaeoniaAppTests {
         #expect(viewModel.state == .unauthenticated)
         #expect(viewModel.authRoute == .signedOut)
         #expect(try await authService.restoreSession() == nil)
+        #expect(await syncService.resetCallCount == 1)
+    }
+
+    @MainActor
+    @Test func pairedProfileUpdateCommitsSessionAndRequestsSync() async throws {
+        let syncService = TestPaeoniaSyncService()
+        let authService = AuthServiceSpy(session: .test(profileStatus: .complete))
+        let viewModel = RootViewModel(
+            syncService: syncService,
+            authService: authService,
+            accessRouteService: StaticAccessRouteService(route: .paired)
+        )
+
+        await viewModel.start()
+        let updated = await viewModel.updateCurrentProfile(
+            displayName: "Jamie",
+            profilePhotoUpdate: .replace(Data([1, 2, 3]))
+        )
+
+        #expect(updated)
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.currentSession?.displayName == "Jamie")
+        #expect(
+            viewModel.currentSession?.profilePhotoAssetID
+                == UUID(uuidString: "99999999-9999-9999-9999-999999999999")
+        )
+        #expect(await syncService.runOnceReasons == [.localChange])
+    }
+
+    @MainActor
+    @Test func failedPairedProfileUpdateKeepsStableSession() async {
+        let authService = AuthServiceSpy(
+            session: .test(profileStatus: .complete),
+            failingOperations: [.updateProfile]
+        )
+        let viewModel = RootViewModel(
+            syncService: TestPaeoniaSyncService(),
+            authService: authService,
+            accessRouteService: StaticAccessRouteService(route: .paired)
+        )
+
+        await viewModel.start()
+        let updated = await viewModel.updateCurrentProfile(
+            displayName: "Jamie",
+            profilePhotoUpdate: .unchanged
+        )
+
+        #expect(!updated)
+        #expect(viewModel.state == .paired)
+        #expect(viewModel.currentSession?.displayName == "Test account")
     }
 
     @MainActor
     @Test func deleteFailureRestoresPreviousRoute() async {
+        let syncService = TestPaeoniaSyncService()
         let authService = AuthServiceSpy(
             session: .test(profileStatus: .complete),
             failingOperations: [.requestAccountDeletion]
         )
         let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
+            syncService: syncService,
             authService: authService,
             accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
         )
@@ -684,6 +771,29 @@ struct PaeoniaAppTests {
         #expect(viewModel.state == .limitedAuthenticated)
         #expect(viewModel.currentSession?.profileStatus == .complete)
         #expect(viewModel.notice == .deleteAccountFailed)
+        #expect(await syncService.resetCallCount == 0)
+    }
+
+    @MainActor
+    @Test func appleDeletionFallbackSignsOutAndShowsManualRevocationStep() async {
+        let authService = AuthServiceSpy(
+            session: .test(profileStatus: .complete),
+            accountDeletionOutcome: .manualAppleRevocationRequired
+        )
+        let viewModel = RootViewModel(
+            syncService: TestPaeoniaSyncService(),
+            authService: authService,
+            accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
+        )
+
+        await viewModel.start()
+        await viewModel.deleteAccount(appleAuthorizationCode: nil)
+
+        #expect(viewModel.state == .unauthenticated)
+        #expect(viewModel.requiresManualAppleRevocation)
+
+        viewModel.dismissManualAppleRevocation()
+        #expect(!viewModel.requiresManualAppleRevocation)
     }
 
     @MainActor
@@ -761,6 +871,8 @@ private actor TestPaeoniaSyncService: PaeoniaSyncing {
     private(set) var runOnceReasons: [SyncRequestReason] = []
     private(set) var configuredSessions: [SyncSession?] = []
     private(set) var resetCallCount = 0
+    private(set) var relationshipAccessPurgeOwnerUserIDs: [UUID] = []
+    private(set) var relationshipAccessPurgePermanence: [Bool] = []
 
     func configure(session: SyncSession?) {
         configuredSessions.append(session)
@@ -787,8 +899,13 @@ private actor TestPaeoniaSyncService: PaeoniaSyncing {
 
     func stop() {}
 
-    func resetForUserChange() {
+    func resetForUserChange() async {
         resetCallCount += 1
+    }
+
+    func purgeRelationshipAccess(ownerUserID: UUID, permanently: Bool) async {
+        relationshipAccessPurgeOwnerUserIDs.append(ownerUserID)
+        relationshipAccessPurgePermanence.append(permanently)
     }
 }
 
@@ -1150,7 +1267,9 @@ private actor OrderedPaeoniaSyncService: PaeoniaSyncing {
 
     func stop() {}
 
-    func resetForUserChange() {}
+    func resetForUserChange() async {}
+
+    func purgeRelationshipAccess(ownerUserID _: UUID, permanently _: Bool) async {}
 }
 
 private actor OrderedAuthService: AuthServicing {
@@ -1192,9 +1311,27 @@ private actor OrderedAuthService: AuthServicing {
         .test(profileStatus: .complete)
     }
 
+    func updateProfile(
+        displayName: String,
+        profilePhotoUpdate: AuthProfilePhotoUpdate
+    ) async throws -> AuthSession {
+        AuthSession(
+            id: "11111111-1111-1111-1111-111111111111",
+            provider: .development,
+            displayName: displayName,
+            timeZoneID: "Europe/Oslo",
+            profilePhotoAssetID: nil,
+            profileStatus: .complete
+        )
+    }
+
     func signOut() async throws {}
 
-    func requestAccountDeletion() async throws {}
+    func requestAccountDeletion(
+        appleAuthorizationCode: String?
+    ) async throws -> AccountDeletionOutcome {
+        .completed
+    }
 }
 
 private extension PairingInvite {

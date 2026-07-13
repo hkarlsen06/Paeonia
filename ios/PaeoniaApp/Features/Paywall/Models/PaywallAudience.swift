@@ -30,6 +30,28 @@ nonisolated enum PaywallAudience: Equatable, Sendable {
         }
     }
 
+    func headlineTitle(hasFreeTrial: Bool) -> LocalizedStringResource {
+        switch self {
+        case .unpaired:
+            hasFreeTrial ? .paywallTrialTitle : .paywallTitle
+        case .paired:
+            .paywallPairedTitle(partnerNameForCopy)
+        }
+    }
+
+    func subtitle(hasFreeTrial: Bool) -> LocalizedStringResource {
+        switch (self, hasFreeTrial) {
+        case (.unpaired, true):
+            .paywallTrialSubtitle
+        case (.unpaired, false):
+            .paywallSubtitle
+        case (.paired, true):
+            .paywallPairedTrialSubtitle
+        case (.paired, false):
+            .paywallPairedSubtitle
+        }
+    }
+
     /// The partner's display name for copy, falling back to a neutral phrase when
     /// the name has not loaded yet.
     var partnerNameForCopy: String {

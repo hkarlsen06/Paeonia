@@ -11,8 +11,36 @@ nonisolated protocol ProfilePhotoImageProviding: Sendable {
     func profilePhotoData(for mediaAssetID: UUID?) async -> Data?
 }
 
+nonisolated protocol ProfilePhotoImageCacheClearing: Sendable {
+    func clearAll() async
+}
+
+nonisolated protocol ProfilePhotoImageInvalidating: Sendable {
+    func invalidate(mediaAssetID: UUID) async
+}
+
+nonisolated struct ProfilePhotoDownload: Sendable {
+    let data: Data
+    let statusCode: Int?
+}
+
+nonisolated protocol ProfilePhotoDataDownloading: Sendable {
+    func download(from url: URL) async throws -> ProfilePhotoDownload
+}
+
+nonisolated struct URLSessionProfilePhotoDataDownloader: ProfilePhotoDataDownloading {
+    func download(from url: URL) async throws -> ProfilePhotoDownload {
+        let (data, response) = try await URLSession.shared.data(from: url)
+        return ProfilePhotoDownload(
+            data: data,
+            statusCode: (response as? HTTPURLResponse)?.statusCode
+        )
+    }
+}
+
 nonisolated enum ProfilePhotoImageProviderFactory {
-    static let shared: (any ProfilePhotoImageProviding)? = try? ProfilePhotoImageService.live()
+    static let shared: (any ProfilePhotoImageProviding)? = ProfilePhotoImageService.shared
+    static let cacheInvalidator: (any ProfilePhotoImageInvalidating)? = ProfilePhotoImageService.shared
 }
 
 final class FileProfilePhotoImageCache: @unchecked Sendable, ProfilePhotoImageCaching {
@@ -74,17 +102,28 @@ final class FileProfilePhotoImageCache: @unchecked Sendable, ProfilePhotoImageCa
     }
 }
 
-actor ProfilePhotoImageService: ProfilePhotoImageProviding {
+actor ProfilePhotoImageService:
+    ProfilePhotoImageProviding,
+    ProfilePhotoImageCacheClearing,
+    ProfilePhotoImageInvalidating
+{
+    nonisolated static let shared: ProfilePhotoImageService? = try? live()
+
     private let cache: any ProfilePhotoImageCaching
     private let urlProvider: any ProfilePhotoURLProviding
+    private let downloader: any ProfilePhotoDataDownloading
     private var inFlightDownloads: [UUID: Task<Data?, Never>] = [:]
+    private var invalidatedMediaAssetIDs = Set<UUID>()
+    private var privacyGeneration: UInt64 = 0
 
     init(
         cache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
-        urlProvider: any ProfilePhotoURLProviding
+        urlProvider: any ProfilePhotoURLProviding,
+        downloader: any ProfilePhotoDataDownloading = URLSessionProfilePhotoDataDownloader()
     ) {
         self.cache = cache
         self.urlProvider = urlProvider
+        self.downloader = downloader
     }
 
     nonisolated static func live() throws -> ProfilePhotoImageService {
@@ -92,7 +131,7 @@ actor ProfilePhotoImageService: ProfilePhotoImageProviding {
     }
 
     func profilePhotoData(for mediaAssetID: UUID?) async -> Data? {
-        guard let mediaAssetID else {
+        guard let mediaAssetID, !invalidatedMediaAssetIDs.contains(mediaAssetID) else {
             return nil
         }
 
@@ -104,31 +143,70 @@ actor ProfilePhotoImageService: ProfilePhotoImageProviding {
             return await inFlightDownload.value
         }
 
-        let download = Task { await fetchAndCache(mediaAssetID: mediaAssetID) }
+        let requestedPrivacyGeneration = privacyGeneration
+        let download = Task {
+            await fetchAndCache(
+                mediaAssetID: mediaAssetID,
+                privacyGeneration: requestedPrivacyGeneration
+            )
+        }
         inFlightDownloads[mediaAssetID] = download
         let data = await download.value
         inFlightDownloads[mediaAssetID] = nil
         return data
     }
 
-    private func fetchAndCache(mediaAssetID: UUID) async -> Data? {
+    func clearAll() async {
+        privacyGeneration &+= 1
+        let downloads = Array(inFlightDownloads.values)
+        downloads.forEach { $0.cancel() }
+        for download in downloads {
+            _ = await download.value
+        }
+        inFlightDownloads.removeAll()
+        try? await cache.removeAllProfilePhotoData()
+    }
+
+    func invalidate(mediaAssetID: UUID) async {
+        invalidatedMediaAssetIDs.insert(mediaAssetID)
+        if let download = inFlightDownloads.removeValue(forKey: mediaAssetID) {
+            download.cancel()
+            _ = await download.value
+        }
+        try? await cache.removeProfilePhotoData(for: mediaAssetID)
+    }
+
+    private func fetchAndCache(
+        mediaAssetID: UUID,
+        privacyGeneration requestedPrivacyGeneration: UInt64
+    ) async -> Data? {
         guard let signedURL = try? await urlProvider.signedProfilePhotoURL(for: mediaAssetID) else {
             return nil
         }
 
         do {
-            let (data, response) = try await URLSession.shared.data(from: signedURL)
-            guard !Task.isCancelled else {
+            let download = try await downloader.download(from: signedURL)
+            guard !Task.isCancelled,
+                  requestedPrivacyGeneration == privacyGeneration,
+                  !invalidatedMediaAssetIDs.contains(mediaAssetID)
+            else {
                 return nil
             }
 
-            if let httpResponse = response as? HTTPURLResponse,
-               !(200..<300).contains(httpResponse.statusCode) {
+            if let statusCode = download.statusCode,
+               !(200..<300).contains(statusCode) {
                 return nil
             }
 
-            try? await cache.storeProfilePhotoData(data, for: mediaAssetID)
-            return data
+            try? await cache.storeProfilePhotoData(download.data, for: mediaAssetID)
+            guard !Task.isCancelled,
+                  requestedPrivacyGeneration == privacyGeneration,
+                  !invalidatedMediaAssetIDs.contains(mediaAssetID)
+            else {
+                try? await cache.removeProfilePhotoData(for: mediaAssetID)
+                return nil
+            }
+            return download.data
         } catch {
             return nil
         }

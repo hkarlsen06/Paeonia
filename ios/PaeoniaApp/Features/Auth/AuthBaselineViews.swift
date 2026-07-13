@@ -24,6 +24,7 @@ struct AuthOnboardingView: View {
     let isWorking: Bool
     let onCompleteOnboarding: (String, Data?) -> Void
     let onSignOut: () -> Void
+    let onDeleteAccount: () -> Void
 
     @State private var displayName: String
     @State private var selectedProfilePhotoItem: PhotosPickerItem?
@@ -31,17 +32,20 @@ struct AuthOnboardingView: View {
     @State private var selectedProfilePhotoImage: Image?
     @State private var profilePhotoCropDraft: ProfilePhotoCropDraft?
     @State private var isResettingProfilePhotoPicker = false
+    @State private var isConfirmingDelete = false
 
     init(
         session: AuthSession?,
         isWorking: Bool,
         onCompleteOnboarding: @escaping (String, Data?) -> Void,
-        onSignOut: @escaping () -> Void
+        onSignOut: @escaping () -> Void,
+        onDeleteAccount: @escaping () -> Void
     ) {
         self.session = session
         self.isWorking = isWorking
         self.onCompleteOnboarding = onCompleteOnboarding
         self.onSignOut = onSignOut
+        self.onDeleteAccount = onDeleteAccount
         _displayName = State(initialValue: session?.displayName ?? "")
     }
 
@@ -58,6 +62,20 @@ struct AuthOnboardingView: View {
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity, alignment: .top)
         .keyboardDismissable()
+        .alert(
+            Text(.authDeleteAccountConfirmTitle),
+            isPresented: $isConfirmingDelete
+        ) {
+            Button(role: .destructive, action: onDeleteAccount) {
+                Text(.authDeleteAccountConfirmAction)
+            }
+
+            Button(role: .cancel, action: {}) {
+                Text(.authDeleteAccountConfirmCancel)
+            }
+        } message: {
+            Text(.authDeleteAccountConfirmMessage)
+        }
     }
 
     private var onboardingMessage: LocalizedStringResource {
@@ -119,6 +137,7 @@ struct AuthOnboardingView: View {
         VStack(spacing: PaeoniaSpacing.space12) {
             completeButton
             signOutButton
+            deleteAccountButton
         }
     }
 
@@ -168,6 +187,23 @@ struct AuthOnboardingView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(PaeoniaQuietButtonStyle())
+        .disabled(isWorking)
+    }
+
+    private var deleteAccountButton: some View {
+        Button {
+            isConfirmingDelete = true
+        } label: {
+            Label {
+                Text(.authDeleteAccountButton)
+            } icon: {
+                Image(systemName: "trash.fill")
+                    .accessibilityHidden(true)
+            }
+            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PaeoniaQuietDestructiveButtonStyle())
         .disabled(isWorking)
     }
 

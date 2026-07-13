@@ -17,6 +17,8 @@ nonisolated protocol DailyAnswerMediaCacheClearing: Sendable {
 /// service: check the on-disk cache first, otherwise resolve a signed URL through
 /// `get_media_signed_url`, download, and cache by media asset id.
 actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerMediaCacheClearing {
+    nonisolated static let shared: DailyAnswerMediaImageService? = try? live()
+
     private let client: SupabaseClient
     private let directoryURL: URL
     private let expiresInSeconds = 3_600

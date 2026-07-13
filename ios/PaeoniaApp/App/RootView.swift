@@ -8,16 +8,19 @@ struct RootView: View {
     @State private var bannerCenter = PaeoniaBannerCenter()
     @State private var isLaunchExperienceActive = true
     @State private var launchContentRevealed = false
-    @State private var lastKnownAuthenticatedUserID: UUID?
+    @State private var isPushPermissionPrimerPresented = false
+    @State private var isPushPermissionPrimerEvaluationInFlight = false
     @Binding private var deepLink: PaeoniaDeepLink?
     @Binding private var pendingJoinInviteCode: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     private let appleSignInProvider: any AppleSignInProviding
     private let googleSignInProvider: any GoogleSignInProviding
     private let widgetCanvasService: any WidgetCanvasManaging
     private let widgetCanvasSync: any WidgetCanvasSyncing
     private let pushAuthorization: any PushAuthorizationProviding
+    private let pushPermissionPrimerStore: any PushPermissionPrimerPersisting
     private let widgetPushRegistration: any WidgetPushRegistering
     private let partnerAvatarSharing: (any PartnerAvatarSharing)?
 
@@ -32,6 +35,7 @@ struct RootView: View {
         widgetCanvasService: (any WidgetCanvasManaging)? = nil,
         widgetCanvasSync: (any WidgetCanvasSyncing)? = nil,
         pushAuthorization: (any PushAuthorizationProviding)? = nil,
+        pushPermissionPrimerStore: (any PushPermissionPrimerPersisting)? = nil,
         widgetPushRegistration: (any WidgetPushRegistering)? = nil,
         partnerAvatarSharing: (any PartnerAvatarSharing)? = nil
     ) {
@@ -44,6 +48,7 @@ struct RootView: View {
         self.widgetCanvasService = widgetCanvasService ?? WidgetCanvasService.shared
         self.widgetCanvasSync = widgetCanvasSync ?? WidgetCanvasSyncServiceFactory.makeDefault()
         self.pushAuthorization = pushAuthorization ?? PushAuthorizationService()
+        self.pushPermissionPrimerStore = pushPermissionPrimerStore ?? UserDefaultsPushPermissionPrimerStore()
         self.widgetPushRegistration = widgetPushRegistration ?? WidgetPushRegistrationServiceFactory.makeDefault()
         self.partnerAvatarSharing = partnerAvatarSharing ?? PartnerAvatarSharingServiceFactory.makeDefault()
     }
@@ -90,9 +95,13 @@ struct RootView: View {
                 PaeoniaNotificationRouter.shared.consumeForegroundNotice()
             }
             .onChange(of: viewModel.state) { _, state in
-                clearWidgetIfNeeded(for: state)
                 syncWidgetIfPaired(state)
-                requestPushAuthorizationIfPaired(state)
+                presentPushPermissionPrimerIfNeeded(for: state)
+            }
+            .onChange(of: viewModel.isPairingCelebrationPresented) { _, isPresented in
+                if !isPresented {
+                    presentPushPermissionPrimerIfNeeded(for: viewModel.state)
+                }
             }
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else {
@@ -114,7 +123,6 @@ struct RootView: View {
             .onChange(of: viewModel.currentSession?.id, initial: true) { _, sessionID in
                 // Once signed in, get an APNs token so the backend can send the
                 // silent push that wakes us to sync a partner's drawing.
-                rememberAuthenticatedUser(sessionID)
                 registerForRemoteNotificationsIfSignedIn(sessionID)
             }
             .paeoniaTopBanner(bannerCenter) {
@@ -122,6 +130,45 @@ struct RootView: View {
                 // same destination the notification tap routes to.
                 viewModel.openWidgetDrawing()
             }
+            .alert(
+                Text(.authDeleteAccountAppleManualTitle),
+                isPresented: manualAppleRevocationBinding
+            ) {
+                Button {
+                    viewModel.dismissManualAppleRevocation()
+                    if let url = URL(string: "https://account.apple.com/") {
+                        openURL(url)
+                    }
+                } label: {
+                    Text(.authDeleteAccountAppleManualOpenButton)
+                }
+
+                Button(role: .cancel) {
+                    viewModel.dismissManualAppleRevocation()
+                } label: {
+                    Text(.authDeleteAccountAppleManualDoneButton)
+                }
+            } message: {
+                Text(.authDeleteAccountAppleManualMessage)
+            }
+            .sheet(isPresented: $isPushPermissionPrimerPresented) {
+                PushPermissionPrimerView(
+                    partnerName: pushPermissionPrimerPartnerName,
+                    onEnable: enablePushNotifications,
+                    onNotNow: dismissPushPermissionPrimer
+                )
+            }
+    }
+
+    private var manualAppleRevocationBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.requiresManualAppleRevocation },
+            set: { isPresented in
+                if !isPresented {
+                    viewModel.dismissManualAppleRevocation()
+                }
+            }
+        )
     }
 
     private var widgetDrawingPresented: Binding<Bool> {
@@ -161,7 +208,10 @@ struct RootView: View {
                 LaunchExperienceView(
                     contentReady: !isLaunching,
                     onRevealContent: { launchContentRevealed = true },
-                    onFinished: { isLaunchExperienceActive = false }
+                    onFinished: {
+                        isLaunchExperienceActive = false
+                        presentPushPermissionPrimerIfNeeded(for: viewModel.state)
+                    }
                 )
                 .transition(.identity)
                 .zIndex(1)
@@ -292,7 +342,8 @@ struct RootView: View {
                     session: viewModel.currentSession,
                     isWorking: viewModel.isWorking,
                     onCompleteOnboarding: completeOnboarding,
-                    onSignOut: signOut
+                    onSignOut: signOut,
+                    onDeleteAccount: deleteAccount
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
@@ -319,6 +370,9 @@ struct RootView: View {
                     currentUserID: viewModel.currentSession.flatMap { UUID(uuidString: $0.id) },
                     currentDisplayName: viewModel.currentSession?.displayName,
                     currentProfilePhotoAssetID: viewModel.currentProfilePhotoAssetID,
+                    currentCustomProfilePhotoAssetID: viewModel.currentCustomProfilePhotoAssetID,
+                    currentProviderProfilePhotoAssetID: viewModel.currentProviderProfilePhotoAssetID,
+                    currentAuthProvider: viewModel.currentSession?.provider,
                     partnerUserID: viewModel.currentPartnerUserID,
                     partnerDisplayName: viewModel.currentPartnerDisplayName,
                     partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
@@ -334,9 +388,20 @@ struct RootView: View {
                     onHomeRefresh: { await refreshHomeSurfacesFromPull() },
                     onDailyChallengeRefresh: { await viewModel.refreshFromHomePull() },
                     onDailyChallengeLocalChange: { await viewModel.syncAfterLocalChange() },
+                    onRelationshipStartedOnLocalChange: { await viewModel.syncAfterLocalChange() },
                     onMemoriesLocalChange: { await viewModel.syncAfterLocalChange() },
                     onLeftRelationship: refreshPairing,
-                    onLogout: signOut
+                    onLogout: signOut,
+                    onDeleteAccount: deleteAccount,
+                    onUpdateProfile: { displayName, profilePhotoUpdate in
+                        await viewModel.updateCurrentProfile(
+                            displayName: displayName,
+                            profilePhotoUpdate: profilePhotoUpdate
+                        )
+                    },
+                    onPurchasesRestored: {
+                        await viewModel.refreshAfterSubscriptionChange()
+                    }
                 )
                 .transition(
                     .asymmetric(
@@ -469,13 +534,38 @@ struct RootView: View {
     private func signOut() {
         Task {
             await viewModel.signOut()
+            finishDepartingUserCleanup()
         }
     }
 
     private func deleteAccount() {
         Task {
-            await viewModel.deleteAccount()
+            let authorizationCode: String?
+            if viewModel.currentSession?.provider == .apple {
+                let credential = try? await appleSignInProvider.signIn()
+                authorizationCode = credential?.authorizationCode
+            } else {
+                authorizationCode = nil
+            }
+
+            // If Apple re-authentication is cancelled or unavailable, deletion
+            // still proceeds and the server records Apple's documented manual
+            // revocation fallback.
+            await viewModel.deleteAccount(appleAuthorizationCode: authorizationCode)
+            finishDepartingUserCleanup()
         }
+    }
+
+    /// Provider identity and invite codes must not carry into the next app
+    /// account. Keep both intact when an account action fails, and clear them
+    /// only after the current user has actually departed.
+    private func finishDepartingUserCleanup() {
+        guard viewModel.state == .unauthenticated else {
+            return
+        }
+
+        googleSignInProvider.signOut()
+        pendingJoinInviteCode = nil
     }
 
     private func subscriptionChanged() {
@@ -542,42 +632,10 @@ struct RootView: View {
                 viewModel.selectMainTab(.home)
             }
             self.deepLink = nil
+        case .subscription:
+            openURL(PaeoniaDeepLink.appStoreSubscriptionsURL)
+            self.deepLink = nil
         }
-    }
-
-    /// Keeps private content off the device the moment the app leaves the paired
-    /// state (sign out, account deletion, lost access, ended relationship): the
-    /// Home Screen drawing, the partner avatar, and any staged or cached daily-answer
-    /// photos. Never fires for `.launching`, so a paired user's content survives
-    /// across launches.
-    private func clearWidgetIfNeeded(for state: AppState) {
-        guard state != .paired, state != .launching else {
-            return
-        }
-
-        let ownerUserID = viewModel.currentSession
-            .flatMap { UUID(uuidString: $0.id) }
-            ?? lastKnownAuthenticatedUserID
-
-        Task {
-            await widgetCanvasService.clearForPrivacy()
-            await partnerAvatarSharing?.clear()
-            FileDailyAnswerMediaDraftStore.live().clearAll()
-            FileDailyChallengeSnapshotCache.live().clearAll()
-            await (try? DailyAnswerMediaImageService.live())?.clearAll()
-            await (try? MemoryMediaImageService.live())?.clearAll()
-            if let ownerUserID {
-                await MemoryDataServiceFactory.clearForPrivacy(ownerUserID: ownerUserID)
-            }
-        }
-    }
-
-    private func rememberAuthenticatedUser(_ sessionID: String?) {
-        guard let sessionID, let userID = UUID(uuidString: sessionID) else {
-            return
-        }
-
-        lastKnownAuthenticatedUserID = userID
     }
 
     /// Pulls the partner's latest drawing (and our own latest) into the widget
@@ -627,17 +685,65 @@ struct RootView: View {
         await locationViewModel.reload()
     }
 
-    /// Asks for notification permission once the couple is paired (the first
-    /// moment a partner can send a drawing). The request only prompts when the
-    /// status is still undetermined, so repeated paired transitions are no-ops.
-    private func requestPushAuthorizationIfPaired(_ state: AppState) {
-        guard state == .paired else {
+    /// Offers one calm, persisted explanation after pairing, once both the cold
+    /// launch and pairing celebration are out of the way. The system dialog is
+    /// only requested after the user explicitly continues from this primer.
+    private func presentPushPermissionPrimerIfNeeded(for state: AppState) {
+        guard state == .paired,
+              !isLaunchExperienceActive,
+              !viewModel.isPairingCelebrationPresented,
+              !isPushPermissionPrimerPresented,
+              !isPushPermissionPrimerEvaluationInFlight,
+              !pushPermissionPrimerStore.hasResponded()
+        else {
             return
         }
 
-        Task {
-            await pushAuthorization.requestAuthorizationIfNeeded()
+        isPushPermissionPrimerEvaluationInFlight = true
+        Task { @MainActor in
+            let isNotDetermined = await pushAuthorization.isNotDetermined()
+            isPushPermissionPrimerEvaluationInFlight = false
+
+            guard viewModel.state == .paired,
+                  !isLaunchExperienceActive,
+                  !viewModel.isPairingCelebrationPresented,
+                  !pushPermissionPrimerStore.hasResponded()
+            else {
+                return
+            }
+
+            if isNotDetermined {
+                isPushPermissionPrimerPresented = true
+            } else {
+                // A prior system choice makes the primer irrelevant. Persist
+                // that settled state so later paired transitions stay quiet.
+                pushPermissionPrimerStore.markResponded()
+            }
         }
+    }
+
+    private var pushPermissionPrimerPartnerName: String {
+        viewModel.currentPartnerDisplayName?.trimmedNonEmpty
+            ?? String(localized: .pairingCelebrationPartnerName)
+    }
+
+    private func enablePushNotifications() {
+        isPushPermissionPrimerPresented = false
+        Task { @MainActor in
+            let didSettleAuthorization = await pushAuthorization.requestAuthorizationIfNeeded()
+            // Persist only after the call has reached and settled the system
+            // authorization flow. If the app is terminated before then, the
+            // primer remains eligible on the next launch instead of disappearing
+            // forever while iOS is still `.notDetermined`.
+            if didSettleAuthorization {
+                pushPermissionPrimerStore.markResponded()
+            }
+        }
+    }
+
+    private func dismissPushPermissionPrimer() {
+        pushPermissionPrimerStore.markResponded()
+        isPushPermissionPrimerPresented = false
     }
 
     private func showBanner(for notice: RootNotice?) {

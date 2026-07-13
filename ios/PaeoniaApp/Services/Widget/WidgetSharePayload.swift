@@ -1,8 +1,8 @@
 import Foundation
 
-/// Privacy state for the widget. `redacted` tells the widget to show a neutral
-/// placeholder instead of the drawing.
-nonisolated enum WidgetSharePrivacyMode: String, Codable {
+/// Privacy state for the Home Screen widget. `redacted` tells every renderer to
+/// show a neutral placeholder instead of the drawing.
+nonisolated enum WidgetSharePrivacyMode: String, Codable, Equatable, Sendable {
     case normal
     case redacted
 }
@@ -26,8 +26,11 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
     let createdAt: Date
     let renderedAt: Date
     var rendererVersion = WidgetSharePayload.currentRendererVersion
-    var privacyMode: WidgetSharePrivacyMode = .normal
-    var isRedacted = false
+    /// Safe by default: payload construction starts redacted. The save pipeline
+    /// must explicitly opt a validated, user-saved drawing into Home Screen
+    /// display with `.normal` and `isRedacted = false`.
+    var privacyMode: WidgetSharePrivacyMode = .redacted
+    var isRedacted = true
     let contentHash: String
     let previews: [String: String]
 

@@ -76,7 +76,7 @@ The couple's content comes first:
 1. partner presence
 2. drawings and widget content
 3. daily check-in state
-4. memories and voice notes
+4. memories, notes, and photos
 5. milestones/countdowns
 6. sync and operational status
 

@@ -22,7 +22,7 @@ protocol SupabasePairingGateway: Actor {
     func acceptInvite(
         inviteCode: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) async throws -> UUID
 
     func revokeInvite(id: UUID) async throws -> Bool
@@ -114,7 +114,7 @@ actor LiveSupabasePairingGateway: SupabasePairingGateway {
     func acceptInvite(
         inviteCode: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) async throws -> UUID {
         try await client
             .rpc(
@@ -249,19 +249,19 @@ nonisolated private struct AcceptPairingInviteRequest: Encodable {
     let clientID: UUID
     let clientSequence: Int64
     let localCreatedAt: Date
-    let startedOn: String
+    let startedOn: String?
 
     init(
         inviteCode: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) {
         self.inviteCode = inviteCode
         self.clientOperationID = operation.id
         self.clientID = operation.clientID
         self.clientSequence = operation.clientSequence
         self.localCreatedAt = operation.localCreatedAt
-        self.startedOn = startedOn.rawValue
+        self.startedOn = startedOn?.rawValue
     }
 
     enum CodingKeys: String, CodingKey {

@@ -20,7 +20,7 @@ Important elements need explicit labels:
 - relationship state
 - check-in status
 - memory media actions
-- voice note controls
+- daily voice-answer controls
 - drawing controls
 - widget status where possible
 - destructive actions
@@ -49,11 +49,11 @@ If Reduce Motion is enabled:
 
 ## Hearing
 
-Voice notes are a V1 feature, so the UI should not assume audio is always available.
+Daily voice answers are an MVP feature, so the UI should not assume audio is always available. Memory voice notes are not part of MVP.
 
 MVP requirements:
 
-- voice notes need clear playback controls
+- voice answers need clear playback controls
 - playback state must be visible, not audio-only
 - duration should be visible
 - failed playback/upload states must be textual

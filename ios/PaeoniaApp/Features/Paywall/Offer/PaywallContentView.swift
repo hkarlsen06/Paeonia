@@ -74,6 +74,11 @@ struct PaywallContentView: View {
                 .foregroundStyle(.paeoniaTextPrimary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, PaeoniaSpacing.space2)
+
+            Text(.paywallOneSubscription)
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

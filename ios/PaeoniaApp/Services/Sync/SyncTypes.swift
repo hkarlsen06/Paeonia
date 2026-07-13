@@ -6,7 +6,8 @@ nonisolated protocol PaeoniaSyncing: Actor {
     func requestSync(reason: SyncRequestReason)
     func runOnce(reason: SyncRequestReason) async -> SyncRunResult
     func stop()
-    func resetForUserChange()
+    func resetForUserChange() async
+    func purgeRelationshipAccess(ownerUserID: UUID, permanently: Bool) async
 }
 
 nonisolated protocol SyncStream: Sendable {
@@ -20,10 +21,19 @@ nonisolated protocol SyncStream: Sendable {
 nonisolated struct SyncSession: Equatable, Sendable {
     let userID: UUID
     let activeCoupleID: UUID?
+    /// Current relationship identity used only to reject stale cross-couple
+    /// privacy events. Unlike `activeCoupleID`, this remains populated while a
+    /// relationship is paywalled or showing its ended notice.
+    let relationshipCoupleID: UUID?
 
-    init(userID: UUID, activeCoupleID: UUID? = nil) {
+    init(
+        userID: UUID,
+        activeCoupleID: UUID? = nil,
+        relationshipCoupleID: UUID? = nil
+    ) {
         self.userID = userID
         self.activeCoupleID = activeCoupleID
+        self.relationshipCoupleID = relationshipCoupleID ?? activeCoupleID
     }
 
     init?(authSession: AuthSession, activeCoupleID: UUID? = nil) {
@@ -31,7 +41,11 @@ nonisolated struct SyncSession: Equatable, Sendable {
             return nil
         }
 
-        self.init(userID: userID, activeCoupleID: activeCoupleID)
+        self.init(
+            userID: userID,
+            activeCoupleID: activeCoupleID,
+            relationshipCoupleID: activeCoupleID
+        )
     }
 }
 
@@ -96,6 +110,7 @@ nonisolated enum SyncRecordStatus: String, Codable, CaseIterable, Sendable {
 nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendable {
     case createPairingInvite = "create_pairing_invite"
     case acceptPairingInvite = "accept_pairing_invite"
+    case setRelationshipStartedOn = "set_relationship_started_on"
     case leaveRelationship = "leave_relationship"
     case submitLeaveAndReport = "submit_leave_and_report"
     case createPendingMediaUpload = "create_pending_media_upload"

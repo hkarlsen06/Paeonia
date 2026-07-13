@@ -10,19 +10,23 @@ actor AuthServiceSpy: AuthServicing {
         case signInWithGoogle
         case signInForDevelopment
         case completeOnboarding
+        case updateProfile
         case signOut
         case requestAccountDeletion
     }
 
     private var session: AuthSession?
     private let failingOperations: Set<Operation>
+    private let accountDeletionOutcome: AccountDeletionOutcome
 
     init(
         session: AuthSession? = nil,
-        failingOperations: Set<Operation> = []
+        failingOperations: Set<Operation> = [],
+        accountDeletionOutcome: AccountDeletionOutcome = .completed
     ) {
         self.session = session
         self.failingOperations = failingOperations
+        self.accountDeletionOutcome = accountDeletionOutcome
     }
 
     func restoreSession() async throws -> AuthSession? {
@@ -87,14 +91,48 @@ actor AuthServiceSpy: AuthServicing {
         return completedSession
     }
 
+    func updateProfile(
+        displayName: String,
+        profilePhotoUpdate: AuthProfilePhotoUpdate
+    ) async throws -> AuthSession {
+        try failIfNeeded(.updateProfile)
+        guard let session else {
+            throw AuthServiceError.noActiveSession
+        }
+
+        let assetID: UUID? = switch profilePhotoUpdate {
+        case .unchanged:
+            session.customProfilePhotoAssetID
+        case .replace:
+            UUID(uuidString: "99999999-9999-9999-9999-999999999999")
+        case .remove:
+            nil
+        }
+        let updated = AuthSession(
+            id: session.id,
+            provider: session.provider,
+            displayName: displayName,
+            timeZoneID: session.timeZoneID,
+            profilePhotoAssetID: nil,
+            profileStatus: session.profileStatus,
+            customProfilePhotoAssetID: assetID,
+            providerProfilePhotoAssetID: session.providerProfilePhotoAssetID
+        )
+        self.session = updated
+        return updated
+    }
+
     func signOut() async throws {
         try failIfNeeded(.signOut)
         session = nil
     }
 
-    func requestAccountDeletion() async throws {
+    func requestAccountDeletion(
+        appleAuthorizationCode: String?
+    ) async throws -> AccountDeletionOutcome {
         try failIfNeeded(.requestAccountDeletion)
         session = nil
+        return accountDeletionOutcome
     }
 
     private func failIfNeeded(_ operation: Operation) throws {
@@ -178,11 +216,36 @@ actor BlockingDeleteAuthService: AuthServicing {
         return completedSession
     }
 
+    func updateProfile(
+        displayName: String,
+        profilePhotoUpdate: AuthProfilePhotoUpdate
+    ) async throws -> AuthSession {
+        guard let session else {
+            throw AuthServiceError.noActiveSession
+        }
+        let updated = AuthSession(
+            id: session.id,
+            provider: session.provider,
+            displayName: displayName,
+            timeZoneID: session.timeZoneID,
+            profilePhotoAssetID: nil,
+            profileStatus: session.profileStatus,
+            customProfilePhotoAssetID: profilePhotoUpdate == .remove
+                ? nil
+                : session.customProfilePhotoAssetID,
+            providerProfilePhotoAssetID: session.providerProfilePhotoAssetID
+        )
+        self.session = updated
+        return updated
+    }
+
     func signOut() async throws {
         session = nil
     }
 
-    func requestAccountDeletion() async throws {
+    func requestAccountDeletion(
+        appleAuthorizationCode: String?
+    ) async throws -> AccountDeletionOutcome {
         deleteStarted = true
         deleteStartedContinuation?.resume()
         deleteStartedContinuation = nil
@@ -192,6 +255,7 @@ actor BlockingDeleteAuthService: AuthServicing {
         }
 
         session = nil
+        return .completed
     }
 }
 

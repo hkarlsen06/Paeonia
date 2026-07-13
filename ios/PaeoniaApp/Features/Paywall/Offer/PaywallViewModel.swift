@@ -19,10 +19,18 @@ final class PaywallViewModel: PresentationReadinessProviding {
     private(set) var isLoading = false
     private(set) var hasFinishedLoadingProducts = false
     private(set) var isPurchasing = false
+    private(set) var isPreviewingInvite = false
     private(set) var isAcceptingInvite = false
     private(set) var isLeavingRelationship = false
     private(set) var error: PaywallError?
     private(set) var purchaseSucceeded = false
+    private(set) var invitePreview: PairingInvitePreview?
+
+    private var previewedInviteCode: String?
+    /// Last fully resolved eligibility snapshot. Keep it in place while StoreKit
+    /// refreshes so an already-presented paywall never flips between trial and
+    /// non-trial copy mid-refresh.
+    private var eligibleFreeTrials = [PaeoniaSubscriptionProductID: PaeoniaFreeTrial]()
 
     private let storeKitService: any PaeoniaStoreKitServicing
     private let pairingService: (any PairingServicing)?
@@ -48,11 +56,7 @@ final class PaywallViewModel: PresentationReadinessProviding {
     }
 
     var currentFreeTrial: PaeoniaFreeTrial? {
-        guard let offer = currentProduct?.subscription?.introductoryOffer else {
-            return nil
-        }
-
-        return PaeoniaFreeTrial(offer: offer)
+        eligibleFreeTrials[selectedProductID]
     }
 
     var selectedProductID: PaeoniaSubscriptionProductID {
@@ -64,33 +68,12 @@ final class PaywallViewModel: PresentationReadinessProviding {
         }
     }
 
-    var hasLoadedProducts: Bool {
-        !storeKitService.products.isEmpty
-    }
-
     var isPresentationReady: Bool {
-        hasLoadedProducts || hasFinishedLoadingProducts
-    }
-
-    func loadProducts() async {
-        guard !isLoading, !isPresentationReady else {
-            return
-        }
-
-        isLoading = true
-        error = nil
-
-        do {
-            try await storeKitService.loadProducts()
-            if storeKitService.products.isEmpty {
-                error = .productsUnavailable
-            }
-        } catch {
-            self.error = .productsUnavailable
-        }
-
-        hasFinishedLoadingProducts = true
-        isLoading = false
+        // Products can publish before the asynchronous introductory-offer
+        // eligibility check settles. Do not expose a first frame until both have
+        // reached a stable result, otherwise an ineligible subscriber can briefly
+        // see trial copy. This flag stays true during later refreshes.
+        hasFinishedLoadingProducts
     }
 
     func purchaseSelectedProduct() async -> Bool {
@@ -143,28 +126,78 @@ final class PaywallViewModel: PresentationReadinessProviding {
         }
     }
 
-    func acceptInvite(codeInput: String) async -> Bool {
+    /// Looks up a live invite before any relationship is created. The preview is
+    /// retained with the exact normalized code so the UI can show the inviter and
+    /// ask for an explicit confirmation before calling `acceptPreviewedInvite()`.
+    func previewInvite(codeInput: String) async -> PairingInvitePreview? {
+        guard !isPreviewingInvite, !isAcceptingInvite else {
+            return nil
+        }
+
         guard let pairingService else {
-            error = .inviteAcceptFailed
+            error = .invitePreviewFailed
+            return nil
+        }
+
+        isPreviewingInvite = true
+        error = nil
+        invitePreview = nil
+        previewedInviteCode = nil
+
+        do {
+            let inviteCode = try PairingInviteCode.normalized(codeInput)
+            guard let preview = try await pairingService.previewInvite(codeInput: inviteCode) else {
+                error = .inviteUnavailable
+                isPreviewingInvite = false
+                return nil
+            }
+
+            invitePreview = preview
+            previewedInviteCode = inviteCode
+            isPreviewingInvite = false
+            return preview
+        } catch is PairingInviteCodeError {
+            self.error = .inviteInvalid
+            isPreviewingInvite = false
+            return nil
+        } catch is CancellationError {
+            isPreviewingInvite = false
+            return nil
+        } catch {
+            self.error = .invitePreviewFailed
+            isPreviewingInvite = false
+            return nil
+        }
+    }
+
+    /// Accepts only the invite that was successfully previewed. Keeping this gate in
+    /// the view model prevents another call site from accidentally restoring the old
+    /// enter-code-and-immediately-pair behavior.
+    func acceptPreviewedInvite() async -> Bool {
+        guard !isPreviewingInvite,
+              !isAcceptingInvite,
+              let pairingService,
+              invitePreview != nil,
+              let previewedInviteCode
+        else {
+            error = .inviteUnavailable
             return false
         }
 
-        let startedOn = PairingStartDate(date: Date())
         isAcceptingInvite = true
         error = nil
 
         do {
-            let inviteCode = try PairingInviteCode.normalized(codeInput)
             let operation = operationProvider.makeOperation()
             _ = try await pairingService.acceptInvite(
-                codeInput: inviteCode,
+                codeInput: previewedInviteCode,
                 operation: operation,
-                startedOn: startedOn
+                startedOn: nil
             )
             isAcceptingInvite = false
+            clearInvitePreview()
             return true
-        } catch is PairingInviteCodeError {
-            self.error = .inviteInvalid
+        } catch is CancellationError {
             isAcceptingInvite = false
             return false
         } catch {
@@ -172,6 +205,11 @@ final class PaywallViewModel: PresentationReadinessProviding {
             isAcceptingInvite = false
             return false
         }
+    }
+
+    func clearInvitePreview() {
+        invitePreview = nil
+        previewedInviteCode = nil
     }
 
     /// Ends the current pairing. Used from the paired paywall footer, where a
@@ -239,6 +277,58 @@ final class PaywallViewModel: PresentationReadinessProviding {
     }
 }
 
+extension PaywallViewModel {
+    func loadProducts() async {
+        guard !isLoading else {
+            return
+        }
+
+        isLoading = true
+        error = nil
+
+        do {
+            try await storeKitService.loadProducts()
+            guard !Task.isCancelled else {
+                isLoading = false
+                return
+            }
+
+            let refreshedFreeTrials = await loadEligibleFreeTrials()
+            guard !Task.isCancelled else {
+                isLoading = false
+                return
+            }
+
+            // Replace only after every product's eligibility has settled. Until
+            // then the prior stable offer state remains visible during refreshes.
+            eligibleFreeTrials = refreshedFreeTrials
+            if storeKitService.products.isEmpty {
+                error = .productsUnavailable
+            }
+        } catch is CancellationError {
+            isLoading = false
+            return
+        } catch {
+            self.error = .productsUnavailable
+        }
+
+        hasFinishedLoadingProducts = true
+        isLoading = false
+    }
+
+    private func loadEligibleFreeTrials() async -> [PaeoniaSubscriptionProductID: PaeoniaFreeTrial] {
+        var trials = [PaeoniaSubscriptionProductID: PaeoniaFreeTrial]()
+
+        for productID in PaeoniaSubscriptionProductID.allCases {
+            if let trial = await storeKitService.eligibleFreeTrial(for: productID) {
+                trials[productID] = trial
+            }
+        }
+
+        return trials
+    }
+}
+
 enum PaywallError: Equatable {
     case productsUnavailable
     case purchaseNotConfirmed
@@ -246,6 +336,8 @@ enum PaywallError: Equatable {
     case noPurchasesToRestore
     case restoreFailed
     case inviteInvalid
+    case inviteUnavailable
+    case invitePreviewFailed
     case inviteAcceptFailed
     case unpairFailed
 
@@ -263,6 +355,10 @@ enum PaywallError: Equatable {
             String(localized: .paywallErrorRestoreFailed)
         case .inviteInvalid:
             String(localized: .paywallErrorInviteInvalid)
+        case .inviteUnavailable:
+            String(localized: .paywallErrorInviteUnavailable)
+        case .invitePreviewFailed:
+            String(localized: .paywallErrorInvitePreviewFailed)
         case .inviteAcceptFailed:
             String(localized: .paywallErrorInviteAcceptFailed)
         case .unpairFailed:

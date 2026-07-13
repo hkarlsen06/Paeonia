@@ -1,8 +1,8 @@
 # Phase 3 Migration Checklist
 
-This checklist converts `docs/phase-3-data-contract.md` into implementation slices for the first Supabase migrations.
+This checklist records the design and audit criteria used to turn `docs/phase-3-data-contract.md` into the first Supabase migration slices.
 
-Status: ready for SQL migration design. This is not a migration file.
+Status: implemented as a migration series. This document is now a historical schema/security audit reference, not the active progress tracker. Use `docs/mvp-release-checklist.md` for release readiness and inspect `supabase/migrations/` for the applied source history. Unchecked boxes below are review criteria retained for traceability; they do not mean that no SQL exists.
 
 Rules:
 
@@ -629,7 +629,7 @@ Verification:
 
 ### 009 Memories
 
-Purpose: create editable couple memories with title/date, partner notes, media, voice notes, and optional conversation.
+Purpose: create editable couple memories with title/date, partner notes, photos, and optional conversation.
 
 Tables:
 
@@ -646,7 +646,7 @@ Checklist:
 - [ ] Notes are author-owned and revision-checked.
 - [ ] `memory_media` unique `(memory_id, media_asset_id)`.
 - [ ] Each partner can add up to 5 photos per memory.
-- [ ] Voice notes are `media_assets` linked through `memory_media`.
+- Memory voice notes are deferred beyond MVP. The existing generic media schema may support them later, but release UI and copy must not claim them.
 - [ ] No ordinary user hard delete in MVP; hiding/removal is RPC/admin/cleanup controlled.
 - [ ] Relationship end hides memories immediately and cleanup deletes after `delete_after`.
 

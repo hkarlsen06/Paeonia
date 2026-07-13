@@ -49,6 +49,8 @@ export interface AppleTransactionInfo {
   environment: AppleEnvironment;
   appAccountToken?: string;
   webOrderLineItemId?: string;
+  offerType?: number;
+  offerDiscountType?: string;
   type:
     | "Auto-Renewable Subscription"
     | "Non-Consumable"

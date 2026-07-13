@@ -69,7 +69,7 @@ Production behavior: localized marketing pages.
 
 Purpose: fallback page for invite links.
 
-Temporary behavior: explain that Paeonia is not ready yet and that this link will open the app later.
+Current pre-launch behavior: tell the user to reopen the invite on an iPhone with Paeonia installed. If the app is not installed, direct them back to their partner for the current invite instructions.
 
 Production behavior: if the app is installed, iOS should open Paeonia through Universal Links. If the app is not installed, the page should explain how to get the app.
 
@@ -95,7 +95,7 @@ Temporary behavior: redirect to `/en/privacy/`.
 
 Production behavior: final privacy policy.
 
-The final policy must cover private relationship content, account deletion, precise location sharing if enabled, voice notes, photos, widget drawings, subscriptions, support/admin access, reports, exports, retention, and no-ad/no-tracking posture.
+The policy covers private relationship content, account deletion, precise location sharing if enabled, daily voice answers, photos, widget drawings, subscriptions, support/moderation access, reports, exports, retention, and the no-ad/no-tracking posture. Keep it aligned with shipped behavior and have the release owner arrange any required legal review before publication.
 
 ### `/terms`
 
@@ -105,7 +105,7 @@ Temporary behavior: redirect to `/en/terms/`.
 
 Production behavior: final terms of service.
 
-The final terms must cover subscriptions, one-partner-pays access, restore behavior, account deletion, leaving a relationship, acceptable use, moderation/reporting, and support limitations.
+The terms cover subscriptions, one-partner-pays access, restore behavior, account deletion, leaving a relationship, acceptable use, moderation/reporting, and support limitations. Keep them aligned with shipped behavior and have the release owner arrange any required legal review before publication.
 
 ### `/support`
 
@@ -212,18 +212,17 @@ These are not critical to app auth or pairing, but should remain present for a c
 - `/sitemap.xml`
 - `/site.webmanifest`
 
-## Branding TODO
+## Branding Assets
 
-The current marketing icons are temporary placeholders only:
+The canonical public mark, lockup, favicon SVG, Open Graph image, and web manifest are present under `marketing/public/` and referenced by the marketing metadata.
 
-- `/favicon.ico`
-- `/favicon.svg`
+Before App Store launch, decide whether dedicated PNG favicon sizes and Apple touch icons are needed in addition to the canonical SVG:
+
 - `/favicon-32x32.png`
 - `/favicon-192x192.png`
 - `/apple-touch-icon.png`
-- `/apple-touch-icon-precomposed.png`
 
-Replace these after the real Paeonia brand/icon work is ready. Keep `marketing/app/layout.tsx` metadata and `marketing/public/site.webmanifest` in sync with the final exported assets.
+Keep `marketing/app/layout.tsx` metadata and `marketing/public/site.webmanifest` in sync with any added exports.
 
 ## Things The Marketing App Must Not Own
 

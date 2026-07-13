@@ -29,6 +29,30 @@ protocol AccessSyncSnapshotPersisting: Actor {
     func delete(ownerUserID: UUID) async throws
 }
 
+extension AccessSyncSnapshotPersisting {
+    func replaceRelationshipStartedOn(
+        ownerUserID: UUID,
+        startedOn: String,
+        refreshedAt: Date
+    ) async throws {
+        guard let existing = try await load(ownerUserID: ownerUserID),
+              let relationshipState = existing.relationshipState
+        else {
+            return
+        }
+
+        try await save(
+            AccessSyncSnapshot(
+                ownerUserID: ownerUserID,
+                userEntitlement: existing.userEntitlement,
+                coupleEntitlement: existing.coupleEntitlement,
+                relationshipState: relationshipState.replacingStartedOn(startedOn),
+                refreshedAt: refreshedAt
+            )
+        )
+    }
+}
+
 actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
     private let container: ModelContainer
     private let encoder = JSONEncoder()

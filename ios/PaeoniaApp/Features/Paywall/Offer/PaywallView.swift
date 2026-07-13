@@ -17,6 +17,7 @@ struct PaywallView: View {
 
     @State private var isConfirmingDelete = false
     @State private var isConfirmingUnpair = false
+    @State private var isConfirmingInvite = false
     @State private var inviteCode = ""
     @State private var showInviteOverlay = false
     @State private var hasPresentedPaywallContent = false
@@ -99,6 +100,20 @@ struct PaywallView: View {
         } message: {
             Text(.pairingUnpairConfirmMessage(audience.partnerNameForCopy))
         }
+        .alert(
+            Text(inviteConfirmationTitle),
+            isPresented: $isConfirmingInvite
+        ) {
+            Button(action: redeemPreviewedInvite) {
+                Text(.paywallInviteConfirmAction)
+            }
+
+            Button(role: .cancel, action: cancelInviteConfirmation) {
+                Text(.paywallInviteConfirmCancel)
+            }
+        } message: {
+            Text(inviteConfirmationMessage)
+        }
     }
 
     private func paywallScene(geometry: GeometryProxy) -> some View {
@@ -154,7 +169,7 @@ struct PaywallView: View {
             PaywallInviteCodeView(
                 code: $inviteCode,
                 focus: $inviteFieldFocused,
-                isSubmitting: viewModel.isAcceptingInvite,
+                isSubmitting: viewModel.isPreviewingInvite || viewModel.isAcceptingInvite,
                 onSubmit: submitInvite
             )
             .padding(.horizontal, PaeoniaSpacing.space20)
@@ -185,18 +200,12 @@ struct PaywallView: View {
         )
     }
 
-    /// Paired couples without an active subscription get copy that makes it clear
-    /// they are still linked; everyone else gets the standard acquisition headline.
     private var headlineTitle: LocalizedStringResource {
-        if audience.isPaired {
-            return .paywallPairedTitle(audience.partnerNameForCopy)
-        }
-
-        return presentation.headlineTitle
+        audience.headlineTitle(hasFreeTrial: presentation.hasFreeTrial)
     }
 
     private var subtitle: LocalizedStringResource {
-        audience.isPaired ? .paywallPairedSubtitle : .paywallSubtitle
+        audience.subtitle(hasFreeTrial: presentation.hasFreeTrial)
     }
 
     private func submitInvite() {
@@ -206,7 +215,7 @@ struct PaywallView: View {
         }
 
         if sanitizedCode.count == PaywallInviteCodeView.codeLength {
-            redeemInvite(codeInput: sanitizedCode)
+            previewInvite(codeInput: sanitizedCode)
         } else if !sanitizedCode.isEmpty {
             inviteFieldFocused = true
         }
@@ -243,12 +252,11 @@ struct PaywallView: View {
     // MARK: - Bottom CTA
 
     private var bottomCTA: some View {
-        PaywallBottomCTAView(
-            title: presentation.primaryButtonTitle,
-            caption: .paywallCancelAnytime,
-            isEnabled: presentation.primaryButtonIsEnabled,
-            isBusy: viewModel.isPurchasing,
-            action: purchase
+        PaywallPurchaseCTAView(
+            presentation: presentation,
+            hasProduct: viewModel.currentProduct != nil,
+            onPurchase: purchase,
+            onRetry: retryProducts
         )
     }
 
@@ -260,16 +268,40 @@ struct PaywallView: View {
         hasPresentedPaywallContent || reduceMotion ? 0 : -10
     }
 
-    private func redeemInvite(codeInput: String) {
+    private func previewInvite(codeInput: String) {
+        guard !viewModel.isPreviewingInvite,
+              !viewModel.isAcceptingInvite
+        else {
+            return
+        }
+
+        Task {
+            guard await viewModel.previewInvite(codeInput: codeInput) != nil else {
+                inviteFieldFocused = true
+                return
+            }
+
+            guard showInviteOverlay else {
+                viewModel.clearInvitePreview()
+                return
+            }
+
+            inviteFieldFocused = false
+            isConfirmingInvite = true
+        }
+    }
+
+    private func redeemPreviewedInvite() {
         guard !viewModel.isAcceptingInvite else {
             return
         }
 
         Task {
-            let didAccept = await viewModel.acceptInvite(codeInput: codeInput)
+            let didAccept = await viewModel.acceptPreviewedInvite()
             if didAccept {
                 viewModel.clearError()
                 bannerCenter.dismiss()
+                dismissInviteOverlay()
                 onInviteAccepted()
             } else {
                 inviteFieldFocused = true
@@ -290,6 +322,8 @@ struct PaywallView: View {
     }
 
     private func dismissInviteOverlay() {
+        isConfirmingInvite = false
+        viewModel.clearInvitePreview()
         inviteFieldFocused = false
 
         Task { @MainActor in
@@ -298,6 +332,27 @@ struct PaywallView: View {
             inviteFieldFocused = false
             showInviteOverlay = false
         }
+    }
+
+    private func cancelInviteConfirmation() {
+        viewModel.clearInvitePreview()
+        inviteFieldFocused = true
+    }
+
+    private var inviteConfirmationTitle: LocalizedStringResource {
+        guard let inviterName = viewModel.invitePreview?.inviterDisplayName?.trimmedNonEmpty else {
+            return .paywallInviteConfirmTitleFallback
+        }
+
+        return .paywallInviteConfirmTitle(inviterName)
+    }
+
+    private var inviteConfirmationMessage: LocalizedStringResource {
+        if viewModel.invitePreview?.hasSafetyWarning == true {
+            return .paywallInviteConfirmSafetyMessage
+        }
+
+        return .paywallInviteConfirmMessage
     }
 
     private var footerActions: some View {
@@ -332,6 +387,15 @@ struct PaywallView: View {
             let didPurchase = await viewModel.purchaseSelectedProduct()
             if didPurchase {
                 onPurchaseConfirmed()
+            }
+        }
+    }
+
+    private func retryProducts() {
+        Task {
+            await viewModel.loadProducts()
+            if viewModel.currentProduct != nil {
+                bannerCenter.dismiss()
             }
         }
     }

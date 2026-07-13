@@ -847,7 +847,7 @@ This includes:
 - memories
 - memory photos
 - memory notes
-- voice notes
+- daily voice answers and message voice notes
 - prompt answers
 - streak state
 - countdowns
@@ -1905,7 +1905,7 @@ Rules:
 - Canonical widget drawing payloads are stored as media assets with `media_type = drawing_payload`.
 - Images should adapt Tidex's `ImageCompressor` pattern: prefer efficient formats when supported, keep JPEG fallback, resize/compress before upload, and store resulting metadata.
 - Memory photos allow up to 5 photos per partner per memory.
-- Voice notes can attach to daily answers, memories, and threads.
+- Voice notes can attach to daily answers and threads in MVP. The generic media model can support other parent types later.
 - Upload status starts with `pending`, `finalized`, `failed`, and `expired`.
 - Only finalized, non-deleted, non-hidden media can be returned in ordinary read models or signed URL flows.
 - MVP does not include external media scanner fields or a scanning vendor integration.
@@ -1965,8 +1965,9 @@ Supported content:
 - one or more photos
 - one partner note
 - both partner notes
-- voice notes
 - thread messages
+
+Memory voice notes are deferred beyond MVP. Voice answers remain supported for daily questions, and the generic media model may support memory voice notes in a later release without changing the MVP UI or product claims.
 
 Recommended tables:
 
@@ -2026,7 +2027,6 @@ Rules:
 - `memory_media.id` is the primary key.
 - `memory_media` has a unique constraint on `(memory_id, media_asset_id)`.
 - Each partner can add up to 5 photos per memory.
-- Voice notes use `media_assets` and can be linked through `memory_media`.
 - A memory thread is created only when the first follow-up message is sent.
 - On the memory screen, partner notes should appear as part of the conversation context, with a composer below for follow-up messages.
 - Memories are hidden immediately when the relationship ends and deleted by the relationship cleanup job.
@@ -2488,7 +2488,6 @@ Rules:
 - Each partner can edit only their own `memory_notes` row.
 - Each partner can add/remove only their own memory media.
 - Per-partner memory photo limits are enforced by `memory_media.owner_user_id`.
-- Voice notes attached to a memory follow memory-media ownership rules.
 - Admins can hide/remove reported memory content.
 
 ### Daily Questions And Answers

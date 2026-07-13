@@ -75,6 +75,28 @@ nonisolated struct LocationPoint: Codable, Equatable, Sendable {
     }
 }
 
+/// Display-only age classification for a last-known location. Old locations
+/// remain available; after 24 hours the UI dims the marker and plainly labels
+/// the timestamp instead of treating the location as missing.
+nonisolated enum LocationDisplayRecency: Equatable, Sendable {
+    case recent
+    case stale
+
+    static let staleAfter: TimeInterval = 24 * 60 * 60
+
+    static func resolve(
+        capturedAt: Date,
+        now: Date = Date(),
+        wasStaleAtLastRefresh: Bool = false
+    ) -> Self {
+        if wasStaleAtLastRefresh {
+            return .stale
+        }
+
+        return now.timeIntervalSince(capturedAt) >= staleAfter ? .stale : .recent
+    }
+}
+
 nonisolated struct LocationVisibilitySnapshot: Codable, Equatable, Sendable {
     let ownerUserID: UUID
     let coupleID: UUID
@@ -102,7 +124,7 @@ nonisolated enum CoupleMapState: Equatable, Sendable {
     case loading
     case currentUnknown
     case partnerUnknown(PartnerLocationVisibilityState)
-    case ready(current: LocationPoint, partner: LocationPoint)
+    case ready(current: LocationPoint, partner: LocationPoint, partnerWasStaleAtLastRefresh: Bool)
 }
 
 nonisolated struct LocationIdentity: Equatable, Hashable, Sendable {

@@ -51,6 +51,13 @@ struct PaeoniaDeepLinkTests {
         #expect(PaeoniaDeepLink(url) == .streak)
     }
 
+    @Test func parsesSubscriptionURL() {
+        let url = PaeoniaDeepLink.subscriptionURL
+
+        #expect(url.absoluteString == "paeonia://settings/subscription")
+        #expect(PaeoniaDeepLink(url) == .subscription)
+    }
+
     @Test func notificationPayloadPrefersCanonicalDeeplink() throws {
         let instanceID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let coupleDayID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
@@ -78,6 +85,10 @@ struct PaeoniaDeepLinkTests {
         #expect(PaeoniaDeepLink(notificationUserInfo: ["type": "widget_updated"]) == .widgetDrawing)
         #expect(PaeoniaDeepLink(notificationUserInfo: ["type": "daily_challenge_completed"]) == .dailyToday(coupleDayID: nil))
         #expect(PaeoniaDeepLink(notificationUserInfo: ["type": "streak_reminder"]) == .streak)
+        #expect(
+            PaeoniaDeepLink(notificationUserInfo: ["type": "subscription_trial_reminder"])
+                == .subscription
+        )
     }
 
     @Test func notificationPayloadUsesKnownTypeBeforeConflictingDeeplink() {
@@ -92,6 +103,7 @@ struct PaeoniaDeepLinkTests {
     @Test func notificationPayloadFallsBackToRouteMetadata() {
         #expect(PaeoniaDeepLink(notificationUserInfo: ["route": "widget"]) == .widgetDrawing)
         #expect(PaeoniaDeepLink(notificationUserInfo: ["route": "streak"]) == .streak)
+        #expect(PaeoniaDeepLink(notificationUserInfo: ["route": "subscription"]) == .subscription)
     }
 
     @Test func notificationThreadIdentifierFallsBackToWidgetDrawing() {

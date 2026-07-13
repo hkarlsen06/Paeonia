@@ -18,6 +18,10 @@ enum PaeoniaWidgetStore {
 
     private static let currentPayloadPath = "Widget/current.json"
 
+    /// Shipped MVP privacy policy: only an explicitly normal, current-version
+    /// payload with a safe existing preview path may show the saved drawing.
+    /// Missing, malformed, future-version, redacted, or incomplete state always
+    /// degrades to a neutral placeholder; it never falls back to older content.
     static func loadContent(for family: WidgetFamily) -> PaeoniaWidgetContent {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: appGroupIdentifier
@@ -31,7 +35,8 @@ enum PaeoniaWidgetStore {
                 PaeoniaWidgetCurrentPayload.self,
                 from: payloadData
               ),
-              payload.schemaVersion == 1
+              payload.schemaVersion == 1,
+              payload.rendererVersion == 1
         else {
             return .placeholder
         }

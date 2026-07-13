@@ -62,6 +62,8 @@ private actor FakeSupabaseAccessGateway: SupabaseAccessGateway {
     ) async throws -> [SupabaseRelationshipSyncEvent] {
         []
     }
+
+    func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
 }
 
 private extension SupabaseUserEntitlement {

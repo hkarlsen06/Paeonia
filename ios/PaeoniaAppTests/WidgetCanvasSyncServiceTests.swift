@@ -131,6 +131,22 @@ struct WidgetCanvasSyncServiceTests {
         #expect(env.localStore.savedCalls.isEmpty)
     }
 
+    @Test func temporaryPrivacyHidePreservesPendingDrawingUntilPermanentPurge() async {
+        let env = SyncEnvironment()
+        env.pendingStore.markPending(
+            Self.uploadPayload(for: env.downloadedData),
+            contentHash: WidgetCanvasUploadService.sha256Hex(of: env.downloadedData)
+        )
+
+        await env.service.hideForPrivacy()
+
+        #expect(env.pendingStore.hasPending)
+
+        await env.service.clearForPrivacy()
+
+        #expect(!env.pendingStore.hasPending)
+    }
+
     @Test func syncDoesNothingWithoutAnActiveRevision() async {
         let env = SyncEnvironment()
         env.gateway.state = WidgetCanvasState(
@@ -198,10 +214,10 @@ private final class SyncEnvironment {
     let service: WidgetCanvasSyncService
 
     init(
-        downloadedData: Data = SyncEnvironment.makeDrawing().dataRepresentation(),
+        downloadedData: Data? = nil,
         downloader: (any WidgetPayloadDownloading)? = nil
     ) {
-        let drawingData = downloadedData
+        let drawingData = downloadedData ?? Self.makeDrawing().dataRepresentation()
         self.downloadedData = drawingData
         let pendingDefaults = UserDefaults(suiteName: UUID().uuidString) ?? .standard
         self.pendingDefaults = pendingDefaults

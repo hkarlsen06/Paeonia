@@ -255,24 +255,36 @@ SELECT ok(
 -- 18) A dead token (invalid_token) fails its row immediately, not after retries.
 SELECT internal.mark_notification_result(
   (SELECT id FROM internal.notification_outbox
-   WHERE target_device_id = '00000000-0000-0000-0000-0000000000d1' AND apns_push_type = 'alert' LIMIT 1),
+   WHERE target_device_id = '00000000-0000-0000-0000-0000000000d1'
+     AND apns_push_type = 'alert'
+     AND kind = 'partner_answered'
+   LIMIT 1),
   false, NULL, NULL, true
 );
 SELECT ok(
   (SELECT failed_at IS NOT NULL FROM internal.notification_outbox
-   WHERE target_device_id = '00000000-0000-0000-0000-0000000000d1' AND apns_push_type = 'alert' LIMIT 1),
+   WHERE target_device_id = '00000000-0000-0000-0000-0000000000d1'
+     AND apns_push_type = 'alert'
+     AND kind = 'partner_answered'
+   LIMIT 1),
   'invalid token fails the row immediately'
 );
 
 -- 19) A transient failure leaves the row retryable (failed_at stays null).
 SELECT internal.mark_notification_result(
   (SELECT id FROM internal.notification_outbox
-   WHERE target_device_id = '00000000-0000-0000-0000-0000000000d2' AND apns_push_type = 'alert' LIMIT 1),
+   WHERE target_device_id = '00000000-0000-0000-0000-0000000000d2'
+     AND apns_push_type = 'alert'
+     AND kind = 'partner_answered'
+   LIMIT 1),
   false, NULL, 'TooManyRequests', false
 );
 SELECT ok(
   (SELECT failed_at IS NULL FROM internal.notification_outbox
-   WHERE target_device_id = '00000000-0000-0000-0000-0000000000d2' AND apns_push_type = 'alert' LIMIT 1),
+   WHERE target_device_id = '00000000-0000-0000-0000-0000000000d2'
+     AND apns_push_type = 'alert'
+     AND kind = 'partner_answered'
+   LIMIT 1),
   'transient failure keeps the row retryable'
 );
 

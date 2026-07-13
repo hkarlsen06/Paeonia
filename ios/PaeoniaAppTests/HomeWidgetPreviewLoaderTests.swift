@@ -61,6 +61,31 @@ struct HomeWidgetPreviewLoaderTests {
         #expect(content.image == nil)
     }
 
+    @Test func loadIgnoresFutureSchemaPayload() throws {
+        let environment = TestEnvironment()
+        try environment.writePreview(named: "systemSmall.png")
+        try environment.writePayload(
+            previews: ["systemSmall": "Widget/previews/systemSmall.png"],
+            schemaVersion: WidgetSharePayload.currentSchemaVersion + 1
+        )
+
+        let content = environment.makeLoader().load()
+
+        #expect(content.image == nil)
+    }
+
+    @Test func loadRejectsPreviewPathTraversal() throws {
+        let environment = TestEnvironment()
+        try environment.writePreview(named: "systemSmall.png")
+        try environment.writePayload(
+            previews: ["systemSmall": "Widget/previews/../previews/systemSmall.png"]
+        )
+
+        let content = environment.makeLoader().load()
+
+        #expect(content.image == nil)
+    }
+
     @Test func preferredPreviewPathPrefersSmall() {
         let path = HomeWidgetPreviewLoader.preferredPreviewPath(in: [
             "systemLarge": "large.png",
@@ -101,7 +126,8 @@ private struct TestEnvironment {
     func writePayload(
         previews: [String: String],
         privacyMode: WidgetSharePrivacyMode = .normal,
-        isRedacted: Bool = false
+        isRedacted: Bool = false,
+        schemaVersion: Int = WidgetSharePayload.currentSchemaVersion
     ) throws {
         var payload = WidgetSharePayload(
             revisionID: UUID().uuidString,
@@ -113,6 +139,7 @@ private struct TestEnvironment {
         )
         payload.privacyMode = privacyMode
         payload.isRedacted = isRedacted
+        payload.schemaVersion = schemaVersion
 
         let payloadURL = containerURL.appendingPathComponent("Widget/current.json")
         try FileManager.default.createDirectory(

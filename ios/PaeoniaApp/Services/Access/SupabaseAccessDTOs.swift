@@ -88,6 +88,22 @@ nonisolated struct SupabaseRelationshipState: Codable, Equatable, Sendable {
     var needsEndedNotice: Bool {
         relationshipStatus == .ended && memberStatus == .endedNoticePending
     }
+
+    func replacingStartedOn(_ startedOn: String?) -> Self {
+        Self(
+            coupleID: coupleID,
+            pairID: pairID,
+            relationshipStatus: relationshipStatus,
+            memberStatus: memberStatus,
+            partnerUserID: partnerUserID,
+            partnerDisplayName: partnerDisplayName,
+            partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+            startedOn: startedOn,
+            endedAt: endedAt,
+            deleteAfter: deleteAfter,
+            endedNoticeSeenAt: endedNoticeSeenAt
+        )
+    }
 }
 
 nonisolated struct SupabaseRelationshipSyncEvent: Codable, Equatable, Sendable {

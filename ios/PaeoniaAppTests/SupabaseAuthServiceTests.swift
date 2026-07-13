@@ -128,6 +128,73 @@ struct SupabaseAuthServiceTests {
         #expect(session.profileStatus == .needsOnboarding)
     }
 
+    @Test func googleSignInImportsProviderAvatarIntoPrivateProfileAndOnboardingPreservesIt() async throws {
+        let importedAssetID = try #require(
+            UUID(uuidString: "A6B39D76-11D0-4A4D-8B77-5AF09A9E85E1")
+        )
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .google),
+            profile: .test(displayName: nil, onboardingCompletedAt: nil),
+            profilePhotoAssetID: importedAssetID
+        )
+        let loader = FakeProviderAvatarImageLoader(data: Self.makeJPEGData())
+        let service = SupabaseAuthService(
+            gateway: gateway,
+            providerAvatarLoader: loader
+        )
+
+        let signedIn = try await service.signInWithGoogle(
+            GoogleSignInCredential(
+                idToken: "google-id-token",
+                accessToken: nil,
+                profileImageURL: URL(string: "https://lh3.googleusercontent.com/avatar")
+            )
+        )
+        let completed = try await service.completeOnboarding(
+            displayName: "Jamie",
+            timeZoneID: "Europe/Oslo",
+            profilePhotoData: nil
+        )
+
+        #expect(await loader.requestedURLs.count == 1)
+        #expect(signedIn.profilePhotoAssetID == importedAssetID)
+        #expect(await gateway.updatedProfilePhotoAssetID == importedAssetID)
+        #expect(await gateway.completedProfilePhotoAssetID == nil)
+        #expect(completed.profilePhotoAssetID == importedAssetID)
+    }
+
+    @Test func googleSignInImportsProviderFallbackBehindExistingCustomPhoto() async throws {
+        let existingAssetID = try #require(UUID(uuidString: "10000000-0000-0000-0000-000000000001"))
+        let fallbackAssetID = try #require(UUID(uuidString: "20000000-0000-0000-0000-000000000002"))
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .google),
+            profile: .test(
+                displayName: "Jamie",
+                onboardingCompletedAt: Date(),
+                profilePhotoAssetID: existingAssetID
+            ),
+            profilePhotoAssetID: fallbackAssetID
+        )
+        let loader = FakeProviderAvatarImageLoader(data: Self.makeJPEGData())
+        let service = SupabaseAuthService(
+            gateway: gateway,
+            providerAvatarLoader: loader
+        )
+
+        let session = try await service.signInWithGoogle(
+            GoogleSignInCredential(
+                idToken: "google-id-token",
+                accessToken: nil,
+                profileImageURL: URL(string: "https://lh3.googleusercontent.com/avatar")
+            )
+        )
+
+        #expect(await loader.requestedURLs.count == 1)
+        #expect(session.profilePhotoAssetID == existingAssetID)
+        #expect(session.customProfilePhotoAssetID == existingAssetID)
+        #expect(session.providerProfilePhotoAssetID == fallbackAssetID)
+    }
+
     @Test func completeOnboardingUpdatesProfileFields() async throws {
         let gateway = FakeSupabaseAuthGateway(
             remoteSession: .test(provider: .apple),
@@ -240,6 +307,127 @@ struct SupabaseAuthServiceTests {
         }
     }
 
+    @Test func updateProfileLinksReplacementBeforeQueuingOldPhotoDeletion() async throws {
+        let oldAssetID = try #require(UUID(uuidString: "10000000-0000-0000-0000-000000000001"))
+        let newAssetID = try #require(UUID(uuidString: "20000000-0000-0000-0000-000000000002"))
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .google),
+            profile: .test(
+                displayName: "Old",
+                onboardingCompletedAt: Date(),
+                profilePhotoAssetID: oldAssetID
+            ),
+            profilePhotoAssetID: newAssetID
+        )
+        let cache = FakeProfilePhotoImageCache()
+        let invalidator = FakeProfilePhotoImageInvalidator()
+        try await cache.storeProfilePhotoData(Self.makeJPEGData(), for: oldAssetID)
+        let service = SupabaseAuthService(
+            gateway: gateway,
+            profilePhotoCache: cache,
+            profilePhotoInvalidator: invalidator
+        )
+
+        let session = try await service.updateProfile(
+            displayName: "Jamie",
+            profilePhotoUpdate: .replace(Self.makeJPEGData())
+        )
+
+        #expect(session.displayName == "Jamie")
+        #expect(session.profilePhotoAssetID == newAssetID)
+        #expect(
+            await gateway.profileEvents == [
+                "uploaded:\(newAssetID.uuidString)",
+                "linked:\(newAssetID.uuidString)",
+                "delete:\(oldAssetID.uuidString)",
+            ]
+        )
+        #expect(await cache.profilePhotoData(for: oldAssetID) == nil)
+        #expect(await cache.profilePhotoData(for: newAssetID) != nil)
+        #expect(await invalidator.invalidatedMediaAssetIDs == [oldAssetID])
+    }
+
+    @Test func updateProfileLinkFailureDeletesOnlyNewOrphan() async throws {
+        let oldAssetID = try #require(UUID(uuidString: "10000000-0000-0000-0000-000000000001"))
+        let newAssetID = try #require(UUID(uuidString: "20000000-0000-0000-0000-000000000002"))
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .google),
+            profile: .test(
+                displayName: "Old",
+                onboardingCompletedAt: Date(),
+                profilePhotoAssetID: oldAssetID
+            ),
+            profilePhotoAssetID: newAssetID,
+            updateProfileShouldFail: true
+        )
+        let service = SupabaseAuthService(gateway: gateway)
+
+        await #expect(throws: AuthServiceError.noActiveSession) {
+            try await service.updateProfile(
+                displayName: "Jamie",
+                profilePhotoUpdate: .replace(Self.makeJPEGData())
+            )
+        }
+
+        #expect(await gateway.markedForDeletionAssetIDs == [newAssetID])
+    }
+
+    @Test func updateProfileClearsOldCacheEvenWhenBackendCleanupMustRetry() async throws {
+        let oldAssetID = try #require(UUID(uuidString: "10000000-0000-0000-0000-000000000001"))
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .google),
+            profile: .test(
+                displayName: "Old",
+                onboardingCompletedAt: Date(),
+                profilePhotoAssetID: oldAssetID
+            ),
+            markMediaForDeletionShouldFail: true
+        )
+        let cache = FakeProfilePhotoImageCache()
+        let invalidator = FakeProfilePhotoImageInvalidator()
+        try await cache.storeProfilePhotoData(Self.makeJPEGData(), for: oldAssetID)
+        let service = SupabaseAuthService(
+            gateway: gateway,
+            profilePhotoCache: cache,
+            profilePhotoInvalidator: invalidator
+        )
+
+        let session = try await service.updateProfile(
+            displayName: "Jamie",
+            profilePhotoUpdate: .remove
+        )
+
+        #expect(session.profilePhotoAssetID == nil)
+        #expect(await gateway.updatedProfilePhotoAssetID == nil)
+        #expect(await cache.profilePhotoData(for: oldAssetID) == nil)
+        #expect(await invalidator.invalidatedMediaAssetIDs == [oldAssetID])
+    }
+
+    @Test func updateProfileRemovingCustomPhotoRevealsProviderFallback() async throws {
+        let customAssetID = try #require(UUID(uuidString: "10000000-0000-0000-0000-000000000001"))
+        let fallbackAssetID = try #require(UUID(uuidString: "20000000-0000-0000-0000-000000000002"))
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .google),
+            profile: .test(
+                displayName: "Jamie",
+                onboardingCompletedAt: Date(),
+                profilePhotoAssetID: customAssetID,
+                providerProfilePhotoAssetID: fallbackAssetID
+            )
+        )
+        let service = SupabaseAuthService(gateway: gateway)
+
+        let session = try await service.updateProfile(
+            displayName: "Jamie",
+            profilePhotoUpdate: .remove
+        )
+
+        #expect(session.customProfilePhotoAssetID == nil)
+        #expect(session.providerProfilePhotoAssetID == fallbackAssetID)
+        #expect(session.profilePhotoAssetID == fallbackAssetID)
+        #expect(await gateway.markedForDeletionAssetIDs == [customAssetID])
+    }
+
     @Test func displayNamePolicyAllowsOnlyOneEnteredWord() {
         #expect(AuthDisplayNamePolicy.validatedSingleName(from: "Jamie") == "Jamie")
         #expect(AuthDisplayNamePolicy.validatedSingleName(from: "  Jamie  ") == "Jamie")
@@ -253,17 +441,61 @@ struct SupabaseAuthServiceTests {
         #expect(AuthDisplayNamePolicy.normalizedFirstName(from: "   ") == nil)
     }
 
-    @Test func requestAccountDeletionRequestsBackendThenSignsOut() async throws {
+    @Test func providerAvatarLoaderAcceptsOnlyHTTPSURLsWithHosts() {
+        #expect(
+            HTTPSProviderAvatarImageLoader.isSecureURL(
+                URL(string: "https://lh3.googleusercontent.com/avatar")
+            )
+        )
+        #expect(
+            !HTTPSProviderAvatarImageLoader.isSecureURL(
+                URL(string: "http://lh3.googleusercontent.com/avatar")
+            )
+        )
+        #expect(!HTTPSProviderAvatarImageLoader.isSecureURL(URL(string: "https:///avatar")))
+    }
+
+    @Test func providerAvatarLoaderKeepsRedirectsOnTheOriginalHTTPSHost() throws {
+        let requestedURL = try #require(
+            URL(string: "https://lh3.googleusercontent.com/avatar")
+        )
+
+        #expect(
+            HTTPSProviderAvatarImageLoader.isSecureRedirect(
+                from: requestedURL,
+                to: URL(string: "https://lh3.googleusercontent.com/new-avatar")
+            )
+        )
+        #expect(
+            !HTTPSProviderAvatarImageLoader.isSecureRedirect(
+                from: requestedURL,
+                to: URL(string: "https://example.com/avatar")
+            )
+        )
+        #expect(
+            !HTTPSProviderAvatarImageLoader.isSecureRedirect(
+                from: requestedURL,
+                to: URL(string: "http://lh3.googleusercontent.com/avatar")
+            )
+        )
+    }
+
+    @Test func requestAccountDeletionPassesAppleCodeThenSignsOut() async throws {
         let gateway = FakeSupabaseAuthGateway(
             remoteSession: .test(provider: .apple),
-            profile: .test(onboardingCompletedAt: Date())
+            profile: .test(onboardingCompletedAt: Date()),
+            accountDeletionOutcome: .manualAppleRevocationRequired
         )
         let service = SupabaseAuthService(gateway: gateway)
 
-        try await service.requestAccountDeletion()
+        let outcome = try await service.requestAccountDeletion(
+            appleAuthorizationCode: "fresh-apple-code"
+        )
 
         #expect(await gateway.requestAccountDeletionCallCount == 1)
+        #expect(await gateway.accountDeletionAppleCode == "fresh-apple-code")
         #expect(await gateway.signOutCallCount == 1)
+        #expect(outcome == .manualAppleRevocationRequired)
     }
 
     @Test func signOutClearsCachedProfilePhotosAfterRemoteSignOut() async throws {
@@ -291,7 +523,7 @@ struct SupabaseAuthServiceTests {
         let service = SupabaseAuthService(gateway: gateway)
 
         await #expect(throws: AuthServiceError.noActiveSession) {
-            try await service.requestAccountDeletion()
+            try await service.requestAccountDeletion(appleAuthorizationCode: nil)
         }
         #expect(await gateway.requestAccountDeletionCallCount == 0)
         #expect(await gateway.signOutCallCount == 0)
@@ -313,17 +545,27 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
     private(set) var uploadedProfilePhotoUserID: String?
     private(set) var completedProfilePhotoAssetID: UUID?
     private(set) var markedForDeletionAssetID: UUID?
+    private(set) var markedForDeletionAssetIDs: [UUID] = []
+    private(set) var updatedProfilePhotoAssetID: UUID?
+    private(set) var profileEvents: [String] = []
     private(set) var requestAccountDeletionCallCount = 0
+    private(set) var accountDeletionAppleCode: String?
     private(set) var signOutCallCount = 0
     private let uploadShouldFail: Bool
     private let completeProfileShouldFail: Bool
+    private let updateProfileShouldFail: Bool
+    private let markMediaForDeletionShouldFail: Bool
+    private let accountDeletionOutcome: AccountDeletionOutcome
 
     init(
         remoteSession: SupabaseRemoteSession?,
         profile: SupabaseProfile,
         profilePhotoAssetID: UUID? = nil,
         uploadShouldFail: Bool = false,
-        completeProfileShouldFail: Bool = false
+        completeProfileShouldFail: Bool = false,
+        updateProfileShouldFail: Bool = false,
+        markMediaForDeletionShouldFail: Bool = false,
+        accountDeletionOutcome: AccountDeletionOutcome = .completed
     ) {
         self.remoteSession = remoteSession
         self.profile = profile
@@ -332,6 +574,9 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
             ?? UUID()
         self.uploadShouldFail = uploadShouldFail
         self.completeProfileShouldFail = completeProfileShouldFail
+        self.updateProfileShouldFail = updateProfileShouldFail
+        self.markMediaForDeletionShouldFail = markMediaForDeletionShouldFail
+        self.accountDeletionOutcome = accountDeletionOutcome
     }
 
     func restoreSession() async throws -> SupabaseRemoteSession? {
@@ -366,7 +611,9 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
             timeZoneID: profile.timeZoneID,
             timeZoneUpdatedAt: profile.timeZoneUpdatedAt,
             onboardingCompletedAt: profile.onboardingCompletedAt,
-            profilePhotoAssetID: profile.profilePhotoAssetID
+            profilePhotoAssetID: profile.profilePhotoAssetID,
+            providerProfilePhotoAssetID: profile.providerProfilePhotoAssetID,
+            providerProfilePhotoSource: profile.providerProfilePhotoSource
         )
     }
 
@@ -378,11 +625,17 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
             throw AuthServiceError.invalidProfilePhoto
         }
         uploadedProfilePhotoUserID = userID
+        profileEvents.append("uploaded:\(profilePhotoAssetID.uuidString)")
         return profilePhotoAssetID
     }
 
     func markMediaForDeletion(_ mediaAssetID: UUID) async throws {
         markedForDeletionAssetID = mediaAssetID
+        markedForDeletionAssetIDs.append(mediaAssetID)
+        profileEvents.append("delete:\(mediaAssetID.uuidString)")
+        if markMediaForDeletionShouldFail {
+            throw AuthServiceError.invalidProfilePhoto
+        }
     }
 
     func completeProfileOnboarding(
@@ -401,13 +654,65 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
             timeZoneID: timeZoneID,
             timeZoneUpdatedAt: Date(),
             onboardingCompletedAt: Date(),
-            profilePhotoAssetID: profilePhotoAssetID
+            profilePhotoAssetID: profilePhotoAssetID,
+            providerProfilePhotoAssetID: profile.providerProfilePhotoAssetID,
+            providerProfilePhotoSource: profile.providerProfilePhotoSource
         )
         return profile
     }
 
-    func requestAccountDeletion() async throws {
+    func updateProfile(
+        userID: String,
+        displayName: String,
+        profilePhotoAssetID: UUID?
+    ) async throws -> SupabaseProfile {
+        updatedProfilePhotoAssetID = profilePhotoAssetID
+        profileEvents.append("linked:\(profilePhotoAssetID?.uuidString ?? "nil")")
+        if updateProfileShouldFail {
+            throw AuthServiceError.noActiveSession
+        }
+        profile = SupabaseProfile(
+            userID: userID,
+            displayName: displayName,
+            timeZoneID: profile.timeZoneID,
+            timeZoneUpdatedAt: profile.timeZoneUpdatedAt,
+            onboardingCompletedAt: profile.onboardingCompletedAt,
+            profilePhotoAssetID: profilePhotoAssetID,
+            providerProfilePhotoAssetID: profile.providerProfilePhotoAssetID,
+            providerProfilePhotoSource: profile.providerProfilePhotoSource
+        )
+        return profile
+    }
+
+    func updateProviderProfilePhoto(
+        userID: String,
+        profilePhotoAssetID: UUID,
+        source: String
+    ) async throws -> SupabaseProfile {
+        updatedProfilePhotoAssetID = profilePhotoAssetID
+        profileEvents.append("linked:\(profilePhotoAssetID.uuidString)")
+        if updateProfileShouldFail {
+            throw AuthServiceError.noActiveSession
+        }
+        profile = SupabaseProfile(
+            userID: userID,
+            displayName: profile.displayName,
+            timeZoneID: profile.timeZoneID,
+            timeZoneUpdatedAt: profile.timeZoneUpdatedAt,
+            onboardingCompletedAt: profile.onboardingCompletedAt,
+            profilePhotoAssetID: profile.profilePhotoAssetID,
+            providerProfilePhotoAssetID: profilePhotoAssetID,
+            providerProfilePhotoSource: source
+        )
+        return profile
+    }
+
+    func requestAccountDeletion(
+        appleAuthorizationCode: String?
+    ) async throws -> AccountDeletionOutcome {
         requestAccountDeletionCallCount += 1
+        accountDeletionAppleCode = appleAuthorizationCode
+        return accountDeletionOutcome
     }
 
     func signOut() async throws {
@@ -440,6 +745,28 @@ private actor FakeProfilePhotoImageCache: ProfilePhotoImageCaching {
     }
 }
 
+private actor FakeProviderAvatarImageLoader: ProviderAvatarImageLoading {
+    private let data: Data?
+    private(set) var requestedURLs: [URL] = []
+
+    init(data: Data?) {
+        self.data = data
+    }
+
+    func imageData(from url: URL) async -> Data? {
+        requestedURLs.append(url)
+        return data
+    }
+}
+
+private actor FakeProfilePhotoImageInvalidator: ProfilePhotoImageInvalidating {
+    private(set) var invalidatedMediaAssetIDs: [UUID] = []
+
+    func invalidate(mediaAssetID: UUID) async {
+        invalidatedMediaAssetIDs.append(mediaAssetID)
+    }
+}
+
 private extension SupabaseRemoteSession {
     static func test(
         provider: AuthProvider,
@@ -460,7 +787,9 @@ private extension SupabaseProfile {
         timeZoneID: String? = "Europe/Oslo",
         timeZoneUpdatedAt: Date? = Date(),
         onboardingCompletedAt: Date?,
-        profilePhotoAssetID: UUID? = nil
+        profilePhotoAssetID: UUID? = nil,
+        providerProfilePhotoAssetID: UUID? = nil,
+        providerProfilePhotoSource: String? = nil
     ) -> SupabaseProfile {
         SupabaseProfile(
             userID: "user-id",
@@ -468,7 +797,9 @@ private extension SupabaseProfile {
             timeZoneID: timeZoneID,
             timeZoneUpdatedAt: timeZoneUpdatedAt,
             onboardingCompletedAt: onboardingCompletedAt,
-            profilePhotoAssetID: profilePhotoAssetID
+            profilePhotoAssetID: profilePhotoAssetID,
+            providerProfilePhotoAssetID: providerProfilePhotoAssetID,
+            providerProfilePhotoSource: providerProfilePhotoSource
         )
     }
 }

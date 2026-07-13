@@ -3,16 +3,16 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Join Paeonia',
-  description: 'Paeonia partner invite links will open the shared space for a couple.',
+  description: 'Open a Paeonia partner invite on your iPhone.',
 };
 
 export default function JoinPage() {
   return (
     <main className="page-shell narrow">
-      <h1>Partner invites will open Paeonia.</h1>
+      <h1>Open Paeonia on your iPhone.</h1>
       <p className="lede">
-        When Paeonia launches, this link will connect you with your partner inside your shared space.
-        There are no public profiles, people search, or suggested matches in the app.
+        If Paeonia is installed, open this invite link again on your iPhone to join your partner. If
+        you do not have the app yet, ask your partner for the current invite instructions.
       </p>
       <div className="actions">
         <Link className="button" href="/en/">

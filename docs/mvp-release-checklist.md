@@ -4,6 +4,8 @@ This is the active execution checklist for getting Paeonia to a review-ready MVP
 
 Use this instead of a phase roadmap. Paeonia is now past early planning: the important question is not "what phase are we in?", but "what must be true before we can ship?"
 
+Checklist status was reconciled against repository source and public endpoint availability on 2026-07-11. Checked source/configuration items are not substitutes for device or production-flow QA; those stay unchecked until they are exercised in the environment named by the item.
+
 ## Shipping Standard
 
 Paeonia is ready for MVP when:
@@ -22,27 +24,27 @@ Paeonia is ready for MVP when:
 - Migration and RLS checklist: `docs/phase-3-migration-checklist.md`
 - Marketing/app contract: `docs/marketing-app-contract.md`
 - Design and copy rules: `docs/phase-2-design/`
-- Current UX risks: `docs/ux-friction-report.md`
+- Historical UX audit with a current status summary: `docs/ux-friction-report.md`
 - Question authoring rules: `docs/couple-question-guidelines.md`
 
 ## Release Blockers
 
 These block TestFlight/App Review until resolved.
 
-- [ ] No active docs, scripts, or agent instructions point at the removed phase roadmap.
-- [ ] `docs/implementation-map.md` accurately reflects the current feature ownership.
-- [ ] No reachable app screen says "test account", "not ready", "still building", or similar placeholder copy.
+- [x] No active docs, scripts, or agent instructions point at the removed phase roadmap.
+- [x] `docs/implementation-map.md` accurately reflects the current feature ownership.
+- [x] No reachable app screen says "test account", "not ready", "still building", or similar placeholder copy.
 - [ ] Public privacy policy is final and live at `https://paeonia.no/privacy`.
 - [ ] Public terms are final and live at `https://paeonia.no/terms`.
 - [ ] Support page is final and live at `https://paeonia.no/support`.
-- [ ] In-app legal/support links open the production URLs.
+- [x] In-app legal/support links open the production URLs.
 - [ ] Account deletion works end-to-end from the app.
 - [ ] Relationship leave/disconnect hides shared content after sync.
 - [ ] App Review can access a paired demo state without needing two reviewer-controlled devices.
 - [ ] In-app purchase products are configured in App Store Connect.
 - [ ] StoreKit sandbox purchase, restore, and entitlement refresh are tested on device.
 - [ ] One paying partner unlocks both partners through backend entitlement.
-- [ ] Subscription terms are clear before purchase.
+- [x] Subscription terms are clear before purchase.
 - [ ] App icon is final in the app target, widget target, and App Store assets.
 - [ ] App Store privacy labels match the actual data collected by the build.
 
@@ -50,73 +52,75 @@ These block TestFlight/App Review until resolved.
 
 - [ ] Worktree is clean before release candidate tagging.
 - [ ] Local branch is pushed intentionally before remote deployment.
-- [ ] No secrets, service-role keys, APNs keys, StoreKit secrets, or review access codes are committed.
-- [ ] `.gitignore` excludes generated build output, Xcode derived data, local Supabase temp files, and local environment files.
-- [ ] `AGENTS.md` points agents to `docs/mvp-release-checklist.md` and `docs/implementation-map.md` as the active planning/navigation docs.
-- [ ] CI smoke checks run on pushes.
+- [x] No secrets, service-role keys, APNs keys, StoreKit secrets, or review access codes are committed.
+- [x] `.gitignore` excludes generated build output, Xcode derived data, local Supabase temp files, and local environment files.
+- [x] `AGENTS.md` points agents to `docs/mvp-release-checklist.md` and `docs/implementation-map.md` as the active planning/navigation docs.
+- [x] CI smoke checks run on pushes.
 - [ ] The committed project opens cleanly in Xcode.
 - [ ] The committed SwiftPM/package state is portable for a fresh checkout.
-- [ ] Local-only/debug-only surfaces are either removed or hidden behind debug configuration.
-- [ ] Generated assets are committed only when they are canonical source or required runtime assets.
+- [x] Local-only/debug-only surfaces are either removed or hidden behind debug configuration.
+- [x] Generated assets are committed only when they are canonical source or required runtime assets.
 
 ## Verification Commands
 
 Run these before a release candidate.
 
-- [ ] `swiftlint --quiet`
-- [ ] `./scripts/xcode-build-agent.sh --json`
-- [ ] `./scripts/xcode-test-agent.sh --json`
-- [ ] `pnpm --filter marketing build`
-- [ ] `DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase db lint --local --schema public,internal --fail-on error`
-- [ ] `DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase db reset --local --no-seed`
+- [x] `swiftlint --quiet` (exit 0; advisory warnings remain).
+- [x] `./scripts/xcode-build-agent.sh --json` (Xcode 27 beta; succeeded).
+- [x] `./scripts/xcode-test-agent.sh --json` (468 tests, 0 failures).
+- [x] `pnpm --filter marketing build`
+- [x] `DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase db lint --local --schema public,internal --fail-on error`
+- [x] `DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase db reset --local --no-seed`
+- [x] `DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase test db` (168 pgTAP tests, 0 failures).
 
 Record any skipped command with the reason.
 
 ## iOS App Configuration
 
-- [ ] Bundle identifier is final: `no.paeonia.app`.
-- [ ] Display name is final: `Paeonia`.
-- [ ] Minimum supported iOS version is intentional.
-- [ ] App Group entitlement is present for app and widget.
-- [ ] Associated Domains include `applinks:paeonia.no`.
-- [ ] Push notification capability is configured.
-- [ ] Sign in with Apple capability is configured.
-- [ ] Location usage descriptions are present and plain-language.
-- [ ] Microphone usage description is present for voice notes.
-- [ ] Photo library/camera usage descriptions are present for media answers and memories.
+- [x] Bundle identifier is final: `no.paeonia.app`.
+- [x] Display name is final: `Paeonia`.
+- [x] Minimum supported iOS version is intentional.
+- [x] App Group entitlement is present for app and widget.
+- [x] Associated Domains include `applinks:paeonia.no`.
+- [x] Push notification capability is configured.
+- [x] Sign in with Apple capability is configured.
+- [x] Location usage descriptions are present and plain-language.
+- [x] Microphone usage description is present for voice notes.
+- [x] Photo library/camera usage descriptions are present for media answers and memories.
 - [ ] Widget target is embedded and visible in a release build.
-- [ ] Notification Service Extension is configured if required by the shipped notification behavior.
-- [ ] App icon asset is linked correctly in all relevant targets.
-- [ ] Launch screen uses final brand treatment or an intentionally minimal native launch.
-- [ ] Release build configuration points at production Supabase and production marketing URLs.
-- [ ] Debug/test account shortcuts are unavailable in release builds.
+- [x] Notification Service Extension is configured if required by the shipped notification behavior.
+- [x] App icon asset is linked correctly in all relevant targets.
+- [x] Launch screen uses final brand treatment or an intentionally minimal native launch.
+- [x] Release build configuration points at production Supabase and production marketing URLs.
+- [x] Debug/test account shortcuts are unavailable in release builds.
 
 ## Authentication And Onboarding
 
 - [ ] Sign in with Apple works with normal Apple ID.
 - [ ] Sign in with Apple works with private relay email.
 - [ ] Google Sign-In works.
-- [ ] No email/password, magic-link, or passkey sign-up surface is reachable in MVP.
+- [x] No email/password, magic-link, or passkey sign-up surface is reachable in MVP.
 - [ ] Auth errors are understandable to a normal user.
-- [ ] OAuth profile name is used when available.
-- [ ] Name fallback flow works when OAuth does not provide a usable name.
-- [ ] Display name can be changed later.
-- [ ] Profile photo upload works.
-- [ ] Profile photo fallback from provider works when user-uploaded photo is missing.
-- [ ] Onboarding collects relationship start date.
-- [ ] Relationship start date validation is clear.
-- [ ] The user sees paywall after account creation and before pairing, per product decision.
-- [ ] A user can sign out from post-auth onboarding/paywall states.
-- [ ] A user can delete the account from post-auth onboarding/paywall states.
-- [ ] Account deletion copy states real consequences, not test-device language.
+- [x] OAuth profile name is used when available.
+- [x] Name fallback flow works when OAuth does not provide a usable name.
+- [x] Display name can be changed later.
+- [x] Profile photo upload and replacement have a tested source path.
+- [x] A private OAuth profile-photo fallback appears when the user-uploaded override is missing and cannot itself be removed.
+- [x] Relationship start date is collected contextually from the milestone card, not during onboarding.
+- [x] Relationship start date validation is clear.
+- [x] The user sees paywall after account creation and before pairing, per product decision.
+- [x] A user can sign out from post-auth onboarding/paywall states.
+- [x] A user can delete the account from post-auth onboarding/paywall states.
+- [x] Account deletion copy states real consequences, not test-device language.
 
 ## Paywall, StoreKit, And Entitlements
 
 - [ ] Subscription group exists in App Store Connect.
 - [ ] Product IDs in App Store Connect match `subscription_products`.
 - [ ] Product prices and periods load correctly.
-- [ ] Intro offer/trial copy matches the actual StoreKit product.
-- [ ] Primary CTA says what happens next, for example App Store confirmation.
+- [x] Intro offer/trial copy is derived from the loaded StoreKit product.
+- [x] The trial timeline's two-days-left promise is backed by an idempotent localized push queued from verified Apple trial data.
+- [x] Primary CTA says what happens next, including App Store confirmation.
 - [ ] Restore purchases works when signed into the paying account.
 - [ ] Restore does not grant access to unrelated accounts.
 - [ ] Backend records verified StoreKit transactions.
@@ -127,31 +131,31 @@ Record any skipped command with the reason.
 - [ ] Lifetime/test/review grants are scoped, auditable, revocable, and intentional.
 - [ ] App checks whether the current couple already has active entitlement before starting purchase.
 - [ ] Simultaneous purchase attempts cannot create conflicting active entitlements.
-- [ ] Manage subscription link is available in settings or paywall footer.
-- [ ] Subscription sharing is explained clearly: one subscription unlocks Paeonia for both partners.
-- [ ] Paywall does not imply free access if the product is paid.
-- [ ] Paywall invite-code entry does not confuse joining with purchasing.
+- [x] Manage subscription link is available in settings or paywall footer.
+- [x] Subscription sharing is explained clearly: one subscription unlocks Paeonia for both partners.
+- [x] Paywall does not imply free access if the product is paid.
+- [x] Paywall invite-code entry does not confuse joining with purchasing.
 
 ## Pairing And Relationship Lifecycle
 
 - [ ] Invite creation works for an unpaired entitled user.
 - [ ] Invite code is short enough to share manually.
 - [ ] Invite link opens the app through Universal Links.
-- [ ] `/join/*` fallback route explains what to do if the app is not installed.
-- [ ] Accepting an invite previews who invited the user before pairing.
-- [ ] Accepting an invite requires explicit confirmation.
-- [ ] Expired invite handling is clear.
+- [x] `/join/*` fallback route explains what to do if the app is not installed.
+- [x] Accepting an invite previews who invited the user before pairing.
+- [x] Accepting an invite requires explicit confirmation.
+- [x] Expired invite handling is clear.
 - [ ] Already-paired user cannot accidentally join another relationship.
 - [ ] Pending invites do not create empty couples.
 - [ ] Couple row is created only after acceptance.
-- [ ] Pairing celebration works without blocking access if animation fails.
-- [ ] Relationship ended notice is a real screen/state, not an unavailable placeholder.
-- [ ] Leaving a relationship is clearly warned.
-- [ ] Leaving immediately removes access to shared relationship content.
-- [ ] Leaving schedules backend cleanup according to retention policy.
-- [ ] Account deletion while paired has the same relationship effect as leaving.
-- [ ] Prior report/block safety warnings behave as documented if re-pairing is attempted.
-- [ ] No public discovery, user search, or profile lookup is reachable.
+- [x] Pairing celebration works without blocking access if animation fails.
+- [x] Relationship ended notice is a real screen/state, not an unavailable placeholder.
+- [x] Leaving a relationship is clearly warned.
+- [x] Leaving immediately removes local access to shared relationship content.
+- [x] Leaving schedules backend cleanup according to retention policy.
+- [x] Account deletion while paired has the same relationship effect as leaving.
+- [x] Prior report/block safety warnings behave as documented if re-pairing is attempted.
+- [x] No public discovery, user search, or profile lookup is reachable.
 
 ## Daily Challenge
 
@@ -217,8 +221,7 @@ Record any skipped command with the reason.
 - [ ] Memory media cache clears on relationship access loss.
 - [ ] Memory deletion/hide behavior matches product decision and RLS.
 - [ ] Memory thread-message write path is either surfaced in UI or intentionally deferred.
-- [ ] If voice notes remain MVP scope for memories, memory voice recording/upload/playback is implemented and tested.
-- [ ] If memory voice notes are cut from MVP, that cut is explicitly documented and App Store screenshots/copy do not imply it.
+- [x] Memory voice notes are cut from MVP; active product copy and App Store materials must not imply that memories include voice.
 
 ## Widget Drawing
 
@@ -237,35 +240,35 @@ Record any skipped command with the reason.
 - [ ] Drawing history shows author and timestamp.
 - [ ] Clearing canvas is local until a new revision is saved.
 - [ ] Drawing save failure keeps the drawing recoverable.
-- [ ] Widget privacy setting exists or the shipped behavior is explicitly privacy-safe by default.
-- [ ] Widget does not expose sensitive private text on the lock screen.
-- [ ] App Group data clears on sign-out, account deletion, and relationship access loss.
+- [x] Widget privacy setting exists or the shipped behavior is explicitly privacy-safe by default.
+- [x] Widget does not expose sensitive private text on the lock screen.
+- [x] App Group data clears on sign-out, account deletion, and permanent relationship access loss; temporary entitlement loss uses a privacy-safe hide.
 
 ## Countdown And Relationship Milestones
 
-- [ ] Relationship start date flows from onboarding/server state to home.
-- [ ] Countdown defaults to next monthly milestone under one year.
-- [ ] Countdown defaults to next anniversary after one year.
-- [ ] Round day milestones behave intentionally.
-- [ ] Missing/invalid start date shows honest setup copy, not fake data.
-- [ ] Countdown date formatting localizes correctly.
-- [ ] Countdown card has no hardcoded sample milestone in release.
-- [ ] Custom countdowns are either implemented or absent from claims/screenshots.
+- [x] Relationship start date flows from the milestone setup/server state to home.
+- [x] Countdown defaults to next monthly milestone under one year.
+- [x] Countdown defaults to next anniversary after one year.
+- [x] Round day milestones behave intentionally.
+- [x] Missing/invalid start date shows honest setup copy, not fake data.
+- [x] Countdown date formatting localizes correctly.
+- [x] Countdown card has no hardcoded sample milestone in release.
+- [x] Custom countdowns are absent from active product claims/screenshots.
 - [ ] Countdown reminders are either implemented or absent from notification settings/copy.
 
 ## Partner Location
 
-- [ ] Location map is hidden unless both partners opt in.
-- [ ] Location permission is requested at the right moment.
-- [ ] Permission copy explains latest location only, foreground updates only, and no location history.
-- [ ] Foreground location update works.
-- [ ] Offline stale location retries cannot overwrite newer location.
-- [ ] Latest partner location displays with last-updated relative time.
-- [ ] Stale marker behavior after 24 hours is implemented or intentionally deferred from UI claims.
-- [ ] Disabling sharing deletes/hides latest location as documented.
-- [ ] Relationship end/account deletion removes location visibility.
+- [x] Location map is hidden unless both partners opt in.
+- [x] Location permission is requested at the right moment.
+- [x] Permission copy explains latest location only, foreground updates only, and no location history.
+- [x] Foreground location update has a tested source path.
+- [x] Offline stale location retries cannot overwrite newer location.
+- [x] Latest partner location displays with last-updated relative time.
+- [x] Stale marker behavior after 24 hours is implemented or intentionally deferred from UI claims.
+- [x] Disabling sharing deletes/hides latest location as documented.
+- [x] Relationship end/account deletion removes location visibility.
 - [ ] App Store privacy labels include precise location.
-- [ ] Privacy policy explains partner location clearly.
+- [x] Privacy policy explains opt-in latest-location sharing, no history, stale timestamps, and deletion behavior clearly.
 
 ## Notifications
 
@@ -287,22 +290,22 @@ Record any skipped command with the reason.
 
 ## Settings, Privacy, And Account Controls
 
-- [ ] Settings tab/screen exposes profile, relationship, subscription, notification, location, legal, support, sign-out, and deletion paths as appropriate.
-- [ ] User can update display name.
-- [ ] User can update profile photo.
-- [ ] User can sign out.
-- [ ] User can restore purchases.
-- [ ] User can manage subscription.
-- [ ] User can leave relationship.
-- [ ] User can report and leave relationship.
-- [ ] User can delete account.
-- [ ] User can create privacy/data request or contact support for data access/export.
-- [ ] Delete account copy explains account, relationship, and content consequences.
-- [ ] Destructive actions require confirmation.
-- [ ] Support email is `support@paeonia.no`.
-- [ ] Contact email is `contact@paeonia.no`.
+- [x] Settings tab/screen exposes profile, relationship, subscription, notification, location, legal, support, sign-out, and deletion paths as appropriate.
+- [x] User can update display name.
+- [x] User can update a custom profile photo; the OAuth fallback remains available.
+- [x] User can sign out.
+- [x] User can restore purchases through StoreKit and refresh access.
+- [x] User can manage subscription.
+- [x] User can leave relationship.
+- [x] User can report and leave relationship.
+- [x] User can initiate account deletion.
+- [x] User can create a privacy/data request or contact support for data access/export.
+- [x] Delete account copy explains account, relationship, and content consequences.
+- [x] Destructive actions require confirmation.
+- [x] Support email is `support@paeonia.no`.
+- [x] Contact email is `contact@paeonia.no`.
 - [ ] Reported content remains visible/hidden according to product decision until admin action.
-- [ ] Admin/moderation runbook exists for reports, even without admin UI.
+- [x] Admin/moderation runbook exists for reports, even without admin UI.
 
 ## Offline-First And Sync
 
@@ -311,61 +314,63 @@ Record any skipped command with the reason.
 - [ ] Daily challenge snapshot cache works.
 - [ ] Memory cache works.
 - [ ] Widget payload cache works.
-- [ ] Location visibility cache does not leak after relationship access loss.
+- [x] Location visibility cache does not leak after relationship access loss.
 - [ ] Pending operations are idempotent.
 - [ ] Pending operation retries do not duplicate answers, memories, drawings, or locations.
 - [ ] Sync cursors persist only after successful page/application.
-- [ ] Relationship access-loss events clear private local caches.
-- [ ] Sign-out clears private local caches.
-- [ ] Account deletion clears private local caches.
-- [ ] Media draft stores do not leak content across users.
+- [x] Relationship access-loss events clear or privacy-hide private local caches according to whether loss is permanent.
+- [x] Sign-out clears private local caches.
+- [x] Account deletion clears private local caches.
+- [x] Media draft stores do not leak content across users.
 - [ ] Slow network states are understandable.
 - [ ] Recoverable sync errors route through the shared banner or local status, not raw technical messages.
 - [ ] No private content is written to logs.
 
 ## Supabase Schema, RLS, And Storage
 
-- [ ] All migrations apply cleanly to a fresh local database.
-- [ ] Supabase lint has no blocking findings.
-- [ ] RLS is enabled on all client-facing tables.
-- [ ] Public RPC wrappers are thin `security definer` wrappers with fixed `search_path`.
-- [ ] Internal functions perform `auth.uid()` authorization checks.
-- [ ] Foreign keys and indexes exist for relationship/user/couple access paths.
-- [ ] `internal` schema is not broadly exposed to ordinary clients.
-- [ ] Storage buckets are private.
-- [ ] Profile photo bucket policy is correct.
-- [ ] Couple media bucket policy is correct.
-- [ ] Widget drawing payload bucket policy is correct.
-- [ ] Report snapshot bucket policy is correct.
-- [ ] Media reservation/finalize flow prevents path spoofing.
-- [ ] Orphaned media cleanup job works.
+Remote baseline checked on 2026-07-10: all 74 committed migrations are present and the five expected Edge Functions are active. Advisors have no blocking findings. The security advisor reports 64 warnings for authenticated `security definer` public wrappers; these are intentional thin wrappers over authorized `internal.*` implementations required by Paeonia's schema boundary. The performance advisor reports 67 unused-index informational findings on the pre-launch dataset; retain the relationship, RLS, cleanup, and foreign-key indexes until representative production usage exists.
+
+- [x] All migrations apply cleanly to a fresh local database.
+- [x] Supabase lint has no blocking findings.
+- [x] RLS is enabled on all client-facing tables.
+- [x] Public app RPC wrappers that call `internal.*` are thin `security definer` wrappers with fixed `search_path`; service-only invoker wrappers remain restricted.
+- [x] Internal app functions perform `auth.uid()` authorization checks where user context is required.
+- [x] Foreign keys and indexes exist for relationship/user/couple access paths.
+- [x] `internal` schema is not broadly exposed to ordinary clients.
+- [x] Storage buckets are private.
+- [x] Profile photo bucket policy covers custom and private provider-fallback assets.
+- [x] Couple media bucket policy is covered by the security surface tests.
+- [x] Widget drawing payload bucket policy is covered by the security surface tests.
+- [x] Report snapshot bucket policy is covered by the security surface tests.
+- [x] Media reservation/finalize flow prevents path spoofing.
+- [x] Orphaned media cleanup behavior is covered by pgTAP.
 - [ ] Relationship cleanup job works.
-- [ ] StoreKit notification endpoint is deployed.
-- [ ] Widget push endpoint is deployed.
-- [ ] Cleanup media endpoint is deployed.
+- [x] StoreKit notification endpoint is deployed.
+- [x] Widget push endpoint is deployed.
+- [x] Cleanup media endpoint is deployed.
 - [ ] Edge Function environment variables are configured in production.
-- [ ] `api.paeonia.no` custom domain works for Supabase.
-- [ ] Advisors are checked and intentional findings are documented.
-- [ ] No service-role path is reachable from the client.
+- [x] `api.paeonia.no` custom domain works for Supabase.
+- [x] Advisors are checked and intentional findings are documented.
+- [x] No service-role credential/path is reachable from the client source.
 
 ## Marketing Site
 
-- [ ] `pnpm --filter marketing build` succeeds with static export.
-- [ ] Cloudflare Pages deploy succeeds.
-- [ ] `https://paeonia.no/` loads.
-- [ ] `https://www.paeonia.no/` redirects or resolves correctly.
-- [ ] `https://paeonia.no/privacy` loads.
-- [ ] `https://paeonia.no/terms` loads.
-- [ ] `https://paeonia.no/support` loads.
-- [ ] `https://paeonia.no/join/<code>` fallback loads.
-- [ ] `/.well-known/apple-app-site-association` is served with the correct content type and no redirect problem.
-- [ ] Marketing logo assets load in production.
-- [ ] Favicon uses the mark, not a broken app-icon asset.
+- [x] `pnpm --filter marketing build` succeeds with static export (verified 2026-07-11).
+- [x] Cloudflare Pages deploy succeeds.
+- [x] `https://paeonia.no/` loads.
+- [x] `https://www.paeonia.no/` redirects or resolves correctly.
+- [x] `https://paeonia.no/privacy` loads.
+- [x] `https://paeonia.no/terms` loads.
+- [x] `https://paeonia.no/support` loads.
+- [x] `https://paeonia.no/join/<code>` fallback loads.
+- [x] `/.well-known/apple-app-site-association` is served with the correct content type and no redirect problem.
+- [x] Marketing logo assets load in production.
+- [x] Favicon uses the mark, not a broken app-icon asset.
 - [ ] Header/footer links are not duplicated or noisy.
 - [ ] Landing page language matches shipped app state: private beta, TestFlight, or launched.
 - [ ] Landing page does not promise unshipped features.
-- [ ] Legal pages are no longer placeholder shells.
-- [ ] Support page lists current support/contact emails.
+- [x] Legal pages contain production-oriented English and Norwegian privacy and terms text; final publication and legal review remain release-owner responsibilities.
+- [x] Support page lists current support/contact emails.
 - [ ] Open Graph metadata uses final brand assets.
 
 ## Localization And Copy
@@ -374,11 +379,11 @@ Record any skipped command with the reason.
 - [ ] Swift code uses generated localization symbols, not raw keys.
 - [ ] English strings are clear enough for a 16-year-old user.
 - [ ] Norwegian Bokmal strings are natural, not technical database-sounding translations.
-- [ ] All new keys have translator comments.
+- [x] All new keys have English, Norwegian Bokmal, and translator comments.
 - [ ] No stale placeholder localization keys are reachable.
-- [ ] Paywall copy is audited in English and Norwegian.
-- [ ] Account deletion copy is audited in English and Norwegian.
-- [ ] Location sharing copy is audited in English and Norwegian.
+- [x] Paywall copy is audited in English and Norwegian.
+- [x] Account deletion copy is audited in English and Norwegian.
+- [x] Location sharing copy is audited in English and Norwegian.
 - [ ] Daily answer reveal copy is audited in English and Norwegian.
 - [ ] Widget drawing save/clear copy is audited in English and Norwegian.
 - [ ] App Store metadata copy matches in-app language.
@@ -451,11 +456,11 @@ Run these on real devices where possible.
 
 ## App Store Connect
 
-- [ ] App name: `Paeonia`.
-- [ ] Subtitle written.
-- [ ] Promotional text written.
-- [ ] Description written.
-- [ ] Keywords selected.
+- [x] App name: `Paeonia`.
+- [x] Subtitle written.
+- [x] Promotional text written.
+- [x] Description written.
+- [x] Keywords selected.
 - [ ] Category selected.
 - [ ] Age rating questionnaire completed honestly.
 - [ ] Copyright filled.

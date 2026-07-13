@@ -45,6 +45,46 @@ struct ProfilePhotoImageServiceTests {
         #expect(secondData == nil)
         #expect(await urlProvider.requestedMediaAssetIDs == [mediaAssetID])
     }
+
+    @Test func invalidatingPhotoRemovesCachedBytesAndBlocksTheRetiredAssetID() async throws {
+        let mediaAssetID = UUID()
+        let cache = FakeProfilePhotoCache(seed: [mediaAssetID: Data([0x01])])
+        let urlProvider = FakeProfilePhotoURLProvider(
+            signedURL: try #require(URL(string: "https://example.com/profile.jpg"))
+        )
+        let service = ProfilePhotoImageService(cache: cache, urlProvider: urlProvider)
+
+        await service.invalidate(mediaAssetID: mediaAssetID)
+        let data = await service.profilePhotoData(for: mediaAssetID)
+
+        #expect(data == nil)
+        #expect(await cache.storedData(for: mediaAssetID) == nil)
+        #expect(await urlProvider.requestedMediaAssetIDs.isEmpty)
+    }
+
+    @Test func invalidatingDuringDownloadPreventsStaleBytesFromBeingRewritten() async throws {
+        let mediaAssetID = UUID()
+        let cache = FakeProfilePhotoCache()
+        let downloader = SuspendingProfilePhotoDownloader(data: Data([0x01, 0x02]))
+        let urlProvider = FakeProfilePhotoURLProvider(
+            signedURL: try #require(URL(string: "https://example.com/profile.jpg"))
+        )
+        let service = ProfilePhotoImageService(
+            cache: cache,
+            urlProvider: urlProvider,
+            downloader: downloader
+        )
+
+        let load = Task { await service.profilePhotoData(for: mediaAssetID) }
+        await downloader.waitUntilStarted()
+        let invalidation = Task { await service.invalidate(mediaAssetID: mediaAssetID) }
+        await Task.yield()
+        await downloader.release()
+
+        await invalidation.value
+        #expect(await load.value == nil)
+        #expect(await cache.storedData(for: mediaAssetID) == nil)
+    }
 }
 
 private actor FakeProfilePhotoCache: ProfilePhotoImageCaching {
@@ -69,15 +109,21 @@ private actor FakeProfilePhotoCache: ProfilePhotoImageCaching {
     func removeAllProfilePhotoData() async throws {
         storedData.removeAll()
     }
+
+    func storedData(for mediaAssetID: UUID) -> Data? {
+        storedData[mediaAssetID]
+    }
 }
 
 private actor FakeProfilePhotoURLProvider: ProfilePhotoURLProviding {
     private(set) var requestedMediaAssetIDs: [UUID?] = []
     private let waitsForRelease: Bool
+    private let signedURL: URL?
     private var isReleased = false
 
-    init(waitsForRelease: Bool = false) {
+    init(waitsForRelease: Bool = false, signedURL: URL? = nil) {
         self.waitsForRelease = waitsForRelease
+        self.signedURL = signedURL
     }
 
     func signedProfilePhotoURL(for mediaAssetID: UUID?) async throws -> URL? {
@@ -85,10 +131,48 @@ private actor FakeProfilePhotoURLProvider: ProfilePhotoURLProviding {
         while waitsForRelease && !isReleased {
             await Task.yield()
         }
-        return nil
+        return signedURL
     }
 
     func release() {
         isReleased = true
+    }
+}
+
+private actor SuspendingProfilePhotoDownloader: ProfilePhotoDataDownloading {
+    private let data: Data
+    private var continuation: CheckedContinuation<ProfilePhotoDownload, Never>?
+    private var startedWaiters: [CheckedContinuation<Void, Never>] = []
+    private var didStart = false
+
+    init(data: Data) {
+        self.data = data
+    }
+
+    func download(from _: URL) async throws -> ProfilePhotoDownload {
+        await withCheckedContinuation { continuation in
+            self.continuation = continuation
+            didStart = true
+            let waiters = startedWaiters
+            startedWaiters.removeAll()
+            waiters.forEach { $0.resume() }
+        }
+    }
+
+    func waitUntilStarted() async {
+        guard !didStart else {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            startedWaiters.append(continuation)
+        }
+    }
+
+    func release() {
+        continuation?.resume(
+            returning: ProfilePhotoDownload(data: data, statusCode: 200)
+        )
+        continuation = nil
     }
 }

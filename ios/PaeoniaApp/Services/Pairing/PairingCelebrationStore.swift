@@ -11,6 +11,7 @@ final class UserDefaultsPairingCelebrationStore: PairingCelebrationStoring {
     static let shared = UserDefaultsPairingCelebrationStore()
 
     private let defaults: UserDefaults
+    private let keyPrefix = "paeonia.pairing.celebration.seen."
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -24,7 +25,13 @@ final class UserDefaultsPairingCelebrationStore: PairingCelebrationStoring {
         defaults.set(true, forKey: key(for: pairID))
     }
 
+    func clearAll() {
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(keyPrefix) {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
     private func key(for pairID: UUID) -> String {
-        "paeonia.pairing.celebration.seen.\(pairID.uuidString)"
+        "\(keyPrefix)\(pairID.uuidString)"
     }
 }

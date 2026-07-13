@@ -4,7 +4,7 @@ Plan date: 2026-07-01
 
 This is the agreed plan for Paeonia's first-run experience, split into pre-auth (the hook) and post-auth (setup + activation). It captures the current baseline as verified in code, the locked product decisions, the target flow for both partners, and the implementation slices in build order.
 
-Nothing here is implemented yet. This document is the plan; `docs/implementation-map.md` remains the source of truth for who owns which behavior once work lands.
+The pre-auth carousel, first-class invite-code entry, anniversary refactor, paywall reframe, and permission priming are implemented. The optional waiting-room gift remains a fast-follow, not an MVP blocker. `docs/implementation-map.md` is the source of truth for the files that own landed behavior.
 
 ## Guiding Insight
 
@@ -22,8 +22,8 @@ Cold-launch intro → `SignInView` (single screen) → `AuthOnboardingView` (nam
 - Access states live in `ios/PaeoniaApp/Services/Access/AccessRoute.swift` (`AccessRouteResolver`). The paywall shows at `.limitedAuthenticated` and `.pairedPaywalled`.
 - The paywall already sells a **14-day free trial** (introductory offer live in App Store Connect) and embeds invite-code entry (`ios/PaeoniaApp/Features/Paywall/Components/PaywallInviteCodeView.swift`), so the joining partner pays nothing — one `coupleEntitlement` covers the couple.
 - Post-auth setup collects only display name (single word, prefilled from Apple/Google) plus an optional photo (`ios/PaeoniaApp/Features/Auth/AuthBaselineViews.swift`, `AuthOnboardingView`). Timezone is captured silently.
-- **`couples.started_on` is faked**: `PaywallViewModel.acceptInvite` passes `PairingStartDate(date: Date())`, so the milestone countdown counts from the pairing day, not the couple's real anniversary (`ios/PaeoniaApp/Features/Paywall/Offer/PaywallViewModel.swift`).
-- **Permissions are cold asks.** Push is requested once `.paired` (`ios/PaeoniaApp/App/RootView.swift`, `requestPushAuthorizationIfPaired` → `ios/PaeoniaApp/Services/Notifications/PushAuthorizationService.swift`); location is a lazy `requestWhenInUseAuthorization` at the map surface (`ios/PaeoniaApp/Services/Location/ForegroundLocationCaptureService.swift`). Neither is primed.
+- **Relationship dates are contextual and truthful.** Ordinary invite acceptance leaves `couples.started_on` unset. The Us-tab milestone tile shows an honest setup state, either entitled partner can set or edit the date, and the local-first queue preserves the newest choice until both clients refresh.
+- **Permissions are contextual asks.** Push keeps its post-pairing timing, but `RootView` first presents a persisted one-benefit primer and requests the iOS permission only after an explicit continue. Location remains lazy at the map surface, where the empty state explains latest-location-only, foreground-only, no-history behavior before the system request.
 
 ## Pre-Auth vs Post-Auth
 
@@ -82,29 +82,29 @@ Collect each item at the latest moment it is actually needed, tied to the benefi
 
 Turns a faked value into an honest, contextual moment and unblocks accurate countdowns.
 
-- [ ] New migration: make `couples.started_on` nullable. Follow `docs/phase-3-migration-checklist.md`; create with `supabase migration new <name>`.
-- [ ] Add a `set_couple_started_on` public RPC wrapper over an `internal.*` implementation. It **must** be `security definer` with a pinned `search_path` (authenticated has no USAGE on `internal` — see AGENTS.md and `docs/phase-3-migration-checklist.md`). Writable by either partner in the couple; authorization enforced inside the internal function via `auth.uid()` / entitled-couple checks.
-- [ ] Pairing: drop the hard-coded `PairingStartDate(date: Date())` in `ios/PaeoniaApp/Features/Paywall/Offer/PaywallViewModel.swift`; make `PairingStartDate` / the `p_started_on` param optional through `PairingService.acceptInvite` and `SupabasePairingGateway` so accept no longer sets a date.
-- [ ] Us tab: give `MilestoneCountdownCard` a setup state when `startedOn == nil` — a calm "Set the day you got together" prompt with a date picker — instead of hiding or faking. The card already takes `startedOn: String?`, so this is additive (`ios/PaeoniaApp/Features/Countdown/Components/MilestoneCountdownCard.swift`).
-- [ ] Wire the write through local-first sync so both partners see the update, and keep it editable later.
-- [ ] Tests: milestone card nil → setup → set transition; RPC scoping/authorization; sync propagation to the partner; `RelationshipMilestoneCalculator` with a set date (existing coverage in `ios/PaeoniaAppTests/RelationshipMilestoneTests.swift`).
+- [x] New migration: make `couples.started_on` nullable. Follow `docs/phase-3-migration-checklist.md`; create with `supabase migration new <name>`.
+- [x] Add a `set_couple_started_on` public RPC wrapper over an `internal.*` implementation. It **must** be `security definer` with a pinned `search_path` (authenticated has no USAGE on `internal` — see AGENTS.md and `docs/phase-3-migration-checklist.md`). Writable by either partner in the couple; authorization enforced inside the internal function via `auth.uid()` / entitled-couple checks.
+- [x] Pairing: drop the hard-coded `PairingStartDate(date: Date())` in `ios/PaeoniaApp/Features/Paywall/Offer/PaywallViewModel.swift`; make `PairingStartDate` / the `p_started_on` param optional through `PairingService.acceptInvite` and `SupabasePairingGateway` so accept no longer sets a date.
+- [x] Us tab: give `MilestoneCountdownCard` a setup state when `startedOn == nil` — a calm "Set the day you got together" prompt with a date picker — instead of hiding or faking. The card already takes `startedOn: String?`, so this is additive (`ios/PaeoniaApp/Features/Countdown/Components/MilestoneCountdownCard.swift`).
+- [x] Wire the write through local-first sync so both partners see the update, and keep it editable later.
+- [x] Tests: milestone card nil → setup → set transition; RPC scoping/authorization; sync propagation to the partner; `RelationshipMilestoneCalculator` with a set date (existing coverage in `ios/PaeoniaAppTests/RelationshipMilestoneTests.swift`).
 
 ### 2. Pre-auth hook + first-class code entry
 
-- [ ] Add a 3-screen, swipeable, skippable value sequence before `SignInView` (daily-question reveal, home-screen doodle, countdown). Keep it copy-light and honor Reduce Motion, matching the launch-intro tone in `ios/PaeoniaApp/Features/Auth/`.
-- [ ] Surface "Joining a partner? Enter your code" as a first-class path at/near sign-in so joiners never route through the paywall to find the code field.
-- [ ] Respect `PresentationReadinessProviding` for any launch-adjacent screen; do not dismiss the launch surface until the first surface is stable (AGENTS.md → Stable Presentation Readiness).
-- [ ] Localize all copy with generated `LocalizedStringResource` symbols; add entries via `./scripts/xcstrings-set` (English + Norwegian Bokmal + translator comment).
+- [x] Add a 3-screen, swipeable, skippable value sequence before `SignInView` (daily-question reveal, home-screen doodle, countdown). Keep it copy-light and honor Reduce Motion, matching the launch-intro tone in `ios/PaeoniaApp/Features/Auth/`.
+- [x] Surface "Joining a partner? Enter your code" as a first-class path at/near sign-in so joiners never route through the paywall to find the code field.
+- [x] Respect `PresentationReadinessProviding` for any launch-adjacent screen; do not dismiss the launch surface until the first surface is stable (AGENTS.md → Stable Presentation Readiness).
+- [x] Localize all copy with generated `LocalizedStringResource` symbols; add entries via `./scripts/xcstrings-set` (English + Norwegian Bokmal + translator comment).
 
 ### 3. Paywall copy reframe
 
-- [ ] Reframe paywall copy around "open your shared space with {partner}" using the existing trial offer; no StoreKit/offer changes. Update `PaywallPresentation` / `PaywallAudience` copy paths (`ios/PaeoniaApp/Features/Paywall/`).
-- [ ] Keep copy understandable to an ordinary 16-year-old; no internal terms (AGENTS.md → Product Copy Clarity).
+- [x] Reframe paywall copy around "open your shared space with {partner}" using the existing trial offer; no StoreKit/offer changes. Update `PaywallPresentation` / `PaywallAudience` copy paths (`ios/PaeoniaApp/Features/Paywall/`).
+- [x] Keep copy understandable to an ordinary 16-year-old; no internal terms (AGENTS.md → Product Copy Clarity).
 
-### 4. Push priming
+### 4. Push and location priming
 
-- [ ] Add a priming screen before the system push dialog, with one concrete benefit ("When {partner} draws on your home screen or answers today's question, we'll let you know") and a "Not now". Keep the `.paired` trigger in `ios/PaeoniaApp/App/RootView.swift`; prime before `PushAuthorizationService.requestAuthorizationIfNeeded()`.
-- [ ] Add the same one-line context before the location system dialog at the map surface. Do not ask for location during onboarding.
+- [x] Add a priming screen before the system push dialog, with one concrete benefit ("When {partner} draws on your home screen or answers today's question, we'll let you know") and a "Not now". Keep the `.paired` trigger in `ios/PaeoniaApp/App/RootView.swift`; prime before `PushAuthorizationService.requestAuthorizationIfNeeded()`.
+- [x] Add the same one-line context before the location system dialog at the map surface. Do not ask for location during onboarding.
 
 ### 5. Waiting-room first gift (only if wanted in v1)
 

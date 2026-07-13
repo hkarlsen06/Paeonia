@@ -10,6 +10,9 @@ struct MainTabView: View {
     let currentUserID: UUID?
     let currentDisplayName: String?
     let currentProfilePhotoAssetID: UUID?
+    let currentCustomProfilePhotoAssetID: UUID?
+    let currentProviderProfilePhotoAssetID: UUID?
+    let currentAuthProvider: AuthProvider?
     let partnerUserID: UUID?
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
@@ -29,14 +32,24 @@ struct MainTabView: View {
     var onHomeRefresh: () async -> Void = {}
     var onDailyChallengeRefresh: () async -> Void = {}
     var onDailyChallengeLocalChange: @MainActor () async -> Void = {}
+    var onRelationshipStartedOnLocalChange: @MainActor () async -> Void = {}
     let onMemoriesLocalChange: @MainActor @Sendable () async -> Void
     /// Invoked after the user unpairs from the You tab, so the root re-resolves
     /// access and moves them back to the unpaired flow.
     var onLeftRelationship: () -> Void = {}
     /// Invoked when the user logs out from the You tab, so the root ends the session.
     var onLogout: () -> Void = {}
+    /// Invoked after the paired Settings confirmation. Auth/session lifecycle
+    /// remains rooted rather than being duplicated in the Settings view model.
+    var onDeleteAccount: () -> Void = {}
+    /// Saves the paired user's canonical profile through the root-owned auth
+    /// service so every tab receives the resulting session in one update.
+    var onUpdateProfile: @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool = { _, _ in false }
+    /// Re-resolves entitlement/access after StoreKit has re-confirmed a purchase.
+    var onPurchasesRestored: @MainActor @Sendable () async -> Void = {}
 
     @State private var dailyChallengeViewModel = DailyChallengeViewModel()
+    @State private var milestoneViewModel = RelationshipMilestoneViewModel()
     @State private var isAnswerFlowPresented = false
     /// Which card the daily answer flow should zoom out of (the Home prompt card or the
     /// Questions-tab hero card), so the cover grows from the one the user tapped.
@@ -55,6 +68,7 @@ struct MainTabView: View {
     @Namespace private var zoomNamespace
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     /// Which entry card the daily answer flow zooms out of.
     private enum DailyFlowSource {
@@ -73,6 +87,9 @@ struct MainTabView: View {
         currentUserID: UUID?,
         currentDisplayName: String?,
         currentProfilePhotoAssetID: UUID?,
+        currentCustomProfilePhotoAssetID: UUID?,
+        currentProviderProfilePhotoAssetID: UUID?,
+        currentAuthProvider: AuthProvider? = nil,
         partnerUserID: UUID?,
         partnerDisplayName: String?,
         partnerProfilePhotoAssetID: UUID?,
@@ -88,13 +105,20 @@ struct MainTabView: View {
         onHomeRefresh: @escaping () async -> Void = {},
         onDailyChallengeRefresh: @escaping () async -> Void = {},
         onDailyChallengeLocalChange: @escaping @MainActor () async -> Void = {},
+        onRelationshipStartedOnLocalChange: @escaping @MainActor () async -> Void = {},
         onMemoriesLocalChange: @escaping @MainActor @Sendable () async -> Void = {},
         onLeftRelationship: @escaping () -> Void = {},
-        onLogout: @escaping () -> Void = {}
+        onLogout: @escaping () -> Void = {},
+        onDeleteAccount: @escaping () -> Void = {},
+        onUpdateProfile: @escaping @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool = { _, _ in false },
+        onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {}
     ) {
         self.currentUserID = currentUserID
         self.currentDisplayName = currentDisplayName
         self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
+        self.currentCustomProfilePhotoAssetID = currentCustomProfilePhotoAssetID
+        self.currentProviderProfilePhotoAssetID = currentProviderProfilePhotoAssetID
+        self.currentAuthProvider = currentAuthProvider
         self.partnerUserID = partnerUserID
         self.partnerDisplayName = partnerDisplayName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
@@ -110,9 +134,13 @@ struct MainTabView: View {
         self.onHomeRefresh = onHomeRefresh
         self.onDailyChallengeRefresh = onDailyChallengeRefresh
         self.onDailyChallengeLocalChange = onDailyChallengeLocalChange
+        self.onRelationshipStartedOnLocalChange = onRelationshipStartedOnLocalChange
         self.onMemoriesLocalChange = onMemoriesLocalChange
         self.onLeftRelationship = onLeftRelationship
         self.onLogout = onLogout
+        self.onDeleteAccount = onDeleteAccount
+        self.onUpdateProfile = onUpdateProfile
+        self.onPurchasesRestored = onPurchasesRestored
     }
 
     var body: some View {
@@ -142,6 +170,26 @@ struct MainTabView: View {
         }
         .onChange(of: dailyChallengeParticipants) { _, participants in
             dailyChallengeViewModel.refreshParticipants(participants)
+        }
+        .task(id: currentUserID) {
+            milestoneViewModel.setSyncAfterLocalChange(onRelationshipStartedOnLocalChange)
+            await milestoneViewModel.configure(
+                ownerUserID: currentUserID,
+                serverStartedOn: relationshipStartedOn
+            )
+        }
+        .onChange(of: relationshipStartedOn) { _, startedOn in
+            milestoneViewModel.refreshServerStartedOn(startedOn)
+        }
+        .onChange(of: milestoneViewModel.error) { _, error in
+            guard let error else { return }
+            bannerCenter.show(.error(message: error.message))
+            milestoneViewModel.clearError()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await milestoneViewModel.retryPendingChangeIfNeeded() }
+            }
         }
         .task(id: deepLink.wrappedValue) {
             await handleDeepLink(deepLink.wrappedValue)
@@ -274,11 +322,16 @@ struct MainTabView: View {
     private var homeTab: some View {
         NavigationStack {
             PairedHomeView(
+                currentUserID: currentUserID,
                 currentDisplayName: currentDisplayName,
                 currentProfilePhotoAssetID: currentProfilePhotoAssetID,
                 partnerDisplayName: partnerDisplayName,
                 partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                relationshipStartedOn: relationshipStartedOn,
+                relationshipStartedOn: milestoneViewModel.startedOn,
+                milestoneIsSaving: milestoneViewModel.isSaving,
+                onSaveRelationshipStartedOn: { date in
+                    await milestoneViewModel.save(startedOn: date)
+                },
                 dailyChallengeCardState: dailyChallengeViewModel.homeCardState,
                 dailyChallengeStreak: streakPillState,
                 zoomNamespace: zoomNamespace,
@@ -395,16 +448,40 @@ struct MainTabView: View {
         case .streak:
             selection.wrappedValue = .home
             self.deepLink.wrappedValue = nil
+        case .subscription:
+            // RootView owns this external URL and consumes the binding after it
+            // opens App Store subscription management. Leaving it untouched here
+            // prevents the paired tab task from racing the root task.
+            break
         }
     }
 
     private var youTab: some View {
         NavigationStack {
             SettingsView(
+                currentUserID: currentUserID,
+                currentDisplayName: currentDisplayName,
+                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                currentCustomProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
+                currentProviderProfilePhotoAssetID: currentProviderProfilePhotoAssetID,
+                currentAuthProvider: currentAuthProvider,
+                partnerUserID: partnerUserID,
+                relationshipStartedOn: milestoneViewModel.startedOn,
+                milestoneIsSaving: milestoneViewModel.isSaving,
+                onSaveRelationshipStartedOn: { date in
+                    await milestoneViewModel.save(startedOn: date)
+                },
                 locationViewModel: locationViewModel,
                 partnerName: dailyChallengeParticipants.partnerName,
                 onLeftRelationship: onLeftRelationship,
-                onLogout: onLogout
+                onLogout: onLogout,
+                onDeleteAccount: onDeleteAccount,
+                onUpdateProfile: { [onUpdateProfile] displayName, photoUpdate in
+                    await onUpdateProfile(displayName, photoUpdate)
+                },
+                onPurchasesRestored: { [onPurchasesRestored] in
+                    await onPurchasesRestored()
+                }
             )
         }
     }
@@ -416,6 +493,8 @@ struct MainTabView: View {
         currentUserID: UUID(uuidString: "11111111-1111-1111-1111-111111111111"),
         currentDisplayName: "Hjalmar",
         currentProfilePhotoAssetID: nil,
+        currentCustomProfilePhotoAssetID: nil,
+        currentProviderProfilePhotoAssetID: nil,
         partnerUserID: UUID(uuidString: "22222222-2222-2222-2222-222222222222"),
         partnerDisplayName: "Oda",
         partnerProfilePhotoAssetID: nil,

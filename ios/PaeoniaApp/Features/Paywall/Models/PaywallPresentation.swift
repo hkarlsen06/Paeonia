@@ -12,6 +12,10 @@ struct PaywallPresentation {
         product != nil && !isPurchasing && !isLoading
     }
 
+    var hasFreeTrial: Bool {
+        freeTrial != nil
+    }
+
     var primaryButtonTitle: LocalizedStringResource {
         if isPurchasing {
             return .paywallCtaPurchasing
@@ -22,14 +26,6 @@ struct PaywallPresentation {
         }
 
         return .paywallCtaSubscribe
-    }
-
-    var headlineTitle: LocalizedStringResource {
-        if freeTrial != nil {
-            return .paywallTrialTitle
-        }
-
-        return .paywallTitle
     }
 
     var priceLine: String {

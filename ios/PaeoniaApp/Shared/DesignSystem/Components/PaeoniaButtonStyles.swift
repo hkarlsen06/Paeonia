@@ -81,6 +81,35 @@ struct PaeoniaQuietButtonStyle: ButtonStyle {
     }
 }
 
+/// A quiet text button for destructive actions that must stay visually
+/// subordinate to the actions above them (for example "Delete account" under
+/// "Log out"). Unlike `PaeoniaQuietButtonStyle`, the label reads in the error
+/// color so the consequence is visible before tapping.
+struct PaeoniaQuietDestructiveButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(PaeoniaTypography.button)
+            .multilineTextAlignment(.center)
+            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+            .padding(.horizontal, PaeoniaSpacing.space12)
+            .foregroundStyle(isEnabled ? .paeoniaError : .paeoniaTextTertiary)
+            .background(backgroundColor(isPressed: configuration.isPressed))
+            .clipShape(Capsule(style: .continuous))
+            .contentShape(Capsule(style: .continuous))
+            .animation(PaeoniaMotion.buttonPress, value: configuration.isPressed)
+    }
+
+    private func backgroundColor(isPressed: Bool) -> Color {
+        if !isEnabled {
+            return .clear
+        }
+
+        return isPressed ? .paeoniaSurfacePressed : .clear
+    }
+}
+
 struct PaeoniaDestructiveButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 

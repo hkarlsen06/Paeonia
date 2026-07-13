@@ -103,7 +103,7 @@ export const marketingNo = {
   ctaPrimary: {
     heading: 'Bygget varsomt for private forhold',
     description:
-      'Personvern er en del av Paeonia fra første versjon. Se hva personvernteksten vil dekke, og hvordan du kan kontakte oss med spørsmål.',
+      'Personvern er en del av Paeonia fra første versjon. Les hvordan opplysningene dine behandles, og hvordan du kan kontakte oss med spørsmål.',
     button: 'Les om personvern',
   },
   contact: {
@@ -126,7 +126,7 @@ export const marketingNo = {
   },
   support: {
     title: 'Hjelp',
-    description: 'Paeonia gjør klar sin første versjon. Har du spørsmål, kan du sende oss en e-post.',
+    description: 'Trenger du hjelp med Paeonia, kontoen din eller en partnerinvitasjon, kan du sende oss en e-post.',
     emailLabel: 'E-post',
     back: 'Tilbake til Paeonia',
   },

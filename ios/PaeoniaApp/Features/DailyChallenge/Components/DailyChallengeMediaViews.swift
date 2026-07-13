@@ -6,7 +6,7 @@ import UIKit
 /// client can't be configured (previews/tests), in which case images show a quiet
 /// placeholder instead of loading.
 nonisolated enum DailyAnswerMediaImageProviderFactory {
-    static let shared: (any DailyAnswerMediaImageProviding)? = try? DailyAnswerMediaImageService.live()
+    static let shared: (any DailyAnswerMediaImageProviding)? = DailyAnswerMediaImageService.shared
 }
 
 /// A small pill row for choosing which kind to answer with, shown only when a

@@ -5,7 +5,7 @@ import UIKit
 /// can't be configured (previews/tests), in which case photos show a quiet
 /// placeholder instead of loading.
 nonisolated enum MemoryMediaImageProviderFactory {
-    static let shared: (any MemoryMediaImageProviding)? = try? MemoryMediaImageService.live()
+    static let shared: (any MemoryMediaImageProviding)? = MemoryMediaImageService.shared
 }
 
 /// Loads and shows a memory photo. Fetches a signed download once, caches it, and

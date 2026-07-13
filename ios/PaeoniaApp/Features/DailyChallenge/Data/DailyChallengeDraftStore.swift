@@ -67,6 +67,11 @@ final class UserDefaultsDailyChallengeDraftStore: DailyChallengeDraftStoring {
         persist(current, for: userID)
     }
 
+    func clearDrafts(for userID: UUID) {
+        defaults.removeObject(forKey: key(for: userID))
+        defaults.removeObject(forKey: legacyTextKey(for: userID))
+    }
+
     /// Folds any old text-only drafts into the new format, then removes the old key
     /// so the migration only runs once. Returns nil when there was nothing to migrate.
     private func migrateLegacyTextDrafts(for userID: UUID) -> [UUID: DailyAnswerDraft]? {

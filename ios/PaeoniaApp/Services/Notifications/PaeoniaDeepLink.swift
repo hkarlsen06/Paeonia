@@ -5,6 +5,7 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case dailyReveal(instanceID: UUID, coupleDayID: UUID?)
     case dailyToday(coupleDayID: UUID?)
     case streak
+    case subscription
 
     static let scheme = "paeonia"
 
@@ -57,6 +58,26 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         return url
     }
 
+    static var subscriptionURL: URL {
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = "settings"
+        components.path = "/subscription"
+
+        guard let url = components.url else {
+            preconditionFailure("Invalid Paeonia subscription URL")
+        }
+
+        return url
+    }
+
+    static var appStoreSubscriptionsURL: URL {
+        guard let url = URL(string: "https://apps.apple.com/account/subscriptions") else {
+            preconditionFailure("Invalid App Store subscriptions URL")
+        }
+        return url
+    }
+
     init?(_ url: URL) {
         if let widgetDeepLink = PaeoniaWidgetDeepLink(url) {
             switch widgetDeepLink {
@@ -88,6 +109,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             self = .dailyToday(coupleDayID: query.uuidValue(named: "coupleDayId"))
         case ("streak", []):
             self = .streak
+        case ("settings", ["subscription"]):
+            self = .subscription
         default:
             return nil
         }
@@ -127,6 +150,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             self = .dailyToday(coupleDayID: coupleDayID)
         case "streak_reminder":
             self = .streak
+        case "subscription_trial_reminder":
+            self = .subscription
         default:
             if let deeplink {
                 self = deeplink
@@ -140,6 +165,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
                 self = .dailyToday(coupleDayID: coupleDayID)
             case "streak":
                 self = .streak
+            case "subscription":
+                self = .subscription
             default:
                 return nil
             }

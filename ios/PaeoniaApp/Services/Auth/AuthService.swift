@@ -21,8 +21,12 @@ protocol AuthServicing: Actor {
         timeZoneID: String,
         profilePhotoData: Data?
     ) async throws -> AuthSession
+    func updateProfile(
+        displayName: String,
+        profilePhotoUpdate: AuthProfilePhotoUpdate
+    ) async throws -> AuthSession
     func signOut() async throws
-    func requestAccountDeletion() async throws
+    func requestAccountDeletion(appleAuthorizationCode: String?) async throws -> AccountDeletionOutcome
 }
 
 actor DevelopmentAuthService: AuthServicing {
@@ -97,12 +101,44 @@ actor DevelopmentAuthService: AuthServicing {
         return completedSession
     }
 
+    func updateProfile(
+        displayName: String,
+        profilePhotoUpdate: AuthProfilePhotoUpdate
+    ) async throws -> AuthSession {
+        guard let session else {
+            throw AuthServiceError.noActiveSession
+        }
+        guard let displayName = AuthDisplayNamePolicy.validatedSingleName(from: displayName) else {
+            throw AuthServiceError.invalidDisplayName
+        }
+
+        let customProfilePhotoAssetID: UUID? = switch profilePhotoUpdate {
+        case .unchanged, .replace:
+            session.customProfilePhotoAssetID
+        case .remove:
+            nil
+        }
+        let updatedSession = AuthSession(
+            id: session.id,
+            provider: session.provider,
+            displayName: displayName,
+            timeZoneID: session.timeZoneID,
+            profilePhotoAssetID: nil,
+            profileStatus: session.profileStatus,
+            customProfilePhotoAssetID: customProfilePhotoAssetID,
+            providerProfilePhotoAssetID: session.providerProfilePhotoAssetID
+        )
+        self.session = updatedSession
+        return updatedSession
+    }
+
     func signOut() async throws {
         session = nil
     }
 
-    func requestAccountDeletion() async throws {
+    func requestAccountDeletion(appleAuthorizationCode: String?) async throws -> AccountDeletionOutcome {
         session = nil
+        return .completed
     }
 }
 
@@ -137,11 +173,18 @@ actor UnavailableAuthService: AuthServicing {
         throw error
     }
 
+    func updateProfile(
+        displayName: String,
+        profilePhotoUpdate: AuthProfilePhotoUpdate
+    ) async throws -> AuthSession {
+        throw error
+    }
+
     func signOut() async throws {
         throw error
     }
 
-    func requestAccountDeletion() async throws {
+    func requestAccountDeletion(appleAuthorizationCode: String?) async throws -> AccountDeletionOutcome {
         throw error
     }
 }

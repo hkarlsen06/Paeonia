@@ -79,6 +79,26 @@ struct PairingInviteCodeTests {
 
         #expect(store.loadInviteCode() == nil)
     }
+
+    @MainActor
+    @Test func pairingCelebrationStoreClearsOnlyCelebrationKeys() throws {
+        let suiteName = "PaeoniaAppTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let firstPairID = UUID()
+        let secondPairID = UUID()
+        let unrelatedKey = "paeonia.pairing.unrelated"
+        let store = UserDefaultsPairingCelebrationStore(defaults: defaults)
+        store.markCelebrationSeen(forPairID: firstPairID)
+        store.markCelebrationSeen(forPairID: secondPairID)
+        defaults.set(true, forKey: unrelatedKey)
+
+        store.clearAll()
+
+        #expect(!store.hasSeenCelebration(forPairID: firstPairID))
+        #expect(!store.hasSeenCelebration(forPairID: secondPairID))
+        #expect(defaults.bool(forKey: unrelatedKey))
+    }
 }
 
 struct SupabasePairingServiceTests {
@@ -246,27 +266,26 @@ struct SupabasePairingServiceTests {
         #expect(await gateway.rotatedExpiresAt == expiresAt)
     }
 
-    @Test func acceptInviteNormalizesCodeBeforeCallingGateway() async throws {
+    @Test func acceptInviteNormalizesCodeAndLeavesRelationshipDateUnset() async throws {
         let acceptedCoupleID = try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444"))
         let clientID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
         let operation = PairingClientOperation(
             clientID: clientID,
             clientSequence: 8
         )
-        let startedOn = try PairingStartDate(rawValue: "2026-06-24")
         let gateway = FakeSupabasePairingGateway(acceptedCoupleID: acceptedCoupleID)
         let service = SupabasePairingService(gateway: gateway)
 
         let relationship = try await service.acceptInvite(
             codeInput: "https://paeonia.no/join/01-ab-cd",
             operation: operation,
-            startedOn: startedOn
+            startedOn: nil
         )
 
         #expect(relationship.coupleID == acceptedCoupleID)
         #expect(await gateway.acceptedInviteCode == canonicalCode)
         #expect(await gateway.acceptedOperation == operation)
-        #expect(await gateway.acceptedStartedOn == startedOn)
+        #expect(await gateway.acceptedStartedOn == nil)
     }
 
     @Test func leaveRelationshipForwardsOperationToGateway() async throws {
@@ -287,14 +306,21 @@ struct SupabasePairingServiceTests {
 
 struct PaywallInviteAcceptanceTests {
     @MainActor
-    @Test func acceptingInviteUsesNormalizedCodeAndOperation() async throws {
+    @Test func previewMustSucceedBeforeAcceptingInviteWithoutInventingStartDate() async throws {
         let operation = PairingClientOperation(
             id: try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333")),
             clientID: try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
             clientSequence: 9,
             localCreatedAt: Date(timeIntervalSince1970: 40)
         )
-        let pairingService = PaywallPairingServiceSpy()
+        let preview = PairingInvitePreview(
+            inviteID: try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444")),
+            inviterUserID: try #require(UUID(uuidString: "55555555-5555-5555-5555-555555555555")),
+            inviterDisplayName: "Alex",
+            expiresAt: Date(timeIntervalSince1970: 100),
+            hasSafetyWarning: false
+        )
+        let pairingService = PaywallPairingServiceSpy(preview: preview)
         let viewModel = PaywallViewModel(
             userID: "11111111-1111-1111-1111-111111111111",
             storeKitService: PaywallStoreKitServiceSpy(),
@@ -302,16 +328,25 @@ struct PaywallInviteAcceptanceTests {
             operationProvider: StaticPairingOperationProvider(operation: operation)
         )
 
-        let accepted = await viewModel.acceptInvite(codeInput: "01-ab-cd")
+        let loadedPreview = await viewModel.previewInvite(codeInput: "01-ab-cd")
+
+        #expect(loadedPreview == preview)
+        #expect(viewModel.invitePreview == preview)
+        #expect(await pairingService.previewedCodeInput == "01ABCD")
+        #expect(await pairingService.acceptCallCount == 0)
+
+        let accepted = await viewModel.acceptPreviewedInvite()
 
         #expect(accepted)
         #expect(viewModel.error == nil)
+        #expect(viewModel.invitePreview == nil)
         #expect(await pairingService.acceptedCodeInput == "01ABCD")
         #expect(await pairingService.acceptedOperation == operation)
+        #expect(await pairingService.acceptedStartedOn == nil)
     }
 
     @MainActor
-    @Test func invalidInviteCodeDoesNotCallPairingService() async {
+    @Test func invalidInviteCodeDoesNotCallPreviewOrAccept() async {
         let pairingService = PaywallPairingServiceSpy()
         let viewModel = PaywallViewModel(
             userID: "11111111-1111-1111-1111-111111111111",
@@ -320,11 +355,57 @@ struct PaywallInviteAcceptanceTests {
             operationProvider: StaticPairingOperationProvider()
         )
 
-        let accepted = await viewModel.acceptInvite(codeInput: "ABC12")
+        let preview = await viewModel.previewInvite(codeInput: "ABC12")
 
-        #expect(!accepted)
+        #expect(preview == nil)
         #expect(viewModel.error == .inviteInvalid)
+        #expect(await pairingService.previewCallCount == 0)
         #expect(await pairingService.acceptCallCount == 0)
+    }
+
+    @MainActor
+    @Test func unavailableInviteExplainsInvalidOrExpiredCodeAndCannotBeAccepted() async {
+        let pairingService = PaywallPairingServiceSpy(preview: nil)
+        let viewModel = PaywallViewModel(
+            userID: "11111111-1111-1111-1111-111111111111",
+            storeKitService: PaywallStoreKitServiceSpy(),
+            pairingService: pairingService,
+            operationProvider: StaticPairingOperationProvider()
+        )
+
+        let preview = await viewModel.previewInvite(codeInput: "01ABCD")
+        let accepted = await viewModel.acceptPreviewedInvite()
+
+        #expect(preview == nil)
+        #expect(!accepted)
+        #expect(viewModel.error == .inviteUnavailable)
+        #expect(await pairingService.previewCallCount == 1)
+        #expect(await pairingService.acceptCallCount == 0)
+        #expect(
+            PaywallError.inviteUnavailable.message
+                == String(localized: .paywallErrorInviteUnavailable)
+        )
+    }
+
+    @MainActor
+    @Test func previewRetainsPriorSafetyWarningForConfirmation() async throws {
+        let warningPreview = PairingInvitePreview(
+            inviteID: try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444")),
+            inviterUserID: try #require(UUID(uuidString: "55555555-5555-5555-5555-555555555555")),
+            inviterDisplayName: "Alex",
+            expiresAt: Date(timeIntervalSince1970: 100),
+            hasSafetyWarning: true
+        )
+        let viewModel = PaywallViewModel(
+            userID: "11111111-1111-1111-1111-111111111111",
+            storeKitService: PaywallStoreKitServiceSpy(),
+            pairingService: PaywallPairingServiceSpy(preview: warningPreview),
+            operationProvider: StaticPairingOperationProvider()
+        )
+
+        _ = await viewModel.previewInvite(codeInput: "01ABCD")
+
+        #expect(viewModel.invitePreview?.hasSafetyWarning == true)
     }
 }
 
@@ -374,7 +455,48 @@ struct PaywallUnpairTests {
 
 struct PaywallStoreKitLoadingTests {
     @MainActor
-    @Test func paywallPresentationWaitsForStoreKitProductsToSettle() async {
+    @Test func configuredTrialIsHiddenForAnIneligiblePriorSubscriber() async {
+        let configuredTrial = PaeoniaFreeTrial(value: 14, unit: .day)
+        let storeKitService = OfferPaywallStoreKitService(
+            configuredTrial: configuredTrial,
+            isEligible: false
+        )
+        let viewModel = PaywallViewModel(
+            userID: "11111111-1111-1111-1111-111111111111",
+            storeKitService: storeKitService,
+            pairingService: PaywallPairingServiceSpy(),
+            operationProvider: StaticPairingOperationProvider()
+        )
+
+        await viewModel.loadProducts()
+
+        #expect(viewModel.isPresentationReady)
+        #expect(viewModel.currentFreeTrial == nil)
+        #expect(storeKitService.eligibilityChecks == Set(PaeoniaSubscriptionProductID.allCases))
+    }
+
+    @MainActor
+    @Test func configuredTrialIsShownForAnEligibleSubscriber() async {
+        let configuredTrial = PaeoniaFreeTrial(value: 14, unit: .day)
+        let storeKitService = OfferPaywallStoreKitService(
+            configuredTrial: configuredTrial,
+            isEligible: true
+        )
+        let viewModel = PaywallViewModel(
+            userID: "11111111-1111-1111-1111-111111111111",
+            storeKitService: storeKitService,
+            pairingService: PaywallPairingServiceSpy(),
+            operationProvider: StaticPairingOperationProvider()
+        )
+
+        await viewModel.loadProducts()
+
+        #expect(viewModel.isPresentationReady)
+        #expect(viewModel.currentFreeTrial == configuredTrial)
+    }
+
+    @MainActor
+    @Test func paywallPresentationWaitsForStoreKitProductsAndEligibilityToSettle() async {
         let storeKitService = BlockingPaywallStoreKitService()
         let viewModel = PaywallViewModel(
             userID: "11111111-1111-1111-1111-111111111111",
@@ -394,6 +516,12 @@ struct PaywallStoreKitLoadingTests {
         #expect(!viewModel.isPresentationReady)
 
         storeKitService.finishLoad()
+        await storeKitService.waitForEligibilityToStart()
+
+        #expect(viewModel.isLoading)
+        #expect(!viewModel.isPresentationReady)
+
+        storeKitService.finishEligibility()
         await loadTask.value
 
         #expect(!viewModel.isLoading)
@@ -402,6 +530,41 @@ struct PaywallStoreKitLoadingTests {
 
         viewModel.clearError()
         #expect(viewModel.isPresentationReady)
+    }
+
+    @MainActor
+    @Test func eligibilityRefreshKeepsTheLastStableOfferUntilTheNewResultSettles() async {
+        let configuredTrial = PaeoniaFreeTrial(value: 14, unit: .day)
+        let storeKitService = RefreshingOfferPaywallStoreKitService(
+            initialTrial: configuredTrial
+        )
+        let viewModel = PaywallViewModel(
+            userID: "11111111-1111-1111-1111-111111111111",
+            storeKitService: storeKitService,
+            pairingService: PaywallPairingServiceSpy(),
+            operationProvider: StaticPairingOperationProvider()
+        )
+
+        await viewModel.loadProducts()
+        #expect(viewModel.isPresentationReady)
+        #expect(viewModel.currentFreeTrial == configuredTrial)
+
+        storeKitService.beginBlockingRefresh(returning: nil)
+        let refreshTask = Task { @MainActor in
+            await viewModel.loadProducts()
+        }
+        await storeKitService.waitForRefreshEligibilityToStart()
+
+        #expect(viewModel.isLoading)
+        #expect(viewModel.isPresentationReady)
+        #expect(viewModel.currentFreeTrial == configuredTrial)
+
+        storeKitService.finishRefreshEligibility()
+        await refreshTask.value
+
+        #expect(!viewModel.isLoading)
+        #expect(viewModel.isPresentationReady)
+        #expect(viewModel.currentFreeTrial == nil)
     }
 }
 
@@ -608,6 +771,44 @@ struct PaywallAudienceTests {
         #expect(PaywallAudience.paired(partnerName: nil).partnerNameForCopy == fallback)
         #expect(PaywallAudience.paired(partnerName: "   ").partnerNameForCopy == fallback)
     }
+
+    @Test func unpairedAudienceUsesTrialCopyOnlyWhenTrialIsAvailable() {
+        let audience = PaywallAudience.unpaired
+
+        #expect(
+            String(localized: audience.headlineTitle(hasFreeTrial: true))
+                == String(localized: .paywallTrialTitle)
+        )
+        #expect(
+            String(localized: audience.subtitle(hasFreeTrial: true))
+                == String(localized: .paywallTrialSubtitle)
+        )
+        #expect(
+            String(localized: audience.headlineTitle(hasFreeTrial: false))
+                == String(localized: .paywallTitle)
+        )
+        #expect(
+            String(localized: audience.subtitle(hasFreeTrial: false))
+                == String(localized: .paywallSubtitle)
+        )
+    }
+
+    @Test func pairedAudienceUsesPartnerNameAndTrialSpecificSubtitle() {
+        let audience = PaywallAudience.paired(partnerName: "  Riley  ")
+
+        #expect(
+            String(localized: audience.headlineTitle(hasFreeTrial: true))
+                == String(localized: .paywallPairedTitle("Riley"))
+        )
+        #expect(
+            String(localized: audience.subtitle(hasFreeTrial: true))
+                == String(localized: .paywallPairedTrialSubtitle)
+        )
+        #expect(
+            String(localized: audience.subtitle(hasFreeTrial: false))
+                == String(localized: .paywallPairedSubtitle)
+        )
+    }
 }
 
 struct PaywallErrorTests {
@@ -728,7 +929,7 @@ private actor FakeSupabasePairingGateway: SupabasePairingGateway {
     func acceptInvite(
         inviteCode: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) async throws -> UUID {
         acceptedInviteCode = inviteCode
         acceptedOperation = operation
@@ -782,6 +983,9 @@ private final class BlockingPaywallStoreKitService: PaeoniaStoreKitServicing {
 
     private var loadContinuation: CheckedContinuation<Void, any Error>?
     private var loadStartedContinuation: CheckedContinuation<Void, Never>?
+    private var eligibilityContinuation: CheckedContinuation<PaeoniaFreeTrial?, Never>?
+    private var eligibilityStartedContinuation: CheckedContinuation<Void, Never>?
+    private var eligibilityCallCount = 0
 
     func configure(userID: String) {}
 
@@ -806,6 +1010,126 @@ private final class BlockingPaywallStoreKitService: PaeoniaStoreKitServicing {
     func finishLoad() {
         loadContinuation?.resume()
         loadContinuation = nil
+    }
+
+    func eligibleFreeTrial(for productID: PaeoniaSubscriptionProductID) async -> PaeoniaFreeTrial? {
+        eligibilityCallCount += 1
+        if eligibilityCallCount > 1 {
+            return nil
+        }
+
+        return await withCheckedContinuation { continuation in
+            eligibilityContinuation = continuation
+            eligibilityStartedContinuation?.resume()
+            eligibilityStartedContinuation = nil
+        }
+    }
+
+    func waitForEligibilityToStart() async {
+        if eligibilityContinuation != nil {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            eligibilityStartedContinuation = continuation
+        }
+    }
+
+    func finishEligibility() {
+        eligibilityContinuation?.resume(returning: nil)
+        eligibilityContinuation = nil
+    }
+
+    func product(for productID: PaeoniaSubscriptionProductID) -> Product? { nil }
+    func product(for productID: PaeoniaConsumableProductID) -> Product? { nil }
+    func purchase(_ product: Product) async throws -> Bool { false }
+    func restorePurchases() async throws -> Bool { false }
+    func redeemStreakRestore() async throws -> Int? { nil }
+    func recoverPendingStreakRestores() async -> Int? { nil }
+}
+
+@MainActor
+private final class OfferPaywallStoreKitService: PaeoniaStoreKitServicing {
+    var products: [Product] { [] }
+    private let configuredTrial: PaeoniaFreeTrial
+    private let isEligible: Bool
+    private(set) var eligibilityChecks = Set<PaeoniaSubscriptionProductID>()
+
+    init(configuredTrial: PaeoniaFreeTrial, isEligible: Bool) {
+        self.configuredTrial = configuredTrial
+        self.isEligible = isEligible
+    }
+
+    func configure(userID: String) {}
+    func loadProducts() async throws {}
+
+    func eligibleFreeTrial(for productID: PaeoniaSubscriptionProductID) async -> PaeoniaFreeTrial? {
+        eligibilityChecks.insert(productID)
+        return PaeoniaStoreKitOfferEligibility.freeTrial(
+            configuredOffer: configuredTrial,
+            isEligible: isEligible
+        )
+    }
+
+    func product(for productID: PaeoniaSubscriptionProductID) -> Product? { nil }
+    func product(for productID: PaeoniaConsumableProductID) -> Product? { nil }
+    func purchase(_ product: Product) async throws -> Bool { false }
+    func restorePurchases() async throws -> Bool { false }
+    func redeemStreakRestore() async throws -> Int? { nil }
+    func recoverPendingStreakRestores() async -> Int? { nil }
+}
+
+@MainActor
+private final class RefreshingOfferPaywallStoreKitService: PaeoniaStoreKitServicing {
+    var products: [Product] { [] }
+
+    private var monthlyTrial: PaeoniaFreeTrial?
+    private var shouldBlockMonthlyEligibility = false
+    private var refreshEligibilityContinuation: CheckedContinuation<Void, Never>?
+    private var refreshEligibilityStartedContinuation: CheckedContinuation<Void, Never>?
+
+    init(initialTrial: PaeoniaFreeTrial?) {
+        monthlyTrial = initialTrial
+    }
+
+    func configure(userID: String) {}
+    func loadProducts() async throws {}
+
+    func eligibleFreeTrial(for productID: PaeoniaSubscriptionProductID) async -> PaeoniaFreeTrial? {
+        guard productID == .coupleMonthly else {
+            return nil
+        }
+
+        if shouldBlockMonthlyEligibility {
+            await withCheckedContinuation { continuation in
+                refreshEligibilityContinuation = continuation
+                refreshEligibilityStartedContinuation?.resume()
+                refreshEligibilityStartedContinuation = nil
+            }
+            shouldBlockMonthlyEligibility = false
+        }
+
+        return monthlyTrial
+    }
+
+    func beginBlockingRefresh(returning trial: PaeoniaFreeTrial?) {
+        monthlyTrial = trial
+        shouldBlockMonthlyEligibility = true
+    }
+
+    func waitForRefreshEligibilityToStart() async {
+        if refreshEligibilityContinuation != nil {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            refreshEligibilityStartedContinuation = continuation
+        }
+    }
+
+    func finishRefreshEligibility() {
+        refreshEligibilityContinuation?.resume()
+        refreshEligibilityContinuation = nil
     }
 
     func product(for productID: PaeoniaSubscriptionProductID) -> Product? { nil }
@@ -837,15 +1161,23 @@ private final class StaticPairingOperationProvider: PairingClientOperationProvid
 }
 
 private actor PaywallPairingServiceSpy: PairingServicing {
+    private(set) var previewCallCount = 0
+    private(set) var previewedCodeInput: String?
     private(set) var acceptCallCount = 0
     private(set) var acceptedCodeInput: String?
     private(set) var acceptedOperation: PairingClientOperation?
+    private(set) var acceptedStartedOn: PairingStartDate?
     private(set) var leaveCallCount = 0
     private(set) var leftOperation: PairingClientOperation?
     private let leaveShouldFail: Bool
+    private let preview: PairingInvitePreview?
 
-    init(leaveShouldFail: Bool = false) {
+    init(
+        leaveShouldFail: Bool = false,
+        preview: PairingInvitePreview? = nil
+    ) {
         self.leaveShouldFail = leaveShouldFail
+        self.preview = preview
     }
 
     func createInvite(
@@ -869,8 +1201,9 @@ private actor PaywallPairingServiceSpy: PairingServicing {
     }
 
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
-        await Task.yield()
-        return nil
+        previewCallCount += 1
+        previewedCodeInput = codeInput
+        return preview
     }
 
     func rotateInvite(
@@ -889,11 +1222,12 @@ private actor PaywallPairingServiceSpy: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship {
         acceptCallCount += 1
         acceptedCodeInput = codeInput
         acceptedOperation = operation
+        acceptedStartedOn = startedOn
         return PairingAcceptedRelationship(coupleID: UUID())
     }
 
@@ -995,7 +1329,7 @@ private actor BlockingValidationPairingService: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship {
         fatalError("unused")
     }
@@ -1046,7 +1380,7 @@ private actor CachedInviteRecoveryPairingService: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship {
         fatalError("unused")
     }
@@ -1123,7 +1457,7 @@ private actor PendingCreatePairingService: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship {
         await Task.yield()
         return PairingAcceptedRelationship(coupleID: UUID())
@@ -1174,7 +1508,7 @@ private actor FailingCreatePairingService: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship {
         await Task.yield()
         return PairingAcceptedRelationship(coupleID: UUID())

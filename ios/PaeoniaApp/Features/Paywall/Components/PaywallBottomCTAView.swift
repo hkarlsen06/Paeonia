@@ -2,7 +2,7 @@ import SwiftUI
 
 struct PaywallBottomCTAView: View {
     let title: LocalizedStringResource
-    let caption: LocalizedStringResource
+    let caption: LocalizedStringResource?
     let isEnabled: Bool
     let isBusy: Bool
     let action: () -> Void
@@ -39,14 +39,19 @@ struct PaywallBottomCTAView: View {
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
+        .accessibilityLabel(Text(title))
         .sensoryFeedback(.impact(flexibility: .soft), trigger: isBusy)
     }
 
     private var captionLine: some View {
-        Text(caption)
-            .font(PaeoniaTypography.caption)
-            .foregroundStyle(.paeoniaTextTertiary)
-            .frame(maxWidth: .infinity, alignment: .center)
+        Group {
+            if let caption {
+                Text(caption)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextTertiary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+        }
     }
 
     private var primaryButtonBackground: LinearGradient {

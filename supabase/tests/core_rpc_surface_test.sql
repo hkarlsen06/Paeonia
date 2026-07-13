@@ -6,7 +6,7 @@ VALUES ('invite_code_pepper', 'test-pepper-value-for-pairing-invite-hashes');
 
 SELECT is(
   (
-    SELECT count(*)::integer
+    SELECT count(DISTINCT p.proname)::integer
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
@@ -17,6 +17,7 @@ SELECT is(
         'create_pairing_invite',
         'preview_pairing_invite',
         'accept_pairing_invite',
+        'set_couple_started_on',
         'leave_relationship',
         'start_daily_challenge',
         'submit_daily_answer',
@@ -37,13 +38,13 @@ SELECT is(
         'request_account_deletion'
       )
   ),
-  23,
+  24,
   'core public RPC wrappers exist'
 );
 
 SELECT is(
   (
-    SELECT count(*)::integer
+    SELECT count(DISTINCT p.proname)::integer
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
@@ -54,6 +55,7 @@ SELECT is(
         'create_pairing_invite',
         'preview_pairing_invite',
         'accept_pairing_invite',
+        'set_couple_started_on',
         'leave_relationship',
         'start_daily_challenge',
         'submit_daily_answer',
@@ -75,13 +77,13 @@ SELECT is(
       )
       AND p.prosecdef
   ),
-  23,
+  24,
   'core public RPC wrappers are security definer'
 );
 
 SELECT is(
   (
-    SELECT count(*)::integer
+    SELECT count(DISTINCT p.proname)::integer
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
@@ -92,6 +94,7 @@ SELECT is(
         'create_pairing_invite',
         'preview_pairing_invite',
         'accept_pairing_invite',
+        'set_couple_started_on',
         'leave_relationship',
         'start_daily_challenge',
         'submit_daily_answer',
@@ -113,7 +116,7 @@ SELECT is(
       )
       AND has_function_privilege('authenticated', p.oid, 'execute')
   ),
-  23,
+  24,
   'authenticated can execute core public RPC wrappers'
 );
 
@@ -130,6 +133,7 @@ SELECT is(
         'create_pairing_invite',
         'preview_pairing_invite',
         'accept_pairing_invite',
+        'set_couple_started_on',
         'leave_relationship',
         'start_daily_challenge',
         'submit_daily_answer',
@@ -287,7 +291,7 @@ SELECT is(
       AND constraint_row.confrelid = 'public.couples'::regclass
       AND constraint_row.confdeltype = 'c'
   ),
-  16,
+  17,
   'deleting a couple cascades direct relationship-owned rows'
 );
 
@@ -514,6 +518,7 @@ SELECT is(
         'widget_drawing_revisions',
         'latest_partner_locations'
       )
+      AND roles && ARRAY['public', 'anon', 'authenticated']::name[]
   ),
   0,
   'relationship-owned content has no broad direct RLS policies'

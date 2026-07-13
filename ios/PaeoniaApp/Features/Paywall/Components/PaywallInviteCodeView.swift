@@ -97,6 +97,7 @@ struct PaywallInviteCodeView: View {
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .disabled(!isComplete || isSubmitting)
+            .accessibilityLabel(Text(.paywallInviteAction))
             .sensoryFeedback(.impact(flexibility: .soft), trigger: isSubmitting)
 
             Text(.paywallInviteCtaCaption)

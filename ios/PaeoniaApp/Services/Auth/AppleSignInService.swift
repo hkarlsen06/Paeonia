@@ -117,7 +117,10 @@ extension AppleSignInService: ASAuthorizationControllerDelegate {
                 AppleSignInCredential(
                     idToken: identityTokenString,
                     nonce: nonce,
-                    fullName: Self.fullName(from: appleIDCredential.fullName)
+                    fullName: Self.fullName(from: appleIDCredential.fullName),
+                    authorizationCode: appleIDCredential.authorizationCode.flatMap {
+                        String(data: $0, encoding: .utf8)
+                    }
                 )
             )
         )

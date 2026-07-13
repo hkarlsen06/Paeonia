@@ -15,32 +15,42 @@ struct CoupleMapCard: View {
     let state: CoupleMapState
     var onPromptCurrentLocation: () -> Void = {}
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @ViewBuilder
     var body: some View {
         switch state {
-        case let .ready(current, partner):
-            // Tap blows heart between avatars; long press opens Maps.
-            mapTile {
-                CoupleMapSnapshot(
-                    currentName: currentName,
-                    currentProfilePhotoAssetID: currentProfilePhotoAssetID,
-                    currentCoordinate: current.coordinate,
-                    currentCapturedAt: current.capturedAt,
-                    partnerName: partnerName,
-                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                    partnerCoordinate: partner.coordinate,
-                    partnerCapturedAt: partner.capturedAt,
-                    onLongPress: {
-                        openInAppleMaps(current: current, partner: partner)
-                    }
+        case let .ready(current, partner, partnerWasStaleAtLastRefresh):
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                // Tap blows heart between avatars; long press opens Maps.
+                mapTile {
+                    CoupleMapSnapshot(
+                        currentName: currentName,
+                        currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                        currentCoordinate: current.coordinate,
+                        currentCapturedAt: current.capturedAt,
+                        partnerName: partnerName,
+                        partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                        partnerCoordinate: partner.coordinate,
+                        partnerCapturedAt: partner.capturedAt,
+                        partnerWasStaleAtLastRefresh: partnerWasStaleAtLastRefresh,
+                        onLongPress: {
+                            openInAppleMaps(current: current, partner: partner)
+                        }
+                    )
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(.homeMapAccessibilityLabel(partnerName)))
+                .accessibilityHint(Text(.homeMapOpenHint))
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction {
+                    openInAppleMaps(current: current, partner: partner)
+                }
+
+                PartnerLocationRecordedStatus(
+                    capturedAt: partner.capturedAt,
+                    wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh
                 )
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(.homeMapAccessibilityLabel(partnerName)))
-            .accessibilityHint(Text(.homeMapOpenHint))
-            .accessibilityAddTraits(.isButton)
-            .accessibilityAction {
-                openInAppleMaps(current: current, partner: partner)
             }
         case .loading:
             mapTile {
@@ -48,7 +58,7 @@ struct CoupleMapCard: View {
             }
             .accessibilityHidden(true)
         case .currentUnknown:
-            mapTile {
+            mapTile(preservesAspectRatio: !dynamicTypeSize.isAccessibilitySize) {
                 MapEmptyState(
                     title: .homeMapCurrentUnknownTitle,
                     message: .homeMapCurrentUnknownMessage,
@@ -59,7 +69,7 @@ struct CoupleMapCard: View {
                 )
             }
         case let .partnerUnknown(reason):
-            mapTile {
+            mapTile(preservesAspectRatio: !dynamicTypeSize.isAccessibilitySize) {
                 MapEmptyState(
                     title: partnerUnknownTitle(for: reason),
                     message: .homeMapPartnerUnknownMessage(partnerName),
@@ -86,10 +96,21 @@ struct CoupleMapCard: View {
         )
     }
 
-    private func mapTile<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
+    @ViewBuilder
+    private func mapTile<Content: View>(
+        preservesAspectRatio: Bool = true,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        if preservesAspectRatio {
+            mapTileSurface(content().aspectRatio(2, contentMode: .fit))
+        } else {
+            mapTileSurface(content())
+        }
+    }
+
+    private func mapTileSurface<Content: View>(_ content: Content) -> some View {
+        content
             .frame(maxWidth: .infinity)
-            .aspectRatio(2, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
@@ -165,7 +186,7 @@ private struct MapEmptyState: View {
                     .font(PaeoniaTypography.caption.weight(.semibold))
                     .foregroundStyle(.paeoniaTextInverse)
                     .padding(.horizontal, PaeoniaSpacing.space12)
-                    .padding(.vertical, PaeoniaSpacing.space8)
+                    .frame(minHeight: PaeoniaSpacing.buttonHeight)
                     .background(.paeoniaAccentPrimary)
                     .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
                     .buttonStyle(.plain)
@@ -187,6 +208,7 @@ private struct CoupleMapSnapshot: View {
     let partnerProfilePhotoAssetID: UUID?
     let partnerCoordinate: CLLocationCoordinate2D
     let partnerCapturedAt: Date
+    let partnerWasStaleAtLastRefresh: Bool
     let onLongPress: () -> Void
 
     /// How much larger than the pins' own span the framed area is, leaving an even
@@ -352,10 +374,7 @@ private struct CoupleMapSnapshot: View {
                 name: currentName,
                 assetID: currentProfilePhotoAssetID,
                 tint: .paeoniaPartnerOne,
-                capturedAt: currentCapturedAt,
-                showsTimestamp: false,
-                point: snap.currentPoint,
-                containerWidth: size.width
+                capturedAt: currentCapturedAt
             )
             .position(snap.currentPoint)
 
@@ -364,13 +383,8 @@ private struct CoupleMapSnapshot: View {
                 assetID: partnerProfilePhotoAssetID,
                 tint: .paeoniaPartnerTwo,
                 capturedAt: partnerCapturedAt,
-                showsTimestamp: true,
-                // Hang the badge toward the other pin (the map interior) so it never
-                // reaches the card edge: below when the partner is the upper pin, above
-                // when it's the lower one.
-                badgeBelow: snap.partnerPoint.y <= snap.currentPoint.y,
-                point: snap.partnerPoint,
-                containerWidth: size.width
+                wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh,
+                dimsWhenStale: true
             )
             .position(snap.partnerPoint)
 
@@ -832,108 +846,88 @@ private enum SweepFront {
     }
 }
 
-/// A partner's avatar pin: the same tinted, ringed avatar shown in the Home
-/// toolbar, with a short relative timestamp of when the location was captured
-/// floating just below it. The timestamp is an overlay so it doesn't shift the
-/// avatar off its exact map point, and it slides sideways when needed so the badge
-/// never spills outside the card.
+/// An avatar marker on the map. A partner's marker dims once its last-known
+/// location is 24 hours old; the plain-language status below the map carries the
+/// same state so color/opacity is never the only signal.
 private struct MapAvatarPin: View {
     let name: String
     let assetID: UUID?
     let tint: Color
     let capturedAt: Date
-    let showsTimestamp: Bool
-    /// Whether the timestamp badge hangs below the avatar (toward the bottom) or
-    /// above it. Set so the badge always points into the map, never at a card edge.
-    var badgeBelow: Bool = true
-    let point: CGPoint
-    let containerWidth: CGFloat
+    var wasStaleAtLastRefresh = false
+    var dimsWhenStale = false
 
-    @State private var badgeWidth: CGFloat = 0
-
-    private static let edgeInset: CGFloat = 8
     private static let avatarDiameter: CGFloat = 36
-    private static let badgeRefreshInterval: TimeInterval = 30
-
-    private var diameter: CGFloat {
-        Self.avatarDiameter
-    }
-
-    /// Offset that pushes the badge just past the avatar so a small gap shows
-    /// between them, applied downward when below and upward when above.
-    private var badgeDrop: CGFloat {
-        diameter + PaeoniaSpacing.space4
-    }
-
-    /// Slides the badge horizontally so it stays inset from both card edges, while
-    /// staying centered on the avatar whenever there is room.
-    private var badgeOffsetX: CGFloat {
-        guard badgeWidth > 0, containerWidth > 0 else {
-            return 0
-        }
-        let halfWidth = badgeWidth / 2
-        let minCenter = Self.edgeInset + halfWidth
-        let maxCenter = containerWidth - Self.edgeInset - halfWidth
-        guard minCenter <= maxCenter else {
-            return 0
-        }
-        return min(max(point.x, minCenter), maxCenter) - point.x
-    }
+    private static let staleMarkerOpacity = 0.5
+    private static let refreshInterval: TimeInterval = 30
 
     var body: some View {
-        PaeoniaProfilePhotoAvatar(
-            mediaAssetID: assetID,
-            name: name,
-            tint: tint,
-            size: diameter
-        )
-        .overlay(alignment: badgeBelow ? .top : .bottom) {
-            if showsTimestamp {
-                LiveRelativeTimestampText(
-                    capturedAt: capturedAt,
-                    refreshInterval: Self.badgeRefreshInterval
-                )
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(1)
-                .fixedSize()
-                .padding(.horizontal, PaeoniaSpacing.space8)
-                .padding(.vertical, 2)
-                .background(Capsule().fill(.black.opacity(0.5)))
-                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { badgeWidth = $0 }
-                .offset(x: badgeOffsetX, y: badgeBelow ? badgeDrop : -badgeDrop)
-            }
+        TimelineView(.periodic(from: .now, by: Self.refreshInterval)) { context in
+            PaeoniaProfilePhotoAvatar(
+                mediaAssetID: assetID,
+                name: name,
+                tint: tint,
+                size: Self.avatarDiameter
+            )
+            .opacity(opacity(asOf: context.date))
         }
+    }
+
+    private func opacity(asOf now: Date) -> Double {
+        guard dimsWhenStale,
+              LocationDisplayRecency.resolve(
+                  capturedAt: capturedAt,
+                  now: now,
+                  wasStaleAtLastRefresh: wasStaleAtLastRefresh
+              ) == .stale
+        else {
+            return 1
+        }
+        return Self.staleMarkerOpacity
     }
 }
 
-private struct LiveRelativeTimestampText: View {
+/// Keeps the recorded time and stale warning available as ordinary text below
+/// the map, including for VoiceOver users who cannot inspect marker opacity.
+private struct PartnerLocationRecordedStatus: View {
     let capturedAt: Date
-    let refreshInterval: TimeInterval
+    let wasStaleAtLastRefresh: Bool
 
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: refreshInterval)) { context in
-            Text(displayDate(asOf: context.date).formatted(Self.relativeStyle).capitalizedFirstLetter)
-        }
-    }
-
+    private static let refreshInterval: TimeInterval = 30
     private static let relativeStyle = Date.RelativeFormatStyle(
         presentation: .named,
         unitsStyle: .abbreviated
     )
 
-    private func displayDate(asOf referenceDate: Date) -> Date {
-        min(capturedAt, referenceDate)
-    }
-}
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: Self.refreshInterval)) { context in
+            HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8) {
+                Image(systemName: "clock.fill")
+                    .font(.caption2.weight(.semibold))
+                    .accessibilityHidden(true)
 
-private extension String {
-    /// Uppercases only the first character, leaving the rest untouched. Relative
-    /// date styles like "for 3 t siden" come back lowercased, but as a standalone
-    /// badge it should read like a label ("For 3 t siden").
-    var capitalizedFirstLetter: String {
-        guard let first else { return self }
-        return first.uppercased() + String(dropFirst())
+                Text(status(asOf: context.date))
+                    .font(PaeoniaTypography.caption)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .foregroundStyle(.paeoniaTextSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func status(asOf now: Date) -> LocalizedStringResource {
+        let displayedDate = min(capturedAt, now)
+        let relativeTime = displayedDate.formatted(Self.relativeStyle)
+        switch LocationDisplayRecency.resolve(
+            capturedAt: capturedAt,
+            now: now,
+            wasStaleAtLastRefresh: wasStaleAtLastRefresh
+        ) {
+        case .recent:
+            return .homeMapRecordedRecent(relativeTime)
+        case .stale:
+            return .homeMapRecordedStale(relativeTime)
+        }
     }
 }
 

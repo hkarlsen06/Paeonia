@@ -25,7 +25,7 @@ protocol PairingServicing: Actor {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship
 
     func revokeInvite(id: UUID) async throws -> Bool
@@ -134,7 +134,7 @@ actor SupabasePairingService: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship {
         let inviteCode = try PairingInviteCode.normalized(codeInput)
         let coupleID = try await gateway.acceptInvite(

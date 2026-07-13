@@ -30,7 +30,10 @@ nonisolated struct HomeWidgetPreviewLoader {
 
         let payloadURL = containerURL.appendingPathComponent(payloadPath)
         guard let data = try? Data(contentsOf: payloadURL),
-              let payload = try? Self.decoder().decode(WidgetSharePayload.self, from: data) else {
+              let payload = try? Self.decoder().decode(WidgetSharePayload.self, from: data),
+              payload.schemaVersion == WidgetSharePayload.currentSchemaVersion,
+              payload.rendererVersion == WidgetSharePayload.currentRendererVersion
+        else {
             return Content(image: nil)
         }
 
@@ -40,7 +43,10 @@ nonisolated struct HomeWidgetPreviewLoader {
             return Content(image: nil)
         }
 
-        guard let relativePath = Self.preferredPreviewPath(in: payload.previews) else {
+        guard !payload.contentHash.isEmpty,
+              let relativePath = Self.preferredPreviewPath(in: payload.previews),
+              Self.isSafeRelativePath(relativePath)
+        else {
             return Content(image: nil)
         }
 
@@ -52,6 +58,10 @@ nonisolated struct HomeWidgetPreviewLoader {
     /// to any available rendition.
     static func preferredPreviewPath(in previews: [String: String]) -> String? {
         previews["systemSmall"] ?? previews["systemLarge"] ?? previews.values.sorted().first
+    }
+
+    static func isSafeRelativePath(_ path: String) -> Bool {
+        !path.isEmpty && !path.hasPrefix("/") && !path.split(separator: "/").contains("..")
     }
 
     private static func decoder() -> JSONDecoder {

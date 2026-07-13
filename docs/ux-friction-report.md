@@ -2,6 +2,33 @@
 
 Source review date: 2026-06-29
 
+## Status Update
+
+Revalidated against source on 2026-07-11. This remains a point-in-time audit, not the active release tracker.
+
+Resolved since the original review:
+
+- the public privacy policy and terms now have production-oriented English and Norwegian text aligned with the data contract; publication and legal review remain release-owner work
+- account deletion confirmation copy now describes the real consequence in English and Norwegian Bokmal
+- Memories routes to a functional local-first timeline instead of a placeholder tab
+- the countdown card derives real milestone values instead of rendering hardcoded sample data
+- a missing relationship date now shows an honest setup state and either partner can edit it later
+- the relationship-ended route has a dedicated acknowledgement state
+- Daily Challenge distinguishes locked and revealed partner-answer states in copy
+- invite-code entry is now a first-class pre-auth path
+- invite acceptance now previews the inviter and requires explicit confirmation
+- push and location permission asks now have contextual EN/NB priming
+- old partner locations remain visible with a 24-hour stale marker and recorded-time text
+- widget payloads are redacted unless a current, validated save explicitly opts into Home Screen display
+
+Still open or only partially addressed:
+
+- the account-deletion source path, retry queue, provider-revocation fallback, and local purge are implemented and tested, but the migration/function secrets still need production deployment and real-provider/device QA
+- paired Settings now includes profile editing, private OAuth-photo fallback, restore purchases, reporting, deletion, legal/support, and privacy/export requests; device accessibility and real-service QA remain
+- the legal pages still need the controller/operator entity name, postal address, organization number, intended legal review, and publication
+
+The detailed findings below are retained as historical evidence. Use `docs/mvp-release-checklist.md` for current release decisions.
+
 ## Scope
 
 This audit reviewed the current SwiftUI app surfaces and the marketing site source. It focused on consumer UX friction: confusing wording, misleading placement, unfinished entry points, destructive-flow clarity, privacy-sensitive copy, and small interaction choices that can cause hesitation.
@@ -321,7 +348,7 @@ Fix:
 
 - The landing page has strong positioning and avoids public/social patterns.
 - The mock phone is useful, but it shows product promises that the iOS app should not contradict with placeholders.
-- Legal pages are still pre-launch placeholders. Before App Store submission, privacy and terms need final plain-language coverage.
+- At the time of this audit, legal pages were pre-launch placeholders. They have since been replaced in source with plain-language English and Norwegian content; publication and any required legal review remain release-owner work.
 
 ## Recommended Implementation Order
 

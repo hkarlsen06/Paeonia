@@ -28,7 +28,8 @@ nonisolated struct RelationshipMilestone: Equatable, Sendable {
     let kind: Kind
     /// Start-of-day for the milestone, in the calendar used to compute it.
     let date: Date
-    /// Whole calendar days from "today" to the milestone date. `0` on the day itself.
+    /// Whole calendar days from "today" to the milestone date. `0` on the day
+    /// itself; negative for an already-passed milestone in a timeline.
     let daysRemaining: Int
 }
 
@@ -60,7 +61,13 @@ nonisolated struct RelationshipMilestoneCalculator {
     private let calendar: Calendar
 
     init(calendar: Calendar = .current) {
-        self.calendar = calendar
+        // The persisted `yyyy-MM-dd` is a Gregorian database date. Respect the
+        // caller's time zone for day boundaries, but never reinterpret those
+        // components through a non-Gregorian preferred calendar.
+        var gregorianCalendar = Calendar(identifier: .gregorian)
+        gregorianCalendar.timeZone = calendar.timeZone
+        gregorianCalendar.locale = calendar.locale
+        self.calendar = gregorianCalendar
     }
 
     /// The next milestone for an `yyyy-MM-dd` start date, or `nil` when it can't be
@@ -69,6 +76,83 @@ nonisolated struct RelationshipMilestoneCalculator {
     func nextMilestone(startedOn rawDate: String, now: Date = Date()) -> RelationshipMilestone? {
         guard let start = startOfDay(fromISODate: rawDate) else { return nil }
         return nextMilestone(start: start, now: now)
+    }
+
+    /// The next `limit` milestones in order, soonest first. Each entry's
+    /// `daysRemaining` counts from the real `now`, not from the previous milestone,
+    /// so a list can show "in 9 days / in 25 days / …" consistently.
+    func upcomingMilestones(
+        startedOn rawDate: String,
+        now: Date = Date(),
+        limit: Int
+    ) -> [RelationshipMilestone] {
+        guard let start = startOfDay(fromISODate: rawDate) else { return [] }
+        return upcomingMilestones(start: start, now: now, limit: limit)
+    }
+
+    func upcomingMilestones(start: Date, now: Date = Date(), limit: Int) -> [RelationshipMilestone] {
+        let today = calendar.startOfDay(for: now)
+        var milestones: [RelationshipMilestone] = []
+        var cursor = now
+        while milestones.count < limit, let next = nextMilestone(start: start, now: cursor) {
+            milestones.append(
+                RelationshipMilestone(
+                    kind: next.kind,
+                    date: next.date,
+                    daysRemaining: days(from: today, to: next.date)
+                )
+            )
+            // Step just past the milestone found. When two families share a date the
+            // tie-break already picked the weightier kind, and moving past that day
+            // drops the duplicate instead of listing the same date twice.
+            guard let dayAfter = calendar.date(byAdding: .day, value: 1, to: next.date) else { break }
+            cursor = dayAfter
+        }
+        return milestones
+    }
+
+    /// The most recent `limit` milestones already behind the couple, in
+    /// chronological order (oldest first). Entries carry a *negative*
+    /// `daysRemaining` — days since the milestone — so a timeline can mix past and
+    /// upcoming rows with one value. A milestone landing today is not past; it
+    /// belongs to `upcomingMilestones` with `daysRemaining == 0`.
+    func pastMilestones(
+        startedOn rawDate: String,
+        now: Date = Date(),
+        limit: Int
+    ) -> [RelationshipMilestone] {
+        guard let start = startOfDay(fromISODate: rawDate) else { return [] }
+        return pastMilestones(start: start, now: now, limit: limit)
+    }
+
+    func pastMilestones(start: Date, now: Date = Date(), limit: Int) -> [RelationshipMilestone] {
+        let today = calendar.startOfDay(for: now)
+        var past: [RelationshipMilestone] = []
+        var cursor = calendar.startOfDay(for: start)
+        // Replay the schedule from the very start; it ends because the day-count
+        // family always yields a next milestone and each step moves the cursor
+        // forward, so the walk reaches `today` in a bounded number of milestones.
+        while let next = nextMilestone(start: start, now: cursor), next.date < today {
+            past.append(
+                RelationshipMilestone(
+                    kind: next.kind,
+                    date: next.date,
+                    daysRemaining: days(from: today, to: next.date)
+                )
+            )
+            if past.count > limit { past.removeFirst() }
+            guard let dayAfter = calendar.date(byAdding: .day, value: 1, to: next.date) else { break }
+            cursor = dayAfter
+        }
+        return past
+    }
+
+    /// Whole calendar days from the start date to `now` — 0 on the day the couple
+    /// got together, matching how the day-count milestones tally (100 days together
+    /// falls exactly on start + 100 days). `nil` when the date can't be parsed.
+    func daysTogether(startedOn rawDate: String, now: Date = Date()) -> Int? {
+        guard let start = startOfDay(fromISODate: rawDate) else { return nil }
+        return days(from: calendar.startOfDay(for: start), to: calendar.startOfDay(for: now))
     }
 
     func nextMilestone(start: Date, now: Date = Date()) -> RelationshipMilestone? {

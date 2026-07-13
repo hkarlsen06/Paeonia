@@ -65,6 +65,8 @@ actor MemoryMediaImageDiskCache: MemoryMediaImageCacheWriting {
 /// `get_media_signed_url`, download, and cache by media asset id. A separate cache
 /// directory keeps memory photos isolated from daily-answer media.
 actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheClearing {
+    nonisolated static let shared: MemoryMediaImageService? = try? live()
+
     private let client: SupabaseClient
     private let cache: MemoryMediaImageDiskCache
     private let expiresInSeconds = 3_600

@@ -4,6 +4,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     private let streams: [any SyncStream]
     private let stateStore: any SyncStatePersisting
     private let pendingOperationStore: any PendingSyncOperationPersisting
+    private let localPrivacyPurger: any LocalPrivacyPurging
     private let minimumForegroundSyncInterval: TimeInterval
     private let syncTimeoutNanoseconds: UInt64
     private let failedRunRetryDelay: TimeInterval
@@ -22,6 +23,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     private var activeRunWaiters: [CheckedContinuation<Void, Never>] = []
     private var scheduledTask: Task<Void, Never>?
     private var retryTask: Task<Void, Never>?
+    private var activePipelineTasks: [UUID: Task<SyncRunResult, Never>] = [:]
     private var scheduleGeneration: UInt64 = 0
     private var lastForegroundSyncAt: Date?
 
@@ -34,6 +36,8 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         locationVisibilityStore: (any LocationVisibilitySnapshotPersisting)? = nil,
         ownLocationStore: (any OwnLocationSnapshotPersisting)? = nil,
         memoryStore: (any MemoryRecordPersisting)? = nil,
+        privacyRecordStore: (any LocalPrivacyRecordPurging)? = nil,
+        localPrivacyPurger: (any LocalPrivacyPurging)? = nil,
         pendingOperationHandlers: [any PendingSyncOperationHandling] = [],
         minimumForegroundSyncInterval: TimeInterval = 60,
         syncTimeoutNanoseconds: UInt64 = 30_000_000_000,
@@ -50,11 +54,24 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         let needsDefaultStores = stateStore == nil
             || pendingOperationStore == nil
             || needsDefaultStreamStores
+            || (streams.isEmpty && privacyRecordStore == nil && localPrivacyPurger == nil)
         let fallbackStores = needsDefaultStores ? PaeoniaSyncServiceDefaults.makeStores() : nil
+        let resolvedLocalPrivacyPurger: any LocalPrivacyPurging
+        if let localPrivacyPurger {
+            resolvedLocalPrivacyPurger = localPrivacyPurger
+        } else if let resolvedPrivacyRecordStore = privacyRecordStore ?? fallbackStores?.privacyRecordStore {
+            resolvedLocalPrivacyPurger = LocalPrivacyPurgeService(
+                recordStore: resolvedPrivacyRecordStore
+            )
+        } else {
+            resolvedLocalPrivacyPurger = NoOpLocalPrivacyPurger()
+        }
+
         if streams.isEmpty {
             guard let resolvedAccessSnapshotStore = accessSnapshotStore ?? fallbackStores?.accessSnapshotStore,
                   let resolvedRelationshipEventStore = relationshipEventStore ?? fallbackStores?.relationshipEventStore,
-                  let resolvedLocationVisibilityStore = locationVisibilityStore ?? fallbackStores?.locationVisibilityStore,
+                  let resolvedLocationVisibilityStore = locationVisibilityStore
+                    ?? fallbackStores?.locationVisibilityStore,
                   let resolvedOwnLocationStore = ownLocationStore ?? fallbackStores?.ownLocationStore,
                   let resolvedMemoryStore = memoryStore ?? fallbackStores?.memoryStore else {
                 preconditionFailure("Default sync streams require persistent sync stores")
@@ -66,6 +83,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
                 locationVisibilityStore: resolvedLocationVisibilityStore,
                 ownLocationStore: resolvedOwnLocationStore,
                 memoryStore: resolvedMemoryStore,
+                localPrivacyPurger: resolvedLocalPrivacyPurger,
                 pendingOperationHandlers: pendingOperationHandlers
             )
         } else {
@@ -79,6 +97,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
 
         self.stateStore = resolvedStateStore
         self.pendingOperationStore = resolvedPendingOperationStore
+        self.localPrivacyPurger = resolvedLocalPrivacyPurger
         self.minimumForegroundSyncInterval = minimumForegroundSyncInterval
         self.syncTimeoutNanoseconds = syncTimeoutNanoseconds
         self.failedRunRetryDelay = failedRunRetryDelay
@@ -94,6 +113,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
             scheduledTask = nil
             retryTask?.cancel()
             retryTask = nil
+            activePipelineTasks.values.forEach { $0.cancel() }
             isSyncing = false
             needsLocalChangeFollowUp = false
             resumeActiveRunWaiters()
@@ -133,23 +153,42 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         scheduledTask = nil
         retryTask?.cancel()
         retryTask = nil
+        activePipelineTasks.values.forEach { $0.cancel() }
         hasStarted = false
         isSyncing = false
         needsLocalChangeFollowUp = false
         resumeActiveRunWaiters()
     }
 
-    func resetForUserChange() {
+    func resetForUserChange() async {
         let oldUserID = session?.userID
+        let scheduledRun = scheduledTask
+        let runningPipelines = Array(activePipelineTasks.values)
         stop()
+        for pipeline in runningPipelines {
+            _ = await pipeline.value
+        }
+        if let scheduledRun {
+            await scheduledRun.value
+        }
         session = nil
         lastForegroundSyncAt = nil
 
         if let oldUserID {
-            Task {
-                try? await pendingOperationStore.resetInFlight(ownerUserID: oldUserID)
-            }
+            await localPrivacyPurger.purge(
+                ownerUserID: oldUserID,
+                scope: .departingUser
+            )
         }
+    }
+
+    func purgeRelationshipAccess(ownerUserID: UUID, permanently: Bool) async {
+        await localPrivacyPurger.purge(
+            ownerUserID: ownerUserID,
+            scope: permanently
+                ? .relationshipContentPurged(clearAccessSnapshot: true)
+                : .relationshipAccessHidden
+        )
     }
 
     func runOnce(reason: SyncRequestReason) async -> SyncRunResult {
@@ -346,9 +385,19 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         session: SyncSession
     ) async -> SyncRunResult {
         let timeoutNanoseconds = syncTimeoutNanoseconds
+        let pipelineID = UUID()
+        let runTask = Task {
+            await performRun(reason: reason, session: session)
+        }
+        activePipelineTasks[pipelineID] = runTask
+        Task { [weak self] in
+            _ = await runTask.value
+            await self?.removeActivePipeline(pipelineID)
+        }
+
         let stream = AsyncStream<SyncRunResult> { continuation in
-            let runTask = Task {
-                let result = await performRun(reason: reason, session: session)
+            let resultTask = Task {
+                let result = await runTask.value
                 continuation.yield(result)
                 continuation.finish()
             }
@@ -364,6 +413,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
 
             continuation.onTermination = { _ in
                 runTask.cancel()
+                resultTask.cancel()
                 timeoutTask.cancel()
             }
         }
@@ -379,6 +429,10 @@ actor PaeoniaSyncService: PaeoniaSyncing {
             failedStreamKey: nil,
             errorDescription: nil
         )
+    }
+
+    private func removeActivePipeline(_ id: UUID) {
+        activePipelineTasks[id] = nil
     }
 
     private func performRun(

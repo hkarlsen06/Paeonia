@@ -2,9 +2,23 @@ import Foundation
 import GoogleSignIn
 import UIKit
 
-struct GoogleSignInCredential: Equatable, Sendable {
+nonisolated struct GoogleSignInCredential: Equatable, Sendable {
     let idToken: String
     let accessToken: String?
+    /// Transient provider artwork from the trusted Google SDK. Paeonia imports
+    /// it into private Storage during onboarding and never stores this public
+    /// URL as the user's canonical avatar.
+    let profileImageURL: URL?
+
+    init(
+        idToken: String,
+        accessToken: String?,
+        profileImageURL: URL? = nil
+    ) {
+        self.idToken = idToken
+        self.accessToken = accessToken
+        self.profileImageURL = profileImageURL
+    }
 }
 
 enum GoogleSignInServiceError: Error, Equatable {
@@ -21,6 +35,11 @@ enum GoogleSignInServiceError: Error, Equatable {
 @MainActor
 protocol GoogleSignInProviding: AnyObject {
     func signIn() async throws -> GoogleSignInCredential
+    func signOut()
+}
+
+extension GoogleSignInProviding {
+    func signOut() {}
 }
 
 @MainActor
@@ -96,6 +115,26 @@ final class GoogleSignInService: GoogleSignInProviding {
         }
     }
 
+    /// Clears the provider-side device session only after Paeonia's own sign-out
+    /// or deletion succeeds, so a different app account cannot silently inherit
+    /// a buffered or previously selected Google identity.
+    func signOut() {
+        GIDSignIn.sharedInstance.signOut()
+        bufferedCredential = nil
+        timedOutRequestID = nil
+        timeoutTask?.cancel()
+        timeoutTask = nil
+
+        guard let continuation else {
+            activeRequestID = nil
+            return
+        }
+
+        self.continuation = nil
+        activeRequestID = nil
+        continuation.resume(throwing: GoogleSignInServiceError.userCancelled)
+    }
+
     private static func signInResult(
         result: GIDSignInResult?,
         error: Error?
@@ -121,7 +160,8 @@ final class GoogleSignInService: GoogleSignInProviding {
         return .success(
             GoogleSignInCredential(
                 idToken: idToken,
-                accessToken: result.user.accessToken.tokenString
+                accessToken: result.user.accessToken.tokenString,
+                profileImageURL: result.user.profile?.imageURL(withDimension: 1_024)
             )
         )
     }

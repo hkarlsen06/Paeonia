@@ -12,6 +12,7 @@ nonisolated protocol PartnerAvatarSharing: Sendable {
 actor PartnerAvatarSharingService: PartnerAvatarSharing {
     private let imageProvider: any ProfilePhotoImageProviding
     private let appGroupContainerURL: URL?
+    private var privacyGeneration: UInt64 = 0
 
     init(
         imageProvider: any ProfilePhotoImageProviding,
@@ -26,7 +27,11 @@ actor PartnerAvatarSharingService: PartnerAvatarSharing {
             return
         }
 
+        let requestedGeneration = privacyGeneration
         guard let data = await imageProvider.profilePhotoData(for: assetID) else {
+            return
+        }
+        guard requestedGeneration == privacyGeneration else {
             return
         }
 
@@ -40,6 +45,7 @@ actor PartnerAvatarSharingService: PartnerAvatarSharing {
     // Actor isolation satisfies the protocol's `async` requirement without the
     // keyword; the body has nothing to await.
     func clear() {
+        privacyGeneration &+= 1
         guard let fileURL = avatarFileURL,
               FileManager.default.fileExists(atPath: fileURL.path) else {
             return
@@ -54,7 +60,13 @@ actor PartnerAvatarSharingService: PartnerAvatarSharing {
 }
 
 nonisolated enum PartnerAvatarSharingServiceFactory {
+    static let shared: (any PartnerAvatarSharing)? = makeLive()
+
     static func makeDefault() -> (any PartnerAvatarSharing)? {
+        shared
+    }
+
+    private static func makeLive() -> (any PartnerAvatarSharing)? {
         guard let imageProvider = ProfilePhotoImageProviderFactory.shared else {
             return nil
         }

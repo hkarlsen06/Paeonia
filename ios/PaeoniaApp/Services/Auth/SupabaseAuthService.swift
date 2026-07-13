@@ -8,6 +8,8 @@ import OSLog
 actor SupabaseAuthService: AuthServicing {
     private let gateway: any SupabaseAuthGateway
     private let profilePhotoCache: any ProfilePhotoImageCaching
+    private let profilePhotoInvalidator: (any ProfilePhotoImageInvalidating)?
+    private let providerAvatarLoader: any ProviderAvatarImageLoading
     #if DEBUG
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
@@ -17,10 +19,15 @@ actor SupabaseAuthService: AuthServicing {
 
     init(
         gateway: any SupabaseAuthGateway,
-        profilePhotoCache: (any ProfilePhotoImageCaching)? = nil
+        profilePhotoCache: (any ProfilePhotoImageCaching)? = nil,
+        profilePhotoInvalidator: (any ProfilePhotoImageInvalidating)? = nil,
+        providerAvatarLoader: (any ProviderAvatarImageLoading)? = nil
     ) {
         self.gateway = gateway
         self.profilePhotoCache = profilePhotoCache ?? FileProfilePhotoImageCache.live()
+        self.profilePhotoInvalidator = profilePhotoInvalidator
+            ?? ProfilePhotoImageProviderFactory.cacheInvalidator
+        self.providerAvatarLoader = providerAvatarLoader ?? HTTPSProviderAvatarImageLoader()
     }
 
     static func live() throws -> SupabaseAuthService {
@@ -66,7 +73,12 @@ actor SupabaseAuthService: AuthServicing {
             idToken: credential.idToken,
             accessToken: credential.accessToken
         )
-        let profile = try await gateway.loadProfile(userID: remoteSession.userID)
+        let loadedProfile = try await gateway.loadProfile(userID: remoteSession.userID)
+        let profile = await importGoogleAvatarIfAvailable(
+            userID: remoteSession.userID,
+            providerAvatarURL: credential.profileImageURL,
+            profile: loadedProfile
+        )
         return makeSession(
             remoteSession: SupabaseRemoteSession(
                 userID: remoteSession.userID,
@@ -96,26 +108,40 @@ actor SupabaseAuthService: AuthServicing {
 
         try await gateway.updateAuthDisplayName(trimmedDisplayName)
 
-        let profilePhotoAssetID = await uploadProfilePhotoIfAvailable(
+        let currentProfile = try await gateway.loadProfile(userID: remoteSession.userID)
+
+        let newlyUploadedAssetID = await uploadProfilePhotoIfAvailable(
             userID: remoteSession.userID,
             data: profilePhotoData
         )
+        let linkedProfilePhotoAssetID = newlyUploadedAssetID
+            ?? currentProfile.profilePhotoAssetID
 
         let profile: SupabaseProfile
         do {
             profile = try await gateway.completeProfileOnboarding(
                 userID: remoteSession.userID,
                 timeZoneID: timeZoneID,
-                profilePhotoAssetID: profilePhotoAssetID
+                profilePhotoAssetID: linkedProfilePhotoAssetID
             )
         } catch {
             // Linking failed after the photo was already finalized; don't leave an
             // orphaned object behind in storage or a stale local cache entry.
-            if let profilePhotoAssetID {
-                try? await gateway.markMediaForDeletion(profilePhotoAssetID)
-                try? await profilePhotoCache.removeProfilePhotoData(for: profilePhotoAssetID)
+            if let newlyUploadedAssetID {
+                try? await gateway.markMediaForDeletion(newlyUploadedAssetID)
+                try? await profilePhotoCache.removeProfilePhotoData(for: newlyUploadedAssetID)
             }
             throw error
+        }
+
+        if let previousAssetID = currentProfile.profilePhotoAssetID,
+           let newlyUploadedAssetID,
+           previousAssetID != newlyUploadedAssetID {
+            // Stop an in-flight read of the old immutable asset immediately
+            // after the new link commits; backend cleanup may take longer.
+            await profilePhotoInvalidator?.invalidate(mediaAssetID: previousAssetID)
+            try? await gateway.markMediaForDeletion(previousAssetID)
+            try? await profilePhotoCache.removeProfilePhotoData(for: previousAssetID)
         }
 
         return makeSession(
@@ -123,6 +149,74 @@ actor SupabaseAuthService: AuthServicing {
                 userID: remoteSession.userID,
                 provider: remoteSession.provider,
                 displayName: trimmedDisplayName
+            ),
+            profile: profile
+        )
+    }
+
+    func updateProfile(
+        displayName: String,
+        profilePhotoUpdate: AuthProfilePhotoUpdate
+    ) async throws -> AuthSession {
+        let displayName = try normalizedDisplayName(displayName)
+        guard let remoteSession = try await gateway.restoreSession() else {
+            throw AuthServiceError.noActiveSession
+        }
+
+        let currentProfile = try await gateway.loadProfile(userID: remoteSession.userID)
+        var newlyUploadedAssetID: UUID?
+        let linkedAssetID: UUID?
+
+        switch profilePhotoUpdate {
+        case .unchanged:
+            linkedAssetID = currentProfile.profilePhotoAssetID
+        case let .replace(data):
+            let assetID = try await uploadProfilePhoto(
+                userID: remoteSession.userID,
+                data: data
+            )
+            newlyUploadedAssetID = assetID
+            linkedAssetID = assetID
+        case .remove:
+            linkedAssetID = nil
+        }
+
+        let profile: SupabaseProfile
+        do {
+            profile = try await gateway.updateProfile(
+                userID: remoteSession.userID,
+                displayName: displayName,
+                profilePhotoAssetID: linkedAssetID
+            )
+        } catch {
+            // A finalized replacement is not user-visible until the profile row
+            // links it. Clean up only that new orphan; the old linked image stays.
+            if let newlyUploadedAssetID {
+                try? await gateway.markMediaForDeletion(newlyUploadedAssetID)
+                try? await profilePhotoCache.removeProfilePhotoData(for: newlyUploadedAssetID)
+            }
+            throw error
+        }
+
+        // The profile row is canonical. Auth metadata is only a future sign-in
+        // fallback, so a metadata outage must not undo a successful profile save.
+        try? await gateway.updateAuthDisplayName(displayName)
+
+        if let previousAssetID = currentProfile.profilePhotoAssetID,
+           previousAssetID != profile.profilePhotoAssetID {
+            // Queue the replaced/removed asset strictly after the new profile
+            // link succeeds. Failure leaves an inaccessible retained asset and
+            // is safer than deleting bytes that may still be linked.
+            await profilePhotoInvalidator?.invalidate(mediaAssetID: previousAssetID)
+            try? await gateway.markMediaForDeletion(previousAssetID)
+            try? await profilePhotoCache.removeProfilePhotoData(for: previousAssetID)
+        }
+
+        return makeSession(
+            remoteSession: SupabaseRemoteSession(
+                userID: remoteSession.userID,
+                provider: remoteSession.provider,
+                displayName: displayName
             ),
             profile: profile
         )
@@ -158,6 +252,54 @@ actor SupabaseAuthService: AuthServicing {
         }
     }
 
+    /// Paired edits are explicit saves, so an invalid or failed replacement must
+    /// surface as an error instead of silently keeping the old image.
+    private func uploadProfilePhoto(userID: String, data: Data) async throws -> UUID {
+        let compressedImage = await MainActor.run {
+            ImageCompressor.compress(data)
+        }
+        guard let compressedImage else {
+            throw AuthServiceError.invalidProfilePhoto
+        }
+
+        let assetID = try await gateway.uploadProfilePhoto(
+            userID: userID,
+            compressedImage: compressedImage
+        )
+        try? await profilePhotoCache.storeProfilePhotoData(compressedImage.data, for: assetID)
+        return assetID
+    }
+
+    /// Best-effort Google fallback for both new and previously onboarded users.
+    /// It is imported even when a custom photo is active so removing that custom
+    /// override can reveal the fallback immediately. The provider URL is consumed
+    /// only during sign-in and is never persisted.
+    private func importGoogleAvatarIfAvailable(
+        userID: String,
+        providerAvatarURL: URL?,
+        profile: SupabaseProfile
+    ) async -> SupabaseProfile {
+        guard profile.providerProfilePhotoAssetID == nil,
+              let providerAvatarURL = Self.trustedGoogleAvatarURL(providerAvatarURL),
+              let imageData = await providerAvatarLoader.imageData(from: providerAvatarURL),
+              let assetID = await uploadProfilePhotoIfAvailable(userID: userID, data: imageData)
+        else {
+            return profile
+        }
+
+        do {
+            return try await gateway.updateProviderProfilePhoto(
+                userID: userID,
+                profilePhotoAssetID: assetID,
+                source: "google"
+            )
+        } catch {
+            try? await gateway.markMediaForDeletion(assetID)
+            try? await profilePhotoCache.removeProfilePhotoData(for: assetID)
+            return profile
+        }
+    }
+
     private func logProfilePhotoIssue(_ message: String) {
         #if DEBUG
         logger.error("Profile photo \(message, privacy: .public); continuing onboarding without it.")
@@ -169,14 +311,22 @@ actor SupabaseAuthService: AuthServicing {
         try? await profilePhotoCache.removeAllProfilePhotoData()
     }
 
-    func requestAccountDeletion() async throws {
+    func requestAccountDeletion(
+        appleAuthorizationCode: String?
+    ) async throws -> AccountDeletionOutcome {
         guard try await gateway.restoreSession() != nil else {
             throw AuthServiceError.noActiveSession
         }
 
-        try await gateway.requestAccountDeletion()
-        try await gateway.signOut()
+        let outcome = try await gateway.requestAccountDeletion(
+            appleAuthorizationCode: appleAuthorizationCode
+        )
+        // The Edge Function may have already removed the Auth user. Supabase
+        // still clears its local session before making the remote sign-out call,
+        // so a missing remote user is safe to ignore here.
+        try? await gateway.signOut()
         try? await profilePhotoCache.removeAllProfilePhotoData()
+        return outcome
     }
 
     private func makeSession(
@@ -195,8 +345,10 @@ actor SupabaseAuthService: AuthServicing {
             provider: remoteSession.provider,
             displayName: displayName,
             timeZoneID: profile.timeZoneID?.trimmedNonEmpty,
-            profilePhotoAssetID: profile.profilePhotoAssetID,
-            profileStatus: profileStatus
+            profilePhotoAssetID: nil,
+            profileStatus: profileStatus,
+            customProfilePhotoAssetID: profile.profilePhotoAssetID,
+            providerProfilePhotoAssetID: profile.providerProfilePhotoAssetID
         )
     }
 
@@ -230,6 +382,18 @@ actor SupabaseAuthService: AuthServicing {
         }
 
         return displayName
+    }
+
+    private static func trustedGoogleAvatarURL(_ url: URL?) -> URL? {
+        guard HTTPSProviderAvatarImageLoader.isSecureURL(url),
+              let url,
+              let host = url.host?.lowercased(),
+              host == "googleusercontent.com" || host.hasSuffix(".googleusercontent.com")
+        else {
+            return nil
+        }
+
+        return url
     }
 }
 

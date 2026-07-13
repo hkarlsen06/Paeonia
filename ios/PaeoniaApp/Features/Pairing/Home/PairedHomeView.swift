@@ -1,12 +1,15 @@
 import SwiftUI
 
 struct PairedHomeView: View {
+    let currentUserID: UUID?
     let currentDisplayName: String?
     let currentProfilePhotoAssetID: UUID?
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
     /// The day the relationship started (`yyyy-MM-dd`), driving the milestone countdown.
     let relationshipStartedOn: String?
+    let milestoneIsSaving: Bool
+    let onSaveRelationshipStartedOn: (Date) async -> Bool
     let dailyChallengeCardState: DailyChallengeCardState
     let dailyChallengeStreak: StreakPillState
     let zoomNamespace: Namespace.ID?
@@ -18,13 +21,18 @@ struct PairedHomeView: View {
     var onRefresh: () async -> Void = {}
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     init(
+        currentUserID: UUID? = nil,
         currentDisplayName: String?,
         currentProfilePhotoAssetID: UUID? = nil,
         partnerDisplayName: String?,
         partnerProfilePhotoAssetID: UUID? = nil,
         relationshipStartedOn: String? = nil,
+        milestoneIsSaving: Bool = false,
+        onSaveRelationshipStartedOn: @escaping (Date) async -> Bool = { _ in false },
         dailyChallengeCardState: DailyChallengeCardState = DailyChallengeCardState(
             kind: .loading,
             answeredCount: 0,
@@ -39,11 +47,14 @@ struct PairedHomeView: View {
         onOpenWidgetDrawing: @escaping () -> Void = {},
         onRefresh: @escaping () async -> Void = {}
     ) {
+        self.currentUserID = currentUserID
         self.currentDisplayName = currentDisplayName
         self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
         self.partnerDisplayName = partnerDisplayName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.relationshipStartedOn = relationshipStartedOn
+        self.milestoneIsSaving = milestoneIsSaving
+        self.onSaveRelationshipStartedOn = onSaveRelationshipStartedOn
         self.dailyChallengeCardState = dailyChallengeCardState
         self.dailyChallengeStreak = dailyChallengeStreak
         self.zoomNamespace = zoomNamespace
@@ -61,12 +72,8 @@ struct PairedHomeView: View {
                 dailyPromptCard
                     .launchEntrance(order: 0)
 
-                HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
-                    MilestoneCountdownCard(startedOn: relationshipStartedOn)
-
-                    HomeWidgetCard(onOpen: onOpenWidgetDrawing)
-                }
-                .launchEntrance(order: 1)
+                milestoneAndWidget
+                    .launchEntrance(order: 1)
 
                 CoupleMapCard(
                     currentName: currentName,
@@ -84,7 +91,9 @@ struct PairedHomeView: View {
             .padding(.bottom, PaeoniaSpacing.space16)
         }
         .scrollIndicators(.hidden)
-        .refreshable { await onRefresh() }
+        .refreshable {
+            await onRefresh()
+        }
         // The home screen shows the couple's current widget, so seeing it means
         // the user has noticed any update — clear lingering partner alerts.
         .task {
@@ -92,7 +101,9 @@ struct PairedHomeView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                Task { await WidgetUpdateNotifications.clearDelivered() }
+                Task {
+                    await WidgetUpdateNotifications.clearDelivered()
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -132,7 +143,10 @@ struct PairedHomeView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     DailyStreakToolbarLabel(state: dailyChallengeStreak, onTap: onTapStreak)
                         .transition(.opacity)
-                        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeStreak.isVisible)
+                        .animation(
+                            reduceMotion ? nil : PaeoniaMotion.stateChange,
+                            value: dailyChallengeStreak.isVisible
+                        )
                 }
             }
         }
@@ -146,6 +160,29 @@ struct PairedHomeView: View {
             onAnswer: onOpenDailyChallenge
         )
         .zoomSource(DailyFlowZoom.home, in: zoomNamespace)
+    }
+
+    @ViewBuilder
+    private var milestoneAndWidget: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: PaeoniaSpacing.space16) {
+                milestoneCard
+                HomeWidgetCard(onOpen: onOpenWidgetDrawing)
+            }
+        } else {
+            HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
+                milestoneCard
+                HomeWidgetCard(onOpen: onOpenWidgetDrawing)
+            }
+        }
+    }
+
+    private var milestoneCard: some View {
+        MilestoneCountdownCard(
+            startedOn: relationshipStartedOn,
+            isSaving: milestoneIsSaving,
+            onSave: onSaveRelationshipStartedOn
+        )
     }
 
     private var currentName: String {
@@ -166,5 +203,6 @@ struct PairedHomeView: View {
             locationMapState: .partnerUnknown(.notSharing)
         )
     }
+    .environment(PaeoniaBannerCenter())
     .preferredColorScheme(.dark)
 }

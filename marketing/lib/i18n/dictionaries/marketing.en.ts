@@ -104,7 +104,7 @@ export const marketingEn = {
   ctaPrimary: {
     heading: 'Built carefully for private relationships',
     description:
-      'Privacy is part of Paeonia from the first release. See what the policy will cover and how to reach us with questions.',
+      'Privacy is part of Paeonia from the first release. Read how your data is handled and how to reach us with questions.',
     button: 'Read how privacy works',
   },
   contact: {
@@ -127,7 +127,7 @@ export const marketingEn = {
   },
   support: {
     title: 'Support',
-    description: 'Paeonia is preparing its first release. For questions, email us and we will help when we can.',
+    description: 'For help with Paeonia, your account, or a partner invite, email us and we will help.',
     emailLabel: 'Email',
     back: 'Back to Paeonia',
   },

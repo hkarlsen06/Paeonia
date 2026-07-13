@@ -12,7 +12,10 @@ final class LocationMapViewModel: PresentationReadinessProviding {
 
     private enum Constants {
         static let consentVersion = "location-sharing-v1"
-        static let partnerLocationUnknownAfter: TimeInterval = 7 * 24 * 60 * 60
+    }
+
+    private enum LocationOperationAbort: Error {
+        case identityChanged
     }
 
     private let visibilityStore: any LocationVisibilitySnapshotPersisting
@@ -24,6 +27,8 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     private var localChangeSyncHandler: (@MainActor () async -> Void)?
 
     private var identity = LocationIdentity(currentUserID: nil, coupleID: nil)
+    private var reloadGeneration = 0
+    private var activeLocationOperationID: UUID?
 
     private(set) var mapState: CoupleMapState = .loading
     private(set) var isPresentationReady = false
@@ -58,11 +63,17 @@ final class LocationMapViewModel: PresentationReadinessProviding {
             return
         }
 
+        // The suspended request belongs to the previous account/couple. Its
+        // identity checks prevent it from committing when it resumes, while the
+        // token comparison in `defer` prevents it from clearing a newer request.
+        activeLocationOperationID = nil
         self.identity = identity
+        reloadGeneration &+= 1
         mapState = .loading
         isPresentationReady = false
         sharingEnabled = false
         isSharingLoaded = false
+        notice = nil
         await reload()
     }
 
@@ -71,8 +82,12 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     }
 
     func reload() async {
-        guard let currentUserID = identity.currentUserID,
-              let coupleID = identity.coupleID
+        reloadGeneration &+= 1
+        let activeReloadGeneration = reloadGeneration
+        let requestedIdentity = identity
+
+        guard let currentUserID = requestedIdentity.currentUserID,
+              let coupleID = requestedIdentity.coupleID
         else {
             mapState = .loading
             isPresentationReady = false
@@ -84,11 +99,27 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         do {
             let visibility = try await visibilityStore.load(ownerUserID: currentUserID, coupleID: coupleID)
             let ownLocation = try await ownLocationStore.load(ownerUserID: currentUserID, coupleID: coupleID)
-            sharingEnabled = visibility?.viewerSharingEnabled ?? false
+            guard identity == requestedIdentity,
+                  reloadGeneration == activeReloadGeneration
+            else {
+                return
+            }
+
+            // Keep an in-flight opt-in/opt-out stable while a scene-activation
+            // reload runs behind the system location sheet.
+            if activeLocationOperationID == nil {
+                sharingEnabled = visibility?.viewerSharingEnabled ?? false
+            }
             isSharingLoaded = true
             mapState = Self.resolveMapState(visibility: visibility, ownLocation: ownLocation)
             isPresentationReady = true
         } catch {
+            guard identity == requestedIdentity,
+                  reloadGeneration == activeReloadGeneration
+            else {
+                return
+            }
+
             mapState = .partnerUnknown(.unknown("local_load_failed"))
             isPresentationReady = true
             isSharingLoaded = true
@@ -98,57 +129,46 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     func setSharingEnabled(_ enabled: Bool) async {
         guard enabled != sharingEnabled,
               let currentUserID = identity.currentUserID,
-              let coupleID = identity.coupleID
+              let coupleID = identity.coupleID,
+              let operationID = beginLocationOperation()
         else {
             return
         }
+
+        let operationIdentity = identity
+        defer { finishLocationOperation(operationID) }
 
         let previousValue = sharingEnabled
         sharingEnabled = enabled
         isSharingLoaded = true
 
         do {
-            let capturedLocation = enabled ? try await locationCapture.captureCurrentLocation() : nil
-            try await visibilityStore.setViewerSharingEnabled(
+            try await persistSharingChange(
                 ownerUserID: currentUserID,
                 coupleID: coupleID,
-                isEnabled: enabled,
-                updatedAt: Date()
+                enabled: enabled,
+                operationIdentity: operationIdentity
             )
-            try await enqueueLocationPreference(
-                ownerUserID: currentUserID,
-                coupleID: coupleID,
-                isEnabled: enabled,
-                source: .settingsToggle
-            )
-
-            if let capturedLocation {
-                try await saveAndEnqueueOwnLocation(
-                    ownerUserID: currentUserID,
-                    coupleID: coupleID,
-                    location: capturedLocation,
-                    source: .settingsToggle
-                )
-        } else {
-            try? await ownLocationStore.delete(ownerUserID: currentUserID, coupleID: coupleID)
-        }
 
             await syncAfterLocalChange()
+            try requireCurrentIdentity(operationIdentity)
             await reload()
+        } catch LocationOperationAbort.identityChanged {
+            return
         } catch {
-            sharingEnabled = previousValue
-            try? await visibilityStore.setViewerSharingEnabled(
+            await restoreSharingChange(
                 ownerUserID: currentUserID,
                 coupleID: coupleID,
-                isEnabled: previousValue,
-                updatedAt: Date()
+                previousValue: previousValue,
+                operationIdentity: operationIdentity,
+                error: error
             )
-            notice = notice(for: error)
-            await reload()
         }
     }
 
     func promptForCurrentLocation() async {
+        guard activeLocationOperationID == nil else { return }
+
         if sharingEnabled {
             await refreshOwnLocationIfSharingEnabled(source: .manualRefresh)
         } else {
@@ -159,31 +179,25 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     func refreshOwnLocationIfSharingEnabled(source: LocationSharingSource) async {
         guard sharingEnabled,
               let currentUserID = identity.currentUserID,
-              let coupleID = identity.coupleID
+              let coupleID = identity.coupleID,
+              let operationID = beginLocationOperation()
         else {
             return
         }
 
+        let operationIdentity = identity
+        defer { finishLocationOperation(operationID) }
+
         do {
             let location = try await locationCapture.captureCurrentLocation()
-
-            // A routine foreground refresh only writes when the fix is stale or
-            // the user has actually moved; manual refresh and settings toggles
-            // always write. This keeps every app switch from queuing a partner
-            // location write (and the local-change sync that follows it).
-            if source == .foregroundOpen {
-                let lastSent = (try? await ownLocationStore.load(
-                    ownerUserID: currentUserID,
-                    coupleID: coupleID
-                ))?.location
-                guard RoutineLocationThrottle.shouldSend(
-                    lastSent: lastSent,
-                    current: location,
-                    now: Date()
-                ) else {
-                    return
-                }
-            }
+            try requireCurrentIdentity(operationIdentity)
+            guard try await shouldSendLocation(
+                location,
+                source: source,
+                ownerUserID: currentUserID,
+                coupleID: coupleID,
+                operationIdentity: operationIdentity
+            ) else { return }
 
             try await saveAndEnqueueOwnLocation(
                 ownerUserID: currentUserID,
@@ -191,9 +205,15 @@ final class LocationMapViewModel: PresentationReadinessProviding {
                 location: location,
                 source: source
             )
+            try requireCurrentIdentity(operationIdentity)
+
             await syncAfterLocalChange()
+            try requireCurrentIdentity(operationIdentity)
             await reload()
+        } catch LocationOperationAbort.identityChanged {
+            return
         } catch {
+            guard identity == operationIdentity else { return }
             notice = notice(for: error)
         }
     }
@@ -204,8 +224,7 @@ final class LocationMapViewModel: PresentationReadinessProviding {
 
     static func resolveMapState(
         visibility: LocationVisibilitySnapshot?,
-        ownLocation: OwnLocationSnapshot?,
-        now: Date = Date()
+        ownLocation: OwnLocationSnapshot?
     ) -> CoupleMapState {
         guard let visibility else {
             return .partnerUnknown(.unknown("missing_visibility"))
@@ -217,17 +236,16 @@ final class LocationMapViewModel: PresentationReadinessProviding {
             return .currentUnknown
         }
         guard visibility.visibilityState == .visible,
-              let partner = visibility.partnerLocation,
-              !partnerLocationIsExpired(partner, now: now)
+              let partner = visibility.partnerLocation
         else {
             return .partnerUnknown(visibility.visibilityState)
         }
 
-        return .ready(current: current, partner: partner)
-    }
-
-    private static func partnerLocationIsExpired(_ location: LocationPoint, now: Date) -> Bool {
-        now.timeIntervalSince(location.capturedAt) >= Constants.partnerLocationUnknownAfter
+        return .ready(
+            current: current,
+            partner: partner,
+            partnerWasStaleAtLastRefresh: visibility.partnerLocationIsStale
+        )
     }
 
     private func enqueueLocationPreference(
@@ -252,6 +270,106 @@ final class LocationMapViewModel: PresentationReadinessProviding {
                 requestData: try encoder.encode(payload)
             )
         )
+    }
+
+    private func persistSharingChange(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        enabled: Bool,
+        operationIdentity: LocationIdentity
+    ) async throws {
+        let capturedLocation = enabled ? try await locationCapture.captureCurrentLocation() : nil
+        try requireCurrentIdentity(operationIdentity)
+
+        try await visibilityStore.setViewerSharingEnabled(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            isEnabled: enabled,
+            updatedAt: Date()
+        )
+        try requireCurrentIdentity(operationIdentity)
+
+        try await enqueueLocationPreference(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            isEnabled: enabled,
+            source: .settingsToggle
+        )
+        try requireCurrentIdentity(operationIdentity)
+
+        if let capturedLocation {
+            try await saveAndEnqueueOwnLocation(
+                ownerUserID: ownerUserID,
+                coupleID: coupleID,
+                location: capturedLocation,
+                source: .settingsToggle
+            )
+        } else {
+            try? await ownLocationStore.delete(ownerUserID: ownerUserID, coupleID: coupleID)
+        }
+        try requireCurrentIdentity(operationIdentity)
+    }
+
+    private func restoreSharingChange(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        previousValue: Bool,
+        operationIdentity: LocationIdentity,
+        error: any Error
+    ) async {
+        guard identity == operationIdentity else { return }
+        sharingEnabled = previousValue
+        try? await visibilityStore.setViewerSharingEnabled(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            isEnabled: previousValue,
+            updatedAt: Date()
+        )
+        guard identity == operationIdentity else { return }
+        notice = notice(for: error)
+        await reload()
+    }
+
+    private func shouldSendLocation(
+        _ location: LocationPoint,
+        source: LocationSharingSource,
+        ownerUserID: UUID,
+        coupleID: UUID,
+        operationIdentity: LocationIdentity
+    ) async throws -> Bool {
+        // A routine foreground refresh only writes when the fix is stale or the
+        // user moved; explicit refreshes always write.
+        guard source == .foregroundOpen else { return true }
+
+        let lastSent = (try? await ownLocationStore.load(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID
+        ))?.location
+        try requireCurrentIdentity(operationIdentity)
+        return RoutineLocationThrottle.shouldSend(
+            lastSent: lastSent,
+            current: location,
+            now: Date()
+        )
+    }
+
+    private func beginLocationOperation() -> UUID? {
+        guard activeLocationOperationID == nil else { return nil }
+        let operationID = UUID()
+        activeLocationOperationID = operationID
+        return operationID
+    }
+
+    private func finishLocationOperation(_ operationID: UUID) {
+        if activeLocationOperationID == operationID {
+            activeLocationOperationID = nil
+        }
+    }
+
+    private func requireCurrentIdentity(_ expectedIdentity: LocationIdentity) throws {
+        guard identity == expectedIdentity else {
+            throw LocationOperationAbort.identityChanged
+        }
     }
 
     private func saveAndEnqueueOwnLocation(

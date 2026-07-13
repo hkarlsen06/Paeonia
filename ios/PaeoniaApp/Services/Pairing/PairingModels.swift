@@ -50,13 +50,47 @@ nonisolated struct PairingStartDate: Equatable, Sendable {
     }
 
     init(date: Date, calendar: Calendar = .current) {
-        let components = calendar.dateComponents([.year, .month, .day], from: date)
+        // `couples.started_on` is a PostgreSQL `date` encoded as Gregorian ISO.
+        // A user's preferred display calendar may be Buddhist, Islamic, Hebrew,
+        // etc.; extracting that calendar's year into an ISO string would persist
+        // a completely different day. Keep the device time zone, but always use
+        // Gregorian components at the storage boundary.
+        let storageCalendar = Self.gregorianCalendar(in: calendar.timeZone)
+        let components = storageCalendar.dateComponents([.year, .month, .day], from: date)
         self.rawValue = String(
             format: "%04d-%02d-%02d",
             components.year ?? 1,
             components.month ?? 1,
             components.day ?? 1
         )
+    }
+
+    func date(calendar: Calendar = .current) -> Date? {
+        let parts = rawValue.split(separator: "-")
+        guard parts.count == 3,
+              let year = Int(parts[0]),
+              let month = Int(parts[1]),
+              let day = Int(parts[2])
+        else {
+            return nil
+        }
+
+        let storageCalendar = Self.gregorianCalendar(in: calendar.timeZone)
+        return storageCalendar.date(
+            from: DateComponents(
+                calendar: storageCalendar,
+                timeZone: storageCalendar.timeZone,
+                year: year,
+                month: month,
+                day: day
+            )
+        )
+    }
+
+    private static func gregorianCalendar(in timeZone: TimeZone) -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        return calendar
     }
 }
 

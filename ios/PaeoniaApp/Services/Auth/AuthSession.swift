@@ -5,23 +5,33 @@ nonisolated struct AuthSession: Equatable, Identifiable, Sendable {
     let provider: AuthProvider
     let displayName: String?
     let timeZoneID: String?
-    let profilePhotoAssetID: UUID?
+    /// Paeonia-uploaded override. Removing it reveals the private provider
+    /// fallback instead of leaving a Google user without an avatar.
+    let customProfilePhotoAssetID: UUID?
+    /// Private media imported from OAuth. The provider URL is never persisted.
+    let providerProfilePhotoAssetID: UUID?
     let profileStatus: AuthProfileStatus
 
-    // swiftlint:disable:next unneeded_synthesized_initializer
+    var profilePhotoAssetID: UUID? {
+        customProfilePhotoAssetID ?? providerProfilePhotoAssetID
+    }
+
     nonisolated init(
         id: String,
         provider: AuthProvider,
         displayName: String?,
         timeZoneID: String?,
         profilePhotoAssetID: UUID?,
-        profileStatus: AuthProfileStatus
+        profileStatus: AuthProfileStatus,
+        customProfilePhotoAssetID: UUID? = nil,
+        providerProfilePhotoAssetID: UUID? = nil
     ) {
         self.id = id
         self.provider = provider
         self.displayName = displayName
         self.timeZoneID = timeZoneID
-        self.profilePhotoAssetID = profilePhotoAssetID
+        self.customProfilePhotoAssetID = customProfilePhotoAssetID ?? profilePhotoAssetID
+        self.providerProfilePhotoAssetID = providerProfilePhotoAssetID
         self.profileStatus = profileStatus
     }
 
@@ -35,8 +45,10 @@ nonisolated struct AuthSession: Equatable, Identifiable, Sendable {
             provider: provider,
             displayName: displayName,
             timeZoneID: timeZoneID,
-            profilePhotoAssetID: profilePhotoAssetID ?? self.profilePhotoAssetID,
-            profileStatus: .complete
+            profilePhotoAssetID: profilePhotoAssetID ?? customProfilePhotoAssetID,
+            profileStatus: .complete,
+            customProfilePhotoAssetID: profilePhotoAssetID ?? customProfilePhotoAssetID,
+            providerProfilePhotoAssetID: providerProfilePhotoAssetID
         )
     }
 }
@@ -57,6 +69,37 @@ nonisolated struct AppleSignInCredential: Equatable, Sendable {
     let idToken: String
     let nonce: String
     let fullName: String?
+    /// Apple's short-lived authorization code. Sign-in itself only needs the ID
+    /// token, but account deletion can exchange this code server-side and revoke
+    /// the user's Sign in with Apple authorization without persisting a token.
+    let authorizationCode: String?
+
+    nonisolated init(
+        idToken: String,
+        nonce: String,
+        fullName: String?,
+        authorizationCode: String? = nil
+    ) {
+        self.idToken = idToken
+        self.nonce = nonce
+        self.fullName = fullName
+        self.authorizationCode = authorizationCode
+    }
+}
+
+nonisolated enum AccountDeletionOutcome: Equatable, Sendable {
+    case completed
+    case queued
+    case manualAppleRevocationRequired
+}
+
+/// Describes the profile-photo intent separately from the image bytes so a
+/// paired edit can distinguish keeping, replacing, and removing the current
+/// private asset.
+nonisolated enum AuthProfilePhotoUpdate: Equatable, Sendable {
+    case unchanged
+    case replace(Data)
+    case remove
 }
 
 nonisolated struct AuthRouteResolver: Sendable {

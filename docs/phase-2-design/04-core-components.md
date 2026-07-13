@@ -120,7 +120,7 @@ Field types:
 - multiline note input
 - date picker
 - invite code input
-- voice note title/metadata field if needed
+- voice-answer title/metadata field if needed
 
 Rules:
 
@@ -143,7 +143,7 @@ Required empty states:
 - partner has not answered yet
 - no memories yet
 - no widget drawing yet
-- no voice notes yet
+- no playable voice answer yet
 - offline with no cached content
 
 Tone:

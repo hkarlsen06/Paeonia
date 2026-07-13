@@ -39,7 +39,14 @@ final class UserDefaultsPairingInviteStore: PairingInviteStoring {
     }
 
     func clearInvite(for userID: String) {
-        defaults.removeObject(forKey: key(for: userID))
+        let variants = [
+            userID,
+            UUID(uuidString: userID)?.uuidString,
+            UUID(uuidString: userID)?.uuidString.lowercased(),
+        ]
+        for variant in Set(variants.compactMap { $0 }) {
+            defaults.removeObject(forKey: key(for: variant))
+        }
     }
 
     private func key(for userID: String) -> String {

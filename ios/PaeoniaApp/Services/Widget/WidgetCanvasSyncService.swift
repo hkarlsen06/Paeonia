@@ -32,6 +32,8 @@ struct URLSessionWidgetPayloadDownloader: WidgetPayloadDownloading {
 /// in-app canvas). This is what makes a partner's drawing actually appear.
 nonisolated protocol WidgetCanvasSyncing: Sendable {
     func sync(identity: WidgetSyncIdentity) async
+    func hideForPrivacy() async
+    func clearForPrivacy() async
 }
 
 actor WidgetCanvasSyncService: WidgetCanvasSyncing {
@@ -41,7 +43,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
     private let pendingStore: WidgetPendingUploadStore
     private let pendingUploader: (any WidgetCanvasUploading)?
     private let defaults: UserDefaults
-    private let lastSyncedKey = "paeonia.widgetCanvas.lastSyncedRevisionID"
+    private nonisolated static let lastSyncedKey = "paeonia.widgetCanvas.lastSyncedRevisionID"
     private var inFlightSync: (identity: WidgetSyncIdentity, task: Task<Void, Never>)?
     private var pendingRerunIdentities: Set<WidgetSyncIdentity> = []
 
@@ -95,7 +97,37 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
         } while pendingRerunIdentities.contains(identity)
     }
 
+    func clearForPrivacy() async {
+        await stopInFlightSyncForPrivacy()
+        pendingStore.clearAll()
+        Self.clearPersistedState(defaults: defaults)
+        await localStore.clearForPrivacy()
+    }
+
+    func hideForPrivacy() async {
+        await stopInFlightSyncForPrivacy()
+        Self.clearPersistedState(defaults: defaults)
+        await localStore.hideForPrivacy()
+    }
+
+    private func stopInFlightSyncForPrivacy() async {
+        let runningTask = inFlightSync?.task
+        runningTask?.cancel()
+        pendingRerunIdentities.removeAll()
+        if let runningTask {
+            await runningTask.value
+        }
+        inFlightSync = nil
+    }
+
+    nonisolated static func clearPersistedState(defaults: UserDefaults = .standard) {
+        defaults.removeObject(forKey: lastSyncedKey)
+    }
+
     private func performSync(identity: WidgetSyncIdentity) async {
+        guard !Task.isCancelled else {
+            return
+        }
         #if DEBUG
         logger.debug("Widget canvas sync started.")
         #endif
@@ -118,7 +150,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
             }
 
             // Skip if we already rendered this revision locally.
-            guard revisionID.uuidString != defaults.string(forKey: lastSyncedKey) else {
+            guard revisionID.uuidString != defaults.string(forKey: Self.lastSyncedKey) else {
                 return
             }
 
@@ -126,7 +158,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
             // so we never pull it back over newer local work.
             if let currentUserID = identity.currentUserID,
                state.activeRevisionAuthorUserID == currentUserID {
-                defaults.set(revisionID.uuidString, forKey: lastSyncedKey)
+                defaults.set(revisionID.uuidString, forKey: Self.lastSyncedKey)
                 return
             }
 
@@ -157,6 +189,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
         }
 
         let data = try await downloader.download(from: url)
+        try Task.checkCancellation()
         // Required precondition: only show data we can re-render.
         guard (try? PKDrawing(data: data)) != nil else {
             return
@@ -174,7 +207,8 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
             createdAt: state.revisionCreatedAt ?? Date()
         )
 
-        defaults.set(revisionID.uuidString, forKey: lastSyncedKey)
+        try Task.checkCancellation()
+        defaults.set(revisionID.uuidString, forKey: Self.lastSyncedKey)
     }
 
     private func retryPendingUploadIfNeeded(_ snapshot: WidgetPendingUploadSnapshot) async -> Bool {
@@ -222,10 +256,18 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
 
 nonisolated struct NoOpWidgetCanvasSync: WidgetCanvasSyncing {
     func sync(identity: WidgetSyncIdentity) {}
+    func hideForPrivacy() {}
+    func clearForPrivacy() {}
 }
 
 nonisolated enum WidgetCanvasSyncServiceFactory {
+    static let shared: any WidgetCanvasSyncing = makeLive()
+
     static func makeDefault() -> any WidgetCanvasSyncing {
+        shared
+    }
+
+    private static func makeLive() -> any WidgetCanvasSyncing {
         guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
             return NoOpWidgetCanvasSync()
         }

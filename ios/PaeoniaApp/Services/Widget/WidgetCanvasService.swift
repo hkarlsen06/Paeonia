@@ -74,6 +74,10 @@ nonisolated protocol WidgetCanvasManaging: Sendable {
     /// Removes the saved drawing and widget previews so private content does not
     /// linger on the Home Screen after a session ends.
     func clearForPrivacy() async
+
+    /// Hides widget-visible derivatives while preserving the canonical drawing
+    /// for a temporary entitlement loss.
+    func hideForPrivacy() async
 }
 
 extension WidgetCanvasManaging {
@@ -82,6 +86,10 @@ extension WidgetCanvasManaging {
             return nil
         }
         return WidgetCanvasSnapshot(drawingData: data, authorName: nil, createdAt: nil)
+    }
+
+    func hideForPrivacy() async {
+        await clearForPrivacy()
     }
 }
 
@@ -103,6 +111,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
     private let canonicalDrawingURL: URL?
     private let rasterizer: WidgetDrawingRasterizer
     private let reloader: any WidgetTimelineReloading
+    private var privacyGeneration: UInt64 = 0
 
     #if DEBUG
     private let logger = Logger(
@@ -178,6 +187,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
             throw WidgetCanvasError.invalidDrawingData
         }
 
+        let saveGeneration = privacyGeneration
         try persistCanonicalDrawing(drawingData)
 
         // The widget payload is derived cache. A failure here must not lose the
@@ -187,7 +197,8 @@ actor WidgetCanvasService: WidgetCanvasManaging {
                 drawingData: drawingData,
                 canvasSize: canvasSize,
                 authorName: authorName,
-                createdAt: createdAt
+                createdAt: createdAt,
+                privacyGeneration: saveGeneration
             )
         } catch {
             #if DEBUG
@@ -207,6 +218,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
     }
 
     func clearForPrivacy() async {
+        privacyGeneration &+= 1
         let fileManager = FileManager.default
         var didRemoveSomething = false
 
@@ -215,23 +227,42 @@ actor WidgetCanvasService: WidgetCanvasManaging {
             didRemoveSomething = true
         }
 
-        if let appGroupContainerURL {
-            let payloadURL = appGroupContainerURL.appendingPathComponent(PaeoniaAppGroup.widgetPayloadPath)
-            if fileManager.fileExists(atPath: payloadURL.path) {
-                try? fileManager.removeItem(at: payloadURL)
-                didRemoveSomething = true
-            }
+        didRemoveSomething = removeWidgetVisibleFiles(fileManager: fileManager) || didRemoveSomething
 
-            let previewsURL = appGroupContainerURL.appendingPathComponent(
-                PaeoniaAppGroup.widgetPreviewsDirectory,
-                isDirectory: true
-            )
-            if fileManager.fileExists(atPath: previewsURL.path) {
-                try? fileManager.removeItem(at: previewsURL)
-                didRemoveSomething = true
-            }
+        await reloadWidgetIfNeeded(didRemoveSomething)
+    }
+
+    func hideForPrivacy() async {
+        privacyGeneration &+= 1
+        let didRemoveSomething = removeWidgetVisibleFiles(fileManager: .default)
+        await reloadWidgetIfNeeded(didRemoveSomething)
+    }
+
+    private func removeWidgetVisibleFiles(fileManager: FileManager) -> Bool {
+        guard let appGroupContainerURL else {
+            return false
         }
 
+        var didRemoveSomething = false
+        let payloadURL = appGroupContainerURL.appendingPathComponent(PaeoniaAppGroup.widgetPayloadPath)
+        if fileManager.fileExists(atPath: payloadURL.path) {
+            try? fileManager.removeItem(at: payloadURL)
+            didRemoveSomething = true
+        }
+
+        let previewsURL = appGroupContainerURL.appendingPathComponent(
+            PaeoniaAppGroup.widgetPreviewsDirectory,
+            isDirectory: true
+        )
+        if fileManager.fileExists(atPath: previewsURL.path) {
+            try? fileManager.removeItem(at: previewsURL)
+            didRemoveSomething = true
+        }
+
+        return didRemoveSomething
+    }
+
+    private func reloadWidgetIfNeeded(_ didRemoveSomething: Bool) async {
         // Only reload when something actually changed so leaving the paired
         // state with an already-empty widget does not churn the timeline.
         if didRemoveSomething {
@@ -259,8 +290,10 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         drawingData: Data,
         canvasSize: CGSize,
         authorName: String?,
-        createdAt: Date
+        createdAt: Date,
+        privacyGeneration expectedPrivacyGeneration: UInt64
     ) async throws {
+        try checkPrivacyGeneration(expectedPrivacyGeneration)
         guard let appGroupContainerURL else {
             return
         }
@@ -281,6 +314,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
             ) else {
                 continue
             }
+            try checkPrivacyGeneration(expectedPrivacyGeneration)
 
             try pngData.write(to: previewsURL.appendingPathComponent(spec.fileName), options: .atomic)
             previews[spec.family] = "\(PaeoniaAppGroup.widgetPreviewsDirectory)/\(spec.fileName)"
@@ -296,6 +330,8 @@ actor WidgetCanvasService: WidgetCanvasManaging {
             authorName: trimmedAuthorName?.isEmpty == false ? trimmedAuthorName : nil,
             createdAt: createdAt,
             renderedAt: Date(),
+            privacyMode: .normal,
+            isRedacted: false,
             contentHash: Self.contentHash(for: drawingData),
             previews: previews
         )
@@ -304,9 +340,16 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         // exist yet; the widget falls back to a placeholder otherwise.
         let payloadData = try WidgetSharePayload.encoder().encode(payload)
         let payloadURL = appGroupContainerURL.appendingPathComponent(PaeoniaAppGroup.widgetPayloadPath)
+        try checkPrivacyGeneration(expectedPrivacyGeneration)
         try payloadData.write(to: payloadURL, options: .atomic)
 
         await reloader.reloadWidget()
+    }
+
+    private func checkPrivacyGeneration(_ expectedPrivacyGeneration: UInt64) throws {
+        guard expectedPrivacyGeneration == privacyGeneration else {
+            throw CancellationError()
+        }
     }
 
     nonisolated static func contentHash(for data: Data) -> String {

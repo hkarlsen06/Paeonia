@@ -122,4 +122,9 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
             defaults.removeObject(forKey: legacyHashKey)
         }
     }
+
+    func clearAll() {
+        defaults.removeObject(forKey: key)
+        defaults.removeObject(forKey: legacyHashKey)
+    }
 }

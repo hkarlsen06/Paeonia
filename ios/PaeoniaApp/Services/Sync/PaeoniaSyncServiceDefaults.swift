@@ -8,7 +8,8 @@ nonisolated enum PaeoniaSyncServiceDefaults {
         relationshipEventStore: any RelationshipSyncEventPersisting,
         locationVisibilityStore: any LocationVisibilitySnapshotPersisting,
         ownLocationStore: any OwnLocationSnapshotPersisting,
-        memoryStore: any MemoryRecordPersisting
+        memoryStore: any MemoryRecordPersisting,
+        privacyRecordStore: any LocalPrivacyRecordPurging
     )
 
     static func makeStores() -> Stores {
@@ -21,7 +22,8 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 SwiftDataRelationshipSyncEventRepository(container: localStore.container),
                 SwiftDataLocationVisibilitySnapshotRepository(container: localStore.container),
                 SwiftDataOwnLocationSnapshotRepository(container: localStore.container),
-                SwiftDataMemoryRecordRepository(container: localStore.container)
+                SwiftDataMemoryRecordRepository(container: localStore.container),
+                SwiftDataLocalPrivacyRecordStore(container: localStore.container)
             )
         } catch {
             preconditionFailure("Unable to create persistent sync store: \(error)")
@@ -34,6 +36,7 @@ nonisolated enum PaeoniaSyncServiceDefaults {
         locationVisibilityStore: any LocationVisibilitySnapshotPersisting,
         ownLocationStore: any OwnLocationSnapshotPersisting,
         memoryStore: any MemoryRecordPersisting,
+        localPrivacyPurger: any LocalPrivacyPurging,
         pendingOperationHandlers: [any PendingSyncOperationHandling] = []
     ) -> [any SyncStream] {
         guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
@@ -56,6 +59,10 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 mediaUploadService: LiveDailyAnswerMediaUploadService(client: client),
                 gateway: LiveSupabaseDailyChallengeGateway(client: client),
                 mediaDraftStore: FileDailyAnswerMediaDraftStore.live()
+            ),
+            RelationshipDatePendingOperationHandler(
+                gateway: LiveSupabaseRelationshipStartedOnGateway(client: client),
+                accessSnapshotStore: accessSnapshotStore
             ),
             CreateMemoryPendingOperationHandler(
                 gateway: memoryGateway,
@@ -94,7 +101,10 @@ nonisolated enum PaeoniaSyncServiceDefaults {
             ),
             RelationshipSyncEventsStream(
                 gateway: accessGateway,
-                eventStore: relationshipEventStore
+                eventStore: relationshipEventStore,
+                eventApplier: RelationshipSyncEventApplier(
+                    localPrivacyPurger: localPrivacyPurger
+                )
             ),
             PendingSyncOperationDrainStream(
                 handlers: mergedHandlers(

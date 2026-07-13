@@ -1,4 +1,5 @@
 import Foundation
+import StoreKit
 import Testing
 @testable import PaeoniaApp
 
@@ -117,6 +118,57 @@ struct SettingsViewModelTests {
         #expect(viewModel.notice == .leaveFailed)
         #expect(viewModel.isLeavingRelationship == false)
     }
+
+    @Test func restorePurchasesConfiguresUserAndSurfacesSuccess() async {
+        let storeKit = FakeSettingsStoreKit(restoreResult: .success(true))
+        let viewModel = SettingsViewModel(
+            preferences: nil,
+            authorization: FakePushAuthorization(),
+            userID: "user-123",
+            storeKitService: storeKit
+        )
+
+        let restored = await viewModel.restorePurchases()
+
+        #expect(storeKit.configuredUserID == "user-123")
+        #expect(storeKit.restoreCallCount == 1)
+        #expect(restored)
+        #expect(viewModel.notice == .purchasesRestored)
+        #expect(!viewModel.isRestoringPurchases)
+    }
+
+    @Test func restorePurchasesSurfacesNothingFound() async {
+        let storeKit = FakeSettingsStoreKit(restoreResult: .success(false))
+        let viewModel = SettingsViewModel(
+            preferences: nil,
+            authorization: FakePushAuthorization(),
+            userID: "user-123",
+            storeKitService: storeKit
+        )
+
+        let restored = await viewModel.restorePurchases()
+
+        #expect(!restored)
+        #expect(viewModel.notice == .noPurchasesToRestore)
+    }
+
+    @Test func restorePurchasesSurfacesFailure() async {
+        let storeKit = FakeSettingsStoreKit(
+            restoreResult: .failure(PaeoniaPurchaseError.restoreFailed)
+        )
+        let viewModel = SettingsViewModel(
+            preferences: nil,
+            authorization: FakePushAuthorization(),
+            userID: "user-123",
+            storeKitService: storeKit
+        )
+
+        let restored = await viewModel.restorePurchases()
+
+        #expect(!restored)
+        #expect(viewModel.notice == .restorePurchasesFailed)
+        #expect(!viewModel.isRestoringPurchases)
+    }
 }
 
 private enum FakePreferencesError: Error {
@@ -163,7 +215,7 @@ private actor FakeNotificationPreferences: NotificationPreferencesProviding {
 private struct FakePushAuthorization: PushAuthorizationProviding {
     var denied = false
 
-    func requestAuthorizationIfNeeded() {}
+    func requestAuthorizationIfNeeded() -> Bool { true }
 
     func isDenied() -> Bool {
         denied
@@ -203,7 +255,7 @@ private actor FakePairingService: PairingServicing {
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
-        startedOn: PairingStartDate
+        startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship {
         fatalError("unused")
     }
@@ -222,5 +274,48 @@ private actor FakePairingService: PairingServicing {
 private final class FakeOperationProvider: PairingClientOperationProviding {
     func makeOperation() -> PairingClientOperation {
         SyncClientOperation(clientID: UUID(), clientSequence: 1)
+    }
+}
+
+@MainActor
+private final class FakeSettingsStoreKit: PaeoniaStoreKitServicing {
+    let products: [Product] = []
+    private let restoreResult: Result<Bool, Error>
+    private(set) var configuredUserID: String?
+    private(set) var restoreCallCount = 0
+
+    init(restoreResult: Result<Bool, Error>) {
+        self.restoreResult = restoreResult
+    }
+
+    func configure(userID: String) {
+        configuredUserID = userID
+    }
+
+    func loadProducts() async throws {}
+
+    func product(for productID: PaeoniaSubscriptionProductID) -> Product? {
+        nil
+    }
+
+    func product(for productID: PaeoniaConsumableProductID) -> Product? {
+        nil
+    }
+
+    func purchase(_ product: Product) async throws -> Bool {
+        false
+    }
+
+    func restorePurchases() async throws -> Bool {
+        restoreCallCount += 1
+        return try restoreResult.get()
+    }
+
+    func redeemStreakRestore() async throws -> Int? {
+        nil
+    }
+
+    func recoverPendingStreakRestores() async -> Int? {
+        nil
     }
 }
