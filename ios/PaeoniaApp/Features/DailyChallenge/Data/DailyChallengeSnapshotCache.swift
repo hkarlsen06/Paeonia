@@ -3,8 +3,9 @@ import Foundation
 // MARK: - Protocol
 
 /// Persists the last successful `DailyChallengeRemoteSnapshotRow` so the view
-/// model can seed itself synchronously on launch, before the first network load
-/// returns. This removes the placeholder→content swap for returning users.
+/// model can seed itself on launch, before the first network load returns. The view
+/// model reads it away from the main actor so file I/O and JSON decoding cannot stall
+/// the launch animation. This removes the placeholder→content swap for returning users.
 ///
 /// Conforms to `Sendable` so it can be injected into actors and `@MainActor`
 /// types without requiring an `@unchecked` annotation at the call site.

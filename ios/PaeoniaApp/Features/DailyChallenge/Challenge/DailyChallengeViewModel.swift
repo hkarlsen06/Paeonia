@@ -92,7 +92,7 @@ final class DailyChallengeViewModel {
     }
 
     private static func makeDefaultPendingOperationStore() -> any PendingSyncOperationPersisting {
-        if let localStore = try? PaeoniaLocalStore() {
+        if let localStore = PaeoniaLocalStore.shared {
             return SwiftDataPendingSyncOperationRepository(container: localStore.container)
         }
         return InMemoryPendingSyncOperationRepository()
@@ -208,14 +208,15 @@ final class DailyChallengeViewModel {
         // specific user, so a different signed-in user never sees stale content.
         // `reload()` runs immediately after and replaces the seed with fresh data;
         // the seed is only visible during that first network round-trip.
-        if let cached = snapshotCache.load(ownerUserID: newUserID) {
-            // Guard: only apply if currentUserID hasn't changed underneath us.
-            // Since `configure` is @MainActor and there is no suspension between
-            // the assignment above and here, this check is always true — but it
-            // documents the invariant explicitly.
-            if self.currentUserID == newUserID {
-                apply(cached.loadResult(currentUserID: newUserID, locale: .current))
-            }
+        let snapshotCache = self.snapshotCache
+        let cached = await Task.detached(priority: .userInitiated) {
+            snapshotCache.load(ownerUserID: newUserID)
+        }.value
+        // The disk read intentionally runs away from the main actor. Re-check the
+        // identity after that suspension so a completed read for the previous user
+        // can never update the newly signed-in user's screen.
+        if self.currentUserID == newUserID, let cached {
+            apply(cached.loadResult(currentUserID: newUserID, locale: .current))
         }
 
         await reload()

@@ -93,8 +93,7 @@ actor RelationshipStartedOnDataService: RelationshipStartedOnDataServicing {
 
 nonisolated enum RelationshipStartedOnDataServiceFactory {
     static func makeDefault() -> any RelationshipStartedOnDataServicing {
-        do {
-            let localStore = try PaeoniaLocalStore()
+        if let localStore = PaeoniaLocalStore.shared {
             return RelationshipStartedOnDataService(
                 accessSnapshotStore: SwiftDataAccessSyncSnapshotRepository(
                     container: localStore.container
@@ -103,11 +102,11 @@ nonisolated enum RelationshipStartedOnDataServiceFactory {
                     container: localStore.container
                 )
             )
-        } catch {
-            return RelationshipStartedOnDataService(
-                accessSnapshotStore: InMemoryAccessSyncSnapshotRepository(),
-                pendingOperationStore: InMemoryPendingSyncOperationRepository()
-            )
         }
+
+        return RelationshipStartedOnDataService(
+            accessSnapshotStore: InMemoryAccessSyncSnapshotRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository()
+        )
     }
 }

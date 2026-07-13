@@ -183,15 +183,24 @@ final class RootViewModel {
     }
 
     private static func makeDefaultAccessSnapshotStore() -> (any AccessSyncSnapshotPersisting)? {
-        guard let localStore = try? PaeoniaLocalStore() else {
+        guard let localStore = PaeoniaLocalStore.shared else {
             return nil
         }
 
         return SwiftDataAccessSyncSnapshotRepository(container: localStore.container)
     }
 
-    func start() async {
+    func start(deferringSyncUntilLaunchCompletes: Bool = false) async {
         await refreshAuthRoute()
+        if !deferringSyncUntilLaunchCompletes {
+            await startSyncIfNeeded()
+        }
+    }
+
+    /// Starts background sync after the cold-launch animation and first content
+    /// entrance have finished. Auth/access resolution still happens before the
+    /// reveal; only work that is not needed to choose the first screen is deferred.
+    func finishDeferredLaunchStartup() async {
         await startSyncIfNeeded()
     }
 

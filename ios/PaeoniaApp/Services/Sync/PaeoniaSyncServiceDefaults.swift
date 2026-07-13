@@ -13,21 +13,20 @@ nonisolated enum PaeoniaSyncServiceDefaults {
     )
 
     static func makeStores() -> Stores {
-        do {
-            let localStore = try PaeoniaLocalStore()
-            return (
-                SwiftDataSyncStateRepository(container: localStore.container),
-                SwiftDataPendingSyncOperationRepository(container: localStore.container),
-                SwiftDataAccessSyncSnapshotRepository(container: localStore.container),
-                SwiftDataRelationshipSyncEventRepository(container: localStore.container),
-                SwiftDataLocationVisibilitySnapshotRepository(container: localStore.container),
-                SwiftDataOwnLocationSnapshotRepository(container: localStore.container),
-                SwiftDataMemoryRecordRepository(container: localStore.container),
-                SwiftDataLocalPrivacyRecordStore(container: localStore.container)
-            )
-        } catch {
-            preconditionFailure("Unable to create persistent sync store: \(error)")
+        guard let localStore = PaeoniaLocalStore.shared else {
+            preconditionFailure("Unable to create persistent sync store")
         }
+
+        return (
+            SwiftDataSyncStateRepository(container: localStore.container),
+            SwiftDataPendingSyncOperationRepository(container: localStore.container),
+            SwiftDataAccessSyncSnapshotRepository(container: localStore.container),
+            SwiftDataRelationshipSyncEventRepository(container: localStore.container),
+            SwiftDataLocationVisibilitySnapshotRepository(container: localStore.container),
+            SwiftDataOwnLocationSnapshotRepository(container: localStore.container),
+            SwiftDataMemoryRecordRepository(container: localStore.container),
+            SwiftDataLocalPrivacyRecordStore(container: localStore.container)
+        )
     }
 
     static func makeStreams(

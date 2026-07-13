@@ -436,15 +436,14 @@ final class LocationMapViewModel: PresentationReadinessProviding {
             return nil
         }
 
-        do {
-            let localStore = try PaeoniaLocalStore()
-            return (
-                SwiftDataLocationVisibilitySnapshotRepository(container: localStore.container),
-                SwiftDataOwnLocationSnapshotRepository(container: localStore.container),
-                SwiftDataPendingSyncOperationRepository(container: localStore.container)
-            )
-        } catch {
+        guard let localStore = PaeoniaLocalStore.shared else {
             return nil
         }
+
+        return (
+            SwiftDataLocationVisibilitySnapshotRepository(container: localStore.container),
+            SwiftDataOwnLocationSnapshotRepository(container: localStore.container),
+            SwiftDataPendingSyncOperationRepository(container: localStore.container)
+        )
     }
 }

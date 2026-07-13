@@ -863,6 +863,27 @@ struct PaeoniaAppTests {
         #expect(viewModel.state == .limitedAuthenticated)
         #expect(recorder.events == [.restoreSession, .startSync])
     }
+
+    @MainActor
+    @Test func coldLaunchCanDeferSyncUntilAnimationFinishes() async {
+        let syncService = TestPaeoniaSyncService()
+        let viewModel = RootViewModel(
+            syncService: syncService,
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: StaticAccessRouteService(route: .paired)
+        )
+
+        await viewModel.start(deferringSyncUntilLaunchCompletes: true)
+
+        #expect(viewModel.state == .paired)
+        #expect(await syncService.startCallCount == 0)
+        #expect(await syncService.configuredSessions.isEmpty)
+
+        await viewModel.finishDeferredLaunchStartup()
+
+        #expect(await syncService.startCallCount == 1)
+        #expect(await syncService.configuredSessions.count == 1)
+    }
 }
 
 private actor TestPaeoniaSyncService: PaeoniaSyncing {

@@ -185,25 +185,24 @@ actor MemoryDataService: MemoryDataServicing {
 
 nonisolated enum MemoryDataServiceFactory {
     static func makeDefault() -> any MemoryDataServicing {
-        do {
-            let localStore = try PaeoniaLocalStore()
+        if let localStore = PaeoniaLocalStore.shared {
             return MemoryDataService(
                 memoryStore: SwiftDataMemoryRecordRepository(container: localStore.container),
                 pendingOperationStore: SwiftDataPendingSyncOperationRepository(container: localStore.container)
             )
-        } catch {
-            return MemoryDataService(
-                memoryStore: InMemoryMemoryRecordRepository(),
-                pendingOperationStore: InMemoryPendingSyncOperationRepository()
-            )
         }
+
+        return MemoryDataService(
+            memoryStore: InMemoryMemoryRecordRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository()
+        )
     }
 
     /// Wipes the signed-in user's locally cached memories when the relationship ends.
     /// Memories are couple-private content, so losing access should remove the local
     /// copy the same way the widget, daily, and media caches are cleared on un-pair.
     static func clearForPrivacy(ownerUserID: UUID) async {
-        guard let localStore = try? PaeoniaLocalStore() else { return }
+        guard let localStore = PaeoniaLocalStore.shared else { return }
         let repository = SwiftDataMemoryRecordRepository(container: localStore.container)
         try? await repository.deleteAll(ownerUserID: ownerUserID)
     }

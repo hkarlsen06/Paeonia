@@ -23,6 +23,9 @@ struct RootView: View {
     private let pushPermissionPrimerStore: any PushPermissionPrimerPersisting
     private let widgetPushRegistration: any WidgetPushRegistering
     private let partnerAvatarSharing: (any PartnerAvatarSharing)?
+    /// Lets the first screen's entrance animation settle before sync, widget, avatar,
+    /// and APNs warm-up begin. None of this work is required to choose the route.
+    private static let postLaunchWorkDelay: Duration = .milliseconds(700)
 
     @MainActor
     init(
@@ -60,7 +63,21 @@ struct RootView: View {
                 locationViewModel.setLocalChangeSyncHandler {
                     await viewModel.syncAfterLocalLocationChange()
                 }
-                await viewModel.start()
+                await viewModel.start(deferringSyncUntilLaunchCompletes: true)
+            }
+            .task(id: isLaunchExperienceActive) {
+                guard !isLaunchExperienceActive else { return }
+
+                do {
+                    try await Task.sleep(for: Self.postLaunchWorkDelay)
+                } catch {
+                    return
+                }
+
+                guard !Task.isCancelled else { return }
+                registerForRemoteNotificationsIfSignedIn(viewModel.currentSession?.id)
+                await viewModel.finishDeferredLaunchStartup()
+                await performWidgetSyncIfPaired(viewModel.state)
             }
             .preferredColorScheme(.dark)
             // Handle deep links from an async task (fires on appear and whenever
@@ -95,7 +112,9 @@ struct RootView: View {
                 PaeoniaNotificationRouter.shared.consumeForegroundNotice()
             }
             .onChange(of: viewModel.state) { _, state in
-                syncWidgetIfPaired(state)
+                if !isLaunchExperienceActive {
+                    syncWidgetIfPaired(state)
+                }
                 presentPushPermissionPrimerIfNeeded(for: state)
             }
             .onChange(of: viewModel.isPairingCelebrationPresented) { _, isPresented in
@@ -104,7 +123,7 @@ struct RootView: View {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
-                guard phase == .active else {
+                guard phase == .active, !isLaunchExperienceActive else {
                     return
                 }
                 // Re-arm APNs so a rotated token reaches registration; the
@@ -123,7 +142,9 @@ struct RootView: View {
             .onChange(of: viewModel.currentSession?.id, initial: true) { _, sessionID in
                 // Once signed in, get an APNs token so the backend can send the
                 // silent push that wakes us to sync a partner's drawing.
-                registerForRemoteNotificationsIfSignedIn(sessionID)
+                if !isLaunchExperienceActive {
+                    registerForRemoteNotificationsIfSignedIn(sessionID)
+                }
             }
             .paeoniaTopBanner(bannerCenter) {
                 // Tapping a partner-update notice opens the drawing screen, the

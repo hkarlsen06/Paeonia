@@ -10,9 +10,9 @@ import SwiftUI
 /// `View.launchEntrance(order:)`).
 ///
 /// The sequencing/gating lives in `LaunchExperienceSequence`; this view owns only the
-/// timing and the SwiftUI presentation. The reveal waits for `contentReady`, so a slow
-/// auth/access resolve simply holds on the branded wordmark instead of flashing a
-/// half-loaded surface.
+/// timing and the SwiftUI presentation. The animated portion waits for `contentReady`,
+/// so a slow auth/access resolve holds the static petal instead of competing with
+/// startup work or flashing a half-loaded surface.
 struct LaunchExperienceView: View {
     /// True once the routed first surface behind the overlay is ready to be shown
     /// (auth/access has resolved). Drives the gate on the reveal.
@@ -25,7 +25,6 @@ struct LaunchExperienceView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var sequence = LaunchExperienceSequence()
-    @State private var wordmarkHeight: CGFloat = 0
     /// The logo's exit: a fast fade out. `1` at rest.
     @State private var logoOpacity: Double = 1
     /// The plum backdrop that covers the app during the intro. Fades away (seamlessly —
@@ -42,6 +41,7 @@ struct LaunchExperienceView: View {
     private let markRise: CGFloat = 30
     private let wordmarkGap: CGFloat = 10
     private let wordmarkSize: CGFloat = 40
+    private let wordmarkLineHeight: CGFloat = 48
 
     // Timing.
     private static let markHold: TimeInterval = 0.25
@@ -58,11 +58,12 @@ struct LaunchExperienceView: View {
     var body: some View {
         overlay
             .animation(sequenceAnimation, value: sequence.phase)
-            .task { await runScript() }
-            .onChange(of: contentReady, initial: true) { _, ready in
-                if ready {
-                    sequence.markContentReady()
-                }
+            // Keep the petal perfectly still while auth, SwiftData, and the routed
+            // first surface are being prepared. Starting the animated portion only
+            // after readiness prevents launch work from stealing frames mid-motion.
+            .task(id: contentReady) {
+                guard contentReady else { return }
+                await runScript()
             }
             .onChange(of: sequence.phase) { _, phase in
                 handlePhaseChange(phase)
@@ -77,6 +78,7 @@ struct LaunchExperienceView: View {
                 .opacity(backdropOpacity)
 
             logo
+                .compositingGroup()
                 .opacity(logoOpacity)
                 .offset(y: markOffsetY)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -108,23 +110,16 @@ struct LaunchExperienceView: View {
             .foregroundStyle(.paeoniaTextPrimary)
             .lineLimit(1)
             .fixedSize()
-            .background {
-                GeometryReader { proxy in
-                    Color.clear.preference(
-                        key: WordmarkHeightPreferenceKey.self,
-                        value: proxy.size.height
-                    )
-                }
-            }
-            .onPreferenceChange(WordmarkHeightPreferenceKey.self) { height in
-                wordmarkHeight = height
-            }
+            // A fixed line box keeps layout immutable during the animation. The old
+            // GeometryReader preference updated state after the first frame, which
+            // could retarget the wordmark offset while the mark was already moving.
+            .frame(height: wordmarkLineHeight)
     }
 
     // MARK: - Derived presentation
 
     private var wordmarkCenterOffset: CGFloat {
-        markHeight / 2 + wordmarkGap + wordmarkHeight / 2
+        markHeight / 2 + wordmarkGap + wordmarkLineHeight / 2
     }
 
     /// The mark sits dead-center (matching the system splash) until it lifts to make
@@ -161,10 +156,20 @@ struct LaunchExperienceView: View {
     // MARK: - Timing
 
     private func runScript() async {
-        try? await Task.sleep(for: .seconds(Self.markHold))
+        sequence.markContentReady()
+
+        do {
+            try await Task.sleep(for: .seconds(Self.markHold))
+        } catch {
+            return
+        }
         sequence.revealWordmark()
 
-        try? await Task.sleep(for: .seconds(Self.revealDuration + Self.wordmarkHold))
+        do {
+            try await Task.sleep(for: .seconds(Self.revealDuration + Self.wordmarkHold))
+        } catch {
+            return
+        }
         sequence.markWordmarkHoldElapsed()
     }
 
@@ -193,14 +198,6 @@ struct LaunchExperienceView: View {
             try? await Task.sleep(for: .seconds(Self.exitDuration))
             sequence.finishReveal()
         }
-    }
-}
-
-private struct WordmarkHeightPreferenceKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
     }
 }
 
