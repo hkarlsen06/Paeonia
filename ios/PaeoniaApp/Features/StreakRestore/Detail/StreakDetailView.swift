@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A calm, read-only look at the couple's daily-challenge streak: the live flame and
+/// A calm, read-only look at the couple's connection streak: the live flame and
 /// day count, their longest run so far, and a short, forgiving note on how it works.
 ///
 /// Opened by tapping the streak badge while the streak is healthy. A broken streak

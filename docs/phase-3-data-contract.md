@@ -1704,6 +1704,7 @@ Rules:
 - Starting the daily challenge freezes `anchor_time_zone_id`, `starts_at`, and `ends_at`.
 - If a partner moves timezone during the day, the current `couple_day` does not change.
 - The next started `couple_day` uses the latest stored partner timezones.
+- This daily-challenge snapshot rule does not freeze the streak deadline; streak timing follows the live timezone rule in **Streaks And Activity**.
 - When a partner completes their three-question challenge, notify the other partner.
 - Notification copy should explain that answering the questions is required to reveal what the partner wrote.
 
@@ -2070,8 +2071,10 @@ Qualifying activity:
 Rules:
 
 - A couple-day is kept alive when at least one qualifying activity event exists for that `couple_day`.
-- The next activity deadline should not fall before midnight in the latest partner timezone.
-- A streak breaks after that next activity day has fully elapsed: `next_activity_deadline_at + 1 day`.
+- `next_activity_deadline_at` is the actual break instant, after the next activity day has fully elapsed.
+- Calculate it as the later-occurring protective midnight across both partners: for each partner's current timezone, take midnight after the next complete local calendar day following the latest qualifying activity, then use the later absolute instant.
+- Recalculate a live streak deadline from the immutable activity timestamp whenever either partner's timezone changes and before streak reads or reminders. Prefer the timezone on that partner's most recently seen active device, with the profile timezone as fallback. Travel changes the deadline; the streak is not frozen to the timezone that was active when the action happened.
+- Use local calendar-date arithmetic before converting the midnight back to `timestamptz`. Do not add a fixed 24-hour interval to a midnight across daylight-saving transitions.
 - A paid streak restore stays available for 24 hours after the break point.
 - Include a graceful restore button.
 - Do not add manipulative purchase-to-restore behavior in MVP.

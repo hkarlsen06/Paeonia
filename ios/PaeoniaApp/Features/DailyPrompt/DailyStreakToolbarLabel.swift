@@ -6,27 +6,40 @@ struct StreakPillState: Equatable {
     var count: Int
     var isRestorable: Bool
     var restorableCount: Int
+    private var isAvailable: Bool
 
-    static let hidden = StreakPillState(count: 0, isRestorable: false, restorableCount: 0)
+    static let hidden = StreakPillState(
+        count: 0,
+        isRestorable: false,
+        restorableCount: 0,
+        isAvailable: false
+    )
 
-    init(count: Int, isRestorable: Bool, restorableCount: Int) {
+    init(count: Int, isRestorable: Bool, restorableCount: Int, isAvailable: Bool = true) {
         self.count = count
         self.isRestorable = isRestorable
         self.restorableCount = restorableCount
+        self.isAvailable = isAvailable
     }
 
     init(_ streak: CoupleStreak) {
         count = streak.currentCount
         isRestorable = streak.isRestorable
         restorableCount = streak.restorableCount
+        isAvailable = true
     }
 
     /// The number shown: the lost streak while a restore is offered (so it advertises
     /// what you'd get back), otherwise the live count.
     var displayCount: Int { isRestorable ? restorableCount : count }
 
-    /// Show it only when there's a streak to celebrate or a restore to offer.
-    var isVisible: Bool { displayCount >= 1 }
+    /// A paired surface keeps the streak discoverable even before the first day.
+    /// `.hidden` remains available for previews and surfaces without streak data.
+    var isVisible: Bool { isAvailable }
+
+    /// Zero is a cooled-down streak, while a restorable streak is broken. Both use
+    /// the same muted flame treatment, but only the lost restorable count is crossed out.
+    var usesMutedFlame: Bool { displayCount == 0 || isRestorable }
 }
 
 /// The couple's streak as a navigation-bar element: the brand flame and the day
@@ -79,7 +92,7 @@ struct DailyStreakToolbarLabel: View {
     }
 
     private var flameStyle: LinearGradient {
-        if state.isRestorable {
+        if state.usesMutedFlame {
             return LinearGradient(
                 colors: [.paeoniaTextSecondary.opacity(0.6), .paeoniaSurfacePressed],
                 startPoint: .top,
@@ -101,6 +114,16 @@ struct DailyStreakToolbarLabel: View {
 }
 
 #if DEBUG
+#Preview("Zero") {
+    DailyStreakToolbarLabel(
+        state: StreakPillState(count: 0, isRestorable: false, restorableCount: 0),
+        onTap: {}
+    )
+    .padding()
+    .background(.paeoniaBackgroundPrimary)
+    .preferredColorScheme(.dark)
+}
+
 #Preview("Healthy") {
     DailyStreakToolbarLabel(state: StreakPillState(count: 12, isRestorable: false, restorableCount: 0))
         .padding()

@@ -27,9 +27,9 @@ struct CoupleStreakTests {
         #expect(count == 5)
     }
 
-    @Test func missedDayResetsToOne() {
+    @Test func expiredServerCountStartsAgainAtOne() {
         let count = StreakCelebration.celebratedCount(
-            serverCurrentCount: 9,
+            serverCurrentCount: 0,
             lastQualifiedDate: "2026-06-25",
             todayLocalDate: "2026-06-28"
         )
@@ -67,15 +67,16 @@ struct CoupleStreakTests {
         #expect(count == 7)
     }
 
-    @Test func futureLastQualifiedDateDoesNotUndercount() {
-        // Clock skew: stored date is ahead of "today". Don't reset to one.
+    @Test func crossingTheDateLineStillExtendsALiveStreak() {
+        // Travel can make the current couple date sort before the last recorded
+        // date. The server's live count, not date ordering, owns expiration.
         let count = StreakCelebration.celebratedCount(
             serverCurrentCount: 8,
             lastQualifiedDate: "2026-06-29",
             todayLocalDate: "2026-06-28"
         )
 
-        #expect(count == 8)
+        #expect(count == 9)
     }
 
     // MARK: - Restore eligibility
@@ -121,5 +122,34 @@ struct CoupleStreakTests {
 
     @Test func noneIsNotRestorable() {
         #expect(!CoupleStreak.none.isRestorable)
+    }
+
+    // MARK: - Toolbar presentation
+
+    @Test func zeroStreakRemainsVisibleWithAMutedFlame() {
+        let state = StreakPillState(
+            count: 0,
+            isRestorable: false,
+            restorableCount: 0
+        )
+
+        #expect(state.isVisible)
+        #expect(state.displayCount == 0)
+        #expect(state.usesMutedFlame)
+    }
+
+    @Test func healthyStreakUsesTheLiveFlame() {
+        let state = StreakPillState(
+            count: 1,
+            isRestorable: false,
+            restorableCount: 0
+        )
+
+        #expect(state.isVisible)
+        #expect(!state.usesMutedFlame)
+    }
+
+    @Test func explicitlyUnavailableStreakStateRemainsHidden() {
+        #expect(!StreakPillState.hidden.isVisible)
     }
 }
