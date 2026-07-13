@@ -911,7 +911,7 @@ private struct PartnerLocationRecordedStatus: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .foregroundStyle(.paeoniaTextSecondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
     }
 

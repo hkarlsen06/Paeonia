@@ -168,36 +168,36 @@ struct WidgetDrawingView: View {
     }
 
     // Attribution for the saved drawing, sitting above the canvas: who drew it
-    // (leading) and when (trailing), in the widget's own type styles. Struck out
-    // the moment the canvas is edited, until the next save.
-    @ViewBuilder
+    // (leading) and when (trailing), in the widget's own type styles. The row
+    // always participates in layout, including while the first saved drawing is
+    // loading and before a first-ever save, so its visibility never resizes the
+    // square canvas. It is struck out while the editable canvas differs from the
+    // drawing that is still displayed on the widget.
     private var canvasAttribution: some View {
-        if viewModel.isShowingSavedAttribution {
-            HStack(spacing: PaeoniaSpacing.space8) {
-                if let name = viewModel.savedDrawingAuthorName, !name.isEmpty {
-                    Text(verbatim: name)
-                        .font(PaeoniaTypography.widgetPrimary)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .lineLimit(1)
-                }
+        HStack(spacing: PaeoniaSpacing.space8) {
+            Text(verbatim: viewModel.savedDrawingAuthorName ?? " ")
+                .font(PaeoniaTypography.widgetPrimary)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .lineLimit(1)
 
-                Spacer(minLength: PaeoniaSpacing.space8)
+            Spacer(minLength: PaeoniaSpacing.space8)
 
-                if let createdAt = viewModel.savedDrawingCreatedAt {
-                    Text(Self.attributionTimestamp(createdAt))
-                        .font(PaeoniaTypography.widgetSecondary)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .lineLimit(1)
-                }
-            }
-            .strikethrough(viewModel.hasUnsavedEdits)
-            // Inset so the text tucks inside the canvas's rounded corners rather
-            // than sitting flush at the screen edges.
-            .padding(.horizontal, PaeoniaSpacing.space16)
-            // Pull the row down toward the canvas, tightening the VStack's
-            // default 16pt gap so the attribution reads as belonging to it.
-            .padding(.bottom, -PaeoniaSpacing.space8)
+            Text(
+                verbatim: viewModel.savedDrawingCreatedAt.map(Self.attributionTimestamp) ?? " "
+            )
+            .font(PaeoniaTypography.widgetSecondary)
+            .foregroundStyle(.paeoniaTextSecondary)
+            .lineLimit(1)
         }
+        .opacity(viewModel.isShowingSavedAttribution ? 1 : 0)
+        .accessibilityHidden(!viewModel.isShowingSavedAttribution)
+        .strikethrough(viewModel.hasUnsavedEdits)
+        // Inset so the text tucks inside the canvas's rounded corners rather
+        // than sitting flush at the screen edges.
+        .padding(.horizontal, PaeoniaSpacing.space16)
+        // Pull the row down toward the canvas, tightening the VStack's
+        // default 16pt gap so the attribution reads as belonging to it.
+        .padding(.bottom, -PaeoniaSpacing.space8)
     }
 
     /// Matches the widget's timestamp treatment: just the time today, otherwise

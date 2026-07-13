@@ -389,6 +389,90 @@ struct WidgetDrawingAttributionTests {
         #expect(viewModel.savedDrawingAuthorName == "Me")
     }
 
+    @Test func clearingAfterSaveKeepsLastSavedAttribution() async {
+        let savedAt = Date(timeIntervalSinceReferenceDate: 1_000)
+        let spy = WidgetCanvasServiceSpy()
+        spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
+        spy.savedAuthorName = "Partner"
+        spy.savedCreatedAt = savedAt
+        let viewModel = WidgetDrawingViewModel(service: spy)
+        await viewModel.loadSavedDrawingIfNeeded()
+
+        viewModel.clearCanvas()
+
+        #expect(viewModel.drawing.strokes.isEmpty)
+        #expect(viewModel.hasUnsavedEdits)
+        #expect(viewModel.isShowingSavedAttribution)
+        #expect(viewModel.savedDrawingAuthorName == "Partner")
+        #expect(viewModel.savedDrawingCreatedAt == savedAt)
+    }
+
+    @Test func identicalSyncedDrawingRefreshesItsAttribution() async {
+        let drawingData = makeNonEmptyDrawing().dataRepresentation()
+        let spy = WidgetCanvasServiceSpy()
+        spy.savedDrawingData = drawingData
+        spy.savedAuthorName = "Me"
+        spy.savedCreatedAt = Date(timeIntervalSinceReferenceDate: 1_000)
+        let viewModel = WidgetDrawingViewModel(service: spy)
+        await viewModel.loadSavedDrawingIfNeeded()
+
+        let partnerSavedAt = Date(timeIntervalSinceReferenceDate: 2_000)
+        spy.savedAuthorName = "Partner"
+        spy.savedCreatedAt = partnerSavedAt
+
+        await viewModel.reloadSavedDrawingFromSyncIfSafe()
+
+        #expect(viewModel.savedDrawingAuthorName == "Partner")
+        #expect(viewModel.savedDrawingCreatedAt == partnerSavedAt)
+        #expect(viewModel.hasUnsavedEdits == false)
+    }
+
+    @Test func missingMetadataForIdenticalDrawingDoesNotEraseKnownAttribution() async {
+        let spy = WidgetCanvasServiceSpy()
+        spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
+        spy.savedAuthorName = "Partner"
+        spy.savedCreatedAt = Date(timeIntervalSinceReferenceDate: 1_000)
+        let viewModel = WidgetDrawingViewModel(service: spy)
+        await viewModel.loadSavedDrawingIfNeeded()
+
+        spy.savedAuthorName = nil
+        spy.savedCreatedAt = nil
+        await viewModel.reloadSavedDrawingFromSyncIfSafe()
+
+        #expect(viewModel.savedDrawingAuthorName == "Partner")
+        #expect(viewModel.savedDrawingCreatedAt == Date(timeIntervalSinceReferenceDate: 1_000))
+        #expect(viewModel.isShowingSavedAttribution)
+    }
+
+    @Test func identicalSaveWithUnknownAuthorDoesNotKeepPreviousAuthor() async {
+        let spy = WidgetCanvasServiceSpy()
+        spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
+        spy.savedAuthorName = "Me"
+        spy.savedCreatedAt = Date(timeIntervalSinceReferenceDate: 1_000)
+        let viewModel = WidgetDrawingViewModel(service: spy)
+        await viewModel.loadSavedDrawingIfNeeded()
+
+        let latestSavedAt = Date(timeIntervalSinceReferenceDate: 2_000)
+        spy.savedAuthorName = nil
+        spy.savedCreatedAt = latestSavedAt
+        await viewModel.reloadSavedDrawingFromSyncIfSafe()
+
+        #expect(viewModel.savedDrawingAuthorName == nil)
+        #expect(viewModel.savedDrawingCreatedAt == latestSavedAt)
+        #expect(viewModel.isShowingSavedAttribution)
+    }
+
+    @Test func firstUnsavedDrawingHasNoAttribution() {
+        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy())
+
+        viewModel.drawing = makeNonEmptyDrawing()
+
+        #expect(viewModel.hasUnsavedEdits)
+        #expect(!viewModel.isShowingSavedAttribution)
+        #expect(viewModel.savedDrawingAuthorName == nil)
+        #expect(viewModel.savedDrawingCreatedAt == nil)
+    }
+
     @Test func undoingEditsBackToSavedStateClearsUnsavedEdits() async {
         let spy = WidgetCanvasServiceSpy()
         let viewModel = WidgetDrawingViewModel(

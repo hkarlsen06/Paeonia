@@ -283,6 +283,77 @@
         }
       }
     },
+    "auth.deleteAccount.appleManual.doneButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
+          }
+        }
+      }
+    },
+    "auth.deleteAccount.appleManual.message" : {
+      "comment" : "Your Paeonia profile has been removed. In Apple Account settings, open Sign in with Apple, choose Paeonia, and stop using it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Paeonia profile has been removed. In Apple Account settings, open Sign in with Apple, choose Paeonia, and stop using it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia-profilen din er fjernet. Åpne Apple-kontoinnstillingene, velg Logg på med Apple, velg Paeonia og slutt å bruke tjenesten."
+          }
+        }
+      }
+    },
+    "auth.deleteAccount.appleManual.openButton" : {
+      "comment" : "Open Apple Account",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Apple Account"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Apple-konto"
+          }
+        }
+      }
+    },
+    "auth.deleteAccount.appleManual.title" : {
+      "comment" : "One more Apple step",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One more Apple step"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ett steg til hos Apple"
+          }
+        }
+      }
+    },
     "auth.deleteAccount.button" : {
       "comment" : "Button that starts the account deletion confirmation flow.",
       "extractionState" : "manual",
@@ -3091,6 +3162,42 @@
         }
       }
     },
+    "home.map.recorded.recent" : {
+      "comment" : "Relative recorded-time status below the couple map. %@ is a localized relative time such as 12 minutes ago.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updated %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oppdatert %@."
+          }
+        }
+      }
+    },
+    "home.map.recorded.stale" : {
+      "comment" : "Stale relative recorded-time warning below the couple map after 24 hours. %@ is a localized relative time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updated %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oppdatert %@."
+          }
+        }
+      }
+    },
     "home.map.relationshipEnded.title" : {
       "comment" : "Title shown in the Home map tile if location visibility reports that the relationship ended.",
       "extractionState" : "manual",
@@ -3109,20 +3216,380 @@
         }
       }
     },
-    "home.milestone.title.days" : {
-      "comment" : "Milestone name shown under the day count on the Us-tab countdown card for a round day-count marker. Compound avoids repeating 'days'. %@ is the day count (e.g. 100, 1,000).",
+    "home.milestone.edit.action" : {
+      "comment" : "VoiceOver label for the button that edits the relationship start date on the milestone tile",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your %@-day milestone"
+            "value" : "Edit the day you got together"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@-dagersmilepælen"
+            "value" : "Endre datoen dere ble sammen"
+          }
+        }
+      }
+    },
+    "home.milestone.editor.cancelAction" : {
+      "comment" : "Button that closes the relationship date editor without saving",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avbryt"
+          }
+        }
+      }
+    },
+    "home.milestone.editor.dateLabel" : {
+      "comment" : "Accessible label for the relationship start date picker",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The day you got together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datoen dere ble sammen"
+          }
+        }
+      }
+    },
+    "home.milestone.editor.edit.message" : {
+      "comment" : "Explanation above the relationship start date picker while editing",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the day you got together. The change will appear for both of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg dagen dere ble sammen. Endringen vises for dere begge."
+          }
+        }
+      }
+    },
+    "home.milestone.editor.edit.title" : {
+      "comment" : "Navigation title when editing an existing relationship start date",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit date"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre dato"
+          }
+        }
+      }
+    },
+    "home.milestone.editor.saveAction" : {
+      "comment" : "Button that saves the chosen relationship start date",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        }
+      }
+    },
+    "home.milestone.editor.savingAction" : {
+      "comment" : "Accessible label for the relationship date save button while the date is being saved",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saving"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagrer"
+          }
+        }
+      }
+    },
+    "home.milestone.editor.setup.message" : {
+      "comment" : "Explanation above the relationship start date picker during initial setup",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the day your relationship started. Either of you can change it later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg dagen forholdet deres startet. Begge kan endre den senere."
+          }
+        }
+      }
+    },
+    "home.milestone.editor.setup.title" : {
+      "comment" : "Navigation title when choosing the relationship start date for the first time",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When did you get together?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når ble dere sammen?"
+          }
+        }
+      }
+    },
+    "home.milestone.error.futureDate" : {
+      "comment" : "Error shown if a relationship start date later than today is submitted",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose today or an earlier date."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg i dag eller en tidligere dato."
+          }
+        }
+      }
+    },
+    "home.milestone.error.saveFailed" : {
+      "comment" : "Error shown when the relationship start date could not be saved locally",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The date wasn't saved. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datoen ble ikke lagret. Prøv igjen."
+          }
+        }
+      }
+    },
+    "home.milestone.setup.accessibilityHint" : {
+      "comment" : "VoiceOver hint for the milestone setup tile",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the date picker."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpner datovelgeren."
+          }
+        }
+      }
+    },
+    "home.milestone.setup.message" : {
+      "comment" : "Short explanation on the Us-tab milestone setup tile",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll use it to count down to your next milestone."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi bruker den til å telle ned til deres neste milepæl."
+          }
+        }
+      }
+    },
+    "home.milestone.setup.title" : {
+      "comment" : "Title on the Us-tab milestone setup tile when the couple has not chosen their relationship start date",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set the day you got together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sett datoen dere ble sammen"
+          }
+        }
+      }
+    },
+    "home.milestone.timeline.accessibilityHint" : {
+      "comment" : "Accessibility hint on the Us-tab milestone card; tapping opens the milestone timeline sheet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows your upcoming milestones."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viser kommende milepæler."
+          }
+        }
+      }
+    },
+    "home.milestone.timeline.days" : {
+      "comment" : "Day count in the milestone timeline sheet when the count is not exactly 1. %@ is the number of days (e.g. 186)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ days"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ dager"
+          }
+        }
+      }
+    },
+    "home.milestone.timeline.days.one" : {
+      "comment" : "Day count in the milestone timeline sheet when the count is exactly 1",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 day"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 dag"
+          }
+        }
+      }
+    },
+    "home.milestone.timeline.since" : {
+      "comment" : "Subline under the together-for headline. Placeholder is a formatted date like 'Thursday 8 January 2026'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Since %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siden %@"
+          }
+        }
+      }
+    },
+    "home.milestone.timeline.title" : {
+      "comment" : "Navigation title of the sheet listing upcoming relationship milestones",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Milestones"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Milepæler"
+          }
+        }
+      }
+    },
+    "home.milestone.timeline.togetherFor" : {
+      "comment" : "Headline on the milestone sheet. Placeholder is an already-localized duration like '186 days'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen i %@"
+          }
+        }
+      }
+    },
+    "home.milestone.title.days" : {
+      "comment" : "Milestone name shown under the day count on the Us-tab countdown card for a round day-count marker. %@ is the day count (e.g. 100, 1,000). Must wrap across lines; avoid long unbreakable compounds.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ days together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ dager sammen"
           }
         }
       }
@@ -3140,7 +3607,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Deres første årsdag"
+            "value" : "Deres første jubileum"
           }
         }
       }
@@ -3463,7 +3930,7 @@
         },
         "nb" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Meg"
           }
         }
@@ -4207,6 +4674,78 @@
         }
       }
     },
+    "notifications.permissionPrimer.enable" : {
+      "comment" : "Primary action that continues from the primer to the iOS notification permission dialog",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on notifications"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå på varsler"
+          }
+        }
+      }
+    },
+    "notifications.permissionPrimer.message" : {
+      "comment" : "One-benefit explanation before the iOS notification permission dialog. %@ is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When %@ sends a drawing or answers today's question, Paeonia can let you know."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når %@ sender en tegning eller svarer på dagens spørsmål, kan Paeonia gi deg beskjed."
+          }
+        }
+      }
+    },
+    "notifications.permissionPrimer.notNow" : {
+      "comment" : "Dismisses the notification permission primer without opening the iOS dialog",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke nå"
+          }
+        }
+      }
+    },
+    "notifications.permissionPrimer.title" : {
+      "comment" : "Title of the notification permission primer shown after pairing",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See when something new arrives"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se når noe nytt kommer"
+          }
+        }
+      }
+    },
     "pairing.celebration.getStartedButton" : {
       "comment" : "Button that dismisses the pairing celebration after it settles.",
       "extractionState" : "manual",
@@ -4435,7 +4974,7 @@
         },
         "nb" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Del denne koden med partneren din. Ditt abonnement dekker dere begge."
           }
         }
@@ -4563,6 +5102,96 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inviter partneren din"
+          }
+        }
+      }
+    },
+    "pairing.unpair.confirm.action" : {
+      "comment" : "Destructive confirm button that ends the pairing. Shared by the paywall footer and the You-tab leave action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unpair"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble fra"
+          }
+        }
+      }
+    },
+    "pairing.unpair.confirm.cancel" : {
+      "comment" : "Cancel button that keeps the pairing. Shared by the paywall footer and the You-tab leave action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stay paired"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forbli koblet"
+          }
+        }
+      }
+    },
+    "pairing.unpair.confirm.message" : {
+      "comment" : "Message of the confirmation alert for ending the pairing. %@ is the partner's name. Shared by the paywall footer and the You-tab leave action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll leave your shared space and %@ will be told. You'll both stop seeing your shared questions, memories, and widget. You can pair again later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du forlater det felles rommet deres, og %@ får beskjed. Dere slutter begge å se de felles spørsmålene, minnene og widgeten. Du kan koble deg til noen igjen senere."
+          }
+        }
+      }
+    },
+    "pairing.unpair.confirm.title" : {
+      "comment" : "Title of the confirmation alert for ending the pairing. %@ is the partner's name. Shared by the paywall footer and the You-tab leave action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unpair from %@?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble fra %@?"
+          }
+        }
+      }
+    },
+    "pairing.unpair.failed" : {
+      "comment" : "Error banner shown when ending the pairing fails. Shared by the paywall footer and the You-tab leave action.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't unpair you just now. Please try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å koble deg fra akkurat nå. Prøv igjen."
           }
         }
       }
@@ -4783,6 +5412,42 @@
         }
       }
     },
+    "paywall.error.invitePreviewFailed" : {
+      "comment" : "Error shown when the app cannot check an invite code because of a temporary failure",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't check this code. Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke sjekke koden. Sjekk nettet og prøv igjen."
+          }
+        }
+      }
+    },
+    "paywall.error.inviteUnavailable" : {
+      "comment" : "Error shown when an invite code is invalid, expired, revoked, or already used",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This invite is no longer available. The code may be invalid or expired. Ask your partner for a new code."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne invitasjonen er ikke lenger tilgjengelig. Koden kan være ugyldig eller utløpt. Be partneren din om en ny kode."
+          }
+        }
+      }
+    },
     "paywall.error.noPurchases" : {
       "comment" : "Error message when restore finds no purchases.",
       "extractionState" : "manual",
@@ -4873,24 +5538,6 @@
         }
       }
     },
-    "pairing.unpair.failed" : {
-      "comment" : "Error banner shown when ending the pairing fails. Shared by the paywall footer and the You-tab leave action.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't unpair you just now. Please try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi klarte ikke å koble deg fra akkurat nå. Prøv igjen."
-          }
-        }
-      }
-    },
     "paywall.feature.daily" : {
       "comment" : "Short paywall feature label for daily questions.",
       "extractionState" : "manual",
@@ -4959,6 +5606,114 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bli med partneren din"
+          }
+        }
+      }
+    },
+    "paywall.invite.confirm.action" : {
+      "comment" : "Button that explicitly accepts a previewed partner invite",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bli med"
+          }
+        }
+      }
+    },
+    "paywall.invite.confirm.cancel" : {
+      "comment" : "Button that cancels partner invite confirmation without accepting",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke nå"
+          }
+        }
+      }
+    },
+    "paywall.invite.confirm.message" : {
+      "comment" : "Centered confirmation message before accepting a normal partner invite",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Joining connects your shared space. Only continue if this is the person you expect."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når du blir med, kobles det felles området deres sammen. Fortsett bare hvis dette er personen du forventer."
+          }
+        }
+      }
+    },
+    "paywall.invite.confirm.safetyMessage" : {
+      "comment" : "Safety warning shown before accepting an invite when the pair has a prior safety flag",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There was a previous safety concern involving this person. Only join if you feel safe doing so."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det har tidligere vært en bekymring knyttet til denne personen. Bli bare med hvis du føler deg trygg."
+          }
+        }
+      }
+    },
+    "paywall.invite.confirm.title" : {
+      "comment" : "Centered confirmation title before accepting an invite. %@ is the inviter's display name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join %@?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bli med %@?"
+          }
+        }
+      }
+    },
+    "paywall.invite.confirm.titleFallback" : {
+      "comment" : "Centered confirmation title before accepting an invite when the inviter has no visible display name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join your partner?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bli med partneren din?"
           }
         }
       }
@@ -5125,6 +5880,24 @@
         }
       }
     },
+    "paywall.paired.trial.subtitle" : {
+      "comment" : "Paywall subtitle for paired users who can start a free trial.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start your free trial to open your shared space again. Everything you saved together is safe."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start den gratis prøveperioden for å åpne området deres igjen. Alt dere har lagret sammen, er trygt."
+          }
+        }
+      }
+    },
     "paywall.period.monthly" : {
       "comment" : "Full monthly billing period label.",
       "extractionState" : "manual",
@@ -5211,6 +5984,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Laster pris"
+          }
+        }
+      }
+    },
+    "paywall.products.retry" : {
+      "comment" : "Primary action shown when App Store subscription products could not be loaded",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try loading again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv å laste inn igjen"
           }
         }
       }
@@ -5557,6 +6348,24 @@
         }
       }
     },
+    "paywall.trial.subtitle" : {
+      "comment" : "Paywall subtitle explaining what starting the free trial opens.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start your free trial to open a private shared space for the two of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start den gratis prøveperioden for å åpne et privat område for dere to."
+          }
+        }
+      }
+    },
     "paywall.trial.then" : {
       "comment" : "Connector word before the post-trial price.",
       "extractionState" : "manual",
@@ -5755,74 +6564,1262 @@
         }
       }
     },
-    "pairing.unpair.confirm.action" : {
-      "comment" : "Destructive confirm button that ends the pairing. Shared by the paywall footer and the You-tab leave action.",
+    "privacySafety.access.action" : {
+      "comment" : "Button that submits a personal data access request",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unpair"
+            "value" : "Request access"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Koble fra"
+            "value" : "Be om innsyn"
           }
         }
       }
     },
-    "pairing.unpair.confirm.cancel" : {
-      "comment" : "Cancel button that keeps the pairing. Shared by the paywall footer and the You-tab leave action.",
+    "privacySafety.access.description" : {
+      "comment" : "Description of a personal data access request",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stay paired"
+            "value" : "Ask what personal data Paeonia has about you and how it is used."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Forbli koblet"
+            "value" : "Be om innsyn i hvilke personopplysninger Paeonia har om deg, og hvordan de brukes."
           }
         }
       }
     },
-    "pairing.unpair.confirm.message" : {
-      "comment" : "Message of the confirmation alert for ending the pairing. %@ is the partner's name. Shared by the paywall footer and the You-tab leave action.",
+    "privacySafety.access.title" : {
+      "comment" : "Title for requesting access to personal data",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You'll leave your shared space and %@ will be told. You'll both stop seeing your shared questions, memories, and widget. You can pair again later."
+            "value" : "Access request"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du forlater det felles rommet deres, og %@ får beskjed. Dere slutter begge å se de felles spørsmålene, minnene og widgeten. Du kan koble deg til noen igjen senere."
+            "value" : "Forespørsel om innsyn"
           }
         }
       }
     },
-    "pairing.unpair.confirm.title" : {
-      "comment" : "Title of the confirmation alert for ending the pairing. %@ is the partner's name. Shared by the paywall footer and the You-tab leave action.",
+    "privacySafety.correction.action" : {
+      "comment" : "Button that opens the personal data correction form",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unpair from %@?"
+            "value" : "Ask for a correction"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Koble fra %@?"
+            "value" : "Be om retting"
+          }
+        }
+      }
+    },
+    "privacySafety.correction.description" : {
+      "comment" : "Description of a personal data correction request",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell us if account information is wrong or incomplete."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortell oss hvis kontoinformasjon er feil eller mangelfull."
+          }
+        }
+      }
+    },
+    "privacySafety.correction.detailsLabel" : {
+      "comment" : "Label above details in the personal data correction form",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What should be corrected?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hva skal rettes?"
+          }
+        }
+      }
+    },
+    "privacySafety.correction.detailsPlaceholder" : {
+      "comment" : "Placeholder in the personal data correction details field",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include enough detail for us to find the information."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta med nok detaljer til at vi kan finne opplysningene."
+          }
+        }
+      }
+    },
+    "privacySafety.correction.detailsRequired.message" : {
+      "comment" : "Banner message when correction details are missing",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell us what is wrong before sending the request."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortell oss hva som er feil før du sender forespørselen."
+          }
+        }
+      }
+    },
+    "privacySafety.correction.detailsRequired.title" : {
+      "comment" : "Banner title when correction details are missing",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add the correction details"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til hva som skal rettes"
+          }
+        }
+      }
+    },
+    "privacySafety.correction.formDescription" : {
+      "comment" : "Instructions for the personal data correction form",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe the information that is wrong and what it should say instead."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskriv hvilke opplysninger som er feil, og hva det skal stå i stedet."
+          }
+        }
+      }
+    },
+    "privacySafety.correction.formTitle" : {
+      "comment" : "Navigation title for the personal data correction form",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Correct your data"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rett opplysningene dine"
+          }
+        }
+      }
+    },
+    "privacySafety.correction.submit" : {
+      "comment" : "Button that sends a personal data correction request",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send correction request"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send forespørsel om retting"
+          }
+        }
+      }
+    },
+    "privacySafety.correction.title" : {
+      "comment" : "Title for requesting correction of personal data",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Correct your data"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rett opplysningene dine"
+          }
+        }
+      }
+    },
+    "privacySafety.export.action" : {
+      "comment" : "Button that submits a personal data export request",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request a copy"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Be om en kopi"
+          }
+        }
+      }
+    },
+    "privacySafety.export.description" : {
+      "comment" : "Description of a personal data export request",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask for a copy of your account data that you can save or use elsewhere."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Be om en kopi av kontoopplysningene dine som du kan lagre eller bruke andre steder."
+          }
+        }
+      }
+    },
+    "privacySafety.export.title" : {
+      "comment" : "Title for requesting a portable personal data export",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a copy of your data"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få en kopi av opplysningene dine"
+          }
+        }
+      }
+    },
+    "privacySafety.introduction" : {
+      "comment" : "Introductory copy on the privacy and safety screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask to see, copy, or correct your data, and find help if something in your relationship feels unsafe."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Be om å få se, kopiere eller rette opplysningene dine, og finn hjelp hvis noe i forholdet føles utrygt."
+          }
+        }
+      }
+    },
+    "privacySafety.loadFailed.message" : {
+      "comment" : "Banner message when privacy requests cannot be loaded",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pull down to try again. You can still contact support at support@paeonia.no."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dra ned for å prøve igjen. Du kan fortsatt kontakte support på support@paeonia.no."
+          }
+        }
+      }
+    },
+    "privacySafety.loadFailed.title" : {
+      "comment" : "Banner title when privacy requests cannot be loaded",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load your requests"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste forespørslene dine"
+          }
+        }
+      }
+    },
+    "privacySafety.report.description" : {
+      "comment" : "Description of report-and-leave. The placeholder is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell Paeonia what happened and end the relationship. Blocking %@ is a separate choice."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortell Paeonia hva som skjedde, og avslutt forholdet. Det er et eget valg å blokkere %@."
+          }
+        }
+      }
+    },
+    "privacySafety.report.title" : {
+      "comment" : "Title of the report-and-leave destination. The placeholder is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report %@ and leave"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporter %@ og forlat forholdet"
+          }
+        }
+      }
+    },
+    "privacySafety.request.active" : {
+      "comment" : "Disabled button label when the same privacy request is already active",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request in progress"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forespørsel under behandling"
+          }
+        }
+      }
+    },
+    "privacySafety.request.active.message" : {
+      "comment" : "Banner message when this kind of privacy request is already active",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You already have this type of request in progress."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du har allerede denne typen forespørsel under behandling."
+          }
+        }
+      }
+    },
+    "privacySafety.request.active.title" : {
+      "comment" : "Banner title when a duplicate active privacy request is avoided",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Already in progress"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allerede under behandling"
+          }
+        }
+      }
+    },
+    "privacySafety.request.failed.message" : {
+      "comment" : "Banner message when a privacy request cannot be submitted",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again. No changes were made."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk tilkoblingen og prøv igjen. Ingen endringer ble gjort."
+          }
+        }
+      }
+    },
+    "privacySafety.request.failed.title" : {
+      "comment" : "Banner title when a privacy request cannot be submitted",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't send your request"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke sende forespørselen"
+          }
+        }
+      }
+    },
+    "privacySafety.request.sending" : {
+      "comment" : "Button label while a privacy request is being submitted",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sending…"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sender …"
+          }
+        }
+      }
+    },
+    "privacySafety.request.submitted.message" : {
+      "comment" : "Banner message after a privacy request is submitted",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll contact you at the email connected to your account."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kontakter deg på e-postadressen som er knyttet til kontoen din."
+          }
+        }
+      }
+    },
+    "privacySafety.request.submitted.title" : {
+      "comment" : "Banner title after a privacy request is submitted",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request received"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forespørsel mottatt"
+          }
+        }
+      }
+    },
+    "privacySafety.requests.sectionTitle" : {
+      "comment" : "Section title above privacy data request actions",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opplysningene dine"
+          }
+        }
+      }
+    },
+    "privacySafety.safety.sectionTitle" : {
+      "comment" : "Section title above relationship reporting tools",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relationship safety"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trygghet i forholdet"
+          }
+        }
+      }
+    },
+    "privacySafety.status.cancelled" : {
+      "comment" : "Visible status for a cancelled privacy request",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelled"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avbrutt"
+          }
+        }
+      }
+    },
+    "privacySafety.status.completed" : {
+      "comment" : "Visible status for a completed privacy request",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fullført"
+          }
+        }
+      }
+    },
+    "privacySafety.status.processing" : {
+      "comment" : "Visible status while a privacy request is being processed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In progress"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Under behandling"
+          }
+        }
+      }
+    },
+    "privacySafety.status.rejected" : {
+      "comment" : "Visible status for a privacy request that could not be completed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not be completed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke fullføres"
+          }
+        }
+      }
+    },
+    "privacySafety.status.submitted" : {
+      "comment" : "Visible status for a newly received privacy request",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request received"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forespørsel mottatt"
+          }
+        }
+      }
+    },
+    "privacySafety.status.verifying" : {
+      "comment" : "Visible status while a privacy request is being verified",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirming your request"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bekrefter forespørselen"
+          }
+        }
+      }
+    },
+    "privacySafety.title" : {
+      "comment" : "Title for the paired privacy and relationship safety screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy & Safety"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personvern og trygghet"
+          }
+        }
+      }
+    },
+    "reportAndLeave.block.description" : {
+      "comment" : "Description of the optional block toggle. The placeholder is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you turn this on, %@ cannot pair with you again. This choice is off by default."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvis du slår på dette, kan %@ ikke koble seg til deg igjen. Dette valget er av som standard."
+          }
+        }
+      }
+    },
+    "reportAndLeave.block.title" : {
+      "comment" : "Title for the explicit optional block toggle. The placeholder is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Block %@ too"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blokker %@ også"
+          }
+        }
+      }
+    },
+    "reportAndLeave.confirm.action" : {
+      "comment" : "Destructive action in the centered report-and-leave confirmation",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send report and leave"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send rapport og forlat"
+          }
+        }
+      }
+    },
+    "reportAndLeave.confirm.blockMessage" : {
+      "comment" : "Centered confirmation message when explicit blocking is enabled. The placeholder is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your report will be sent, your relationship with %@ will end, and they will be blocked from pairing with you again. Shared content will no longer be available in the app."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporten din blir sendt, forholdet med %@ avsluttes, og personen blokkeres fra å koble seg til deg igjen. Delt innhold vil ikke lenger være tilgjengelig i appen."
+          }
+        }
+      }
+    },
+    "reportAndLeave.confirm.cancel" : {
+      "comment" : "Cancel action in the centered report-and-leave confirmation",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avbryt"
+          }
+        }
+      }
+    },
+    "reportAndLeave.confirm.message" : {
+      "comment" : "Centered confirmation message without blocking. The placeholder is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your report will be sent and your relationship with %@ will end. Shared content will no longer be available in the app."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporten din blir sendt, og forholdet med %@ avsluttes. Delt innhold vil ikke lenger være tilgjengelig i appen."
+          }
+        }
+      }
+    },
+    "reportAndLeave.confirm.title" : {
+      "comment" : "Centered confirmation title before reporting and leaving. The placeholder is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report %@ and leave?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapportere %@ og forlate forholdet?"
+          }
+        }
+      }
+    },
+    "reportAndLeave.failed.message" : {
+      "comment" : "Banner message when report-and-leave fails",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The relationship was not changed. Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forholdet ble ikke endret. Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      }
+    },
+    "reportAndLeave.failed.title" : {
+      "comment" : "Banner title when report-and-leave fails",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't send the report"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke sende rapporten"
+          }
+        }
+      }
+    },
+    "reportAndLeave.introduction" : {
+      "comment" : "Introductory report copy. The placeholder is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell us what happened with %@. Your report is private and is not shown to the person you report."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortell oss hva som skjedde med %@. Rapporten din er privat og vises ikke til personen du rapporterer."
+          }
+        }
+      }
+    },
+    "reportAndLeave.note.description" : {
+      "comment" : "Instructions for optional conduct report details",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include what happened and when. Only add information that helps us review the report."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskriv hva som skjedde og når. Ta bare med opplysninger som hjelper oss å vurdere rapporten."
+          }
+        }
+      }
+    },
+    "reportAndLeave.note.label" : {
+      "comment" : "Label for optional conduct report details",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details (optional)"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detaljer (valgfritt)"
+          }
+        }
+      }
+    },
+    "reportAndLeave.note.placeholder" : {
+      "comment" : "Placeholder in the optional conduct report details field",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What happened?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hva skjedde?"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.abuse" : {
+      "comment" : "Conduct report reason for abuse",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abuse"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mishandling"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.harassment" : {
+      "comment" : "Conduct report reason for harassment",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harassment"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trakassering"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.hate" : {
+      "comment" : "Conduct report reason for hate or discrimination",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hate or discrimination"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hat eller diskriminering"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.impersonation" : {
+      "comment" : "Conduct report reason for impersonation",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pretending to be someone else"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utgir seg for å være en annen"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.label" : {
+      "comment" : "Label for selecting a conduct report reason",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reason"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grunn"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.other" : {
+      "comment" : "Catch-all conduct report reason",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annet"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.placeholder" : {
+      "comment" : "Placeholder before a conduct report reason is chosen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a reason"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg en grunn"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.privacy" : {
+      "comment" : "Conduct report reason for a privacy violation",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy violation"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brudd på personvernet"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.selfHarm" : {
+      "comment" : "Conduct report reason for concern about self-harm",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Self-harm concern"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bekymring for selvskading"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.sexualContent" : {
+      "comment" : "Conduct report reason for sexual content",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sexual content"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seksuelt innhold"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.spam" : {
+      "comment" : "Conduct report reason for spam",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spam"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spam"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reason.threat" : {
+      "comment" : "Conduct report reason for threats",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Threats"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trusler"
+          }
+        }
+      }
+    },
+    "reportAndLeave.reasonRequired.message" : {
+      "comment" : "Banner message when no conduct report reason was chosen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select what best describes what happened."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg det som best beskriver hva som skjedde."
+          }
+        }
+      }
+    },
+    "reportAndLeave.reasonRequired.title" : {
+      "comment" : "Banner title when no conduct report reason was chosen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a reason"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg en grunn"
+          }
+        }
+      }
+    },
+    "reportAndLeave.submitButton" : {
+      "comment" : "Destructive button that prepares to report and leave. The placeholder is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report %@ and leave"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporter %@ og forlat forholdet"
+          }
+        }
+      }
+    },
+    "reportAndLeave.submitted.message" : {
+      "comment" : "Banner message after report-and-leave succeeds",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The relationship has ended. Your report is ready for review."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forholdet er avsluttet. Rapporten er klar til behandling."
+          }
+        }
+      }
+    },
+    "reportAndLeave.submitted.title" : {
+      "comment" : "Banner title after report-and-leave succeeds",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report sent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapport sendt"
+          }
+        }
+      }
+    },
+    "reportAndLeave.submitting" : {
+      "comment" : "Button label while a report-and-leave request is being submitted",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sending report…"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sender rapport …"
+          }
+        }
+      }
+    },
+    "reportAndLeave.title" : {
+      "comment" : "Navigation title for the report-and-leave flow",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report and leave"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporter og forlat forholdet"
           }
         }
       }
@@ -5967,6 +7964,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Denne skrus på når sammenkobling er klar."
+          }
+        }
+      }
+    },
+    "settings.account.logoutButton" : {
+      "comment" : "Me tab: sign out of the app on this device",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log out"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logg ut"
           }
         }
       }
@@ -6133,6 +8148,78 @@
         }
       }
     },
+    "settings.notifications.collapsedLabel" : {
+      "comment" : "Accessibility value announced when the notifications section is closed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collapsed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skjult"
+          }
+        }
+      }
+    },
+    "settings.notifications.dailyChallenge.subtitle" : {
+      "comment" : "Explains daily challenge completion notifications. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a notification when %@ finishes today's questions."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få et varsel når %@ fullfører dagens spørsmål."
+          }
+        }
+      }
+    },
+    "settings.notifications.dailyChallenge.title" : {
+      "comment" : "Toggle title: get notified when partner completes today's daily questions",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dagens spørsmål"
+          }
+        }
+      }
+    },
+    "settings.notifications.expandedLabel" : {
+      "comment" : "Accessibility value announced when the notifications section is open",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expanded"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utvidet"
+          }
+        }
+      }
+    },
     "settings.notifications.openSettingsButton" : {
       "comment" : "Button that opens the iOS Settings app",
       "extractionState" : "manual",
@@ -6147,6 +8234,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Åpne Innstillinger"
+          }
+        }
+      }
+    },
+    "settings.notifications.partnerAnswered.subtitle" : {
+      "comment" : "Explains same-question reveal notifications. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a notification when %@ answers a question you can reveal."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få et varsel når %@ svarer på et spørsmål du kan se."
+          }
+        }
+      }
+    },
+    "settings.notifications.partnerAnswered.title" : {
+      "comment" : "Toggle title: get notified when partner answers a question the user can reveal",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same-question reveals"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på samme spørsmål"
           }
         }
       }
@@ -6201,6 +8324,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Varsler"
+          }
+        }
+      }
+    },
+    "settings.notifications.streakReminders.subtitle" : {
+      "comment" : "Explains streak reminder notifications",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a reminder before your shared check-in expires."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få en påminnelse før den felles innsjekken utløper."
+          }
+        }
+      }
+    },
+    "settings.notifications.streakReminders.title" : {
+      "comment" : "Toggle title: get notified before the shared check-in expires",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-in reminders"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Innsjekkpåminnelser"
           }
         }
       }
@@ -6277,6 +8436,595 @@
         }
       }
     },
+    "settings.privacySafety.message" : {
+      "comment" : "Manage your data or report a safety concern.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage your data or report a safety concern."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Administrer dataene dine eller rapporter noe utrygt."
+          }
+        }
+      }
+    },
+    "settings.profile.editAction" : {
+      "comment" : "Edit name or photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit name or photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre navn eller bilde"
+          }
+        }
+      }
+    },
+    "settings.profile.editor.title" : {
+      "comment" : "Edit profile",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit profile"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rediger profil"
+          }
+        }
+      }
+    },
+    "settings.profile.fallbackName" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deg"
+          }
+        }
+      }
+    },
+    "settings.profile.name.label" : {
+      "comment" : "First name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First name"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fornavn"
+          }
+        }
+      }
+    },
+    "settings.profile.photo.add" : {
+      "comment" : "Add photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til bilde"
+          }
+        }
+      }
+    },
+    "settings.profile.photo.change" : {
+      "comment" : "Change photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre bilde"
+          }
+        }
+      }
+    },
+    "settings.profile.photo.message" : {
+      "comment" : "Your photo is private and only shown inside Paeonia to your partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your photo is private and only shown inside Paeonia to your partner."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildet ditt er privat og vises bare til partneren din i Paeonia."
+          }
+        }
+      }
+    },
+    "settings.profile.photo.previewAccessibilityLabel" : {
+      "comment" : "New profile photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New profile photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nytt profilbilde"
+          }
+        }
+      }
+    },
+    "settings.profile.photo.remove" : {
+      "comment" : "Remove photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern bilde"
+          }
+        }
+      }
+    },
+    "settings.profile.photoLoadFailed.message" : {
+      "comment" : "Choose another photo and try again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose another photo and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et annet bilde og prøv igjen."
+          }
+        }
+      }
+    },
+    "settings.profile.photoLoadFailed.title" : {
+      "comment" : "Couldn't open that photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't open that photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke åpne bildet"
+          }
+        }
+      }
+    },
+    "settings.profile.save" : {
+      "comment" : "Save changes",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save changes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre endringer"
+          }
+        }
+      }
+    },
+    "settings.profile.saved.message" : {
+      "comment" : "Your changes are ready for both of you.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your changes are ready for both of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endringene dine er klare for dere begge."
+          }
+        }
+      }
+    },
+    "settings.profile.saved.title" : {
+      "comment" : "Profile updated",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile updated"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilen er oppdatert"
+          }
+        }
+      }
+    },
+    "settings.profile.saveFailed.message" : {
+      "comment" : "Your old profile is still there. Check your connection and try again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your old profile is still there. Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den gamle profilen din er fortsatt der. Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      }
+    },
+    "settings.profile.saveFailed.title" : {
+      "comment" : "Couldn't update your profile",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't update your profile"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke oppdatere profilen"
+          }
+        }
+      }
+    },
+    "settings.profile.saving" : {
+      "comment" : "Saving…",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saving…"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagrer …"
+          }
+        }
+      }
+    },
+    "settings.profile.sectionTitle" : {
+      "comment" : "Your profile",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your profile"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilen din"
+          }
+        }
+      }
+    },
+    "settings.profile.signedInWith" : {
+      "comment" : "Read-only line at the bottom of the profile editor telling the user which sign-in provider their account uses. %@ is the provider brand name, e.g. Apple or Google",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signed in with %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pålogget med %@"
+          }
+        }
+      }
+    },
+    "settings.purchases.failed.message" : {
+      "comment" : "Check your connection and try again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      }
+    },
+    "settings.purchases.failed.title" : {
+      "comment" : "Couldn't restore purchases",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't restore purchases"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke gjenopprette kjøp"
+          }
+        }
+      }
+    },
+    "settings.purchases.none.message" : {
+      "comment" : "We couldn't find an App Store subscription to restore for this account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't find an App Store subscription to restore for this account."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fant ikke noe App Store-abonnement å gjenopprette for denne kontoen."
+          }
+        }
+      }
+    },
+    "settings.purchases.none.title" : {
+      "comment" : "No subscription found",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No subscription found"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fant ikke noe abonnement"
+          }
+        }
+      }
+    },
+    "settings.purchases.restored.message" : {
+      "comment" : "Paeonia has refreshed access for both of you.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia has refreshed access for both of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia har oppdatert tilgangen for dere begge."
+          }
+        }
+      }
+    },
+    "settings.purchases.restored.title" : {
+      "comment" : "Subscription restored",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscription restored"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abonnementet er gjenopprettet"
+          }
+        }
+      }
+    },
+    "settings.purchases.restoring" : {
+      "comment" : "Restoring purchases…",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restoring purchases…"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenoppretter kjøp …"
+          }
+        }
+      }
+    },
+    "settings.purchases.sectionTitle" : {
+      "comment" : "Purchases",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchases"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kjøp"
+          }
+        }
+      }
+    },
+    "settings.relationship.date.missingMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add the day your relationship started"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til dagen forholdet startet"
+          }
+        }
+      }
+    },
+    "settings.relationship.date.setMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change the day your relationship started"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre dagen forholdet startet"
+          }
+        }
+      }
+    },
+    "settings.relationship.date.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relationship date"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datoen deres"
+          }
+        }
+      }
+    },
+    "settings.relationship.section.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relationship"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forhold"
+          }
+        }
+      }
+    },
+    "settings.unpair.button" : {
+      "comment" : "Button on the You tab that ends the pairing with the partner. Placed low and behind a confirmation so it is not tapped by accident.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave relationship"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forlat forholdet"
+          }
+        }
+      }
+    },
     "streakDetail.done" : {
       "comment" : "Button that closes the informative streak sheet",
       "extractionState" : "manual",
@@ -6314,19 +9062,19 @@
       }
     },
     "streakDetail.message" : {
-      "comment" : "Short, forgiving explanation of how the daily streak works, on the streak sheet",
+      "comment" : "Short, forgiving explanation of which meaningful daily activities keep the couple streak alive",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Answer your three daily questions each day to keep the flame going. Miss a day and it cools down — but you can always start again."
+            "value" : "Do one small thing for each other each day to keep the flame going. You can answer questions, send a drawing, add a memory, or write a message. Miss a day and it cools down, but you can always start again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar på de tre daglige spørsmålene hver dag for å holde flammen i live. Hopper dere over en dag, kjølner den – men dere kan alltid begynne på nytt."
+            "value" : "Gjør én liten ting for hverandre hver dag for å holde flammen i live. Du kan svare på spørsmål, sende en tegning, legge til et minne eller skrive en melding. Hopper dere over en dag, kjølner den, men dere kan alltid begynne på nytt."
           }
         }
       }
@@ -6579,6 +9327,240 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sender"
+          }
+        }
+      }
+    },
+    "welcome.countdown.subtitle" : {
+      "comment" : "Welcome carousel screen 3: looking-forward line",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Count down to your next visit and the milestones along the way."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell ned til neste gjensyn og milepælene på veien."
+          }
+        }
+      }
+    },
+    "welcome.countdown.title" : {
+      "comment" : "Welcome carousel screen 3: looking-forward headline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking forward, together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se fram til det sammen"
+          }
+        }
+      }
+    },
+    "welcome.dailyQuestions.subtitle" : {
+      "comment" : "Welcome carousel screen 2: closeness line",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The small things you share keep the two of you near."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De små tingene dere deler, holder dere to nær hverandre."
+          }
+        }
+      }
+    },
+    "welcome.dailyQuestions.title" : {
+      "comment" : "Welcome carousel screen 2: closeness headline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closer, every day"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nærmere, hver dag"
+          }
+        }
+      }
+    },
+    "welcome.doodle.subtitle" : {
+      "comment" : "Welcome carousel screen 1: warm greeting line",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome to Paeonia — a private little place to stay close, however far apart you are."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velkommen til Paeonia – et lite, privat sted for å være nær, uansett hvor langt fra hverandre dere er."
+          }
+        }
+      }
+    },
+    "welcome.doodle.title" : {
+      "comment" : "Welcome carousel screen 1: warm greeting headline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For the two of you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For dere to"
+          }
+        }
+      }
+    },
+    "welcome.getStarted" : {
+      "comment" : "Welcome carousel: primary button on the last screen, leads to sign-in",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get started"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kom i gang"
+          }
+        }
+      }
+    },
+    "welcome.haveInviteCode" : {
+      "comment" : "Welcome/sign-in: open invite code entry for a joining partner",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Have an invite code?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Har du en invitasjonskode?"
+          }
+        }
+      }
+    },
+    "welcome.inviteCode.continue" : {
+      "comment" : "Welcome invite code sheet: submit button",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      }
+    },
+    "welcome.inviteCode.subtitle" : {
+      "comment" : "Welcome invite code sheet: explanation",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner already started Paeonia? Add their code, then sign in to join them."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Har partneren din allerede startet Paeonia? Legg inn koden deres, og logg inn for å bli med."
+          }
+        }
+      }
+    },
+    "welcome.inviteCode.title" : {
+      "comment" : "Welcome invite code sheet: title",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your invite code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv inn invitasjonskoden"
+          }
+        }
+      }
+    },
+    "welcome.next" : {
+      "comment" : "Welcome carousel: advance to the next screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste"
+          }
+        }
+      }
+    },
+    "welcome.skip" : {
+      "comment" : "Welcome carousel: skip to sign-in",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hopp over"
           }
         }
       }
@@ -7120,7 +10102,7 @@
         },
         "nb" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Lagre"
           }
         }
@@ -7305,2988 +10287,6 @@
           }
         }
       }
-    },
-    "settings.unpair.button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Leave relationship"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Forlat forholdet"
-          }
-        }
-      },
-      "comment" : "Button on the You tab that ends the pairing with the partner. Placed low and behind a confirmation so it is not tapped by accident."
-    },
-    "settings.notifications.partnerAnswered.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Same-question reveals"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar på samme spørsmål"
-          }
-        }
-      },
-      "comment" : "Toggle title: get notified when partner answers a question the user can reveal"
-    },
-    "settings.notifications.dailyChallenge.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get a notification when %@ finishes today's questions."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få et varsel når %@ fullfører dagens spørsmål."
-          }
-        }
-      },
-      "comment" : "Explains daily challenge completion notifications. %@ is the partner's name."
-    },
-    "settings.notifications.dailyChallenge.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Daily questions"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dagens spørsmål"
-          }
-        }
-      },
-      "comment" : "Toggle title: get notified when partner completes today's daily questions"
-    },
-    "settings.notifications.streakReminders.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get a reminder before your shared check-in expires."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få en påminnelse før den felles innsjekken utløper."
-          }
-        }
-      },
-      "comment" : "Explains streak reminder notifications"
-    },
-    "settings.notifications.partnerAnswered.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get a notification when %@ answers a question you can reveal."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få et varsel når %@ svarer på et spørsmål du kan se."
-          }
-        }
-      },
-      "comment" : "Explains same-question reveal notifications. %@ is the partner's name."
-    },
-    "settings.notifications.streakReminders.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check-in reminders"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Innsjekkpåminnelser"
-          }
-        }
-      },
-      "comment" : "Toggle title: get notified before the shared check-in expires"
-    },
-    "welcome.doodle.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For the two of you"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For dere to"
-          }
-        }
-      },
-      "comment" : "Welcome carousel screen 1: warm greeting headline"
-    },
-    "welcome.doodle.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Welcome to Paeonia — a private little place to stay close, however far apart you are."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velkommen til Paeonia – et lite, privat sted for å være nær, uansett hvor langt fra hverandre dere er."
-          }
-        }
-      },
-      "comment" : "Welcome carousel screen 1: warm greeting line"
-    },
-    "welcome.dailyQuestions.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Closer, every day"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nærmere, hver dag"
-          }
-        }
-      },
-      "comment" : "Welcome carousel screen 2: closeness headline"
-    },
-    "welcome.dailyQuestions.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The small things you share keep the two of you near."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "De små tingene dere deler, holder dere to nær hverandre."
-          }
-        }
-      },
-      "comment" : "Welcome carousel screen 2: closeness line"
-    },
-    "welcome.countdown.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Looking forward, together"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se fram til det sammen"
-          }
-        }
-      },
-      "comment" : "Welcome carousel screen 3: looking-forward headline"
-    },
-    "welcome.countdown.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Count down to your next visit and the milestones along the way."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tell ned til neste gjensyn og milepælene på veien."
-          }
-        }
-      },
-      "comment" : "Welcome carousel screen 3: looking-forward line"
-    },
-    "welcome.skip" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skip"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hopp over"
-          }
-        }
-      },
-      "comment" : "Welcome carousel: skip to sign-in"
-    },
-    "welcome.next" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neste"
-          }
-        }
-      },
-      "comment" : "Welcome carousel: advance to the next screen"
-    },
-    "welcome.getStarted" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get started"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kom i gang"
-          }
-        }
-      },
-      "comment" : "Welcome carousel: primary button on the last screen, leads to sign-in"
-    },
-    "welcome.haveInviteCode" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Have an invite code?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Har du en invitasjonskode?"
-          }
-        }
-      },
-      "comment" : "Welcome/sign-in: open invite code entry for a joining partner"
-    },
-    "welcome.inviteCode.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter your invite code"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skriv inn invitasjonskoden"
-          }
-        }
-      },
-      "comment" : "Welcome invite code sheet: title"
-    },
-    "welcome.inviteCode.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your partner already started Paeonia? Add their code, then sign in to join them."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Har partneren din allerede startet Paeonia? Legg inn koden deres, og logg inn for å bli med."
-          }
-        }
-      },
-      "comment" : "Welcome invite code sheet: explanation"
-    },
-    "welcome.inviteCode.continue" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continue"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fortsett"
-          }
-        }
-      },
-      "comment" : "Welcome invite code sheet: submit button"
-    },
-    "settings.account.logoutButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Log out"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Logg ut"
-          }
-        }
-      },
-      "comment" : "Me tab: sign out of the app on this device"
-    },
-    "settings.notifications.expandedLabel" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Expanded"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Utvidet"
-          }
-        }
-      },
-      "comment" : "Accessibility value announced when the notifications section is open"
-    },
-    "settings.notifications.collapsedLabel" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Collapsed"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skjult"
-          }
-        }
-      },
-      "comment" : "Accessibility value announced when the notifications section is closed"
-    },
-    "home.milestone.timeline.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Milestones"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Milepæler"
-          }
-        }
-      },
-      "comment" : "Navigation title of the sheet listing upcoming relationship milestones"
-    },
-    "home.milestone.timeline.togetherFor" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Together for %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sammen i %@"
-          }
-        }
-      },
-      "comment" : "Headline on the milestone sheet. Placeholder is an already-localized duration like '186 days'"
-    },
-    "home.milestone.timeline.since" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Since %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Siden %@"
-          }
-        }
-      },
-      "comment" : "Subline under the together-for headline. Placeholder is a formatted date like 'Thursday 8 January 2026'"
-    },
-    "home.milestone.timeline.accessibilityHint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shows your upcoming milestones."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Viser kommende milepæler."
-          }
-        }
-      },
-      "comment" : "Accessibility hint on the Us-tab milestone card; tapping opens the milestone timeline sheet"
-    },
-    "home.milestone.timeline.days" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ days"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ dager"
-          }
-        }
-      },
-      "comment" : "Day count in the milestone timeline sheet when the count is not exactly 1. %@ is the number of days (e.g. 186)"
-    },
-    "home.milestone.timeline.days.one" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 day"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 dag"
-          }
-        }
-      },
-      "comment" : "Day count in the milestone timeline sheet when the count is exactly 1"
-    },
-    "auth.deleteAccount.appleManual.doneButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Done"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ferdig"
-          }
-        }
-      }
-    },
-    "auth.deleteAccount.appleManual.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your Paeonia profile has been removed. In Apple Account settings, open Sign in with Apple, choose Paeonia, and stop using it."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paeonia-profilen din er fjernet. Åpne Apple-kontoinnstillingene, velg Logg på med Apple, velg Paeonia og slutt å bruke tjenesten."
-          }
-        }
-      },
-      "comment" : "Your Paeonia profile has been removed. In Apple Account settings, open Sign in with Apple, choose Paeonia, and stop using it."
-    },
-    "auth.deleteAccount.appleManual.openButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Apple Account"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Åpne Apple-konto"
-          }
-        }
-      },
-      "comment" : "Open Apple Account"
-    },
-    "auth.deleteAccount.appleManual.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One more Apple step"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ett steg til hos Apple"
-          }
-        }
-      },
-      "comment" : "One more Apple step"
-    },
-    "home.map.recorded.recent" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Updated %@."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Oppdatert %@."
-          }
-        }
-      },
-      "comment" : "Relative recorded-time status below the couple map. %@ is a localized relative time such as 12 minutes ago."
-    },
-    "home.map.recorded.stale" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Updated %@. This location may be out of date."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Oppdatert %@. Posisjonen kan være utdatert."
-          }
-        }
-      },
-      "comment" : "Stale relative recorded-time warning below the couple map after 24 hours. %@ is a localized relative time."
-    },
-    "home.milestone.edit.action" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit the day you got together"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Endre datoen dere ble sammen"
-          }
-        }
-      },
-      "comment" : "VoiceOver label for the button that edits the relationship start date on the milestone tile"
-    },
-    "home.milestone.editor.cancelAction" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancel"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Avbryt"
-          }
-        }
-      },
-      "comment" : "Button that closes the relationship date editor without saving"
-    },
-    "home.milestone.editor.dateLabel" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The day you got together"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Datoen dere ble sammen"
-          }
-        }
-      },
-      "comment" : "Accessible label for the relationship start date picker"
-    },
-    "home.milestone.editor.edit.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose the day you got together. The change will appear for both of you."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg dagen dere ble sammen. Endringen vises for dere begge."
-          }
-        }
-      },
-      "comment" : "Explanation above the relationship start date picker while editing"
-    },
-    "home.milestone.editor.edit.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit date"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Endre dato"
-          }
-        }
-      },
-      "comment" : "Navigation title when editing an existing relationship start date"
-    },
-    "home.milestone.editor.saveAction" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre"
-          }
-        }
-      },
-      "comment" : "Button that saves the chosen relationship start date"
-    },
-    "home.milestone.editor.savingAction" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saving"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagrer"
-          }
-        }
-      },
-      "comment" : "Accessible label for the relationship date save button while the date is being saved"
-    },
-    "home.milestone.editor.setup.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose the day your relationship started. Either of you can change it later."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg dagen forholdet deres startet. Begge kan endre den senere."
-          }
-        }
-      },
-      "comment" : "Explanation above the relationship start date picker during initial setup"
-    },
-    "home.milestone.editor.setup.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "When did you get together?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Når ble dere sammen?"
-          }
-        }
-      },
-      "comment" : "Navigation title when choosing the relationship start date for the first time"
-    },
-    "home.milestone.error.futureDate" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose today or an earlier date."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg i dag eller en tidligere dato."
-          }
-        }
-      },
-      "comment" : "Error shown if a relationship start date later than today is submitted"
-    },
-    "home.milestone.error.saveFailed" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The date wasn't saved. Try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Datoen ble ikke lagret. Prøv igjen."
-          }
-        }
-      },
-      "comment" : "Error shown when the relationship start date could not be saved locally"
-    },
-    "home.milestone.setup.accessibilityHint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opens the date picker."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Åpner datovelgeren."
-          }
-        }
-      },
-      "comment" : "VoiceOver hint for the milestone setup tile"
-    },
-    "home.milestone.setup.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We'll use it to count down to your next milestone."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi bruker den til å telle ned til deres neste milepæl."
-          }
-        }
-      },
-      "comment" : "Short explanation on the Us-tab milestone setup tile"
-    },
-    "home.milestone.setup.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Set the day you got together"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sett datoen dere ble sammen"
-          }
-        }
-      },
-      "comment" : "Title on the Us-tab milestone setup tile when the couple has not chosen their relationship start date"
-    },
-    "notifications.permissionPrimer.enable" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Turn on notifications"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Slå på varsler"
-          }
-        }
-      },
-      "comment" : "Primary action that continues from the primer to the iOS notification permission dialog"
-    },
-    "notifications.permissionPrimer.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "When %@ sends a drawing or answers today's question, Paeonia can let you know."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Når %@ sender en tegning eller svarer på dagens spørsmål, kan Paeonia gi deg beskjed."
-          }
-        }
-      },
-      "comment" : "One-benefit explanation before the iOS notification permission dialog. %@ is the partner name."
-    },
-    "notifications.permissionPrimer.notNow" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not now"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ikke nå"
-          }
-        }
-      },
-      "comment" : "Dismisses the notification permission primer without opening the iOS dialog"
-    },
-    "notifications.permissionPrimer.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See when something new arrives"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se når noe nytt kommer"
-          }
-        }
-      },
-      "comment" : "Title of the notification permission primer shown after pairing"
-    },
-    "paywall.error.invitePreviewFailed" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't check this code. Check your connection and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi kunne ikke sjekke koden. Sjekk nettet og prøv igjen."
-          }
-        }
-      },
-      "comment" : "Error shown when the app cannot check an invite code because of a temporary failure"
-    },
-    "paywall.error.inviteUnavailable" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This invite is no longer available. The code may be invalid or expired. Ask your partner for a new code."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Denne invitasjonen er ikke lenger tilgjengelig. Koden kan være ugyldig eller utløpt. Be partneren din om en ny kode."
-          }
-        }
-      },
-      "comment" : "Error shown when an invite code is invalid, expired, revoked, or already used"
-    },
-    "paywall.invite.confirm.action" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Join"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bli med"
-          }
-        }
-      },
-      "comment" : "Button that explicitly accepts a previewed partner invite"
-    },
-    "paywall.invite.confirm.cancel" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not now"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ikke nå"
-          }
-        }
-      },
-      "comment" : "Button that cancels partner invite confirmation without accepting"
-    },
-    "paywall.invite.confirm.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Joining connects your shared space. Only continue if this is the person you expect."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Når du blir med, kobles det felles området deres sammen. Fortsett bare hvis dette er personen du forventer."
-          }
-        }
-      },
-      "comment" : "Centered confirmation message before accepting a normal partner invite"
-    },
-    "paywall.invite.confirm.safetyMessage" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "There was a previous safety concern involving this person. Only join if you feel safe doing so."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Det har tidligere vært en bekymring knyttet til denne personen. Bli bare med hvis du føler deg trygg."
-          }
-        }
-      },
-      "comment" : "Safety warning shown before accepting an invite when the pair has a prior safety flag"
-    },
-    "paywall.invite.confirm.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Join %@?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bli med %@?"
-          }
-        }
-      },
-      "comment" : "Centered confirmation title before accepting an invite. %@ is the inviter's display name."
-    },
-    "paywall.invite.confirm.titleFallback" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Join your partner?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bli med partneren din?"
-          }
-        }
-      },
-      "comment" : "Centered confirmation title before accepting an invite when the inviter has no visible display name"
-    },
-    "paywall.paired.trial.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start your free trial to open your shared space again. Everything you saved together is safe."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start den gratis prøveperioden for å åpne området deres igjen. Alt dere har lagret sammen, er trygt."
-          }
-        }
-      },
-      "comment" : "Paywall subtitle for paired users who can start a free trial."
-    },
-    "paywall.products.retry" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Try loading again"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prøv å laste inn igjen"
-          }
-        }
-      },
-      "comment" : "Primary action shown when App Store subscription products could not be loaded"
-    },
-    "paywall.trial.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start your free trial to open a private shared space for the two of you."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start den gratis prøveperioden for å åpne et privat område for dere to."
-          }
-        }
-      },
-      "comment" : "Paywall subtitle explaining what starting the free trial opens."
-    },
-    "privacySafety.access.action" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Request access"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Be om innsyn"
-          }
-        }
-      },
-      "comment" : "Button that submits a personal data access request"
-    },
-    "privacySafety.access.description" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask what personal data Paeonia has about you and how it is used."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Be om innsyn i hvilke personopplysninger Paeonia har om deg, og hvordan de brukes."
-          }
-        }
-      },
-      "comment" : "Description of a personal data access request"
-    },
-    "privacySafety.access.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Access request"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Forespørsel om innsyn"
-          }
-        }
-      },
-      "comment" : "Title for requesting access to personal data"
-    },
-    "privacySafety.correction.action" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask for a correction"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Be om retting"
-          }
-        }
-      },
-      "comment" : "Button that opens the personal data correction form"
-    },
-    "privacySafety.correction.description" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tell us if account information is wrong or incomplete."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fortell oss hvis kontoinformasjon er feil eller mangelfull."
-          }
-        }
-      },
-      "comment" : "Description of a personal data correction request"
-    },
-    "privacySafety.correction.detailsLabel" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What should be corrected?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hva skal rettes?"
-          }
-        }
-      },
-      "comment" : "Label above details in the personal data correction form"
-    },
-    "privacySafety.correction.detailsPlaceholder" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Include enough detail for us to find the information."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ta med nok detaljer til at vi kan finne opplysningene."
-          }
-        }
-      },
-      "comment" : "Placeholder in the personal data correction details field"
-    },
-    "privacySafety.correction.detailsRequired.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tell us what is wrong before sending the request."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fortell oss hva som er feil før du sender forespørselen."
-          }
-        }
-      },
-      "comment" : "Banner message when correction details are missing"
-    },
-    "privacySafety.correction.detailsRequired.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add the correction details"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legg til hva som skal rettes"
-          }
-        }
-      },
-      "comment" : "Banner title when correction details are missing"
-    },
-    "privacySafety.correction.formDescription" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Describe the information that is wrong and what it should say instead."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beskriv hvilke opplysninger som er feil, og hva det skal stå i stedet."
-          }
-        }
-      },
-      "comment" : "Instructions for the personal data correction form"
-    },
-    "privacySafety.correction.formTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Correct your data"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rett opplysningene dine"
-          }
-        }
-      },
-      "comment" : "Navigation title for the personal data correction form"
-    },
-    "privacySafety.correction.submit" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send correction request"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send forespørsel om retting"
-          }
-        }
-      },
-      "comment" : "Button that sends a personal data correction request"
-    },
-    "privacySafety.correction.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Correct your data"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rett opplysningene dine"
-          }
-        }
-      },
-      "comment" : "Title for requesting correction of personal data"
-    },
-    "privacySafety.export.action" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Request a copy"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Be om en kopi"
-          }
-        }
-      },
-      "comment" : "Button that submits a personal data export request"
-    },
-    "privacySafety.export.description" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask for a copy of your account data that you can save or use elsewhere."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Be om en kopi av kontoopplysningene dine som du kan lagre eller bruke andre steder."
-          }
-        }
-      },
-      "comment" : "Description of a personal data export request"
-    },
-    "privacySafety.export.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get a copy of your data"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Få en kopi av opplysningene dine"
-          }
-        }
-      },
-      "comment" : "Title for requesting a portable personal data export"
-    },
-    "privacySafety.introduction" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask to see, copy, or correct your data, and find help if something in your relationship feels unsafe."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Be om å få se, kopiere eller rette opplysningene dine, og finn hjelp hvis noe i forholdet føles utrygt."
-          }
-        }
-      },
-      "comment" : "Introductory copy on the privacy and safety screen"
-    },
-    "privacySafety.loadFailed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pull down to try again. You can still contact support at support@paeonia.no."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dra ned for å prøve igjen. Du kan fortsatt kontakte support på support@paeonia.no."
-          }
-        }
-      },
-      "comment" : "Banner message when privacy requests cannot be loaded"
-    },
-    "privacySafety.loadFailed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't load your requests"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke laste forespørslene dine"
-          }
-        }
-      },
-      "comment" : "Banner title when privacy requests cannot be loaded"
-    },
-    "privacySafety.report.description" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tell Paeonia what happened and end the relationship. Blocking %@ is a separate choice."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fortell Paeonia hva som skjedde, og avslutt forholdet. Det er et eget valg å blokkere %@."
-          }
-        }
-      },
-      "comment" : "Description of report-and-leave. The placeholder is the partner name."
-    },
-    "privacySafety.report.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Report %@ and leave"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rapporter %@ og forlat forholdet"
-          }
-        }
-      },
-      "comment" : "Title of the report-and-leave destination. The placeholder is the partner name."
-    },
-    "privacySafety.request.active" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Request in progress"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Forespørsel under behandling"
-          }
-        }
-      },
-      "comment" : "Disabled button label when the same privacy request is already active"
-    },
-    "privacySafety.request.active.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You already have this type of request in progress."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du har allerede denne typen forespørsel under behandling."
-          }
-        }
-      },
-      "comment" : "Banner message when this kind of privacy request is already active"
-    },
-    "privacySafety.request.active.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Already in progress"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Allerede under behandling"
-          }
-        }
-      },
-      "comment" : "Banner title when a duplicate active privacy request is avoided"
-    },
-    "privacySafety.request.failed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check your connection and try again. No changes were made."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen. Ingen endringer ble gjort."
-          }
-        }
-      },
-      "comment" : "Banner message when a privacy request cannot be submitted"
-    },
-    "privacySafety.request.failed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't send your request"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke sende forespørselen"
-          }
-        }
-      },
-      "comment" : "Banner title when a privacy request cannot be submitted"
-    },
-    "privacySafety.request.sending" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sending…"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sender …"
-          }
-        }
-      },
-      "comment" : "Button label while a privacy request is being submitted"
-    },
-    "privacySafety.request.submitted.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We'll contact you at the email connected to your account."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi kontakter deg på e-postadressen som er knyttet til kontoen din."
-          }
-        }
-      },
-      "comment" : "Banner message after a privacy request is submitted"
-    },
-    "privacySafety.request.submitted.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Request received"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Forespørsel mottatt"
-          }
-        }
-      },
-      "comment" : "Banner title after a privacy request is submitted"
-    },
-    "privacySafety.requests.sectionTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your data"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opplysningene dine"
-          }
-        }
-      },
-      "comment" : "Section title above privacy data request actions"
-    },
-    "privacySafety.safety.sectionTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Relationship safety"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trygghet i forholdet"
-          }
-        }
-      },
-      "comment" : "Section title above relationship reporting tools"
-    },
-    "privacySafety.status.cancelled" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancelled"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Avbrutt"
-          }
-        }
-      },
-      "comment" : "Visible status for a cancelled privacy request"
-    },
-    "privacySafety.status.completed" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Completed"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fullført"
-          }
-        }
-      },
-      "comment" : "Visible status for a completed privacy request"
-    },
-    "privacySafety.status.processing" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In progress"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Under behandling"
-          }
-        }
-      },
-      "comment" : "Visible status while a privacy request is being processed"
-    },
-    "privacySafety.status.rejected" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Could not be completed"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke fullføres"
-          }
-        }
-      },
-      "comment" : "Visible status for a privacy request that could not be completed"
-    },
-    "privacySafety.status.submitted" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Request received"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Forespørsel mottatt"
-          }
-        }
-      },
-      "comment" : "Visible status for a newly received privacy request"
-    },
-    "privacySafety.status.verifying" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Confirming your request"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bekrefter forespørselen"
-          }
-        }
-      },
-      "comment" : "Visible status while a privacy request is being verified"
-    },
-    "privacySafety.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Privacy & Safety"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Personvern og trygghet"
-          }
-        }
-      },
-      "comment" : "Title for the paired privacy and relationship safety screen"
-    },
-    "reportAndLeave.block.description" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "If you turn this on, %@ cannot pair with you again. This choice is off by default."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hvis du slår på dette, kan %@ ikke koble seg til deg igjen. Dette valget er av som standard."
-          }
-        }
-      },
-      "comment" : "Description of the optional block toggle. The placeholder is the partner name."
-    },
-    "reportAndLeave.block.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Block %@ too"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Blokker %@ også"
-          }
-        }
-      },
-      "comment" : "Title for the explicit optional block toggle. The placeholder is the partner name."
-    },
-    "reportAndLeave.confirm.action" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send report and leave"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send rapport og forlat"
-          }
-        }
-      },
-      "comment" : "Destructive action in the centered report-and-leave confirmation"
-    },
-    "reportAndLeave.confirm.blockMessage" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your report will be sent, your relationship with %@ will end, and they will be blocked from pairing with you again. Shared content will no longer be available in the app."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rapporten din blir sendt, forholdet med %@ avsluttes, og personen blokkeres fra å koble seg til deg igjen. Delt innhold vil ikke lenger være tilgjengelig i appen."
-          }
-        }
-      },
-      "comment" : "Centered confirmation message when explicit blocking is enabled. The placeholder is the partner name."
-    },
-    "reportAndLeave.confirm.cancel" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancel"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Avbryt"
-          }
-        }
-      },
-      "comment" : "Cancel action in the centered report-and-leave confirmation"
-    },
-    "reportAndLeave.confirm.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your report will be sent and your relationship with %@ will end. Shared content will no longer be available in the app."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rapporten din blir sendt, og forholdet med %@ avsluttes. Delt innhold vil ikke lenger være tilgjengelig i appen."
-          }
-        }
-      },
-      "comment" : "Centered confirmation message without blocking. The placeholder is the partner name."
-    },
-    "reportAndLeave.confirm.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Report %@ and leave?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rapportere %@ og forlate forholdet?"
-          }
-        }
-      },
-      "comment" : "Centered confirmation title before reporting and leaving. The placeholder is the partner name."
-    },
-    "reportAndLeave.failed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The relationship was not changed. Check your connection and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Forholdet ble ikke endret. Sjekk tilkoblingen og prøv igjen."
-          }
-        }
-      },
-      "comment" : "Banner message when report-and-leave fails"
-    },
-    "reportAndLeave.failed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't send the report"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke sende rapporten"
-          }
-        }
-      },
-      "comment" : "Banner title when report-and-leave fails"
-    },
-    "reportAndLeave.introduction" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tell us what happened with %@. Your report is private and is not shown to the person you report."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fortell oss hva som skjedde med %@. Rapporten din er privat og vises ikke til personen du rapporterer."
-          }
-        }
-      },
-      "comment" : "Introductory report copy. The placeholder is the partner name."
-    },
-    "reportAndLeave.note.description" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Include what happened and when. Only add information that helps us review the report."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beskriv hva som skjedde og når. Ta bare med opplysninger som hjelper oss å vurdere rapporten."
-          }
-        }
-      },
-      "comment" : "Instructions for optional conduct report details"
-    },
-    "reportAndLeave.note.label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Details (optional)"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Detaljer (valgfritt)"
-          }
-        }
-      },
-      "comment" : "Label for optional conduct report details"
-    },
-    "reportAndLeave.note.placeholder" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What happened?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hva skjedde?"
-          }
-        }
-      },
-      "comment" : "Placeholder in the optional conduct report details field"
-    },
-    "reportAndLeave.reason.abuse" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abuse"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mishandling"
-          }
-        }
-      },
-      "comment" : "Conduct report reason for abuse"
-    },
-    "reportAndLeave.reason.harassment" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Harassment"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trakassering"
-          }
-        }
-      },
-      "comment" : "Conduct report reason for harassment"
-    },
-    "reportAndLeave.reason.hate" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hate or discrimination"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hat eller diskriminering"
-          }
-        }
-      },
-      "comment" : "Conduct report reason for hate or discrimination"
-    },
-    "reportAndLeave.reason.impersonation" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pretending to be someone else"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Utgir seg for å være en annen"
-          }
-        }
-      },
-      "comment" : "Conduct report reason for impersonation"
-    },
-    "reportAndLeave.reason.label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reason"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Grunn"
-          }
-        }
-      },
-      "comment" : "Label for selecting a conduct report reason"
-    },
-    "reportAndLeave.reason.other" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Other"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Annet"
-          }
-        }
-      },
-      "comment" : "Catch-all conduct report reason"
-    },
-    "reportAndLeave.reason.placeholder" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose a reason"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg en grunn"
-          }
-        }
-      },
-      "comment" : "Placeholder before a conduct report reason is chosen"
-    },
-    "reportAndLeave.reason.privacy" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Privacy violation"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Brudd på personvernet"
-          }
-        }
-      },
-      "comment" : "Conduct report reason for a privacy violation"
-    },
-    "reportAndLeave.reason.selfHarm" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Self-harm concern"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bekymring for selvskading"
-          }
-        }
-      },
-      "comment" : "Conduct report reason for concern about self-harm"
-    },
-    "reportAndLeave.reason.sexualContent" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sexual content"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Seksuelt innhold"
-          }
-        }
-      },
-      "comment" : "Conduct report reason for sexual content"
-    },
-    "reportAndLeave.reason.spam" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spam"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spam"
-          }
-        }
-      },
-      "comment" : "Conduct report reason for spam"
-    },
-    "reportAndLeave.reason.threat" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Threats"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trusler"
-          }
-        }
-      },
-      "comment" : "Conduct report reason for threats"
-    },
-    "reportAndLeave.reasonRequired.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Select what best describes what happened."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg det som best beskriver hva som skjedde."
-          }
-        }
-      },
-      "comment" : "Banner message when no conduct report reason was chosen"
-    },
-    "reportAndLeave.reasonRequired.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose a reason"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg en grunn"
-          }
-        }
-      },
-      "comment" : "Banner title when no conduct report reason was chosen"
-    },
-    "reportAndLeave.submitButton" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Report %@ and leave"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rapporter %@ og forlat forholdet"
-          }
-        }
-      },
-      "comment" : "Destructive button that prepares to report and leave. The placeholder is the partner name."
-    },
-    "reportAndLeave.submitted.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The relationship has ended. Your report is ready for review."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Forholdet er avsluttet. Rapporten er klar til behandling."
-          }
-        }
-      },
-      "comment" : "Banner message after report-and-leave succeeds"
-    },
-    "reportAndLeave.submitted.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Report sent"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rapport sendt"
-          }
-        }
-      },
-      "comment" : "Banner title after report-and-leave succeeds"
-    },
-    "reportAndLeave.submitting" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sending report…"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sender rapport …"
-          }
-        }
-      },
-      "comment" : "Button label while a report-and-leave request is being submitted"
-    },
-    "reportAndLeave.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Report and leave"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rapporter og forlat forholdet"
-          }
-        }
-      },
-      "comment" : "Navigation title for the report-and-leave flow"
-    },
-    "settings.privacySafety.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Manage your data or report a safety concern."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Administrer dataene dine eller rapporter noe utrygt."
-          }
-        }
-      },
-      "comment" : "Manage your data or report a safety concern."
-    },
-    "settings.profile.editAction" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit name or photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Endre navn eller bilde"
-          }
-        }
-      },
-      "comment" : "Edit name or photo"
-    },
-    "settings.profile.editor.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit profile"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rediger profil"
-          }
-        }
-      },
-      "comment" : "Edit profile"
-    },
-    "settings.profile.fallbackName" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deg"
-          }
-        }
-      }
-    },
-    "settings.profile.name.label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "First name"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fornavn"
-          }
-        }
-      },
-      "comment" : "First name"
-    },
-    "settings.profile.photo.add" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legg til bilde"
-          }
-        }
-      },
-      "comment" : "Add photo"
-    },
-    "settings.profile.photo.change" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Change photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Endre bilde"
-          }
-        }
-      },
-      "comment" : "Change photo"
-    },
-    "settings.profile.photo.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your photo is private and only shown inside Paeonia to your partner."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bildet ditt er privat og vises bare til partneren din i Paeonia."
-          }
-        }
-      },
-      "comment" : "Your photo is private and only shown inside Paeonia to your partner."
-    },
-    "settings.profile.photo.previewAccessibilityLabel" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New profile photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nytt profilbilde"
-          }
-        }
-      },
-      "comment" : "New profile photo"
-    },
-    "settings.profile.photo.remove" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fjern bilde"
-          }
-        }
-      },
-      "comment" : "Remove photo"
-    },
-    "settings.profile.photoLoadFailed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose another photo and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg et annet bilde og prøv igjen."
-          }
-        }
-      },
-      "comment" : "Choose another photo and try again."
-    },
-    "settings.profile.photoLoadFailed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't open that photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke åpne bildet"
-          }
-        }
-      },
-      "comment" : "Couldn't open that photo"
-    },
-    "settings.profile.save" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save changes"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre endringer"
-          }
-        }
-      },
-      "comment" : "Save changes"
-    },
-    "settings.profile.saveFailed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your old profile is still there. Check your connection and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Den gamle profilen din er fortsatt der. Sjekk tilkoblingen og prøv igjen."
-          }
-        }
-      },
-      "comment" : "Your old profile is still there. Check your connection and try again."
-    },
-    "settings.profile.saveFailed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't update your profile"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke oppdatere profilen"
-          }
-        }
-      },
-      "comment" : "Couldn't update your profile"
-    },
-    "settings.profile.saved.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your changes are ready for both of you."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Endringene dine er klare for dere begge."
-          }
-        }
-      },
-      "comment" : "Your changes are ready for both of you."
-    },
-    "settings.profile.saved.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profile updated"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profilen er oppdatert"
-          }
-        }
-      },
-      "comment" : "Profile updated"
-    },
-    "settings.profile.saving" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saving…"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagrer …"
-          }
-        }
-      },
-      "comment" : "Saving…"
-    },
-    "settings.profile.sectionTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your profile"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profilen din"
-          }
-        }
-      },
-      "comment" : "Your profile"
-    },
-    "settings.purchases.failed.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check your connection and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen."
-          }
-        }
-      },
-      "comment" : "Check your connection and try again."
-    },
-    "settings.purchases.failed.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't restore purchases"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke gjenopprette kjøp"
-          }
-        }
-      },
-      "comment" : "Couldn't restore purchases"
-    },
-    "settings.purchases.none.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't find an App Store subscription to restore for this account."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi fant ikke noe App Store-abonnement å gjenopprette for denne kontoen."
-          }
-        }
-      },
-      "comment" : "We couldn't find an App Store subscription to restore for this account."
-    },
-    "settings.purchases.none.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No subscription found"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fant ikke noe abonnement"
-          }
-        }
-      },
-      "comment" : "No subscription found"
-    },
-    "settings.purchases.restored.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paeonia has refreshed access for both of you."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paeonia har oppdatert tilgangen for dere begge."
-          }
-        }
-      },
-      "comment" : "Paeonia has refreshed access for both of you."
-    },
-    "settings.purchases.restored.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Subscription restored"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abonnementet er gjenopprettet"
-          }
-        }
-      },
-      "comment" : "Subscription restored"
-    },
-    "settings.purchases.restoring" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Restoring purchases…"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gjenoppretter kjøp …"
-          }
-        }
-      },
-      "comment" : "Restoring purchases…"
-    },
-    "settings.purchases.sectionTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Purchases"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kjøp"
-          }
-        }
-      },
-      "comment" : "Purchases"
-    },
-    "settings.relationship.date.missingMessage" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add the day your relationship started"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legg til dagen forholdet startet"
-          }
-        }
-      }
-    },
-    "settings.relationship.date.setMessage" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Change the day your relationship started"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Endre dagen forholdet startet"
-          }
-        }
-      }
-    },
-    "settings.relationship.date.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Relationship date"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Datoen deres"
-          }
-        }
-      }
-    },
-    "settings.relationship.section.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Relationship"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Forhold"
-          }
-        }
-      }
-    },
-    "settings.profile.signedInWith" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Signed in with %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pålogget med %@"
-          }
-        }
-      },
-      "comment" : "Read-only line at the bottom of the profile editor telling the user which sign-in provider their account uses. %@ is the provider brand name, e.g. Apple or Google"
     }
   },
   "version" : "1.0"

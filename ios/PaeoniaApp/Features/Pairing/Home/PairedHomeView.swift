@@ -68,7 +68,9 @@ struct PairedHomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: PaeoniaSpacing.sectionSpacing) {
+            // Matches the horizontal gap inside the milestone/drawing tile row so
+            // the card grid reads as one consistent grid.
+            VStack(spacing: PaeoniaSpacing.space16) {
                 dailyPromptCard
                     .launchEntrance(order: 0)
 

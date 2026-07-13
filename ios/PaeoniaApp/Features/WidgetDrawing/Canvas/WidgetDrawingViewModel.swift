@@ -255,9 +255,13 @@ final class WidgetDrawingViewModel {
         !isSaving && !drawing.strokes.isEmpty && hasUnsavedEdits
     }
 
-    /// True when a non-cleared canvas has saved attribution to show.
+    /// True once a saved drawing has attribution that can be shown. This is
+    /// deliberately independent of the editable canvas being empty: clearing
+    /// is only an unsaved edit, so the row must continue to describe the last
+    /// drawing that is still on the widget.
     var isShowingSavedAttribution: Bool {
-        !drawing.strokes.isEmpty && savedDrawingCreatedAt != nil
+        lastSavedDrawingSignature != nil
+            && (savedDrawingAuthorName != nil || savedDrawingCreatedAt != nil)
     }
 
     /// True when there is drawn content the user can clear from the canvas.
@@ -356,7 +360,7 @@ final class WidgetDrawingViewModel {
 
         drawing = savedDrawing
         lastSavedDrawingSignature = Self.drawingSignature(for: savedDrawing)
-        savedDrawingAuthorName = snapshot.authorName
+        savedDrawingAuthorName = snapshot.authorName?.trimmedNonEmpty
         savedDrawingCreatedAt = snapshot.createdAt
         refreshUndoRedoAvailability()
     }
@@ -376,13 +380,30 @@ final class WidgetDrawingViewModel {
         }
 
         let signature = Self.drawingSignature(for: savedDrawing)
+        let normalizedAuthorName = snapshot.authorName?.trimmedNonEmpty
+
         guard signature != lastSavedDrawingSignature else {
+            // The same visible strokes may have been saved again by either
+            // partner. Refresh any metadata that arrived with that save so the
+            // row identifies the actual latest author and time. A timestamp
+            // means this is complete metadata for a save, so an unavailable
+            // author must clear the old name instead of misattributing it. If a
+            // transient local payload has no metadata at all, preserve the last
+            // known values until complete metadata returns.
+            if let createdAt = snapshot.createdAt {
+                savedDrawingAuthorName = normalizedAuthorName
+                savedDrawingCreatedAt = createdAt
+            } else if let normalizedAuthorName {
+                savedDrawingAuthorName = normalizedAuthorName
+            }
             return
         }
 
         drawing = savedDrawing
         lastSavedDrawingSignature = signature
-        savedDrawingAuthorName = snapshot.authorName
+        // A different revision must never inherit the previous revision's
+        // attribution when its metadata is unavailable.
+        savedDrawingAuthorName = normalizedAuthorName
         savedDrawingCreatedAt = snapshot.createdAt
         hasLoadedSavedDrawing = true
         refreshUndoRedoAvailability()
@@ -418,7 +439,7 @@ final class WidgetDrawingViewModel {
                 createdAt: savedAt
             )
             lastSavedDrawingSignature = Self.drawingSignature(for: drawing)
-            savedDrawingAuthorName = authorName
+            savedDrawingAuthorName = authorName?.trimmedNonEmpty
             savedDrawingCreatedAt = savedAt
             isSaving = false
             showSavedConfirmation()
