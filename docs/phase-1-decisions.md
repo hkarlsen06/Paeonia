@@ -1,6 +1,6 @@
 # Phase 1 Decisions
 
-These decisions should be confirmed before the next foundation step.
+Status: historical foundation record. These decisions were adopted during project setup and are retained to explain the repository's baseline. They are not an active plan; use `docs/mvp-release-checklist.md` for release work and `AGENTS.md` for current constraints.
 
 ## iOS Project
 
@@ -56,4 +56,4 @@ These decisions should be confirmed before the next foundation step.
 
 - `paeonia.no` is the canonical domain.
 - The marketing app is static Next.js for Cloudflare Pages.
-- Placeholder legal copy is not final and must not be treated as production legal text.
+- The original placeholder legal copy has been replaced by production-oriented English and Norwegian source text. Final operator details and legal review remain release-owner responsibilities; see `docs/mvp-release-checklist.md`.

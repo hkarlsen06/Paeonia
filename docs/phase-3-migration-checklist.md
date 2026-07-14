@@ -39,7 +39,7 @@ Before writing SQL for a slice:
 - [ ] Confirm every RLS helper lookup has supporting indexes.
 - [ ] Confirm ordinary users cannot call privileged internals directly.
 - [ ] Confirm upload-backed content uses `media_assets`, not duplicate lifecycle columns.
-- [ ] Confirm seed data required for the app flow is either in the slice or explicitly deferred.
+- [x] Required question catalog data is versioned in `supabase/questions/` and applied through catalog migrations; non-MVP seed data is not required.
 - [ ] Confirm cleanup/retry behavior for rows that can outlive the user or relationship.
 - [ ] Confirm the slice can be tested locally with SQL assertions or focused app-level smoke tests.
 
@@ -301,8 +301,8 @@ Checklist:
 RLS/RPC:
 
 - [ ] Self can read and update own profile fields.
-- [ ] Partner profile read is deferred to relationship read model after relationship tables exist.
-- [ ] No profile listing/search policy.
+- [x] Partner profile reads are exposed through the current-relationship read model; no profile listing/search policy exists.
+- [x] No profile listing/search policy exists.
 - [ ] Self can read/update notification preferences.
 - [ ] Device register/update/disable should be RPC-backed or tightly self-owned.
 - [ ] Self can create/read privacy requests; service/admin updates status.

@@ -4,11 +4,11 @@ Source review date: 2026-06-29
 
 ## Status Update
 
-Revalidated against source on 2026-07-11. This remains a point-in-time audit, not the active release tracker.
+Revalidated against source on 2026-07-13. This remains a point-in-time audit, not the active release tracker.
 
 Resolved since the original review:
 
-- the public privacy policy and terms now have production-oriented English and Norwegian text aligned with the data contract; publication and legal review remain release-owner work
+- the public privacy policy and terms are live with production-oriented English and Norwegian text aligned with the data contract; final operator details and legal review remain release-owner work
 - account deletion confirmation copy now describes the real consequence in English and Norwegian Bokmal
 - Memories routes to a functional local-first timeline instead of a placeholder tab
 - the countdown card derives real milestone values instead of rendering hardcoded sample data
@@ -23,11 +23,25 @@ Resolved since the original review:
 
 Still open or only partially addressed:
 
-- the account-deletion source path, retry queue, provider-revocation fallback, and local purge are implemented and tested, but the migration/function secrets still need production deployment and real-provider/device QA
+- the account-deletion migration and Edge Function are deployed, and the source path, retry queue, provider-revocation fallback, and local purge are implemented and tested; production environment validation and real-provider/device QA remain
 - paired Settings now includes profile editing, private OAuth-photo fallback, restore purchases, reporting, deletion, legal/support, and privacy/export requests; device accessibility and real-service QA remain
-- the legal pages still need the controller/operator entity name, postal address, organization number, intended legal review, and publication
+- the live legal pages still need the controller/operator entity name, postal address, organization number, and intended legal review before final release sign-off
 
 The detailed findings below are retained as historical evidence. Use `docs/mvp-release-checklist.md` for current release decisions.
+
+Current disposition of the original findings:
+
+| Original finding | Current disposition |
+| --- | --- |
+| Delete-account test-build copy | Resolved in English and Norwegian. End-to-end provider/device QA remains in the release checklist. |
+| Reachable placeholders and fake countdown values | Resolved. Memories, milestone setup, and relationship-ended routing now use real states. |
+| Partner-answer states depended on icons | Resolved with distinct locked/revealed copy and actions. |
+| Invite entry competed with subscription purchase | Resolved with first-class invite entry, preview, and confirmation. |
+| Widget save outcome was unclear | Resolved with shared-widget language and recoverable-send reassurance. |
+| Name validation appeared only after invalid input | Resolved with an always-visible short-name explanation. |
+| Location sharing lacked privacy boundaries | Resolved in settings/permission copy and stale-location presentation. |
+| Marketing readiness language | Still release-state dependent; update it when the distribution channel changes. |
+| Dismiss/history controls relied on convention | Banner dismissal is resolved; remaining discoverability observations are non-blocking device-QA considerations. |
 
 ## Scope
 
@@ -40,7 +54,7 @@ Reviewed surfaces:
 - iOS launch, auth, onboarding, pairing, paywall, home tabs, Daily Challenge, widget drawing, location, settings, and shared UI components
 - Marketing landing, join fallback, legal/support shell, and English/Norwegian dictionaries
 
-## Overall Assessment
+## Original Overall Assessment (Historical)
 
 Paeonia has a strong product foundation: calm native layout, good use of stable launch readiness, a clear local-first direction, and several thoughtful interaction details. The biggest satisfaction risk is not visual polish. It is trust leakage from pre-release copy and unfinished surfaces that are still reachable.
 
@@ -348,9 +362,11 @@ Fix:
 
 - The landing page has strong positioning and avoids public/social patterns.
 - The mock phone is useful, but it shows product promises that the iOS app should not contradict with placeholders.
-- At the time of this audit, legal pages were pre-launch placeholders. They have since been replaced in source with plain-language English and Norwegian content; publication and any required legal review remain release-owner work.
+- At the time of this audit, legal pages were pre-launch placeholders. They have since been replaced and published with plain-language English and Norwegian content; final operator details and any required legal review remain release-owner work.
 
-## Recommended Implementation Order
+## Original Recommended Implementation Order (Historical)
+
+Items 1–7 below have been implemented. Item 8 remains tied to the chosen release channel and is tracked in `docs/mvp-release-checklist.md`.
 
 1. Fix account deletion confirmation copy in English and Norwegian.
 2. Remove or replace reachable placeholders: Memories tab, countdown hardcoded values, relationship-ended fallback, route-unavailable copy.

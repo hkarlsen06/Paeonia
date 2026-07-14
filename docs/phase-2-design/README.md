@@ -1,6 +1,6 @@
 # Phase 2 Design Foundation
 
-This folder captures Paeonia's brand and design-system decisions before feature implementation starts.
+Status: implemented design foundation and ongoing reference. This folder records the brand and design-system decisions adopted before feature implementation; it is not an active project phase or release tracker.
 
 The goal is not to freeze every visual detail. The goal is to make the app easier to build consistently from the locked Paeonia logo, app-icon mark, and plum-led color baseline.
 
@@ -8,14 +8,14 @@ The goal is not to freeze every visual detail. The goal is to make the app easie
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| App icon | Decided | Delivered mark and Icon Composer exports are the source baseline. Material/depth tuning can still be adjusted. |
+| App icon | Baseline decided | Delivered mark and Icon Composer exports are canonical. Final target/App Store validation remains on the MVP release checklist. |
 | Color system | Decided | Paeonia uses a single plum-led brand theme. No separate light/dark app themes for MVP. |
 | Typography | Decided | Use SF/system typography across native app and marketing for MVP. |
 | Spacing/radius tokens | Decided | Use a small semantic scale, not ad hoc values. |
 | Component primitives | Decided | Buttons, cards, sheets, fields, empty states, alerts, paywall cards. |
 | Motion/haptics | Decided | Calm, purposeful, never noisy. |
-| Widget visual language | Direction set | Central product surface. Drawing-first, intimate, low-clutter. |
-| Voice/copy | Direction set | Warm, direct, private, not guilt-driven. |
+| Widget visual language | Documented | Central product surface. Drawing-first, intimate, low-clutter. |
+| Voice/copy | Documented | Warm, direct, private, not guilt-driven. |
 
 ## Documents
 
@@ -48,10 +48,10 @@ The goal is not to freeze every visual detail. The goal is to make the app easie
 - Haptics: subtle in normal use, tactile for key relationship moments.
 - Typography: SF/system typography everywhere, including marketing. No separate brand font for MVP.
 
-## Deferred Decisions
+## Remaining Release Decision
 
-These decisions are intentionally not locked yet:
+The foundation is implemented. One release-asset decision remains open:
 
 - icon material/depth treatment in Apple Icon Composer
 
-The delivered logo and app-icon mark are now the canonical visual baseline for marketing and native app color direction. Final icon material/depth treatment can still be tuned during implementation.
+The delivered logo and app-icon mark are the canonical visual baseline for marketing and native app color direction. Final material/depth tuning must preserve that baseline and be validated across the app, widget, and App Store assets before release.

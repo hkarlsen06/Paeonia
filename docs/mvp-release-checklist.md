@@ -369,7 +369,7 @@ Remote baseline checked on 2026-07-10: all 74 committed migrations are present a
 - [ ] Header/footer links are not duplicated or noisy.
 - [ ] Landing page language matches shipped app state: private beta, TestFlight, or launched.
 - [ ] Landing page does not promise unshipped features.
-- [x] Legal pages contain production-oriented English and Norwegian privacy and terms text; final publication and legal review remain release-owner responsibilities.
+- [x] Legal pages are published with production-oriented English and Norwegian privacy and terms text; final operator details and legal review remain release-owner responsibilities.
 - [x] Support page lists current support/contact emails.
 - [ ] Open Graph metadata uses final brand assets.
 
