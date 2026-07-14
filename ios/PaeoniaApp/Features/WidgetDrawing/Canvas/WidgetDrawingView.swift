@@ -202,7 +202,7 @@ struct WidgetDrawingView: View {
 
     /// Matches the widget's timestamp treatment: just the time today, otherwise
     /// the date.
-    private static func attributionTimestamp(_ date: Date) -> String {
+    nonisolated private static func attributionTimestamp(_ date: Date) -> String {
         if Calendar.current.isDateInToday(date) {
             return date.formatted(date: .omitted, time: .shortened)
         }
