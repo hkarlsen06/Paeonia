@@ -89,6 +89,7 @@ final class RootViewModel {
     }
 
     private let syncService: any PaeoniaSyncing
+    private let privacyLifecycle: RootPrivacyLifecycle
     private let authService: any AuthServicing
     private let accessRouteService: (any AccessRouteServicing)?
     private let accessSnapshotStore: (any AccessSyncSnapshotPersisting)?
@@ -109,7 +110,10 @@ final class RootViewModel {
     private var hasStartedSync = false
     private var configuredSyncSession: SyncSession?
     private var accessResolutionGeneration = 0
-    @ObservationIgnored private var inFlightAccessPrivacyPurge: (id: UUID, task: Task<Void, Never>)?
+    @ObservationIgnored private var inFlightAccessPrivacyPurge: (
+        id: UUID,
+        task: Task<LocalPrivacyPurgeResult, Never>
+    )?
     private var opensWidgetDrawingWhenPaired = false
     private var shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = false
 
@@ -174,7 +178,9 @@ final class RootViewModel {
         inviteStore: (any PairingInviteStoring)? = nil,
         pairingCelebrationStore: (any PairingCelebrationStoring)? = nil
     ) {
-        self.syncService = syncService ?? PaeoniaSyncService()
+        let resolvedSyncService = syncService ?? PaeoniaSyncService()
+        self.syncService = resolvedSyncService
+        self.privacyLifecycle = RootPrivacyLifecycle(syncService: resolvedSyncService)
         self.authService = authService ?? AuthServiceFactory.makeDefault()
         self.accessRouteService = accessRouteService ?? (try? SupabaseAccessRouteService.live())
         self.accessSnapshotStore = accessSnapshotStore ?? Self.makeDefaultAccessSnapshotStore()
@@ -191,6 +197,7 @@ final class RootViewModel {
     }
 
     func start(deferringSyncUntilLaunchCompletes: Bool = false) async {
+        _ = await privacyLifecycle.retryPending()
         await refreshAuthRoute()
         if !deferringSyncUntilLaunchCompletes {
             await startSyncIfNeeded()
@@ -397,6 +404,16 @@ final class RootViewModel {
             return
         }
 
+        guard await privacyLifecycle.retryPending() else {
+            // A permanent owner-scoped purge from an earlier relationship must
+            // finish before the new couple can write local content that the
+            // delayed retry would otherwise remove.
+            await resolveAccessRoute(for: session)
+            await startSyncIfNeeded()
+            schedulePrivacyPurgeRecovery(for: session)
+            return
+        }
+
         showAcceptedInviteCelebration(for: session)
         await resolveAccessRoute(for: session)
         await startSyncIfNeeded()
@@ -435,6 +452,11 @@ final class RootViewModel {
     }
 
     func refreshAfterForegroundActivation() async {
+        if await privacyLifecycle.retryPendingOnForeground(),
+           let session = currentSession {
+            privacyLifecycle.cancelRecovery()
+            await resolveAccessRoute(for: session)
+        }
         await startSyncIfNeeded()
 
         guard hasStartedSync, currentSession != nil else {
@@ -822,7 +844,7 @@ final class RootViewModel {
         // newer `.paired` result. This prevents a stale ended/paywalled result
         // from continuing to clear caches after the new route becomes visible.
         if let pendingPurge = inFlightAccessPrivacyPurge {
-            await pendingPurge.task.value
+            _ = await pendingPurge.task.value
         }
 
         guard generation == accessResolutionGeneration else {
@@ -842,7 +864,24 @@ final class RootViewModel {
             return
         }
 
+        if resolution.route == .paired {
+            guard await privacyLifecycle.retryPending() else {
+                schedulePrivacyPurgeRecovery(for: session)
+                return
+            }
+        }
+
         applyAccessResolution(resolution, for: session, previous: previous)
+    }
+
+    private func schedulePrivacyPurgeRecovery(for session: AuthSession) {
+        privacyLifecycle.scheduleRecovery { [weak self] in
+            guard let self, self.currentSession?.id == session.id else {
+                return
+            }
+            await self.resolveAccessRoute(for: session)
+            await self.startSyncIfNeeded()
+        }
     }
 
     private func purgePrivateRelationshipDataIfNeeded(
@@ -892,7 +931,8 @@ final class RootViewModel {
             )
         }
         inFlightAccessPrivacyPurge = (purgeID, purgeTask)
-        await purgeTask.value
+        let purgeResult = await purgeTask.value
+        privacyLifecycle.record(purgeResult)
         if inFlightAccessPrivacyPurge?.id == purgeID {
             inFlightAccessPrivacyPurge = nil
         }
@@ -941,6 +981,10 @@ final class RootViewModel {
     }
 
     private func startSyncIfNeeded() async {
+        guard !privacyLifecycle.hasPendingRetry else {
+            return
+        }
+
         switch authRoute {
         case .signedOut, .onboarding:
             return

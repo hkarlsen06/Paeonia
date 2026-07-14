@@ -14,6 +14,7 @@ This is the first stop when an agent needs to find the current owner of a Paeoni
 - `ios/PaeoniaApp/Features/Auth/Welcome/WelcomeInviteCodeSheet.swift`: pre-auth invite-code capture. The code is retained through sign-in and redeemed through the normal pairing path.
 - `ios/PaeoniaApp/Features/Auth/SignInView.swift`: Apple/Google sign-in controls and pre-auth privacy, terms, and support links.
 - `ios/PaeoniaApp/App/RootViewModel.swift`: launch-adjacent auth/access/pairing state and `PresentationReadinessProviding` readiness.
+- `ios/PaeoniaApp/App/RootPrivacyLifecycle.swift`: cold-launch/foreground draining and bounded recovery for durable local privacy-purge retries; blocks a new paired route and sync startup until an older owner-scoped purge has completed.
 - `ios/PaeoniaApp/App/MainTabView.swift` and `ios/PaeoniaApp/App/MainTab.swift`: tab layout and high-level feature entry points.
 - `ios/PaeoniaApp/App/RootNoticeLocalization.swift`: root-level user-facing notice copy.
 - `ios/PaeoniaAppTests/AccessRouteResolverTests.swift`: access route behavior around launch and relationship access.

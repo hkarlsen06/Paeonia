@@ -848,7 +848,7 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
-    @Test func startRestoresAuthBeforeStartingSync() async {
+    @Test func startRetriesPrivacyThenRestoresAuthBeforeStartingSync() async {
         let recorder = StartupOrderRecorder()
         let authService = OrderedAuthService(recorder: recorder)
         let syncService = OrderedPaeoniaSyncService(recorder: recorder)
@@ -861,7 +861,7 @@ struct PaeoniaAppTests {
         await viewModel.start()
 
         #expect(viewModel.state == .limitedAuthenticated)
-        #expect(recorder.events == [.restoreSession, .startSync])
+        #expect(recorder.events == [.retryPrivacyPurges, .restoreSession, .startSync])
     }
 
     @MainActor
@@ -884,6 +884,28 @@ struct PaeoniaAppTests {
         #expect(await syncService.startCallCount == 1)
         #expect(await syncService.configuredSessions.count == 1)
     }
+
+    @MainActor
+    @Test func pairedRouteWaitsForPendingPrivacyPurgeAndRecoversOnForeground() async {
+        let syncService = TestPaeoniaSyncService(
+            privacyRetryResults: [.recordsPendingRetry, .recordsPendingRetry, .completed]
+        )
+        let viewModel = RootViewModel(
+            syncService: syncService,
+            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
+            accessRouteService: StaticAccessRouteService(route: .paired)
+        )
+
+        await viewModel.start()
+
+        #expect(viewModel.state == .launching)
+        #expect(await syncService.startCallCount == 0)
+
+        await viewModel.refreshAfterForegroundActivation()
+
+        #expect(viewModel.state == .paired)
+        #expect(await syncService.startCallCount == 1)
+    }
 }
 
 private actor TestPaeoniaSyncService: PaeoniaSyncing {
@@ -894,6 +916,11 @@ private actor TestPaeoniaSyncService: PaeoniaSyncing {
     private(set) var resetCallCount = 0
     private(set) var relationshipAccessPurgeOwnerUserIDs: [UUID] = []
     private(set) var relationshipAccessPurgePermanence: [Bool] = []
+    private var privacyRetryResults: [LocalPrivacyPurgeRetryResult]
+
+    init(privacyRetryResults: [LocalPrivacyPurgeRetryResult] = []) {
+        self.privacyRetryResults = privacyRetryResults
+    }
 
     func configure(session: SyncSession?) {
         configuredSessions.append(session)
@@ -924,9 +951,20 @@ private actor TestPaeoniaSyncService: PaeoniaSyncing {
         resetCallCount += 1
     }
 
-    func purgeRelationshipAccess(ownerUserID: UUID, permanently: Bool) async {
+    func retryPendingPrivacyPurges() async -> LocalPrivacyPurgeRetryResult {
+        guard !privacyRetryResults.isEmpty else {
+            return .completed
+        }
+        return privacyRetryResults.removeFirst()
+    }
+
+    func purgeRelationshipAccess(
+        ownerUserID: UUID,
+        permanently: Bool
+    ) async -> LocalPrivacyPurgeResult {
         relationshipAccessPurgeOwnerUserIDs.append(ownerUserID)
         relationshipAccessPurgePermanence.append(permanently)
+        return .completed
     }
 }
 
@@ -1241,6 +1279,7 @@ private final class TestPairingInviteStore: PairingInviteStoring {
 
 private final class StartupOrderRecorder: @unchecked Sendable {
     enum Event: Equatable {
+        case retryPrivacyPurges
         case restoreSession
         case startSync
     }
@@ -1290,7 +1329,17 @@ private actor OrderedPaeoniaSyncService: PaeoniaSyncing {
 
     func resetForUserChange() async {}
 
-    func purgeRelationshipAccess(ownerUserID _: UUID, permanently _: Bool) async {}
+    func retryPendingPrivacyPurges() async -> LocalPrivacyPurgeRetryResult {
+        recorder.record(.retryPrivacyPurges)
+        return .completed
+    }
+
+    func purgeRelationshipAccess(
+        ownerUserID _: UUID,
+        permanently _: Bool
+    ) async -> LocalPrivacyPurgeResult {
+        .completed
+    }
 }
 
 private actor OrderedAuthService: AuthServicing {

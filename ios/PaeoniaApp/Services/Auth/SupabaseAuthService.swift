@@ -10,6 +10,7 @@ actor SupabaseAuthService: AuthServicing {
     private let profilePhotoCache: any ProfilePhotoImageCaching
     private let profilePhotoInvalidator: (any ProfilePhotoImageInvalidating)?
     private let providerAvatarLoader: any ProviderAvatarImageLoading
+    private let sessionCache: any AuthSessionCaching
     #if DEBUG
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
@@ -21,27 +22,45 @@ actor SupabaseAuthService: AuthServicing {
         gateway: any SupabaseAuthGateway,
         profilePhotoCache: (any ProfilePhotoImageCaching)? = nil,
         profilePhotoInvalidator: (any ProfilePhotoImageInvalidating)? = nil,
-        providerAvatarLoader: (any ProviderAvatarImageLoading)? = nil
+        providerAvatarLoader: (any ProviderAvatarImageLoading)? = nil,
+        sessionCache: (any AuthSessionCaching)? = nil
     ) {
         self.gateway = gateway
         self.profilePhotoCache = profilePhotoCache ?? FileProfilePhotoImageCache.live()
         self.profilePhotoInvalidator = profilePhotoInvalidator
             ?? ProfilePhotoImageProviderFactory.cacheInvalidator
         self.providerAvatarLoader = providerAvatarLoader ?? HTTPSProviderAvatarImageLoader()
+        self.sessionCache = sessionCache ?? TransientAuthSessionCache()
     }
 
     static func live() throws -> SupabaseAuthService {
         let client = try PaeoniaSupabaseClientProvider.shared.client()
-        return SupabaseAuthService(gateway: LiveSupabaseAuthGateway(client: client))
+        return SupabaseAuthService(
+            gateway: LiveSupabaseAuthGateway(client: client),
+            sessionCache: UserDefaultsAuthSessionCache.shared
+        )
     }
 
     func restoreSession() async throws -> AuthSession? {
         guard let remoteSession = try await gateway.restoreSession() else {
+            await sessionCache.clear()
             return nil
         }
 
-        let profile = try await gateway.loadProfile(userID: remoteSession.userID)
-        return makeSession(remoteSession: remoteSession, profile: profile)
+        do {
+            let profile = try await gateway.loadProfile(userID: remoteSession.userID)
+            return await makeSession(remoteSession: remoteSession, profile: profile)
+        } catch {
+            if AuthSessionFallbackPolicy.isCancellation(error) {
+                throw error
+            }
+            if AuthSessionFallbackPolicy.allowsCachedSession(for: error),
+               let cachedSession = await sessionCache.load(userID: remoteSession.userID) {
+                return cachedSession
+            }
+            await sessionCache.clear()
+            throw error
+        }
     }
 
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession {
@@ -58,7 +77,7 @@ actor SupabaseAuthService: AuthServicing {
             try await gateway.updateAuthDisplayName(displayName)
         }
         let profile = try await gateway.loadProfile(userID: remoteSession.userID)
-        return makeSession(
+        return await makeSession(
             remoteSession: SupabaseRemoteSession(
                 userID: remoteSession.userID,
                 provider: .apple,
@@ -79,7 +98,7 @@ actor SupabaseAuthService: AuthServicing {
             providerAvatarURL: credential.profileImageURL,
             profile: loadedProfile
         )
-        return makeSession(
+        return await makeSession(
             remoteSession: SupabaseRemoteSession(
                 userID: remoteSession.userID,
                 provider: .google,
@@ -144,7 +163,7 @@ actor SupabaseAuthService: AuthServicing {
             try? await profilePhotoCache.removeProfilePhotoData(for: previousAssetID)
         }
 
-        return makeSession(
+        return await makeSession(
             remoteSession: SupabaseRemoteSession(
                 userID: remoteSession.userID,
                 provider: remoteSession.provider,
@@ -212,7 +231,7 @@ actor SupabaseAuthService: AuthServicing {
             try? await profilePhotoCache.removeProfilePhotoData(for: previousAssetID)
         }
 
-        return makeSession(
+        return await makeSession(
             remoteSession: SupabaseRemoteSession(
                 userID: remoteSession.userID,
                 provider: remoteSession.provider,
@@ -308,6 +327,7 @@ actor SupabaseAuthService: AuthServicing {
 
     func signOut() async throws {
         try await gateway.signOut()
+        await sessionCache.clear()
         try? await profilePhotoCache.removeAllProfilePhotoData()
     }
 
@@ -325,6 +345,7 @@ actor SupabaseAuthService: AuthServicing {
         // still clears its local session before making the remote sign-out call,
         // so a missing remote user is safe to ignore here.
         try? await gateway.signOut()
+        await sessionCache.clear()
         try? await profilePhotoCache.removeAllProfilePhotoData()
         return outcome
     }
@@ -332,7 +353,7 @@ actor SupabaseAuthService: AuthServicing {
     private func makeSession(
         remoteSession: SupabaseRemoteSession,
         profile: SupabaseProfile
-    ) -> AuthSession {
+    ) async -> AuthSession {
         let profileStatus = Self.profileStatus(for: profile)
         let displayName = Self.displayName(
             remoteSession: remoteSession,
@@ -340,7 +361,7 @@ actor SupabaseAuthService: AuthServicing {
             profileStatus: profileStatus
         )
 
-        return AuthSession(
+        let session = AuthSession(
             id: remoteSession.userID,
             provider: remoteSession.provider,
             displayName: displayName,
@@ -350,6 +371,8 @@ actor SupabaseAuthService: AuthServicing {
             customProfilePhotoAssetID: profile.profilePhotoAssetID,
             providerProfilePhotoAssetID: profile.providerProfilePhotoAssetID
         )
+        await sessionCache.save(session)
+        return session
     }
 
     private static func profileStatus(for profile: SupabaseProfile) -> AuthProfileStatus {

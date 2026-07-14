@@ -308,7 +308,11 @@ private struct PrivacyPurgeCall: Equatable, Sendable {
 private actor RecordingLocalPrivacyPurger: LocalPrivacyPurging {
     private(set) var calls: [PrivacyPurgeCall] = []
 
-    func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) {
+    func purge(
+        ownerUserID: UUID,
+        scope: LocalPrivacyPurgeScope
+    ) -> LocalPrivacyPurgeResult {
         calls.append(PrivacyPurgeCall(ownerUserID: ownerUserID, scope: scope))
+        return .completed
     }
 }

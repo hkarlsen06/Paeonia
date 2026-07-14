@@ -12,6 +12,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     private var session: SyncSession?
     private var hasStarted = false
     private var isSyncing = false
+    private var isPrivacyQuiescing = false
     // A follow-up pass is only needed when a *local write* was requested while a
     // run was already in flight: that run may have already drained the pending-
     // operations stream, so the new write needs another push. A foreground /
@@ -25,6 +26,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     private var retryTask: Task<Void, Never>?
     private var activePipelineTasks: [UUID: Task<SyncRunResult, Never>] = [:]
     private var scheduleGeneration: UInt64 = 0
+    private var sessionGeneration: UInt64 = 0
     private var lastForegroundSyncAt: Date?
 
     init(
@@ -104,24 +106,52 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     }
 
     func configure(session: SyncSession?) {
-        let previousUserID = self.session?.userID
-        self.session = session
-
-        if previousUserID != nil, previousUserID != session?.userID {
-            scheduleGeneration &+= 1
-            scheduledTask?.cancel()
-            scheduledTask = nil
-            retryTask?.cancel()
-            retryTask = nil
-            activePipelineTasks.values.forEach { $0.cancel() }
-            isSyncing = false
-            needsLocalChangeFollowUp = false
-            resumeActiveRunWaiters()
-            lastForegroundSyncAt = nil
+        guard self.session != session else {
+            return
         }
 
-        if hasStarted, session != nil {
-            scheduleSync(reason: .startup)
+        self.session = session
+        sessionGeneration &+= 1
+        scheduleGeneration &+= 1
+        let transitionGeneration = sessionGeneration
+        let transitionScheduleGeneration = scheduleGeneration
+        let scheduledRun = scheduledTask
+        let runningPipelines = Array(activePipelineTasks.values)
+
+        scheduledRun?.cancel()
+        retryTask?.cancel()
+        retryTask = nil
+        runningPipelines.forEach { $0.cancel() }
+        needsLocalChangeFollowUp = false
+        lastForegroundSyncAt = nil
+
+        guard scheduledRun != nil || !runningPipelines.isEmpty || isSyncing else {
+            scheduledTask = nil
+            isSyncing = false
+            resumeActiveRunWaiters()
+            if hasStarted, session != nil {
+                scheduleSync(reason: .startup)
+            }
+            return
+        }
+
+        // Keep the sync lock held across the boundary. A replacement session
+        // must not start until every task from the previous session has
+        // settled, even when a stream is slow to cooperate with cancellation.
+        isSyncing = true
+        scheduledTask = Task {
+            for pipeline in runningPipelines {
+                _ = await pipeline.value
+            }
+            if let scheduledRun {
+                await scheduledRun.value
+            }
+
+            finishSessionTransition(
+                session: session,
+                sessionGeneration: transitionGeneration,
+                scheduleGeneration: transitionScheduleGeneration
+            )
         }
     }
 
@@ -182,13 +212,25 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         }
     }
 
-    func purgeRelationshipAccess(ownerUserID: UUID, permanently: Bool) async {
-        await localPrivacyPurger.purge(
+    @discardableResult
+    func purgeRelationshipAccess(
+        ownerUserID: UUID,
+        permanently: Bool
+    ) async -> LocalPrivacyPurgeResult {
+        await quiesceActiveWorkForPrivacyPurge()
+        let result = await localPrivacyPurger.purge(
             ownerUserID: ownerUserID,
             scope: permanently
                 ? .relationshipContentPurged(clearAccessSnapshot: true)
                 : .relationshipAccessHidden
         )
+        finishPrivacyPurgeQuiescence()
+        return result
+    }
+
+    @discardableResult
+    func retryPendingPrivacyPurges() async -> LocalPrivacyPurgeRetryResult {
+        await localPrivacyPurger.retryPendingPurges()
     }
 
     func runOnce(reason: SyncRequestReason) async -> SyncRunResult {
@@ -200,17 +242,27 @@ actor PaeoniaSyncService: PaeoniaSyncing {
             return .coalesced()
         }
 
-        guard session != nil else {
+        guard let session else {
             return .skippedNoSession()
         }
 
         hasStarted = true
         needsLocalChangeFollowUp = false
         isSyncing = true
+        let generation = sessionGeneration
 
-        let result = await drainSyncRuns(startingReason: reason)
-        isSyncing = false
-        resumeActiveRunWaiters()
+        let result = await drainSyncRuns(
+            startingReason: reason,
+            session: session,
+            sessionGeneration: generation
+        )
+        guard generation == sessionGeneration, self.session == session else {
+            return result
+        }
+        if !isPrivacyQuiescing {
+            isSyncing = false
+            resumeActiveRunWaiters()
+        }
 
         if result.status != .cancelled {
             await scheduleRetryIfNeeded(after: result)
@@ -227,7 +279,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
             return
         }
 
-        guard session != nil else {
+        guard let session else {
             return
         }
 
@@ -235,30 +287,57 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         needsLocalChangeFollowUp = false
         scheduleGeneration &+= 1
         let generation = scheduleGeneration
+        let sessionGeneration = self.sessionGeneration
         scheduledTask?.cancel()
         retryTask?.cancel()
         retryTask = nil
         scheduledTask = Task {
-            await drainScheduledSync(reason: reason, generation: generation)
+            await drainScheduledSync(
+                reason: reason,
+                session: session,
+                sessionGeneration: sessionGeneration,
+                scheduleGeneration: generation
+            )
         }
     }
 
-    private func drainScheduledSync(reason: SyncRequestReason, generation: UInt64) async {
-        let result = await drainSyncRuns(startingReason: reason)
-        finishScheduledSync(generation: generation)
+    private func drainScheduledSync(
+        reason: SyncRequestReason,
+        session: SyncSession,
+        sessionGeneration: UInt64,
+        scheduleGeneration: UInt64
+    ) async {
+        let result = await drainSyncRuns(
+            startingReason: reason,
+            session: session,
+            sessionGeneration: sessionGeneration
+        )
+        finishScheduledSync(
+            session: session,
+            sessionGeneration: sessionGeneration,
+            scheduleGeneration: scheduleGeneration
+        )
 
-        if result.status != .cancelled, !Task.isCancelled {
+        if result.status != .cancelled,
+           !Task.isCancelled,
+           sessionGeneration == self.sessionGeneration,
+           session == self.session {
             await scheduleRetryIfNeeded(after: result)
         }
     }
 
-    private func drainSyncRuns(startingReason: SyncRequestReason) async -> SyncRunResult {
+    private func drainSyncRuns(
+        startingReason: SyncRequestReason,
+        session: SyncSession,
+        sessionGeneration: UInt64
+    ) async -> SyncRunResult {
         var nextReason = startingReason
         var lastResult: SyncRunResult?
 
         while true {
-            guard let session else {
-                return lastResult ?? .skippedNoSession()
+            guard sessionGeneration == self.sessionGeneration,
+                  session == self.session else {
+                return lastResult ?? SyncRunResult.cancelled()
             }
 
             if shouldSkipForInterval(reason: nextReason, now: Date()) {
@@ -283,13 +362,74 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         }
     }
 
-    private func finishScheduledSync(generation: UInt64) {
-        guard generation == scheduleGeneration else {
+    private func finishScheduledSync(
+        session: SyncSession,
+        sessionGeneration: UInt64,
+        scheduleGeneration: UInt64
+    ) {
+        guard scheduleGeneration == self.scheduleGeneration,
+              sessionGeneration == self.sessionGeneration,
+              session == self.session else {
             return
         }
 
         isSyncing = false
         scheduledTask = nil
+        resumeActiveRunWaiters()
+    }
+
+    private func finishSessionTransition(
+        session: SyncSession?,
+        sessionGeneration: UInt64,
+        scheduleGeneration: UInt64
+    ) {
+        guard sessionGeneration == self.sessionGeneration,
+              scheduleGeneration == self.scheduleGeneration,
+              session == self.session else {
+            return
+        }
+
+        scheduledTask = nil
+        isSyncing = false
+        resumeActiveRunWaiters()
+
+        if hasStarted, session != nil {
+            scheduleSync(reason: .startup)
+        }
+    }
+
+    /// Relationship cleanup runs before Root commits the replacement access
+    /// route. Quiesce the current session here so an old-couple stream cannot
+    /// repopulate SwiftData after the privacy purge has deleted its records.
+    private func quiesceActiveWorkForPrivacyPurge() async {
+        if isPrivacyQuiescing {
+            await waitForActiveRunToFinish()
+        }
+
+        let scheduledRun = scheduledTask
+        let runningPipelines = Array(activePipelineTasks.values)
+        scheduleGeneration &+= 1
+        scheduledRun?.cancel()
+        retryTask?.cancel()
+        retryTask = nil
+        runningPipelines.forEach { $0.cancel() }
+        isPrivacyQuiescing = true
+        isSyncing = true
+        needsLocalChangeFollowUp = false
+
+        for pipeline in runningPipelines {
+            _ = await pipeline.value
+        }
+        if let scheduledRun {
+            await scheduledRun.value
+        }
+
+        scheduledTask = nil
+    }
+
+    private func finishPrivacyPurgeQuiescence() {
+        isPrivacyQuiescing = false
+        isSyncing = false
         resumeActiveRunWaiters()
     }
 
@@ -390,45 +530,49 @@ actor PaeoniaSyncService: PaeoniaSyncing {
             await performRun(reason: reason, session: session)
         }
         activePipelineTasks[pipelineID] = runTask
-        Task { [weak self] in
-            _ = await runTask.value
-            await self?.removeActivePipeline(pipelineID)
-        }
-
-        let stream = AsyncStream<SyncRunResult> { continuation in
-            let resultTask = Task {
-                let result = await runTask.value
-                continuation.yield(result)
-                continuation.finish()
-            }
-            let timeoutTask = Task {
-                try? await Task.sleep(nanoseconds: timeoutNanoseconds)
-                guard !Task.isCancelled else {
-                    return
+        let result = await withTaskCancellationHandler {
+            await withTaskGroup(of: TimedRunEvent.self) { group in
+                group.addTask {
+                    .completed(await runTask.value)
                 }
-                runTask.cancel()
-                continuation.yield(.timedOut())
-                continuation.finish()
-            }
+                group.addTask {
+                    do {
+                        try await Task.sleep(nanoseconds: timeoutNanoseconds)
+                        return .timedOut
+                    } catch {
+                        return .cancelled
+                    }
+                }
 
-            continuation.onTermination = { _ in
-                runTask.cancel()
-                resultTask.cancel()
-                timeoutTask.cancel()
+                guard let firstEvent = await group.next() else {
+                    return SyncRunResult.cancelled()
+                }
+
+                switch firstEvent {
+                case let .completed(result):
+                    group.cancelAll()
+                    return result
+                case .timedOut:
+                    runTask.cancel()
+                    group.cancelAll()
+                    // Cancellation is a request, not proof that the task has
+                    // stopped. Keep this run active until the pipeline settles
+                    // so a retry cannot overlap its local writes.
+                    _ = await runTask.value
+                    return .timedOut()
+                case .cancelled:
+                    runTask.cancel()
+                    group.cancelAll()
+                    _ = await runTask.value
+                    return .cancelled()
+                }
             }
+        } onCancel: {
+            runTask.cancel()
         }
 
-        for await result in stream {
-            return result
-        }
-
-        return SyncRunResult(
-            status: .cancelled,
-            attemptedStreamCount: 0,
-            completedStreamCount: 0,
-            failedStreamKey: nil,
-            errorDescription: nil
-        )
+        removeActivePipeline(pipelineID)
+        return result
     }
 
     private func removeActivePipeline(_ id: UUID) {
@@ -470,6 +614,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
                     scope: scope,
                     streamKey: streamKey
                 )
+                try Task.checkCancellation()
                 let context = SyncContext(
                     session: session,
                     reason: reason,
@@ -485,6 +630,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
                     streamKey: streamKey,
                     at: startedAt
                 )
+                try Task.checkCancellation()
                 let nextCursor = try await stream.pull(context: context)
                 try Task.checkCancellation()
                 try await stream.push(context: context)
@@ -506,6 +652,15 @@ actor PaeoniaSyncService: PaeoniaSyncing {
                     errorDescription: nil
                 )
             } catch {
+                if Task.isCancelled {
+                    return SyncRunResult(
+                        status: .cancelled,
+                        attemptedStreamCount: attemptedStreamCount,
+                        completedStreamCount: completedStreamCount,
+                        failedStreamKey: streamKey,
+                        errorDescription: nil
+                    )
+                }
                 let errorDescription = String(describing: error)
                 try? await stateStore.markFailed(
                     ownerUserID: session.userID,
@@ -533,4 +688,10 @@ actor PaeoniaSyncService: PaeoniaSyncing {
             errorDescription: nil
         )
     }
+}
+
+private enum TimedRunEvent: Sendable {
+    case completed(SyncRunResult)
+    case timedOut
+    case cancelled
 }

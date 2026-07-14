@@ -1,13 +1,28 @@
 import Foundation
 
-nonisolated enum LocalPrivacyPurgeScope: Equatable, Sendable {
+nonisolated enum LocalPrivacyPurgeScope: Codable, Equatable, Sendable {
     case departingUser
     case relationshipAccessHidden
     case relationshipContentPurged(clearAccessSnapshot: Bool)
 }
 
 nonisolated protocol LocalPrivacyPurging: Sendable {
-    func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) async
+    @discardableResult
+    func purge(
+        ownerUserID: UUID,
+        scope: LocalPrivacyPurgeScope
+    ) async -> LocalPrivacyPurgeResult
+
+    @discardableResult
+    func retryPendingPurges() async -> LocalPrivacyPurgeRetryResult
+}
+
+extension LocalPrivacyPurging {
+    @discardableResult
+    // swiftlint:disable:next async_without_await
+    func retryPendingPurges() async -> LocalPrivacyPurgeRetryResult {
+        .completed
+    }
 }
 
 nonisolated protocol LocalPrivateContentPurging: Sendable {
@@ -17,40 +32,151 @@ nonisolated protocol LocalPrivateContentPurging: Sendable {
 actor LocalPrivacyPurgeService: LocalPrivacyPurging {
     private let recordStore: any LocalPrivacyRecordPurging
     private let privateContentPurger: any LocalPrivateContentPurging
+    private let retryStore: any LocalPrivacyPurgeRetryStoring
+    private let retryDelay: Duration
+    private let automaticallyRetry: Bool
+    private var scheduledRetry: Task<Void, Never>?
+    private var volatileRetryRequests: [UUID: LocalPrivacyPurgeRequest] = [:]
 
     init(
         recordStore: any LocalPrivacyRecordPurging,
-        privateContentPurger: any LocalPrivateContentPurging = LiveLocalPrivateContentPurger()
+        privateContentPurger: any LocalPrivateContentPurging = LiveLocalPrivateContentPurger(),
+        retryStore: any LocalPrivacyPurgeRetryStoring = UserDefaultsLocalPrivacyPurgeRetryStore(),
+        retryDelay: Duration = .seconds(30),
+        automaticallyRetry: Bool = true
     ) {
         self.recordStore = recordStore
         self.privateContentPurger = privateContentPurger
+        self.retryStore = retryStore
+        self.retryDelay = retryDelay
+        self.automaticallyRetry = automaticallyRetry
     }
 
-    func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) async {
+    @discardableResult
+    func purge(
+        ownerUserID: UUID,
+        scope: LocalPrivacyPurgeScope
+    ) async -> LocalPrivacyPurgeResult {
+        var request = LocalPrivacyPurgeRequest(ownerUserID: ownerUserID, scope: scope)
+        if let volatileRequest = volatileRetryRequests[ownerUserID] {
+            request = volatileRequest.merging(request)
+        }
+        let requestWasPersisted: Bool
         do {
-            switch scope {
-            case .departingUser:
-                try await recordStore.purgeDepartingUser(ownerUserID: ownerUserID)
-            case .relationshipAccessHidden:
-                try await recordStore.hideRelationshipAccess(ownerUserID: ownerUserID)
-            case let .relationshipContentPurged(clearAccessSnapshot):
-                try await recordStore.purgeRelationshipContent(
-                    ownerUserID: ownerUserID,
-                    clearAccessSnapshot: clearAccessSnapshot
-                )
-            }
+            try await retryStore.enqueue(request)
+            volatileRetryRequests[ownerUserID] = nil
+            requestWasPersisted = true
         } catch {
-            // File/App Group cleanup still has to run when one SwiftData store
-            // operation fails. The API is idempotent, so the coordinator can
-            // safely invoke it again on a later privacy transition.
+            requestWasPersisted = false
         }
 
         await privateContentPurger.purge(ownerUserID: ownerUserID, scope: scope)
+
+        guard requestWasPersisted else {
+            do {
+                try await purgeRecords(for: request)
+                return .completed
+            } catch {
+                volatileRetryRequests[ownerUserID] = request
+                scheduleRetryIfNeeded()
+                return .recordsFailedWithoutDurableRetry
+            }
+        }
+
+        _ = await retryPendingPurges()
+        do {
+            let pendingRequest = try await retryStore.request(for: ownerUserID)
+            return pendingRequest == nil ? .completed : .recordsPendingRetry
+        } catch {
+            scheduleRetryIfNeeded()
+            return .recordsPendingRetry
+        }
+    }
+
+    @discardableResult
+    func retryPendingPurges() async -> LocalPrivacyPurgeRetryResult {
+        var hasFailure = false
+        for request in Array(volatileRetryRequests.values) {
+            do {
+                try await purgeRecords(for: request)
+                volatileRetryRequests[request.ownerUserID] = nil
+            } catch {
+                hasFailure = true
+            }
+        }
+
+        let pendingRequests: [LocalPrivacyPurgeRequest]
+        do {
+            pendingRequests = try await retryStore.pendingRequests()
+        } catch {
+            scheduleRetryIfNeeded()
+            return .recordsPendingRetry
+        }
+
+        for request in pendingRequests {
+            do {
+                try await purgeRecords(for: request)
+                try await retryStore.remove(request)
+            } catch {
+                hasFailure = true
+            }
+        }
+
+        let stillHasPendingRequests: Bool
+        do {
+            let remainingRequests = try await retryStore.pendingRequests()
+            stillHasPendingRequests = !remainingRequests.isEmpty
+        } catch {
+            stillHasPendingRequests = true
+        }
+
+        if hasFailure || stillHasPendingRequests {
+            scheduleRetryIfNeeded()
+            return .recordsPendingRetry
+        }
+        return .completed
+    }
+
+    private func purgeRecords(for request: LocalPrivacyPurgeRequest) async throws {
+        switch request.scope {
+        case .departingUser:
+            try await recordStore.purgeDepartingUser(ownerUserID: request.ownerUserID)
+        case .relationshipAccessHidden:
+            try await recordStore.hideRelationshipAccess(ownerUserID: request.ownerUserID)
+        case let .relationshipContentPurged(clearAccessSnapshot):
+            try await recordStore.purgeRelationshipContent(
+                ownerUserID: request.ownerUserID,
+                clearAccessSnapshot: clearAccessSnapshot
+            )
+        }
+    }
+
+    private func scheduleRetryIfNeeded() {
+        guard automaticallyRetry, scheduledRetry == nil else {
+            return
+        }
+        scheduledRetry = Task { [weak self, retryDelay] in
+            try? await Task.sleep(for: retryDelay)
+            guard !Task.isCancelled else {
+                return
+            }
+            await self?.runScheduledRetry()
+        }
+    }
+
+    private func runScheduledRetry() async {
+        scheduledRetry = nil
+        _ = await retryPendingPurges()
     }
 }
 
 actor NoOpLocalPrivacyPurger: LocalPrivacyPurging {
-    func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) {}
+    func purge(
+        ownerUserID: UUID,
+        scope: LocalPrivacyPurgeScope
+    ) -> LocalPrivacyPurgeResult {
+        .completed
+    }
 }
 
 actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {

@@ -322,6 +322,124 @@ struct PaeoniaSyncServiceTests {
             ]
         )
     }
+
+    @Test func relationshipPurgeWaitsForCancelledSyncWritesToSettle() async {
+        let stream = BlockingFirstPullSyncStream(streamKey: .relationship)
+        let privacyPurger = RecordingSyncPrivacyPurger()
+        let coordinator = PaeoniaSyncService(
+            streams: [stream],
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
+            localPrivacyPurger: privacyPurger
+        )
+        await coordinator.configure(session: .test())
+        let sync = Task { await coordinator.runOnce(reason: .manualRefresh) }
+        await stream.waitForFirstPull()
+
+        let purge = Task {
+            await coordinator.purgeRelationshipAccess(
+                ownerUserID: .testUserID,
+                permanently: true
+            )
+        }
+        await stream.waitForCancellationCount(1)
+        for _ in 0..<100 {
+            await Task.yield()
+        }
+        #expect(await privacyPurger.calls.isEmpty)
+
+        await stream.releaseFirstPull()
+        #expect(await purge.value == .completed)
+        _ = await sync.value
+
+        #expect(
+            await privacyPurger.calls == [
+                SyncPrivacyPurgeCall(
+                    ownerUserID: .testUserID,
+                    scope: .relationshipContentPurged(clearAccessSnapshot: true)
+                )
+            ]
+        )
+    }
+
+    @Test func sameUserCoupleChangeSettlesOldPipelineBeforeStartingNewSession() async throws {
+        let oldCoupleID = try #require(
+            UUID(uuidString: "22222222-2222-2222-2222-222222222222")
+        )
+        let newCoupleID = try #require(
+            UUID(uuidString: "33333333-3333-3333-3333-333333333333")
+        )
+        let stream = BlockingFirstPullSyncStream(streamKey: .relationship)
+        let coordinator = PaeoniaSyncService(
+            streams: [stream],
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository()
+        )
+        await coordinator.configure(
+            session: SyncSession(userID: .testUserID, activeCoupleID: oldCoupleID)
+        )
+
+        let oldRun = Task { await coordinator.runOnce(reason: .manualRefresh) }
+        await stream.waitForFirstPull()
+
+        let configuration = Task {
+            await coordinator.configure(
+                session: SyncSession(userID: .testUserID, activeCoupleID: newCoupleID)
+            )
+        }
+        await stream.waitForCancellationCount(1)
+        for _ in 0..<100 {
+            await Task.yield()
+        }
+        #expect(await stream.pulledCoupleIDs == [oldCoupleID])
+
+        await stream.releaseFirstPull()
+        await configuration.value
+        _ = await oldRun.value
+        await stream.waitForPullCount(2)
+
+        #expect(await stream.pulledCoupleIDs == [oldCoupleID, newCoupleID])
+        #expect(await stream.events == [
+            "relationship.pull.manual_refresh",
+            "relationship.pull.startup",
+            "relationship.push.startup",
+        ])
+    }
+
+    @Test func timedOutPipelineSettlesBeforeRetryCanStart() async {
+        let stream = BlockingFirstPullSyncStream(streamKey: .relationship)
+        let coordinator = PaeoniaSyncService(
+            streams: [stream],
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
+            syncTimeoutNanoseconds: 100_000_000,
+            failedRunRetryDelay: 0
+        )
+        await coordinator.configure(session: .test())
+
+        let timedRun = Task { await coordinator.runOnce(reason: .manualRefresh) }
+        await stream.waitForFirstPull()
+        await stream.waitForCancellationCount(1)
+
+        let coalescedRun = Task { await coordinator.runOnce(reason: .manualRefresh) }
+        for _ in 0..<100 {
+            await Task.yield()
+        }
+        #expect(await stream.pullCount == 1)
+
+        await stream.releaseFirstPull()
+        let timedResult = await timedRun.value
+        let coalescedResult = await coalescedRun.value
+        await stream.waitForPullCount(2)
+
+        #expect(timedResult.status == .timedOut)
+        #expect(coalescedResult.status == .coalesced)
+        #expect(await stream.events == [
+            "relationship.pull.manual_refresh",
+            "relationship.pull.local_change",
+            "relationship.push.local_change",
+        ])
+    }
 }
 
 private struct SyncPrivacyPurgeCall: Equatable, Sendable {
@@ -332,8 +450,12 @@ private struct SyncPrivacyPurgeCall: Equatable, Sendable {
 private actor RecordingSyncPrivacyPurger: LocalPrivacyPurging {
     private(set) var calls: [SyncPrivacyPurgeCall] = []
 
-    func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) {
+    func purge(
+        ownerUserID: UUID,
+        scope: LocalPrivacyPurgeScope
+    ) -> LocalPrivacyPurgeResult {
         calls.append(SyncPrivacyPurgeCall(ownerUserID: ownerUserID, scope: scope))
+        return .completed
     }
 }
 
@@ -364,6 +486,10 @@ private actor BlockingFirstPullSyncStream: SyncStream {
     private var firstPullStarted = false
     private var firstPullStartedContinuation: CheckedContinuation<Void, Never>?
     private var firstPullReleaseContinuation: CheckedContinuation<Void, Never>?
+    private var recordedCoupleIDs: [UUID?] = []
+    private var cancellationCount = 0
+    private var cancellationWaiters: [CheckedContinuation<Void, Never>] = []
+    private var pullCountWaiters: [CheckedContinuation<Void, Never>] = []
 
     init(streamKey: SyncStreamKey) {
         self.streamKey = streamKey
@@ -375,6 +501,14 @@ private actor BlockingFirstPullSyncStream: SyncStream {
 
     var events: [String] {
         recordedEvents
+    }
+
+    var pulledCoupleIDs: [UUID?] {
+        recordedCoupleIDs
+    }
+
+    var pullCount: Int {
+        recordedCoupleIDs.count
     }
 
     func waitForFirstPull() async {
@@ -392,16 +526,49 @@ private actor BlockingFirstPullSyncStream: SyncStream {
         firstPullReleaseContinuation = nil
     }
 
+    func waitForCancellationCount(_ expectedCount: Int) async {
+        if cancellationCount >= expectedCount {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            cancellationWaiters.append(continuation)
+        }
+    }
+
+    func waitForPullCount(_ expectedCount: Int) async {
+        if recordedCoupleIDs.count >= expectedCount {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            pullCountWaiters.append(continuation)
+        }
+    }
+
+    private func recordCancellation() {
+        cancellationCount += 1
+        cancellationWaiters.forEach { $0.resume() }
+        cancellationWaiters.removeAll()
+    }
+
     func pull(context: SyncContext) async throws -> SyncCursor? {
         recordedEvents.append("\(streamKey.rawValue).pull.\(context.reason.rawValue)")
+        recordedCoupleIDs.append(context.session.activeCoupleID)
+        pullCountWaiters.forEach { $0.resume() }
+        pullCountWaiters.removeAll()
 
         if !firstPullStarted {
             firstPullStarted = true
             firstPullStartedContinuation?.resume()
             firstPullStartedContinuation = nil
 
-            await withCheckedContinuation { continuation in
-                firstPullReleaseContinuation = continuation
+            await withTaskCancellationHandler {
+                await withCheckedContinuation { continuation in
+                    firstPullReleaseContinuation = continuation
+                }
+            } onCancel: {
+                Task { await self.recordCancellation() }
             }
         }
 

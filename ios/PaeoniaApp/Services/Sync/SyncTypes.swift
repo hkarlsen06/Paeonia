@@ -7,7 +7,20 @@ nonisolated protocol PaeoniaSyncing: Actor {
     func runOnce(reason: SyncRequestReason) async -> SyncRunResult
     func stop()
     func resetForUserChange() async
-    func purgeRelationshipAccess(ownerUserID: UUID, permanently: Bool) async
+    @discardableResult
+    func purgeRelationshipAccess(
+        ownerUserID: UUID,
+        permanently: Bool
+    ) async -> LocalPrivacyPurgeResult
+    @discardableResult
+    func retryPendingPrivacyPurges() async -> LocalPrivacyPurgeRetryResult
+}
+
+extension PaeoniaSyncing {
+    // swiftlint:disable:next async_without_await
+    func retryPendingPrivacyPurges() async -> LocalPrivacyPurgeRetryResult {
+        .completed
+    }
 }
 
 nonisolated protocol SyncStream: Sendable {
@@ -245,6 +258,16 @@ nonisolated struct SyncRunResult: Equatable, Sendable {
             completedStreamCount: 0,
             failedStreamKey: nil,
             errorDescription: "Sync timed out"
+        )
+    }
+
+    static func cancelled() -> SyncRunResult {
+        SyncRunResult(
+            status: .cancelled,
+            attemptedStreamCount: 0,
+            completedStreamCount: 0,
+            failedStreamKey: nil,
+            errorDescription: nil
         )
     }
 }

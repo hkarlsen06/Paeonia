@@ -63,6 +63,120 @@ struct SupabaseAuthServiceTests {
         #expect(await gateway.updatedAuthDisplayName == nil)
     }
 
+    @Test func restoreSessionUsesMatchingCachedProfileWhenProfileLoadFails() async throws {
+        let cachedSession = AuthSession.test(profileStatus: .complete)
+        let sessionCache = FakeAuthSessionCache(session: cachedSession)
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .apple, userID: cachedSession.id),
+            profile: .test(onboardingCompletedAt: Date()),
+            loadProfileError: URLError(.notConnectedToInternet)
+        )
+        let service = SupabaseAuthService(gateway: gateway, sessionCache: sessionCache)
+
+        let restoredSession = try await service.restoreSession()
+
+        #expect(restoredSession == cachedSession)
+    }
+
+    @Test func restoreSessionPreservesCachedOnboardingRequirementWhenProfileLoadFails() async throws {
+        let cachedSession = AuthSession.test(profileStatus: .needsOnboarding)
+        let sessionCache = FakeAuthSessionCache(session: cachedSession)
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .apple, userID: cachedSession.id),
+            profile: .test(onboardingCompletedAt: nil),
+            loadProfileError: URLError(.networkConnectionLost)
+        )
+        let service = SupabaseAuthService(gateway: gateway, sessionCache: sessionCache)
+
+        let restoredSession = try await service.restoreSession()
+
+        #expect(restoredSession?.profileStatus == .needsOnboarding)
+    }
+
+    @Test func restoreSessionDoesNotUseCachedProfileForAnotherUser() async {
+        let sessionCache = FakeAuthSessionCache(
+            session: .test(id: "previous-user", profileStatus: .complete)
+        )
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .apple, userID: "current-user"),
+            profile: .test(onboardingCompletedAt: Date()),
+            loadProfileError: URLError(.notConnectedToInternet)
+        )
+        let service = SupabaseAuthService(gateway: gateway, sessionCache: sessionCache)
+
+        await #expect(throws: URLError.self) {
+            try await service.restoreSession()
+        }
+        #expect(await sessionCache.currentSession == nil)
+    }
+
+    @Test func restoreSessionDoesNotUseCacheWhenBackendRejectsProfile() async {
+        let cachedSession = AuthSession.test(profileStatus: .complete)
+        let sessionCache = FakeAuthSessionCache(session: cachedSession)
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .apple, userID: cachedSession.id),
+            profile: .test(onboardingCompletedAt: Date()),
+            loadProfileError: AuthServiceError.invalidProfilePhoto
+        )
+        let service = SupabaseAuthService(gateway: gateway, sessionCache: sessionCache)
+
+        await #expect(throws: AuthServiceError.invalidProfilePhoto) {
+            try await service.restoreSession()
+        }
+        #expect(await sessionCache.currentSession == nil)
+    }
+
+    @Test func restoreSessionDoesNotUseCacheWhenProfileLoadIsCancelled() async {
+        let cachedSession = AuthSession.test(profileStatus: .complete)
+        let sessionCache = FakeAuthSessionCache(session: cachedSession)
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .apple, userID: cachedSession.id),
+            profile: .test(onboardingCompletedAt: Date()),
+            loadProfileError: URLError(.cancelled)
+        )
+        let service = SupabaseAuthService(gateway: gateway, sessionCache: sessionCache)
+
+        await #expect(throws: URLError.self) {
+            try await service.restoreSession()
+        }
+        #expect(await sessionCache.currentSession == cachedSession)
+    }
+
+    @Test func restoreSessionClearsCacheWhenPersistedSessionIsMissing() async throws {
+        let sessionCache = FakeAuthSessionCache(
+            session: .test(profileStatus: .complete)
+        )
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: nil,
+            profile: .test(onboardingCompletedAt: Date())
+        )
+        let service = SupabaseAuthService(gateway: gateway, sessionCache: sessionCache)
+
+        let restoredSession = try await service.restoreSession()
+
+        #expect(restoredSession == nil)
+        #expect(await sessionCache.currentSession == nil)
+    }
+
+    @Test func userDefaultsSessionCacheRoundTripsAndClearsVerifiedProfileState() async {
+        let suiteName = "SupabaseAuthServiceTests.\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            Issue.record("Could not create isolated UserDefaults suite")
+            return
+        }
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let cache = UserDefaultsAuthSessionCache(defaults: defaults)
+        let session = AuthSession.test(profileStatus: .complete)
+
+        await cache.save(session)
+
+        #expect(await cache.load(userID: session.id) == session)
+        #expect(await cache.load(userID: "another-user") == nil)
+
+        await cache.clear()
+        #expect(await cache.load(userID: session.id) == nil)
+    }
+
     @Test func appleSignInPassesTokenAndNonceToGateway() async throws {
         let gateway = FakeSupabaseAuthGateway(
             remoteSession: .test(provider: .unknown, displayName: nil),
@@ -552,6 +666,7 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
     private(set) var accountDeletionAppleCode: String?
     private(set) var signOutCallCount = 0
     private let uploadShouldFail: Bool
+    private let loadProfileError: (any Error)?
     private let completeProfileShouldFail: Bool
     private let updateProfileShouldFail: Bool
     private let markMediaForDeletionShouldFail: Bool
@@ -562,6 +677,7 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
         profile: SupabaseProfile,
         profilePhotoAssetID: UUID? = nil,
         uploadShouldFail: Bool = false,
+        loadProfileError: (any Error)? = nil,
         completeProfileShouldFail: Bool = false,
         updateProfileShouldFail: Bool = false,
         markMediaForDeletionShouldFail: Bool = false,
@@ -573,6 +689,7 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
             ?? UUID(uuidString: "A6B39D76-11D0-4A4D-8B77-5AF09A9E85E1")
             ?? UUID()
         self.uploadShouldFail = uploadShouldFail
+        self.loadProfileError = loadProfileError
         self.completeProfileShouldFail = completeProfileShouldFail
         self.updateProfileShouldFail = updateProfileShouldFail
         self.markMediaForDeletionShouldFail = markMediaForDeletionShouldFail
@@ -600,6 +717,9 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
     }
 
     func loadProfile(userID: String) async throws -> SupabaseProfile {
+        if let loadProfileError {
+            throw loadProfileError
+        }
         profile
     }
 
@@ -742,6 +862,29 @@ private actor FakeProfilePhotoImageCache: ProfilePhotoImageCaching {
     func removeAllProfilePhotoData() async throws {
         removeAllCallCount += 1
         storedData.removeAll()
+    }
+}
+
+private actor FakeAuthSessionCache: AuthSessionCaching {
+    private(set) var currentSession: AuthSession?
+
+    init(session: AuthSession? = nil) {
+        currentSession = session
+    }
+
+    func load(userID: String) -> AuthSession? {
+        guard currentSession?.id == userID else {
+            return nil
+        }
+        return currentSession
+    }
+
+    func save(_ session: AuthSession) {
+        currentSession = session
+    }
+
+    func clear() {
+        currentSession = nil
     }
 }
 

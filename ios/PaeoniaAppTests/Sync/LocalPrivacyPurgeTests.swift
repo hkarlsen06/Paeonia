@@ -87,23 +87,138 @@ struct LocalPrivacyPurgeTests {
         )
     }
 
-    @Test func privateFilesStillPurgeWhenRecordDeletionFailsAndRetryIsIdempotent() async {
+    @Test func recordDeletionFailureIsDurableAndPrivateFilesStillPurge() async throws {
         let ownerUserID = UUID()
         let filePurger = RecordingPrivateContentPurger()
+        let recordStore = ScriptedLocalPrivacyRecordStore(failuresBeforeSuccess: 1)
+        let retryStore = InMemoryLocalPrivacyPurgeRetryStore()
         let purger = LocalPrivacyPurgeService(
-            recordStore: FailingLocalPrivacyRecordStore(),
-            privateContentPurger: filePurger
+            recordStore: recordStore,
+            privateContentPurger: filePurger,
+            retryStore: retryStore,
+            automaticallyRetry: false
         )
 
-        await purger.purge(ownerUserID: ownerUserID, scope: .departingUser)
-        await purger.purge(ownerUserID: ownerUserID, scope: .departingUser)
+        let firstResult = await purger.purge(
+            ownerUserID: ownerUserID,
+            scope: .departingUser
+        )
+
+        #expect(firstResult == .recordsPendingRetry)
+        #expect(
+            try await retryStore.request(for: ownerUserID)
+                == LocalPrivacyPurgeRequest(ownerUserID: ownerUserID, scope: .departingUser)
+        )
 
         #expect(
             await filePurger.calls == [
-                PrivacyFilePurgeCall(ownerUserID: ownerUserID, scope: .departingUser),
                 PrivacyFilePurgeCall(ownerUserID: ownerUserID, scope: .departingUser)
             ]
         )
+
+        let retryResult = await purger.retryPendingPurges()
+
+        #expect(retryResult == .completed)
+        #expect(try await retryStore.request(for: ownerUserID) == nil)
+        #expect(await recordStore.calls == [.departingUser, .departingUser])
+        // Record retries must not repeat already-completed file/App Group cleanup.
+        #expect(await filePurger.calls.count == 1)
+    }
+
+    @Test func pendingBroaderPurgeCannotBeReplacedByLaterNarrowerScope() async throws {
+        let ownerUserID = UUID()
+        let recordStore = ScriptedLocalPrivacyRecordStore(failuresBeforeSuccess: 2)
+        let retryStore = InMemoryLocalPrivacyPurgeRetryStore()
+        let purger = LocalPrivacyPurgeService(
+            recordStore: recordStore,
+            privateContentPurger: RecordingPrivateContentPurger(),
+            retryStore: retryStore,
+            automaticallyRetry: false
+        )
+
+        #expect(
+            await purger.purge(ownerUserID: ownerUserID, scope: .departingUser)
+                == .recordsPendingRetry
+        )
+        #expect(
+            await purger.purge(ownerUserID: ownerUserID, scope: .relationshipAccessHidden)
+                == .recordsPendingRetry
+        )
+
+        #expect(await purger.retryPendingPurges() == .completed)
+
+        #expect(try await retryStore.request(for: ownerUserID) == nil)
+        #expect(
+            await recordStore.calls == [
+                .departingUser,
+                .departingUser,
+                .departingUser
+            ]
+        )
+    }
+
+    @Test func permanentPurgeMergesAccessSnapshotRequirement() async throws {
+        let ownerUserID = UUID()
+        let retryStore = InMemoryLocalPrivacyPurgeRetryStore()
+
+        try await retryStore.enqueue(
+            LocalPrivacyPurgeRequest(
+                ownerUserID: ownerUserID,
+                scope: .relationshipContentPurged(clearAccessSnapshot: false)
+            )
+        )
+        try await retryStore.enqueue(
+            LocalPrivacyPurgeRequest(
+                ownerUserID: ownerUserID,
+                scope: .relationshipContentPurged(clearAccessSnapshot: true)
+            )
+        )
+
+        #expect(
+            try await retryStore.request(for: ownerUserID)
+                == LocalPrivacyPurgeRequest(
+                    ownerUserID: ownerUserID,
+                    scope: .relationshipContentPurged(clearAccessSnapshot: true)
+                )
+        )
+    }
+
+    @Test func userDefaultsRetryLedgerSurvivesStoreRecreation() async throws {
+        let suiteName = "LocalPrivacyPurgeTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let ownerUserID = UUID()
+        let request = LocalPrivacyPurgeRequest(
+            ownerUserID: ownerUserID,
+            scope: .relationshipContentPurged(clearAccessSnapshot: true)
+        )
+
+        let firstStore = UserDefaultsLocalPrivacyPurgeRetryStore(defaults: defaults)
+        try await firstStore.enqueue(request)
+
+        let recreatedStore = UserDefaultsLocalPrivacyPurgeRetryStore(defaults: defaults)
+        #expect(try await recreatedStore.request(for: ownerUserID) == request)
+
+        try await recreatedStore.remove(request)
+        #expect(try await recreatedStore.pendingRequests().isEmpty)
+    }
+
+    @Test func inMemoryRetrySurvivesLedgerWriteFailureForCurrentLaunch() async {
+        let ownerUserID = UUID()
+        let recordStore = ScriptedLocalPrivacyRecordStore(failuresBeforeSuccess: 1)
+        let purger = LocalPrivacyPurgeService(
+            recordStore: recordStore,
+            privateContentPurger: RecordingPrivateContentPurger(),
+            retryStore: FailingLocalPrivacyPurgeRetryStore(),
+            automaticallyRetry: false
+        )
+
+        #expect(
+            await purger.purge(ownerUserID: ownerUserID, scope: .departingUser)
+                == .recordsFailedWithoutDurableRetry
+        )
+        #expect(await purger.retryPendingPurges() == .recordsPendingRetry)
+        #expect(await recordStore.calls == [.departingUser, .departingUser])
     }
 
     private func seedAllRecords(ownerUserID: UUID, in context: ModelContext) throws {
@@ -285,19 +400,80 @@ private enum LocalPrivacyTestError: Error {
     case simulatedFailure
 }
 
-private actor FailingLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
+private actor ScriptedLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
+    private(set) var calls: [LocalPrivacyPurgeScope] = []
+    private var failuresRemaining: Int
+
+    init(failuresBeforeSuccess: Int) {
+        failuresRemaining = failuresBeforeSuccess
+    }
+
     func purgeDepartingUser(ownerUserID _: UUID) throws {
-        throw LocalPrivacyTestError.simulatedFailure
+        try record(.departingUser)
     }
 
     func hideRelationshipAccess(ownerUserID _: UUID) throws {
-        throw LocalPrivacyTestError.simulatedFailure
+        try record(.relationshipAccessHidden)
     }
 
     func purgeRelationshipContent(
         ownerUserID _: UUID,
-        clearAccessSnapshot _: Bool
+        clearAccessSnapshot: Bool
     ) throws {
+        try record(.relationshipContentPurged(clearAccessSnapshot: clearAccessSnapshot))
+    }
+
+    private func record(_ scope: LocalPrivacyPurgeScope) throws {
+        calls.append(scope)
+        guard failuresRemaining > 0 else {
+            return
+        }
+        failuresRemaining -= 1
+        throw LocalPrivacyTestError.simulatedFailure
+    }
+}
+
+private actor InMemoryLocalPrivacyPurgeRetryStore: LocalPrivacyPurgeRetryStoring {
+    private var requests: [UUID: LocalPrivacyPurgeRequest] = [:]
+
+    func enqueue(_ request: LocalPrivacyPurgeRequest) {
+        if let existing = requests[request.ownerUserID] {
+            requests[request.ownerUserID] = existing.merging(request)
+        } else {
+            requests[request.ownerUserID] = request
+        }
+    }
+
+    func pendingRequests() -> [LocalPrivacyPurgeRequest] {
+        Array(requests.values)
+    }
+
+    func request(for ownerUserID: UUID) -> LocalPrivacyPurgeRequest? {
+        requests[ownerUserID]
+    }
+
+    func remove(_ completedRequest: LocalPrivacyPurgeRequest) {
+        guard requests[completedRequest.ownerUserID] == completedRequest else {
+            return
+        }
+        requests.removeValue(forKey: completedRequest.ownerUserID)
+    }
+}
+
+private actor FailingLocalPrivacyPurgeRetryStore: LocalPrivacyPurgeRetryStoring {
+    func enqueue(_ request: LocalPrivacyPurgeRequest) throws {
+        throw LocalPrivacyTestError.simulatedFailure
+    }
+
+    func pendingRequests() throws -> [LocalPrivacyPurgeRequest] {
+        throw LocalPrivacyTestError.simulatedFailure
+    }
+
+    func request(for ownerUserID: UUID) throws -> LocalPrivacyPurgeRequest? {
+        throw LocalPrivacyTestError.simulatedFailure
+    }
+
+    func remove(_ completedRequest: LocalPrivacyPurgeRequest) throws {
         throw LocalPrivacyTestError.simulatedFailure
     }
 }
