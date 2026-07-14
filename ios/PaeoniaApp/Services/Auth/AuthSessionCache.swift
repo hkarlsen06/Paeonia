@@ -59,39 +59,25 @@ actor UserDefaultsAuthSessionCache: AuthSessionCaching {
 
     private struct StoredSession: Codable {
         let id: String
-        let provider: String
+        let provider: AuthProvider
         let displayName: String?
         let timeZoneID: String?
         let customProfilePhotoAssetID: UUID?
         let providerProfilePhotoAssetID: UUID?
-        let profileStatus: String
+        let profileStatus: AuthProfileStatus
 
         init(_ session: AuthSession) {
             id = session.id
-            provider = switch session.provider {
-            case .apple: "apple"
-            case .google: "google"
-            case .development: "development"
-            case .unknown: "unknown"
-            }
+            provider = session.provider
             displayName = session.displayName
             timeZoneID = session.timeZoneID
             customProfilePhotoAssetID = session.customProfilePhotoAssetID
             providerProfilePhotoAssetID = session.providerProfilePhotoAssetID
-            profileStatus = switch session.profileStatus {
-            case .needsOnboarding: "needsOnboarding"
-            case .complete: "complete"
-            }
+            profileStatus = session.profileStatus
         }
 
-        var session: AuthSession? {
-            guard let provider = AuthProvider(storedValue: provider),
-                  let profileStatus = AuthProfileStatus(storedValue: profileStatus)
-            else {
-                return nil
-            }
-
-            return AuthSession(
+        var session: AuthSession {
+            AuthSession(
                 id: id,
                 provider: provider,
                 displayName: displayName,
@@ -136,27 +122,5 @@ actor UserDefaultsAuthSessionCache: AuthSessionCaching {
 
     func clear() {
         defaults.removeObject(forKey: key)
-    }
-}
-
-private extension AuthProvider {
-    nonisolated init?(storedValue: String) {
-        switch storedValue {
-        case "apple": self = .apple
-        case "google": self = .google
-        case "development": self = .development
-        case "unknown": self = .unknown
-        default: return nil
-        }
-    }
-}
-
-private extension AuthProfileStatus {
-    nonisolated init?(storedValue: String) {
-        switch storedValue {
-        case "needsOnboarding": self = .needsOnboarding
-        case "complete": self = .complete
-        default: return nil
-        }
     }
 }

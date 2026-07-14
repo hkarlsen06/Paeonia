@@ -21,4 +21,23 @@ final class PaeoniaAppUITests: XCTestCase {
             XCUIApplication().launch()
         }
     }
+
+    @MainActor
+    func testReviewQABootstrap() throws {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let openButton = springboard.buttons["Åpne"]
+        if openButton.waitForExistence(timeout: 5) {
+            openButton.tap()
+        }
+
+        let app = XCUIApplication()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        sleep(3)
+        print("QA_APP_TREE_BEGIN\n\(app.debugDescription)\nQA_APP_TREE_END")
+
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Review QA bootstrap"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
 }

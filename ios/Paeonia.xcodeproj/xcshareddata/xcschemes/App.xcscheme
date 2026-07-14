@@ -52,16 +52,6 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "2A2D036D2FDD055E00A7BE1A"
-               BuildableName = "PaeoniaAppTests.xctest"
-               ReferencedContainer = "container:Paeonia.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
                BlueprintIdentifier = "2A2D037A2FDD058B00A7BE1A"
                BuildableName = "PaeoniaAppUITests.xctest"
                ReferencedContainer = "container:Paeonia.xcodeproj">

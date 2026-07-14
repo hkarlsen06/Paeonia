@@ -844,7 +844,8 @@ final class RootViewModel {
         // newer `.paired` result. This prevents a stale ended/paywalled result
         // from continuing to clear caches after the new route becomes visible.
         if let pendingPurge = inFlightAccessPrivacyPurge {
-            _ = await pendingPurge.task.value
+            let purgeResult = await pendingPurge.task.value
+            privacyLifecycle.record(purgeResult)
         }
 
         guard generation == accessResolutionGeneration else {

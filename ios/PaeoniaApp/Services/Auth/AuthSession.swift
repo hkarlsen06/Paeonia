@@ -53,14 +53,14 @@ nonisolated struct AuthSession: Equatable, Identifiable, Sendable {
     }
 }
 
-nonisolated enum AuthProvider: Equatable, Sendable {
+nonisolated enum AuthProvider: String, Codable, Equatable, Sendable {
     case apple
     case google
     case development
     case unknown
 }
 
-nonisolated enum AuthProfileStatus: Equatable, Sendable {
+nonisolated enum AuthProfileStatus: String, Codable, Equatable, Sendable {
     case needsOnboarding
     case complete
 }
