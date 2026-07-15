@@ -10,6 +10,7 @@ import SwiftUI
 /// code up so they join instead of paying.
 struct WelcomeView: View {
     let isWorking: Bool
+    let pendingInviteCode: String?
     let onAppleSignIn: () -> Void
     let onGoogleSignIn: () -> Void
     let onSubmitInviteCode: (String) -> Void
@@ -35,6 +36,7 @@ struct WelcomeView: View {
             case .signIn:
                 SignInView(
                     isWorking: isWorking,
+                    pendingInviteCode: pendingInviteCode,
                     onAppleSignIn: onAppleSignIn,
                     onGoogleSignIn: onGoogleSignIn,
                     onHaveInviteCode: presentInviteSheet
@@ -49,6 +51,18 @@ struct WelcomeView: View {
                 onSubmitInviteCode(code)
                 goToSignIn()
             }
+        }
+        // A code can arrive from the entry sheet, a Universal Link, or a previous
+        // launch. In every case, resume at sign-in instead of making the joining
+        // partner repeat the value carousel.
+        .onChange(of: pendingInviteCode, initial: true) { _, code in
+            guard let code,
+                  (try? PairingInviteCode.normalized(code)) != nil
+            else {
+                return
+            }
+
+            goToSignIn()
         }
     }
 
@@ -214,6 +228,7 @@ private struct WelcomeHeroPage: View {
 #Preview {
     WelcomeView(
         isWorking: false,
+        pendingInviteCode: nil,
         onAppleSignIn: {},
         onGoogleSignIn: {},
         onSubmitInviteCode: { _ in }

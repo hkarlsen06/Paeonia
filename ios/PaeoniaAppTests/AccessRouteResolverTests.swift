@@ -47,6 +47,63 @@ struct AccessRouteResolverTests {
         #expect(route.allowsInviteAcceptance)
     }
 
+    @Test func capturedIncomingInviteOverridesEntitledUnpairedDestination() {
+        let resolver = PendingJoinInviteFlowResolver()
+
+        #expect(
+            resolver.shouldPresentInviteAcceptance(
+                for: .unpaired,
+                pendingInviteCode: "01ABCD"
+            )
+        )
+        #expect(
+            resolver.shouldPresentInviteAcceptance(
+                for: .invitePending,
+                pendingInviteCode: "01ABCD"
+            )
+        )
+    }
+
+    @Test func capturedIncomingInviteWaitsThroughAuthAndProfileSetup() {
+        let resolver = PendingJoinInviteFlowResolver()
+
+        #expect(
+            !resolver.shouldPresentInviteAcceptance(
+                for: .unauthenticated,
+                pendingInviteCode: "01ABCD"
+            )
+        )
+        #expect(
+            !resolver.shouldPresentInviteAcceptance(
+                for: .onboarding,
+                pendingInviteCode: "01ABCD"
+            )
+        )
+        #expect(
+            resolver.shouldPresentInviteAcceptance(
+                for: .limitedAuthenticated,
+                pendingInviteCode: "01ABCD"
+            )
+        )
+    }
+
+    @Test func malformedOrCompletedIncomingInviteDoesNotOverrideRouting() {
+        let resolver = PendingJoinInviteFlowResolver()
+
+        #expect(
+            !resolver.shouldPresentInviteAcceptance(
+                for: .unpaired,
+                pendingInviteCode: "short"
+            )
+        )
+        #expect(
+            !resolver.shouldPresentInviteAcceptance(
+                for: .paired,
+                pendingInviteCode: "01ABCD"
+            )
+        )
+    }
+
     @Test func activeRelationshipWithCoupleEntitlementRoutesToPaired() {
         let route = resolver.route(
             for: .test(

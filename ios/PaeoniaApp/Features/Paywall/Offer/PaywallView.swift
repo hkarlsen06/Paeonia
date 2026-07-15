@@ -63,10 +63,10 @@ struct PaywallView: View {
         .task(id: viewModel.isPresentationReady) {
             await presentPaywallContentIfReady()
         }
-        .task(id: pendingInviteCode) {
-            await presentPendingInviteIfAvailable()
-        }
-        .task(id: allowsInviteEntry) {
+        .task(id: PendingInvitePresentationID(
+            code: pendingInviteCode, allowsInviteEntry: allowsInviteEntry,
+            isPresentationReady: viewModel.isPresentationReady
+        )) {
             await presentPendingInviteIfAvailable()
         }
         .onChange(of: viewModel.error) { _, error in
@@ -101,7 +101,7 @@ struct PaywallView: View {
             Text(.pairingUnpairConfirmMessage(audience.partnerNameForCopy))
         }
         .alert(
-            Text(inviteConfirmationTitle),
+            Text(PaywallInviteConfirmation.title(for: viewModel.invitePreview)),
             isPresented: $isConfirmingInvite
         ) {
             Button(action: redeemPreviewedInvite) {
@@ -112,7 +112,7 @@ struct PaywallView: View {
                 Text(.paywallInviteConfirmCancel)
             }
         } message: {
-            Text(inviteConfirmationMessage)
+            Text(PaywallInviteConfirmation.message(for: viewModel.invitePreview))
         }
     }
 
@@ -157,23 +157,15 @@ struct PaywallView: View {
     // MARK: - Invite Overlay
 
     private var inviteOverlay: some View {
-        ZStack {
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .overlay(Color.black.opacity(0.3))
-                .ignoresSafeArea()
-                .onTapGesture { dismissInviteOverlay() }
-                .accessibilityLabel(Text(.paywallInviteDismiss))
-                .accessibilityAddTraits(.isButton)
-
-            PaywallInviteCodeView(
-                code: $inviteCode,
-                focus: $inviteFieldFocused,
-                isSubmitting: viewModel.isPreviewingInvite || viewModel.isAcceptingInvite,
-                onSubmit: submitInvite
-            )
-            .padding(.horizontal, PaeoniaSpacing.space20)
-        }
+        PaywallInviteOverlay(
+            code: $inviteCode,
+            focus: $inviteFieldFocused,
+            isSubmitting: viewModel.isPreviewingInvite || viewModel.isAcceptingInvite,
+            hasPendingInvite: pendingInviteCode != nil,
+            onSubmit: submitInvite,
+            onDismiss: dismissInviteOverlay,
+            onContinueWithoutInvite: continueWithoutPendingInvite
+        )
         .task { await focusInviteFieldAfterPresentation() }
     }
 
@@ -223,21 +215,38 @@ struct PaywallView: View {
 
     @MainActor
     private func presentPendingInviteIfAvailable() async {
-        guard allowsInviteEntry,
+        guard viewModel.isPresentationReady,
+              allowsInviteEntry,
               let pendingCode = pendingInviteCode,
               let normalizedCode = try? PairingInviteCode.normalized(pendingCode)
         else {
             return
         }
 
+        // A manual submission updates the durable binding after it starts. Do not
+        // interpret that persistence update as a second request to preview the same
+        // code while its overlay is already visible.
+        guard !showInviteOverlay || inviteCode != normalizedCode else {
+            return
+        }
+
         inviteCode = normalizedCode
-        self.pendingInviteCode = nil
 
         withAnimation(.easeInOut(duration: 0.25)) {
             showInviteOverlay = true
         }
 
         await focusInviteFieldAfterPresentation()
+
+        guard await viewModel.previewInvite(codeInput: normalizedCode) != nil,
+              showInviteOverlay
+        else {
+            inviteFieldFocused = true
+            return
+        }
+
+        inviteFieldFocused = false
+        isConfirmingInvite = true
     }
 
     private func heroHeight(for geometry: GeometryProxy) -> CGFloat {
@@ -276,7 +285,10 @@ struct PaywallView: View {
         }
 
         Task {
-            guard await viewModel.previewInvite(codeInput: codeInput) != nil else {
+            let preview = await viewModel.previewInvite(codeInput: codeInput)
+            pendingInviteCode = codeInput
+
+            guard preview != nil else {
                 inviteFieldFocused = true
                 return
             }
@@ -301,6 +313,7 @@ struct PaywallView: View {
             if didAccept {
                 viewModel.clearError()
                 bannerCenter.dismiss()
+                pendingInviteCode = nil
                 dismissInviteOverlay()
                 onInviteAccepted()
             } else {
@@ -339,20 +352,10 @@ struct PaywallView: View {
         inviteFieldFocused = true
     }
 
-    private var inviteConfirmationTitle: LocalizedStringResource {
-        guard let inviterName = viewModel.invitePreview?.inviterDisplayName?.trimmedNonEmpty else {
-            return .paywallInviteConfirmTitleFallback
-        }
-
-        return .paywallInviteConfirmTitle(inviterName)
-    }
-
-    private var inviteConfirmationMessage: LocalizedStringResource {
-        if viewModel.invitePreview?.hasSafetyWarning == true {
-            return .paywallInviteConfirmSafetyMessage
-        }
-
-        return .paywallInviteConfirmMessage
+    private func continueWithoutPendingInvite() {
+        pendingInviteCode = nil
+        inviteCode = ""
+        dismissInviteOverlay()
     }
 
     private var footerActions: some View {

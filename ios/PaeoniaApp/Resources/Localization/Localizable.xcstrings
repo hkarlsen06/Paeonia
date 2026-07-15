@@ -5718,6 +5718,24 @@
         }
       }
     },
+    "paywall.invite.continueWithout" : {
+      "comment" : "Quiet action that discards a saved incoming partner invite and continues with the user's ordinary account flow.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue without this invite"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett uten denne invitasjonen"
+          }
+        }
+      }
+    },
     "paywall.invite.cta.caption" : {
       "comment" : "Small caption under the join button reassuring there is no charge to join.",
       "extractionState" : "manual",
@@ -9489,6 +9507,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fortsett"
+          }
+        }
+      }
+    },
+    "welcome.inviteCode.change" : {
+      "comment" : "Welcome sign-in action for replacing a previously saved partner invite code.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bytt kode"
+          }
+        }
+      }
+    },
+    "welcome.inviteCode.saved.message" : {
+      "comment" : "Welcome sign-in reassurance shown after a partner invite code has been saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to see who invited you and choose whether to join."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logg inn for å se hvem som inviterte deg, og velg om du vil bli med."
+          }
+        }
+      }
+    },
+    "welcome.inviteCode.saved.title" : {
+      "comment" : "Welcome sign-in status confirming that the partner invite code will continue through authentication.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite code saved"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invitasjonskoden er lagret"
           }
         }
       }

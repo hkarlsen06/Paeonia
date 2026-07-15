@@ -69,9 +69,9 @@ Production behavior: localized marketing pages.
 
 Purpose: fallback page for invite links.
 
-Current pre-launch behavior: tell the user to reopen the invite on an iPhone with Paeonia installed. If the app is not installed, direct them back to their partner for the current invite instructions.
+Current pre-launch behavior: preserve the invite code, offer an explicit `paeonia://join/<code>` button when Safari keeps the Universal Link in the browser, and tell private-beta users to install from their beta invitation before reopening the link.
 
-Production behavior: if the app is installed, iOS should open Paeonia through Universal Links. If the app is not installed, the page should explain how to get the app.
+Production behavior: if the app is installed, iOS should open Paeonia through Universal Links. If the app is not installed, the fallback page offers the canonical App Store listing at `https://apps.apple.com/us/app/paeonia/id6779833892` alongside the retained invite code. `NEXT_PUBLIC_PAEONIA_APP_STORE_URL` may override that destination for a specific marketing build.
 
 Do not reveal invite details on the public web page. Invite preview and acceptance belong inside the app/backend flow.
 

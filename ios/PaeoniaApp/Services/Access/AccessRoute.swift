@@ -116,3 +116,35 @@ nonisolated struct AccessRouteResolver: Sendable {
         return .limitedAuthenticated
     }
 }
+
+/// Decides when a captured incoming invite should take precedence over the
+/// ordinary post-auth destination. An entitled, unpaired user would normally be
+/// sent to invite creation, but someone who already entered a partner's code must
+/// instead finish that join flow first.
+nonisolated struct PendingJoinInviteFlowResolver: Sendable {
+    func shouldPresentInviteAcceptance(
+        for state: AppState,
+        pendingInviteCode: String?
+    ) -> Bool {
+        guard let pendingInviteCode,
+              (try? PairingInviteCode.normalized(pendingInviteCode)) != nil
+        else {
+            return false
+        }
+
+        switch state {
+        case .limitedAuthenticated, .unpaired, .invitePending:
+            true
+        case .launching,
+             .unauthenticated,
+             .onboarding,
+             .paired,
+             .pairedPaywalled,
+             .entitlementLost,
+             .entitlementRestored,
+             .relationshipEndedNotice,
+             .deletingAccount:
+            false
+        }
+    }
+}

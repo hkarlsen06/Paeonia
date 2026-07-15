@@ -246,6 +246,18 @@ struct RootView: View {
 
     @ViewBuilder
     private var routedRootContent: some View {
+        if PendingJoinInviteFlowResolver().shouldPresentInviteAcceptance(
+            for: viewModel.state,
+            pendingInviteCode: pendingJoinInviteCode
+        ) {
+            paywallScreen
+        } else {
+            routedContentForCurrentState
+        }
+    }
+
+    @ViewBuilder
+    private var routedContentForCurrentState: some View {
         switch viewModel.state {
         case .launching:
             Color.paeoniaBackgroundPrimary
@@ -270,6 +282,7 @@ struct RootView: View {
     private var welcomeScreen: some View {
         WelcomeView(
             isWorking: viewModel.isWorking,
+            pendingInviteCode: pendingJoinInviteCode,
             onAppleSignIn: signInWithApple,
             onGoogleSignIn: signInWithGoogle,
             onSubmitInviteCode: captureInviteCode

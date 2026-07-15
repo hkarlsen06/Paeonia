@@ -53,16 +53,27 @@ struct PairingInviteCodeTests {
         #expect(PairingJoinURL.inviteCode(from: url) == canonicalCode)
     }
 
+    @Test func appJoinURLSupportsManualOpenFromWebFallback() throws {
+        let url = try PairingJoinURL.makeAppURL(inviteCode: canonicalCode.lowercased())
+
+        #expect(url.absoluteString == "paeonia://join/\(canonicalCode)")
+        #expect(PairingJoinURL.inviteCode(from: url) == canonicalCode)
+    }
+
     @Test func joinURLParserRejectsNonJoinLinks() throws {
         let wrongHost = try #require(URL(string: "https://example.com/join/01-ab-cd"))
         let wrongScheme = try #require(URL(string: "http://paeonia.no/join/01-ab-cd"))
         let wrongPath = try #require(URL(string: "https://paeonia.no/invite/01-ab-cd"))
         let extraPath = try #require(URL(string: "https://paeonia.no/join/01-ab-cd/extra"))
+        let wrongAppHost = try #require(URL(string: "paeonia://invite/01-ab-cd"))
+        let extraAppPath = try #require(URL(string: "paeonia://join/01-ab-cd/extra"))
 
         #expect(PairingJoinURL.inviteCode(from: wrongHost) == nil)
         #expect(PairingJoinURL.inviteCode(from: wrongScheme) == nil)
         #expect(PairingJoinURL.inviteCode(from: wrongPath) == nil)
         #expect(PairingJoinURL.inviteCode(from: extraPath) == nil)
+        #expect(PairingJoinURL.inviteCode(from: wrongAppHost) == nil)
+        #expect(PairingJoinURL.inviteCode(from: extraAppPath) == nil)
     }
 
     @Test func pendingJoinInviteStorePersistsNormalizedCode() throws {

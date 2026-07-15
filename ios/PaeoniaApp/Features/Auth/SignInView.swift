@@ -5,10 +5,11 @@ import SwiftUI
 /// Paeonia brand and offers the supported ways to get in: Apple and Google.
 struct SignInView: View {
     let isWorking: Bool
+    var pendingInviteCode: String?
     let onAppleSignIn: () -> Void
     let onGoogleSignIn: () -> Void
-    /// Optional path for a partner who already has an invite code. When set, a quiet
-    /// "Have an invite code?" action appears under the sign-in buttons.
+    /// Optional path for entering or replacing a partner invite. A captured code
+    /// gets an explicit saved state so the user knows it will survive sign-in.
     var onHaveInviteCode: (() -> Void)?
 
     private let contentMaxWidth: CGFloat = 430
@@ -41,7 +42,7 @@ struct SignInView: View {
                             actions
 
                             if let onHaveInviteCode {
-                                inviteCodeButton(onHaveInviteCode)
+                                inviteCodeContent(onHaveInviteCode)
                             }
                         }
 
@@ -178,14 +179,43 @@ struct SignInView: View {
         .disabled(isWorking)
     }
 
-    private func inviteCodeButton(_ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(.welcomeHaveInviteCode)
-                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-                .contentShape(Rectangle())
+    @ViewBuilder
+    private func inviteCodeContent(_ action: @escaping () -> Void) -> some View {
+        if pendingInviteCode != nil {
+            VStack(spacing: PaeoniaSpacing.space8) {
+                Label {
+                    Text(.welcomeInviteCodeSavedTitle)
+                } icon: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.paeoniaAccentPrimary)
+                        .accessibilityHidden(true)
+                }
+                .font(PaeoniaTypography.bodyEmphasis)
+                .foregroundStyle(.paeoniaTextPrimary)
+
+                Text(.welcomeInviteCodeSavedMessage)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button(action: action) {
+                    Text(.welcomeInviteCodeChange)
+                        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .disabled(isWorking)
+            }
+        } else {
+            Button(action: action) {
+                Text(.welcomeHaveInviteCode)
+                    .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(PaeoniaQuietButtonStyle())
+            .disabled(isWorking)
         }
-        .buttonStyle(PaeoniaQuietButtonStyle())
-        .disabled(isWorking)
     }
 
     // MARK: - Footer
@@ -272,6 +302,7 @@ private struct SafariView: UIViewControllerRepresentable {
 #Preview("Sign in") {
     SignInView(
         isWorking: false,
+        pendingInviteCode: nil,
         onAppleSignIn: {},
         onGoogleSignIn: {}
     )

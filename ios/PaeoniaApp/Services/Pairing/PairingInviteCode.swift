@@ -100,12 +100,13 @@ nonisolated enum PairingJoinURL {
     static let host = "paeonia.no"
     static let joinPathComponent = "join"
 
-    private static let scheme = "https"
+    private static let webScheme = "https"
+    private static let appScheme = "paeonia"
 
     static func make(inviteCode rawInviteCode: String) throws -> URL {
         let inviteCode = try PairingInviteCode.normalized(rawInviteCode)
         var components = URLComponents()
-        components.scheme = scheme
+        components.scheme = webScheme
         components.host = host
         components.path = "/\(joinPathComponent)/\(inviteCode)"
 
@@ -116,20 +117,41 @@ nonisolated enum PairingJoinURL {
         return url
     }
 
+    /// Manual recovery URL used by the web fallback when Safari keeps a
+    /// same-domain Universal Link in the browser. Shared invites still use the
+    /// canonical HTTPS URL; this scheme is only an explicit "Open Paeonia" action.
+    static func makeAppURL(inviteCode rawInviteCode: String) throws -> URL {
+        let inviteCode = try PairingInviteCode.normalized(rawInviteCode)
+        var components = URLComponents()
+        components.scheme = appScheme
+        components.host = joinPathComponent
+        components.path = "/\(inviteCode)"
+
+        guard let url = components.url else {
+            throw PairingInviteCodeError.invalidJoinURL
+        }
+
+        return url
+    }
+
     static func inviteCode(from url: URL) -> String? {
-        guard url.scheme?.lowercased() == scheme,
-              url.host()?.lowercased() == host
-        else {
-            return nil
-        }
-
+        let scheme = url.scheme?.lowercased()
+        let urlHost = url.host()?.lowercased()
         let components = url.pathComponents.filter { $0 != "/" }
-        guard components.count == 2,
-              components[0] == joinPathComponent
-        else {
-            return nil
+
+        if scheme == webScheme,
+           urlHost == host,
+           components.count == 2,
+           components[0] == joinPathComponent {
+            return try? PairingInviteCode.normalized(components[1])
         }
 
-        return try? PairingInviteCode.normalized(components[1])
+        if scheme == appScheme,
+           urlHost == joinPathComponent,
+           components.count == 1 {
+            return try? PairingInviteCode.normalized(components[0])
+        }
+
+        return nil
     }
 }

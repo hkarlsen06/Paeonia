@@ -11,6 +11,7 @@ struct PaywallInviteCodeView: View {
     var focus: FocusState<Bool>.Binding
     let isSubmitting: Bool
     let onSubmit: () -> Void
+    var onContinueWithoutInvite: (() -> Void)?
 
     @ScaledMetric(relativeTo: .title2) private var codeCellHeight: CGFloat = 56
 
@@ -104,6 +105,16 @@ struct PaywallInviteCodeView: View {
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextTertiary)
                 .frame(maxWidth: .infinity, alignment: .center)
+
+            if let onContinueWithoutInvite {
+                Button(action: onContinueWithoutInvite) {
+                    Text(.paywallInviteContinueWithout)
+                        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .disabled(isSubmitting)
+            }
         }
     }
 
@@ -160,7 +171,13 @@ private struct PaywallInviteCodeViewPreview: View {
     @State private var code = ""
 
     var body: some View {
-        PaywallInviteCodeView(code: $code, focus: $focused, isSubmitting: false, onSubmit: {})
+        PaywallInviteCodeView(
+            code: $code,
+            focus: $focused,
+            isSubmitting: false,
+            onSubmit: {},
+            onContinueWithoutInvite: {}
+        )
             .padding()
             .background(.paeoniaSurfacePrimary)
             .preferredColorScheme(.dark)
