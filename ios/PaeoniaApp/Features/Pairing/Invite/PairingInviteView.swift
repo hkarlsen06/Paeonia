@@ -145,26 +145,19 @@ struct PairingInviteView: View {
         Button {
             checkPairing()
         } label: {
-            Label {
+            HStack(spacing: PaeoniaSpacing.space8) {
+                if isCheckingPairing {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(.paeoniaTextSecondary)
+                        .accessibilityHidden(true)
+                }
+
                 Text(isCheckingPairing ? .pairingInviteCheckingButton : .pairingInviteRefreshButton)
-            } icon: {
-                refreshButtonIcon
             }
         }
         .buttonStyle(PaeoniaSecondaryButtonStyle())
         .disabled(isCheckingPairing || viewModel.isLoading || viewModel.isRevoking)
-    }
-
-    @ViewBuilder
-    private var refreshButtonIcon: some View {
-        if isCheckingPairing {
-            ProgressView()
-                .controlSize(.small)
-                .tint(.paeoniaTextSecondary)
-        } else {
-            Image(systemName: "checkmark.circle.fill")
-                .accessibilityHidden(true)
-        }
     }
 
     private func secondaryActions(for invite: PairingInvite) -> some View {

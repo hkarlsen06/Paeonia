@@ -465,14 +465,9 @@ extension SettingsView {
             Button {
                 isConfirmingDelete = true
             } label: {
-                Label {
-                    Text(.authDeleteAccountButton)
-                } icon: {
-                    Image(systemName: "trash.fill")
-                        .accessibilityHidden(true)
-                }
-                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-                .contentShape(Rectangle())
+                Text(.authDeleteAccountButton)
+                    .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(PaeoniaQuietDestructiveButtonStyle())
             .disabled(viewModel.isLeavingRelationship)

@@ -132,7 +132,7 @@ nonisolated struct PendingJoinInviteFlowResolver: Sendable {
             return false
         }
 
-        switch state {
+        return switch state {
         case .limitedAuthenticated, .unpaired, .invitePending:
             true
         case .launching,

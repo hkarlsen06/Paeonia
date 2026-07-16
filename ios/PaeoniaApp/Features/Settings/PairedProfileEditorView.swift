@@ -181,26 +181,31 @@ extension PairedProfileEditorView {
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12))
             .disabled(isSaving)
 
-            Text(.authOnboardingDisplayNameSingleWordHint)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextTertiary)
+            if showsSingleWordHint {
+                Text(.authOnboardingDisplayNameSingleWordHint)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextTertiary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// The single-word rule is otherwise invisible: a multi-word name just leaves
+    /// Save disabled with no explanation.
+    private var showsSingleWordHint: Bool {
+        displayName.trimmedNonEmpty != nil && validatedDisplayName == nil
+    }
+
     private var saveButton: some View {
         Button(action: save) {
-            Label {
-                Text(isSaving ? .settingsProfileSaving : .settingsProfileSave)
-            } icon: {
+            HStack(spacing: PaeoniaSpacing.space8) {
                 if isSaving {
                     ProgressView()
                         .tint(.paeoniaTextInverse)
                         .accessibilityHidden(true)
-                } else {
-                    Image(systemName: "checkmark.circle.fill")
-                        .accessibilityHidden(true)
                 }
+
+                Text(isSaving ? .settingsProfileSaving : .settingsProfileSave)
             }
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())

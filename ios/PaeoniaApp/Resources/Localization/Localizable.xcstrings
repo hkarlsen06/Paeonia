@@ -805,37 +805,19 @@
       }
     },
     "auth.onboarding.message" : {
-      "comment" : "Message explaining why profile setup is needed.",
+      "comment" : "Supporting line under the onboarding name screen title; covers both the name and optional photo",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose the first name or nickname your partner should see."
+            "value" : "Your partner will see this name and photo."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Velg fornavnet eller kallenavnet partneren din skal se."
-          }
-        }
-      }
-    },
-    "auth.onboarding.prefilledMessage" : {
-      "comment" : "Message shown when profile setup opens with an OAuth-provided display name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check that this is the name you want your partner to see. Use your first name or a nickname."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekk at dette er navnet du vil at partneren din skal se. Bruk fornavnet ditt eller et kallenavn."
+            "value" : "Partneren din ser dette navnet og bildet."
           }
         }
       }
@@ -872,42 +854,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Endre profilbilde"
-          }
-        }
-      }
-    },
-    "auth.onboarding.profilePhoto.message" : {
-      "comment" : "Short helper text for the optional profile photo picker in onboarding.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your partner will see this when you connect."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partneren din ser dette når dere kobles sammen."
-          }
-        }
-      }
-    },
-    "auth.onboarding.profilePhoto.title" : {
-      "comment" : "Title for the optional profile photo picker in onboarding.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add a photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legg til bilde"
           }
         }
       }
@@ -1034,78 +980,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Denne skjermen er ikke tilgjengelig"
-          }
-        }
-      }
-    },
-    "auth.signedIn.message" : {
-      "comment" : "Message shown after sign-in before shared features are ready.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pairing and shared features come next. For now, this account is ready."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neste steg er sammenkobling og delte funksjoner. Foreløpig er kontoen klar."
-          }
-        }
-      }
-    },
-    "auth.signedIn.ready.caption" : {
-      "comment" : "Small caption confirming the account is ready.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Account ready"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kontoen er klar"
-          }
-        }
-      }
-    },
-    "auth.signedIn.testAccount.caption" : {
-      "comment" : "Small caption for a local test account.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Local test account"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lokal testkonto"
-          }
-        }
-      }
-    },
-    "auth.signedIn.title" : {
-      "comment" : "Title shown after the user is signed in.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You're signed in"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du er logget inn"
           }
         }
       }
