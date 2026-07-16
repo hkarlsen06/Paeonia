@@ -16,6 +16,7 @@ This is the first stop when an agent needs to find the current owner of a Paeoni
 - `ios/PaeoniaApp/App/RootViewModel.swift`: launch-adjacent auth/access/pairing state and `PresentationReadinessProviding` readiness.
 - `ios/PaeoniaApp/App/RootPrivacyLifecycle.swift`: cold-launch/foreground draining and bounded recovery for durable local privacy-purge retries; blocks a new paired route and sync startup until an older owner-scoped purge has completed.
 - `ios/PaeoniaApp/App/MainTabView.swift` and `ios/PaeoniaApp/App/MainTab.swift`: tab layout and high-level feature entry points.
+- `ios/PaeoniaApp/App/DeveloperScenarios/` and the shared `Scenarios` Xcode scheme: Debug-only deterministic feature launcher. It bypasses auth, pairing, entitlements, and remote services with fixed identities plus in-memory dependencies. Use `PAEONIA_SCENARIO=<id>` or `-paeonia-scenario <id>` for direct UI-test launches.
 - `ios/PaeoniaApp/App/RootNoticeLocalization.swift`: root-level user-facing notice copy.
 - `ios/PaeoniaAppTests/AccessRouteResolverTests.swift`: access route behavior around launch and relationship access.
 

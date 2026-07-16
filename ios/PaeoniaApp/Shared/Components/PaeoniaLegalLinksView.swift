@@ -7,6 +7,7 @@ struct PaeoniaLegalLinksView: View {
                 Link(destination: termsURL) {
                     footerLabel(.authSignInLegalTerms)
                 }
+                .accessibilityIdentifier("legal.terms")
             }
 
             separator
@@ -15,6 +16,7 @@ struct PaeoniaLegalLinksView: View {
                 Link(destination: privacyURL) {
                     footerLabel(.authSignInLegalPrivacy)
                 }
+                .accessibilityIdentifier("legal.privacy")
             }
         }
         .font(PaeoniaTypography.caption)

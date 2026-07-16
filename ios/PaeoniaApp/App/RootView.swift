@@ -244,16 +244,24 @@ struct RootView: View {
         viewModel.state == .launching
     }
 
-    @ViewBuilder
+    /// The routed surfaces crossfade into each other (sign-in → profile setup →
+    /// paywall) instead of swapping in one frame, so moving through the flow reads
+    /// as one continuous journey. A fade only, so Reduce Motion needs no branch.
     private var routedRootContent: some View {
-        if PendingJoinInviteFlowResolver().shouldPresentInviteAcceptance(
-            for: viewModel.state,
-            pendingInviteCode: pendingJoinInviteCode
-        ) {
-            paywallScreen
-        } else {
-            routedContentForCurrentState
+        ZStack {
+            Group {
+                if PendingJoinInviteFlowResolver().shouldPresentInviteAcceptance(
+                    for: viewModel.state,
+                    pendingInviteCode: pendingJoinInviteCode
+                ) {
+                    paywallScreen
+                } else {
+                    routedContentForCurrentState
+                }
+            }
+            .transition(.opacity)
         }
+        .animation(PaeoniaMotion.meaningfulMoment, value: viewModel.state)
     }
 
     @ViewBuilder
@@ -371,6 +379,7 @@ struct RootView: View {
         NavigationStack {
             VStack(spacing: PaeoniaSpacing.sectionSpacing) {
                 header
+                    .screenEntrance(order: 0)
 
                 AuthOnboardingView(
                     session: viewModel.currentSession,

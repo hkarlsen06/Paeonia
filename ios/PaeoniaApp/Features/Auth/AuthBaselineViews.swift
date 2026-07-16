@@ -32,6 +32,7 @@ struct AuthOnboardingView: View {
     @State private var profilePhotoCropDraft: ProfilePhotoCropDraft?
     @State private var isResettingProfilePhotoPicker = false
     @State private var isConfirmingDelete = false
+    @Environment(\.launchIntroComplete) private var launchIntroComplete
 
     init(
         session: AuthSession?,
@@ -60,6 +61,13 @@ struct AuthOnboardingView: View {
         .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity, alignment: .top)
         .keyboardDismissable()
+        .onAppear {
+            // Arriving here mid-session means sign-in just succeeded; a cold launch
+            // resuming an unfinished profile is not that moment, so stay quiet then.
+            if launchIntroComplete {
+                PaeoniaHaptics.signedIn()
+            }
+        }
         .alert(
             Text(.authDeleteAccountConfirmTitle),
             isPresented: $isConfirmingDelete
@@ -79,6 +87,7 @@ struct AuthOnboardingView: View {
     private var onboardingContent: some View {
         VStack(spacing: PaeoniaSpacing.space20) {
             profilePhotoPicker
+                .screenEntrance(order: 1)
 
             VStack(spacing: PaeoniaSpacing.space8) {
                 Text(.authOnboardingTitle)
@@ -95,6 +104,7 @@ struct AuthOnboardingView: View {
                     // followed by a short orphan.
                     .padding(.horizontal, PaeoniaSpacing.space24)
             }
+            .screenEntrance(order: 2)
 
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
                 displayNameField
@@ -106,6 +116,7 @@ struct AuthOnboardingView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .screenEntrance(order: 3)
         }
         .frame(maxWidth: .infinity)
         .onChange(of: selectedProfilePhotoItem) { _, item in
@@ -127,6 +138,7 @@ struct AuthOnboardingView: View {
             signOutButton
             deleteAccountButton
         }
+        .screenEntrance(order: 4)
     }
 
     private var canCompleteOnboarding: Bool {
@@ -162,6 +174,7 @@ struct AuthOnboardingView: View {
                 return
             }
 
+            PaeoniaHaptics.profileSetupSent()
             onCompleteOnboarding(displayName, selectedProfilePhotoData)
         } label: {
             Text(.authOnboardingCompleteButton)

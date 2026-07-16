@@ -31,6 +31,8 @@ struct SettingsView: View {
     let onDeleteAccount: () -> Void
     let onUpdateProfile: @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool
     let onPurchasesRestored: @MainActor @Sendable () async -> Void
+    private let privacySafetyService: (any PrivacySafetyServicing)?
+    private let privacyOperationProvider: (any SyncClientOperationProviding)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.openURL) private var openURL
 
@@ -46,6 +48,7 @@ struct SettingsView: View {
 
     @MainActor
     init(
+        viewModel: SettingsViewModel? = nil,
         currentUserID: UUID? = nil,
         currentDisplayName: String? = nil,
         currentProfilePhotoAssetID: UUID? = nil,
@@ -63,7 +66,9 @@ struct SettingsView: View {
         onDeleteAccount: @escaping () -> Void = {},
         onUpdateProfile: @escaping @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool =
             { _, _ in false },
-        onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {}
+        onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {},
+        privacySafetyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
+        privacyOperationProvider: (any SyncClientOperationProviding)? = nil
     ) {
         self.currentUserID = currentUserID
         self.currentDisplayName = currentDisplayName
@@ -82,8 +87,10 @@ struct SettingsView: View {
         self.onDeleteAccount = onDeleteAccount
         self.onUpdateProfile = onUpdateProfile
         self.onPurchasesRestored = onPurchasesRestored
+        self.privacySafetyService = privacySafetyService
+        self.privacyOperationProvider = privacyOperationProvider
         _viewModel = State(
-            initialValue: SettingsViewModel(userID: currentUserID?.uuidString)
+            initialValue: viewModel ?? SettingsViewModel(userID: currentUserID?.uuidString)
         )
     }
 
@@ -394,6 +401,8 @@ extension SettingsView {
                     PrivacySafetyView(
                         partnerUserID: partnerUserID,
                         partnerName: partnerName,
+                        service: privacySafetyService,
+                        operationProvider: privacyOperationProvider,
                         onReportedAndLeft: onLeftRelationship
                     )
                 } label: {

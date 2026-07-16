@@ -11,7 +11,7 @@ struct MemoriesScreen: View {
     /// engine by the host). Called after each local change and on pull-to-refresh.
     let onLocalChange: @MainActor @Sendable () async -> Void
 
-    @State private var viewModel = MemoriesViewModel()
+    @State private var viewModel: MemoriesViewModel
     @State private var isCreating = false
     /// The in-progress new-memory form, held here rather than inside the sheet so an
     /// accidental swipe-to-dismiss never throws away a half-written memory. Reopening
@@ -22,10 +22,12 @@ struct MemoriesScreen: View {
     init(
         currentUserID: UUID?,
         coupleID: UUID?,
+        viewModel: MemoriesViewModel? = nil,
         onLocalChange: @escaping @MainActor @Sendable () async -> Void = {}
     ) {
         self.currentUserID = currentUserID
         self.coupleID = coupleID
+        _viewModel = State(initialValue: viewModel ?? MemoriesViewModel())
         self.onLocalChange = onLocalChange
     }
 

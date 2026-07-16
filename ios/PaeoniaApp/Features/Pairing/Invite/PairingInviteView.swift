@@ -10,9 +10,12 @@ struct PairingInviteView: View {
 
     init(
         session: AuthSession?,
+        viewModel: PairingInviteViewModel? = nil,
         onRefreshAccess: @escaping () -> Void
     ) {
-        _viewModel = State(initialValue: PairingInviteViewModel(userID: session?.id))
+        _viewModel = State(
+            initialValue: viewModel ?? PairingInviteViewModel(userID: session?.id)
+        )
         self.onRefreshAccess = onRefreshAccess
     }
 

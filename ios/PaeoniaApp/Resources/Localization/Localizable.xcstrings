@@ -9403,24 +9403,6 @@
         }
       }
     },
-    "welcome.inviteCode.saved.message" : {
-      "comment" : "Welcome sign-in reassurance shown after a partner invite code has been saved.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sign in to see who invited you and choose whether to join."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Logg inn for å se hvem som inviterte deg, og velg om du vil bli med."
-          }
-        }
-      }
-    },
     "welcome.inviteCode.saved.title" : {
       "comment" : "Welcome sign-in status confirming that the partner invite code will continue through authentication.",
       "extractionState" : "manual",

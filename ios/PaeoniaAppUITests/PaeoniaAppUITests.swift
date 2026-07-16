@@ -15,6 +15,61 @@ final class PaeoniaAppUITests: XCTestCase {
     }
 
     @MainActor
+    func testQuestionsScenarioLaunchesWithoutAccountSetup() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["PAEONIA_SCENARIO"] = "questions"
+        app.launch()
+
+        XCTAssertTrue(
+            app.buttons["mainTab.questions"].waitForExistence(timeout: 5)
+        )
+    }
+
+    @MainActor
+    func testScenarioSchemeArgumentOpensCatalog() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-paeonia-scenarios"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Developer Scenarios"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testPaywallScenarioUsesTheCompleteProductionSurface() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["PAEONIA_SCENARIO"] = "paywall-standard"
+        app.launch()
+
+        let privacyLink = app.links["legal.privacy"]
+        for _ in 0..<6 where !privacyLink.exists {
+            app.swipeUp()
+        }
+
+        XCTAssertTrue(privacyLink.waitForExistence(timeout: 2))
+        XCTAssertTrue(app.links["legal.terms"].exists)
+    }
+
+    @MainActor
+    func testCatalogKeepsItsPositionAfterReturningFromAScenario() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-paeonia-scenarios"]
+        app.launch()
+
+        let scenario = app.descendants(matching: .any)[
+            "developer.scenario.deep-link-subscription"
+        ]
+        for _ in 0..<12 where !scenario.exists {
+            app.swipeUp()
+        }
+
+        XCTAssertTrue(scenario.waitForExistence(timeout: 2))
+        scenario.tap()
+        app.buttons["developer.scenario.return"].tap()
+
+        XCTAssertTrue(scenario.waitForExistence(timeout: 2))
+    }
+
+    @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {

@@ -7,6 +7,7 @@ import SwiftUI
 /// widget — select the Home tab and present its destination in one atomic update,
 /// so the screen can never open hidden behind another tab.
 struct MainTabView: View {
+    let tabs: [MainTab]
     let currentUserID: UUID?
     let currentDisplayName: String?
     let currentProfilePhotoAssetID: UUID?
@@ -48,8 +49,9 @@ struct MainTabView: View {
     /// Re-resolves entitlement/access after StoreKit has re-confirmed a purchase.
     var onPurchasesRestored: @MainActor @Sendable () async -> Void = {}
 
-    @State private var dailyChallengeViewModel = DailyChallengeViewModel()
-    @State private var milestoneViewModel = RelationshipMilestoneViewModel()
+    @State private var dailyChallengeViewModel: DailyChallengeViewModel
+    @State private var milestoneViewModel: RelationshipMilestoneViewModel
+    @State private var memoriesViewModel: MemoriesViewModel
     @State private var isAnswerFlowPresented = false
     /// Which card the daily answer flow should zoom out of (the Home prompt card or the
     /// Questions-tab hero card), so the cover grows from the one the user tapped.
@@ -84,6 +86,7 @@ struct MainTabView: View {
     }
 
     init(
+        tabs: [MainTab] = MainTab.allCases,
         currentUserID: UUID?,
         currentDisplayName: String?,
         currentProfilePhotoAssetID: UUID?,
@@ -111,8 +114,12 @@ struct MainTabView: View {
         onLogout: @escaping () -> Void = {},
         onDeleteAccount: @escaping () -> Void = {},
         onUpdateProfile: @escaping @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool = { _, _ in false },
-        onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {}
+        onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {},
+        dailyChallengeViewModel: DailyChallengeViewModel? = nil,
+        milestoneViewModel: RelationshipMilestoneViewModel? = nil,
+        memoriesViewModel: MemoriesViewModel? = nil
     ) {
+        self.tabs = tabs
         self.currentUserID = currentUserID
         self.currentDisplayName = currentDisplayName
         self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
@@ -141,11 +148,20 @@ struct MainTabView: View {
         self.onDeleteAccount = onDeleteAccount
         self.onUpdateProfile = onUpdateProfile
         self.onPurchasesRestored = onPurchasesRestored
+        _dailyChallengeViewModel = State(
+            initialValue: dailyChallengeViewModel ?? DailyChallengeViewModel()
+        )
+        _milestoneViewModel = State(
+            initialValue: milestoneViewModel ?? RelationshipMilestoneViewModel()
+        )
+        _memoriesViewModel = State(
+            initialValue: memoriesViewModel ?? MemoriesViewModel()
+        )
     }
 
     var body: some View {
         TabView(selection: selection) {
-            ForEach(MainTab.allCases) { tab in
+            ForEach(tabs) { tab in
                 content(for: tab)
                     .tag(tab)
                     .tabItem {
@@ -154,6 +170,7 @@ struct MainTabView: View {
                         } icon: {
                             Image(systemName: tab.systemImage)
                         }
+                        .accessibilityIdentifier("mainTab.\(tab.rawValue)")
                     }
             }
         }
@@ -312,6 +329,7 @@ struct MainTabView: View {
             MemoriesScreen(
                 currentUserID: currentUserID,
                 coupleID: coupleID,
+                viewModel: memoriesViewModel,
                 onLocalChange: { @MainActor @Sendable in
                     await syncAfterLocalChange()
                 }

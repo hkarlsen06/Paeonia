@@ -7,13 +7,13 @@ struct PaeoniaApp: App {
     @State private var deepLink: PaeoniaDeepLink?
     @State private var pendingJoinInviteCode = UserDefaultsPairingJoinInviteStore.shared.loadInviteCode()
     @State private var notificationRouter = PaeoniaNotificationRouter.shared
+    #if DEBUG
+    @State private var developerDestination = DeveloperScenarioLaunch.destination()
+    #endif
 
     var body: some Scene {
         WindowGroup {
-            RootView(
-                deepLink: $deepLink,
-                pendingJoinInviteCode: $pendingJoinInviteCode
-            )
+            appContent
             .onOpenURL { url in
                 if GIDSignIn.sharedInstance.handle(url) {
                     return
@@ -49,5 +49,32 @@ struct PaeoniaApp: App {
                 notificationRouter.consumePendingDeepLink()
             }
         }
+    }
+
+    @ViewBuilder
+    private var appContent: some View {
+        #if DEBUG
+        switch developerDestination {
+        case .production:
+            productionRoot
+        case .menu:
+            DeveloperScenarioMenu {
+                developerDestination = .production
+            }
+        case .scenario(let scenario):
+            DeveloperScenarioHost(scenario: scenario) {
+                developerDestination = .menu
+            }
+        }
+        #else
+        productionRoot
+        #endif
+    }
+
+    private var productionRoot: some View {
+        RootView(
+            deepLink: $deepLink,
+            pendingJoinInviteCode: $pendingJoinInviteCode
+        )
     }
 }

@@ -6,6 +6,18 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    /// Sign-in finished and the next screen has arrived — the moment the user knows
+    /// login worked.
+    static func signedIn() {
+        notify(.success)
+    }
+
+    /// The profile setup Continue button: a light send-off tap while the save and the
+    /// next screen take over.
+    static func profileSetupSent() {
+        impact(.light)
+    }
+
     static func pairingLinkBuildUp(intensity: CGFloat) {
         let generator = UIImpactFeedbackGenerator(style: .soft)
         generator.prepare()

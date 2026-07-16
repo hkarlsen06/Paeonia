@@ -40,6 +40,33 @@ extension View {
     func launchEntrance(order: Int) -> some View {
         modifier(LaunchEntranceModifier(order: order))
     }
+
+    /// The same lifted drop-in cascade as `launchEntrance(order:)`, but cued by the
+    /// screen's own first appearance — for screens the user reaches mid-session, like
+    /// the profile setup screen right after signing in. During a cold launch it still
+    /// waits for the intro's content cue, so both paths feel identical.
+    func screenEntrance(order: Int) -> some View {
+        modifier(ScreenEntranceModifier(order: order))
+    }
+}
+
+/// Shared feel of the entrance cascade, so launch-cued and appearance-cued screens
+/// drop their content in identically.
+private enum EntranceCascade {
+    /// How far above its resting place each element starts before dropping in.
+    static let rise: CGFloat = 26
+    /// Gap between each element's entrance, so the cascade flows down the screen.
+    static let stagger: TimeInterval = 0.08
+
+    static func entrance(order: Int, reduceMotion: Bool) -> Animation {
+        guard !reduceMotion else {
+            // No positional motion under Reduce Motion — just a gentle fade in.
+            return .easeOut(duration: PaeoniaMotion.motionDefault)
+        }
+
+        return .spring(response: 0.5, dampingFraction: 0.68)
+            .delay(Double(order) * stagger)
+    }
 }
 
 private struct LaunchEntranceModifier: ViewModifier {
@@ -48,25 +75,34 @@ private struct LaunchEntranceModifier: ViewModifier {
     @Environment(\.launchContentRevealed) private var revealed
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// How far above its resting place each element starts before dropping in.
-    private static let rise: CGFloat = 26
-    /// Gap between each element's entrance, so the cascade flows down the screen.
-    private static let stagger: TimeInterval = 0.08
+    func body(content: Content) -> some View {
+        content
+            .opacity(revealed ? 1 : 0)
+            .offset(y: revealed || reduceMotion ? 0 : -EntranceCascade.rise)
+            .animation(EntranceCascade.entrance(order: order, reduceMotion: reduceMotion), value: revealed)
+    }
+}
+
+private struct ScreenEntranceModifier: ViewModifier {
+    let order: Int
+
+    @Environment(\.launchContentRevealed) private var launchRevealed
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hasAppeared = false
+
+    /// During a cold launch the intro's cue gates the drop-in; mid-session the first
+    /// rendered frame does, so the cascade plays right as the screen arrives.
+    private var revealed: Bool {
+        hasAppeared && launchRevealed
+    }
 
     func body(content: Content) -> some View {
         content
             .opacity(revealed ? 1 : 0)
-            .offset(y: revealed || reduceMotion ? 0 : -Self.rise)
-            .animation(entrance, value: revealed)
-    }
-
-    private var entrance: Animation? {
-        guard !reduceMotion else {
-            // No positional motion under Reduce Motion — just a gentle fade in.
-            return .easeOut(duration: PaeoniaMotion.motionDefault)
-        }
-
-        return .spring(response: 0.5, dampingFraction: 0.68)
-            .delay(Double(order) * Self.stagger)
+            .offset(y: revealed || reduceMotion ? 0 : -EntranceCascade.rise)
+            .animation(EntranceCascade.entrance(order: order, reduceMotion: reduceMotion), value: revealed)
+            .task {
+                hasAppeared = true
+            }
     }
 }

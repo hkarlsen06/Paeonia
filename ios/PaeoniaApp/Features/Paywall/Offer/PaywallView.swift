@@ -1,10 +1,21 @@
 import Foundation
 import SwiftUI
 
+/// Deterministic display data used by previews and the developer scenario harness.
+/// The production view hierarchy stays intact; only StoreKit's opaque product data
+/// and purchase action are replaced.
+struct PaywallPresentationOverride {
+    let presentation: (PaeoniaBillingPeriod) -> PaywallPresentation
+    let priceLine: (PaeoniaBillingPeriod) -> String
+    let purchaseIsEnabled: Bool
+    let onPurchase: () -> Void
+}
+
 // swiftlint:disable:next type_body_length
 struct PaywallView: View {
     @State private var viewModel: PaywallViewModel
     @Binding private var pendingInviteCode: String?
+    private let presentationOverride: PaywallPresentationOverride?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -31,10 +42,15 @@ struct PaywallView: View {
         onInviteAccepted: @escaping () -> Void,
         onSignOut: @escaping () -> Void,
         onUnpaired: @escaping () -> Void,
-        onDeleteAccount: @escaping () -> Void
+        onDeleteAccount: @escaping () -> Void,
+        viewModel: PaywallViewModel? = nil,
+        presentationOverride: PaywallPresentationOverride? = nil
     ) {
-        _viewModel = State(initialValue: PaywallViewModel(userID: session?.id))
+        _viewModel = State(
+            initialValue: viewModel ?? PaywallViewModel(userID: session?.id)
+        )
         _pendingInviteCode = pendingInviteCode
+        self.presentationOverride = presentationOverride
         self.audience = audience
         self.onPurchaseConfirmed = onPurchaseConfirmed
         self.onInviteAccepted = onInviteAccepted
@@ -47,25 +63,39 @@ struct PaywallView: View {
         audience.allowsInviteEntry
     }
 
+    private var isPresentationReady: Bool {
+        presentationOverride != nil || viewModel.isPresentationReady
+    }
+
     var body: some View {
-        Group {
-            if viewModel.isPresentationReady {
+        ZStack {
+            if isPresentationReady {
                 GeometryReader { geometry in
                     paywallScene(geometry: geometry)
                 }
+                .transition(.opacity)
             } else {
                 AuthLaunchingView()
+                    // The quiet petal surface fades out on top while the paywall's
+                    // own content entrance starts underneath, so loading dissolves
+                    // into the offer instead of blinking away.
+                    .transition(.opacity)
+                    .zIndex(1)
             }
         }
+        .animation(PaeoniaMotion.meaningfulMoment, value: isPresentationReady)
         .task {
+            guard presentationOverride == nil else {
+                return
+            }
             await viewModel.loadProducts()
         }
-        .task(id: viewModel.isPresentationReady) {
+        .task(id: isPresentationReady) {
             await presentPaywallContentIfReady()
         }
         .task(id: PendingInvitePresentationID(
             code: pendingInviteCode, allowsInviteEntry: allowsInviteEntry,
-            isPresentationReady: viewModel.isPresentationReady
+            isPresentationReady: isPresentationReady
         )) {
             await presentPendingInviteIfAvailable()
         }
@@ -179,7 +209,8 @@ struct PaywallView: View {
             billingPeriod: $viewModel.billingPeriod,
             headlineTitle: headlineTitle,
             subtitle: subtitle,
-            priceLine: presentation.priceLine,
+            priceLine: presentationOverride?.priceLine(viewModel.billingPeriod)
+                ?? presentation.priceLine,
             timelineItems: presentation.timelineItems,
             allowsInviteEntry: allowsInviteEntry,
             showsArtworkHeader: !audience.isPaired,
@@ -215,7 +246,7 @@ struct PaywallView: View {
 
     @MainActor
     private func presentPendingInviteIfAvailable() async {
-        guard viewModel.isPresentationReady,
+        guard isPresentationReady,
               allowsInviteEntry,
               let pendingCode = pendingInviteCode,
               let normalizedCode = try? PairingInviteCode.normalized(pendingCode)
@@ -261,12 +292,24 @@ struct PaywallView: View {
     // MARK: - Bottom CTA
 
     private var bottomCTA: some View {
-        PaywallPurchaseCTAView(
-            presentation: presentation,
-            hasProduct: viewModel.currentProduct != nil,
-            onPurchase: purchase,
-            onRetry: retryProducts
-        )
+        Group {
+            if let presentationOverride {
+                PaywallBottomCTAView(
+                    title: presentation.primaryButtonTitle,
+                    caption: .paywallCancelAnytime,
+                    isEnabled: presentationOverride.purchaseIsEnabled,
+                    isBusy: presentation.isPurchasing,
+                    action: presentationOverride.onPurchase
+                )
+            } else {
+                PaywallPurchaseCTAView(
+                    presentation: presentation,
+                    hasProduct: viewModel.currentProduct != nil,
+                    onPurchase: purchase,
+                    onRetry: retryProducts
+                )
+            }
+        }
     }
 
     private var paywallEntranceOpacity: Double {
@@ -376,13 +419,14 @@ struct PaywallView: View {
     }
 
     private var presentation: PaywallPresentation {
-        PaywallPresentation(
-            billingPeriod: viewModel.billingPeriod,
-            product: viewModel.currentProduct,
-            freeTrial: viewModel.currentFreeTrial,
-            isPurchasing: viewModel.isPurchasing,
-            isLoading: viewModel.isLoading
-        )
+        presentationOverride?.presentation(viewModel.billingPeriod)
+            ?? PaywallPresentation(
+                billingPeriod: viewModel.billingPeriod,
+                product: viewModel.currentProduct,
+                freeTrial: viewModel.currentFreeTrial,
+                isPurchasing: viewModel.isPurchasing,
+                isLoading: viewModel.isLoading
+            )
     }
 
     private func purchase() {
@@ -432,7 +476,7 @@ struct PaywallView: View {
     }
 
     private func presentPaywallContentIfReady() async {
-        guard viewModel.isPresentationReady else {
+        guard isPresentationReady else {
             hasPresentedPaywallContent = false
             return
         }

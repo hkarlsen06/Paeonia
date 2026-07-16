@@ -193,12 +193,6 @@ struct SignInView: View {
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(.welcomeInviteCodeSavedMessage)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-
                 Button(action: action) {
                     Text(.welcomeInviteCodeChange)
                         .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)

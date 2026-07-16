@@ -2,13 +2,24 @@ import SwiftUI
 
 struct WidgetDrawingView: View {
     @State private var viewModel: WidgetDrawingViewModel
+    private let historyViewModel: WidgetDrawingHistoryViewModel?
+    private let historyThumbnailLoader: (any WidgetRevisionThumbnailLoading)?
     @State private var isClearConfirmationPresented = false
     @State private var isHistoryPresented = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.scenePhase) private var scenePhase
 
-    init(authorName: String? = nil) {
-        _viewModel = State(initialValue: WidgetDrawingViewModel(authorName: authorName))
+    init(
+        authorName: String? = nil,
+        viewModel: WidgetDrawingViewModel? = nil,
+        historyViewModel: WidgetDrawingHistoryViewModel? = nil,
+        historyThumbnailLoader: (any WidgetRevisionThumbnailLoading)? = nil
+    ) {
+        _viewModel = State(
+            initialValue: viewModel ?? WidgetDrawingViewModel(authorName: authorName)
+        )
+        self.historyViewModel = historyViewModel
+        self.historyThumbnailLoader = historyThumbnailLoader
     }
 
     var body: some View {
@@ -46,7 +57,14 @@ struct WidgetDrawingView: View {
             }
         }
         .sheet(isPresented: $isHistoryPresented) {
-            WidgetDrawingHistoryView()
+            if let historyViewModel, let historyThumbnailLoader {
+                WidgetDrawingHistoryView(
+                    viewModel: historyViewModel,
+                    thumbnailLoader: historyThumbnailLoader
+                )
+            } else {
+                WidgetDrawingHistoryView()
+            }
         }
         .task {
             await viewModel.loadSavedDrawingIfNeeded()
