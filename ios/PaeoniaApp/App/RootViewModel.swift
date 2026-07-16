@@ -178,7 +178,7 @@ final class RootViewModel {
         accessSnapshotStore: (any AccessSyncSnapshotPersisting)? = nil,
         inviteStore: (any PairingInviteStoring)? = nil,
         pairingCelebrationStore: (any PairingCelebrationStoring)? = nil,
-        systemSideEffects: any RootSystemSideEffecting = LiveRootSystemSideEffects()
+        systemSideEffects: (any RootSystemSideEffecting)? = nil
     ) {
         let resolvedSyncService = syncService ?? PaeoniaSyncService()
         self.syncService = resolvedSyncService
@@ -188,7 +188,7 @@ final class RootViewModel {
         self.accessSnapshotStore = accessSnapshotStore ?? Self.makeDefaultAccessSnapshotStore()
         self.inviteStore = inviteStore ?? UserDefaultsPairingInviteStore.shared
         self.pairingCelebrationStore = pairingCelebrationStore ?? UserDefaultsPairingCelebrationStore.shared
-        self.systemSideEffects = systemSideEffects
+        self.systemSideEffects = systemSideEffects ?? LiveRootSystemSideEffects()
     }
 
     private static func makeDefaultAccessSnapshotStore() -> (any AccessSyncSnapshotPersisting)? {

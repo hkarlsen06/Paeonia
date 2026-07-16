@@ -10,8 +10,10 @@
     @State private var milestoneViewModel: RelationshipMilestoneViewModel
     @State private var memoriesViewModel: MemoriesViewModel
     private let locationViewModel: LocationMapViewModel
+    private let scenario: DeveloperScenario
 
     init(scenario: DeveloperScenario) {
+      self.scenario = scenario
       let operationProvider = DeveloperScenarioOperationProvider()
       let dailyService = DeveloperDailyChallengeService(mode: .mode(for: scenario))
       let pendingOperationStore: any PendingSyncOperationPersisting =
@@ -74,31 +76,46 @@
       )
     }
 
+    @ViewBuilder
     var body: some View {
-      MainTabView(
-        tabs: [.home, .questions, .memories],
-        currentUserID: DeveloperScenarioFixture.currentUserID,
-        currentDisplayName: "Alex",
-        currentProfilePhotoAssetID: nil,
-        currentCustomProfilePhotoAssetID: nil,
-        currentProviderProfilePhotoAssetID: nil,
-        currentAuthProvider: .development,
-        partnerUserID: DeveloperScenarioFixture.partnerUserID,
-        partnerDisplayName: "Robin",
-        partnerProfilePhotoAssetID: nil,
-        authorName: "Alex",
-        coupleID: DeveloperScenarioFixture.coupleID,
-        relationshipStartedOn: "2025-09-14",
-        locationMapState: .partnerUnknown(.notSharing),
-        locationViewModel: locationViewModel,
-        selection: $selection,
-        widgetDrawingPresented: .constant(false),
-        deepLink: $deepLink,
-        onOpenWidgetDrawing: {},
-        dailyChallengeViewModel: dailyChallengeViewModel,
-        milestoneViewModel: milestoneViewModel,
-        memoriesViewModel: memoriesViewModel
-      )
+      if scenario == .questionAnswerFlow {
+        DailyChallengeAnswerFlow(viewModel: dailyChallengeViewModel)
+          .task {
+            await dailyChallengeViewModel.configure(
+              participants: DailyChallengeParticipants(
+                currentUserID: DeveloperScenarioFixture.currentUserID,
+                currentDisplayName: "Alex",
+                partnerUserID: DeveloperScenarioFixture.partnerUserID,
+                partnerDisplayName: "Robin"
+              )
+            )
+          }
+      } else {
+        MainTabView(
+          tabs: [.home, .questions, .memories],
+          currentUserID: DeveloperScenarioFixture.currentUserID,
+          currentDisplayName: "Alex",
+          currentProfilePhotoAssetID: nil,
+          currentCustomProfilePhotoAssetID: nil,
+          currentProviderProfilePhotoAssetID: nil,
+          currentAuthProvider: .development,
+          partnerUserID: DeveloperScenarioFixture.partnerUserID,
+          partnerDisplayName: "Robin",
+          partnerProfilePhotoAssetID: nil,
+          authorName: "Alex",
+          coupleID: DeveloperScenarioFixture.coupleID,
+          relationshipStartedOn: "2025-09-14",
+          locationMapState: .partnerUnknown(.notSharing),
+          locationViewModel: locationViewModel,
+          selection: $selection,
+          widgetDrawingPresented: .constant(false),
+          deepLink: $deepLink,
+          onOpenWidgetDrawing: {},
+          dailyChallengeViewModel: dailyChallengeViewModel,
+          milestoneViewModel: milestoneViewModel,
+          memoriesViewModel: memoriesViewModel
+        )
+      }
     }
   }
 

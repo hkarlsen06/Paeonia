@@ -43,7 +43,7 @@ struct RootView: View {
         locationSharingPrimerStore: (any LocationSharingPrimerPersisting)? = nil,
         widgetPushRegistration: (any WidgetPushRegistering)? = nil,
         partnerAvatarSharing: (any PartnerAvatarSharing)? = nil,
-        featureDependencies: RootFeatureDependencies = RootFeatureDependencies(),
+        featureDependencies: RootFeatureDependencies? = nil,
         allowsSystemIntegrations: Bool = true
     ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
@@ -65,7 +65,7 @@ struct RootView: View {
         self.pushAuthorization = pushAuthorization ?? PushAuthorizationService()
         self.widgetPushRegistration = widgetPushRegistration ?? WidgetPushRegistrationServiceFactory.makeDefault()
         self.partnerAvatarSharing = partnerAvatarSharing ?? PartnerAvatarSharingServiceFactory.makeDefault()
-        self.featureDependencies = featureDependencies
+        self.featureDependencies = featureDependencies ?? RootFeatureDependencies()
         self.allowsSystemIntegrations = allowsSystemIntegrations
     }
 

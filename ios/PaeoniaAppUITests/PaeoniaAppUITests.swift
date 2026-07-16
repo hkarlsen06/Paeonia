@@ -70,6 +70,77 @@ final class PaeoniaAppUITests: XCTestCase {
     }
 
     @MainActor
+    func testLocalFlowOnboardingMenuEntryNavigates() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-paeonia-scenarios"]
+        app.launch()
+
+        let row = app.descendants(matching: .any)[
+            "developer.scenario.local-flow-onboarding"
+        ]
+        for _ in 0..<8 where !row.exists {
+            app.swipeUp()
+        }
+
+        XCTAssertTrue(row.waitForExistence(timeout: 2))
+        row.tap()
+        XCTAssertTrue(app.buttons["developer.scenario.return"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testQuestionAnswerFlowMenuEntryReturnsToCatalog() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-paeonia-scenarios"]
+        app.launch()
+
+        let row = app.descendants(matching: .any)[
+            "developer.scenario.question-answer-flow"
+        ]
+        for _ in 0..<12 where !row.exists {
+            app.swipeUp()
+        }
+
+        XCTAssertTrue(row.waitForExistence(timeout: 2))
+        row.tap()
+
+        let returnButton = app.buttons["developer.scenario.return"]
+        XCTAssertTrue(returnButton.waitForExistence(timeout: 5))
+        returnButton.tap()
+        XCTAssertTrue(app.navigationBars["Developer Scenarios"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testEveryDeveloperScenarioMenuEntryNavigatesAndReturns() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-paeonia-scenarios"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Developer Scenarios"].waitForExistence(timeout: 5))
+
+        for scenarioID in Self.developerScenarioIDs {
+            let row = app.descendants(matching: .any)["developer.scenario.\(scenarioID)"]
+            for _ in 0..<12 where !row.exists {
+                app.swipeUp()
+            }
+
+            XCTAssertTrue(row.waitForExistence(timeout: 2), "Missing menu row: \(scenarioID)")
+            row.tap()
+
+            let returnButton = app.buttons["developer.scenario.return"]
+            XCTAssertTrue(
+                returnButton.waitForExistence(timeout: 5),
+                "Did not open scenario: \(scenarioID)"
+            )
+            returnButton.tap()
+
+            XCTAssertTrue(
+                app.navigationBars["Developer Scenarios"].waitForExistence(timeout: 5),
+                "Did not return from scenario: \(scenarioID)"
+            )
+        }
+    }
+
+    @MainActor
     func testInteractiveLocalFlowContinuesFromSignInIntoPairing() throws {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-fresh"
@@ -126,4 +197,66 @@ final class PaeoniaAppUITests: XCTestCase {
         screenshot.lifetime = .keepAlways
         add(screenshot)
     }
+
+    private static let developerScenarioIDs = [
+        "launch-loading",
+        "welcome",
+        "sign-in",
+        "sign-in-invite",
+        "onboarding-empty",
+        "onboarding-prefilled",
+        "local-flow-fresh",
+        "local-flow-onboarding",
+        "local-flow-paywall",
+        "local-flow-pairing",
+        "local-flow-paired",
+        "pairing-invite-ready",
+        "pairing-join",
+        "pairing-invite-expired",
+        "pairing-safety-warning",
+        "pairing-invite-error",
+        "pairing-celebration",
+        "pairing-celebration-settled",
+        "paywall-trial",
+        "paywall-standard",
+        "paywall-paired",
+        "paywall-loading",
+        "paired-home",
+        "questions",
+        "questions-partial",
+        "questions-revealed",
+        "questions-empty",
+        "questions-loading",
+        "questions-error",
+        "questions-history",
+        "questions-offline-queued",
+        "question-answer-flow",
+        "streak-healthy",
+        "streak-broken",
+        "streak-restored",
+        "memories-empty",
+        "memories-populated",
+        "memory-editor",
+        "memory-detail",
+        "countdown-missing",
+        "countdown-upcoming",
+        "countdown-today",
+        "location-not-sharing",
+        "location-current-missing",
+        "location-live",
+        "location-stale",
+        "widget-drawing",
+        "widget-history-empty",
+        "widget-history-populated",
+        "notification-primer",
+        "settings",
+        "settings-notifications-denied",
+        "privacy-safety",
+        "report-and-leave",
+        "deep-link-daily-today",
+        "deep-link-daily-reveal",
+        "deep-link-widget",
+        "deep-link-streak",
+        "deep-link-subscription",
+    ]
 }

@@ -10,7 +10,9 @@
           ForEach(DeveloperScenario.Category.allCases) { category in
             Section(category.rawValue) {
               ForEach(scenarios(in: category)) { scenario in
-                NavigationLink(value: scenario) {
+                NavigationLink {
+                  DeveloperScenarioNavigationDestination(scenario: scenario)
+                } label: {
                   VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
                     Text(scenario.title)
                       .foregroundStyle(.paeoniaTextPrimary)
@@ -38,9 +40,6 @@
         .scrollContentBackground(.hidden)
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle("Developer Scenarios")
-      }
-      .navigationDestination(for: DeveloperScenario.self) { scenario in
-        DeveloperScenarioNavigationDestination(scenario: scenario)
       }
       .preferredColorScheme(.dark)
       .accessibilityIdentifier("developer.scenario.menu")
