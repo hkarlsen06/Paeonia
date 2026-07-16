@@ -18,5 +18,10 @@
 	<array>
 		<string>group.no.paeonia.app</string>
 	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)no.paeonia.app</string>
+		<string>$(AppIdentifierPrefix)no.paeonia.shared</string>
+	</array>
 </dict>
 </plist>

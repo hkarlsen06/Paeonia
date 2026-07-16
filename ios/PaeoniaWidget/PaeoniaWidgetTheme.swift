@@ -10,11 +10,6 @@ enum PaeoniaWidgetSpacing {
     static let space16: CGFloat = 16
 }
 
-enum PaeoniaWidgetRadius {
-    static let canvasSmall: CGFloat = 18
-    static let canvasLarge: CGFloat = 24
-}
-
 enum PaeoniaWidgetTypography {
     static func wordmark(family: WidgetFamily) -> Font {
         switch family {
@@ -67,8 +62,6 @@ extension Color {
     static let paeoniaWidgetAccentPrimary = PaeoniaWidgetPalette.petalLight
     static let paeoniaWidgetAccentSecondary = PaeoniaWidgetPalette.pink
     static let paeoniaWidgetDrawing = PaeoniaWidgetPalette.blush
-    static let paeoniaWidgetCanvasSurface = PaeoniaWidgetPalette.blush.opacity(0.055)
-    static let paeoniaWidgetCanvasBorder = PaeoniaWidgetPalette.blush.opacity(0.13)
 }
 
 extension ShapeStyle where Self == Color {
@@ -78,8 +71,6 @@ extension ShapeStyle where Self == Color {
     static var paeoniaWidgetAccentPrimary: Color { Color.paeoniaWidgetAccentPrimary }
     static var paeoniaWidgetAccentSecondary: Color { Color.paeoniaWidgetAccentSecondary }
     static var paeoniaWidgetDrawing: Color { Color.paeoniaWidgetDrawing }
-    static var paeoniaWidgetCanvasSurface: Color { Color.paeoniaWidgetCanvasSurface }
-    static var paeoniaWidgetCanvasBorder: Color { Color.paeoniaWidgetCanvasBorder }
 }
 
 private extension Color {

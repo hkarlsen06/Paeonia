@@ -5,6 +5,7 @@ import Foundation
 /// drawing with the right nickname.
 nonisolated final class WidgetSyncIdentityStore: @unchecked Sendable {
     nonisolated static let shared = WidgetSyncIdentityStore()
+    private static let appGroupIdentifier = "group.no.paeonia.app"
 
     private enum Key {
         static let userID = "paeonia.widgetSync.currentUserID"
@@ -14,8 +15,10 @@ nonisolated final class WidgetSyncIdentityStore: @unchecked Sendable {
 
     private let defaults: UserDefaults
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults? = nil) {
         self.defaults = defaults
+            ?? UserDefaults(suiteName: Self.appGroupIdentifier)
+            ?? .standard
     }
 
     func save(_ identity: WidgetSyncIdentity) {

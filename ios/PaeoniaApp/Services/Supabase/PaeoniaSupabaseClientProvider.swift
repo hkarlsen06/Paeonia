@@ -14,6 +14,7 @@ final class PaeoniaSupabaseClientProvider: @unchecked Sendable {
                 supabaseKey: resolvedConfig.publishableKey,
                 options: SupabaseClientOptions(
                     auth: SupabaseClientOptions.AuthOptions(
+                        storage: PaeoniaSharedAuthStorage(),
                         redirectToURL: resolvedConfig.redirectURL,
                         storageKey: "paeonia-auth-session",
                         autoRefreshToken: true,

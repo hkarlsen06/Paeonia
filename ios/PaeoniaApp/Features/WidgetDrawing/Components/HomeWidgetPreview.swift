@@ -125,36 +125,23 @@ struct HomeWidgetCard: View {
     }
 
     private var widget: some View {
-        VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
-            containedDrawingSurface
-                // Crossfade between the placeholder sketch and the real drawing
-                // when the image first arrives or changes. The frame is already
-                // square, so this is a content swap, not a layout shift. Instant
-                // under Reduce Motion.
-                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: model.image == nil)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            HStack(spacing: PaeoniaSpacing.space4) {
-                Image(systemName: "pencil.tip.crop.circle")
-                    .font(.system(size: 13, weight: .semibold))
-                    .accessibilityHidden(true)
-
-                Text(.homeWidgetCta)
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                    .multilineTextAlignment(.center)
-                    .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
-            }
-            .foregroundStyle(.paeoniaAccentPrimary)
-        }
-        // Match the map tile's distance label: same bottom inset so the two CTAs
-        // line up vertically across the side-by-side tiles.
-        .padding([.top, .horizontal], PaeoniaSpacing.space16)
-        .padding(.bottom, PaeoniaSpacing.tileCaptionBottomInset)
+        drawingSurface
+        // The Us-tab tile is the canvas itself. It does not reserve an inner
+        // caption or padding, so the saved square drawing reaches every edge of
+        // the card without a nested-card treatment.
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: model.image == nil)
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
         .background(.paeoniaBackgroundPrimary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
+        .overlay(alignment: .bottom) {
+            if model.image == nil {
+                emptyCanvasCaption
+                    .padding(.horizontal, PaeoniaSpacing.space16)
+                    .padding(.bottom, PaeoniaSpacing.tileCaptionBottomInset)
+                    .transition(.opacity)
+            }
+        }
         .overlay {
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
                 .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
@@ -162,22 +149,19 @@ struct HomeWidgetCard: View {
         .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
     }
 
-    private var containedDrawingSurface: some View {
-        GeometryReader { proxy in
-            let side = min(proxy.size.width, proxy.size.height)
+    private var emptyCanvasCaption: some View {
+        HStack(spacing: PaeoniaSpacing.space4) {
+            Image(systemName: "pencil.tip.crop.circle")
+                .font(.system(size: 13, weight: .semibold))
+                .accessibilityHidden(true)
 
-            drawingSurface
-                .frame(width: side, height: side)
-                .background(.paeoniaSurfaceSecondary)
-                .clipShape(
-                    RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-                        .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            Text(.homeWidgetCta)
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
         }
+        .foregroundStyle(.paeoniaAccentPrimary)
     }
 
     @ViewBuilder

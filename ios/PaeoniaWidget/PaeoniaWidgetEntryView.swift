@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import UIKit
 import WidgetKit
@@ -8,18 +9,13 @@ struct PaeoniaWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            overlayContent
-            refreshButtonLayer
-        }
-        .widgetURL(PaeoniaWidgetURL.drawing)
-        // `.contain` (not `.combine`) so the interactive refresh button stays a
-        // separately actionable accessibility element.
-        .accessibilityElement(children: .contain)
+        overlayContent
+            .widgetURL(PaeoniaWidgetURL.drawing)
+            .accessibilityElement(children: .contain)
     }
 
     private var overlayContent: some View {
-        VStack(alignment: .leading, spacing: contentSpacing) {
+        VStack(alignment: .leading, spacing: 0) {
             header
 
             middleContent
@@ -28,7 +24,6 @@ struct PaeoniaWidgetEntryView: View {
         }
         .padding(contentPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .allowsHitTesting(false)
     }
 
     private var drawingImage: UIImage? {
@@ -79,13 +74,12 @@ struct PaeoniaWidgetEntryView: View {
         }
     }
 
-    /// A contained square preserves the exact canvas coordinate space instead
-    /// of cropping a drawing behind widget chrome. The surrounding breathing
-    /// room keeps the widget identity and attribution legible without covering
-    /// any strokes.
+    /// The canvas consumes all space between the header and footer. Keeping
+    /// those elements in the same stack makes the drawing meet their edges
+    /// without ever extending underneath them.
     @ViewBuilder
     private var middleContent: some View {
-        PaeoniaWidgetDrawingArea(cornerRadius: canvasCornerRadius) {
+        PaeoniaWidgetDrawingArea {
             switch entry.content {
             case .placeholder:
                 PaeoniaPlaceholderDrawing()
@@ -117,20 +111,37 @@ struct PaeoniaWidgetEntryView: View {
         }
     }
 
+    @ViewBuilder
     private var footer: some View {
-        HStack(alignment: .center, spacing: PaeoniaWidgetSpacing.space8) {
-            footerLeadingLabel
-                .font(PaeoniaWidgetTypography.title(family: family))
-                .foregroundStyle(.paeoniaWidgetTextPrimary)
-                .lineLimit(family == .systemSmall ? 2 : 1)
-                .minimumScaleFactor(0.7)
-                .allowsHitTesting(false)
-                .layoutPriority(1)
+        if case .drawing = entry.content {
+            HStack(alignment: .center, spacing: PaeoniaWidgetSpacing.space8) {
+                footerLeadingContent
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .layoutPriority(1)
 
-            Spacer(minLength: PaeoniaWidgetSpacing.space8)
+                refreshButton
+            }
+        } else {
+            HStack(alignment: .center, spacing: PaeoniaWidgetSpacing.space8) {
+                footerLeadingContent
 
-            footerTrailing
+                Spacer(minLength: PaeoniaWidgetSpacing.space8)
+
+                Text(footerAction)
+                    .font(PaeoniaWidgetTypography.action(family: family))
+                    .foregroundStyle(.paeoniaWidgetAccentPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.68)
+            }
         }
+    }
+
+    private var footerLeadingContent: some View {
+        footerLeadingLabel
+            .font(PaeoniaWidgetTypography.title(family: family))
+            .foregroundStyle(.paeoniaWidgetTextPrimary)
+            .lineLimit(family == .systemSmall ? 2 : 1)
+            .minimumScaleFactor(0.7)
     }
 
     @ViewBuilder
@@ -139,22 +150,6 @@ struct PaeoniaWidgetEntryView: View {
             Text(verbatim: authorName)
         } else {
             Text(footerTitle)
-        }
-    }
-
-    @ViewBuilder
-    private var footerTrailing: some View {
-        if case .drawing = entry.content {
-            Color.clear
-                .frame(width: refreshButtonSize, height: refreshButtonSize)
-                .accessibilityHidden(true)
-        } else {
-            Text(footerAction)
-                .font(PaeoniaWidgetTypography.action(family: family))
-                .foregroundStyle(.paeoniaWidgetAccentPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.68)
-                .allowsHitTesting(false)
         }
     }
 
@@ -178,34 +173,14 @@ struct PaeoniaWidgetEntryView: View {
         }
     }
 
-    @ViewBuilder
-    private var refreshButtonLayer: some View {
-        if case .drawing = entry.content {
-            VStack {
-                Spacer(minLength: 0)
-
-                HStack {
-                    Spacer(minLength: 0)
-
-                    refreshButton
-                }
-            }
-            .padding(contentPadding)
-        }
-    }
-
     private var refreshButton: some View {
-        // The extension cannot authenticate to the couple's Supabase session.
-        // Opening this dedicated route lets the host app perform a real sync;
-        // a local-only `reloadTimelines` would simply repaint stale bytes.
-        Link(destination: PaeoniaWidgetURL.refresh) {
+        Button(intent: PaeoniaWidgetRefreshIntent()) {
             Image(systemName: "arrow.clockwise")
                 .font(.system(size: family == .systemSmall ? 15 : 17, weight: .semibold))
-                .foregroundStyle(.paeoniaWidgetAccentPrimary)
-                .frame(width: refreshButtonSize, height: refreshButtonSize)
-                .background(.paeoniaWidgetAccentPrimary.opacity(0.16), in: Circle())
-                .contentShape(Circle())
+                .frame(width: refreshHitTargetSize, height: refreshHitTargetSize)
         }
+        .tint(.paeoniaWidgetAccentPrimary)
+        .buttonBorderShape(.circle)
         .accessibilityLabel(Text(.widgetRefresh))
     }
 
@@ -216,8 +191,8 @@ struct PaeoniaWidgetEntryView: View {
         return nil
     }
 
-    private var refreshButtonSize: CGFloat {
-        family == .systemSmall ? 36 : 42
+    private var refreshHitTargetSize: CGFloat {
+        family == .systemSmall ? 56 : 60
     }
 
     private static func timestampText(_ date: Date) -> String {
@@ -231,10 +206,6 @@ struct PaeoniaWidgetEntryView: View {
         family == .systemSmall ? PaeoniaWidgetSpacing.space10 : PaeoniaWidgetSpacing.space12
     }
 
-    private var contentSpacing: CGFloat {
-        family == .systemSmall ? PaeoniaWidgetSpacing.space8 : PaeoniaWidgetSpacing.space12
-    }
-
     private var markWidth: CGFloat {
         family == .systemSmall ? 24 : 28
     }
@@ -246,26 +217,18 @@ struct PaeoniaWidgetEntryView: View {
     private var redactedIconSize: CGFloat {
         family == .systemSmall ? 22 : 28
     }
-
-    private var canvasCornerRadius: CGFloat {
-        family == .systemSmall ? PaeoniaWidgetRadius.canvasSmall : PaeoniaWidgetRadius.canvasLarge
-    }
 }
 
 private enum PaeoniaWidgetURL {
     // A fixed, known-valid literal URL; the optional initializer cannot fail here.
     // swiftlint:disable:next force_unwrapping
     static let drawing = URL(string: "paeonia://widget/drawing")!
-    // swiftlint:disable:next force_unwrapping
-    static let refresh = URL(string: "paeonia://widget/refresh")!
 }
 
 private struct PaeoniaWidgetDrawingArea<Content: View>: View {
-    let cornerRadius: CGFloat
     private let content: Content
 
-    init(cornerRadius: CGFloat, @ViewBuilder content: () -> Content) {
-        self.cornerRadius = cornerRadius
+    init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
 
@@ -275,12 +238,6 @@ private struct PaeoniaWidgetDrawingArea<Content: View>: View {
 
             content
                 .frame(width: side, height: side)
-                .background(.paeoniaWidgetCanvasSurface)
-                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .stroke(.paeoniaWidgetCanvasBorder, lineWidth: 1)
-                }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
     }

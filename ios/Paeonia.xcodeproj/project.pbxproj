@@ -12,6 +12,7 @@
 		2A2D03532FDD045F00A7BE1A /* PaeoniaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2A2D03432FDD045E00A7BE1A /* PaeoniaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2A2D03652FDD04D100A7BE1A /* PaeoniaNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2A2D035E2FDD04D100A7BE1A /* PaeoniaNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2A2D03902FDE000000A7BE1A /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D03932FDE000000A7BE1A /* Supabase */; };
+		2A2D03912FDE000000A7BE1A /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D03932FDE000000A7BE1A /* Supabase */; };
 		2A2D04012FDF000000A7BE1A /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D04032FDF000000A7BE1A /* GoogleSignIn */; };
 		2A2D04112FE0000000A7BE1A /* CropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D04132FE0000000A7BE1A /* CropViewController */; };
 		2A2D04142FE0000000A7BE1A /* TOCropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D04152FE0000000A7BE1A /* TOCropViewController */; };
@@ -106,6 +107,7 @@
 				PaeoniaWidget.swift,
 				PaeoniaWidgetBundle.swift,
 				PaeoniaWidgetEntryView.swift,
+				PaeoniaWidgetRefreshService.swift,
 				PaeoniaWidgetStore.swift,
 				PaeoniaWidgetTheme.swift,
 				PaeoniaWidgetTimelineProvider.swift,
@@ -166,6 +168,7 @@
 		2A2D03402FDD045E00A7BE1A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				2A2D03912FDE000000A7BE1A /* Supabase in Frameworks */,
 				2A2D03482FDD045E00A7BE1A /* SwiftUI.framework in Frameworks */,
 				2A2D03462FDD045E00A7BE1A /* WidgetKit.framework in Frameworks */,
 			);
@@ -273,6 +276,9 @@
 				2A2D03492FDD045E00A7BE1A /* PaeoniaWidget */,
 			);
 			name = PaeoniaWidgetExtension;
+			packageProductDependencies = (
+				2A2D03932FDE000000A7BE1A /* Supabase */,
+			);
 			productName = PaeoniaWidgetExtension;
 			productReference = 2A2D03432FDD045E00A7BE1A /* PaeoniaWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -704,6 +710,8 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				PAEONIA_SUPABASE_PUBLISHABLE_KEY = sb_publishable_8uBdIagCGucwBYNyvoznyw_8BoEVrPy;
+				PAEONIA_SUPABASE_URL = "https://api.paeonia.no";
 				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -738,6 +746,8 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				PAEONIA_SUPABASE_PUBLISHABLE_KEY = sb_publishable_8uBdIagCGucwBYNyvoznyw_8BoEVrPy;
+				PAEONIA_SUPABASE_URL = "https://api.paeonia.no";
 				PRODUCT_BUNDLE_IDENTIFIER = no.paeonia.app.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
