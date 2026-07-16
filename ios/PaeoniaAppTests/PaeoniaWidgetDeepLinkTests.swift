@@ -12,6 +12,15 @@ struct PaeoniaWidgetDeepLinkTests {
         #expect(PaeoniaDeepLink(url) == .widgetDrawing)
     }
 
+    @Test func refreshURLUsesHostAppRefreshRoute() {
+        let url = PaeoniaWidgetDeepLink.refreshURL
+
+        #expect(url.absoluteString == "paeonia://widget/refresh")
+        #expect(PaeoniaWidgetDeepLink(url) == .refresh)
+        #expect(PaeoniaWidgetDeepLink.handles(url))
+        #expect(PaeoniaDeepLink(url) == .widgetRefresh)
+    }
+
     @Test func rejectsNonWidgetURLs() throws {
         let joinURL = try #require(URL(string: "https://paeonia.no/join/01ABCD"))
         let authURL = try #require(URL(string: "paeonia://auth/callback"))

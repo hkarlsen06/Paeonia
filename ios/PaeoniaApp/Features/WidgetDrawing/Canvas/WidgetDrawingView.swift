@@ -165,26 +165,29 @@ struct WidgetDrawingView: View {
     }
 
     private var drawingCanvas: some View {
-        PencilKitCanvasView(
-            drawing: $viewModel.drawing,
-            tool: viewModel.pencilKitTool,
-            toolConfigurationRevision: viewModel.toolConfigurationRevision,
-            onCanvasReady: viewModel.bindCanvasView,
-            onDrawingChange: viewModel.updateDrawing
-        )
-        // The widget container uses the primary plum; matching it here makes the
-        // canvas an exact preview of what the saved drawing shows on the Home
-        // Screen. The screen behind sits one step deeper so the canvas reads as
-        // a raised surface.
-        .background(.paeoniaBackgroundPrimary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-                .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+        GeometryReader { proxy in
+            let side = min(proxy.size.width, proxy.size.height)
+
+            PencilKitCanvasView(
+                drawing: $viewModel.drawing,
+                tool: viewModel.pencilKitTool,
+                toolConfigurationRevision: viewModel.toolConfigurationRevision,
+                onCanvasReady: viewModel.bindCanvasView,
+                onDrawingChange: viewModel.updateDrawing
+            )
+            // PencilKit coordinates, the rasterizer source rect, previews, and
+            // widget rendering all use this exact square. Constraining the UIKit
+            // view itself avoids recording a wider coordinate space on devices
+            // where the remaining vertical space is shorter than screen width.
+            .frame(width: side, height: side)
+            .background(.paeoniaBackgroundPrimary)
+            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
+                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
-        // Fill the space left by the controls and the bottom row as the largest
-        // possible square, so freeing vertical space grows the canvas.
-        .aspectRatio(1, contentMode: .fit)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
     }

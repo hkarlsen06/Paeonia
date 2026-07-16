@@ -8221,19 +8221,19 @@
       }
     },
     "settings.notifications.streakReminders.subtitle" : {
-      "comment" : "Explains streak reminder notifications",
+      "comment" : "Explains that streak reminders are sent only to a partner who still needs to contribute",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a reminder before your shared check-in expires."
+            "value" : "Get a reminder when you still need to check in for your shared streak."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få en påminnelse før den felles innsjekken utløper."
+            "value" : "Få en påminnelse når du fortsatt må sjekke inn for den felles rekken."
           }
         }
       }
@@ -8954,19 +8954,19 @@
       }
     },
     "streakDetail.message" : {
-      "comment" : "Short, forgiving explanation of which meaningful daily activities keep the couple streak alive",
+      "comment" : "Short, forgiving explanation that each partner must do one meaningful daily activity to keep the couple streak alive",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Do one small thing for each other each day to keep the flame going. You can answer questions, send a drawing, add a memory, or write a message. Miss a day and it cools down, but you can always start again."
+            "value" : "Each of you does one small thing each day to keep the flame going. Answer questions, send a drawing, add a memory, or write a message. If one of you misses a day, it cools down, but you can always start again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gjør én liten ting for hverandre hver dag for å holde flammen i live. Du kan svare på spørsmål, sende en tegning, legge til et minne eller skrive en melding. Hopper dere over en dag, kjølner den, men dere kan alltid begynne på nytt."
+            "value" : "Begge gjør én liten ting hver dag for å holde flammen i live. Svar på spørsmål, send en tegning, legg til et minne eller skriv en melding. Hvis én av dere hopper over en dag, kjølner den, men dere kan alltid begynne på nytt."
           }
         }
       }
@@ -10215,6 +10215,78 @@
           }
         }
       }
+    },
+    "location.permissionPrimer.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share your location?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vil du dele posisjonen din?"
+          }
+        }
+      },
+      "comment" : "Title of the one-time location-sharing explanation shown after pairing"
+    },
+    "location.permissionPrimer.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share your latest location with %@. Paeonia updates it only while you use the app and never saves a location history. You can turn this off anytime in Settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del den nyeste posisjonen din med %@. Paeonia oppdaterer den bare mens du bruker appen, og lagrer aldri posisjonshistorikk. Du kan slå dette av når som helst i Innstillinger."
+          }
+        }
+      },
+      "comment" : "Privacy explanation shown before iOS asks for location access. %@ is the partner name."
+    },
+    "location.permissionPrimer.share" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share my location"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del posisjonen min"
+          }
+        }
+      },
+      "comment" : "Continues from the location-sharing explanation to the iOS location permission dialog"
+    },
+    "location.permissionPrimer.notNow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke nå"
+          }
+        }
+      },
+      "comment" : "Dismisses the location-sharing explanation without asking iOS for permission"
     }
   },
   "version" : "1.0"

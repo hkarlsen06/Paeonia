@@ -88,7 +88,7 @@ struct StreakRestoreViewModelTests {
         let now = Date(timeIntervalSince1970: 1_000)
 
         #expect(StreakRestoreDeadlineState.resolve(deadline: nil, now: now) == .unavailable)
-        #expect(!StreakRestoreDeadlineState.resolve(deadline: nil, now: now).blocksPurchase)
+        #expect(StreakRestoreDeadlineState.resolve(deadline: nil, now: now).blocksPurchase)
     }
 
     @Test func deadlineStateIsActiveBeforeDeadline() {

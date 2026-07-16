@@ -232,6 +232,25 @@ struct WidgetDrawingViewModelTests {
         #expect(payload.strokeCount == viewModel.drawing.strokes.count)
     }
 
+    @Test func saveUsesSquareShortEdgeForRasterAndUploadCoordinates() async throws {
+        let serviceSpy = WidgetCanvasServiceSpy()
+        let uploadSpy = WidgetCanvasUploadSpy()
+        let viewModel = WidgetDrawingViewModel(service: serviceSpy, uploader: uploadSpy)
+        let canvasView = PKCanvasView(frame: CGRect(x: 0, y: 0, width: 360, height: 280))
+        viewModel.bindCanvasView(canvasView)
+        viewModel.drawing = makeNonEmptyDrawing()
+
+        await viewModel.save()
+
+        #expect(serviceSpy.lastCanvasSize == CGSize(width: 280, height: 280))
+        #expect(try #require(uploadSpy.enqueued.first).canvasSide == 280)
+    }
+
+    @Test func canvasSideFallsBackUntilCanvasHasStableLayout() {
+        #expect(WidgetDrawingViewModel.canvasSide(for: .zero) == WidgetDrawingViewModel.fallbackCanvasSide)
+        #expect(WidgetDrawingViewModel.canvasSide(for: CGSize(width: 300, height: 240)) == 240)
+    }
+
     @Test func failedSaveDoesNotEnqueueUpload() async {
         let serviceSpy = WidgetCanvasServiceSpy()
         serviceSpy.saveError = WidgetDrawingTestError.failed

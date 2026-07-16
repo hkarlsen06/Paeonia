@@ -2,6 +2,7 @@ import Foundation
 
 nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case widgetDrawing
+    case widgetRefresh
     case dailyReveal(instanceID: UUID, coupleDayID: UUID?)
     case dailyToday(coupleDayID: UUID?)
     case streak
@@ -83,6 +84,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             switch widgetDeepLink {
             case .drawing:
                 self = .widgetDrawing
+            case .refresh:
+                self = .widgetRefresh
             }
             return
         }
@@ -120,6 +123,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         switch widgetDeepLink {
         case .drawing:
             self = .widgetDrawing
+        case .refresh:
+            self = .widgetRefresh
         }
     }
 

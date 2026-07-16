@@ -462,10 +462,18 @@ final class WidgetDrawingViewModel {
 
     private func currentCanvasSize() -> CGSize {
         let bounds = canvasView?.bounds.size ?? .zero
-        guard bounds.width > 0, bounds.height > 0 else {
-            return CGSize(width: Self.fallbackCanvasSide, height: Self.fallbackCanvasSide)
+        let side = Self.canvasSide(for: bounds)
+        return CGSize(width: side, height: side)
+    }
+
+    /// PencilKit, upload metadata, and raster rendering share one square source
+    /// rect. The short edge is the only safe source dimension if UIKit reports a
+    /// transient non-square bound during layout.
+    nonisolated static func canvasSide(for size: CGSize) -> CGFloat {
+        guard size.width > 0, size.height > 0 else {
+            return fallbackCanvasSide
         }
-        return bounds
+        return min(size.width, size.height)
     }
 
     private func showSavedConfirmation() {

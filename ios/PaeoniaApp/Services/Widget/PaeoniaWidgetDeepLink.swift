@@ -2,16 +2,26 @@ import Foundation
 
 nonisolated enum PaeoniaWidgetDeepLink: Equatable {
     case drawing
+    case refresh
 
     static let scheme = "paeonia"
     static let host = "widget"
     static let drawingPathComponent = "drawing"
+    static let refreshPathComponent = "refresh"
 
     static var drawingURL: URL {
+        url(pathComponent: drawingPathComponent)
+    }
+
+    static var refreshURL: URL {
+        url(pathComponent: refreshPathComponent)
+    }
+
+    private static func url(pathComponent: String) -> URL {
         var components = URLComponents()
         components.scheme = scheme
         components.host = host
-        components.path = "/\(drawingPathComponent)"
+        components.path = "/\(pathComponent)"
 
         guard let url = components.url else {
             preconditionFailure("Invalid Paeonia widget drawing URL")
@@ -28,11 +38,14 @@ nonisolated enum PaeoniaWidgetDeepLink: Equatable {
         }
 
         let pathComponents = url.pathComponents.filter { $0 != "/" }
-        guard pathComponents == [Self.drawingPathComponent] else {
+        switch pathComponents {
+        case [Self.drawingPathComponent]:
+            self = .drawing
+        case [Self.refreshPathComponent]:
+            self = .refresh
+        default:
             return nil
         }
-
-        self = .drawing
     }
 
     static func handles(_ url: URL) -> Bool {

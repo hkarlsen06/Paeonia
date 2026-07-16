@@ -115,7 +115,11 @@ final class PaeoniaAppUITests: XCTestCase {
         let app = XCUIApplication()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
         sleep(3)
-        print("QA_APP_TREE_BEGIN\n\(app.debugDescription)\nQA_APP_TREE_END")
+
+        let hierarchy = XCTAttachment(string: app.debugDescription)
+        hierarchy.name = "Review QA app hierarchy"
+        hierarchy.lifetime = .keepAlways
+        add(hierarchy)
 
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = "Review QA bootstrap"

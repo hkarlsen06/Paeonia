@@ -397,22 +397,50 @@ extension SettingsView {
     private var privacySafetySection: some View {
         if let partnerUserID {
             PaeoniaCard(padding: 0) {
-                NavigationLink {
-                    PrivacySafetyView(
-                        partnerUserID: partnerUserID,
-                        partnerName: partnerName,
-                        service: privacySafetyService,
-                        operationProvider: privacyOperationProvider,
-                        onReportedAndLeft: onLeftRelationship
-                    )
-                } label: {
-                    PaeoniaDisclosureRow(
-                        title: .privacySafetyTitle,
-                        message: .settingsPrivacySafetyMessage,
-                        systemImage: "checkmark.shield.fill"
-                    )
+                VStack(spacing: 0) {
+                    NavigationLink {
+                        PrivacySafetyView(
+                            partnerUserID: partnerUserID,
+                            partnerName: partnerName,
+                            service: privacySafetyService,
+                            operationProvider: privacyOperationProvider,
+                            onReportedAndLeft: onLeftRelationship
+                        )
+                    } label: {
+                        PaeoniaDisclosureRow(
+                            title: .privacySafetyTitle,
+                            message: .settingsPrivacySafetyMessage,
+                            systemImage: "checkmark.shield.fill"
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    Divider()
+                        .overlay(.paeoniaSurfacePressed)
+
+                    // Reporting is a safety action, so keep it directly reachable
+                    // from Settings instead of requiring the user to discover it
+                    // inside the privacy-request screen. The destination still
+                    // makes the relationship-ending consequence explicit before
+                    // anything is sent.
+                    NavigationLink {
+                        ReportAndLeaveView(
+                            partnerUserID: partnerUserID,
+                            partnerName: partnerName,
+                            service: privacySafetyService,
+                            operationProvider: privacyOperationProvider,
+                            onReportedAndLeft: onLeftRelationship
+                        )
+                    } label: {
+                        PaeoniaDisclosureRow(
+                            title: .privacySafetyReportTitle(partnerName),
+                            message: .privacySafetyReportDescription(partnerName),
+                            systemImage: "exclamationmark.shield",
+                            iconTint: .paeoniaError
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
     }

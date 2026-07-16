@@ -95,6 +95,28 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
     let restoreAvailable: Bool
     let restorableCount: Int
     let restoreDeadline: Date?
+    let currentUserContributedToday: Bool
+    let partnerContributedToday: Bool
+
+    init(
+        currentCount: Int,
+        longestCount: Int,
+        lastQualifiedDate: String?,
+        restoreAvailable: Bool,
+        restorableCount: Int,
+        restoreDeadline: Date?,
+        currentUserContributedToday: Bool = false,
+        partnerContributedToday: Bool = false
+    ) {
+        self.currentCount = currentCount
+        self.longestCount = longestCount
+        self.lastQualifiedDate = lastQualifiedDate
+        self.restoreAvailable = restoreAvailable
+        self.restorableCount = restorableCount
+        self.restoreDeadline = restoreDeadline
+        self.currentUserContributedToday = currentUserContributedToday
+        self.partnerContributedToday = partnerContributedToday
+    }
 
     enum CodingKeys: String, CodingKey {
         case currentCount = "current_count"
@@ -103,6 +125,26 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
         case restoreAvailable = "restore_available"
         case restorableCount = "restorable_count"
         case restoreDeadline = "restore_deadline"
+        case currentUserContributedToday = "current_user_contributed_today"
+        case partnerContributedToday = "partner_contributed_today"
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        currentCount = try container.decode(Int.self, forKey: .currentCount)
+        longestCount = try container.decode(Int.self, forKey: .longestCount)
+        lastQualifiedDate = try container.decodeIfPresent(String.self, forKey: .lastQualifiedDate)
+        restoreAvailable = try container.decode(Bool.self, forKey: .restoreAvailable)
+        restorableCount = try container.decode(Int.self, forKey: .restorableCount)
+        restoreDeadline = try container.decodeIfPresent(Date.self, forKey: .restoreDeadline)
+        currentUserContributedToday = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .currentUserContributedToday
+        ) ?? false
+        partnerContributedToday = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .partnerContributedToday
+        ) ?? false
     }
 
     var streak: CoupleStreak {
@@ -112,7 +154,9 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
             lastQualifiedDate: lastQualifiedDate,
             restoreAvailable: restoreAvailable,
             restorableCount: restorableCount,
-            restoreDeadline: restoreDeadline
+            restoreDeadline: restoreDeadline,
+            currentUserContributedToday: currentUserContributedToday,
+            partnerContributedToday: partnerContributedToday
         )
     }
 }

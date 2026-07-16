@@ -14,6 +14,8 @@ struct PairedProfileEditorView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .title) private var avatarSize: CGFloat = 104
     @State private var displayName: String
     @State private var selectedItem: PhotosPickerItem?
     @State private var selectedImage: UIImage?
@@ -41,22 +43,8 @@ struct PairedProfileEditorView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                profileRow
-
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                    Text(.settingsProfilePhotoMessage)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    if let authProviderName {
-                        Text(.settingsProfileSignedInWith(authProviderName))
-                            .font(PaeoniaTypography.caption)
-                            .foregroundStyle(.paeoniaTextTertiary)
-                    }
-                }
-
-                saveButton
+                photoSection
+                nameSection
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
@@ -66,6 +54,14 @@ struct PairedProfileEditorView: View {
         .navigationTitle(Text(.settingsProfileEditorTitle))
         .navigationBarTitleDisplayMode(.inline)
         .keyboardDismissable()
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            saveButton
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.top, PaeoniaSpacing.space12)
+                .padding(.bottom, PaeoniaSpacing.space8)
+                .background(.paeoniaBackgroundPrimary)
+        }
         .onChange(of: selectedItem) { _, item in
             loadPhoto(from: item)
         }
@@ -81,25 +77,44 @@ struct PairedProfileEditorView: View {
 }
 
 extension PairedProfileEditorView {
-    /// One compact composition instead of stacked cards: the avatar sits to the
-    /// left of the name field with its two photo actions as small icon buttons
-    /// directly beneath it, so the whole identity reads as a single block.
-    private var profileRow: some View {
-        HStack(alignment: .center, spacing: PaeoniaSpacing.space16) {
+    /// The photo is the visual anchor for this focused editor. Centering it and
+    /// giving both actions equal-width labels keeps the layout balanced and makes
+    /// the controls understandable without relying on symbol interpretation.
+    private var photoSection: some View {
+        VStack(spacing: PaeoniaSpacing.space16) {
+            profilePreview
+            photoActions
+
             VStack(spacing: PaeoniaSpacing.space8) {
-                profilePreview
+                Text(.settingsProfilePhotoMessage)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                HStack(spacing: PaeoniaSpacing.space8) {
-                    changePhotoButton
-
-                    if hasRemovablePhoto {
-                        removePhotoButton
-                    }
+                if let authProviderName {
+                    Text(.settingsProfileSignedInWith(authProviderName))
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextTertiary)
                 }
             }
-
-            nameField
+            .multilineTextAlignment(.center)
         }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var photoActions: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space8))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space8))
+
+        return layout {
+            changePhotoButton
+
+            if hasRemovablePhoto {
+                removePhotoButton
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var changePhotoButton: some View {
@@ -108,8 +123,12 @@ extension PairedProfileEditorView {
             matching: .images,
             photoLibrary: .shared()
         ) {
-            iconCircle(systemName: hasVisiblePhoto ? "photo.badge.arrow.down" : "photo.badge.plus")
+            photoActionLabel(
+                hasVisiblePhoto ? .settingsProfilePhotoChange : .settingsProfilePhotoAdd,
+                systemName: hasVisiblePhoto ? "photo.badge.arrow.down" : "photo.badge.plus"
+            )
         }
+        .buttonStyle(.plain)
         .disabled(isSaving)
         .accessibilityLabel(
             Text(hasVisiblePhoto ? .settingsProfilePhotoChange : .settingsProfilePhotoAdd)
@@ -118,22 +137,36 @@ extension PairedProfileEditorView {
 
     private var removePhotoButton: some View {
         Button(action: removePhoto) {
-            iconCircle(systemName: "trash", tint: .paeoniaError)
+            photoActionLabel(
+                .settingsProfilePhotoRemove,
+                systemName: "trash",
+                tint: .paeoniaError
+            )
         }
+        .buttonStyle(.plain)
         .disabled(isSaving)
         .accessibilityLabel(Text(.settingsProfilePhotoRemove))
     }
 
-    private func iconCircle(systemName: String, tint: Color = .paeoniaAccentPrimary) -> some View {
-        Image(systemName: systemName)
-            .font(.system(size: 17, weight: .semibold))
-            .foregroundStyle(tint)
-            .frame(
-                width: PaeoniaSpacing.compactButtonHeight,
-                height: PaeoniaSpacing.compactButtonHeight
-            )
-            .background(.paeoniaSurfaceSecondary, in: Circle())
-            .contentShape(Circle())
+    private func photoActionLabel(
+        _ title: LocalizedStringResource,
+        systemName: String,
+        tint: Color = .paeoniaAccentPrimary
+    ) -> some View {
+        Label {
+            Text(title)
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            Image(systemName: systemName)
+                .accessibilityHidden(true)
+        }
+        .font(PaeoniaTypography.button)
+        .foregroundStyle(tint)
+        .padding(.horizontal, PaeoniaSpacing.space12)
+        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
+        .background(.paeoniaSurfaceSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
     }
 
     @ViewBuilder
@@ -142,7 +175,7 @@ extension PairedProfileEditorView {
             Image(uiImage: selectedImage)
                 .resizable()
                 .scaledToFill()
-                .frame(width: Self.avatarSize, height: Self.avatarSize)
+                .frame(width: resolvedAvatarSize, height: resolvedAvatarSize)
                 .clipShape(Circle())
                 .overlay {
                     // Same subtle accent ring as the onboarding photo preview.
@@ -155,17 +188,23 @@ extension PairedProfileEditorView {
                 mediaAssetID: previewProfilePhotoAssetID,
                 name: validatedDisplayName ?? displayName,
                 tint: .paeoniaAccentPrimary,
-                size: Self.avatarSize
+                size: resolvedAvatarSize
             )
         }
     }
 
-    /// Sized so the avatar plus its two 44-point icon buttons form a column that
-    /// balances the name field beside it.
-    private static let avatarSize: CGFloat = 88
+    /// Let the identity anchor grow with text without allowing it to crowd the
+    /// form at the largest accessibility sizes.
+    private var resolvedAvatarSize: CGFloat {
+        min(avatarSize, 136)
+    }
 
-    private var nameField: some View {
+    private var nameSection: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            Text(.settingsProfileNameLabel)
+                .font(PaeoniaTypography.bodyEmphasis)
+                .foregroundStyle(.paeoniaTextPrimary)
+
             TextField(
                 text: $displayName,
                 prompt: Text(.authOnboardingDisplayNamePlaceholder)
@@ -184,7 +223,8 @@ extension PairedProfileEditorView {
             if showsSingleWordHint {
                 Text(.authOnboardingDisplayNameSingleWordHint)
                     .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextTertiary)
+                    .foregroundStyle(.paeoniaWarning)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -214,6 +214,20 @@ final class RootViewModel {
         await startSyncIfNeeded()
     }
 
+    /// Waits for the paired read models needed immediately after launch or a
+    /// sign-in transition. Location is local-first, but its server-backed
+    /// preference may be the only surviving copy after a privacy purge or app
+    /// reinstall, so the root reloads the cache only after this pass settles.
+    func synchronizePairedPresentationData() async {
+        await startSyncIfNeeded()
+
+        guard state == .paired, hasStartedSync, currentSession != nil else {
+            return
+        }
+
+        _ = await syncService.runOnce(reason: .startup)
+    }
+
     func signInWithApple(using appleSignInProvider: any AppleSignInProviding) async {
         await performAuthAction(failureNotice: .signInFailed) {
             let credential = try await appleSignInProvider.signIn()

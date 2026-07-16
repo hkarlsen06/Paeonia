@@ -63,6 +63,129 @@ struct LocationSnapshotRepositoryTests {
     }
 }
 
+struct LocationSharingPrimerStoreTests {
+    @Test
+    func responsePersistsPerUserAndRelationshipWithoutPlaintextIdentifiers() throws {
+        let suiteName = "LocationSharingPrimerStoreTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let otherUserID = testUUID("44444444-4444-4444-4444-444444444444")
+        let coupleID = testUUID("22222222-2222-2222-2222-222222222222")
+        let otherCoupleID = testUUID("55555555-5555-5555-5555-555555555555")
+        let store = UserDefaultsLocationSharingPrimerStore(defaults: defaults)
+
+        #expect(!store.hasResponded(ownerUserID: ownerUserID, coupleID: coupleID))
+        store.markResponded(ownerUserID: ownerUserID, coupleID: coupleID)
+
+        let restoredStore = UserDefaultsLocationSharingPrimerStore(defaults: defaults)
+        #expect(restoredStore.hasResponded(ownerUserID: ownerUserID, coupleID: coupleID))
+        #expect(!restoredStore.hasResponded(ownerUserID: otherUserID, coupleID: coupleID))
+        #expect(!restoredStore.hasResponded(ownerUserID: ownerUserID, coupleID: otherCoupleID))
+
+        let storedKeys = defaults.dictionaryRepresentation().keys.joined(separator: " ")
+        #expect(!storedKeys.contains(ownerUserID.uuidString.lowercased()))
+        #expect(!storedKeys.contains(coupleID.uuidString.lowercased()))
+    }
+
+    @MainActor
+    @Test
+    func restoredServerOptInStillShowsPrimerWhenIOSPermissionIsUndecided() async throws {
+        let suiteName = "LocationSharingPrimerCoordinatorTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let identity = LocationIdentity(
+            currentUserID: testUUID("11111111-1111-1111-1111-111111111111"),
+            coupleID: testUUID("22222222-2222-2222-2222-222222222222")
+        )
+        let coordinator = RootPairingPermissionPrimerCoordinator(
+            pushPrimerStore: UserDefaultsPushPermissionPrimerStore(defaults: defaults),
+            locationPrimerStore: UserDefaultsLocationSharingPrimerStore(defaults: defaults)
+        )
+
+        await coordinator.presentIfNeeded(
+            identity: identity,
+            sharingStateIsKnown: true,
+            sharingEnabled: true,
+            locationAuthorizationState: .notDetermined,
+            pushAuthorization: StaticPushAuthorization(isNotDetermined: true)
+        )
+
+        #expect(coordinator.presentedPrimer == .location)
+    }
+
+    @MainActor
+    @Test
+    func newerIdentityWinsWhileOlderPushEvaluationIsSuspended() async throws {
+        let suiteName = "LocationSharingPrimerCoordinatorRaceTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let firstIdentity = LocationIdentity(
+            currentUserID: testUUID("11111111-1111-1111-1111-111111111111"),
+            coupleID: testUUID("22222222-2222-2222-2222-222222222222")
+        )
+        let latestIdentity = LocationIdentity(
+            currentUserID: firstIdentity.currentUserID,
+            coupleID: testUUID("55555555-5555-5555-5555-555555555555")
+        )
+        let pushAuthorization = SequencedPushAuthorization()
+        let coordinator = RootPairingPermissionPrimerCoordinator(
+            pushPrimerStore: UserDefaultsPushPermissionPrimerStore(defaults: defaults),
+            locationPrimerStore: UserDefaultsLocationSharingPrimerStore(defaults: defaults)
+        )
+
+        let staleEvaluation = Task { @MainActor in
+            await coordinator.presentIfNeeded(
+                identity: firstIdentity,
+                sharingStateIsKnown: true,
+                sharingEnabled: true,
+                locationAuthorizationState: .authorized,
+                pushAuthorization: pushAuthorization
+            )
+        }
+        await pushAuthorization.waitUntilFirstEvaluationStarts()
+        await coordinator.presentIfNeeded(
+            identity: latestIdentity,
+            sharingStateIsKnown: true,
+            sharingEnabled: true,
+            locationAuthorizationState: .authorized,
+            pushAuthorization: pushAuthorization
+        )
+        pushAuthorization.finishFirstEvaluation()
+        await staleEvaluation.value
+
+        #expect(coordinator.presentedPrimer == .notifications)
+        #expect(coordinator.presentedIdentity == latestIdentity)
+    }
+
+    @MainActor
+    @Test
+    func deniedLocationAuthorizationNeverShowsDeadEndLocationPrimer() async throws {
+        let suiteName = "LocationSharingPrimerDeniedTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let identity = LocationIdentity(
+            currentUserID: testUUID("11111111-1111-1111-1111-111111111111"),
+            coupleID: testUUID("22222222-2222-2222-2222-222222222222")
+        )
+        let coordinator = RootPairingPermissionPrimerCoordinator(
+            pushPrimerStore: UserDefaultsPushPermissionPrimerStore(defaults: defaults),
+            locationPrimerStore: UserDefaultsLocationSharingPrimerStore(defaults: defaults)
+        )
+
+        await coordinator.presentIfNeeded(
+            identity: identity,
+            sharingStateIsKnown: true,
+            sharingEnabled: false,
+            locationAuthorizationState: .denied,
+            pushAuthorization: StaticPushAuthorization(isNotDetermined: true)
+        )
+
+        #expect(coordinator.presentedPrimer == .notifications)
+    }
+}
+
 struct LocationVisibilitySyncStreamTests {
     @Test
     func pullStoresVisibilitySnapshotAndAdvancesCursor() async throws {
@@ -300,6 +423,124 @@ struct SupabaseLocationGatewayRequestEncodingTests {
 
 @MainActor
 struct LocationMapViewModelTests {
+    @Test
+    func missingSnapshotDoesNotMasqueradeAsRestoredOptOut() async {
+        let viewModel = LocationMapViewModel(
+            visibilityStore: InMemoryLocationVisibilitySnapshotRepository(),
+            ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
+            operationProvider: UniqueOperationProvider(),
+            locationCapture: StubLocationCapture(error: ForegroundLocationCaptureError.unavailable)
+        )
+
+        await viewModel.configure(
+            identity: LocationIdentity(
+                currentUserID: testUUID("11111111-1111-1111-1111-111111111111"),
+                coupleID: testUUID("22222222-2222-2222-2222-222222222222")
+            )
+        )
+
+        #expect(viewModel.isPresentationReady)
+        #expect(viewModel.isSharingLoaded)
+        #expect(!viewModel.hasResolvedSharingPreference)
+        #expect(!viewModel.sharingEnabled)
+    }
+
+    @Test
+    func freshViewModelRestoresSharingFromDurableSnapshot() async throws {
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let coupleID = testUUID("22222222-2222-2222-2222-222222222222")
+        let visibilityStore = InMemoryLocationVisibilitySnapshotRepository()
+        try await visibilityStore.setViewerSharingEnabled(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            isEnabled: true,
+            updatedAt: Date(timeIntervalSince1970: 100)
+        )
+
+        let viewModel = LocationMapViewModel(
+            visibilityStore: visibilityStore,
+            ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
+            operationProvider: UniqueOperationProvider(),
+            locationCapture: StubLocationCapture(error: ForegroundLocationCaptureError.unavailable)
+        )
+
+        await viewModel.configure(
+            identity: LocationIdentity(currentUserID: ownerUserID, coupleID: coupleID)
+        )
+
+        #expect(viewModel.isPresentationReady)
+        #expect(viewModel.isSharingLoaded)
+        #expect(viewModel.hasResolvedSharingPreference)
+        #expect(viewModel.sharingEnabled)
+    }
+
+    @Test
+    func restoredSharingDoesNotPromptForSystemPermission() async throws {
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let coupleID = testUUID("22222222-2222-2222-2222-222222222222")
+        let visibilityStore = InMemoryLocationVisibilitySnapshotRepository()
+        let capture = CountingLocationCapture(authorizationState: .notDetermined)
+        try await visibilityStore.setViewerSharingEnabled(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            isEnabled: true,
+            updatedAt: Date(timeIntervalSince1970: 100)
+        )
+        let viewModel = LocationMapViewModel(
+            visibilityStore: visibilityStore,
+            ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
+            operationProvider: UniqueOperationProvider(),
+            locationCapture: capture
+        )
+        await viewModel.configure(
+            identity: LocationIdentity(currentUserID: ownerUserID, coupleID: coupleID)
+        )
+
+        await viewModel.refreshOwnLocationIfSharingEnabled(
+            source: .foregroundOpen,
+            mayPromptForAuthorization: false
+        )
+
+        #expect(capture.requestCount == 0)
+    }
+
+    @Test
+    func primerActionCapturesLocationWhenServerPreferenceIsAlreadyEnabled() async throws {
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let coupleID = testUUID("22222222-2222-2222-2222-222222222222")
+        let visibilityStore = InMemoryLocationVisibilitySnapshotRepository()
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        try await visibilityStore.setViewerSharingEnabled(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            isEnabled: true,
+            updatedAt: Date(timeIntervalSince1970: 100)
+        )
+        let viewModel = LocationMapViewModel(
+            visibilityStore: visibilityStore,
+            ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
+            pendingOperationStore: pendingStore,
+            operationProvider: UniqueOperationProvider(),
+            locationCapture: StubLocationCapture(
+                location: LocationPoint(
+                    latitude: 59.91,
+                    longitude: 10.75,
+                    capturedAt: Date(timeIntervalSince1970: 101)
+                )
+            )
+        )
+        await viewModel.configure(
+            identity: LocationIdentity(currentUserID: ownerUserID, coupleID: coupleID)
+        )
+
+        await viewModel.promptForCurrentLocation()
+
+        #expect(try await locationWriteCount(pendingStore, ownerUserID: ownerUserID) == 1)
+    }
+
     @Test
     func mapStateRequiresCurrentAndPartnerLocations() throws {
         let current = ownLocationSnapshot()
@@ -751,6 +992,7 @@ private final class StubLocationCapture: ForegroundLocationCapturing {
 
 @MainActor
 private final class SuspendedLocationCapture: ForegroundLocationCapturing {
+    let authorizationState: ForegroundLocationAuthorizationState = .authorized
     private var continuation: CheckedContinuation<LocationPoint, Never>?
     private(set) var requestCount = 0
 
@@ -771,6 +1013,76 @@ private final class SuspendedLocationCapture: ForegroundLocationCapturing {
         continuation?.resume(returning: location)
         continuation = nil
     }
+}
+
+@MainActor
+private final class CountingLocationCapture: ForegroundLocationCapturing {
+    let authorizationState: ForegroundLocationAuthorizationState
+    private(set) var requestCount = 0
+
+    init(authorizationState: ForegroundLocationAuthorizationState) {
+        self.authorizationState = authorizationState
+    }
+
+    // swiftlint:disable:next async_without_await
+    func captureCurrentLocation() async throws -> LocationPoint {
+        requestCount += 1
+        throw ForegroundLocationCaptureError.unavailable
+    }
+}
+
+private struct StaticPushAuthorization: PushAuthorizationProviding {
+    let isNotDeterminedValue: Bool
+
+    init(isNotDetermined: Bool) {
+        isNotDeterminedValue = isNotDetermined
+    }
+
+    // swiftlint:disable async_without_await
+    func isNotDetermined() async -> Bool { isNotDeterminedValue }
+    func requestAuthorizationIfNeeded() async -> Bool { true }
+    func isDenied() async -> Bool { false }
+    // swiftlint:enable async_without_await
+}
+
+@MainActor
+private final class SequencedPushAuthorization: PushAuthorizationProviding {
+    private var evaluationCount = 0
+    private var firstEvaluationContinuation: CheckedContinuation<Bool, Never>?
+    private var firstEvaluationStartWaiters: [CheckedContinuation<Void, Never>] = []
+
+    func isNotDetermined() async -> Bool {
+        evaluationCount += 1
+        guard evaluationCount == 1 else {
+            return true
+        }
+
+        let waiters = firstEvaluationStartWaiters
+        firstEvaluationStartWaiters.removeAll()
+        waiters.forEach { $0.resume() }
+        return await withCheckedContinuation { continuation in
+            firstEvaluationContinuation = continuation
+        }
+    }
+
+    func waitUntilFirstEvaluationStarts() async {
+        guard evaluationCount == 0 else {
+            return
+        }
+        await withCheckedContinuation { continuation in
+            firstEvaluationStartWaiters.append(continuation)
+        }
+    }
+
+    func finishFirstEvaluation() {
+        firstEvaluationContinuation?.resume(returning: true)
+        firstEvaluationContinuation = nil
+    }
+
+    // swiftlint:disable async_without_await
+    func requestAuthorizationIfNeeded() async -> Bool { true }
+    func isDenied() async -> Bool { false }
+    // swiftlint:enable async_without_await
 }
 
 private func visibilitySnapshot(

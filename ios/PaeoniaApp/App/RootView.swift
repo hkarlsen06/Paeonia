@@ -8,8 +8,8 @@ struct RootView: View {
     @State private var bannerCenter = PaeoniaBannerCenter()
     @State private var isLaunchExperienceActive = true
     @State private var launchContentRevealed = false
-    @State private var isPushPermissionPrimerPresented = false
-    @State private var isPushPermissionPrimerEvaluationInFlight = false
+    @State private var permissionPrimerCoordinator: RootPairingPermissionPrimerCoordinator
+    @State private var hasFinishedPostLaunchWork = false
     @Binding private var deepLink: PaeoniaDeepLink?
     @Binding private var pendingJoinInviteCode: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -20,7 +20,6 @@ struct RootView: View {
     private let widgetCanvasService: any WidgetCanvasManaging
     private let widgetCanvasSync: any WidgetCanvasSyncing
     private let pushAuthorization: any PushAuthorizationProviding
-    private let pushPermissionPrimerStore: any PushPermissionPrimerPersisting
     private let widgetPushRegistration: any WidgetPushRegistering
     private let partnerAvatarSharing: (any PartnerAvatarSharing)?
     private let featureDependencies: RootFeatureDependencies
@@ -41,6 +40,7 @@ struct RootView: View {
         widgetCanvasSync: (any WidgetCanvasSyncing)? = nil,
         pushAuthorization: (any PushAuthorizationProviding)? = nil,
         pushPermissionPrimerStore: (any PushPermissionPrimerPersisting)? = nil,
+        locationSharingPrimerStore: (any LocationSharingPrimerPersisting)? = nil,
         widgetPushRegistration: (any WidgetPushRegistering)? = nil,
         partnerAvatarSharing: (any PartnerAvatarSharing)? = nil,
         featureDependencies: RootFeatureDependencies = RootFeatureDependencies(),
@@ -48,6 +48,14 @@ struct RootView: View {
     ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
         _locationViewModel = State(initialValue: locationViewModel ?? LocationMapViewModel())
+        _permissionPrimerCoordinator = State(
+            initialValue: RootPairingPermissionPrimerCoordinator(
+                pushPrimerStore: pushPermissionPrimerStore
+                    ?? UserDefaultsPushPermissionPrimerStore(),
+                locationPrimerStore: locationSharingPrimerStore
+                    ?? UserDefaultsLocationSharingPrimerStore()
+            )
+        )
         _deepLink = deepLink
         _pendingJoinInviteCode = pendingJoinInviteCode
         self.appleSignInProvider = appleSignInProvider ?? AppleSignInService()
@@ -55,7 +63,6 @@ struct RootView: View {
         self.widgetCanvasService = widgetCanvasService ?? WidgetCanvasService.shared
         self.widgetCanvasSync = widgetCanvasSync ?? WidgetCanvasSyncServiceFactory.makeDefault()
         self.pushAuthorization = pushAuthorization ?? PushAuthorizationService()
-        self.pushPermissionPrimerStore = pushPermissionPrimerStore ?? UserDefaultsPushPermissionPrimerStore()
         self.widgetPushRegistration = widgetPushRegistration ?? WidgetPushRegistrationServiceFactory.makeDefault()
         self.partnerAvatarSharing = partnerAvatarSharing ?? PartnerAvatarSharingServiceFactory.makeDefault()
         self.featureDependencies = featureDependencies
@@ -83,6 +90,7 @@ struct RootView: View {
                 guard !Task.isCancelled else { return }
                 registerForRemoteNotificationsIfSignedIn(viewModel.currentSession?.id)
                 await viewModel.finishDeferredLaunchStartup()
+                hasFinishedPostLaunchWork = true
                 await performWidgetSyncIfPaired(viewModel.state)
             }
             .preferredColorScheme(.dark)
@@ -90,10 +98,20 @@ struct RootView: View {
             // the link changes) so navigation state is never mutated
             // synchronously during a view update.
             .task(id: deepLink) {
-                handleDeepLink(deepLink)
+                await handleDeepLink(deepLink)
             }
             .task(id: locationIdentity) {
                 await locationViewModel.configure(identity: locationIdentity)
+            }
+            // A local snapshot paints immediately. Once the paired surface is
+            // stable, wait for the server-backed read model, then republish it
+            // into the view model so location consent survives privacy purges,
+            // sign-out/sign-in, reinstall, and ordinary app restarts.
+            .task(id: stablePairedLocationIdentity) {
+                guard let stableIdentity = stablePairedLocationIdentity else {
+                    return
+                }
+                await restorePairedLocationPresentation(for: stableIdentity)
             }
             .onChange(of: viewModel.notice) { _, notice in
                 showBanner(for: notice)
@@ -121,14 +139,11 @@ struct RootView: View {
                 PaeoniaNotificationRouter.shared.consumeForegroundNotice()
             }
             .onChange(of: viewModel.state) { _, state in
+                if state != .paired {
+                    permissionPrimerCoordinator.dismiss()
+                }
                 if !isLaunchExperienceActive {
                     syncWidgetIfPaired(state)
-                }
-                presentPushPermissionPrimerIfNeeded(for: state)
-            }
-            .onChange(of: viewModel.isPairingCelebrationPresented) { _, isPresented in
-                if !isPresented {
-                    presentPushPermissionPrimerIfNeeded(for: viewModel.state)
                 }
             }
             .onChange(of: scenePhase) { _, phase in
@@ -142,9 +157,15 @@ struct RootView: View {
                 // refresh our location, run a single foreground sync, reload the
                 // map, then pull the partner's widget drawing.
                 Task {
-                    await locationViewModel.refreshOwnLocationIfSharingEnabled(source: .foregroundOpen)
+                    await locationViewModel.refreshOwnLocationIfSharingEnabled(
+                        source: .foregroundOpen,
+                        mayPromptForAuthorization: false
+                    )
                     await viewModel.refreshAfterForegroundActivation()
                     await locationViewModel.reload()
+                    if let identity = stablePairedLocationIdentity {
+                        await presentPermissionPrimerIfNeeded(for: identity)
+                    }
                     await performWidgetSyncIfPaired(viewModel.state)
                 }
             }
@@ -181,12 +202,21 @@ struct RootView: View {
             } message: {
                 Text(.authDeleteAccountAppleManualMessage)
             }
-            .sheet(isPresented: $isPushPermissionPrimerPresented) {
-                PushPermissionPrimerView(
-                    partnerName: pushPermissionPrimerPartnerName,
-                    onEnable: enablePushNotifications,
-                    onNotNow: dismissPushPermissionPrimer
-                )
+            .sheet(item: pairingPermissionPrimerBinding) { primer in
+                switch primer {
+                case .location:
+                    LocationSharingPrimerView(
+                        partnerName: pairingPermissionPrimerPartnerName,
+                        onShare: enableLocationSharing,
+                        onNotNow: dismissLocationSharingPrimer
+                    )
+                case .notifications:
+                    PushPermissionPrimerView(
+                        partnerName: pairingPermissionPrimerPartnerName,
+                        onEnable: enablePushNotifications,
+                        onNotNow: dismissPushPermissionPrimer
+                    )
+                }
             }
     }
 
@@ -240,7 +270,6 @@ struct RootView: View {
                     onRevealContent: { launchContentRevealed = true },
                     onFinished: {
                         isLaunchExperienceActive = false
-                        presentPushPermissionPrimerIfNeeded(for: viewModel.state)
                     }
                 )
                 .transition(.identity)
@@ -675,7 +704,7 @@ struct RootView: View {
     }
 
     @MainActor
-    private func handleDeepLink(_ deepLink: PaeoniaDeepLink?) {
+    private func handleDeepLink(_ deepLink: PaeoniaDeepLink?) async {
         guard let deepLink else {
             return
         }
@@ -683,6 +712,18 @@ struct RootView: View {
         switch deepLink {
         case .widgetDrawing:
             viewModel.openWidgetDrawing()
+            self.deepLink = nil
+        case .widgetRefresh:
+            // A widget extension cannot use the signed-in Supabase session.
+            // Route refresh through the host app, keep the destination useful,
+            // and await the real paired sync before consuming the request.
+            viewModel.openWidgetDrawing()
+            await performWidgetSyncIfPaired(viewModel.state)
+            // `.task(id:)` cancels this handler when a newer route arrives. Do
+            // not let the completed refresh erase that newer navigation intent.
+            guard !Task.isCancelled, self.deepLink == deepLink else {
+                return
+            }
             self.deepLink = nil
         case .dailyReveal, .dailyToday:
             switch viewModel.state {
@@ -744,55 +785,45 @@ struct RootView: View {
     /// Pull-to-refresh on Home after the Daily Challenge refresh has run: refreshes
     /// shared local surfaces and widget sync without delaying the challenge rollover.
     private func refreshHomeSurfacesFromPull() async {
-        await locationViewModel.refreshOwnLocationIfSharingEnabled(source: .manualRefresh)
+        await locationViewModel.refreshOwnLocationIfSharingEnabled(
+            source: .manualRefresh,
+            mayPromptForAuthorization: false
+        )
         await performWidgetSyncIfPaired(viewModel.state)
         await locationViewModel.reload()
     }
 
-    /// Offers one calm, persisted explanation after pairing, once both the cold
-    /// launch and pairing celebration are out of the way. The system dialog is
-    /// only requested after the user explicitly continues from this primer.
-    private func presentPushPermissionPrimerIfNeeded(for state: AppState) {
-        guard state == .paired,
-              !isLaunchExperienceActive,
-              !viewModel.isPairingCelebrationPresented,
-              !isPushPermissionPrimerPresented,
-              !isPushPermissionPrimerEvaluationInFlight,
-              !pushPermissionPrimerStore.hasResponded()
-        else {
-            return
-        }
-
-        isPushPermissionPrimerEvaluationInFlight = true
-        Task { @MainActor in
-            let isNotDetermined = await pushAuthorization.isNotDetermined()
-            isPushPermissionPrimerEvaluationInFlight = false
-
-            guard viewModel.state == .paired,
-                  !isLaunchExperienceActive,
-                  !viewModel.isPairingCelebrationPresented,
-                  !pushPermissionPrimerStore.hasResponded()
-            else {
-                return
+    private var pairingPermissionPrimerBinding: Binding<RootPairingPermissionPrimerCoordinator.Primer?> {
+        Binding(
+            get: { permissionPrimerCoordinator.presentedPrimer },
+            set: { primer in
+                if primer == nil {
+                    permissionPrimerCoordinator.dismiss()
+                }
             }
-
-            if isNotDetermined {
-                isPushPermissionPrimerPresented = true
-            } else {
-                // A prior system choice makes the primer irrelevant. Persist
-                // that settled state so later paired transitions stay quiet.
-                pushPermissionPrimerStore.markResponded()
-            }
-        }
+        )
     }
 
-    private var pushPermissionPrimerPartnerName: String {
+    private var pairingPermissionPrimerPartnerName: String {
         viewModel.currentPartnerDisplayName?.trimmedNonEmpty
             ?? String(localized: .pairingCelebrationPartnerName)
     }
 
+    private func enableLocationSharing() {
+        permissionPrimerCoordinator.markLocationResponded(identity: locationIdentity)
+        permissionPrimerCoordinator.dismiss()
+        Task { @MainActor in
+            await locationViewModel.promptForCurrentLocation()
+        }
+    }
+
+    private func dismissLocationSharingPrimer() {
+        permissionPrimerCoordinator.markLocationResponded(identity: locationIdentity)
+        permissionPrimerCoordinator.dismiss()
+    }
+
     private func enablePushNotifications() {
-        isPushPermissionPrimerPresented = false
+        permissionPrimerCoordinator.dismiss()
         Task { @MainActor in
             let didSettleAuthorization = await pushAuthorization.requestAuthorizationIfNeeded()
             // Persist only after the call has reached and settled the system
@@ -800,14 +831,14 @@ struct RootView: View {
             // primer remains eligible on the next launch instead of disappearing
             // forever while iOS is still `.notDetermined`.
             if didSettleAuthorization {
-                pushPermissionPrimerStore.markResponded()
+                permissionPrimerCoordinator.markPushResponded()
             }
         }
     }
 
     private func dismissPushPermissionPrimer() {
-        pushPermissionPrimerStore.markResponded()
-        isPushPermissionPrimerPresented = false
+        permissionPrimerCoordinator.markPushResponded()
+        permissionPrimerCoordinator.dismiss()
     }
 
     private func showBanner(for notice: RootNotice?) {
@@ -846,6 +877,66 @@ struct RootView: View {
             coupleID: viewModel.currentActiveCoupleID
         )
     }
+
+    private var stablePairedLocationIdentity: LocationIdentity? {
+        guard hasFinishedPostLaunchWork,
+              viewModel.state == .paired,
+              !viewModel.isPairingCelebrationPresented,
+              locationIdentity.currentUserID != nil,
+              locationIdentity.coupleID != nil
+        else {
+            return nil
+        }
+
+        return locationIdentity
+    }
+
+    private func restorePairedLocationPresentation(for identity: LocationIdentity) async {
+        await viewModel.synchronizePairedPresentationData()
+        guard isCurrentStableIdentity(identity) else { return }
+
+        // Configure again rather than assuming the cache-first task has already
+        // settled; both tasks can become eligible after a fast sign-in transition.
+        await locationViewModel.configure(identity: identity)
+        guard isCurrentStableIdentity(identity) else { return }
+
+        // A fresh install may restore an enabled server preference while iOS
+        // permission is undecided. The primer remains the only prompting path.
+        await locationViewModel.refreshOwnLocationIfSharingEnabled(
+            source: .foregroundOpen,
+            mayPromptForAuthorization: false
+        )
+        guard isCurrentStableIdentity(identity) else { return }
+
+        await presentPermissionPrimerIfNeeded(for: identity)
+    }
+
+    private func presentPermissionPrimerIfNeeded(for identity: LocationIdentity) async {
+        guard allowsSystemIntegrations, isCurrentStableIdentity(identity) else {
+            return
+        }
+
+        await permissionPrimerCoordinator.presentIfNeeded(
+            identity: identity,
+            sharingStateIsKnown: locationViewModel.hasResolvedSharingPreference,
+            sharingEnabled: locationViewModel.sharingEnabled,
+            locationAuthorizationState: locationViewModel.authorizationState,
+            pushAuthorization: pushAuthorization
+        )
+
+        // Scene-activation work is intentionally unstructured and can outlive
+        // the paired identity while the authorization status read is suspended.
+        // Never let that stale result resurrect a primer after unpair/sign-out.
+        if !isCurrentStableIdentity(identity),
+           permissionPrimerCoordinator.presentedIdentity == identity {
+            permissionPrimerCoordinator.dismiss()
+        }
+    }
+
+    private func isCurrentStableIdentity(_ identity: LocationIdentity) -> Bool {
+        !Task.isCancelled && stablePairedLocationIdentity == identity
+    }
+
 }
 
 #Preview {

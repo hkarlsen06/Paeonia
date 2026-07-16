@@ -46,6 +46,8 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
     private nonisolated static let lastSyncedKey = "paeonia.widgetCanvas.lastSyncedRevisionID"
     private var inFlightSync: (identity: WidgetSyncIdentity, task: Task<Void, Never>)?
     private var pendingRerunIdentities: Set<WidgetSyncIdentity> = []
+    private var privacyGeneration: UInt64 = 0
+    private var privacyResetCount = 0
 
     #if DEBUG
     private let logger = Logger(
@@ -71,43 +73,80 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
     }
 
     func sync(identity: WidgetSyncIdentity) async {
-        // A matching run is already going. It may have already read the canvas state, so
-        // simply awaiting it could miss a revision committed after that read. Ask the
-        // running pass for one trailing re-run (all duplicates collapse into a single
-        // re-run) and wait for that pass to finish. A different identity still runs on
-        // its own, independently.
-        if let inFlightSync, inFlightSync.identity == identity {
-            pendingRerunIdentities.insert(identity)
-            await inFlightSync.task.value
+        await sync(identity: identity, privacyGeneration: privacyGeneration)
+    }
+
+    private func sync(identity: WidgetSyncIdentity, privacyGeneration expectedGeneration: UInt64) async {
+        guard privacyResetCount == 0,
+              expectedGeneration == privacyGeneration,
+              !Task.isCancelled
+        else {
             return
         }
 
-        // Run, then do one more pass for each generation of duplicates that arrived while
-        // we were busy, so the latest state is always observed before we settle. The
-        // re-run is cheap when nothing changed: it re-reads the canvas state and stops at
-        // the already-synced revision before downloading again.
+        if let inFlightSync {
+            if inFlightSync.identity == identity {
+                // The active pass may already have read the server state. Queue
+                // a trailing pass and await the *whole loop*, not only the first
+                // request, so a refresh control cannot settle while its re-check
+                // is still running.
+                pendingRerunIdentities.insert(identity)
+                await inFlightSync.task.value
+                return
+            }
+
+            // Identity changes are rare (sign-out/re-pair) and must not run two
+            // downloads against one local canvas concurrently. Let the prior
+            // owner settle, then re-enter against the latest in-flight state.
+            await inFlightSync.task.value
+            await sync(identity: identity, privacyGeneration: expectedGeneration)
+            return
+        }
+
+        let syncTask = Task {
+            await self.runSyncLoop(identity: identity, privacyGeneration: expectedGeneration)
+        }
+        inFlightSync = (identity, syncTask)
+        await syncTask.value
+    }
+
+    /// Runs until no caller requested another observation pass while the prior
+    /// pass was suspended in network or disk work. All matching callers await
+    /// this task, so completion means the coalesced refresh is genuinely done.
+    private func runSyncLoop(identity: WidgetSyncIdentity, privacyGeneration expectedGeneration: UInt64) async {
         repeat {
             pendingRerunIdentities.remove(identity)
-            let syncTask = Task { await performSync(identity: identity) }
-            inFlightSync = (identity, syncTask)
-            await syncTask.value
-            if inFlightSync?.identity == identity {
-                inFlightSync = nil
-            }
-        } while pendingRerunIdentities.contains(identity)
+            await performSync(identity: identity)
+        } while !Task.isCancelled
+            && privacyResetCount == 0
+            && expectedGeneration == privacyGeneration
+            && pendingRerunIdentities.contains(identity)
+
+        // Clear inside the loop task before it completes. Otherwise a new
+        // caller can observe a completed task still registered as in-flight,
+        // queue a rerun that nothing is left to execute, and falsely settle.
+        if inFlightSync?.identity == identity {
+            inFlightSync = nil
+        }
     }
 
     func clearForPrivacy() async {
+        privacyGeneration &+= 1
+        privacyResetCount += 1
         await stopInFlightSyncForPrivacy()
         pendingStore.clearAll()
         Self.clearPersistedState(defaults: defaults)
         await localStore.clearForPrivacy()
+        privacyResetCount -= 1
     }
 
     func hideForPrivacy() async {
+        privacyGeneration &+= 1
+        privacyResetCount += 1
         await stopInFlightSyncForPrivacy()
         Self.clearPersistedState(defaults: defaults)
         await localStore.hideForPrivacy()
+        privacyResetCount -= 1
     }
 
     private func stopInFlightSyncForPrivacy() async {

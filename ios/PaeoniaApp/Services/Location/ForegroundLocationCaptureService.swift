@@ -7,9 +7,22 @@ nonisolated enum ForegroundLocationCaptureError: Error, Equatable {
     case alreadyRequesting
 }
 
+nonisolated enum ForegroundLocationAuthorizationState: Equatable, Sendable {
+    case notDetermined
+    case authorized
+    case denied
+}
+
 @MainActor
 protocol ForegroundLocationCapturing: AnyObject {
+    var authorizationState: ForegroundLocationAuthorizationState { get }
     func captureCurrentLocation() async throws -> LocationPoint
+}
+
+extension ForegroundLocationCapturing {
+    /// Test and scenario captures opt out of silent restoration unless they
+    /// deliberately provide an authorization state.
+    var authorizationState: ForegroundLocationAuthorizationState { .notDetermined }
 }
 
 @MainActor
@@ -21,6 +34,19 @@ final class ForegroundLocationCaptureService: NSObject, ForegroundLocationCaptur
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+    }
+
+    var authorizationState: ForegroundLocationAuthorizationState {
+        switch manager.authorizationStatus {
+        case .notDetermined:
+            .notDetermined
+        case .authorizedAlways, .authorizedWhenInUse:
+            .authorized
+        case .denied, .restricted:
+            .denied
+        @unknown default:
+            .denied
+        }
     }
 
     func captureCurrentLocation() async throws -> LocationPoint {

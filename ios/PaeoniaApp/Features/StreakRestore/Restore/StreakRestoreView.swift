@@ -173,7 +173,7 @@ nonisolated enum StreakRestoreDeadlineState: Equatable {
     }
 
     var blocksPurchase: Bool {
-        self == .expired
+        self != .active
     }
 }
 

@@ -147,6 +147,41 @@ struct WidgetCanvasSyncServiceTests {
         #expect(!env.pendingStore.hasPending)
     }
 
+    @Test func privacyClearPreventsWaitingDifferentIdentityFromRestartingSync() async {
+        let downloadedData = SyncEnvironment.makeDrawing().dataRepresentation()
+        let downloader = SyncSuspendingDownloaderSpy(data: downloadedData)
+        let env = SyncEnvironment(downloadedData: downloadedData, downloader: downloader)
+        let partnerID = UUID()
+        env.gateway.state = Self.state(authorUserID: partnerID, canvasSide: 280)
+        env.gateway.signedURL = URL(string: "https://example.com/payload")
+
+        let firstSync = Task {
+            await env.service.sync(identity: Self.identity(partnerID: partnerID))
+        }
+        await downloader.waitUntilDownloadStarted()
+
+        let waitingSync = Task {
+            await env.service.sync(
+                identity: WidgetSyncIdentity(
+                    currentUserID: UUID(),
+                    currentDisplayName: "Different user",
+                    partnerDisplayName: "Different partner"
+                )
+            )
+        }
+        let privacyClear = Task { await env.service.clearForPrivacy() }
+        await Task.yield()
+        await downloader.resume()
+
+        await firstSync.value
+        await waitingSync.value
+        await privacyClear.value
+
+        #expect(env.gateway.getCanvasStateCallCount == 1)
+        #expect(await downloader.downloadCount == 1)
+        #expect(env.localStore.savedCalls.isEmpty)
+    }
+
     @Test func syncDoesNothingWithoutAnActiveRevision() async {
         let env = SyncEnvironment()
         env.gateway.state = WidgetCanvasState(
@@ -267,6 +302,9 @@ private actor SyncSuspendingDownloaderSpy: WidgetPayloadDownloading {
 
     func download(from url: URL) async -> Data {
         downloadCount += 1
+        if downloadCount > 1 {
+            return data
+        }
         return await withCheckedContinuation { continuation in
             downloadContinuation = continuation
             didStartDownload = true

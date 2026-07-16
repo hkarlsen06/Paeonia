@@ -1,6 +1,15 @@
 import PencilKit
 import UIKit
 
+nonisolated protocol WidgetDrawingRasterizing: Sendable {
+    @MainActor
+    func renderPNG(
+        fromDrawingData: Data,
+        canvasSide: CGFloat,
+        pixelWidth: CGFloat
+    ) async -> Data?
+}
+
 /// Renders a saved drawing into the raster previews the widget displays.
 ///
 /// Previews are derived cache data, not the canonical drawing. Rendering uses a
@@ -11,7 +20,7 @@ import UIKit
 /// Works in terms of `Data` in and `Data` out (both `Sendable`) and runs on the
 /// main actor, so the canvas service actor can call it without passing
 /// non-`Sendable` PencilKit/UIKit values across an isolation boundary.
-nonisolated struct WidgetDrawingRasterizer {
+nonisolated struct WidgetDrawingRasterizer: WidgetDrawingRasterizing {
     /// Decodes `drawingData` and renders a PNG whose long edge is roughly
     /// `pixelWidth` pixels wide.
     ///
@@ -21,7 +30,14 @@ nonisolated struct WidgetDrawingRasterizer {
     ///     were drawn in. Strokes are stored in this coordinate space.
     ///   - pixelWidth: The target rendered width in pixels.
     @MainActor
-    func renderPNG(fromDrawingData drawingData: Data, canvasSide: CGFloat, pixelWidth: CGFloat) -> Data? {
+    // Async protocol shape lets the save coordinator test and guard actor
+    // reentrancy around rendering; UIKit itself completes synchronously here.
+    func renderPNG(
+        fromDrawingData drawingData: Data,
+        canvasSide: CGFloat,
+        pixelWidth: CGFloat
+    ) async -> Data? {
+        await Task.yield()
         guard canvasSide > 0,
               pixelWidth > 0,
               let drawing = try? PKDrawing(data: drawingData)

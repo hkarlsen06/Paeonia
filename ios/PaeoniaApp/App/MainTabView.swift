@@ -477,6 +477,10 @@ struct MainTabView: View {
         case .widgetDrawing:
             onOpenWidgetDrawing()
             self.deepLink.wrappedValue = nil
+        case .widgetRefresh:
+            // RootView owns the host-app sync and consumes this route once the
+            // refresh has settled. Do not race it from the tab hierarchy.
+            break
         case .dailyReveal(let instanceID, _):
             selection.wrappedValue = .questions
             await refreshDailyChallenge()

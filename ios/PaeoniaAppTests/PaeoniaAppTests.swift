@@ -883,6 +883,10 @@ struct PaeoniaAppTests {
 
         #expect(await syncService.startCallCount == 1)
         #expect(await syncService.configuredSessions.count == 1)
+
+        await viewModel.synchronizePairedPresentationData()
+
+        #expect(await syncService.runOnceReasons == [.startup])
     }
 
     @MainActor

@@ -6,22 +6,35 @@ import Testing
 /// local-first, so this math has to land on the same number the server will reach
 /// once today's answer syncs.
 struct CoupleStreakTests {
-    @Test func consecutiveDayExtendsStoredCount() {
+    @Test func consecutiveDayExtendsStoredCountWhenPartnerAlreadyContributed() {
         let count = StreakCelebration.celebratedCount(
             serverCurrentCount: 4,
             lastQualifiedDate: "2026-06-27",
-            todayLocalDate: "2026-06-28"
+            todayLocalDate: "2026-06-28",
+            partnerContributedToday: true
         )
 
         #expect(count == 5)
     }
 
+    @Test func currentUsersCompletionDoesNotAdvanceStreakAlone() {
+        let count = StreakCelebration.celebratedCount(
+            serverCurrentCount: 4,
+            lastQualifiedDate: "2026-06-27",
+            todayLocalDate: "2026-06-28",
+            partnerContributedToday: false
+        )
+
+        #expect(count == 4)
+    }
+
     @Test func alreadyCountedTodayKeepsStoredCount() {
-        // The partner (or this user earlier) already kept the streak today.
+        // The server has already recorded the mutually qualified day.
         let count = StreakCelebration.celebratedCount(
             serverCurrentCount: 5,
             lastQualifiedDate: "2026-06-28",
-            todayLocalDate: "2026-06-28"
+            todayLocalDate: "2026-06-28",
+            partnerContributedToday: false
         )
 
         #expect(count == 5)
@@ -31,17 +44,19 @@ struct CoupleStreakTests {
         let count = StreakCelebration.celebratedCount(
             serverCurrentCount: 0,
             lastQualifiedDate: "2026-06-25",
-            todayLocalDate: "2026-06-28"
+            todayLocalDate: "2026-06-28",
+            partnerContributedToday: true
         )
 
         #expect(count == 1)
     }
 
-    @Test func neverQualifiedStartsAtOne() {
+    @Test func neverQualifiedStartsAtOneWhenBothHaveContributed() {
         let count = StreakCelebration.celebratedCount(
             serverCurrentCount: 0,
             lastQualifiedDate: nil,
-            todayLocalDate: "2026-06-28"
+            todayLocalDate: "2026-06-28",
+            partnerContributedToday: true
         )
 
         #expect(count == 1)
@@ -51,7 +66,8 @@ struct CoupleStreakTests {
         let count = StreakCelebration.celebratedCount(
             serverCurrentCount: 12,
             lastQualifiedDate: "2026-06-30",
-            todayLocalDate: "2026-07-01"
+            todayLocalDate: "2026-07-01",
+            partnerContributedToday: true
         )
 
         #expect(count == 13)
@@ -61,7 +77,8 @@ struct CoupleStreakTests {
         let count = StreakCelebration.celebratedCount(
             serverCurrentCount: 7,
             lastQualifiedDate: "2026-06-27",
-            todayLocalDate: nil
+            todayLocalDate: nil,
+            partnerContributedToday: true
         )
 
         #expect(count == 7)
@@ -73,10 +90,22 @@ struct CoupleStreakTests {
         let count = StreakCelebration.celebratedCount(
             serverCurrentCount: 8,
             lastQualifiedDate: "2026-06-29",
-            todayLocalDate: "2026-06-28"
+            todayLocalDate: "2026-06-28",
+            partnerContributedToday: true
         )
 
         #expect(count == 9)
+    }
+
+    @Test func legacyCachedStreakDefaultsParticipationToIncomplete() throws {
+        let data = Data(
+            #"{"current_count":4,"longest_count":8,"last_qualified_date":"2026-06-27","restore_available":false,"restorable_count":0,"restore_deadline":null}"#.utf8
+        )
+
+        let row = try JSONDecoder().decode(CoupleStreakRow.self, from: data)
+
+        #expect(!row.currentUserContributedToday)
+        #expect(!row.partnerContributedToday)
     }
 
     // MARK: - Restore eligibility

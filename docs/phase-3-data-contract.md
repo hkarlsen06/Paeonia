@@ -2070,10 +2070,12 @@ Qualifying activity:
 
 Rules:
 
-- A couple-day is kept alive when at least one qualifying activity event exists for that `couple_day`.
+- A couple-day is kept alive only after each active partner has at least one qualifying activity event for that `couple_day`; one partner cannot advance or renew the shared streak alone.
+- Anchor the qualified moment to the later of the partners' first qualifying events for that day. Later repeat actions from either partner must not extend the deadline again.
 - `next_activity_deadline_at` is the actual break instant, after the next activity day has fully elapsed.
 - Calculate it as the later-occurring protective midnight across both partners: for each partner's current timezone, take midnight after the next complete local calendar day following the latest qualifying activity, then use the later absolute instant.
 - Recalculate a live streak deadline from the immutable activity timestamp whenever either partner's timezone changes and before streak reads or reminders. Prefer the timezone on that partner's most recently seen active device, with the profile timezone as fallback. Travel changes the deadline; the streak is not frozen to the timezone that was active when the action happened.
+- Send a streak reminder only to an active partner who has not yet contributed during the current couple day. If neither has contributed, each may receive their own reminder; never remind someone whose part is already complete.
 - Use local calendar-date arithmetic before converting the midnight back to `timestamptz`. Do not add a fixed 24-hour interval to a midnight across daylight-saving transitions.
 - A paid streak restore stays available for 24 hours after the break point.
 - Include a graceful restore button.

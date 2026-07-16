@@ -324,6 +324,11 @@
     func markResponded() {}
   }
 
+  nonisolated struct DeveloperLocalFlowLocationPrimerStore: LocationSharingPrimerPersisting {
+    func hasResponded(ownerUserID _: UUID, coupleID _: UUID) -> Bool { true }
+    func markResponded(ownerUserID _: UUID, coupleID _: UUID) {}
+  }
+
   actor DeveloperLocalFlowPartnerAvatarSharing: PartnerAvatarSharing {
     func cachePartnerAvatar(assetID _: UUID?) async {}
     func clear() async {}

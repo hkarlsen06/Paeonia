@@ -750,6 +750,12 @@ RPCs/jobs:
 - notification fanout job/function
 - streak reminder scheduler
 
+Streak behavior:
+
+- [ ] A couple day advances the shared streak only after both active partners contribute.
+- [ ] The qualification timestamp is the later partner's first event; repeat actions do not extend it.
+- [ ] Reminder fanout targets only the partner or partners still missing a current-day contribution.
+
 Indexes:
 
 - `location_sharing_preferences(couple_id, user_id)` PK

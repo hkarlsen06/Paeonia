@@ -34,7 +34,12 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     private(set) var isPresentationReady = false
     private(set) var sharingEnabled = false
     private(set) var isSharingLoaded = false
+    private(set) var hasResolvedSharingPreference = false
     private(set) var notice: Notice?
+
+    var authorizationState: ForegroundLocationAuthorizationState {
+        locationCapture.authorizationState
+    }
 
     init(
         visibilityStore: (any LocationVisibilitySnapshotPersisting)? = nil,
@@ -48,8 +53,12 @@ final class LocationMapViewModel: PresentationReadinessProviding {
             needsOwnLocationStore: ownLocationStore == nil,
             needsPendingOperationStore: pendingOperationStore == nil
         )
-        self.visibilityStore = visibilityStore ?? defaultStores?.visibilityStore ?? InMemoryLocationVisibilitySnapshotRepository()
-        self.ownLocationStore = ownLocationStore ?? defaultStores?.ownLocationStore ?? InMemoryOwnLocationSnapshotRepository()
+        self.visibilityStore = visibilityStore
+            ?? defaultStores?.visibilityStore
+            ?? InMemoryLocationVisibilitySnapshotRepository()
+        self.ownLocationStore = ownLocationStore
+            ?? defaultStores?.ownLocationStore
+            ?? InMemoryOwnLocationSnapshotRepository()
         self.pendingOperationStore = pendingOperationStore
             ?? defaultStores?.pendingOperationStore
             ?? InMemoryPendingSyncOperationRepository()
@@ -73,6 +82,7 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         isPresentationReady = false
         sharingEnabled = false
         isSharingLoaded = false
+        hasResolvedSharingPreference = false
         notice = nil
         await reload()
     }
@@ -93,6 +103,7 @@ final class LocationMapViewModel: PresentationReadinessProviding {
             isPresentationReady = false
             sharingEnabled = false
             isSharingLoaded = false
+            hasResolvedSharingPreference = false
             return
         }
 
@@ -111,6 +122,7 @@ final class LocationMapViewModel: PresentationReadinessProviding {
                 sharingEnabled = visibility?.viewerSharingEnabled ?? false
             }
             isSharingLoaded = true
+            hasResolvedSharingPreference = visibility != nil
             mapState = Self.resolveMapState(visibility: visibility, ownLocation: ownLocation)
             isPresentationReady = true
         } catch {
@@ -122,7 +134,11 @@ final class LocationMapViewModel: PresentationReadinessProviding {
 
             mapState = .partnerUnknown(.unknown("local_load_failed"))
             isPresentationReady = true
+            // Local-first controls remain available offline. Automatic priming
+            // uses the separate resolved flag and stays quiet until a cached or
+            // server snapshot establishes the actual preference.
             isSharingLoaded = true
+            hasResolvedSharingPreference = false
         }
     }
 
@@ -141,6 +157,7 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         let previousValue = sharingEnabled
         sharingEnabled = enabled
         isSharingLoaded = true
+        hasResolvedSharingPreference = true
 
         do {
             try await persistSharingChange(
@@ -176,7 +193,14 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         }
     }
 
-    func refreshOwnLocationIfSharingEnabled(source: LocationSharingSource) async {
+    func refreshOwnLocationIfSharingEnabled(
+        source: LocationSharingSource,
+        mayPromptForAuthorization: Bool = true
+    ) async {
+        guard mayPromptForAuthorization || locationCapture.authorizationState == .authorized else {
+            return
+        }
+
         guard sharingEnabled,
               let currentUserID = identity.currentUserID,
               let coupleID = identity.coupleID,
@@ -222,32 +246,6 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         notice = nil
     }
 
-    static func resolveMapState(
-        visibility: LocationVisibilitySnapshot?,
-        ownLocation: OwnLocationSnapshot?
-    ) -> CoupleMapState {
-        guard let visibility else {
-            return .partnerUnknown(.unknown("missing_visibility"))
-        }
-        guard visibility.viewerSharingEnabled else {
-            return .currentUnknown
-        }
-        guard let current = ownLocation?.location else {
-            return .currentUnknown
-        }
-        guard visibility.visibilityState == .visible,
-              let partner = visibility.partnerLocation
-        else {
-            return .partnerUnknown(visibility.visibilityState)
-        }
-
-        return .ready(
-            current: current,
-            partner: partner,
-            partnerWasStaleAtLastRefresh: visibility.partnerLocationIsStale
-        )
-    }
-
     private func enqueueLocationPreference(
         ownerUserID: UUID,
         coupleID: UUID,
@@ -266,7 +264,11 @@ final class LocationMapViewModel: PresentationReadinessProviding {
                 ownerUserID: ownerUserID,
                 operation: operation,
                 operationKind: .updateLocationSharingPreference,
-                idempotencyScope: "location-preference:\(coupleID.uuidString.lowercased()):\(operation.id.uuidString.lowercased())",
+                idempotencyScope: [
+                    "location-preference",
+                    coupleID.uuidString.lowercased(),
+                    operation.id.uuidString.lowercased(),
+                ].joined(separator: ":"),
                 requestData: try encoder.encode(payload)
             )
         )
@@ -400,7 +402,11 @@ final class LocationMapViewModel: PresentationReadinessProviding {
                 ownerUserID: ownerUserID,
                 operation: operation,
                 operationKind: .updateLatestPartnerLocation,
-                idempotencyScope: "latest-location:\(coupleID.uuidString.lowercased()):\(operation.id.uuidString.lowercased())",
+                idempotencyScope: [
+                    "latest-location",
+                    coupleID.uuidString.lowercased(),
+                    operation.id.uuidString.lowercased(),
+                ].joined(separator: ":"),
                 requestData: try encoder.encode(payload)
             )
         )

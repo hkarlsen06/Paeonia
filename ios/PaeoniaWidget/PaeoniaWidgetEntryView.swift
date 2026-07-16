@@ -1,4 +1,3 @@
-import AppIntents
 import SwiftUI
 import UIKit
 import WidgetKit
@@ -29,28 +28,7 @@ struct PaeoniaWidgetEntryView: View {
         }
         .padding(contentPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        // The saved drawing fills the whole widget edge to edge, so a partner
-        // filling the canvas colors the entire widget instead of a small square
-        // in the middle.
-        .background {
-            drawingBackground
-        }
         .allowsHitTesting(false)
-    }
-
-    /// The saved drawing rendered full-bleed behind the header and footer. Only
-    /// real drawings fill the widget; the placeholder and redacted states stay in
-    /// the centered band via `middleContent`.
-    @ViewBuilder
-    private var drawingBackground: some View {
-        if let image = drawingImage {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-                .accessibilityHidden(true)
-        }
     }
 
     private var drawingImage: UIImage? {
@@ -101,27 +79,27 @@ struct PaeoniaWidgetEntryView: View {
         }
     }
 
-    /// The content shown in the middle band between header and footer. A real
-    /// drawing is rendered full-bleed behind everything (see `drawingBackground`),
-    /// so here it only takes up flexible space; the placeholder and redacted
-    /// states stay centered in the band.
+    /// A contained square preserves the exact canvas coordinate space instead
+    /// of cropping a drawing behind widget chrome. The surrounding breathing
+    /// room keeps the widget identity and attribution legible without covering
+    /// any strokes.
     @ViewBuilder
     private var middleContent: some View {
-        switch entry.content {
-        case .placeholder:
-            PaeoniaWidgetDrawingArea {
+        PaeoniaWidgetDrawingArea(cornerRadius: canvasCornerRadius) {
+            switch entry.content {
+            case .placeholder:
                 PaeoniaPlaceholderDrawing()
-            }
-        case .drawing:
-            if drawingImage == nil {
-                PaeoniaWidgetDrawingArea {
+            case .drawing:
+                if let drawingImage {
+                    Image(uiImage: drawingImage)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .accessibilityHidden(true)
+                } else {
                     PaeoniaPlaceholderDrawing()
                 }
-            } else {
-                Spacer(minLength: 0)
-            }
-        case .redacted:
-            PaeoniaWidgetDrawingArea {
+            case .redacted:
                 VStack(spacing: PaeoniaWidgetSpacing.space8) {
                     Image(systemName: "eye.slash.fill")
                         .font(.system(size: redactedIconSize, weight: .semibold))
@@ -147,7 +125,7 @@ struct PaeoniaWidgetEntryView: View {
                 .lineLimit(family == .systemSmall ? 2 : 1)
                 .minimumScaleFactor(0.7)
                 .allowsHitTesting(false)
-            .layoutPriority(1)
+                .layoutPriority(1)
 
             Spacer(minLength: PaeoniaWidgetSpacing.space8)
 
@@ -217,18 +195,17 @@ struct PaeoniaWidgetEntryView: View {
     }
 
     private var refreshButton: some View {
-        Button(intent: PaeoniaWidgetRefreshIntent()) {
+        // The extension cannot authenticate to the couple's Supabase session.
+        // Opening this dedicated route lets the host app perform a real sync;
+        // a local-only `reloadTimelines` would simply repaint stale bytes.
+        Link(destination: PaeoniaWidgetURL.refresh) {
             Image(systemName: "arrow.clockwise")
                 .font(.system(size: family == .systemSmall ? 15 : 17, weight: .semibold))
                 .foregroundStyle(.paeoniaWidgetAccentPrimary)
                 .frame(width: refreshButtonSize, height: refreshButtonSize)
                 .background(.paeoniaWidgetAccentPrimary.opacity(0.16), in: Circle())
                 .contentShape(Circle())
-                // Shows the system "working" treatment while the refresh
-                // intent runs, so the tap has visible feedback.
-                .invalidatableContent()
         }
-        .buttonStyle(.plain)
         .accessibilityLabel(Text(.widgetRefresh))
     }
 
@@ -269,23 +246,42 @@ struct PaeoniaWidgetEntryView: View {
     private var redactedIconSize: CGFloat {
         family == .systemSmall ? 22 : 28
     }
+
+    private var canvasCornerRadius: CGFloat {
+        family == .systemSmall ? PaeoniaWidgetRadius.canvasSmall : PaeoniaWidgetRadius.canvasLarge
+    }
 }
 
 private enum PaeoniaWidgetURL {
     // A fixed, known-valid literal URL; the optional initializer cannot fail here.
     // swiftlint:disable:next force_unwrapping
     static let drawing = URL(string: "paeonia://widget/drawing")!
+    // swiftlint:disable:next force_unwrapping
+    static let refresh = URL(string: "paeonia://widget/refresh")!
 }
 
 private struct PaeoniaWidgetDrawingArea<Content: View>: View {
+    let cornerRadius: CGFloat
     private let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    init(cornerRadius: CGFloat, @ViewBuilder content: () -> Content) {
+        self.cornerRadius = cornerRadius
         self.content = content()
     }
 
     var body: some View {
-        content
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        GeometryReader { proxy in
+            let side = min(proxy.size.width, proxy.size.height)
+
+            content
+                .frame(width: side, height: side)
+                .background(.paeoniaWidgetCanvasSurface)
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(.paeoniaWidgetCanvasBorder, lineWidth: 1)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        }
     }
 }

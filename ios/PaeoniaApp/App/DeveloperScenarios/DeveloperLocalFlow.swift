@@ -29,6 +29,7 @@
         widgetCanvasSync: NoOpWidgetCanvasSync(),
         pushAuthorization: DeveloperScenarioPushAuthorization(denied: false),
         pushPermissionPrimerStore: DeveloperLocalFlowPrimerStore(),
+        locationSharingPrimerStore: DeveloperLocalFlowLocationPrimerStore(),
         widgetPushRegistration: NoOpWidgetPushRegistration(),
         partnerAvatarSharing: DeveloperLocalFlowPartnerAvatarSharing(),
         featureDependencies: environment.featureDependencies,
