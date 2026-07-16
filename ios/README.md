@@ -111,3 +111,9 @@ app.launch()
 Unknown scenario IDs intentionally open the catalog instead of falling through
 to the production app. The normal `App` scheme remains the production launch
 path.
+
+State scenarios are deterministic snapshots. Scenarios under **Interactive local
+flows** use the production root and support local sign-in, onboarding, simulated
+purchase, pairing, and paired feature interactions. See
+`docs/developer-scenario-harness.md` for behavior, safety boundaries, reset controls,
+and the required pattern for future features.

@@ -38,9 +38,9 @@
         .scrollContentBackground(.hidden)
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle("Developer Scenarios")
-        .navigationDestination(for: DeveloperScenario.self) { scenario in
-          DeveloperScenarioNavigationDestination(scenario: scenario)
-        }
+      }
+      .navigationDestination(for: DeveloperScenario.self) { scenario in
+        DeveloperScenarioNavigationDestination(scenario: scenario)
       }
       .preferredColorScheme(.dark)
       .accessibilityIdentifier("developer.scenario.menu")
@@ -67,23 +67,37 @@
     let scenario: DeveloperScenario
     let returnToMenu: () -> Void
     @State private var bannerCenter = PaeoniaBannerCenter()
+    @State private var reloadID = UUID()
 
     var body: some View {
       scenarioContent
+        .id(reloadID)
         .environment(bannerCenter)
         .preferredColorScheme(.dark)
         .accessibilityIdentifier("developer.scenario.host.\(scenario.rawValue)")
         .overlay(alignment: .topTrailing) {
-          Button(action: returnToMenu) {
-            Image(systemName: "wrench.and.screwdriver.fill")
-              .frame(width: 44, height: 44)
-              .background(.paeoniaSurfacePrimary.opacity(0.92), in: Circle())
+          HStack(spacing: PaeoniaSpacing.space8) {
+            Button {
+              reloadID = UUID()
+            } label: {
+              Image(systemName: "arrow.counterclockwise")
+                .frame(width: 44, height: 44)
+                .background(.paeoniaSurfacePrimary.opacity(0.92), in: Circle())
+            }
+            .accessibilityLabel("Reset scenario")
+            .accessibilityIdentifier("developer.scenario.reset")
+
+            Button(action: returnToMenu) {
+              Image(systemName: "wrench.and.screwdriver.fill")
+                .frame(width: 44, height: 44)
+                .background(.paeoniaSurfacePrimary.opacity(0.92), in: Circle())
+            }
+            .accessibilityLabel("Return to developer scenarios")
+            .accessibilityIdentifier("developer.scenario.return")
           }
           .foregroundStyle(.paeoniaTextPrimary)
           .padding(.top, PaeoniaSpacing.space8)
           .padding(.trailing, PaeoniaSpacing.space8)
-          .accessibilityLabel("Return to developer scenarios")
-          .accessibilityIdentifier("developer.scenario.return")
         }
     }
 
@@ -118,6 +132,16 @@
         )
       case .onboardingEmpty, .onboardingPrefilled:
         DeveloperOnboardingScenarioView(prefilled: scenario == .onboardingPrefilled)
+      case .localFlowFresh:
+        DeveloperLocalFlowHost(seed: .fresh)
+      case .localFlowOnboarding:
+        DeveloperLocalFlowHost(seed: .onboarding)
+      case .localFlowPaywall:
+        DeveloperLocalFlowHost(seed: .paywall)
+      case .localFlowPairing:
+        DeveloperLocalFlowHost(seed: .pairing)
+      case .localFlowPaired:
+        DeveloperLocalFlowHost(seed: .paired)
       case .pairingInviteReady, .pairingJoin, .pairingInviteExpired, .pairingSafetyWarning,
         .pairingInviteError, .pairingCelebration, .pairingCelebrationSettled:
         DeveloperPairingScenarioView(scenario: scenario)

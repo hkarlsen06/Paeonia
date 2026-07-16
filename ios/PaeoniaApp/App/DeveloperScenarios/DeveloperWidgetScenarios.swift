@@ -111,7 +111,7 @@
     }
   }
 
-  private actor DeveloperWidgetCanvasService: WidgetCanvasManaging {
+  actor DeveloperWidgetCanvasService: WidgetCanvasManaging {
     private var snapshot: WidgetCanvasSnapshot?
 
     func loadSavedDrawing() async -> Data? { snapshot?.drawingData }

@@ -70,6 +70,33 @@ final class PaeoniaAppUITests: XCTestCase {
     }
 
     @MainActor
+    func testInteractiveLocalFlowContinuesFromSignInIntoPairing() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-fresh"
+        app.launch()
+
+        let skipWelcomeButton = app.buttons["auth.welcome.skip"]
+        XCTAssertTrue(skipWelcomeButton.waitForExistence(timeout: 8))
+        skipWelcomeButton.tap()
+
+        let appleSignInButton = app.buttons["auth.signIn.apple"]
+        XCTAssertTrue(appleSignInButton.waitForExistence(timeout: 5))
+        appleSignInButton.tap()
+
+        let nameField = app.textFields["auth.onboarding.displayName"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: 5))
+        nameField.tap()
+        nameField.typeText("Alex")
+        app.buttons["auth.onboarding.complete"].tap()
+
+        let purchaseButton = app.buttons["paywall.primaryAction"]
+        XCTAssertTrue(purchaseButton.waitForExistence(timeout: 5))
+        purchaseButton.tap()
+
+        XCTAssertTrue(app.buttons["pairing.checkAccess"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {

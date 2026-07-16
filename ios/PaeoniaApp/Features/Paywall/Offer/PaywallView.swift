@@ -8,7 +8,7 @@ struct PaywallPresentationOverride {
     let presentation: (PaeoniaBillingPeriod) -> PaywallPresentation
     let priceLine: (PaeoniaBillingPeriod) -> String
     let purchaseIsEnabled: Bool
-    let onPurchase: () -> Void
+    let onPurchase: @MainActor () async -> Bool
 }
 
 // swiftlint:disable:next type_body_length
@@ -299,7 +299,13 @@ struct PaywallView: View {
                     caption: .paywallCancelAnytime,
                     isEnabled: presentationOverride.purchaseIsEnabled,
                     isBusy: presentation.isPurchasing,
-                    action: presentationOverride.onPurchase
+                    action: {
+                        Task { @MainActor in
+                            if await presentationOverride.onPurchase() {
+                                onPurchaseConfirmed()
+                            }
+                        }
+                    }
                 )
             } else {
                 PaywallPurchaseCTAView(

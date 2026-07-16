@@ -172,7 +172,7 @@
         },
         priceLine: priceLine(for:),
         purchaseIsEnabled: true,
-        onPurchase: {}
+        onPurchase: { true }
       )
     }
 

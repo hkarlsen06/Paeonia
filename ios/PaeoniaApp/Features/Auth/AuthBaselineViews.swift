@@ -166,6 +166,7 @@ struct AuthOnboardingView: View {
         .padding(.vertical, PaeoniaSpacing.space12)
         .background(.paeoniaSurfaceSecondary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12))
+        .accessibilityIdentifier("auth.onboarding.displayName")
     }
 
     private var completeButton: some View {
@@ -181,6 +182,7 @@ struct AuthOnboardingView: View {
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
         .disabled(!canCompleteOnboarding)
+        .accessibilityIdentifier("auth.onboarding.complete")
     }
 
     private var signOutButton: some View {

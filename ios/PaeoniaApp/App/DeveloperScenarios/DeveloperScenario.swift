@@ -12,6 +12,12 @@
     case onboardingEmpty = "onboarding-empty"
     case onboardingPrefilled = "onboarding-prefilled"
 
+    case localFlowFresh = "local-flow-fresh"
+    case localFlowOnboarding = "local-flow-onboarding"
+    case localFlowPaywall = "local-flow-paywall"
+    case localFlowPairing = "local-flow-pairing"
+    case localFlowPaired = "local-flow-paired"
+
     case pairingInviteReady = "pairing-invite-ready"
     case pairingJoin = "pairing-join"
     case pairingInviteExpired = "pairing-invite-expired"
@@ -71,16 +77,17 @@
     case deepLinkSubscription = "deep-link-subscription"
 
     enum Category: String, CaseIterable, Identifiable {
-      case launchAndAuth = "Launch & authentication"
-      case pairing
-      case paywall = "Paywall & entitlement"
-      case questions
-      case streak
-      case memories
-      case relationship = "Countdown & location"
-      case widget
-      case settings = "Settings & privacy"
-      case deepLinks = "Deep links & notifications"
+      case launchAndAuth = "State · Launch & authentication"
+      case localFlows = "Interactive local flows"
+      case pairing = "State · Pairing"
+      case paywall = "State · Paywall & entitlement"
+      case questions = "State · Questions"
+      case streak = "State · Streak"
+      case memories = "State · Memories"
+      case relationship = "State · Countdown & location"
+      case widget = "State · Widget"
+      case settings = "State · Settings & privacy"
+      case deepLinks = "State · Deep links & notifications"
 
       var id: String { rawValue }
     }
@@ -95,6 +102,11 @@
       case .signInInvite: "Sign in · invite saved"
       case .onboardingEmpty: "Onboarding · empty"
       case .onboardingPrefilled: "Onboarding · name filled"
+      case .localFlowFresh: "Local flow · fresh install"
+      case .localFlowOnboarding: "Local flow · onboarding"
+      case .localFlowPaywall: "Local flow · paywall"
+      case .localFlowPairing: "Local flow · pairing"
+      case .localFlowPaired: "Local flow · paired app"
       case .pairingInviteReady: "Pairing invite · ready"
       case .pairingJoin: "Pairing · enter invite"
       case .pairingInviteExpired: "Pairing invite · expired"
@@ -153,13 +165,23 @@
       case .welcome:
         "Fresh install before authentication"
       case .signIn:
-        "Provider choices without starting OAuth"
+        "Visual provider state; use Local flow · fresh install for functional sign-in"
       case .signInInvite:
         "Sign-in with a retained partner code"
       case .onboardingEmpty:
         "New profile with no display name"
       case .onboardingPrefilled:
         "Profile setup with a suggested name"
+      case .localFlowFresh:
+        "Apple or Google sign-in through the complete local app journey"
+      case .localFlowOnboarding:
+        "Complete profile setup, purchase access, pair, and continue"
+      case .localFlowPaywall:
+        "Simulate a purchase, then continue into pairing"
+      case .localFlowPairing:
+        "Create an invite and use Check pairing to simulate a partner joining"
+      case .localFlowPaired:
+        "Use the real tabs with local questions, memories, settings, and widget data"
       case .pairingInviteReady:
         "Shareable local invite without a second account"
       case .pairingJoin:
@@ -263,6 +285,9 @@
       switch self {
       case .launchLoading, .welcome, .signIn, .signInInvite, .onboardingEmpty, .onboardingPrefilled:
         .launchAndAuth
+      case .localFlowFresh, .localFlowOnboarding, .localFlowPaywall, .localFlowPairing,
+        .localFlowPaired:
+        .localFlows
       case .pairingInviteReady, .pairingJoin, .pairingInviteExpired, .pairingSafetyWarning,
         .pairingInviteError, .pairingCelebration, .pairingCelebrationSettled:
         .pairing

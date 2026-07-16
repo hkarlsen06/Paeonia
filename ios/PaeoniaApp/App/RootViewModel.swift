@@ -95,6 +95,7 @@ final class RootViewModel {
     private let accessSnapshotStore: (any AccessSyncSnapshotPersisting)?
     private let inviteStore: any PairingInviteStoring
     private let pairingCelebrationStore: any PairingCelebrationStoring
+    private let systemSideEffects: any RootSystemSideEffecting
 
     private var route: RootRoute = .launching
     private(set) var isWorking = false
@@ -176,7 +177,8 @@ final class RootViewModel {
         accessRouteService: (any AccessRouteServicing)? = nil,
         accessSnapshotStore: (any AccessSyncSnapshotPersisting)? = nil,
         inviteStore: (any PairingInviteStoring)? = nil,
-        pairingCelebrationStore: (any PairingCelebrationStoring)? = nil
+        pairingCelebrationStore: (any PairingCelebrationStoring)? = nil,
+        systemSideEffects: any RootSystemSideEffecting = LiveRootSystemSideEffects()
     ) {
         let resolvedSyncService = syncService ?? PaeoniaSyncService()
         self.syncService = resolvedSyncService
@@ -186,6 +188,7 @@ final class RootViewModel {
         self.accessSnapshotStore = accessSnapshotStore ?? Self.makeDefaultAccessSnapshotStore()
         self.inviteStore = inviteStore ?? UserDefaultsPairingInviteStore.shared
         self.pairingCelebrationStore = pairingCelebrationStore ?? UserDefaultsPairingCelebrationStore.shared
+        self.systemSideEffects = systemSideEffects
     }
 
     private static func makeDefaultAccessSnapshotStore() -> (any AccessSyncSnapshotPersisting)? {
@@ -310,7 +313,7 @@ final class RootViewModel {
             clearPendingWidgetDrawingOpen()
             route = .signedOut
             await syncService.resetForUserChange()
-            PushRegistrationFingerprintStore.resetAll()
+            systemSideEffects.resetPushRegistrationState()
             hasStartedSync = false
             configuredSyncSession = nil
         }
@@ -339,7 +342,7 @@ final class RootViewModel {
             clearPairingCelebrationPresentation()
             route = .signedOut
             await syncService.resetForUserChange()
-            PushRegistrationFingerprintStore.resetAll()
+            systemSideEffects.resetPushRegistrationState()
             hasStartedSync = false
             configuredSyncSession = nil
         } catch {

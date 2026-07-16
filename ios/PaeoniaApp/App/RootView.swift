@@ -23,6 +23,8 @@ struct RootView: View {
     private let pushPermissionPrimerStore: any PushPermissionPrimerPersisting
     private let widgetPushRegistration: any WidgetPushRegistering
     private let partnerAvatarSharing: (any PartnerAvatarSharing)?
+    private let featureDependencies: RootFeatureDependencies
+    private let allowsSystemIntegrations: Bool
     /// Lets the first screen's entrance animation settle before sync, widget, avatar,
     /// and APNs warm-up begin. None of this work is required to choose the route.
     private static let postLaunchWorkDelay: Duration = .milliseconds(700)
@@ -40,7 +42,9 @@ struct RootView: View {
         pushAuthorization: (any PushAuthorizationProviding)? = nil,
         pushPermissionPrimerStore: (any PushPermissionPrimerPersisting)? = nil,
         widgetPushRegistration: (any WidgetPushRegistering)? = nil,
-        partnerAvatarSharing: (any PartnerAvatarSharing)? = nil
+        partnerAvatarSharing: (any PartnerAvatarSharing)? = nil,
+        featureDependencies: RootFeatureDependencies = RootFeatureDependencies(),
+        allowsSystemIntegrations: Bool = true
     ) {
         _viewModel = State(initialValue: viewModel ?? RootViewModel())
         _locationViewModel = State(initialValue: locationViewModel ?? LocationMapViewModel())
@@ -54,6 +58,8 @@ struct RootView: View {
         self.pushPermissionPrimerStore = pushPermissionPrimerStore ?? UserDefaultsPushPermissionPrimerStore()
         self.widgetPushRegistration = widgetPushRegistration ?? WidgetPushRegistrationServiceFactory.makeDefault()
         self.partnerAvatarSharing = partnerAvatarSharing ?? PartnerAvatarSharingServiceFactory.makeDefault()
+        self.featureDependencies = featureDependencies
+        self.allowsSystemIntegrations = allowsSystemIntegrations
     }
 
     var body: some View {
@@ -98,6 +104,9 @@ struct RootView: View {
             // A partner's widget update arrived while the app is open: the delegate
             // suppressed the system banner and relayed it here for the in-app one.
             .onChange(of: PaeoniaNotificationRouter.shared.pendingForegroundNotice) { _, notice in
+                guard allowsSystemIntegrations else {
+                    return
+                }
                 guard let notice else {
                     return
                 }
@@ -306,7 +315,9 @@ struct RootView: View {
             onInviteAccepted: inviteAccepted,
             onSignOut: signOut,
             onUnpaired: refreshPairing,
-            onDeleteAccount: deleteAccount
+            onDeleteAccount: deleteAccount,
+            viewModel: featureDependencies.paywallViewModel,
+            presentationOverride: featureDependencies.paywallPresentationOverride
         )
     }
 
@@ -344,6 +355,7 @@ struct RootView: View {
 
                 PairingInviteView(
                     session: viewModel.currentSession,
+                    viewModel: featureDependencies.pairingInviteViewModel,
                     onRefreshAccess: refreshPairing
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -444,7 +456,16 @@ struct RootView: View {
                     },
                     onPurchasesRestored: {
                         await viewModel.refreshAfterSubscriptionChange()
-                    }
+                    },
+                    dailyChallengeViewModel: featureDependencies.dailyChallengeViewModel,
+                    milestoneViewModel: featureDependencies.milestoneViewModel,
+                    memoriesViewModel: featureDependencies.memoriesViewModel,
+                    settingsViewModel: featureDependencies.settingsViewModel,
+                    settingsPrivacyService: featureDependencies.settingsPrivacyService,
+                    settingsPrivacyOperationProvider: featureDependencies.settingsPrivacyOperationProvider,
+                    widgetDrawingViewModel: featureDependencies.widgetDrawingViewModel,
+                    widgetHistoryViewModel: featureDependencies.widgetHistoryViewModel,
+                    widgetHistoryThumbnailLoader: featureDependencies.widgetHistoryThumbnailLoader
                 )
                 .transition(
                     .asymmetric(
@@ -558,10 +579,10 @@ struct RootView: View {
 
     /// Stashes an invite code a joining partner entered before signing in. Once they
     /// sign in, the paywall reads this pending code so they join their partner instead
-    /// of paying. Persisted too, so the code survives the sign-in round trip.
+    /// of paying. The binding owner persists production changes so this view remains
+    /// safe to host with an in-memory binding in local flows and previews.
     private func captureInviteCode(_ code: String) {
         pendingJoinInviteCode = code
-        UserDefaultsPairingJoinInviteStore.shared.saveInviteCode(code)
     }
 
     private func completeOnboarding(displayName: String, profilePhotoData: Data?) {
@@ -690,7 +711,7 @@ struct RootView: View {
     /// Awaitable core of the widget sync, so pull-to-refresh can keep its spinner
     /// up until the partner's drawing and avatar are staged.
     private func performWidgetSyncIfPaired(_ state: AppState) async {
-        guard state == .paired else {
+        guard allowsSystemIntegrations, state == .paired else {
             return
         }
 
@@ -710,7 +731,7 @@ struct RootView: View {
     }
 
     private func registerForRemoteNotificationsIfSignedIn(_ sessionID: String?) {
-        guard sessionID != nil else {
+        guard allowsSystemIntegrations, sessionID != nil else {
             return
         }
 

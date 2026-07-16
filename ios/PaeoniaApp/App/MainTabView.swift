@@ -52,6 +52,12 @@ struct MainTabView: View {
     @State private var dailyChallengeViewModel: DailyChallengeViewModel
     @State private var milestoneViewModel: RelationshipMilestoneViewModel
     @State private var memoriesViewModel: MemoriesViewModel
+    private let settingsViewModel: SettingsViewModel?
+    private let settingsPrivacyService: (any PrivacySafetyServicing)?
+    private let settingsPrivacyOperationProvider: (any SyncClientOperationProviding)?
+    private let widgetDrawingViewModel: WidgetDrawingViewModel?
+    private let widgetHistoryViewModel: WidgetDrawingHistoryViewModel?
+    private let widgetHistoryThumbnailLoader: (any WidgetRevisionThumbnailLoading)?
     @State private var isAnswerFlowPresented = false
     /// Which card the daily answer flow should zoom out of (the Home prompt card or the
     /// Questions-tab hero card), so the cover grows from the one the user tapped.
@@ -113,11 +119,20 @@ struct MainTabView: View {
         onLeftRelationship: @escaping () -> Void = {},
         onLogout: @escaping () -> Void = {},
         onDeleteAccount: @escaping () -> Void = {},
-        onUpdateProfile: @escaping @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool = { _, _ in false },
+        onUpdateProfile: @escaping @MainActor @Sendable (
+            String, AuthProfilePhotoUpdate
+        ) async -> Bool = { _, _ in false },
         onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {},
         dailyChallengeViewModel: DailyChallengeViewModel? = nil,
         milestoneViewModel: RelationshipMilestoneViewModel? = nil,
-        memoriesViewModel: MemoriesViewModel? = nil
+        memoriesViewModel: MemoriesViewModel? = nil,
+        settingsViewModel: SettingsViewModel? = nil,
+        settingsPrivacyService: (any PrivacySafetyServicing)? =
+            PrivacySafetyServiceFactory.makeDefault(),
+        settingsPrivacyOperationProvider: (any SyncClientOperationProviding)? = nil,
+        widgetDrawingViewModel: WidgetDrawingViewModel? = nil,
+        widgetHistoryViewModel: WidgetDrawingHistoryViewModel? = nil,
+        widgetHistoryThumbnailLoader: (any WidgetRevisionThumbnailLoading)? = nil
     ) {
         self.tabs = tabs
         self.currentUserID = currentUserID
@@ -157,6 +172,12 @@ struct MainTabView: View {
         _memoriesViewModel = State(
             initialValue: memoriesViewModel ?? MemoriesViewModel()
         )
+        self.settingsViewModel = settingsViewModel
+        self.settingsPrivacyService = settingsPrivacyService
+        self.settingsPrivacyOperationProvider = settingsPrivacyOperationProvider
+        self.widgetDrawingViewModel = widgetDrawingViewModel
+        self.widgetHistoryViewModel = widgetHistoryViewModel
+        self.widgetHistoryThumbnailLoader = widgetHistoryThumbnailLoader
     }
 
     var body: some View {
@@ -369,7 +390,12 @@ struct MainTabView: View {
             // The brand mark and couple avatars are populated into the navigation
             // bar from inside PairedHomeView, where the name/photo data lives.
             .navigationDestination(isPresented: widgetDrawingPresented) {
-                WidgetDrawingView(authorName: authorName)
+                WidgetDrawingView(
+                    authorName: authorName,
+                    viewModel: widgetDrawingViewModel,
+                    historyViewModel: widgetHistoryViewModel,
+                    historyThumbnailLoader: widgetHistoryThumbnailLoader
+                )
             }
         }
     }
@@ -477,6 +503,7 @@ struct MainTabView: View {
     private var youTab: some View {
         NavigationStack {
             SettingsView(
+                viewModel: settingsViewModel,
                 currentUserID: currentUserID,
                 currentDisplayName: currentDisplayName,
                 currentProfilePhotoAssetID: currentProfilePhotoAssetID,
@@ -499,7 +526,9 @@ struct MainTabView: View {
                 },
                 onPurchasesRestored: { [onPurchasesRestored] in
                     await onPurchasesRestored()
-                }
+                },
+                privacySafetyService: settingsPrivacyService,
+                privacyOperationProvider: settingsPrivacyOperationProvider
             )
         }
     }

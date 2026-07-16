@@ -152,6 +152,7 @@ struct SignInView: View {
             }
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
+        .accessibilityIdentifier("auth.signIn.apple")
         .disabled(isWorking)
     }
 
@@ -176,6 +177,7 @@ struct SignInView: View {
             }
         }
         .buttonStyle(PaeoniaSecondaryButtonStyle())
+        .accessibilityIdentifier("auth.signIn.google")
         .disabled(isWorking)
     }
 

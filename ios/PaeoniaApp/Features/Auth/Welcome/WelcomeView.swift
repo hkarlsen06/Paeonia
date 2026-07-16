@@ -110,6 +110,7 @@ struct WelcomeView: View {
                     Text(.welcomeSkip)
                 }
                 .buttonStyle(PaeoniaQuietButtonStyle())
+                .accessibilityIdentifier("auth.welcome.skip")
             }
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)

@@ -73,7 +73,7 @@
     }
   }
 
-  private actor DeveloperNotificationPreferences: NotificationPreferencesProviding {
+  actor DeveloperNotificationPreferences: NotificationPreferencesProviding {
     private var preferences = NotificationPreferences()
 
     func loadNotificationPreferences() async throws -> NotificationPreferences { preferences }
