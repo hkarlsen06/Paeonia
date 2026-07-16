@@ -170,7 +170,8 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
             )
             .execute()
             .value
-        guard let profile = profiles.first, profile.userID == userID else {
+        guard let profile = profiles.first,
+              AuthUserIdentity.matches(profile.userID, userID) else {
             throw AuthServiceError.noActiveSession
         }
         return profile
@@ -191,7 +192,8 @@ actor LiveSupabaseAuthGateway: SupabaseAuthGateway {
             )
             .execute()
             .value
-        guard let profile = profiles.first, profile.userID == userID else {
+        guard let profile = profiles.first,
+              AuthUserIdentity.matches(profile.userID, userID) else {
             throw AuthServiceError.noActiveSession
         }
         return profile

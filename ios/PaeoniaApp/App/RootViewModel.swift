@@ -880,7 +880,9 @@ final class RootViewModel {
 
     private func schedulePrivacyPurgeRecovery(for session: AuthSession) {
         privacyLifecycle.scheduleRecovery { [weak self] in
-            guard let self, self.currentSession?.id == session.id else {
+            guard let self,
+                  let currentSession = self.currentSession,
+                  AuthUserIdentity.matches(currentSession.id, session.id) else {
                 return
             }
             await self.resolveAccessRoute(for: session)

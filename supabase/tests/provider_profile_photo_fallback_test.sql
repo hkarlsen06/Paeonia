@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(15);
+SELECT plan(18);
 
 INSERT INTO auth.users (id, email)
 VALUES
@@ -265,6 +265,38 @@ SELECT lives_ok(
   $$,
   'the owner can link their validated private provider fallback through the RPC'
 );
+
+SELECT ok(
+  NOT public.mark_media_for_deletion('84000000-0000-0000-0000-000000000001'),
+  'explicit cleanup cannot queue a linked custom profile photo'
+);
+
+SELECT ok(
+  NOT public.mark_media_for_deletion('84000000-0000-0000-0000-000000000002'),
+  'explicit cleanup cannot queue a linked provider fallback'
+);
+
+UPDATE public.media_assets
+SET
+  deleted_at = now(),
+  storage_delete_status = 'pending'
+WHERE id = '84000000-0000-0000-0000-000000000002';
+
+SELECT is(
+  (
+    SELECT count(*)
+    FROM internal.claim_media_storage_deletes(now(), 100, interval '15 minutes', 5)
+    WHERE media_asset_id = '84000000-0000-0000-0000-000000000002'
+  ),
+  0::bigint,
+  'the cleanup worker cannot claim a referenced asset even if it was queued incorrectly'
+);
+
+UPDATE public.media_assets
+SET
+  deleted_at = null,
+  storage_delete_status = 'none'
+WHERE id = '84000000-0000-0000-0000-000000000002';
 
 SELECT lives_ok(
   $$ SELECT * FROM public.update_own_profile('Renamed', null) $$,

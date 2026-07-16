@@ -6,6 +6,21 @@ protocol AuthSessionCaching: Actor {
     func clear()
 }
 
+/// Auth user ids cross JSON, PostgREST, and the Supabase Swift SDK. UUID text is
+/// case-insensitive, so identity checks must compare parsed UUID values rather
+/// than their transport spelling. The exact fallback keeps local development
+/// identities usable without making two different opaque ids equivalent.
+nonisolated enum AuthUserIdentity {
+    static func matches(_ lhs: String, _ rhs: String) -> Bool {
+        if let lhsUUID = UUID(uuidString: lhs),
+           let rhsUUID = UUID(uuidString: rhs) {
+            return lhsUUID == rhsUUID
+        }
+
+        return lhs == rhs
+    }
+}
+
 nonisolated enum AuthSessionFallbackPolicy {
     static func isCancellation(_ error: any Error) -> Bool {
         error is CancellationError || (error as? URLError)?.code == .cancelled
@@ -39,7 +54,7 @@ actor TransientAuthSessionCache: AuthSessionCaching {
     private var session: AuthSession?
 
     func load(userID: String) -> AuthSession? {
-        guard session?.id == userID else {
+        guard let session, AuthUserIdentity.matches(session.id, userID) else {
             return nil
         }
         return session
@@ -104,7 +119,7 @@ actor UserDefaultsAuthSessionCache: AuthSessionCaching {
     func load(userID: String) -> AuthSession? {
         guard let data = defaults.data(forKey: key),
               let storedSession = try? JSONDecoder().decode(StoredSession.self, from: data),
-              storedSession.id == userID
+              AuthUserIdentity.matches(storedSession.id, userID)
         else {
             return nil
         }

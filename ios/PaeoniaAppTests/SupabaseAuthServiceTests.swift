@@ -5,6 +5,14 @@ import UIKit
 
 struct SupabaseAuthServiceTests {
 
+    @Test func authUserIdentityTreatsUUIDTextCaseAsEquivalent() {
+        let uppercase = "EB70D5C2-3F33-4304-8411-3D7C167336B5"
+        let lowercase = uppercase.lowercased()
+
+        #expect(AuthUserIdentity.matches(uppercase, lowercase))
+        #expect(!AuthUserIdentity.matches(uppercase, "38E6FA64-B11E-41BD-B534-F5F8596C0CA1"))
+    }
+
     @Test func restoreSessionUsesProfileToRequireOnboarding() async throws {
         let gateway = FakeSupabaseAuthGateway(
             remoteSession: .test(provider: .apple),
@@ -379,7 +387,7 @@ struct SupabaseAuthServiceTests {
         #expect(await profilePhotoCache.storedMediaAssetIDs.isEmpty)
     }
 
-    @Test func completeOnboardingDeletesOrphanedPhotoWhenProfileUpdateFails() async throws {
+    @Test func completeOnboardingLeavesFailedLinkCleanupToOrphanSweep() async throws {
         let profilePhotoAssetID = try #require(UUID(uuidString: "26D82C6B-281E-4E51-BC3A-A4620282BC9A"))
         let gateway = FakeSupabaseAuthGateway(
             remoteSession: .test(provider: .apple),
@@ -401,7 +409,7 @@ struct SupabaseAuthServiceTests {
             )
         }
 
-        #expect(await gateway.markedForDeletionAssetID == profilePhotoAssetID)
+        #expect(await gateway.markedForDeletionAssetID == nil)
         #expect(await profilePhotoCache.profilePhotoData(for: profilePhotoAssetID) == nil)
     }
 
@@ -461,7 +469,7 @@ struct SupabaseAuthServiceTests {
         #expect(await invalidator.invalidatedMediaAssetIDs == [oldAssetID])
     }
 
-    @Test func updateProfileLinkFailureDeletesOnlyNewOrphan() async throws {
+    @Test func updateProfileLinkFailureLeavesCleanupToOrphanSweep() async throws {
         let oldAssetID = try #require(UUID(uuidString: "10000000-0000-0000-0000-000000000001"))
         let newAssetID = try #require(UUID(uuidString: "20000000-0000-0000-0000-000000000002"))
         let gateway = FakeSupabaseAuthGateway(
@@ -483,7 +491,32 @@ struct SupabaseAuthServiceTests {
             )
         }
 
-        #expect(await gateway.markedForDeletionAssetIDs == [newAssetID])
+        #expect(await gateway.markedForDeletionAssetIDs.isEmpty)
+    }
+
+    @Test func updateProfileRecoversWhenCommittedResponseFails() async throws {
+        let oldAssetID = try #require(UUID(uuidString: "10000000-0000-0000-0000-000000000001"))
+        let newAssetID = try #require(UUID(uuidString: "20000000-0000-0000-0000-000000000002"))
+        let gateway = FakeSupabaseAuthGateway(
+            remoteSession: .test(provider: .google),
+            profile: .test(
+                displayName: "Old",
+                onboardingCompletedAt: Date(),
+                profilePhotoAssetID: oldAssetID
+            ),
+            profilePhotoAssetID: newAssetID,
+            profileUpdateFailsAfterCommit: true
+        )
+        let service = SupabaseAuthService(gateway: gateway)
+
+        let session = try await service.updateProfile(
+            displayName: "Jamie",
+            profilePhotoUpdate: .replace(Self.makeJPEGData())
+        )
+
+        #expect(session.displayName == "Jamie")
+        #expect(session.customProfilePhotoAssetID == newAssetID)
+        #expect(await gateway.markedForDeletionAssetIDs == [oldAssetID])
     }
 
     @Test func updateProfileClearsOldCacheEvenWhenBackendCleanupMustRetry() async throws {
@@ -669,6 +702,7 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
     private let loadProfileError: (any Error)?
     private let completeProfileShouldFail: Bool
     private let updateProfileShouldFail: Bool
+    private let profileUpdateFailsAfterCommit: Bool
     private let markMediaForDeletionShouldFail: Bool
     private let accountDeletionOutcome: AccountDeletionOutcome
 
@@ -680,6 +714,7 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
         loadProfileError: (any Error)? = nil,
         completeProfileShouldFail: Bool = false,
         updateProfileShouldFail: Bool = false,
+        profileUpdateFailsAfterCommit: Bool = false,
         markMediaForDeletionShouldFail: Bool = false,
         accountDeletionOutcome: AccountDeletionOutcome = .completed
     ) {
@@ -692,6 +727,7 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
         self.loadProfileError = loadProfileError
         self.completeProfileShouldFail = completeProfileShouldFail
         self.updateProfileShouldFail = updateProfileShouldFail
+        self.profileUpdateFailsAfterCommit = profileUpdateFailsAfterCommit
         self.markMediaForDeletionShouldFail = markMediaForDeletionShouldFail
         self.accountDeletionOutcome = accountDeletionOutcome
     }
@@ -801,6 +837,9 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
             providerProfilePhotoAssetID: profile.providerProfilePhotoAssetID,
             providerProfilePhotoSource: profile.providerProfilePhotoSource
         )
+        if profileUpdateFailsAfterCommit {
+            throw URLError(.networkConnectionLost)
+        }
         return profile
     }
 

@@ -144,13 +144,23 @@ actor SupabaseAuthService: AuthServicing {
                 profilePhotoAssetID: linkedProfilePhotoAssetID
             )
         } catch {
-            // Linking failed after the photo was already finalized; don't leave an
-            // orphaned object behind in storage or a stale local cache entry.
-            if let newlyUploadedAssetID {
-                try? await gateway.markMediaForDeletion(newlyUploadedAssetID)
-                try? await profilePhotoCache.removeProfilePhotoData(for: newlyUploadedAssetID)
+            // The update may have committed even when its response was lost or
+            // undecodable. Confirm server state and leave genuine orphan cleanup
+            // to the reference-aware backend sweep.
+            let confirmedProfile = try? await gateway.loadProfile(userID: remoteSession.userID)
+            if let confirmedProfile,
+               Self.profile(
+                   confirmedProfile,
+                   matchesOnboardingTimeZoneID: timeZoneID,
+                   profilePhotoAssetID: linkedProfilePhotoAssetID
+               ) {
+                profile = confirmedProfile
+            } else {
+                if confirmedProfile != nil, let newlyUploadedAssetID {
+                    try? await profilePhotoCache.removeProfilePhotoData(for: newlyUploadedAssetID)
+                }
+                throw error
             }
-            throw error
         }
 
         if let previousAssetID = currentProfile.profilePhotoAssetID,
@@ -208,13 +218,24 @@ actor SupabaseAuthService: AuthServicing {
                 profilePhotoAssetID: linkedAssetID
             )
         } catch {
-            // A finalized replacement is not user-visible until the profile row
-            // links it. Clean up only that new orphan; the old linked image stays.
-            if let newlyUploadedAssetID {
-                try? await gateway.markMediaForDeletion(newlyUploadedAssetID)
-                try? await profilePhotoCache.removeProfilePhotoData(for: newlyUploadedAssetID)
+            // A lost or undecodable response is ambiguous: Postgres may already
+            // have committed the update. Confirm canonical state before failing.
+            // Never queue the replacement here; the backend orphan sweep safely
+            // collects genuinely unlinked uploads without risking a live asset.
+            let confirmedProfile = try? await gateway.loadProfile(userID: remoteSession.userID)
+            if let confirmedProfile,
+               Self.profile(
+                   confirmedProfile,
+                   matchesDisplayName: displayName,
+                   profilePhotoAssetID: linkedAssetID
+               ) {
+                profile = confirmedProfile
+            } else {
+                if confirmedProfile != nil, let newlyUploadedAssetID {
+                    try? await profilePhotoCache.removeProfilePhotoData(for: newlyUploadedAssetID)
+                }
+                throw error
             }
-            throw error
         }
 
         // The profile row is canonical. Auth metadata is only a future sign-in
@@ -313,8 +334,14 @@ actor SupabaseAuthService: AuthServicing {
                 source: "google"
             )
         } catch {
-            try? await gateway.markMediaForDeletion(assetID)
-            try? await profilePhotoCache.removeProfilePhotoData(for: assetID)
+            let confirmedProfile = try? await gateway.loadProfile(userID: userID)
+            if let confirmedProfile {
+                if confirmedProfile.providerProfilePhotoAssetID == assetID,
+                   confirmedProfile.providerProfilePhotoSource == "google" {
+                    return confirmedProfile
+                }
+                try? await profilePhotoCache.removeProfilePhotoData(for: assetID)
+            }
             return profile
         }
     }
@@ -397,6 +424,26 @@ actor SupabaseAuthService: AuthServicing {
             remoteSession.displayName.flatMap(AuthDisplayNamePolicy.normalizedFirstName)
                 ?? profile.displayName.flatMap(AuthDisplayNamePolicy.normalizedFirstName)
         }
+    }
+
+    private static func profile(
+        _ profile: SupabaseProfile,
+        matchesDisplayName displayName: String,
+        profilePhotoAssetID: UUID?
+    ) -> Bool {
+        profile.displayName == displayName
+            && profile.profilePhotoAssetID == profilePhotoAssetID
+    }
+
+    private static func profile(
+        _ profile: SupabaseProfile,
+        matchesOnboardingTimeZoneID timeZoneID: String,
+        profilePhotoAssetID: UUID?
+    ) -> Bool {
+        profile.onboardingCompletedAt != nil
+            && profile.timeZoneID == timeZoneID
+            && profile.timeZoneUpdatedAt != nil
+            && profile.profilePhotoAssetID == profilePhotoAssetID
     }
 
     private func normalizedDisplayName(_ value: String) throws -> String {
