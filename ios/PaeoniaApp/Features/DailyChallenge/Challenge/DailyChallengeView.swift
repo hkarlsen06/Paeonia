@@ -57,6 +57,11 @@ struct DailyChallengeScreen: View {
                                 .id(question.id)
                             }
                         }
+                        // A refreshed snapshot re-sorts, adds, or removes cards with
+                        // a glide instead of reflowing the list in one frame — e.g.
+                        // an answered partner question settling down into the
+                        // timeline, or a new card arriving mid-session.
+                        .animation(PaeoniaMotion.stateChange, value: readQuestions.map(\.id))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -39,7 +39,11 @@ struct PaywallBottomCTAView: View {
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
+        // The spinner fades in over the title instead of snapping while the
+        // App Store purchase settles.
+        .animation(PaeoniaMotion.stateChange, value: isBusy)
         .accessibilityLabel(Text(title))
+        .accessibilityIdentifier("paywall.primaryAction")
         .sensoryFeedback(.impact(flexibility: .soft), trigger: isBusy)
     }
 

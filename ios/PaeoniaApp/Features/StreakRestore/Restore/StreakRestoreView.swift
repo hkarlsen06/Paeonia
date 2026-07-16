@@ -21,13 +21,19 @@ struct StreakRestoreView: View {
     }
 
     var body: some View {
-        Group {
+        ZStack {
             if let restoredCount = viewModel.restoredCount {
                 restoredContent(count: restoredCount)
+                    .transition(.opacity)
             } else {
                 restoreOffer
+                    .transition(.opacity)
             }
         }
+        // The purchase settles concurrently, so the broken-flame offer dissolves
+        // into the restored celebration instead of swapping the instant the
+        // transaction lands. A fade only, so Reduce Motion needs no branch.
+        .animation(PaeoniaMotion.meaningfulMoment, value: viewModel.restoredCount == nil)
         .task { await viewModel.load() }
         .onChange(of: viewModel.error) { _, error in
             showBanner(for: error)
@@ -124,6 +130,9 @@ struct StreakRestoreView: View {
                 viewModel.isPurchasing
                     || StreakRestoreDeadlineState.resolve(deadline: restoreDeadline, now: now).blocksPurchase
             )
+            // The spinner fades in over the price label instead of snapping while
+            // the App Store purchase settles.
+            .animation(PaeoniaMotion.stateChange, value: viewModel.isPurchasing)
 
             Button(action: onClose) {
                 Text(.streakRestoreNotNow)

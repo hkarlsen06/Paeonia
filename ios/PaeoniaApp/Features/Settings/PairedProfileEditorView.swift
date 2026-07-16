@@ -210,6 +210,9 @@ extension PairedProfileEditorView {
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
         .disabled(!canSave)
+        // The spinner and "Saving" label fade in instead of snapping while the
+        // save settles in the background.
+        .animation(PaeoniaMotion.stateChange, value: isSaving)
     }
 
     /// Brand names stay unlocalized; only the sentence around them is translated.

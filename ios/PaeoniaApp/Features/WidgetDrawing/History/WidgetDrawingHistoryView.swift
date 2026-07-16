@@ -98,22 +98,26 @@ struct WidgetDrawingHistoryView: View {
         )
     }
 
-    @ViewBuilder
     private var content: some View {
-        switch viewModel.phase {
-        case .loading:
-            ProgressView()
-                .controlSize(.large)
-                .tint(.paeoniaAccentPrimary)
-        case .failed:
-            failedState
-        case .loaded:
-            if viewModel.isEmpty {
-                emptyState
-            } else {
-                timeline
+        ZStack {
+            switch viewModel.phase {
+            case .loading:
+                ProgressView()
+                    .controlSize(.large)
+                    .tint(.paeoniaAccentPrimary)
+            case .failed:
+                failedState
+            case .loaded:
+                if viewModel.isEmpty {
+                    emptyState
+                } else {
+                    timeline
+                }
             }
         }
+        // The spinner dissolves into the timeline (or empty/error state) instead of
+        // being swapped in one frame. A fade only, so Reduce Motion needs no branch.
+        .animation(PaeoniaMotion.stateChange, value: viewModel.phase)
     }
 
     private var timeline: some View {
@@ -245,6 +249,9 @@ private struct WidgetDrawingHistoryThumbnail: View {
                         .padding(PaeoniaSpacing.space4)
                 }
             }
+            // The finished drawing (and its save button) fades in over the spinner
+            // instead of snapping into the box the moment the download lands.
+            .animation(PaeoniaMotion.stateChange, value: imageData != nil)
             .task(id: item.id) {
                 imageData = await loader.thumbnailPNG(
                     revisionID: item.id,

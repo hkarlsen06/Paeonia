@@ -70,6 +70,9 @@ struct RelationshipDateEditorView: View {
                 }
             }
             .disabled(isSaving)
+            // The spinner fades in over the save label instead of snapping while
+            // the save settles in the background.
+            .animation(PaeoniaMotion.stateChange, value: isSaving)
             .accessibilityLabel(
                 Text(isSaving ? .homeMilestoneEditorSavingAction : .homeMilestoneEditorSaveAction)
             )

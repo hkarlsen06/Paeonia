@@ -74,17 +74,24 @@ struct MemoriesScreen: View {
             }
     }
 
-    @ViewBuilder
     private var content: some View {
-        if !viewModel.hasLoadedOnce {
-            // Blank surface for the split second before the local cache resolves, so the
-            // empty state never flashes before we know whether there are memories.
-            Color.paeoniaBackgroundPrimary
-        } else if memories.isEmpty {
-            emptyState
-        } else {
-            timeline
+        ZStack {
+            if !viewModel.hasLoadedOnce {
+                // Blank surface for the split second before the local cache resolves, so the
+                // empty state never flashes before we know whether there are memories.
+                Color.paeoniaBackgroundPrimary
+            } else if memories.isEmpty {
+                emptyState
+            } else {
+                timeline
+            }
         }
+        // The blank first-load surface dissolves into the timeline (or empty state),
+        // and saving the first memory / deleting the last one crossfades between the
+        // two instead of swapping in one frame. Fades only, so Reduce Motion needs
+        // no branch.
+        .animation(PaeoniaMotion.stateChange, value: viewModel.hasLoadedOnce)
+        .animation(PaeoniaMotion.stateChange, value: memories.isEmpty)
     }
 
     private var timeline: some View {
@@ -97,6 +104,9 @@ struct MemoriesScreen: View {
                     .buttonStyle(.plain)
                 }
             }
+            // A newly saved memory glides into place (and a deleted one closes up)
+            // rather than reflowing the feed in a single frame.
+            .animation(PaeoniaMotion.stateChange, value: memories.map(\.snapshot.memoryID))
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space32)

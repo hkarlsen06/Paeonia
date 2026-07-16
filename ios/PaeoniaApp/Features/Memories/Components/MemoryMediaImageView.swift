@@ -50,6 +50,10 @@ struct MemoryMediaImageView: View {
             .frame(height: height)
             .overlay { content }
             .clipShape(imageShape)
+            // The loaded photo (or the failure glyph) fades in over the quiet
+            // placeholder instead of snapping into the frame when the download lands.
+            .animation(PaeoniaMotion.stateChange, value: image != nil)
+            .animation(PaeoniaMotion.stateChange, value: didFail)
             .task(id: mediaAssetID) { await load() }
     }
 

@@ -26,14 +26,37 @@ struct PairingInviteView: View {
         }
     }
 
-    @ViewBuilder
     private var content: some View {
+        ZStack {
+            if !viewModel.isPresentationReady {
+                // The quiet petal surface fades out on top while the invite content
+                // (and its code tiles' own entrance) starts underneath, so loading
+                // dissolves into the invite instead of blinking away — the same
+                // hand-off the paywall uses. A fade only, so Reduce Motion needs
+                // no branch.
+                AuthLaunchingView()
+                    .transition(.opacity)
+                    .zIndex(1)
+            } else if let invite = viewModel.invite {
+                readyContent(invite)
+                    .transition(.opacity)
+            } else {
+                errorContent
+                    .transition(.opacity)
+            }
+        }
+        .animation(PaeoniaMotion.meaningfulMoment, value: contentPhase)
+    }
+
+    /// Which of the three surfaces (loading, invite, error) is showing, so the
+    /// crossfade keys on the surface swap itself rather than on payload details.
+    private var contentPhase: Int {
         if !viewModel.isPresentationReady {
-            AuthLaunchingView()
-        } else if let invite = viewModel.invite {
-            readyContent(invite)
+            0
+        } else if viewModel.invite != nil {
+            1
         } else {
-            errorContent
+            2
         }
     }
 
@@ -161,6 +184,7 @@ struct PairingInviteView: View {
         }
         .buttonStyle(PaeoniaSecondaryButtonStyle())
         .disabled(isCheckingPairing || viewModel.isLoading || viewModel.isRevoking)
+        .accessibilityIdentifier("pairing.checkAccess")
     }
 
     private func secondaryActions(for invite: PairingInvite) -> some View {

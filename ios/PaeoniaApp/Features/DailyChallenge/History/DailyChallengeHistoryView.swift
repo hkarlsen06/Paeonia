@@ -129,22 +129,26 @@ struct DailyChallengeHistoryView: View {
             }
     }
 
-    @ViewBuilder
     private var content: some View {
-        switch viewModel.state {
-        case .loading:
-            // Calm loading surface until the first load settles, so the screen never
-            // flashes the empty state before content arrives.
-            ProgressView()
-                .controlSize(.large)
-                .tint(.paeoniaAccentPrimary)
-        case .failed:
-            failedState
-        case .empty:
-            emptyState
-        case let .content(content):
-            timeline(content)
+        ZStack {
+            switch viewModel.state {
+            case .loading:
+                // Calm loading surface until the first load settles, so the screen never
+                // flashes the empty state before content arrives.
+                ProgressView()
+                    .controlSize(.large)
+                    .tint(.paeoniaAccentPrimary)
+            case .failed:
+                failedState
+            case .empty:
+                emptyState
+            case let .content(content):
+                timeline(content)
+            }
         }
+        // The spinner dissolves into the timeline (or empty/error state) instead of
+        // being swapped in one frame. A fade only, so Reduce Motion needs no branch.
+        .animation(PaeoniaMotion.stateChange, value: viewModel.state)
     }
 
     private func timeline(_ content: DailyChallengeHistoryViewModel.Content) -> some View {

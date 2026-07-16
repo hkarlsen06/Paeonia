@@ -303,6 +303,10 @@ struct DailyAnswerImageView: View {
             .frame(height: height)
             .overlay { content }
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+            // The revealed photo (or the failure glyph) fades in over the quiet
+            // placeholder instead of snapping into the frame when the download lands.
+            .animation(PaeoniaMotion.stateChange, value: image != nil)
+            .animation(PaeoniaMotion.stateChange, value: didFail)
             .task(id: mediaAssetID) { await load() }
             .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
             .onTapGesture { presentImageViewer() }

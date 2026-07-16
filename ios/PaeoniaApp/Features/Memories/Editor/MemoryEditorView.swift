@@ -286,6 +286,9 @@ struct MemoryEditorView: View {
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
         .disabled(!canSave || isSaving)
+        // The spinner fades in over the save label instead of snapping while
+        // the save (including any photo upload) settles.
+        .animation(PaeoniaMotion.stateChange, value: isSaving)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space12)
         .background(.paeoniaBackgroundPrimary)

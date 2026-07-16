@@ -136,6 +136,10 @@ struct WidgetDrawingView: View {
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .disabled(!viewModel.canSave)
+            // The label crossfades through save → saving → saved instead of
+            // swapping in one frame while the concurrent save settles.
+            .animation(PaeoniaMotion.stateChange, value: viewModel.isSaving)
+            .animation(PaeoniaMotion.stateChange, value: viewModel.recentlySaved)
             .accessibilityLabel(Text(.widgetDrawingSaveButton))
         }
     }

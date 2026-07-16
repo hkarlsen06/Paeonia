@@ -45,6 +45,10 @@ struct PaeoniaProfilePhotoAvatar: View {
                 .strokeBorder(tint.opacity(0.82), lineWidth: 1.5)
         }
         .frame(width: size, height: size)
+        // The fetched photo fades in over the initials instead of snapping the
+        // moment its download lands (cache hits resolve before the first frame,
+        // so the common case still shows the photo immediately).
+        .animation(PaeoniaMotion.stateChange, value: imageData != nil)
         .accessibilityLabel(Text(name))
         .task(id: mediaAssetID) {
             imageData = await profilePhotoProvider.profilePhotoData(for: mediaAssetID)
