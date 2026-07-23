@@ -6,15 +6,11 @@
 //
 // Safe to call repeatedly because rows are claimed atomically in Postgres.
 
-import { createClient } from "npm:@supabase/supabase-js@2";
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SERVICE_KEY = readSupabaseKeyDictionary(
-  "SUPABASE_SECRET_KEYS",
-  Deno.env.get("SUPABASE_SECRET_KEY_NAME") ?? "default",
-) ?? Deno.env.get("SUPABASE_SECRET_KEY") ??
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const DRAIN_SECRET = Deno.env.get("DRAIN_SECRET") ?? "";
+import { type SupabaseContext, withSupabase } from "npm:@supabase/server@1.4.1";
+import {
+  drainRequestIsAuthorized,
+  isDrainConfigured,
+} from "../_shared/drainAuth.ts";
 
 // Production credentials (App Store builds).
 const APNS_KEY_ID = Deno.env.get("APNS_KEY_ID") ?? "";
@@ -78,46 +74,6 @@ interface DrainStats {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-function readSupabaseKeyDictionary(
-  envName: string,
-  keyName: string,
-): string | null {
-  const rawValue = Deno.env.get(envName);
-  if (!rawValue) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(rawValue) as Record<string, unknown>;
-    const namedValue = parsed[keyName] ?? parsed.default ??
-      Object.values(parsed)[0];
-    return typeof namedValue === "string" && namedValue.length > 0
-      ? namedValue
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-// Compares SHA-256 digests so the check is constant-time regardless of where
-// the provided value diverges from the configured secret.
-async function drainSecretMatches(
-  provided: string | null,
-  expected: string,
-): Promise<boolean> {
-  if (!provided || !expected) return false;
-  const encoder = new TextEncoder();
-  const [a, b] = await Promise.all([
-    crypto.subtle.digest("SHA-256", encoder.encode(provided)),
-    crypto.subtle.digest("SHA-256", encoder.encode(expected)),
-  ]);
-  const left = new Uint8Array(a);
-  const right = new Uint8Array(b);
-  let diff = 0;
-  for (let i = 0; i < left.length; i++) diff |= left[i] ^ right[i];
-  return diff === 0;
 }
 
 function base64url(bytes: Uint8Array): string {
@@ -550,39 +506,31 @@ async function drainWidgetPushes(
   return { claimed: batch.length, sent, failed };
 }
 
-Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") {
-    return new Response(JSON.stringify({ ok: true }), {
-      headers: { "content-type": "application/json" },
-    });
-  }
+Deno.serve(withSupabase({ auth: "none" }, handleRequest));
 
+async function handleRequest(
+  request: Request,
+  context: SupabaseContext,
+): Promise<Response> {
   if (request.method !== "POST") {
     return new Response("method not allowed", { status: 405 });
   }
 
-  if (!DRAIN_SECRET) {
+  if (!isDrainConfigured) {
     console.error("push delivery is not configured", {
       missing: ["DRAIN_SECRET"],
     });
     return new Response("push delivery is not configured", { status: 500 });
   }
 
-  const secretMatches = await drainSecretMatches(
-    request.headers.get("x-drain-secret"),
-    DRAIN_SECRET,
-  );
-  if (!secretMatches) {
+  if (!await drainRequestIsAuthorized(request)) {
     return new Response("unauthorized", { status: 401 });
   }
 
   if (
-    !SUPABASE_URL || !SERVICE_KEY || !APNS_KEY_ID || !APNS_TEAM_ID ||
-    !APNS_PRIVATE_KEY
+    !APNS_KEY_ID || !APNS_TEAM_ID || !APNS_PRIVATE_KEY
   ) {
     const missing = [
-      !SUPABASE_URL ? "SUPABASE_URL" : null,
-      !SERVICE_KEY ? "SUPABASE_SECRET_KEYS or SUPABASE_SERVICE_ROLE_KEY" : null,
       !APNS_KEY_ID ? "APNS_KEY_ID" : null,
       !APNS_TEAM_ID ? "APNS_TEAM_ID" : null,
       !APNS_PRIVATE_KEY ? "APNS_PRIVATE_KEY" : null,
@@ -593,7 +541,7 @@ Deno.serve(async (request) => {
     return new Response("push delivery is not configured", { status: 500 });
   }
 
-  const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+  const supabase = context.supabaseAdmin;
 
   let app: DrainStats;
   let widget: DrainStats;
@@ -617,4 +565,4 @@ Deno.serve(async (request) => {
     }),
     { headers: { "content-type": "application/json" } },
   );
-});
+}

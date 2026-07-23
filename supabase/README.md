@@ -60,7 +60,9 @@ safe to drain more than once.
 
 Required Edge Function configuration:
 
-- `SUPABASE_PUBLISHABLE_KEYS` and `SUPABASE_SECRET_KEYS` (preferred key dictionaries)
+- Supabase's platform-provided `SUPABASE_PUBLISHABLE_KEYS`,
+  `SUPABASE_SECRET_KEYS`, and `SUPABASE_JWKS` environment variables, resolved by
+  `@supabase/server`
 - `DRAIN_SECRET`
 - `APPLE_SIGN_IN_TEAM_ID`
 - `APPLE_SIGN_IN_KEY_ID`

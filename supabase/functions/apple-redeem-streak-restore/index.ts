@@ -3,17 +3,15 @@
 // Verifies a streak-restore consumable purchase with Apple and, if valid,
 // restores the couple's shared streak. Mirrors apple-verify-purchase, but the
 // product is a Consumable and the outcome is a streak restore (not an
-// entitlement). Auth happens inside (config: verify_jwt = false).
+// entitlement). @supabase/server authenticates the user inside the function.
 
-import { corsHeaders } from "../_shared/cors.ts";
+import { type SupabaseContext, withSupabase } from "npm:@supabase/server@1.4.1";
 import {
-  adminClient,
-  type AppleTransactionInfo,
   APPLE_APP_BUNDLE_ID,
+  type AppleTransactionInfo,
   assertAppleEnvironmentConfigured,
   clientSafeErrorMessage,
   decodeAppleJWS,
-  getAuthenticatedUser,
   jsonResponse,
   millisToIsoOrNull,
   normalizeClientEnvironment,
@@ -41,11 +39,17 @@ interface RecordStreakRestoreResponse {
   restoredCount?: number;
 }
 
-Deno.serve(async (request: Request) => {
-  if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+// Generated database types are not part of the Edge Function bundle yet.
+// deno-lint-ignore no-explicit-any
+type EdgeDatabase = any;
+type AdminClient = SupabaseContext<EdgeDatabase>["supabaseAdmin"];
 
+Deno.serve(withSupabase<EdgeDatabase>({ auth: "user" }, handleRequest));
+
+async function handleRequest(
+  request: Request,
+  context: SupabaseContext<EdgeDatabase>,
+): Promise<Response> {
   if (request.method !== "POST") {
     return jsonResponse(405, { ok: false, error: "Method not allowed" });
   }
@@ -53,13 +57,9 @@ Deno.serve(async (request: Request) => {
   try {
     assertAppleEnvironmentConfigured();
 
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader) {
-      return jsonResponse(401, { ok: false, error: "Missing authorization" });
-    }
-
-    const user = await getAuthenticatedUser(authHeader);
-    if (!user?.id) {
+    const { data: userData, error: userError } = await context.supabase.auth
+      .getUser();
+    if (userError || !userData.user?.id) {
       return jsonResponse(401, { ok: false, error: "Invalid session" });
     }
 
@@ -97,10 +97,15 @@ Deno.serve(async (request: Request) => {
       });
     }
 
-    const result = await applyRestore(user.id, verified.signedTransactionInfo, {
-      transactionInfo,
-      uploadedTransactionInfo,
-    });
+    const result = await applyRestore(
+      userData.user.id,
+      context.supabaseAdmin,
+      verified.signedTransactionInfo,
+      {
+        transactionInfo,
+        uploadedTransactionInfo,
+      },
+    );
     if (!result.ok) {
       return jsonResponse(result.status ?? 500, {
         ok: false,
@@ -120,7 +125,7 @@ Deno.serve(async (request: Request) => {
       error: clientSafeErrorMessage(error),
     });
   }
-});
+}
 
 function validateStreakRestore(
   transactionInfo: AppleTransactionInfo,
@@ -172,6 +177,7 @@ function validateStreakRestore(
 
 async function applyRestore(
   userId: string,
+  supabaseAdmin: AdminClient,
   signedTransactionInfo: string,
   payload: {
     transactionInfo: AppleTransactionInfo;
@@ -182,8 +188,6 @@ async function applyRestore(
   | { ok: false; error: string; status?: number }
 > {
   const transactionInfo = payload.transactionInfo;
-  const supabaseAdmin = adminClient();
-
   const { data, error } = await supabaseAdmin
     .rpc("record_verified_streak_restore", {
       p_user_id: userId,

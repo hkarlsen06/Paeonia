@@ -4,25 +4,12 @@
 // Apple, and revoke Supabase sessions. Trusted drain calls retry final Auth-user
 // deletion. No provider credential or Supabase access token is persisted.
 
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { type SupabaseContext, withSupabase } from "npm:@supabase/server@1.4.1";
 import {
   appleIdentitySubjects,
   revokeAppleAuthorization,
 } from "../_shared/appleSignInDeletion.ts";
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SUPABASE_SECRET_KEY = readKeyDictionary(
-  "SUPABASE_SECRET_KEYS",
-  Deno.env.get("SUPABASE_SECRET_KEY_NAME") ?? "default",
-) ?? Deno.env.get("SUPABASE_SECRET_KEY") ??
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const SUPABASE_USER_KEY = readKeyDictionary(
-  "SUPABASE_PUBLISHABLE_KEYS",
-  Deno.env.get("SUPABASE_PUBLISHABLE_KEY_NAME") ?? "default",
-) ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
-  Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-const DRAIN_SECRET = Deno.env.get("DRAIN_SECRET") ?? "";
+import { drainRequestIsAuthorized } from "../_shared/drainAuth.ts";
 
 interface DeleteAccountBody {
   appleAuthorizationCode?: unknown;
@@ -50,38 +37,39 @@ interface ProcessResult {
   errorCode?: string;
 }
 
-Deno.serve(async (request: Request) => {
-  if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+// Generated database types are not part of the Edge Function bundle yet.
+// deno-lint-ignore no-explicit-any
+type EdgeDatabase = any;
+type AdminClient = SupabaseContext<EdgeDatabase>["supabaseAdmin"];
+
+Deno.serve(
+  withSupabase<EdgeDatabase>({ auth: ["user", "none"] }, handleRequest),
+);
+
+async function handleRequest(
+  request: Request,
+  context: SupabaseContext<EdgeDatabase>,
+): Promise<Response> {
   if (request.method !== "POST") {
     return jsonResponse(405, { ok: false, error: "Method not allowed" });
   }
-  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY || !SUPABASE_USER_KEY) {
-    return jsonResponse(500, {
-      ok: false,
-      error: "Account deletion is not configured",
-    });
+
+  if (context.authMode === "user") {
+    return await handleUserDeletion(request, context);
   }
 
-  const authHeader = request.headers.get("Authorization");
-  if (authHeader) return await handleUserDeletion(request, authHeader);
-
-  if (!await drainSecretMatches(request.headers.get("x-drain-secret"))) {
+  if (!await drainRequestIsAuthorized(request)) {
     return jsonResponse(401, { ok: false, error: "Unauthorized" });
   }
-  return await handleDrain();
-});
+  return await handleDrain(context.supabaseAdmin);
+}
 
 async function handleUserDeletion(
   request: Request,
-  authHeader: string,
+  context: SupabaseContext<EdgeDatabase>,
 ): Promise<Response> {
-  const userClient = createClient(SUPABASE_URL, SUPABASE_USER_KEY, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: authHeader } },
-  });
-  const admin = adminClient();
+  const userClient = context.supabase;
+  const admin = context.supabaseAdmin;
 
   const { data: userData, error: userError } = await userClient.auth.getUser();
   if (userError || !userData.user?.id) {
@@ -119,6 +107,7 @@ async function handleUserDeletion(
 
   // Revoke every refresh token as early as possible. The local client also
   // signs out after this response, and hard Auth deletion removes sessions.
+  const authHeader = request.headers.get("Authorization") ?? "";
   const { error: signOutError } = await admin.auth.admin.signOut(
     bearerToken(authHeader),
     "global",
@@ -181,8 +170,7 @@ async function handleUserDeletion(
   });
 }
 
-async function handleDrain(): Promise<Response> {
-  const admin = adminClient();
+async function handleDrain(admin: AdminClient): Promise<Response> {
   const { data, error } = await admin.rpc("claim_account_deletion_jobs", {
     p_now: new Date().toISOString(),
     p_limit: 25,
@@ -295,12 +283,6 @@ async function deleteAuthUser(
   }
 }
 
-function adminClient() {
-  return createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
-    auth: { persistSession: false },
-  });
-}
-
 async function readBody(request: Request): Promise<DeleteAccountBody> {
   try {
     const body = await request.json();
@@ -334,37 +316,9 @@ function sanitizeCode(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9_]+/g, "_").slice(0, 100);
 }
 
-async function drainSecretMatches(provided: string | null): Promise<boolean> {
-  if (!provided || !DRAIN_SECRET) return false;
-  const encoder = new TextEncoder();
-  const [leftBuffer, rightBuffer] = await Promise.all([
-    crypto.subtle.digest("SHA-256", encoder.encode(provided)),
-    crypto.subtle.digest("SHA-256", encoder.encode(DRAIN_SECRET)),
-  ]);
-  const left = new Uint8Array(leftBuffer);
-  const right = new Uint8Array(rightBuffer);
-  let difference = 0;
-  for (let index = 0; index < left.length; index++) {
-    difference |= left[index] ^ right[index];
-  }
-  return difference === 0;
-}
-
-function readKeyDictionary(envName: string, keyName: string): string | null {
-  const raw = Deno.env.get(envName);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const value = parsed[keyName] ?? parsed.default ?? Object.values(parsed)[0];
-    return typeof value === "string" && value.length > 0 ? value : null;
-  } catch {
-    return null;
-  }
-}
-
 function jsonResponse(status: number, body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "content-type": "application/json" },
+    headers: { "content-type": "application/json" },
   });
 }

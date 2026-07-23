@@ -410,11 +410,11 @@ verify_jwt = false
 verify_jwt = false
 
 # Drains the notification outbox to APNs. Invoked by a Database Webhook /
-# schedule, guarded by the DRAIN_SECRET header, so no user JWT is involved.
-# Required secrets: DRAIN_SECRET, SUPABASE_SECRET_KEYS (preferred) or
-# SUPABASE_SERVICE_ROLE_KEY, APNS_KEY_ID, APNS_TEAM_ID, APNS_PRIVATE_KEY.
-# Optional overrides: SUPABASE_SECRET_KEY_NAME, APNS_SANDBOX_KEY_ID,
-# APNS_SANDBOX_PRIVATE_KEY, APNS_BUNDLE_ID.
+# schedule and guarded by the DRAIN_SECRET header. @supabase/server provides
+# the admin client and CORS handling.
+# Required secrets: DRAIN_SECRET, APNS_KEY_ID, APNS_TEAM_ID, APNS_PRIVATE_KEY.
+# Optional overrides: APNS_SANDBOX_KEY_ID, APNS_SANDBOX_PRIVATE_KEY,
+# APNS_BUNDLE_ID.
 [functions.send-push-notifications]
 verify_jwt = false
 
@@ -423,9 +423,9 @@ verify_jwt = false
 [functions.cleanup-media-storage]
 verify_jwt = false
 
-# Authenticates user calls inside the function so modern publishable keys work,
-# and also accepts a DRAIN_SECRET-protected retry call from pg_cron/pg_net.
-# Required: SUPABASE_PUBLISHABLE_KEYS, SUPABASE_SECRET_KEYS, DRAIN_SECRET.
+# @supabase/server authenticates user calls and creates scoped/admin clients.
+# The function also accepts a DRAIN_SECRET-protected retry from pg_cron/pg_net.
+# Required custom secret: DRAIN_SECRET.
 # Automatic Sign in with Apple revocation additionally requires
 # APPLE_SIGN_IN_TEAM_ID, APPLE_SIGN_IN_KEY_ID, APPLE_SIGN_IN_PRIVATE_KEY, and
 # APPLE_SIGN_IN_CLIENT_ID (defaults to no.paeonia.app).

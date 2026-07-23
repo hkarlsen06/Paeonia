@@ -1,11 +1,11 @@
 /// <reference types="jsr:@supabase/functions-js/edge-runtime.d.ts" />
 
 import { Buffer } from "node:buffer";
-import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   Environment,
   SignedDataVerifier,
 } from "npm:@apple/app-store-server-library";
+import { type SupabaseContext, withSupabase } from "npm:@supabase/server@1.4.1";
 
 const APPLE_ROOT_CA_G2_URL =
   "https://www.apple.com/certificateauthority/AppleRootCA-G2.cer";
@@ -20,14 +20,6 @@ const APPLE_APP_APPLE_ID_RAW = Deno.env.get("APPLE_APP_APPLE_ID") ??
   Deno.env.get("APPLE_APP_ID") ??
   "";
 const APPLE_APP_APPLE_ID = Number(APPLE_APP_APPLE_ID_RAW);
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SUPABASE_SECRET_KEY = readSupabaseKeyDictionary(
-  "SUPABASE_SECRET_KEYS",
-  Deno.env.get("SUPABASE_SECRET_KEY_NAME") ?? "default",
-) ?? Deno.env.get("SUPABASE_SECRET_KEY") ??
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
-  "";
-
 type AppleEnvironment = "Production" | "Sandbox";
 type StoreKitEnvironment = "production" | "sandbox";
 type StoreKitStatus =
@@ -94,19 +86,22 @@ interface RecordStoreKitNotificationResponse {
 }
 
 let appleRootCertificatesPromise: Promise<Buffer[]> | null = null;
+// Generated database types are not part of the Edge Function bundle yet.
+// deno-lint-ignore no-explicit-any
+type EdgeDatabase = any;
+type AdminClient = SupabaseContext<EdgeDatabase>["supabaseAdmin"];
 
-Deno.serve(async (request: Request) => {
-  if (request.method === "OPTIONS") {
-    return jsonResponse(200, { ok: true });
-  }
+Deno.serve(withSupabase<EdgeDatabase>({ auth: "none" }, handleRequest));
 
+async function handleRequest(
+  request: Request,
+  context: SupabaseContext<EdgeDatabase>,
+): Promise<Response> {
   if (request.method !== "POST") {
     return jsonResponse(405, { ok: false, error: "Method not allowed" });
   }
 
   try {
-    assertEnvironmentConfigured();
-
     const body = await readJsonBody(request);
     const signedPayload = stringOrNull(body.signedPayload);
     if (!signedPayload) {
@@ -138,6 +133,7 @@ Deno.serve(async (request: Request) => {
     // path. Refunds are logged; the restored streak is intentionally kept.
     if (transactionInfo?.productId === STREAK_RESTORE_PRODUCT_ID) {
       const restoreResult = await persistStreakRestoreNotification(
+        context.supabaseAdmin,
         notification,
         transactionInfo,
       );
@@ -146,7 +142,8 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(restoreResult.status ?? 500, {
           received: false,
           processed: false,
-          error: restoreResult.error ?? "Could not process Apple notification",
+          error: restoreResult.error ??
+            "Could not process Apple notification",
         });
       }
 
@@ -158,6 +155,7 @@ Deno.serve(async (request: Request) => {
     }
 
     const result = await persistNotification(
+      context.supabaseAdmin,
       notification,
       transactionInfo,
       renewalInfo,
@@ -182,38 +180,9 @@ Deno.serve(async (request: Request) => {
     return jsonResponse(500, {
       received: false,
       processed: false,
-      error: clientSafeErrorMessage(error),
+      error: "Unexpected error",
     });
   }
-});
-
-class NotificationConfigurationError extends Error {
-  override name = "NotificationConfigurationError";
-}
-
-function assertEnvironmentConfigured() {
-  const missing: string[] = [];
-
-  if (!SUPABASE_URL) missing.push("SUPABASE_URL");
-  if (!SUPABASE_SECRET_KEY) {
-    missing.push("SUPABASE_SECRET_KEYS or SUPABASE_SERVICE_ROLE_KEY");
-  }
-
-  if (missing.length > 0) {
-    throw new NotificationConfigurationError(
-      `Missing required environment: ${missing.join(", ")}`,
-    );
-  }
-}
-
-function clientSafeErrorMessage(error: unknown): string {
-  if (error instanceof NotificationConfigurationError) {
-    return "Apple notification handling is not ready yet.";
-  }
-
-  // The caller is Apple's notification service; error detail stays in the
-  // server log (the catch site already logs the full error).
-  return "Unexpected error";
 }
 
 async function verifyAppleNotification(
@@ -236,7 +205,9 @@ async function verifyAppleNotification(
       }
     }
 
-    console.error("[apple-server-notifications] signed payload verification failed");
+    console.error(
+      "[apple-server-notifications] signed payload verification failed",
+    );
     return null;
   } catch (error) {
     console.error(
@@ -383,6 +354,7 @@ async function decodeSignedRenewalInfo(
 }
 
 async function persistStreakRestoreNotification(
+  supabaseAdmin: AdminClient,
   notification: AppleNotificationPayload,
   transactionInfo: AppleTransactionInfo,
 ): Promise<RecordStoreKitNotificationResponse> {
@@ -396,7 +368,6 @@ async function persistStreakRestoreNotification(
     return { ok: true, processed: false };
   }
 
-  const supabaseAdmin = adminClient();
   const { error } = await supabaseAdmin
     .rpc("mark_streak_restore_refunded", {
       p_environment: toDatabaseEnvironment(transactionInfo.environment),
@@ -419,12 +390,12 @@ async function persistStreakRestoreNotification(
 }
 
 async function persistNotification(
+  supabaseAdmin: AdminClient,
   notification: AppleNotificationPayload,
   transactionInfo: AppleTransactionInfo | null,
   renewalInfo: AppleRenewalInfo | null,
   signedPayload: string,
 ): Promise<RecordStoreKitNotificationResponse> {
-  const supabaseAdmin = adminClient();
   const notificationType = requireString(
     notification.notificationType,
     "notificationType",
@@ -433,7 +404,11 @@ async function persistNotification(
     transactionInfo?.environment ?? notification.data?.environment,
   );
   const status = transactionInfo
-    ? determineSubscriptionStatus(notificationType, transactionInfo, renewalInfo)
+    ? determineSubscriptionStatus(
+      notificationType,
+      transactionInfo,
+      renewalInfo,
+    )
     : null;
   const revocation = transactionInfo
     ? revocationState(notificationType, transactionInfo)
@@ -479,7 +454,8 @@ async function persistNotification(
     };
   }
 
-  return (data ?? { ok: false, status: 500 }) as RecordStoreKitNotificationResponse;
+  return (data ??
+    { ok: false, status: 500 }) as RecordStoreKitNotificationResponse;
 }
 
 function determineSubscriptionStatus(
@@ -617,7 +593,9 @@ async function fetchWithTimeout(
   }
 }
 
-async function readJsonBody(request: Request): Promise<Record<string, unknown>> {
+async function readJsonBody(
+  request: Request,
+): Promise<Record<string, unknown>> {
   try {
     return await request.json();
   } catch {
@@ -655,33 +633,6 @@ function uuidOrNull(value: unknown): string | null {
 
 function millisToIsoOrNull(value: number | undefined): string | null {
   return typeof value === "number" ? new Date(value).toISOString() : null;
-}
-
-function adminClient() {
-  return createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
-    auth: { persistSession: false },
-  });
-}
-
-function readSupabaseKeyDictionary(
-  envName: string,
-  keyName: string,
-): string | null {
-  const rawValue = Deno.env.get(envName);
-  if (!rawValue) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(rawValue) as Record<string, unknown>;
-    const namedValue = parsed[keyName] ?? parsed.default ??
-      Object.values(parsed)[0];
-    return typeof namedValue === "string" && namedValue.length > 0
-      ? namedValue
-      : null;
-  } catch {
-    return null;
-  }
 }
 
 function jsonResponse(status: number, body: Record<string, unknown>): Response {

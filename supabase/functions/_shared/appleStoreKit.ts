@@ -5,12 +5,11 @@
 // (the streak-restore consumable). Domain logic — what a verified transaction
 // means for entitlements vs. streaks — stays in each function.
 
-import { createClient } from "npm:@supabase/supabase-js@2";
 import * as jose from "https://deno.land/x/jose@v5.2.2/index.ts";
-import { corsHeaders } from "./cors.ts";
 
 export const APPLE_PRODUCTION_URL = "https://api.storekit.itunes.apple.com";
-export const APPLE_SANDBOX_URL = "https://api.storekit-sandbox.itunes.apple.com";
+export const APPLE_SANDBOX_URL =
+  "https://api.storekit-sandbox.itunes.apple.com";
 export const APPLE_API_TIMEOUT_MS = 15_000;
 export const APPLE_APP_BUNDLE_ID = Deno.env.get("APPLE_APP_BUNDLE_ID") ??
   "no.paeonia.app";
@@ -18,22 +17,6 @@ export const APPLE_APP_BUNDLE_ID = Deno.env.get("APPLE_APP_BUNDLE_ID") ??
 const APPLE_KEY_ID = Deno.env.get("APPLE_KEY_ID") ?? "";
 const APPLE_ISSUER_ID = Deno.env.get("APPLE_ISSUER_ID") ?? "";
 const APPLE_PRIVATE_KEY = Deno.env.get("APPLE_PRIVATE_KEY") ?? "";
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SUPABASE_SECRET_KEY = readSupabaseKeyDictionary(
-  "SUPABASE_SECRET_KEYS",
-  Deno.env.get("SUPABASE_SECRET_KEY_NAME") ?? "default",
-) ?? Deno.env.get("SUPABASE_SECRET_KEY") ??
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
-  "";
-const SUPABASE_USER_KEY = readSupabaseKeyDictionary(
-  "SUPABASE_PUBLISHABLE_KEYS",
-  Deno.env.get("SUPABASE_PUBLISHABLE_KEY_NAME") ?? "default",
-) ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
-  Deno.env.get("SUPABASE_ANON_KEY") ??
-  "";
-
-export { SUPABASE_SECRET_KEY, SUPABASE_URL, SUPABASE_USER_KEY };
-
 export type StoreKitEnvironment = "xcode" | "sandbox" | "production";
 export type AppleEnvironment = "Sandbox" | "Production";
 
@@ -87,13 +70,6 @@ export class ClientFacingError extends Error {
 export function assertAppleEnvironmentConfigured() {
   const missing: string[] = [];
 
-  if (!SUPABASE_URL) missing.push("SUPABASE_URL");
-  if (!SUPABASE_SECRET_KEY) {
-    missing.push("SUPABASE_SECRET_KEYS or SUPABASE_SERVICE_ROLE_KEY");
-  }
-  if (!SUPABASE_USER_KEY) {
-    missing.push("SUPABASE_PUBLISHABLE_KEYS or SUPABASE_ANON_KEY");
-  }
   if (!APPLE_KEY_ID) missing.push("APPLE_KEY_ID");
   if (!APPLE_ISSUER_ID) missing.push("APPLE_ISSUER_ID");
   if (!APPLE_PRIVATE_KEY) missing.push("APPLE_PRIVATE_KEY");
@@ -115,21 +91,6 @@ export function clientSafeErrorMessage(error: unknown): string {
   }
 
   return "Unexpected error";
-}
-
-export async function getAuthenticatedUser(authHeader: string) {
-  const userClient = createClient(SUPABASE_URL, SUPABASE_USER_KEY, {
-    auth: { persistSession: false },
-    global: { headers: { Authorization: authHeader } },
-  });
-
-  const { data, error } = await userClient.auth.getUser();
-  if (error) {
-    console.warn("[appleStoreKit] auth.getUser failed", error.message);
-    return null;
-  }
-
-  return data.user;
 }
 
 export async function verifyTransactionWithApple(
@@ -329,7 +290,9 @@ export function millisToIsoOrNull(value: number | undefined): string | null {
   return typeof value === "number" ? new Date(value).toISOString() : null;
 }
 
-export function normalizeClientEnvironment(value: unknown): StoreKitEnvironment {
+export function normalizeClientEnvironment(
+  value: unknown,
+): StoreKitEnvironment {
   if (value === "production") return "production";
   if (value === "xcode") return "xcode";
   return "sandbox";
@@ -341,33 +304,6 @@ export function toDatabaseEnvironment(
   return environment === "Production" ? "production" : "sandbox";
 }
 
-export function adminClient() {
-  return createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
-    auth: { persistSession: false },
-  });
-}
-
-function readSupabaseKeyDictionary(
-  envName: string,
-  keyName: string,
-): string | null {
-  const rawValue = Deno.env.get(envName);
-  if (!rawValue) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(rawValue) as Record<string, unknown>;
-    const namedValue = parsed[keyName] ?? parsed.default ??
-      Object.values(parsed)[0];
-    return typeof namedValue === "string" && namedValue.length > 0
-      ? namedValue
-      : null;
-  } catch {
-    return null;
-  }
-}
-
 export function jsonResponse(
   status: number,
   body: Record<string, unknown>,
@@ -375,7 +311,6 @@ export function jsonResponse(
   return new Response(JSON.stringify(body), {
     status,
     headers: {
-      ...corsHeaders,
       "Content-Type": "application/json",
     },
   });

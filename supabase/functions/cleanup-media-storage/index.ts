@@ -3,15 +3,8 @@
 // Drains media storage delete queues through the Supabase Storage API.
 // Safe to call repeatedly because rows are claimed atomically in Postgres.
 
-import { createClient } from "npm:@supabase/supabase-js@2";
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SUPABASE_SECRET_KEY = readSupabaseKeyDictionary(
-  "SUPABASE_SECRET_KEYS",
-  Deno.env.get("SUPABASE_SECRET_KEY_NAME") ?? "default",
-) ?? Deno.env.get("SUPABASE_SECRET_KEY") ??
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const DRAIN_SECRET = Deno.env.get("DRAIN_SECRET") ?? "";
+import { type SupabaseContext, withSupabase } from "npm:@supabase/server@1.4.1";
+import { drainRequestIsAuthorized } from "../_shared/drainAuth.ts";
 
 interface ClaimedMediaDelete {
   media_asset_id: string;
@@ -34,41 +27,8 @@ interface DrainStats {
   failed: number;
 }
 
-function readSupabaseKeyDictionary(
-  envName: string,
-  keyName: string,
-): string | null {
-  const raw = Deno.env.get(envName);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    return parsed[keyName] ?? parsed.default ?? null;
-  } catch {
-    return null;
-  }
-}
-
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-// Compares SHA-256 digests so the check is constant-time regardless of where
-// the provided value diverges from the configured secret.
-async function drainSecretMatches(
-  provided: string | null,
-  expected: string,
-): Promise<boolean> {
-  if (!provided || !expected) return false;
-  const encoder = new TextEncoder();
-  const [a, b] = await Promise.all([
-    crypto.subtle.digest("SHA-256", encoder.encode(provided)),
-    crypto.subtle.digest("SHA-256", encoder.encode(expected)),
-  ]);
-  const left = new Uint8Array(a);
-  const right = new Uint8Array(b);
-  let diff = 0;
-  for (let i = 0; i < left.length; i++) diff |= left[i] ^ right[i];
-  return diff === 0;
 }
 
 function positiveIntParam(
@@ -195,32 +155,23 @@ async function drainReportSnapshotDeletes(
   return { claimed: batch.length, deleted, failed };
 }
 
-Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") {
-    return new Response(JSON.stringify({ ok: true }), {
-      headers: { "content-type": "application/json" },
-    });
-  }
+Deno.serve(withSupabase({ auth: "none" }, handleRequest));
 
+async function handleRequest(
+  request: Request,
+  context: SupabaseContext,
+): Promise<Response> {
   if (request.method !== "POST") {
     return new Response("method not allowed", { status: 405 });
   }
 
-  const secretMatches = await drainSecretMatches(
-    request.headers.get("x-drain-secret"),
-    DRAIN_SECRET,
-  );
-  if (!secretMatches) {
+  if (!await drainRequestIsAuthorized(request)) {
     return new Response("unauthorized", { status: 401 });
-  }
-
-  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
-    return new Response("storage cleanup is not configured", { status: 500 });
   }
 
   const limit = positiveIntParam(request, "limit", 100, 500);
   const maxAttempts = positiveIntParam(request, "maxAttempts", 5, 25);
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY);
+  const supabase = context.supabaseAdmin;
 
   try {
     const media = await drainMediaDeletes(supabase, limit, maxAttempts);
@@ -246,4 +197,4 @@ Deno.serve(async (request) => {
       headers: { "content-type": "application/json" },
     });
   }
-});
+}
