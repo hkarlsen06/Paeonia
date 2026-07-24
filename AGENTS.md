@@ -527,12 +527,25 @@ Paeonia uses Supabase's GitHub integration for remote deploys. On push to `origi
 
 ### SQL And Migrations
 
-- Always create new migration files with `supabase migration new <migration_name>`, then edit the generated file.
-- Keep migration files in `supabase/migrations/`.
+- `supabase/schemas/*.sql` is the readable current-state source for DDL that pg-delta can reproduce. Files run in lexical order: keep ordinary declarations before `98_managed_schema_integrations.sql`, and keep `99_acl_normalization.sql` last.
+- `supabase/migrations/` remains the immutable deployment and transition history. Always create new migration files with `supabase migration new <migration_name>`, then edit the generated file. Never rewrite an already-applied migration.
+- For representable DDL, edit the declarative schema first, generate a migration with `supabase db diff --use-pg-delta -f <name>`, review every statement, and apply it locally with `supabase migration up --local`. Commit the schema files and reviewed migration together.
+- Do not introduce `supabase/sql/` as another canonical function or policy tree. Paeonia has one readable current-state source in `supabase/schemas/`.
+- Keep these changes in explicit hand-written migrations even when the final representable state is also updated declaratively:
+  - DML, backfills, seed/content changes, and other data-dependent transitions
+  - extension lifecycle or schema moves
+  - `storage.buckets` rows and configuration
+  - cron schedules and unschedule/reschedule operations
+  - publication membership
+  - grants, revokes, ownership, default privileges, and column privileges
+  - renames, destructive changes, type changes that depend on existing data, policy renames, and view ownership or column-order transitions
+- Treat generated migrations as proposals, not trusted output. Reject unexpected drops, table rewrites, locks, privilege changes, or RLS changes and replace them with a safe hand-written transition.
+- Preserve and explicitly round-trip the Paeonia-owned objects attached to managed schemas: both triggers on `auth.users` and both policies on `storage.objects`. Do not dump or declare Supabase-owned Auth or Storage internals wholesale.
+- Preserve `security_invoker` view options, RLS state, function `security definer`/`search_path` settings, comments, triggers, and ACLs. The existing rule for authenticated public wrappers that call `internal.*` remains mandatory.
+- Run `./scripts/check-supabase-schema-drift.sh` after schema or migration changes. A non-empty pg-delta result means the declarative state and migration history disagree and must be reconciled before commit.
 - Committed migrations apply automatically via Supabase's Git integration on push to the configured branch — that's the default path, and for most changes just committing is enough.
 - Pushing with the Supabase CLI is also fine when you need a migration live sooner than the next push (e.g. to unblock testing): run `supabase db push --linked` (add `--dry-run` first to preview, `--yes` to skip the prompt). The CLI applies only migrations missing from the remote history and records each under its file version, so a later Git push sees it already applied and skips it — the two paths don't conflict.
-- Either way, an already-applied migration must stay editable-safe: prefer `create or replace` / `drop ... if exists` so re-running is a no-op. To change a function's return type (which `create or replace` can't), `drop function if exists` then recreate.
-- Keep SQL source files in `supabase/sql/functions/` in sync with actual database definitions if that structure is added.
+- New migrations should be rerunnable where the operation allows it: prefer `create or replace` / `drop ... if exists`. To change a function's return type (which `create or replace` cannot do), `drop function if exists` and recreate it in the same reviewed migration.
 - Use `supabase db pull` only when intentionally baselining or reconciling remote-first schema changes.
 - When local Supabase commands need Docker, use Orbstack's socket (`DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock`). If that socket is unavailable and local verification is needed, start Orbstack first, then rerun the command.
 

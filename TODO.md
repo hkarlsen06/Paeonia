@@ -1,16 +1,29 @@
-## Evaluate Supabase declarative schemas with pg-delta
+## Adopt Supabase declarative schemas with pg-delta
 
-Research and, if the current Supabase workflow proves safe for Paeonia, adopt declarative schema files as the readable source of truth while retaining versioned migrations as the deployment and transition history.
+Decision: adopted on 2026-07-23 with Supabase CLI 2.109.1. `supabase/schemas/`
+is the readable DDL source of truth; migrations remain immutable deployment and
+transition history.
 
-- [ ] Verify the currently supported Supabase CLI version, commands, configuration, and directory convention from the official documentation; do not rely on the original public-alpha `db schema declarative sync` interface if it has been superseded.
-- [ ] Inventory the existing `supabase/migrations/` schema surface: tables, types, constraints, indexes, RLS policies, functions, triggers, views, grants, extensions, cron jobs, publications, Storage configuration, and any schema-adjacent data.
-- [ ] Document which objects pg-delta cannot safely or completely represent. Keep DML/data transforms, extension-managed state, and unsupported objects in explicit hand-written migrations.
-- [ ] Generate an initial `supabase/schemas/` baseline from the migration-reconstructed local database, then compare it with the linked Paeonia project and explain every difference before accepting it.
-- [ ] If `supabase/sql/` source files are introduced or already exist, define how they map into the declarative structure so functions and policies do not acquire two competing sources of truth.
-- [ ] Trial the edit -> `supabase db diff -f <name>` -> review -> `supabase migration up` workflow on a disposable branch/local database. Never rewrite already-applied migrations.
-- [ ] Test additive, rename, type-change, function, trigger, view, grant, and RLS-policy changes. Confirm generated migrations preserve data and do not introduce unexpected drops, locks, privilege changes, or RLS regressions.
-- [ ] Prove reproducibility with a clean local reset and representative seed data, then run Supabase security and performance advisors against the result.
-- [ ] Confirm the generated migrations remain compatible with Paeonia's Supabase GitHub integration deployment flow.
-- [ ] If adopted, update `AGENTS.md` and contributor commands, add a CI drift/diff check where practical, and require declarative files plus reviewed generated migrations in the same change.
+- [x] Verified the supported CLI surface: `supabase db diff --use-pg-delta`,
+  `schema_paths`, and `supabase/schemas/*.sql`; the public-alpha sync command is
+  obsolete.
+- [x] Inventoried tables, constraints, indexes, RLS, functions, triggers,
+  views, grants, extensions, cron, Storage, and schema-adjacent data.
+- [x] Documented the hand-written migration lane for data, managed or
+  unsupported state, privileges, renames, and destructive transitions.
+- [x] Generated the baseline from an unseeded clean migration reset and proved
+  zero-diff parity both locally and against the linked Paeonia project.
+- [x] Kept Auth and Storage platform schemas managed while explicitly
+  round-tripping Paeonia's two Auth triggers and two Storage policies.
+- [x] Defined one readable source of truth; do not introduce a competing
+  `supabase/sql/` function or policy tree.
+- [x] Kept migration generation and application as a reviewed step; applied
+  migrations are never rewritten.
+- [x] Exercised the existing history's additive, rename, type, function,
+  trigger, view, grant, and policy transitions through a clean replay and
+  rejected pg-delta's redundant default-privilege noise.
+- [x] Preserved the Supabase GitHub integration deployment contract: only new
+  migrations deploy; declarative files are review and drift inputs.
+- [x] Added contributor guidance and a CI drift, reset, lint, and pgTAP gate.
 
 References: [Supabase declarative database schemas](https://supabase.com/docs/guides/local-development/declarative-database-schemas) and [pg-delta public-alpha announcement](https://github.com/orgs/supabase/discussions/44938).

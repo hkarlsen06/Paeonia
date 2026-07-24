@@ -43,11 +43,46 @@ Common local checks agents have needed:
 
 ```bash
 supabase --version
+DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 ./scripts/check-supabase-schema-drift.sh
 DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase db lint --local --schema public,internal --fail-on error
 DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase db reset --local --no-seed
+DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase test db --local supabase/tests
 ```
 
 Use Orbstack's Docker socket on this machine when Supabase CLI needs Docker. Do not push remote migrations from the CLI; commit migration files and let the configured Supabase GitHub integration apply them after the branch is pushed intentionally.
+
+## Declarative Schema Workflow
+
+`supabase/schemas/` is the readable current database definition. The migration
+directory remains the immutable record of how production moves between those
+states.
+
+For ordinary DDL:
+
+1. Edit the ordered schema files.
+2. Run `supabase db diff --use-pg-delta -f <migration_name>`.
+3. Review the generated migration for data loss, table rewrites, locks, RLS,
+   ownership, and privilege changes.
+4. Replace unsafe or unsupported output with a hand-written migration.
+5. Run `supabase migration up --local`, the drift checker, lint, and the
+   relevant pgTAP tests.
+6. Commit the declarative state and migration together.
+
+The declarative files cover Paeonia-owned tables, constraints, indexes,
+functions, triggers, views, RLS policies, comments, and current ACL state.
+`98_managed_schema_integrations.sql` separately declares Paeonia's two
+`auth.users` triggers and two `storage.objects` policies without claiming
+ownership of the managed schemas. `99_acl_normalization.sql` must remain last.
+
+Use a hand-written migration for DML and backfills, question/content changes,
+Storage bucket rows, extensions, cron, publications, privileges and ownership,
+renames, destructive or data-dependent type transitions, policy renames, and
+view ownership or column-order transitions. When such a migration changes
+representable final DDL, update `supabase/schemas/` in the same change.
+
+Never edit an applied migration and do not add a second canonical
+`supabase/sql/` tree. The retired public-alpha
+`supabase db schema declarative sync` command is not part of this workflow.
 
 ## Account Deletion Operations
 

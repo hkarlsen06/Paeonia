@@ -1,0 +1,44 @@
+name: Supabase
+
+on:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - "scripts/check-supabase-schema-drift.sh"
+      - ".github/workflows/supabase.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "supabase/**"
+      - "scripts/check-supabase-schema-drift.sh"
+      - ".github/workflows/supabase.yml"
+
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.109.1
+
+      - name: Start local database
+        run: supabase db start
+
+      - name: Check declarative schema drift
+        run: ./scripts/check-supabase-schema-drift.sh
+
+      - name: Rebuild migration history
+        run: supabase db reset --local --no-seed
+
+      - name: Lint database
+        run: supabase db lint --local --schema public,internal,storage_private --fail-on error
+
+      - name: Run database tests
+        run: supabase test db --local supabase/tests

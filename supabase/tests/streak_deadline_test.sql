@@ -25,7 +25,13 @@ INSERT INTO public.profiles (
     'Europe/Oslo',
     now(),
     now()
-  );
+  )
+ON CONFLICT (user_id) DO UPDATE
+SET
+  display_name = excluded.display_name,
+  time_zone_id = excluded.time_zone_id,
+  time_zone_updated_at = excluded.time_zone_updated_at,
+  onboarding_completed_at = excluded.onboarding_completed_at;
 
 INSERT INTO public.relationship_pairs (id, user_low_id, user_high_id) VALUES (
   '81000000-0000-0000-0000-000000000010',
@@ -93,9 +99,9 @@ INSERT INTO public.user_devices (
 SELECT is(
   internal.resolve_next_activity_deadline_at(
     '81000000-0000-0000-0000-000000000020',
-    '2026-07-13 12:00:00+00'::timestamptz
+    '2099-07-13 12:00:00+00'::timestamptz
   ),
-  '2026-07-15 07:00:00+00'::timestamptz,
+  '2099-07-15 07:00:00+00'::timestamptz,
   'the streak waits for the partner whose protective midnight occurs last'
 );
 
@@ -106,19 +112,19 @@ WHERE user_id = '81000000-0000-0000-0000-000000000002';
 SELECT is(
   internal.resolve_next_activity_deadline_at(
     '81000000-0000-0000-0000-000000000020',
-    '2026-07-13 12:00:00+00'::timestamptz
+    '2099-07-13 12:00:00+00'::timestamptz
   ),
-  '2026-07-15 12:00:00+00'::timestamptz,
-  'the same activity gets a live travel-aware deadline from current time zones'
+  '2099-07-15 07:00:00+00'::timestamptz,
+  'a current device time zone takes precedence over the onboarding profile zone'
 );
 
 SELECT is(
   internal.resolve_streak_deadline_at(
     '81000000-0000-0000-0000-000000000020',
-    '2026-07-13 12:00:00+00'::timestamptz,
+    '2099-07-13 12:00:00+00'::timestamptz,
     1
   ),
-  '2026-07-14 12:00:00+00'::timestamptz,
+  '2099-07-14 07:00:00+00'::timestamptz,
   'restore without new activity is anchored to the last protective partner midnight'
 );
 
@@ -129,11 +135,23 @@ BEGIN
     '81000000-0000-0000-0000-000000000001',
     internal.get_or_create_couple_day_at(
       '81000000-0000-0000-0000-000000000020',
-      '2026-07-13 12:00:00+00'::timestamptz
+      '2099-07-13 12:00:00+00'::timestamptz
     ),
     'widget_drawing_saved',
-    '2026-07-13 12:00:00+00'::timestamptz,
+    '2099-07-13 12:00:00+00'::timestamptz,
     'streak-deadline-test:drawing',
+    '{}'::jsonb
+  );
+  PERFORM internal.apply_couple_activity(
+    '81000000-0000-0000-0000-000000000020',
+    '81000000-0000-0000-0000-000000000002',
+    internal.get_or_create_couple_day_at(
+      '81000000-0000-0000-0000-000000000020',
+      '2099-07-13 12:00:00+00'::timestamptz
+    ),
+    'widget_drawing_saved',
+    '2099-07-13 12:00:00+00'::timestamptz,
+    'streak-deadline-test:partner-drawing',
     '{}'::jsonb
   );
 END;
@@ -146,7 +164,7 @@ SELECT is(
     WHERE couple_id = '81000000-0000-0000-0000-000000000020'
   ),
   1,
-  'saving a drawing starts or extends the shared streak'
+  'both partners saving a drawing starts or extends the shared streak'
 );
 
 SELECT is(
@@ -169,7 +187,7 @@ SELECT is(
     FROM public.streak_states
     WHERE couple_id = '81000000-0000-0000-0000-000000000020'
   ),
-  '2026-07-15 07:00:00+00'::timestamptz,
+  '2099-07-15 07:00:00+00'::timestamptz,
   'a current device time zone immediately recalculates the live streak deadline'
 );
 
@@ -183,7 +201,7 @@ SELECT is(
     FROM public.streak_states
     WHERE couple_id = '81000000-0000-0000-0000-000000000020'
   ),
-  '2026-07-15 07:00:00+00'::timestamptz,
+  '2099-07-15 07:00:00+00'::timestamptz,
   'the most recently seen active device takes precedence over the onboarding profile zone'
 );
 
@@ -197,7 +215,7 @@ SELECT is(
     FROM public.streak_states
     WHERE couple_id = '81000000-0000-0000-0000-000000000020'
   ),
-  '2026-07-15 12:00:00+00'::timestamptz,
+  '2099-07-15 12:00:00+00'::timestamptz,
   'travel reported by the active device updates the live deadline again'
 );
 
