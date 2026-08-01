@@ -1,17 +1,25 @@
 {
   "name": "paeonia",
   "private": true,
-  "packageManager": "pnpm@10.33.2",
+  "packageManager": "bun@1.3.14",
+  "workspaces": [
+    "marketing",
+    "ios"
+  ],
   "description": "Paeonia monorepo - iOS app, marketing site, and backend infrastructure",
   "scripts": {
-    "dev": "pnpm --filter marketing dev",
-    "build": "pnpm --filter marketing build",
-    "start": "pnpm --filter marketing start",
-    "lint": "pnpm --filter marketing exec tsc --noEmit",
-    "test": "pnpm --filter marketing build",
+    "dev": "bun run --cwd marketing dev",
+    "build": "bun run --cwd marketing build",
+    "start": "bun run --cwd marketing start",
+    "lint": "bun run --cwd marketing typecheck",
+    "test": "bun run --cwd marketing build",
+    "pages:deploy:marketing": "bun run build && wrangler pages deploy marketing/out --project-name paeonia-marketing",
     "open-ios": "open ios/Paeonia.xcodeproj",
-    "review-codes:mint": "node ios/Scripts/mint-review-codes.mjs",
-    "review-codes:revoke": "node ios/Scripts/revoke-review-codes.mjs",
+    "review-codes:mint": "bun ios/Scripts/mint-review-codes.mjs",
+    "review-codes:revoke": "bun ios/Scripts/revoke-review-codes.mjs",
     "swiftlint": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; for arg in \"$@\"; do if [ \"$arg\" = \"--fix\" ] || [ \"$arg\" = \"autocorrect\" ]; then echo \"swiftlint autocorrect is disabled in this repo. Use swift-format once configured.\"; exit 1; fi; done; swiftlint lint \"$@\"' --"
+  },
+  "devDependencies": {
+    "wrangler": "4.118.0"
   }
 }

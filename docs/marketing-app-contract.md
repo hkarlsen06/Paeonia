@@ -167,6 +167,8 @@ This is not required for the app to launch, but it is useful and should stay ava
 
 ## Required Cloudflare Pages Files
 
+`marketing/wrangler.toml` pins the `paeonia-marketing` project, compatibility date, and `out/` deployment directory.
+
 ### `/_headers`
 
 Purpose: static response headers.
@@ -255,8 +257,14 @@ paeonia://login-callback/*
 Run locally:
 
 ```bash
-pnpm --filter marketing build
+bun run build
 jq empty marketing/public/.well-known/apple-app-site-association
+```
+
+Deploy the generated static site with Wrangler:
+
+```bash
+bun run pages:deploy:marketing
 ```
 
 After deploy, verify:

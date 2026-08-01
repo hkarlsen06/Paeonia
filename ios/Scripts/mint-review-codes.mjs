@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Mint App Review demo access codes.
 //
 // Run this before every App Store submission. It:
@@ -18,20 +18,12 @@
 //   SUPABASE_SECRET_KEY  Supabase secret/service-role key (SUPABASE_SERVICE_ROLE_KEY also accepted)
 //
 // Usage:
-//   pnpm review-codes:mint
-//   (or: node ios/Scripts/mint-review-codes.mjs)
+//   bun run review-codes:mint
+//   (or: bun ios/Scripts/mint-review-codes.mjs)
 
 import { randomBytes, randomInt } from "node:crypto";
-import { join } from "node:path";
 
-// Load the repo-root .env so the pnpm command and a bare `node ...` both work
-// without exporting vars by hand. A real shell/CI environment still works if the
-// file is absent.
-try {
-  process.loadEnvFile(join(import.meta.dirname, "..", "..", ".env"));
-} catch {
-  // No .env file — fall back to the ambient environment.
-}
+// Bun loads the repo-root .env automatically; CI and shell variables still work.
 
 const SUPABASE_URL = requireEnv("SUPABASE_URL").replace(/\/+$/, "");
 const SERVICE_KEY = requireEnv("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY");
@@ -124,7 +116,7 @@ function printResult(issued, expiresAt) {
   console.log(
     `\n  Valid until ${expiresAt}. Give each reviewer a different code — one code pairs one reviewer with one demo partner.`,
   );
-  console.log("  After the app is approved, run: node ios/Scripts/revoke-review-codes.mjs\n");
+  console.log("  After the app is approved, run: bun ios/Scripts/revoke-review-codes.mjs\n");
 }
 
 // Creates a dormant auth user for a demo partner. It never signs in; it exists so

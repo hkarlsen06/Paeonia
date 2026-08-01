@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "description": "Paeonia iOS App Store metadata tooling",
   "scripts": {
-    "generate-metadata": "node Scripts/generate-appstore-metadata.mjs",
-    "generate-metadata:force": "node Scripts/generate-appstore-metadata.mjs --force",
-    "generate-metadata:source-only": "node Scripts/generate-appstore-metadata.mjs --source-only",
-    "validate-metadata": "node Scripts/generate-appstore-metadata.mjs --validate-only",
+    "generate-metadata": "bun Scripts/generate-appstore-metadata.mjs",
+    "generate-metadata:force": "bun Scripts/generate-appstore-metadata.mjs --force",
+    "generate-metadata:source-only": "bun Scripts/generate-appstore-metadata.mjs --source-only",
+    "validate-metadata": "bun Scripts/generate-appstore-metadata.mjs --validate-only",
     "upload-metadata": "PATH=/opt/homebrew/opt/ruby@3.4/bin:/opt/homebrew/opt/ruby/bin:$PATH bundle exec fastlane ios upload_metadata",
     "metadata": "PATH=/opt/homebrew/opt/ruby@3.4/bin:/opt/homebrew/opt/ruby/bin:$PATH bundle exec fastlane ios metadata",
     "fastlane": "PATH=/opt/homebrew/opt/ruby@3.4/bin:/opt/homebrew/opt/ruby/bin:$PATH bundle exec fastlane"

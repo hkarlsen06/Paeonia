@@ -44,7 +44,7 @@ platform :ios do
   desc "Generate App Store metadata files and upload them"
   lane :metadata do
     UI.message("Generating localized metadata files...")
-    sh("node", metadata_script)
+    sh("bun", metadata_script)
 
     upload_metadata_files(require_app_store_connect_api_key!)
     UI.success("Metadata uploaded successfully.")
@@ -53,7 +53,7 @@ platform :ios do
   desc "Generate App Store metadata files without uploading"
   lane :generate_metadata do
     UI.message("Generating localized metadata files...")
-    sh("node", metadata_script)
+    sh("bun", metadata_script)
     UI.success("Metadata files generated in fastlane/metadata.")
   end
 
@@ -66,7 +66,7 @@ platform :ios do
   desc "Validate App Store metadata source and generated files"
   lane :validate_metadata do
     UI.message("Validating metadata...")
-    sh("node", metadata_script, "--validate-only")
+    sh("bun", metadata_script, "--validate-only")
     UI.success("Metadata validation passed.")
   end
 end

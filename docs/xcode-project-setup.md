@@ -135,7 +135,7 @@ Rules:
 Run:
 
 ```bash
-pnpm open-ios
+bun run open-ios
 ./scripts/xcode-build-agent.sh --json
 ```
 

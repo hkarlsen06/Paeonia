@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "marketing",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "dev"],
       "port": 3001,
       "cwd": "marketing"

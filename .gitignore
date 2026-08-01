@@ -1,12 +1,13 @@
 # dependencies
 node_modules
-.pnpm-store
-package-lock.json
 
 # Next.js/static export
 marketing/.next/
 marketing/out/
 marketing/next-env.d.ts
+
+# Wrangler local state
+.wrangler/
 
 # testing
 coverage

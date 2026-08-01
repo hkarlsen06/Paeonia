@@ -68,7 +68,7 @@ Run these before a release candidate.
 - [x] `swiftlint --quiet` (exit 0; advisory warnings remain).
 - [x] `./scripts/xcode-build-agent.sh --json` (Xcode 27 beta; succeeded).
 - [x] `./scripts/xcode-test-agent.sh --json` (468 tests, 0 failures).
-- [x] `pnpm --filter marketing build`
+- [x] `bun run build`
 - [x] `DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase db lint --local --schema public,internal --fail-on error`
 - [x] `DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase db reset --local --no-seed`
 - [x] `DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase test db` (168 pgTAP tests, 0 failures).
@@ -355,7 +355,7 @@ Remote baseline checked on 2026-07-10: all 74 committed migrations are present a
 
 ## Marketing Site
 
-- [x] `pnpm --filter marketing build` succeeds with static export (verified 2026-07-11).
+- [x] `bun run build` succeeds with static export (verified 2026-07-11).
 - [x] Cloudflare Pages deploy succeeds.
 - [x] `https://paeonia.no/` loads.
 - [x] `https://www.paeonia.no/` redirects or resolves correctly.

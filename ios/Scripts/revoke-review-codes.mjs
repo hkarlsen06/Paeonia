@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Revoke all active App Review demo access codes.
 //
 // Run this after the app version is approved so the codes printed in App Review
@@ -11,19 +11,10 @@
 //   SUPABASE_SECRET_KEY  Supabase secret/service-role key (SUPABASE_SERVICE_ROLE_KEY also accepted)
 //
 // Usage:
-//   pnpm review-codes:revoke
-//   (or: node ios/Scripts/revoke-review-codes.mjs)
+//   bun run review-codes:revoke
+//   (or: bun ios/Scripts/revoke-review-codes.mjs)
 
-import { join } from "node:path";
-
-// Load the repo-root .env so the pnpm command and a bare `node ...` both work
-// without exporting vars by hand. A real shell/CI environment still works if the
-// file is absent.
-try {
-  process.loadEnvFile(join(import.meta.dirname, "..", "..", ".env"));
-} catch {
-  // No .env file — fall back to the ambient environment.
-}
+// Bun loads the repo-root .env automatically; CI and shell variables still work.
 
 const SUPABASE_URL = requireEnv("SUPABASE_URL").replace(/\/+$/, "");
 const SERVICE_KEY = requireEnv("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY");
