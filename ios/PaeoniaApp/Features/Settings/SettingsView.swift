@@ -97,11 +97,11 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                profileSection
+                profileHeader
                 relationshipSection
                 locationSection
                 notificationsSection
-                restorePurchasesSection
+                purchasesSection
 
                 // Quiet destination cards read as one cluster, so the headerless
                 // privacy card doesn't float alone between headed sections.
@@ -172,56 +172,51 @@ struct SettingsView: View {
 extension SettingsView {
     // MARK: - Profile
 
-    private var profileSection: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            sectionHeader(.settingsProfileSectionTitle)
-
-            PaeoniaCard(padding: 0) {
-                NavigationLink {
-                    PairedProfileEditorView(
-                        displayName: profileDisplayName,
-                        customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
-                        providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID,
-                        authProvider: currentAuthProvider,
-                        onSave: onUpdateProfile
-                    )
-                } label: {
-                    profileRowLabel
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private var profileRowLabel: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            PaeoniaProfilePhotoAvatar(
-                mediaAssetID: currentProfilePhotoAssetID,
-                name: profileDisplayName,
-                tint: .paeoniaPartnerOne,
-                size: 52
+    /// The tab opens on the user's own identity: a centered avatar and name with a
+    /// quiet edit pill, instead of a small headed row card. The whole header is
+    /// one tap target into the profile editor.
+    private var profileHeader: some View {
+        NavigationLink {
+            PairedProfileEditorView(
+                displayName: profileDisplayName,
+                customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
+                providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID,
+                authProvider: currentAuthProvider,
+                onSave: onUpdateProfile
             )
-            .accessibilityHidden(true)
+        } label: {
+            VStack(spacing: PaeoniaSpacing.space12) {
+                PaeoniaProfilePhotoAvatar(
+                    mediaAssetID: currentProfilePhotoAssetID,
+                    name: profileDisplayName,
+                    tint: .paeoniaPartnerOne,
+                    size: 84
+                )
+                .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                Text(profileDisplayName)
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .foregroundStyle(.paeoniaTextPrimary)
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    Text(profileDisplayName)
+                        .font(PaeoniaTypography.title)
+                        .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(.settingsProfileEditAction)
+                    HStack(spacing: PaeoniaSpacing.space4) {
+                        Text(.settingsProfileEditAction)
+
+                        Image(systemName: "chevron.right")
+                            .accessibilityHidden(true)
+                    }
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextSecondary)
+                    .padding(.horizontal, PaeoniaSpacing.space12)
+                    .padding(.vertical, PaeoniaSpacing.space8)
+                    .background(.paeoniaSurfaceSecondary)
+                    .clipShape(Capsule(style: .continuous))
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Image(systemName: "chevron.right")
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextTertiary)
-                .accessibilityHidden(true)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
         }
-        .padding(PaeoniaSpacing.space16)
-        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
     }
 
     private var profileDisplayName: String {
@@ -299,6 +294,12 @@ extension SettingsView {
             }
         } label: {
             HStack(spacing: PaeoniaSpacing.space12) {
+                Image(systemName: "bell.badge.fill")
+                    .font(PaeoniaTypography.bodyEmphasis)
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .frame(width: PaeoniaSpacing.space24)
+                    .accessibilityHidden(true)
+
                 Text(.settingsNotificationsSectionTitle)
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaTextPrimary)
@@ -391,7 +392,7 @@ extension SettingsView {
         }
     }
 
-    // MARK: - Privacy, safety, and purchases
+    // MARK: - Privacy and safety
 
     @ViewBuilder
     private var privacySafetySection: some View {
@@ -445,30 +446,68 @@ extension SettingsView {
         }
     }
 
-    private var restorePurchasesSection: some View {
+    /// Subscription management and purchase restore belong together: one card of
+    /// purchase-related rows instead of a lone full-width button between sections.
+    private var purchasesSection: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             sectionHeader(.settingsPurchasesSectionTitle)
 
-            Button(action: restorePurchases) {
-                Label {
-                    Text(
-                        viewModel.isRestoringPurchases
-                            ? .settingsPurchasesRestoring
-                            : .paywallRestorePurchases
-                    )
-                } icon: {
-                    if viewModel.isRestoringPurchases {
-                        ProgressView()
-                            .accessibilityHidden(true)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .accessibilityHidden(true)
+            PaeoniaCard(padding: 0) {
+                VStack(spacing: 0) {
+                    Button {
+                        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                            openURL(url)
+                        }
+                    } label: {
+                        PaeoniaDisclosureRow(
+                            title: .paywallManageSubscription,
+                            systemImage: "creditcard",
+                            accessory: .externalLink
+                        )
                     }
+                    .buttonStyle(.plain)
+
+                    Divider()
+                        .overlay(.paeoniaSurfacePressed)
+
+                    Button(action: restorePurchases) {
+                        restorePurchasesRow
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(viewModel.isRestoringPurchases)
                 }
             }
-            .buttonStyle(PaeoniaSecondaryButtonStyle())
-            .disabled(viewModel.isRestoringPurchases)
         }
+    }
+
+    /// An action row in the purchases card: same leading-icon shape as the
+    /// disclosure rows, but with a spinner instead of a chevron while restoring.
+    private var restorePurchasesRow: some View {
+        HStack(spacing: PaeoniaSpacing.space12) {
+            Image(systemName: "arrow.clockwise")
+                .font(PaeoniaTypography.bodyEmphasis)
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .frame(width: PaeoniaSpacing.space24)
+                .accessibilityHidden(true)
+
+            Text(
+                viewModel.isRestoringPurchases
+                    ? .settingsPurchasesRestoring
+                    : .paywallRestorePurchases
+            )
+            .font(PaeoniaTypography.bodyEmphasis)
+            .foregroundStyle(.paeoniaTextPrimary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if viewModel.isRestoringPurchases {
+                ProgressView()
+                    .tint(.paeoniaTextSecondary)
+                    .accessibilityHidden(true)
+            }
+        }
+        .padding(.horizontal, PaeoniaSpacing.space16)
+        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
+        .contentShape(Rectangle())
     }
 
     // MARK: - Account actions

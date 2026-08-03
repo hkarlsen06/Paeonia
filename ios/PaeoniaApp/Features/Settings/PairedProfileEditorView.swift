@@ -77,15 +77,15 @@ struct PairedProfileEditorView: View {
 }
 
 extension PairedProfileEditorView {
-    /// The photo is the visual anchor for this focused editor. Centering it and
-    /// giving both actions equal-width labels keeps the layout balanced and makes
-    /// the controls understandable without relying on symbol interpretation.
+    /// The photo is the visual anchor for this focused editor. The avatar itself
+    /// opens the photo picker (with a camera badge as the affordance), so the
+    /// actions below can stay quiet text instead of two competing boxed buttons.
     private var photoSection: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
-            profilePreview
+            avatarPicker
             photoActions
 
-            VStack(spacing: PaeoniaSpacing.space8) {
+            VStack(spacing: PaeoniaSpacing.space4) {
                 Text(.settingsProfilePhotoMessage)
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextSecondary)
@@ -100,6 +100,40 @@ extension PairedProfileEditorView {
             .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var avatarPicker: some View {
+        PhotosPicker(
+            selection: $selectedItem,
+            matching: .images,
+            photoLibrary: .shared()
+        ) {
+            profilePreview
+                .overlay(alignment: .bottomTrailing) {
+                    cameraBadge
+                }
+        }
+        .buttonStyle(.plain)
+        .disabled(isSaving)
+        .accessibilityLabel(
+            Text(hasVisiblePhoto ? .settingsProfilePhotoChange : .settingsProfilePhotoAdd)
+        )
+    }
+
+    private var cameraBadge: some View {
+        Image(systemName: "camera.fill")
+            .font(PaeoniaTypography.caption.weight(.semibold))
+            .foregroundStyle(.paeoniaTextInverse)
+            .frame(width: 30, height: 30)
+            .background(.paeoniaAccentPrimary)
+            .clipShape(Circle())
+            .overlay {
+                // Ring in the screen background so the badge reads as sitting on
+                // top of the avatar instead of merging into its edge.
+                Circle()
+                    .stroke(.paeoniaBackgroundPrimary, lineWidth: 2)
+            }
+            .accessibilityHidden(true)
     }
 
     private var photoActions: some View {
@@ -148,6 +182,8 @@ extension PairedProfileEditorView {
         .accessibilityLabel(Text(.settingsProfilePhotoRemove))
     }
 
+    /// Quiet text actions under the avatar. They keep full button-sized hit
+    /// targets, but without boxed backgrounds the avatar stays the visual anchor.
     private func photoActionLabel(
         _ title: LocalizedStringResource,
         systemName: String,
@@ -162,11 +198,9 @@ extension PairedProfileEditorView {
         }
         .font(PaeoniaTypography.button)
         .foregroundStyle(tint)
-        .padding(.horizontal, PaeoniaSpacing.space12)
-        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
-        .background(.paeoniaSurfaceSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+        .padding(.horizontal, PaeoniaSpacing.space16)
+        .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+        .contentShape(Capsule(style: .continuous))
     }
 
     @ViewBuilder
@@ -201,9 +235,11 @@ extension PairedProfileEditorView {
 
     private var nameSection: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            // Matches the section-header treatment in Settings so the form label
+            // supports the field instead of competing with it.
             Text(.settingsProfileNameLabel)
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
+                .font(PaeoniaTypography.sectionTitle)
+                .foregroundStyle(.paeoniaTextSecondary)
 
             TextField(
                 text: $displayName,
