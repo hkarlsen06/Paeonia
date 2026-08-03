@@ -54,6 +54,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2A2D037A2FDD058B00A7BE1A"
                BuildableName = "PaeoniaAppUITests.xctest"
+               BlueprintName = "PaeoniaAppUITests"
                ReferencedContainer = "container:Paeonia.xcodeproj">
             </BuildableReference>
          </TestableReference>

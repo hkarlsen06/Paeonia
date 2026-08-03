@@ -2,80 +2,80 @@ import Testing
 @testable import PaeoniaApp
 
 /// Covers the cold-launch intro's gating rule: the app is only revealed once *both*
-/// the scripted branded hold has played *and* the first real surface is ready, no
-/// matter which of the two finishes first. Getting this wrong either flashes a
-/// half-loaded screen or holds on a blank one.
+/// the spring has landed *and* the first real surface is ready, no matter which of
+/// the two finishes first. Getting this wrong either flashes a half-loaded screen or
+/// holds on a blank one.
 struct LaunchExperienceSequenceTests {
     @Test func startsOnTheMarkMatchingTheSystemSplash() {
         let sequence = LaunchExperienceSequence()
 
         #expect(sequence.phase == .mark)
         #expect(sequence.isContentReady == false)
-        #expect(sequence.hasHeldWordmark == false)
+        #expect(sequence.hasSpringLanded == false)
     }
 
-    @Test func revealMovesFromMarkToWordmark() {
+    @Test func beginSpringMovesFromMarkToSpring() {
         var sequence = LaunchExperienceSequence()
 
-        sequence.revealWordmark()
+        sequence.beginSpring()
 
-        #expect(sequence.phase == .wordmark)
+        #expect(sequence.phase == .spring)
     }
 
-    @Test func revealOnlyAppliesFromTheMarkPhase() {
+    @Test func beginSpringOnlyAppliesFromTheMarkPhase() {
         var sequence = LaunchExperienceSequence()
-        sequence.revealWordmark()
+        sequence.beginSpring()
         sequence.markContentReady()
-        sequence.markWordmarkHoldElapsed()
+        sequence.markSpringLanded()
         #expect(sequence.phase == .revealing)
 
-        // A late, stray reveal must not knock an in-progress reveal back to wordmark.
-        sequence.revealWordmark()
+        // A late, stray spring start must not knock an in-progress reveal back.
+        sequence.beginSpring()
 
         #expect(sequence.phase == .revealing)
     }
 
-    @Test func holdElapsingBeforeContentReadyKeepsHoldingOnTheWordmark() {
+    @Test func landingBeforeContentReadyKeepsHoldingOnTheLandedMark() {
         var sequence = LaunchExperienceSequence()
-        sequence.revealWordmark()
+        sequence.beginSpring()
 
-        sequence.markWordmarkHoldElapsed()
+        sequence.markSpringLanded()
 
-        // Content is still loading, so we keep showing the branded wordmark.
-        #expect(sequence.phase == .wordmark)
+        // Content is still loading, so we keep showing the branded mark.
+        #expect(sequence.phase == .spring)
 
         sequence.markContentReady()
 
         #expect(sequence.phase == .revealing)
     }
 
-    @Test func contentReadyBeforeHoldElapsedStillWaitsForTheHold() {
+    @Test func contentReadyBeforeLandingStillWaitsForTheImpact() {
         var sequence = LaunchExperienceSequence()
-        sequence.revealWordmark()
+        sequence.beginSpring()
 
         sequence.markContentReady()
 
         // The reveal must not jump in early just because content loaded fast.
-        #expect(sequence.phase == .wordmark)
+        #expect(sequence.phase == .spring)
 
-        sequence.markWordmarkHoldElapsed()
+        sequence.markSpringLanded()
 
         #expect(sequence.phase == .revealing)
     }
 
-    @Test func contentReadyDuringTheMarkPhaseDoesNotSkipTheReveal() {
+    @Test func contentReadyDuringTheMarkPhaseDoesNotSkipTheSpring() {
         var sequence = LaunchExperienceSequence()
 
-        // A very fast launch can be ready before the wordmark is even revealed; the
-        // reveal beat must still play rather than jumping straight to the reveal.
+        // A very fast launch can be ready before the spring has even begun; the
+        // spring must still play rather than jumping straight to the reveal.
         sequence.markContentReady()
         #expect(sequence.phase == .mark)
 
-        sequence.revealWordmark()
-        #expect(sequence.phase == .wordmark)
+        sequence.beginSpring()
+        #expect(sequence.phase == .spring)
 
-        // The reveal only begins once the scripted hold reports in, after the reveal.
-        sequence.markWordmarkHoldElapsed()
+        // The reveal only begins once the impact reports in.
+        sequence.markSpringLanded()
         #expect(sequence.phase == .revealing)
     }
 
@@ -86,8 +86,8 @@ struct LaunchExperienceSequenceTests {
         sequence.finishReveal()
         #expect(sequence.phase == .mark)
 
-        sequence.revealWordmark()
-        sequence.markWordmarkHoldElapsed()
+        sequence.beginSpring()
+        sequence.markSpringLanded()
         sequence.markContentReady()
         #expect(sequence.phase == .revealing)
 
@@ -97,11 +97,11 @@ struct LaunchExperienceSequenceTests {
 
     @Test func repeatedSignalsAreIdempotent() {
         var sequence = LaunchExperienceSequence()
-        sequence.revealWordmark()
+        sequence.beginSpring()
         sequence.markContentReady()
         sequence.markContentReady()
-        sequence.markWordmarkHoldElapsed()
-        sequence.markWordmarkHoldElapsed()
+        sequence.markSpringLanded()
+        sequence.markSpringLanded()
 
         #expect(sequence.phase == .revealing)
 

@@ -1,3 +1,4 @@
+import Foundation
 import SwiftData
 
 protocol LocalStore: Sendable {
@@ -28,10 +29,20 @@ final class PaeoniaLocalStore: LocalStore, @unchecked Sendable {
             schema: schema,
             isStoredInMemoryOnly: inMemory
         )
+        if !inMemory {
+            try Self.createStoreDirectory(for: configuration.url)
+        }
 
         self.container = try ModelContainer(
             for: schema,
             configurations: [configuration]
+        )
+    }
+
+    nonisolated static func createStoreDirectory(for storeURL: URL) throws {
+        try FileManager.default.createDirectory(
+            at: storeURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
         )
     }
 }

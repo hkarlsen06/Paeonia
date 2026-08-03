@@ -15,10 +15,12 @@ struct PaeoniaWidgetRefreshIntent: AppIntent {
     )
     static var supportedModes: IntentModes { .background }
 
+    #if compiler(>=6.4)
     @available(iOS 27.0, *)
     static var allowedExecutionTargets: IntentExecutionTargets {
         .widgetKitExtension
     }
+    #endif
 
     func perform() async -> some IntentResult {
 #if DEBUG

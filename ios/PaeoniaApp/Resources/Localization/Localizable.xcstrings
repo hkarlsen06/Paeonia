@@ -9569,9 +9569,6 @@
         }
       }
     },
-    "widget.drawing.action" : {
-      "comment" : "Accessibility label and title for opening the widget drawing."
-    },
     "widget.history.done" : {
       "comment" : "Button that closes the drawing history screen",
       "extractionState" : "manual",

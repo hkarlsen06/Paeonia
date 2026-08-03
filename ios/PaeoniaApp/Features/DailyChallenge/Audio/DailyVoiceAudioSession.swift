@@ -2,7 +2,9 @@ import AVFoundation
 import Foundation
 
 nonisolated enum DailyVoiceAudioSession {
+    #if compiler(>=6.4)
     private static let errorDomain = "no.paeonia.app.dailyVoice.audioSession"
+    #endif
 
     static func configureForRecording() async throws {
         try await Task.detached(priority: .userInitiated) {
@@ -26,27 +28,34 @@ nonisolated enum DailyVoiceAudioSession {
     }
 
     static func deactivate() {
+        #if compiler(>=6.4)
         if #available(iOS 27.0, *) {
             Task.detached(priority: .utility) {
                 await deactivateAsync()
             }
-        } else {
-            Task.detached(priority: .utility) {
-                try? AVAudioSession.sharedInstance().setActive(false)
-            }
+            return
+        }
+        #endif
+
+        Task.detached(priority: .utility) {
+            try? AVAudioSession.sharedInstance().setActive(false)
         }
     }
 
     private static func activate(priority: TaskPriority) async throws {
+        #if compiler(>=6.4)
         if #available(iOS 27.0, *) {
             try await activateAsync()
-        } else {
-            try await Task.detached(priority: priority) {
-                try AVAudioSession.sharedInstance().setActive(true)
-            }.value
+            return
         }
+        #endif
+
+        try await Task.detached(priority: priority) {
+            try AVAudioSession.sharedInstance().setActive(true)
+        }.value
     }
 
+    #if compiler(>=6.4)
     @available(iOS 27.0, *)
     private static func activateAsync() async throws {
         let session = AVAudioSession.sharedInstance()
@@ -72,7 +81,9 @@ nonisolated enum DailyVoiceAudioSession {
             }
         }
     }
+    #endif
 
+    #if compiler(>=6.4)
     private static func sessionError(_ message: String) -> NSError {
         NSError(
             domain: errorDomain,
@@ -80,4 +91,5 @@ nonisolated enum DailyVoiceAudioSession {
             userInfo: [NSLocalizedDescriptionKey: message]
         )
     }
+    #endif
 }
