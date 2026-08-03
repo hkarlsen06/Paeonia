@@ -5,6 +5,8 @@ struct ReportAndLeaveView: View {
     let partnerName: String
     let onReportedAndLeft: () -> Void
 
+    private let reportTarget: PrivacyReportTarget
+
     @State private var viewModel: ReportAndLeaveViewModel
     @State private var isConfirmingSubmission = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -13,12 +15,14 @@ struct ReportAndLeaveView: View {
     init(
         partnerUserID: UUID,
         partnerName: String,
+        reportTarget: PrivacyReportTarget? = nil,
         service: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
         operationProvider: (any SyncClientOperationProviding)? = nil,
         onReportedAndLeft: @escaping () -> Void = {}
     ) {
         self.partnerUserID = partnerUserID
         self.partnerName = partnerName
+        self.reportTarget = reportTarget ?? .conduct(userID: partnerUserID)
         self.onReportedAndLeft = onReportedAndLeft
         _viewModel = State(
             initialValue: ReportAndLeaveViewModel(
@@ -80,7 +84,7 @@ struct ReportAndLeaveView: View {
         ) {
             Button(role: .destructive) {
                 Task {
-                    await viewModel.submit(partnerUserID: partnerUserID)
+                    await viewModel.submit(target: reportTarget)
                 }
             } label: {
                 Text(.reportAndLeaveConfirmAction)

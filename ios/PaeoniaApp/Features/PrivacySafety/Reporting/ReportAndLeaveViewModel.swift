@@ -40,7 +40,7 @@ final class ReportAndLeaveViewModel {
     }
 
     @discardableResult
-    func submit(partnerUserID: UUID) async -> Bool {
+    func submit(target: PrivacyReportTarget) async -> Bool {
         guard !isSubmitting, let service else {
             if service == nil {
                 notice = .submitFailed
@@ -56,13 +56,13 @@ final class ReportAndLeaveViewModel {
         defer { isSubmitting = false }
 
         let submission = preparedSubmission(
-            partnerUserID: partnerUserID,
+            target: target,
             reason: selectedReason
         )
 
         do {
-            _ = try await service.submitConductReportAndLeave(
-                partnerUserID: partnerUserID,
+            _ = try await service.submitReportAndLeave(
+                target: target,
                 reason: selectedReason,
                 note: submission.fingerprint.note,
                 blockPartner: blockPartner,
@@ -84,12 +84,12 @@ final class ReportAndLeaveViewModel {
     }
 
     private func preparedSubmission(
-        partnerUserID: UUID,
+        target: PrivacyReportTarget,
         reason: PrivacyReportReason
     ) -> PendingSubmission {
         let normalizedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
         let fingerprint = SubmissionFingerprint(
-            partnerUserID: partnerUserID,
+            target: target,
             reason: reason,
             note: normalizedNote.isEmpty ? nil : normalizedNote,
             blockPartner: blockPartner
@@ -109,7 +109,7 @@ final class ReportAndLeaveViewModel {
 
 private extension ReportAndLeaveViewModel {
     struct SubmissionFingerprint: Equatable {
-        let partnerUserID: UUID
+        let target: PrivacyReportTarget
         let reason: PrivacyReportReason
         let note: String?
         let blockPartner: Bool

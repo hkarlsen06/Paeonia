@@ -8,8 +8,8 @@ nonisolated protocol PrivacySafetyServicing: Sendable {
         requesterNote: String?
     ) async throws -> PrivacyRequestSubmissionOutcome
 
-    func submitConductReportAndLeave(
-        partnerUserID: UUID,
+    func submitReportAndLeave(
+        target: PrivacyReportTarget,
         reason: PrivacyReportReason,
         note: String?,
         blockPartner: Bool,
@@ -59,16 +59,16 @@ actor PrivacySafetyService: PrivacySafetyServicing {
         return .created(row.request)
     }
 
-    func submitConductReportAndLeave(
-        partnerUserID: UUID,
+    func submitReportAndLeave(
+        target: PrivacyReportTarget,
         reason: PrivacyReportReason,
         note: String?,
         blockPartner: Bool,
         operation: SyncClientOperation
     ) async throws -> UUID {
         let normalizedNote = note?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return try await gateway.submitConductReportAndLeave(
-            partnerUserID: partnerUserID,
+        return try await gateway.submitReportAndLeave(
+            target: target,
             reason: reason,
             note: normalizedNote?.isEmpty == false ? normalizedNote : nil,
             blockPartner: blockPartner,

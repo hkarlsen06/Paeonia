@@ -10291,6 +10291,78 @@
           }
         }
       }
+    },
+    "dailyChallenge.combinedChoice.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick one of you (optional)"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg en av dere (valgfritt)"
+          }
+        }
+      },
+      "comment" : "Short label above the optional partner-choice picker when a daily question also accepts text"
+    },
+    "dailyChallenge.reportPartnerAnswer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report this answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporter dette svaret"
+          }
+        }
+      },
+      "comment" : "Context-menu action for reporting a visible partner answer"
+    },
+    "settings.notifications.memories.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New memories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nye minner"
+          }
+        }
+      },
+      "comment" : "Title for the notification preference for newly added memories"
+    },
+    "settings.notifications.memories.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a notification when %@ adds a memory."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få et varsel når %@ legger til et minne."
+          }
+        }
+      },
+      "comment" : "Subtitle for the new-memory notification preference. The placeholder is the partner's display name."
     }
   },
   "version" : "1.0"

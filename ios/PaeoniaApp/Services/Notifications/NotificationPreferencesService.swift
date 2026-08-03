@@ -9,6 +9,7 @@ nonisolated struct NotificationPreferences: Equatable, Sendable {
     var dailyChallengeEnabled = true
     var partnerAnsweredEnabled = true
     var widgetUpdatesEnabled = true
+    var memoriesEnabled = true
 }
 
 nonisolated enum NotificationPreferenceKind: Equatable, Sendable {
@@ -16,6 +17,7 @@ nonisolated enum NotificationPreferenceKind: Equatable, Sendable {
     case dailyChallenge
     case partnerAnswered
     case widgetUpdates
+    case memories
 
     var columnName: String {
         switch self {
@@ -27,6 +29,8 @@ nonisolated enum NotificationPreferenceKind: Equatable, Sendable {
             "partner_answered_enabled"
         case .widgetUpdates:
             "widget_updates_enabled"
+        case .memories:
+            "memories_enabled"
         }
     }
 }
@@ -45,7 +49,13 @@ nonisolated protocol NotificationPreferencesProviding: Sendable {
 actor SupabaseNotificationPreferencesService: NotificationPreferencesProviding {
     private let client: SupabaseClient
     private static let table = "notification_preferences"
-    private static let columns = "streak_reminders_enabled,daily_challenge_enabled,partner_answered_enabled,widget_updates_enabled"
+    private static let columns = [
+        "streak_reminders_enabled",
+        "daily_challenge_enabled",
+        "partner_answered_enabled",
+        "widget_updates_enabled",
+        "memories_enabled",
+    ].joined(separator: ",")
 
     init(client: SupabaseClient) {
         self.client = client
@@ -80,13 +90,15 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
     let dailyChallengeEnabled: Bool
     let partnerAnsweredEnabled: Bool
     let widgetUpdatesEnabled: Bool
+    let memoriesEnabled: Bool
 
     var preferences: NotificationPreferences {
         NotificationPreferences(
             streakRemindersEnabled: streakRemindersEnabled,
             dailyChallengeEnabled: dailyChallengeEnabled,
             partnerAnsweredEnabled: partnerAnsweredEnabled,
-            widgetUpdatesEnabled: widgetUpdatesEnabled
+            widgetUpdatesEnabled: widgetUpdatesEnabled,
+            memoriesEnabled: memoriesEnabled
         )
     }
 
@@ -95,6 +107,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
         case dailyChallengeEnabled = "daily_challenge_enabled"
         case partnerAnsweredEnabled = "partner_answered_enabled"
         case widgetUpdatesEnabled = "widget_updates_enabled"
+        case memoriesEnabled = "memories_enabled"
     }
 }
 

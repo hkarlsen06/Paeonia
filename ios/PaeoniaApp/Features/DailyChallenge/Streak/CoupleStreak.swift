@@ -35,6 +35,14 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
         restorableCount > 0 && (restoreDeadline.map { $0 > .now } ?? false)
     }
 
+    /// The single surface a streak entry point should open. Broken streaks go
+    /// straight to the purchase offer; healthy or expired streaks remain
+    /// informative. Keeping this decision shared prevents a notification or
+    /// toolbar entry from inserting a duplicate detail screen before purchase.
+    var entryDestination: StreakEntryDestination {
+        isRestorable ? .restore : .detail
+    }
+
     static let none = CoupleStreak(
         currentCount: 0,
         longestCount: 0,
@@ -43,6 +51,11 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
         restorableCount: 0,
         restoreDeadline: nil
     )
+}
+
+nonisolated enum StreakEntryDestination: Equatable, Sendable {
+    case detail
+    case restore
 }
 
 /// Pure logic for the number shown on the completion celebration.

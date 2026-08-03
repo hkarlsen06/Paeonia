@@ -61,9 +61,31 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
     private let legacyHashKey = "paeonia.widgetCanvas.pendingUploadHash"
     private let retryDelay: TimeInterval
 
-    init(defaults: UserDefaults = .standard, retryDelay: TimeInterval = 60) {
-        self.defaults = defaults
+    init(
+        defaults: UserDefaults? = nil,
+        retryDelay: TimeInterval = 60
+    ) {
+        let resolvedDefaults = defaults
+            ?? UserDefaults(suiteName: PaeoniaAppGroup.identifier)
+            ?? .standard
+        self.defaults = resolvedDefaults
         self.retryDelay = retryDelay
+
+        // Older builds kept this guard in app-only defaults. Move it once so
+        // the widget extension can protect the same pending local save during
+        // an interactive refresh.
+        if defaults == nil, resolvedDefaults !== UserDefaults.standard {
+            if resolvedDefaults.data(forKey: key) == nil,
+               let legacyData = UserDefaults.standard.data(forKey: key) {
+                resolvedDefaults.set(legacyData, forKey: key)
+            }
+            if resolvedDefaults.string(forKey: legacyHashKey) == nil,
+               let legacyHash = UserDefaults.standard.string(forKey: legacyHashKey) {
+                resolvedDefaults.set(legacyHash, forKey: legacyHashKey)
+            }
+            UserDefaults.standard.removeObject(forKey: key)
+            UserDefaults.standard.removeObject(forKey: legacyHashKey)
+        }
     }
 
     var hasPending: Bool {

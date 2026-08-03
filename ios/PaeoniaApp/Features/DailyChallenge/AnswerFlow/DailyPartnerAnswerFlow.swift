@@ -156,36 +156,12 @@ struct DailyPartnerAnswerFlow: View {
     /// the partner on top — so answering pays off with their reply right here. Reads
     /// from the live question, so a reply that loads a beat later fills in on its own.
     private var revealed: some View {
-        VStack(spacing: PaeoniaSpacing.space16) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                    PaeoniaCardEyebrow(.dailyChallengePartnerRevealEyebrow)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Text(question.prompt)
-                        .font(PaeoniaTypography.title)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    if let revealedQuestion {
-                        DailyQuestionStatusView(question: revealedQuestion, participants: viewModel.participants)
-                        DailyAnswerDetailsView(question: revealedQuestion, participants: viewModel.participants)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.space24)
-                .padding(.bottom, PaeoniaSpacing.space8)
-            }
-
-            Button(action: dismiss) {
-                Text(.dailyChallengeFlowDoneButton)
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.bottom, PaeoniaSpacing.space8)
-        }
+        DailyPartnerAnswerRevealView(
+            question: question,
+            revealedQuestion: revealedQuestion,
+            participants: viewModel.participants,
+            onDone: dismiss
+        )
     }
 
     // MARK: - State
@@ -228,9 +204,9 @@ struct DailyPartnerAnswerFlow: View {
         // Hold on the compose screen (Send still busy) just long enough for the partner's
         // now-unlocked reply to load. Capped, so a slow connection never holds it open.
         phase = .sending
-        await viewModel.awaitAnswerReveal(for: question.id)
+        let didReveal = await viewModel.awaitAnswerReveal(for: question.id)
 
-        if revealedQuestion?.canViewPartnerAnswer == true {
+        if didReveal, revealedQuestion?.canViewPartnerAnswer == true {
             // The reply is viewable — turn the screen straight over to it.
             PaeoniaHaptics.answerRevealed()
             withAnimation(PaeoniaMotion.meaningfulMoment) { phase = .revealed }
@@ -255,5 +231,49 @@ struct DailyPartnerAnswerFlow: View {
             )
         )
         viewModel.dismissNotice()
+    }
+}
+
+/// The revealed exchange shared by the focused partner-answer cover and the main
+/// challenge flow. It receives the originally presented question separately from the
+/// live snapshot so reloads may reorder the question list without changing the prompt
+/// or invalidating the presentation that is already on screen.
+struct DailyPartnerAnswerRevealView: View {
+    let question: DailyChallengeQuestion
+    let revealedQuestion: DailyChallengeQuestion?
+    let participants: DailyChallengeParticipants
+    let onDone: () -> Void
+
+    var body: some View {
+        VStack(spacing: PaeoniaSpacing.space16) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+                    PaeoniaCardEyebrow(.dailyChallengePartnerRevealEyebrow)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Text(question.prompt)
+                        .font(PaeoniaTypography.title)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    if let revealedQuestion {
+                        DailyQuestionStatusView(question: revealedQuestion, participants: participants)
+                        DailyAnswerDetailsView(question: revealedQuestion, participants: participants)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.top, PaeoniaSpacing.space24)
+                .padding(.bottom, PaeoniaSpacing.space8)
+            }
+
+            Button(action: onDone) {
+                Text(.dailyChallengeFlowDoneButton)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.bottom, PaeoniaSpacing.space8)
+        }
     }
 }

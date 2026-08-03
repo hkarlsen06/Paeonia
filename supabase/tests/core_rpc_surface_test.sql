@@ -560,6 +560,11 @@ SELECT ok(
     'public.notification_preferences',
     'streak_reminders_enabled',
     'update'
+  ) AND has_column_privilege(
+    'authenticated',
+    'public.notification_preferences',
+    'memories_enabled',
+    'update'
   ),
   'authenticated may update allowed notification preference columns through RLS'
 );

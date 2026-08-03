@@ -288,9 +288,10 @@ struct MainTabView: View {
     /// Tapping the streak badge. A broken streak that can still be bought back opens
     /// the restore offer; an intact streak opens the read-only detail sheet.
     private func openStreakDetails() {
-        if dailyChallengeViewModel.streak.isRestorable {
+        switch dailyChallengeViewModel.streak.entryDestination {
+        case .restore:
             showStreakRestore = true
-        } else {
+        case .detail:
             showStreakDetail = true
         }
     }
@@ -391,6 +392,7 @@ struct MainTabView: View {
             // bar from inside PairedHomeView, where the name/photo data lives.
             .navigationDestination(isPresented: widgetDrawingPresented) {
                 WidgetDrawingView(
+                    ownerUserID: currentUserID,
                     authorName: authorName,
                     viewModel: widgetDrawingViewModel,
                     historyViewModel: widgetHistoryViewModel,
@@ -411,7 +413,10 @@ struct MainTabView: View {
                 onRefresh: {
                     await refreshDailyChallenge()
                 },
-                onAnswerPartnerQuestion: openPartnerAnswerFlow
+                onAnswerPartnerQuestion: openPartnerAnswerFlow,
+                privacySafetyService: settingsPrivacyService,
+                privacyOperationProvider: settingsPrivacyOperationProvider,
+                onReportedAndLeft: onLeftRelationship
             )
         }
     }
@@ -493,8 +498,23 @@ struct MainTabView: View {
                 openAnswerFlow(source: .questions)
             }
             self.deepLink.wrappedValue = nil
+        case .memories:
+            selection.wrappedValue = .memories
+            await memoriesViewModel.refresh()
+            guard !Task.isCancelled, self.deepLink.wrappedValue == deepLink else {
+                return
+            }
+            self.deepLink.wrappedValue = nil
         case .streak:
             selection.wrappedValue = .home
+            // The streak may have advanced, broken, or passed its restore deadline
+            // since the notification was queued. Refresh before choosing the one
+            // destination so a broken streak opens the purchase offer directly.
+            await refreshDailyChallenge()
+            guard !Task.isCancelled, self.deepLink.wrappedValue == deepLink else {
+                return
+            }
+            openStreakDetails()
             self.deepLink.wrappedValue = nil
         case .subscription:
             // RootView owns this external URL and consumes the binding after it

@@ -131,4 +131,18 @@ export const marketingEn = {
     emailLabel: 'Email',
     back: 'Back to Paeonia',
   },
+  join: {
+    title: "You've been invited to Paeonia",
+    message: 'Open Paeonia to see who invited you and choose whether to join.',
+    invalidTitle: "This invite link doesn't look right",
+    invalidMessage: 'Ask your partner to share a new Paeonia invite.',
+    missingMessage: 'Open the full invite link your partner shared with you.',
+    code: 'Invite code',
+    open: 'Open Paeonia',
+    install: 'Get Paeonia on the App Store',
+    beta:
+      'Don’t have Paeonia yet? Install it from the beta invitation you received, then open this link again. Keep this link until you’re connected.',
+    help: 'Need help?',
+    opening: 'Opening your invite…',
+  },
 } as const;

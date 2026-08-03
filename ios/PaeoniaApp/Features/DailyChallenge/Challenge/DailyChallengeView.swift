@@ -20,6 +20,9 @@ struct DailyChallengeScreen: View {
     var onRefresh: (() async -> Void)?
     /// Opens the single-question answer flow for a partner-answered question.
     var onAnswerPartnerQuestion: (DailyChallengeQuestion) -> Void = { _ in }
+    var privacySafetyService: (any PrivacySafetyServicing)?
+    var privacyOperationProvider: (any SyncClientOperationProviding)?
+    var onReportedAndLeft: () -> Void = {}
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
@@ -27,6 +30,7 @@ struct DailyChallengeScreen: View {
     /// History button is tapped, and presented by item so it carries its own state.
     @State private var historyViewModel: DailyChallengeHistoryViewModel?
     @State private var highlightedQuestionID: UUID?
+    @State private var reportedPartnerAnswerID: UUID?
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -52,7 +56,8 @@ struct DailyChallengeScreen: View {
                                     isOwnChallengeComplete: viewModel.hasCompletedRequiredDailyQuestions,
                                     zoomNamespace: zoomNamespace,
                                     isHighlighted: highlightedQuestionID == question.id,
-                                    onAnswer: { onAnswerPartnerQuestion(question) }
+                                    onAnswer: { onAnswerPartnerQuestion(question) },
+                                    onReportPartnerAnswer: { reportedPartnerAnswerID = $0 }
                                 )
                                 .id(question.id)
                             }
@@ -105,8 +110,26 @@ struct DailyChallengeScreen: View {
         // The history cover carries its own loading and error state; it routes
         // recoverable errors into the same shared top banner.
         .fullScreenCover(item: $historyViewModel) { historyViewModel in
-            DailyChallengeHistoryView(viewModel: historyViewModel, dailyChallengeViewModel: viewModel)
+            DailyChallengeHistoryView(
+                viewModel: historyViewModel,
+                dailyChallengeViewModel: viewModel,
+                privacySafetyService: privacySafetyService,
+                privacyOperationProvider: privacyOperationProvider,
+                onReportedAndLeft: onReportedAndLeft
+            )
                 .environment(bannerCenter)
+        }
+        .navigationDestination(item: $reportedPartnerAnswerID) { answerID in
+            if let partnerUserID = viewModel.participants.partnerUserID {
+                ReportAndLeaveView(
+                    partnerUserID: partnerUserID,
+                    partnerName: viewModel.participants.partnerName,
+                    reportTarget: .dailyAnswer(answerID: answerID),
+                    service: privacySafetyService,
+                    operationProvider: privacyOperationProvider,
+                    onReportedAndLeft: onReportedAndLeft
+                )
+            }
         }
         .onChange(of: viewModel.notice) { _, notice in
             showBanner(for: notice)

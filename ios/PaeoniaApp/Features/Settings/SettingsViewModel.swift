@@ -24,6 +24,7 @@ final class SettingsViewModel {
     private(set) var dailyChallengeEnabled = true
     private(set) var partnerAnsweredEnabled = true
     private(set) var widgetAlertsEnabled = true
+    private(set) var memoriesEnabled = true
     private(set) var isLoaded = false
     /// True when the user has turned notifications off in iOS Settings, so the
     /// in-app toggle can explain why nothing arrives.
@@ -138,6 +139,7 @@ final class SettingsViewModel {
         dailyChallengeEnabled = preferences.dailyChallengeEnabled
         partnerAnsweredEnabled = preferences.partnerAnsweredEnabled
         widgetAlertsEnabled = preferences.widgetUpdatesEnabled
+        memoriesEnabled = preferences.memoriesEnabled
     }
 
     private func value(for kind: NotificationPreferenceKind) -> Bool {
@@ -150,6 +152,8 @@ final class SettingsViewModel {
             partnerAnsweredEnabled
         case .widgetUpdates:
             widgetAlertsEnabled
+        case .memories:
+            memoriesEnabled
         }
     }
 
@@ -163,6 +167,8 @@ final class SettingsViewModel {
             partnerAnsweredEnabled = enabled
         case .widgetUpdates:
             widgetAlertsEnabled = enabled
+        case .memories:
+            memoriesEnabled = enabled
         }
     }
 }

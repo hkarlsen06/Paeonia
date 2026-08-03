@@ -219,6 +219,36 @@ struct WidgetDrawingViewModelTests {
         #expect(viewModel.recentlySaved)
     }
 
+    @Test func editsMadeWhileSaveIsSuspendedRemainAnUnsavedDraft() async throws {
+        let ownerUserID = UUID()
+        let draftStore = InMemoryWidgetDrawingDraftStore()
+        let service = SuspendedWidgetCanvasService()
+        await service.suspendNextSave()
+        let viewModel = WidgetDrawingViewModel(
+            ownerUserID: ownerUserID,
+            service: service,
+            uploader: NoOpWidgetCanvasUpload(),
+            draftStore: draftStore
+        )
+        let savedSnapshot = makeNonEmptyDrawing(seed: 12)
+        viewModel.updateDrawing(savedSnapshot, undoManager: nil)
+
+        let saveTask = Task { @MainActor in
+            await viewModel.save()
+        }
+        await service.waitForSuspendedSaveToStart()
+
+        let newerEdit = makeNonEmptyDrawing(seed: 88)
+        viewModel.updateDrawing(newerEdit, undoManager: nil)
+        await service.releaseSuspendedSave()
+        await saveTask.value
+
+        #expect(viewModel.hasUnsavedEdits)
+        let draftData = try #require(draftStore.draft(for: ownerUserID))
+        let restoredDraft = try PKDrawing(data: draftData)
+        #expect(restoredDraft.strokes.map(\.renderBounds) == newerEdit.strokes.map(\.renderBounds))
+    }
+
     @Test func saveEnqueuesUploadWithDrawingMetadata() async throws {
         let uploadSpy = WidgetCanvasUploadSpy()
         let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy(), uploader: uploadSpy)
@@ -325,6 +355,131 @@ struct WidgetDrawingViewModelTests {
         await viewModel.loadSavedDrawingIfNeeded()
 
         #expect(viewModel.drawing.dataRepresentation() == inProgress.dataRepresentation())
+    }
+
+    @Test func unfinishedDrawingRestoresForTheSameOwner() async {
+        let ownerUserID = UUID()
+        let draftStore = InMemoryWidgetDrawingDraftStore()
+        let inProgress = makeNonEmptyDrawing(seed: 72)
+        let firstViewModel = WidgetDrawingViewModel(
+            ownerUserID: ownerUserID,
+            service: WidgetCanvasServiceSpy(),
+            draftStore: draftStore
+        )
+
+        firstViewModel.updateDrawing(inProgress, undoManager: nil)
+        firstViewModel.persistDraftIfNeeded()
+
+        let reopenedViewModel = WidgetDrawingViewModel(
+            ownerUserID: ownerUserID,
+            service: WidgetCanvasServiceSpy(),
+            draftStore: draftStore
+        )
+        await reopenedViewModel.loadSavedDrawingIfNeeded()
+
+        #expect(reopenedViewModel.drawing.strokes.map(\.renderBounds) == inProgress.strokes.map(\.renderBounds))
+        #expect(reopenedViewModel.hasUnsavedEdits)
+    }
+
+    @Test func draftNeverCrossesOwnerBoundary() async {
+        let firstOwnerUserID = UUID()
+        let secondOwnerUserID = UUID()
+        let draftStore = InMemoryWidgetDrawingDraftStore()
+        let firstViewModel = WidgetDrawingViewModel(
+            ownerUserID: firstOwnerUserID,
+            service: WidgetCanvasServiceSpy(),
+            draftStore: draftStore
+        )
+        firstViewModel.updateDrawing(makeNonEmptyDrawing(), undoManager: nil)
+        firstViewModel.persistDraftIfNeeded()
+
+        let secondViewModel = WidgetDrawingViewModel(
+            ownerUserID: secondOwnerUserID,
+            service: WidgetCanvasServiceSpy(),
+            draftStore: draftStore
+        )
+        await secondViewModel.loadSavedDrawingIfNeeded()
+
+        #expect(secondViewModel.drawing.strokes.isEmpty)
+        #expect(draftStore.draft(for: firstOwnerUserID) != nil)
+        #expect(draftStore.draft(for: secondOwnerUserID) == nil)
+    }
+
+    @Test func successfulSaveClearsTheOwnersDraft() async {
+        let ownerUserID = UUID()
+        let draftStore = InMemoryWidgetDrawingDraftStore()
+        let viewModel = WidgetDrawingViewModel(
+            ownerUserID: ownerUserID,
+            service: WidgetCanvasServiceSpy(),
+            uploader: NoOpWidgetCanvasUpload(),
+            draftStore: draftStore
+        )
+        viewModel.updateDrawing(makeNonEmptyDrawing(), undoManager: nil)
+        viewModel.persistDraftIfNeeded()
+        #expect(draftStore.draft(for: ownerUserID) != nil)
+
+        await viewModel.save()
+
+        #expect(draftStore.draft(for: ownerUserID) == nil)
+    }
+
+    @Test func drawingUpdatesWaitForTheDebouncedDraftWriteUntilFlushed() {
+        let ownerUserID = UUID()
+        let draftStore = InMemoryWidgetDrawingDraftStore()
+        let viewModel = WidgetDrawingViewModel(
+            ownerUserID: ownerUserID,
+            service: WidgetCanvasServiceSpy(),
+            draftStore: draftStore
+        )
+
+        viewModel.updateDrawing(makeNonEmptyDrawing(), undoManager: nil)
+
+        #expect(draftStore.draft(for: ownerUserID) == nil)
+        viewModel.persistDraftIfNeeded()
+        #expect(draftStore.draft(for: ownerUserID) != nil)
+    }
+
+    @Test func fileDraftStoreScopesAndClearsDraftsByOwner() {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("WidgetDrawingDraftStoreTests", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+        let store = FileWidgetDrawingDraftStore(directoryURL: directoryURL)
+        let firstOwnerUserID = UUID()
+        let secondOwnerUserID = UUID()
+        let draft = Data([0x01, 0x02, 0x03])
+
+        store.setDraft(draft, for: firstOwnerUserID)
+
+        #expect(store.draft(for: firstOwnerUserID) == draft)
+        #expect(store.draft(for: secondOwnerUserID) == nil)
+        store.clearDraft(for: firstOwnerUserID)
+        #expect(store.draft(for: firstOwnerUserID) == nil)
+    }
+
+    @Test func clearingSavedDrawingRestoresAsAnEmptyUnsavedDraft() async {
+        let ownerUserID = UUID()
+        let draftStore = InMemoryWidgetDrawingDraftStore()
+        let service = WidgetCanvasServiceSpy()
+        service.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
+        let firstViewModel = WidgetDrawingViewModel(
+            ownerUserID: ownerUserID,
+            service: service,
+            draftStore: draftStore
+        )
+        await firstViewModel.loadSavedDrawingIfNeeded()
+
+        firstViewModel.clearCanvas()
+
+        let reopenedViewModel = WidgetDrawingViewModel(
+            ownerUserID: ownerUserID,
+            service: service,
+            draftStore: draftStore
+        )
+        await reopenedViewModel.loadSavedDrawingIfNeeded()
+
+        #expect(reopenedViewModel.drawing.strokes.isEmpty)
+        #expect(reopenedViewModel.hasUnsavedEdits)
     }
 
     @Test func reloadFromSyncAppliesNewerDrawingWhenNoEdits() async {
@@ -691,6 +846,23 @@ private actor SuspendedWidgetCanvasService: WidgetCanvasManaging {
 }
 
 private final class WidgetDrawingUndoTestTarget {}
+
+@MainActor
+private final class InMemoryWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
+    private var drafts: [UUID: Data] = [:]
+
+    func draft(for ownerUserID: UUID) -> Data? {
+        drafts[ownerUserID]
+    }
+
+    func setDraft(_ data: Data, for ownerUserID: UUID) {
+        drafts[ownerUserID] = data
+    }
+
+    func clearDraft(for ownerUserID: UUID) {
+        drafts[ownerUserID] = nil
+    }
+}
 
 private func assertColor(
     _ color: UIColor,

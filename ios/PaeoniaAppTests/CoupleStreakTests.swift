@@ -153,6 +153,33 @@ struct CoupleStreakTests {
         #expect(!CoupleStreak.none.isRestorable)
     }
 
+    @Test func brokenStreakEntryGoesStraightToRestoreOffer() {
+        let streak = CoupleStreak(
+            currentCount: 0,
+            longestCount: 30,
+            lastQualifiedDate: "2026-06-26",
+            restoreAvailable: true,
+            restorableCount: 30,
+            restoreDeadline: .now.addingTimeInterval(3_600)
+        )
+
+        #expect(streak.entryDestination == .restore)
+    }
+
+    @Test func healthyOrExpiredStreakEntryOpensReadOnlyDetail() {
+        let expired = CoupleStreak(
+            currentCount: 0,
+            longestCount: 30,
+            lastQualifiedDate: "2026-06-26",
+            restoreAvailable: true,
+            restorableCount: 30,
+            restoreDeadline: .now.addingTimeInterval(-1)
+        )
+
+        #expect(CoupleStreak.none.entryDestination == .detail)
+        #expect(expired.entryDestination == .detail)
+    }
+
     // MARK: - Toolbar presentation
 
     @Test func zeroStreakRemainsVisibleWithAMutedFlame() {

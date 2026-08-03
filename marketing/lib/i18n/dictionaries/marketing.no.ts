@@ -130,4 +130,18 @@ export const marketingNo = {
     emailLabel: 'E-post',
     back: 'Tilbake til Paeonia',
   },
+  join: {
+    title: 'Du er invitert til Paeonia',
+    message: 'Åpne Paeonia for å se hvem som inviterte deg, og velg om du vil bli med.',
+    invalidTitle: 'Denne invitasjonslenken ser ikke riktig ut',
+    invalidMessage: 'Be partneren din dele en ny invitasjon fra Paeonia.',
+    missingMessage: 'Åpne hele invitasjonslenken partneren din delte med deg.',
+    code: 'Invitasjonskode',
+    open: 'Åpne Paeonia',
+    install: 'Last ned Paeonia fra App Store',
+    beta:
+      'Har du ikke Paeonia ennå? Installer appen fra betainvitasjonen du fikk, og åpne denne lenken på nytt. Behold lenken til dere er koblet sammen.',
+    help: 'Trenger du hjelp?',
+    opening: 'Åpner invitasjonen din …',
+  },
 } as const;

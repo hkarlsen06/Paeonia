@@ -15,7 +15,14 @@ struct PaeoniaWidgetTimelineProvider: TimelineProvider {
         in context: Context,
         completion: @escaping (PaeoniaWidgetEntry) -> Void
     ) {
-        completion(PaeoniaWidgetEntry(date: .now, content: .placeholder))
+        completion(
+            PaeoniaWidgetEntry(
+                date: .now,
+                content: context.isPreview
+                    ? .placeholder
+                    : PaeoniaWidgetStore.loadContent(for: context.family)
+            )
+        )
     }
 
     func getTimeline(

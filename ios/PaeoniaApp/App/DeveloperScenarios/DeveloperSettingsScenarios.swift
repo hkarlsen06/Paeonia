@@ -84,6 +84,7 @@
       case .dailyChallenge: preferences.dailyChallengeEnabled = enabled
       case .partnerAnswered: preferences.partnerAnsweredEnabled = enabled
       case .widgetUpdates: preferences.widgetUpdatesEnabled = enabled
+      case .memories: preferences.memoriesEnabled = enabled
       }
     }
   }

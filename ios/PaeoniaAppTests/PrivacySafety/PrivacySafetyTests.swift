@@ -4,8 +4,8 @@ import Testing
 
 struct PrivacySafetyServiceTests {
     @Test func reportRequestEncodesRequiredNullRPCArguments() throws {
-        let request = SubmitConductReportAndLeaveRequest(
-            partnerUserID: UUID(),
+        let request = SubmitReportAndLeaveRequest(
+            target: .conduct(userID: UUID()),
             reason: .other,
             note: nil,
             blockPartner: false,
@@ -18,6 +18,24 @@ struct PrivacySafetyServiceTests {
         #expect(object["p_note"] is NSNull)
         #expect(object["p_target_aux_id"] is NSNull)
         #expect(object["p_target_kind"] as? String == "conduct")
+    }
+
+    @Test func partnerAnswerReportEncodesTheAnswerAsItsSnapshotTarget() throws {
+        let answerID = UUID()
+        let request = SubmitReportAndLeaveRequest(
+            target: .dailyAnswer(answerID: answerID),
+            reason: .harassment,
+            note: nil,
+            blockPartner: true,
+            operation: SyncClientOperation(clientID: UUID(), clientSequence: 2)
+        )
+
+        let data = try JSONEncoder().encode(request)
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        #expect(object["p_target_kind"] as? String == "daily_answer")
+        let encodedTargetID = try #require(object["p_target_id"] as? String)
+        #expect(UUID(uuidString: encodedTargetID) == answerID)
     }
 
     @Test func activeRequestIsReusedInsteadOfCreatingDuplicate() async throws {
@@ -58,8 +76,8 @@ struct PrivacySafetyServiceTests {
             localCreatedAt: Date(timeIntervalSince1970: 30)
         )
 
-        _ = try await service.submitConductReportAndLeave(
-            partnerUserID: partnerID,
+        _ = try await service.submitReportAndLeave(
+            target: .conduct(userID: partnerID),
             reason: .privacy,
             note: "  Shared a private photo  ",
             blockPartner: false,
@@ -67,7 +85,7 @@ struct PrivacySafetyServiceTests {
         )
 
         let submission = await gateway.lastReportSubmission
-        #expect(submission?.partnerUserID == partnerID)
+        #expect(submission?.target == .conduct(userID: partnerID))
         #expect(submission?.reason == .privacy)
         #expect(submission?.note == "Shared a private photo")
         #expect(submission?.blockPartner == false)
@@ -147,13 +165,13 @@ struct ReportAndLeaveViewModelTests {
         viewModel.selectedReason = .harassment
         viewModel.note = "Repeated unwanted messages"
 
-        let didSubmit = await viewModel.submit(partnerUserID: partnerID)
+        let didSubmit = await viewModel.submit(target: .conduct(userID: partnerID))
 
         #expect(didSubmit)
         #expect(viewModel.notice == .submitted)
         #expect(viewModel.isSubmitting == false)
         let submission = await service.lastReportSubmission
-        #expect(submission?.partnerUserID == partnerID)
+        #expect(submission?.target == .conduct(userID: partnerID))
         #expect(submission?.blockPartner == false)
         #expect(submission?.operation == operationProvider.operation)
     }
@@ -167,7 +185,7 @@ struct ReportAndLeaveViewModelTests {
         viewModel.selectedReason = .threat
         viewModel.blockPartner = true
 
-        let didSubmit = await viewModel.submit(partnerUserID: UUID())
+        let didSubmit = await viewModel.submit(target: .conduct(userID: UUID()))
 
         #expect(didSubmit)
         #expect(await service.lastReportSubmission?.blockPartner == true)
@@ -181,7 +199,7 @@ struct ReportAndLeaveViewModelTests {
         )
         viewModel.selectedReason = .other
 
-        let didSubmit = await viewModel.submit(partnerUserID: UUID())
+        let didSubmit = await viewModel.submit(target: .conduct(userID: UUID()))
 
         #expect(didSubmit == false)
         #expect(viewModel.notice == .submitFailed)
@@ -198,8 +216,8 @@ struct ReportAndLeaveViewModelTests {
         viewModel.selectedReason = .privacy
         viewModel.note = "  Shared private details  "
 
-        #expect(await viewModel.submit(partnerUserID: partnerID) == false)
-        #expect(await viewModel.submit(partnerUserID: partnerID) == true)
+        #expect(await viewModel.submit(target: .conduct(userID: partnerID)) == false)
+        #expect(await viewModel.submit(target: .conduct(userID: partnerID)) == true)
 
         let operations = await service.reportOperations
         #expect(operations.count == 2)
@@ -216,9 +234,9 @@ struct ReportAndLeaveViewModelTests {
         viewModel.selectedReason = .other
         viewModel.note = "First description"
 
-        #expect(await viewModel.submit(partnerUserID: partnerID) == false)
+        #expect(await viewModel.submit(target: .conduct(userID: partnerID)) == false)
         viewModel.note = "Corrected description"
-        #expect(await viewModel.submit(partnerUserID: partnerID) == true)
+        #expect(await viewModel.submit(target: .conduct(userID: partnerID)) == true)
 
         let operations = await service.reportOperations
         #expect(operations.count == 2)
@@ -231,7 +249,7 @@ nonisolated private enum FakePrivacySafetyError: Error {
 }
 
 nonisolated private struct CapturedReportSubmission: Equatable, Sendable {
-    let partnerUserID: UUID
+    let target: PrivacyReportTarget
     let reason: PrivacyReportReason
     let note: String?
     let blockPartner: Bool
@@ -268,15 +286,15 @@ private actor FakePrivacySafetyGateway: PrivacySafetyGateway {
         return createdRow
     }
 
-    func submitConductReportAndLeave(
-        partnerUserID: UUID,
+    func submitReportAndLeave(
+        target: PrivacyReportTarget,
         reason: PrivacyReportReason,
         note: String?,
         blockPartner: Bool,
         operation: SyncClientOperation
     ) -> UUID {
         lastReportSubmission = CapturedReportSubmission(
-            partnerUserID: partnerUserID,
+            target: target,
             reason: reason,
             note: note,
             blockPartner: blockPartner,
@@ -329,8 +347,8 @@ private actor FakePrivacySafetyService: PrivacySafetyServicing {
         return requestOutcome
     }
 
-    func submitConductReportAndLeave(
-        partnerUserID: UUID,
+    func submitReportAndLeave(
+        target: PrivacyReportTarget,
         reason: PrivacyReportReason,
         note: String?,
         blockPartner: Bool,
@@ -342,7 +360,7 @@ private actor FakePrivacySafetyService: PrivacySafetyServicing {
             throw FakePrivacySafetyError.failed
         }
         lastReportSubmission = CapturedReportSubmission(
-            partnerUserID: partnerUserID,
+            target: target,
             reason: reason,
             note: note,
             blockPartner: blockPartner,

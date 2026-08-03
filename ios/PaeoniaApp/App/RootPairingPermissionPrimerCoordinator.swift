@@ -1,10 +1,9 @@
 import Foundation
 import Observation
 
-/// Chooses at most one automatic permission primer for a paired identity in an
-/// app session. Location is evaluated first because it is relationship-scoped;
-/// notification priming remains installation-scoped and can wait for a later
-/// session rather than stacking two sheets after pairing.
+/// Sequences the automatic permission primers after pairing. Notifications are
+/// always resolved first; location can be presented by a later evaluation only
+/// after that sheet and any system prompt have gone away.
 @MainActor
 @Observable
 final class RootPairingPermissionPrimerCoordinator {
@@ -17,7 +16,8 @@ final class RootPairingPermissionPrimerCoordinator {
 
     private let pushPrimerStore: any PushPermissionPrimerPersisting
     private let locationPrimerStore: any LocationSharingPrimerPersisting
-    private var automaticallyPrimedIdentity: LocationIdentity?
+    private var pushPrimedIdentities: Set<LocationIdentity> = []
+    private var locationPrimedIdentities: Set<LocationIdentity> = []
     private var evaluationGeneration = 0
 
     private(set) var presentedPrimer: Primer?
@@ -45,7 +45,6 @@ final class RootPairingPermissionPrimerCoordinator {
         guard let ownerUserID = identity.currentUserID,
               let coupleID = identity.coupleID,
               sharingStateIsKnown,
-              automaticallyPrimedIdentity != identity,
               presentedPrimer == nil
         else {
             return
@@ -54,23 +53,30 @@ final class RootPairingPermissionPrimerCoordinator {
         evaluationGeneration &+= 1
         let activeEvaluationGeneration = evaluationGeneration
 
+        let didPresentPushPrimer = await presentPushPrimerIfNeeded(
+            identity: identity,
+            evaluationGeneration: activeEvaluationGeneration,
+            pushAuthorization: pushAuthorization
+        )
+        guard !didPresentPushPrimer,
+              !Task.isCancelled,
+              activeEvaluationGeneration == evaluationGeneration,
+              presentedPrimer == nil,
+              !locationPrimedIdentities.contains(identity)
+        else {
+            return
+        }
+
         if shouldPresentLocationPrimer(
             ownerUserID: ownerUserID,
             coupleID: coupleID,
             sharingEnabled: sharingEnabled,
             authorizationState: locationAuthorizationState
         ) {
-            automaticallyPrimedIdentity = identity
+            locationPrimedIdentities.insert(identity)
             presentedIdentity = identity
             presentedPrimer = .location
-            return
         }
-
-        await presentPushPrimerIfNeeded(
-            identity: identity,
-            evaluationGeneration: activeEvaluationGeneration,
-            pushAuthorization: pushAuthorization
-        )
     }
 
     private func shouldPresentLocationPrimer(
@@ -107,30 +113,34 @@ final class RootPairingPermissionPrimerCoordinator {
         identity: LocationIdentity,
         evaluationGeneration activeEvaluationGeneration: Int,
         pushAuthorization: any PushAuthorizationProviding
-    ) async {
-        guard !pushPrimerStore.hasResponded() else {
-            return
+    ) async -> Bool {
+        guard !pushPrimerStore.hasResponded(),
+              !pushPrimedIdentities.contains(identity)
+        else {
+            return false
         }
 
         let isNotDetermined = await pushAuthorization.isNotDetermined()
 
         guard !Task.isCancelled,
               activeEvaluationGeneration == evaluationGeneration,
-              automaticallyPrimedIdentity != identity,
               presentedPrimer == nil,
-              !pushPrimerStore.hasResponded()
+              !pushPrimerStore.hasResponded(),
+              !pushPrimedIdentities.contains(identity)
         else {
-            return
+            return false
         }
 
         if isNotDetermined {
-            automaticallyPrimedIdentity = identity
+            pushPrimedIdentities.insert(identity)
             presentedIdentity = identity
             presentedPrimer = .notifications
+            return true
         } else {
             // A prior system choice makes the primer irrelevant on every paired
             // transition on this installation.
             pushPrimerStore.markResponded()
+            return false
         }
     }
 

@@ -280,7 +280,20 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         enabled: Bool,
         operationIdentity: LocationIdentity
     ) async throws {
-        let capturedLocation = enabled ? try await locationCapture.captureCurrentLocation() : nil
+        let capturedLocation: LocationPoint?
+        if enabled {
+            do {
+                capturedLocation = try await locationCapture.captureCurrentLocation()
+            } catch ForegroundLocationCaptureError.unavailable
+                where locationCapture.authorizationState == .authorized {
+                // The durable sharing choice does not depend on one GPS fix.
+                // A later foreground refresh can fill in the current location.
+                capturedLocation = nil
+                notice = .locationUnavailable
+            }
+        } else {
+            capturedLocation = nil
+        }
         try requireCurrentIdentity(operationIdentity)
 
         try await visibilityStore.setViewerSharingEnabled(
@@ -300,12 +313,20 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         try requireCurrentIdentity(operationIdentity)
 
         if let capturedLocation {
-            try await saveAndEnqueueOwnLocation(
-                ownerUserID: ownerUserID,
-                coupleID: coupleID,
-                location: capturedLocation,
-                source: .settingsToggle
-            )
+            do {
+                try await saveAndEnqueueOwnLocation(
+                    ownerUserID: ownerUserID,
+                    coupleID: coupleID,
+                    location: capturedLocation,
+                    source: .settingsToggle
+                )
+            } catch {
+                // The preference is already safely cached and queued. Keep the
+                // user's choice even if saving this first fix fails; a later
+                // foreground refresh can try the latest location again.
+                try requireCurrentIdentity(operationIdentity)
+                notice = .saveFailed
+            }
         } else {
             try? await ownLocationStore.delete(ownerUserID: ownerUserID, coupleID: coupleID)
         }
@@ -381,6 +402,10 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         source: LocationSharingSource
     ) async throws {
         let operation = operationProvider.makeOperation()
+        let previousSnapshot = try await ownLocationStore.load(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID
+        )
         try await ownLocationStore.save(
             OwnLocationSnapshot(
                 ownerUserID: ownerUserID,
@@ -397,19 +422,34 @@ final class LocationMapViewModel: PresentationReadinessProviding {
             location: location,
             source: source
         )
-        try await pendingOperationStore.enqueue(
-            PendingSyncOperationRequest(
-                ownerUserID: ownerUserID,
-                operation: operation,
-                operationKind: .updateLatestPartnerLocation,
-                idempotencyScope: [
-                    "latest-location",
-                    coupleID.uuidString.lowercased(),
-                    operation.id.uuidString.lowercased(),
-                ].joined(separator: ":"),
-                requestData: try encoder.encode(payload)
+        do {
+            try await pendingOperationStore.enqueue(
+                PendingSyncOperationRequest(
+                    ownerUserID: ownerUserID,
+                    operation: operation,
+                    operationKind: .updateLatestPartnerLocation,
+                    idempotencyScope: [
+                        "latest-location",
+                        coupleID.uuidString.lowercased(),
+                        operation.id.uuidString.lowercased(),
+                    ].joined(separator: ":"),
+                    requestData: try encoder.encode(payload)
+                )
             )
-        )
+        } catch {
+            // A fresh snapshot without its matching pending operation would
+            // make the foreground throttle believe this location was queued.
+            // Restore the last durable state so the next refresh retries.
+            if let previousSnapshot {
+                try? await ownLocationStore.save(previousSnapshot)
+            } else {
+                try? await ownLocationStore.delete(
+                    ownerUserID: ownerUserID,
+                    coupleID: coupleID
+                )
+            }
+            throw error
+        }
     }
 
     private func syncAfterLocalChange() async {

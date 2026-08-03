@@ -5,6 +5,7 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case widgetRefresh
     case dailyReveal(instanceID: UUID, coupleDayID: UUID?)
     case dailyToday(coupleDayID: UUID?)
+    case memories
     case streak
     case subscription
 
@@ -54,6 +55,18 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
 
         guard let url = components.url else {
             preconditionFailure("Invalid Paeonia streak URL")
+        }
+
+        return url
+    }
+
+    static var memoriesURL: URL {
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = "memories"
+
+        guard let url = components.url else {
+            preconditionFailure("Invalid Paeonia memories URL")
         }
 
         return url
@@ -110,6 +123,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             )
         case ("daily", ["today"]):
             self = .dailyToday(coupleDayID: query.uuidValue(named: "coupleDayId"))
+        case ("memories", []):
+            self = .memories
         case ("streak", []):
             self = .streak
         case ("settings", ["subscription"]):
@@ -153,6 +168,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
                 return
             }
             self = .dailyToday(coupleDayID: coupleDayID)
+        case "memory_created":
+            self = .memories
         case "streak_reminder":
             self = .streak
         case "subscription_trial_reminder":
@@ -168,6 +185,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
                 self = .widgetDrawing
             case "daily":
                 self = .dailyToday(coupleDayID: coupleDayID)
+            case "memories":
+                self = .memories
             case "streak":
                 self = .streak
             case "subscription":

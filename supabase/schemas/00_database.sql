@@ -3191,6 +3191,7 @@ begin
           when 'partner_answered' then preference.partner_answered_enabled
           when 'widget_updated' then preference.widget_updates_enabled
           when 'location_updated' then preference.location_updates_enabled
+          when 'memory_created' then preference.memories_enabled
           else true
         end,
         false
@@ -3216,6 +3217,7 @@ begin
           when 'partner_answered' then preference.partner_answered_enabled
           when 'widget_updated' then preference.widget_updates_enabled
           when 'location_updated' then preference.location_updates_enabled
+          when 'memory_created' then preference.memories_enabled
           else true
         end,
         false
@@ -3388,6 +3390,7 @@ begin
           when 'partner_answered' then preference.partner_answered_enabled
           when 'widget_updated' then (outbox.apns_push_type <> 'alert' or preference.widget_updates_enabled)
           when 'location_updated' then preference.location_updates_enabled
+          when 'memory_created' then preference.memories_enabled
           else true
         end,
         false
@@ -3414,6 +3417,7 @@ begin
           when 'partner_answered' then preference.partner_answered_enabled
           when 'widget_updated' then (outbox.apns_push_type <> 'alert' or preference.widget_updates_enabled)
           when 'location_updated' then preference.location_updates_enabled
+          when 'memory_created' then preference.memories_enabled
           else true
         end,
         false
@@ -5009,6 +5013,42 @@ $$;
 ALTER FUNCTION "internal"."enqueue_due_streak_reminders"("p_now" timestamp with time zone) OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "internal"."enqueue_memory_created_notification"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'pg_catalog'
+    AS $$
+begin
+  if new.deleted_at is not null or new.moderation_status <> 'visible' then
+    return new;
+  end if;
+
+  perform internal.enqueue_partner_notification(
+    new.couple_id,
+    new.created_by_user_id,
+    'memory_created',
+    jsonb_build_object(
+      'type', 'memory_created',
+      'couple_id', new.couple_id::text,
+      'memory_id', new.id::text,
+      'actor_user_id', new.created_by_user_id::text,
+      'route', 'memories',
+      'deeplink', 'paeonia://memories'
+    ),
+    'memory_created:' || new.id::text,
+    'private',
+    'alert',
+    'memory:' || new.id::text,
+    now()
+  );
+
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "internal"."enqueue_memory_created_notification"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "internal"."enqueue_notification_for_user"("p_recipient_user_id" "uuid", "p_kind" "text", "p_payload" "jsonb", "p_dedupe_key" "text" DEFAULT NULL::"text", "p_redaction_level" "text" DEFAULT 'private'::"text", "p_apns_push_type" "text" DEFAULT 'alert'::"text", "p_apns_collapse_id" "text" DEFAULT NULL::"text", "p_scheduled_for" timestamp with time zone DEFAULT NULL::timestamp with time zone) RETURNS integer
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'pg_catalog'
@@ -5029,7 +5069,8 @@ begin
     'location_updated',
     'relationship_ended',
     'entitlement_changed',
-    'subscription_trial_reminder'
+    'subscription_trial_reminder',
+    'memory_created'
   ) then
     raise exception 'notification kind is not supported'
       using errcode = '23514';
@@ -5098,6 +5139,7 @@ begin
         when 'widget_updated' then
           (p_apns_push_type <> 'alert' or preference.widget_updates_enabled)
         when 'location_updated' then preference.location_updates_enabled
+        when 'memory_created' then preference.memories_enabled
         else true
       end
     )
@@ -9905,6 +9947,10 @@ begin
       when 'nb' then 'Åpne Paeonia for å svare og se hva partneren din skrev.'
       else 'Open Paeonia to answer and reveal what they wrote.'
     end
+    when 'memory_created' then case language_code
+      when 'nb' then 'Åpne Paeonia for å se det.'
+      else 'Open Paeonia to see it.'
+    end
     when 'streak_reminder' then case language_code
       when 'nb' then 'Gjør én liten ting i dag. Rekken fortsetter når dere begge har sjekket inn.'
       else 'Do one small thing today. Your streak continues once both of you have checked in.'
@@ -9943,6 +9989,10 @@ begin
     when 'daily_challenge_completed' then case language_code
       when 'nb' then actor_name || ' fullførte dagens spørsmål'
       else actor_name || ' finished today''s questions'
+    end
+    when 'memory_created' then case language_code
+      when 'nb' then actor_name || ' la til et nytt minne'
+      else actor_name || ' added a new memory'
     end
     when 'streak_reminder' then case language_code
       when 'nb' then 'Sjekk inn før tiden går ut'
@@ -17775,7 +17825,7 @@ CREATE TABLE IF NOT EXISTS "internal"."notification_outbox" (
     CONSTRAINT "notification_outbox_attempt_count_check" CHECK (("attempt_count" >= 0)),
     CONSTRAINT "notification_outbox_body_check" CHECK ((("body" IS NULL) OR (("char_length"("btrim"("body")) >= 1) AND ("char_length"("btrim"("body")) <= 1000)))),
     CONSTRAINT "notification_outbox_dedupe_key_check" CHECK ((("dedupe_key" IS NULL) OR (("char_length"("btrim"("dedupe_key")) >= 1) AND ("char_length"("btrim"("dedupe_key")) <= 320)))),
-    CONSTRAINT "notification_outbox_kind_check" CHECK (("kind" = ANY (ARRAY['streak_reminder'::"text", 'daily_challenge_completed'::"text", 'partner_answered'::"text", 'widget_updated'::"text", 'location_updated'::"text", 'relationship_ended'::"text", 'entitlement_changed'::"text", 'subscription_trial_reminder'::"text"]))),
+    CONSTRAINT "notification_outbox_kind_check" CHECK (("kind" = ANY (ARRAY['streak_reminder'::"text", 'daily_challenge_completed'::"text", 'partner_answered'::"text", 'widget_updated'::"text", 'location_updated'::"text", 'relationship_ended'::"text", 'entitlement_changed'::"text", 'subscription_trial_reminder'::"text", 'memory_created'::"text"]))),
     CONSTRAINT "notification_outbox_last_error_check" CHECK ((("last_error" IS NULL) OR ("char_length"("last_error") <= 2000))),
     CONSTRAINT "notification_outbox_payload_check" CHECK ((("jsonb_typeof"("payload") = 'object'::"text") AND ("octet_length"(("payload")::"text") <= 4096))),
     CONSTRAINT "notification_outbox_payload_version_check" CHECK (("payload_version" = 1)),
@@ -18560,6 +18610,7 @@ CREATE TABLE IF NOT EXISTS "public"."notification_preferences" (
     "revision" integer DEFAULT 1 NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "memories_enabled" boolean DEFAULT true NOT NULL,
     CONSTRAINT "notification_preferences_lock_screen_detail_level_check" CHECK (("lock_screen_detail_level" = ANY (ARRAY['private'::"text", 'descriptive'::"text"]))),
     CONSTRAINT "notification_preferences_revision_check" CHECK (("revision" > 0))
 );
@@ -20392,6 +20443,9 @@ CREATE OR REPLACE TRIGGER "delete_latest_locations_on_relationship_end" AFTER UP
 
 
 
+CREATE OR REPLACE TRIGGER "enqueue_memory_created_notification" AFTER INSERT ON "public"."memories" FOR EACH ROW EXECUTE FUNCTION "internal"."enqueue_memory_created_notification"();
+
+
 CREATE OR REPLACE TRIGGER "enqueue_partner_answered_notification" AFTER INSERT ON "public"."daily_question_answers" FOR EACH ROW EXECUTE FUNCTION "internal"."enqueue_partner_answered_notification"();
 
 
@@ -22076,6 +22130,11 @@ GRANT ALL ON FUNCTION "internal"."enqueue_due_streak_reminders"("p_now" timestam
 
 
 
+REVOKE ALL ON FUNCTION "internal"."enqueue_memory_created_notification"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "internal"."enqueue_memory_created_notification"() TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "internal"."enqueue_notification_for_user"("p_recipient_user_id" "uuid", "p_kind" "text", "p_payload" "jsonb", "p_dedupe_key" "text", "p_redaction_level" "text", "p_apns_push_type" "text", "p_apns_collapse_id" "text", "p_scheduled_for" timestamp with time zone) FROM PUBLIC;
 GRANT ALL ON FUNCTION "internal"."enqueue_notification_for_user"("p_recipient_user_id" "uuid", "p_kind" "text", "p_payload" "jsonb", "p_dedupe_key" "text", "p_redaction_level" "text", "p_apns_push_type" "text", "p_apns_collapse_id" "text", "p_scheduled_for" timestamp with time zone) TO "service_role";
 
@@ -22083,7 +22142,6 @@ GRANT ALL ON FUNCTION "internal"."enqueue_notification_for_user"("p_recipient_us
 
 REVOKE ALL ON FUNCTION "internal"."enqueue_partner_answered_notification"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "internal"."enqueue_partner_answered_notification"() TO "service_role";
-
 
 
 REVOKE ALL ON FUNCTION "internal"."enqueue_partner_notification"("p_couple_id" "uuid", "p_actor_user_id" "uuid", "p_kind" "text", "p_payload" "jsonb", "p_dedupe_key" "text", "p_redaction_level" "text", "p_apns_push_type" "text", "p_apns_collapse_id" "text", "p_scheduled_for" timestamp with time zone) FROM PUBLIC;
@@ -23660,6 +23718,9 @@ GRANT SELECT("created_at") ON TABLE "public"."notification_preferences" TO "auth
 GRANT SELECT("updated_at") ON TABLE "public"."notification_preferences" TO "authenticated";
 
 
+GRANT SELECT("memories_enabled"),UPDATE("memories_enabled") ON TABLE "public"."notification_preferences" TO "authenticated";
+
+
 
 GRANT ALL ON TABLE "public"."pairing_invites" TO "service_role";
 
@@ -24104,9 +24165,3 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUN
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLES TO "service_role";
-
-
-
-
-
-

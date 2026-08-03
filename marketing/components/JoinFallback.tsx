@@ -2,38 +2,16 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { marketingEn } from '@/lib/i18n/dictionaries/marketing.en';
+import { marketingNo } from '@/lib/i18n/dictionaries/marketing.no';
 
 interface JoinFallbackProps {
   appStoreURL: string | null;
 }
 
 const copy = {
-  en: {
-    title: "You've been invited to Paeonia",
-    message: 'Open Paeonia to see who invited you and choose whether to join.',
-    invalidTitle: "This invite link doesn't look right",
-    invalidMessage: 'Ask your partner to share a new Paeonia invite.',
-    missingMessage: 'Open the full invite link your partner shared with you.',
-    code: 'Invite code',
-    open: 'Open Paeonia',
-    install: 'Get Paeonia on the App Store',
-    beta: 'Don’t have Paeonia yet? Install it from the beta invitation you received, then open this link again. Keep this link until you’re connected.',
-    help: 'Need help?',
-    opening: 'Opening your invite…',
-  },
-  nb: {
-    title: 'Du er invitert til Paeonia',
-    message: 'Åpne Paeonia for å se hvem som inviterte deg, og velg om du vil bli med.',
-    invalidTitle: 'Denne invitasjonslenken ser ikke riktig ut',
-    invalidMessage: 'Be partneren din dele en ny invitasjon fra Paeonia.',
-    missingMessage: 'Åpne hele invitasjonslenken partneren din delte med deg.',
-    code: 'Invitasjonskode',
-    open: 'Åpne Paeonia',
-    install: 'Last ned Paeonia fra App Store',
-    beta: 'Har du ikke Paeonia ennå? Installer appen fra betainvitasjonen du fikk, og åpne denne lenken på nytt. Behold lenken til dere er koblet sammen.',
-    help: 'Trenger du hjelp?',
-    opening: 'Åpner invitasjonen din …',
-  },
+  en: marketingEn.join,
+  nb: marketingNo.join,
 } as const;
 
 type Language = keyof typeof copy;

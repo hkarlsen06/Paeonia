@@ -363,6 +363,13 @@ extension SettingsView {
                 isEnabled: viewModel.isLoaded
             )
 
+            settingRow(
+                title: .settingsNotificationsMemoriesTitle,
+                subtitle: .settingsNotificationsMemoriesSubtitle(partnerName),
+                isOn: notificationBinding(.memories),
+                isEnabled: viewModel.isLoaded
+            )
+
             if viewModel.systemNotificationsDenied {
                 systemDisabledNote
             }
@@ -658,6 +665,8 @@ private extension SettingsView {
                     viewModel.partnerAnsweredEnabled
                 case .widgetUpdates:
                     viewModel.widgetAlertsEnabled
+                case .memories:
+                    viewModel.memoriesEnabled
                 }
             },
             set: { newValue in

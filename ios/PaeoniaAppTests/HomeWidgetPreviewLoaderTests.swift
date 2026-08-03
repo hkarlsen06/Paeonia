@@ -10,6 +10,8 @@ struct HomeWidgetPreviewLoaderTests {
         let content = environment.makeLoader().load()
 
         #expect(content.image == nil)
+        #expect(content.authorName == nil)
+        #expect(content.savedAt == nil)
     }
 
     @Test func loadReturnsPreviewImageForNormalPayload() throws {
@@ -22,6 +24,8 @@ struct HomeWidgetPreviewLoaderTests {
         let content = environment.makeLoader().load()
 
         #expect(content.image != nil)
+        #expect(content.authorName == "Hjalmar")
+        #expect(content.savedAt != nil)
     }
 
     @Test func loadFallsBackToLargePreviewWhenSmallMissing() throws {
@@ -48,6 +52,7 @@ struct HomeWidgetPreviewLoaderTests {
         let content = environment.makeLoader().load()
 
         #expect(content.image == nil)
+        #expect(content.isRedacted)
     }
 
     @Test func loadReturnsNilImageWhenPreviewFileMissing() throws {
@@ -59,6 +64,8 @@ struct HomeWidgetPreviewLoaderTests {
         let content = environment.makeLoader().load()
 
         #expect(content.image == nil)
+        #expect(content.authorName == nil)
+        #expect(content.savedAt == nil)
     }
 
     @Test func loadIgnoresFutureSchemaPayload() throws {

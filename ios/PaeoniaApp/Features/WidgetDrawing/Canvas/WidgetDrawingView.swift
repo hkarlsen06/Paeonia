@@ -10,13 +10,17 @@ struct WidgetDrawingView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     init(
+        ownerUserID: UUID? = nil,
         authorName: String? = nil,
         viewModel: WidgetDrawingViewModel? = nil,
         historyViewModel: WidgetDrawingHistoryViewModel? = nil,
         historyThumbnailLoader: (any WidgetRevisionThumbnailLoading)? = nil
     ) {
         _viewModel = State(
-            initialValue: viewModel ?? WidgetDrawingViewModel(authorName: authorName)
+            initialValue: viewModel ?? WidgetDrawingViewModel(
+                ownerUserID: ownerUserID,
+                authorName: authorName
+            )
         )
         self.historyViewModel = historyViewModel
         self.historyThumbnailLoader = historyThumbnailLoader
@@ -83,7 +87,12 @@ struct WidgetDrawingView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task { await viewModel.reloadSavedDrawingFromSyncIfSafe() }
+            } else {
+                viewModel.persistDraftIfNeeded()
             }
+        }
+        .onDisappear {
+            viewModel.persistDraftIfNeeded()
         }
         .onChange(of: viewModel.recentlySaved) { _, recentlySaved in
             if recentlySaved {

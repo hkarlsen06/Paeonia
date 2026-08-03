@@ -14,9 +14,13 @@ struct DailyChallengeHistoryView: View {
     /// question from here (the focused flow needs it) and to gate that CTA behind
     /// finishing today's own questions — the same rule the Questions tab applies.
     private let dailyChallengeViewModel: DailyChallengeViewModel
+    private let privacySafetyService: (any PrivacySafetyServicing)?
+    private let privacyOperationProvider: (any SyncClientOperationProviding)?
+    private let onReportedAndLeft: () -> Void
     /// The question whose answer flow is open, presented over the history. Driving it
     /// by item lets the flow zoom out of the tapped card and carry its own state.
     @State private var answeringQuestion: DailyChallengeQuestion?
+    @State private var reportedPartnerAnswerID: UUID?
     /// Source namespace for the answer flow's zoom-out transition; the tapped card marks
     /// itself in it so the flow appears to grow from the card the user tapped.
     @Namespace private var zoomNamespace
@@ -37,10 +41,16 @@ struct DailyChallengeHistoryView: View {
 
     init(
         viewModel: DailyChallengeHistoryViewModel,
-        dailyChallengeViewModel: DailyChallengeViewModel
+        dailyChallengeViewModel: DailyChallengeViewModel,
+        privacySafetyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
+        privacyOperationProvider: (any SyncClientOperationProviding)? = nil,
+        onReportedAndLeft: @escaping () -> Void = {}
     ) {
         _viewModel = State(initialValue: viewModel)
         self.dailyChallengeViewModel = dailyChallengeViewModel
+        self.privacySafetyService = privacySafetyService
+        self.privacyOperationProvider = privacyOperationProvider
+        self.onReportedAndLeft = onReportedAndLeft
     }
 
     /// Keep full-screen cover insertion in the same transaction as the native zoom.
@@ -71,6 +81,18 @@ struct DailyChallengeHistoryView: View {
                                 Image(systemName: "xmark")
                             }
                             .accessibilityLabel(Text(.dailyChallengeFlowClose))
+                        }
+                    }
+                    .navigationDestination(item: $reportedPartnerAnswerID) { answerID in
+                        if let partnerUserID = viewModel.participants.partnerUserID {
+                            ReportAndLeaveView(
+                                partnerUserID: partnerUserID,
+                                partnerName: viewModel.participants.partnerName,
+                                reportTarget: .dailyAnswer(answerID: answerID),
+                                service: privacySafetyService,
+                                operationProvider: privacyOperationProvider,
+                                onReportedAndLeft: onReportedAndLeft
+                            )
                         }
                     }
             }
@@ -165,7 +187,8 @@ struct DailyChallengeHistoryView: View {
                         ForEach(day.questions) { question in
                             DailyChallengeReadCard(
                                 question: question,
-                                participants: viewModel.participants
+                                participants: viewModel.participants,
+                                onReportPartnerAnswer: { reportedPartnerAnswerID = $0 }
                             )
                         }
                     }

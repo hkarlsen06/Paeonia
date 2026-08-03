@@ -61,6 +61,32 @@ nonisolated enum PrivacyReportReason: String, CaseIterable, Codable, Hashable, S
     case other
 }
 
+/// The existing reporting RPC accepts several kinds of relationship content. Keep
+/// that wire detail here so every entry point still opens the same report-and-leave
+/// flow while preserving the specific content the user reported.
+nonisolated enum PrivacyReportTarget: Equatable, Sendable {
+    case conduct(userID: UUID)
+    case dailyAnswer(answerID: UUID)
+
+    var kind: String {
+        switch self {
+        case .conduct:
+            "conduct"
+        case .dailyAnswer:
+            "daily_answer"
+        }
+    }
+
+    var id: UUID {
+        switch self {
+        case let .conduct(userID):
+            userID
+        case let .dailyAnswer(answerID):
+            answerID
+        }
+    }
+}
+
 nonisolated struct PrivacyRequestRemoteRow: Decodable, Equatable, Sendable {
     let id: UUID
     let requestKind: PrivacyRequestKind

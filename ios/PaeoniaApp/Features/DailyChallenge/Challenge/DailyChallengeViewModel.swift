@@ -134,22 +134,42 @@ final class DailyChallengeViewModel {
         }
     }
 
-    /// Best-effort wait for a just-sent answer to finish sending and the snapshot to
-    /// reload — the reload that unlocks a partner's reply once both have answered. A flow
-    /// closing after a send can await this so the card it collapses into shows both
-    /// answers at once instead of popping the partner's in a beat later.
+    /// Best-effort wait for the snapshot that contains an unlocked partner reply after
+    /// a just-sent answer. The queued operation can disappear a beat before that
+    /// snapshot arrives, so sending state alone is not reveal readiness: returning in
+    /// that gap makes an answering cover close before it can turn over to the exchange.
     ///
-    /// Polls the sending state rather than the network, so it returns the instant the
-    /// send settles and is capped so a slow or offline connection never holds the UI
-    /// open; the background send keeps running regardless. Cancellation-aware via the
-    /// sleeps.
-    func awaitAnswerReveal(for instanceID: UUID) async {
-        guard isSending(instanceID) else { return }
+    /// Once the send settles, perform one fresh read in case the sync-triggered reload
+    /// raced the backend commit. The wait stays capped, so an offline answer never holds
+    /// the flow open indefinitely; the queued send still retries in the background.
+    @discardableResult
+    func awaitAnswerReveal(for instanceID: UUID) async -> Bool {
+        if hasRevealedPartnerAnswer(for: instanceID) { return true }
+
         let deadline = ContinuousClock.now.advanced(by: .seconds(1.2))
+        var didReloadAfterSendSettled = false
+
         while ContinuousClock.now < deadline {
             try? await Task.sleep(for: .milliseconds(80))
-            if Task.isCancelled || !isSending(instanceID) { return }
+            if Task.isCancelled { return false }
+            if hasRevealedPartnerAnswer(for: instanceID) { return true }
+
+            if !isSending(instanceID), !didReloadAfterSendSettled {
+                didReloadAfterSendSettled = true
+                // Give the background reload that cleared sending state a chance to
+                // finish its bookkeeping, then start a genuinely fresh read.
+                await Task.yield()
+                Task { @MainActor [weak self] in
+                    await self?.reload()
+                }
+            }
         }
+
+        return hasRevealedPartnerAnswer(for: instanceID)
+    }
+
+    private func hasRevealedPartnerAnswer(for instanceID: UUID) -> Bool {
+        snapshot.questions.first(where: { $0.id == instanceID })?.canViewPartnerAnswer == true
     }
 
     /// Builds the view model for the Questions history flow, sharing this screen's

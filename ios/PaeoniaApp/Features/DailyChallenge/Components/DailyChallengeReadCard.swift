@@ -29,6 +29,7 @@ struct DailyChallengeReadCard: View {
     var zoomNamespace: Namespace.ID?
     var isHighlighted = false
     var onAnswer: () -> Void = {}
+    var onReportPartnerAnswer: ((UUID) -> Void)?
 
     /// A partner question the user can still answer to reveal the reply. When sending,
     /// the card shows the "saved, sending" preview instead, so this stays false.
@@ -44,6 +45,40 @@ struct DailyChallengeReadCard: View {
     }
 
     var body: some View {
+        Group {
+            if let reportablePartnerAnswerID, let onReportPartnerAnswer {
+                card
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            onReportPartnerAnswer(reportablePartnerAnswerID)
+                        } label: {
+                            Label {
+                                Text(.dailyChallengeReportPartnerAnswer)
+                            } icon: {
+                                Image(systemName: "exclamationmark.shield")
+                            }
+                        }
+                    }
+                    .accessibilityAction(named: Text(.dailyChallengeReportPartnerAnswer)) {
+                        onReportPartnerAnswer(reportablePartnerAnswerID)
+                    }
+            } else {
+                card
+            }
+        }
+        // Answerable cards are the source the single-question flow zooms out of, so the
+        // tapped card appears to grow into the full-screen flow. Only cards that can
+        // open the flow carry it.
+        .zoomSource(question.id, in: canOpenAnswerFlow ? zoomNamespace : nil)
+        .overlay {
+            if isHighlighted {
+                RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
+                    .stroke(.paeoniaAccentPrimary, lineWidth: 2)
+            }
+        }
+    }
+
+    private var card: some View {
         PaeoniaCard {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 Text(question.prompt)
@@ -74,16 +109,15 @@ struct DailyChallengeReadCard: View {
                 }
             }
         }
-        // Answerable cards are the source the single-question flow zooms out of, so the
-        // tapped card appears to grow into the full-screen flow. Only cards that can
-        // open the flow carry it.
-        .zoomSource(question.id, in: canOpenAnswerFlow ? zoomNamespace : nil)
-        .overlay {
-            if isHighlighted {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
-                    .stroke(.paeoniaAccentPrimary, lineWidth: 2)
-            }
+    }
+
+    /// Only a revealed partner answer gets the contextual action. Passing its id into
+    /// the existing flow lets the backend preserve the objectionable answer itself.
+    private var reportablePartnerAnswerID: UUID? {
+        guard let detail = question.partnerAnswerDetail, detail.canViewAnswer else {
+            return nil
         }
+        return detail.answerID
     }
 
     /// The same primary CTA the daily prompt card uses. When the user still has their

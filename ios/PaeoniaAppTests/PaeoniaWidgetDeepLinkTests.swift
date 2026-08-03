@@ -60,6 +60,13 @@ struct PaeoniaDeepLinkTests {
         #expect(PaeoniaDeepLink(url) == .streak)
     }
 
+    @Test func parsesMemoriesURL() {
+        let url = PaeoniaDeepLink.memoriesURL
+
+        #expect(url.absoluteString == "paeonia://memories")
+        #expect(PaeoniaDeepLink(url) == .memories)
+    }
+
     @Test func parsesSubscriptionURL() {
         let url = PaeoniaDeepLink.subscriptionURL
 
@@ -93,6 +100,7 @@ struct PaeoniaDeepLinkTests {
     @Test func notificationPayloadMapsKnownTypes() {
         #expect(PaeoniaDeepLink(notificationUserInfo: ["type": "widget_updated"]) == .widgetDrawing)
         #expect(PaeoniaDeepLink(notificationUserInfo: ["type": "daily_challenge_completed"]) == .dailyToday(coupleDayID: nil))
+        #expect(PaeoniaDeepLink(notificationUserInfo: ["type": "memory_created"]) == .memories)
         #expect(PaeoniaDeepLink(notificationUserInfo: ["type": "streak_reminder"]) == .streak)
         #expect(
             PaeoniaDeepLink(notificationUserInfo: ["type": "subscription_trial_reminder"])
@@ -111,6 +119,7 @@ struct PaeoniaDeepLinkTests {
 
     @Test func notificationPayloadFallsBackToRouteMetadata() {
         #expect(PaeoniaDeepLink(notificationUserInfo: ["route": "widget"]) == .widgetDrawing)
+        #expect(PaeoniaDeepLink(notificationUserInfo: ["route": "memories"]) == .memories)
         #expect(PaeoniaDeepLink(notificationUserInfo: ["route": "streak"]) == .streak)
         #expect(PaeoniaDeepLink(notificationUserInfo: ["route": "subscription"]) == .subscription)
     }

@@ -72,11 +72,7 @@ struct PairedHomeView: View {
             // the card grid reads as one consistent grid.
             VStack(spacing: PaeoniaSpacing.space16) {
                 dailyPromptCard
-                    .launchEntrance(order: 0)
-
                 milestoneAndWidget
-                    .launchEntrance(order: 1)
-
                 CoupleMapCard(
                     currentName: currentName,
                     currentProfilePhotoAssetID: currentProfilePhotoAssetID,
@@ -85,7 +81,6 @@ struct PairedHomeView: View {
                     state: locationMapState,
                     onPromptCurrentLocation: onPromptCurrentLocation
                 )
-                .launchEntrance(order: 2)
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)

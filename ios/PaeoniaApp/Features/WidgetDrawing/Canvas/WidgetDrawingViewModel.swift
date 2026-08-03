@@ -153,6 +153,7 @@ final class WidgetDrawingViewModel {
     /// example, during tests). Production saves read the live canvas bounds.
     nonisolated static let fallbackCanvasSide: CGFloat = 320
     private static let savedConfirmationDuration: Duration = .seconds(1.8)
+    private static let draftPersistenceDelay: Duration = .milliseconds(250)
 
     let colorChoices = WidgetDrawingColorChoice.palette
 
@@ -184,9 +185,12 @@ final class WidgetDrawingViewModel {
     private(set) var savedDrawingCreatedAt: Date?
     @ObservationIgnored private let service: any WidgetCanvasManaging
     @ObservationIgnored private let uploader: any WidgetCanvasUploading
+    @ObservationIgnored private let ownerUserID: UUID?
+    @ObservationIgnored private let draftStore: any WidgetDrawingDraftStoring
     @ObservationIgnored private let authorName: String?
     @ObservationIgnored private var hasLoadedSavedDrawing = false
     @ObservationIgnored private var savedConfirmationTask: Task<Void, Never>?
+    @ObservationIgnored private var draftPersistenceTask: Task<Void, Never>?
     /// Content signature of the drawing as it was last saved (or loaded). Used
     /// to keep Save disabled, and the attribution un-struck, until the canvas
     /// actually differs from what's stored. Derived from the strokes' geometry
@@ -198,13 +202,17 @@ final class WidgetDrawingViewModel {
     @ObservationIgnored private var lastSavedDrawingSignature: Int?
 
     init(
+        ownerUserID: UUID? = nil,
         authorName: String? = nil,
         service: any WidgetCanvasManaging = WidgetCanvasService.shared,
-        uploader: any WidgetCanvasUploading = WidgetCanvasUploadServiceFactory.makeDefault()
+        uploader: any WidgetCanvasUploading = WidgetCanvasUploadServiceFactory.makeDefault(),
+        draftStore: (any WidgetDrawingDraftStoring)? = nil
     ) {
+        self.ownerUserID = ownerUserID
         self.authorName = authorName
         self.service = service
         self.uploader = uploader
+        self.draftStore = draftStore ?? FileWidgetDrawingDraftStore.shared
     }
 
     var isColorSelectionEnabled: Bool {
@@ -336,6 +344,7 @@ final class WidgetDrawingViewModel {
 
     func updateDrawing(_ drawing: PKDrawing, undoManager: UndoManager?) {
         self.drawing = drawing
+        scheduleDraftPersistence()
         refreshUndoRedoAvailability(using: undoManager)
 
         Task { @MainActor in
@@ -351,17 +360,32 @@ final class WidgetDrawingViewModel {
         }
         hasLoadedSavedDrawing = true
 
-        guard drawing.strokes.isEmpty,
-              let snapshot = await service.loadSavedSnapshot(),
-              let savedDrawing = try? PKDrawing(data: snapshot.drawingData)
-        else {
+        guard drawing.strokes.isEmpty else {
             return
         }
 
-        drawing = savedDrawing
-        lastSavedDrawingSignature = Self.drawingSignature(for: savedDrawing)
-        savedDrawingAuthorName = snapshot.authorName?.trimmedNonEmpty
-        savedDrawingCreatedAt = snapshot.createdAt
+        let snapshot = await service.loadSavedSnapshot()
+        let savedDrawing = snapshot.flatMap { try? PKDrawing(data: $0.drawingData) }
+        if let savedDrawing {
+            lastSavedDrawingSignature = Self.drawingSignature(for: savedDrawing)
+            savedDrawingAuthorName = snapshot?.authorName?.trimmedNonEmpty
+            savedDrawingCreatedAt = snapshot?.createdAt
+        }
+
+        if let ownerUserID,
+           let draftData = draftStore.draft(for: ownerUserID) {
+            if let draftDrawing = try? PKDrawing(data: draftData) {
+                drawing = draftDrawing
+                if Self.drawingSignature(for: draftDrawing) == lastSavedDrawingSignature {
+                    draftStore.clearDraft(for: ownerUserID)
+                }
+            } else {
+                draftStore.clearDraft(for: ownerUserID)
+                drawing = savedDrawing ?? PKDrawing()
+            }
+        } else {
+            drawing = savedDrawing ?? PKDrawing()
+        }
         refreshUndoRedoAvailability()
     }
 
@@ -419,6 +443,7 @@ final class WidgetDrawingViewModel {
         recentlySaved = false
         saveFailure = nil
         let drawingData = drawing.dataRepresentation()
+        let savedDrawingSignature = Self.drawingSignature(for: drawing)
         let savedAt = Date()
         let canvasSize = currentCanvasSize()
         // Snapshot the PencilKit-derived metadata now (on the main actor) so the
@@ -438,9 +463,17 @@ final class WidgetDrawingViewModel {
                 authorName: authorName,
                 createdAt: savedAt
             )
-            lastSavedDrawingSignature = Self.drawingSignature(for: drawing)
+            // The canvas remains interactive while rendering and disk writes
+            // suspend. Establish the clean baseline from the exact snapshot we
+            // published, not from strokes the user may have added meanwhile.
+            lastSavedDrawingSignature = savedDrawingSignature
             savedDrawingAuthorName = authorName?.trimmedNonEmpty
             savedDrawingCreatedAt = savedAt
+            if Self.drawingSignature(for: drawing) == savedDrawingSignature {
+                clearDraft()
+            } else {
+                persistDraftIfNeeded()
+            }
             isSaving = false
             showSavedConfirmation()
             // Local widget already updated; send to the partner in the background.
@@ -457,7 +490,58 @@ final class WidgetDrawingViewModel {
         drawing = PKDrawing()
         canvasView?.drawing = PKDrawing()
         canvasView?.undoManager?.removeAllActions()
+        persistDraftIfNeeded()
         refreshUndoRedoAvailability()
+    }
+
+    /// Persists the current edit synchronously so an interactive swipe-dismiss,
+    /// background transition, or process suspension cannot drop the latest
+    /// PencilKit delegate update.
+    func persistDraftIfNeeded() {
+        draftPersistenceTask?.cancel()
+        draftPersistenceTask = nil
+        persistDraftImmediatelyIfNeeded()
+    }
+
+    private func scheduleDraftPersistence() {
+        guard ownerUserID != nil else {
+            return
+        }
+
+        draftPersistenceTask?.cancel()
+        draftPersistenceTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(for: Self.draftPersistenceDelay)
+            } catch {
+                return
+            }
+            guard let self, !Task.isCancelled else {
+                return
+            }
+            self.draftPersistenceTask = nil
+            self.persistDraftImmediatelyIfNeeded()
+        }
+    }
+
+    private func persistDraftImmediatelyIfNeeded() {
+        guard let ownerUserID else {
+            return
+        }
+
+        if hasUnsavedEdits && (!drawing.strokes.isEmpty || lastSavedDrawingSignature != nil) {
+            draftStore.setDraft(drawing.dataRepresentation(), for: ownerUserID)
+        } else {
+            draftStore.clearDraft(for: ownerUserID)
+        }
+    }
+
+    private func clearDraft() {
+        draftPersistenceTask?.cancel()
+        draftPersistenceTask = nil
+        guard let ownerUserID else {
+            return
+        }
+        draftStore.clearDraft(for: ownerUserID)
     }
 
     private func currentCanvasSize() -> CGSize {

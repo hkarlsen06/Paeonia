@@ -732,11 +732,20 @@ struct RootView: View {
             default:
                 self.deepLink = nil
             }
-        case .streak:
-            if viewModel.state == .paired || viewModel.state == .launching {
-                viewModel.selectMainTab(.home)
+        case .memories:
+            switch viewModel.state {
+            case .paired, .launching:
+                viewModel.selectMainTab(.memories)
+            default:
+                self.deepLink = nil
             }
-            self.deepLink = nil
+        case .streak:
+            switch viewModel.state {
+            case .paired, .launching:
+                viewModel.selectMainTab(.home)
+            default:
+                self.deepLink = nil
+            }
         case .subscription:
             openURL(PaeoniaDeepLink.appStoreSubscriptionsURL)
             self.deepLink = nil
@@ -798,7 +807,16 @@ struct RootView: View {
             get: { permissionPrimerCoordinator.presentedPrimer },
             set: { primer in
                 if primer == nil {
+                    let dismissedPrimer = permissionPrimerCoordinator.presentedPrimer
+                    let dismissedIdentity = permissionPrimerCoordinator.presentedIdentity
                     permissionPrimerCoordinator.dismiss()
+
+                    if dismissedPrimer == .notifications,
+                       let dismissedIdentity {
+                        Task { @MainActor in
+                            await continuePermissionPrimerSequence(for: dismissedIdentity)
+                        }
+                    }
                 }
             }
         )
@@ -823,6 +841,7 @@ struct RootView: View {
     }
 
     private func enablePushNotifications() {
+        let primerIdentity = locationIdentity
         permissionPrimerCoordinator.dismiss()
         Task { @MainActor in
             let didSettleAuthorization = await pushAuthorization.requestAuthorizationIfNeeded()
@@ -832,13 +851,31 @@ struct RootView: View {
             // forever while iOS is still `.notDetermined`.
             if didSettleAuthorization {
                 permissionPrimerCoordinator.markPushResponded()
+                await continuePermissionPrimerSequence(for: primerIdentity)
             }
         }
     }
 
     private func dismissPushPermissionPrimer() {
+        let primerIdentity = locationIdentity
         permissionPrimerCoordinator.markPushResponded()
         permissionPrimerCoordinator.dismiss()
+        Task { @MainActor in
+            await continuePermissionPrimerSequence(for: primerIdentity)
+        }
+    }
+
+    /// Give SwiftUI time to finish dismissing the notification sheet before it
+    /// receives the next item. This keeps the two explanations ordered without
+    /// presenting one permission surface on top of another.
+    private func continuePermissionPrimerSequence(for identity: LocationIdentity) async {
+        do {
+            try await Task.sleep(for: .milliseconds(400))
+        } catch {
+            return
+        }
+        guard isCurrentStableIdentity(identity) else { return }
+        await presentPermissionPrimerIfNeeded(for: identity)
     }
 
     private func showBanner(for notice: RootNotice?) {

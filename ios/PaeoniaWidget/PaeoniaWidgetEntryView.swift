@@ -15,7 +15,7 @@ struct PaeoniaWidgetEntryView: View {
     }
 
     private var overlayContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: PaeoniaWidgetSpacing.space6) {
             header
 
             middleContent
@@ -52,31 +52,13 @@ struct PaeoniaWidgetEntryView: View {
 
             Spacer(minLength: PaeoniaWidgetSpacing.space8)
 
-            headerTrailing
+            refreshButton
         }
     }
 
-    @ViewBuilder
-    private var headerTrailing: some View {
-        headerTrailingLabel
-            .font(PaeoniaWidgetTypography.metadata(family: family))
-            .foregroundStyle(.paeoniaWidgetTextSecondary)
-            .lineLimit(1)
-            .minimumScaleFactor(0.72)
-    }
-
-    @ViewBuilder
-    private var headerTrailingLabel: some View {
-        if let savedAt = drawingContent?.savedAt {
-            Text(Self.timestampText(savedAt))
-        } else {
-            Text(.widgetPlaceholderSubtitle)
-        }
-    }
-
-    /// The canvas consumes all space between the header and footer. Keeping
-    /// those elements in the same stack makes the drawing meet their edges
-    /// without ever extending underneath them.
+    /// The square PencilKit raster sits centered on the plum widget background,
+    /// with the header above and metadata below it, so artwork never reads as a
+    /// full-bleed background and metadata never floats over a stroke.
     @ViewBuilder
     private var middleContent: some View {
         PaeoniaWidgetDrawingArea {
@@ -113,27 +95,32 @@ struct PaeoniaWidgetEntryView: View {
 
     @ViewBuilder
     private var footer: some View {
-        if case .drawing = entry.content {
-            HStack(alignment: .center, spacing: PaeoniaWidgetSpacing.space8) {
-                footerLeadingContent
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .layoutPriority(1)
+        HStack(alignment: .firstTextBaseline, spacing: PaeoniaWidgetSpacing.space8) {
+            footerLeadingContent
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
 
-                refreshButton
-            }
-        } else {
-            HStack(alignment: .center, spacing: PaeoniaWidgetSpacing.space8) {
-                footerLeadingContent
-
-                Spacer(minLength: PaeoniaWidgetSpacing.space8)
-
-                Text(footerAction)
-                    .font(PaeoniaWidgetTypography.action(family: family))
-                    .foregroundStyle(.paeoniaWidgetAccentPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.68)
-            }
+            footerTrailingLabel
+                .font(PaeoniaWidgetTypography.metadata(family: family))
+                .foregroundStyle(footerTrailingColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.68)
         }
+    }
+
+    @ViewBuilder
+    private var footerTrailingLabel: some View {
+        if let savedAt = drawingContent?.savedAt {
+            Text(Self.timestampText(savedAt))
+        } else {
+            Text(footerAction)
+        }
+    }
+
+    private var footerTrailingColor: Color {
+        drawingContent?.savedAt == nil
+            ? .paeoniaWidgetAccentPrimary
+            : .paeoniaWidgetTextSecondary
     }
 
     private var footerLeadingContent: some View {
@@ -176,7 +163,7 @@ struct PaeoniaWidgetEntryView: View {
     private var refreshButton: some View {
         Button(intent: PaeoniaWidgetRefreshIntent()) {
             Image(systemName: "arrow.clockwise")
-                .font(.system(size: family == .systemSmall ? 15 : 17, weight: .semibold))
+                .font(.system(size: family == .systemSmall ? 12 : 14, weight: .semibold))
                 .frame(width: refreshHitTargetSize, height: refreshHitTargetSize)
         }
         .tint(.paeoniaWidgetAccentPrimary)
@@ -192,7 +179,7 @@ struct PaeoniaWidgetEntryView: View {
     }
 
     private var refreshHitTargetSize: CGFloat {
-        family == .systemSmall ? 56 : 60
+        family == .systemSmall ? 36 : 40
     }
 
     private static func timestampText(_ date: Date) -> String {

@@ -10,8 +10,8 @@ nonisolated protocol PrivacySafetyGateway: Actor {
         requesterNote: String?
     ) async throws -> PrivacyRequestRemoteRow
 
-    func submitConductReportAndLeave(
-        partnerUserID: UUID,
+    func submitReportAndLeave(
+        target: PrivacyReportTarget,
         reason: PrivacyReportReason,
         note: String?,
         blockPartner: Bool,
@@ -65,8 +65,8 @@ actor LivePrivacySafetyGateway: PrivacySafetyGateway {
             .value
     }
 
-    func submitConductReportAndLeave(
-        partnerUserID: UUID,
+    func submitReportAndLeave(
+        target: PrivacyReportTarget,
         reason: PrivacyReportReason,
         note: String?,
         blockPartner: Bool,
@@ -80,8 +80,8 @@ actor LivePrivacySafetyGateway: PrivacySafetyGateway {
         return try await client
             .rpc(
                 "submit_leave_and_report",
-                params: SubmitConductReportAndLeaveRequest(
-                    partnerUserID: partnerUserID,
+                params: SubmitReportAndLeaveRequest(
+                    target: target,
                     reason: reason,
                     note: note,
                     blockPartner: blockPartner,
@@ -107,10 +107,10 @@ nonisolated private struct PrivacyRequestInsert: Encodable {
     }
 }
 
-nonisolated struct SubmitConductReportAndLeaveRequest: Encodable {
+nonisolated struct SubmitReportAndLeaveRequest: Encodable {
     let reason: PrivacyReportReason
     let note: String?
-    let targetKind = "conduct"
+    let targetKind: String
     let targetID: UUID
     let targetAuxID: UUID? = nil
     let blockReportedUser: Bool
@@ -120,7 +120,7 @@ nonisolated struct SubmitConductReportAndLeaveRequest: Encodable {
     let localCreatedAt: Date
 
     init(
-        partnerUserID: UUID,
+        target: PrivacyReportTarget,
         reason: PrivacyReportReason,
         note: String?,
         blockPartner: Bool,
@@ -128,7 +128,8 @@ nonisolated struct SubmitConductReportAndLeaveRequest: Encodable {
     ) {
         self.reason = reason
         self.note = note
-        self.targetID = partnerUserID
+        self.targetKind = target.kind
+        self.targetID = target.id
         self.blockReportedUser = blockPartner
         self.clientOperationID = operation.id
         self.clientID = operation.clientID

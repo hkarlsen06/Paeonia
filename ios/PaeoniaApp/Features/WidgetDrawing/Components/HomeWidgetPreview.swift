@@ -10,6 +10,9 @@ nonisolated struct HomeWidgetPreviewLoader {
         /// been saved. `nil` means there is nothing to show yet, so the caller
         /// falls back to the placeholder sketch.
         var image: UIImage?
+        var authorName: String?
+        var savedAt: Date?
+        var isRedacted = false
     }
 
     let containerURL: URL?
@@ -25,7 +28,7 @@ nonisolated struct HomeWidgetPreviewLoader {
 
     func load() -> Content {
         guard let containerURL else {
-            return Content(image: nil)
+            return Content(image: nil, authorName: nil, savedAt: nil)
         }
 
         let payloadURL = containerURL.appendingPathComponent(payloadPath)
@@ -34,24 +37,31 @@ nonisolated struct HomeWidgetPreviewLoader {
               payload.schemaVersion == WidgetSharePayload.currentSchemaVersion,
               payload.rendererVersion == WidgetSharePayload.currentRendererVersion
         else {
-            return Content(image: nil)
+            return Content(image: nil, authorName: nil, savedAt: nil)
         }
 
         // Honour the same privacy gate the widget uses: a redacted payload must
         // never surface the drawing, even inside the app.
         guard payload.privacyMode == .normal, !payload.isRedacted else {
-            return Content(image: nil)
+            return Content(image: nil, authorName: nil, savedAt: nil, isRedacted: true)
         }
 
         guard !payload.contentHash.isEmpty,
               let relativePath = Self.preferredPreviewPath(in: payload.previews),
               Self.isSafeRelativePath(relativePath)
         else {
-            return Content(image: nil)
+            return Content(image: nil, authorName: nil, savedAt: nil)
         }
 
         let imageURL = containerURL.appendingPathComponent(relativePath)
-        return Content(image: UIImage(contentsOfFile: imageURL.path))
+        guard let image = UIImage(contentsOfFile: imageURL.path) else {
+            return Content(image: nil, authorName: nil, savedAt: nil)
+        }
+        return Content(
+            image: image,
+            authorName: payload.authorName?.trimmedNonEmpty,
+            savedAt: payload.createdAt
+        )
     }
 
     /// Prefers the small preview (closest to the in-app card size) and falls back
@@ -74,7 +84,11 @@ nonisolated struct HomeWidgetPreviewLoader {
 @MainActor
 @Observable
 final class HomeWidgetPreviewModel {
-    private(set) var image: UIImage?
+    private(set) var content = HomeWidgetPreviewLoader.Content(
+        image: nil,
+        authorName: nil,
+        savedAt: nil
+    )
 
     private let loader: HomeWidgetPreviewLoader
 
@@ -85,7 +99,7 @@ final class HomeWidgetPreviewModel {
     // The payload is a tiny JSON file plus a small PNG, so reading it directly
     // is cheap enough to do without hopping off the main actor.
     func reload() {
-        image = loader.load().image
+        content = loader.load()
     }
 }
 
@@ -125,23 +139,18 @@ struct HomeWidgetCard: View {
     }
 
     private var widget: some View {
-        drawingSurface
-        // The Us-tab tile is the canvas itself. It does not reserve an inner
-        // caption or padding, so the saved square drawing reaches every edge of
-        // the card without a nested-card treatment.
-        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: model.image == nil)
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            header
+            drawingSurface
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            footer
+        }
+        .padding(PaeoniaSpacing.space12)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: model.content.image == nil)
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
         .background(.paeoniaBackgroundPrimary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
-        .overlay(alignment: .bottom) {
-            if model.image == nil {
-                emptyCanvasCaption
-                    .padding(.horizontal, PaeoniaSpacing.space16)
-                    .padding(.bottom, PaeoniaSpacing.tileCaptionBottomInset)
-                    .transition(.opacity)
-            }
-        }
         .overlay {
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
                 .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
@@ -149,33 +158,84 @@ struct HomeWidgetCard: View {
         .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
     }
 
-    private var emptyCanvasCaption: some View {
-        HStack(spacing: PaeoniaSpacing.space4) {
-            Image(systemName: "pencil.tip.crop.circle")
-                .font(.system(size: 13, weight: .semibold))
+    private var header: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            PaeoniaWordmark(size: 14)
+                .layoutPriority(1)
+            Spacer(minLength: PaeoniaSpacing.space4)
+            Image(systemName: "arrow.clockwise")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.paeoniaAccentPrimary)
                 .accessibilityHidden(true)
-
-            Text(.homeWidgetCta)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .multilineTextAlignment(.center)
-                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
         }
-        .foregroundStyle(.paeoniaAccentPrimary)
+    }
+
+    private var footer: some View {
+        HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
+            footerTitle
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextPrimary)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
+
+            Spacer(minLength: PaeoniaSpacing.space4)
+
+            if let savedAt = model.content.savedAt {
+                Text(Self.timestampText(savedAt))
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .lineLimit(1)
+            } else {
+                Text(.homeWidgetCta)
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var footerTitle: some View {
+        if let authorName = model.content.authorName {
+            Text(verbatim: authorName)
+        } else {
+            Text(.widgetDrawingTitle)
+        }
+    }
+
+    private static func timestampText(_ date: Date) -> String {
+        if Calendar.current.isDateInToday(date) {
+            return date.formatted(date: .omitted, time: .shortened)
+        }
+        return date.formatted(date: .abbreviated, time: .omitted)
     }
 
     @ViewBuilder
     private var drawingSurface: some View {
-        if let image = model.image {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .accessibilityHidden(true)
-                .transition(.opacity)
-        } else {
-            HomeWidgetPlaceholderSketch()
-                .transition(.opacity)
+        Group {
+            if let image = model.content.image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .accessibilityHidden(true)
+                    .transition(.opacity)
+            } else if model.content.isRedacted {
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    Image(systemName: "eye.slash.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.paeoniaAccentPrimary)
+                    Text(.widgetDrawingTitle)
+                        .font(PaeoniaTypography.caption.weight(.semibold))
+                        .foregroundStyle(.paeoniaTextPrimary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                HomeWidgetPlaceholderSketch()
+                    .transition(.opacity)
+            }
         }
+        .aspectRatio(1, contentMode: .fit)
     }
 }
 

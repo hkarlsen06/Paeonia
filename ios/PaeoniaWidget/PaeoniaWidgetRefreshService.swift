@@ -13,13 +13,15 @@ enum PaeoniaWidgetRefreshService {
     private static let authAccessGroup = "48ZSLD4RMP.no.paeonia.shared"
     private static let payloadPath = "Widget/current.json"
     private static let previewsDirectory = "Widget/Previews"
+    private static let pendingUploadKey = "paeonia.widgetCanvas.pendingUpload"
+    private static let legacyPendingUploadHashKey = "paeonia.widgetCanvas.pendingUploadHash"
 
     @MainActor
     static func refresh() async throws {
         let client = try makeClient()
         _ = try await client.auth.session
         guard let remoteDrawing = try await loadRemoteDrawing(client: client),
-              shouldPublish(remoteCreatedAt: remoteDrawing.createdAt)
+              shouldPublish(remoteContentHash: contentHash(for: remoteDrawing.drawingData))
         else {
             return
         }
@@ -198,25 +200,49 @@ enum PaeoniaWidgetRefreshService {
         return previews
     }
 
-    private static func shouldPublish(remoteCreatedAt: Date) -> Bool {
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: appGroupIdentifier
-        ) else {
-            return false
-        }
-        let payloadURL = containerURL.appendingPathComponent(payloadPath)
-        guard let data = try? Data(contentsOf: payloadURL),
-              let payload = try? CurrentPayload.decoder.decode(
-                CurrentPayload.self,
-                from: data
-              )
-        else {
+    private static func shouldPublish(remoteContentHash: String) -> Bool {
+        let defaults = UserDefaults(suiteName: appGroupIdentifier)
+        if let pendingData = defaults?.data(forKey: pendingUploadKey) {
+            guard let pending = try? JSONDecoder().decode(PendingUpload.self, from: pendingData),
+                  remoteContentHash == "sha256-\(pending.contentHash)"
+            else {
+                return false
+            }
+
+            // Matching server bytes confirm the host app's pending upload even
+            // when the interactive widget performed the first successful read.
+            clearPendingUploadIfMatching(pending.contentHash, defaults: defaults)
             return true
         }
 
-        // Never let a refresh overwrite a newer local save that has not reached
-        // the server yet.
-        return payload.createdAt <= remoteCreatedAt
+        if let legacyHash = defaults?.string(
+            forKey: legacyPendingUploadHashKey
+        ) {
+            guard remoteContentHash == "sha256-\(legacyHash)" else {
+                return false
+            }
+            clearPendingUploadIfMatching(legacyHash, defaults: defaults)
+            return true
+        }
+
+        // With no unsent local save, the server read is authoritative. Avoid
+        // client/server timestamp comparisons: clock skew previously made a
+        // real partner revision look older indefinitely.
+        return true
+    }
+
+    private static func clearPendingUploadIfMatching(
+        _ contentHash: String,
+        defaults: UserDefaults?
+    ) {
+        if let pendingData = defaults?.data(forKey: pendingUploadKey),
+           let pending = try? JSONDecoder().decode(PendingUpload.self, from: pendingData),
+           pending.contentHash == contentHash {
+            defaults?.removeObject(forKey: pendingUploadKey)
+        }
+        if defaults?.string(forKey: legacyPendingUploadHashKey) == contentHash {
+            defaults?.removeObject(forKey: legacyPendingUploadHashKey)
+        }
     }
 
     private static func contentHash(for data: Data) -> String {
@@ -233,6 +259,10 @@ private extension PaeoniaWidgetRefreshService {
     }
 
     struct EmptyRequest: Encodable {}
+
+    struct PendingUpload: Decodable {
+        let contentHash: String
+    }
 
     struct CanvasState: Decodable {
         let activeRevisionID: UUID?

@@ -98,6 +98,12 @@ struct DailyChallengeAnswerFlow: View {
     /// revive-and-refill celebration once a purchase lands.
     @State private var restoreViewModel: StreakRestoreViewModel?
     @State private var committedAnswerHold: DailyAnswerStepVisualHold?
+    /// A partner question stays captured while its answer sends and its unlocked
+    /// exchange loads. It must not be derived from `answerFlowQuestions`: that list
+    /// intentionally removes the question once the user answers, which used to swap
+    /// this cover to completion before the reveal appeared.
+    @State private var partnerRevealQuestion: DailyChallengeQuestion?
+    @State private var isAwaitingPartnerReveal = false
     @FocusState private var isComposerFocused: Bool
 
     private enum Phase {
@@ -160,25 +166,39 @@ struct DailyChallengeAnswerFlow: View {
 
     var body: some View {
         ZStack {
-            switch phase {
-            case .complete:
-                DailyChallengeCompletionView(
-                    streak: currentStreak,
-                    partnerName: viewModel.participants.partnerName,
-                    restorableCount: viewModel.streak.isRestorable ? viewModel.streak.restorableCount : nil,
-                    restoreDeadline: viewModel.streak.restoreDeadline,
-                    restoreViewModel: restoreViewModel,
-                    hasPartnerQuestionsToAnswer: hasPartnerQuestionsToAnswer,
-                    onOpenPartnerQuestions: onOpenPartnerQuestions,
-                    onDone: dismiss
-                )
-                .transition(completionTransition)
-            case .loading:
-                loadingState
-            case .unavailable:
-                unavailableState
-            case .answering:
-                answeringState
+            if let partnerRevealQuestion {
+                if isAwaitingPartnerReveal {
+                    partnerRevealHoldingState(partnerRevealQuestion)
+                } else {
+                    DailyPartnerAnswerRevealView(
+                        question: partnerRevealQuestion,
+                        revealedQuestion: revealedQuestion(for: partnerRevealQuestion.id),
+                        participants: viewModel.participants,
+                        onDone: finishPartnerReveal
+                    )
+                    .transition(.opacity)
+                }
+            } else {
+                switch phase {
+                case .complete:
+                    DailyChallengeCompletionView(
+                        streak: currentStreak,
+                        partnerName: viewModel.participants.partnerName,
+                        restorableCount: viewModel.streak.isRestorable ? viewModel.streak.restorableCount : nil,
+                        restoreDeadline: viewModel.streak.restoreDeadline,
+                        restoreViewModel: restoreViewModel,
+                        hasPartnerQuestionsToAnswer: hasPartnerQuestionsToAnswer,
+                        onOpenPartnerQuestions: onOpenPartnerQuestions,
+                        onDone: dismiss
+                    )
+                    .transition(completionTransition)
+                case .loading:
+                    loadingState
+                case .unavailable:
+                    unavailableState
+                case .answering:
+                    answeringState
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -206,10 +226,14 @@ struct DailyChallengeAnswerFlow: View {
     /// in the bottom action bar, within thumb reach. The top padding gives the thin bar
     /// clearance from the safe area that the eyebrow's text height used to provide.
     private var header: some View {
+        stepHeader(currentStep: currentRequiredStep)
+    }
+
+    private func stepHeader(currentStep: Int?) -> some View {
         DailyChallengeStepBar(
             total: DailyChallengeProgress.requiredOwnQuestionCount,
             completed: answeredRequiredCount,
-            current: currentRequiredStep,
+            current: currentStep,
             height: 8,
             onSelect: requiredQuestions.isEmpty ? nil : { (step: Int) in goToRequiredStep(step) }
         )
@@ -250,6 +274,33 @@ struct DailyChallengeAnswerFlow: View {
         // and an explicit `.animation` would only re-time the keyboard's movement onto
         // a fixed curve and make it bounce.
         .dismissesKeyboardOnTap { isComposerFocused = false }
+    }
+
+    /// Holds the committed partner answer in the same challenge chrome while the
+    /// unlocked snapshot arrives. The captured question and visual draft keep this
+    /// surface stable even when the live question list re-sorts underneath it.
+    private func partnerRevealHoldingState(_ question: DailyChallengeQuestion) -> some View {
+        VStack(spacing: PaeoniaSpacing.space16) {
+            // A partner question is outside the required three, so no required step
+            // should become selected just because the live list re-indexes underneath.
+            stepHeader(currentStep: nil)
+
+            DailyChallengeAnswerStep(
+                question: question,
+                viewModel: viewModel,
+                isFocused: $isComposerFocused,
+                visualHold: visualHold(for: question),
+                topPadding: PaeoniaSpacing.space4
+            )
+
+            DailyChallengeAnswerActionBar(
+                primaryTitle: .dailyChallengeSubmitButton,
+                isPrimaryBusy: true,
+                isPrimaryDisabled: true,
+                onPrimary: {},
+                onClose: dismiss
+            )
+        }
     }
 
     private var actionBar: some View {
@@ -453,7 +504,7 @@ struct DailyChallengeAnswerFlow: View {
         // Advance once the answer has landed on the server or — for a photo — been
         // staged to send in the background. A failure leaves the draft in place and
         // surfaces a banner instead.
-        let didAnswer = (viewModel.snapshot.answerFlowQuestions
+        let didAnswer = (viewModel.snapshot.questions
             .first(where: { $0.id == question.id })?.hasOwnAnswer ?? false)
             || viewModel.isSending(question.id)
         guard didAnswer else {
@@ -463,7 +514,26 @@ struct DailyChallengeAnswerFlow: View {
 
         isComposerFocused = false
 
-        if question.origin == .own && hasFinishedRequiredQuestions {
+        if question.origin == .partner {
+            partnerRevealQuestion = question
+            isAwaitingPartnerReveal = true
+
+            let didReveal = await viewModel.awaitAnswerReveal(for: question.id)
+            if didReveal, revealedQuestion(for: question.id)?.canViewPartnerAnswer == true {
+                PaeoniaHaptics.answerRevealed()
+                withAnimation(PaeoniaMotion.meaningfulMoment) {
+                    isAwaitingPartnerReveal = false
+                }
+                releaseVisualHold(for: question.id)
+            } else {
+                // Offline or still sending: move on normally. The Questions card
+                // reveals the exchange after the queued answer eventually lands.
+                partnerRevealQuestion = nil
+                isAwaitingPartnerReveal = false
+                clearVisualHold(for: question.id)
+                advanceAfterPartnerAnswer()
+            }
+        } else if hasFinishedRequiredQuestions {
             celebrate()
             releaseVisualHold(for: question.id)
         } else if let next = nextAnswerableIndex(after: boundedIndex) {
@@ -472,6 +542,26 @@ struct DailyChallengeAnswerFlow: View {
         } else {
             celebrate()
             releaseVisualHold(for: question.id)
+        }
+    }
+
+    private func revealedQuestion(for questionID: UUID) -> DailyChallengeQuestion? {
+        viewModel.snapshot.questions.first { $0.id == questionID }
+    }
+
+    private func finishPartnerReveal() {
+        guard let questionID = partnerRevealQuestion?.id else { return }
+        partnerRevealQuestion = nil
+        isAwaitingPartnerReveal = false
+        clearVisualHold(for: questionID)
+        advanceAfterPartnerAnswer()
+    }
+
+    private func advanceAfterPartnerAnswer() {
+        if let next = nextAnswerableIndex(after: -1) {
+            withAnimation(PaeoniaMotion.stateChange) { index = next }
+        } else {
+            celebrate()
         }
     }
 
@@ -792,11 +882,22 @@ struct DailyChallengeAnswerStep: View {
             )
         case .partnerChoice:
             if let options = viewModel.participants.partnerChoiceOptions {
-                DailyPartnerChoicePicker(
-                    options: options,
-                    selection: partnerChoiceSelection,
-                    onSelect: setPartnerChoice
-                )
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+                    Label {
+                        Text(.dailyChallengeCombinedChoiceHint)
+                    } icon: {
+                        Image(systemName: "person.2.fill")
+                            .accessibilityHidden(true)
+                    }
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextSecondary)
+
+                    DailyPartnerChoicePicker(
+                        options: options,
+                        selection: partnerChoiceSelection,
+                        onSelect: setPartnerChoice
+                    )
+                }
             }
         default:
             EmptyView()

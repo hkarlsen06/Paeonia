@@ -163,6 +163,31 @@ struct DailyChallengeMappingTests {
         #expect(question.partnerAnswerDetail?.textBody == "A walk after school.")
     }
 
+    @Test func answeredPartnerQuestionRemainsResolvableAfterLeavingAnswerFlowOrder() throws {
+        let instanceID = UUID()
+        let ownAnswerID = UUID()
+        let partnerAnswerID = UUID()
+        let snapshot = makeSnapshot(rows: [
+            questionRow(
+                instanceID: instanceID,
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                status: "answered",
+                ownAnswerID: ownAnswerID,
+                ownAnsweredAt: TestDailyChallengeIDs.answerDate.addingTimeInterval(10),
+                partnerAnswerID: partnerAnswerID,
+                partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
+                canViewPartnerAnswer: true
+            ),
+        ])
+
+        // Answer-flow ordering intentionally drops a partner question after this user
+        // answers it, but a presented reveal must still resolve it by stable instance id.
+        #expect(snapshot.answerFlowQuestions.allSatisfy { $0.id != instanceID })
+        let revealed = try #require(snapshot.questions.first { $0.id == instanceID })
+        #expect(revealed.canViewPartnerAnswer)
+    }
+
     @Test func answerKindMappingPreservesBackendKindsAndUnknowns() {
         #expect(DailyChallengeAnswerKind(rawValue: "text") == .text)
         #expect(DailyChallengeAnswerKind(rawValue: "photo") == .photo)
@@ -1292,6 +1317,66 @@ struct DailyChallengeMappingTests {
     }
 
     @MainActor
+    @Test func answerRevealWaitsForFreshSnapshotAfterSendAlreadySettled() async throws {
+        let instanceID = UUID()
+        let ownAnswerID = UUID()
+        let partnerAnswerID = UUID()
+        let hiddenSnapshot = makeSnapshot(rows: [
+            questionRow(
+                instanceID: instanceID,
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                partnerAnswerID: partnerAnswerID,
+                partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
+                canViewPartnerAnswer: false
+            ),
+        ])
+        let revealedSnapshot = makeSnapshot(
+            rows: [
+                questionRow(
+                    instanceID: instanceID,
+                    slotNumber: 1,
+                    seededForUserID: TestDailyChallengeIDs.partnerUser,
+                    status: "answered",
+                    ownAnswerID: ownAnswerID,
+                    ownAnsweredAt: TestDailyChallengeIDs.answerDate.addingTimeInterval(10),
+                    partnerAnswerID: partnerAnswerID,
+                    partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
+                    canViewPartnerAnswer: true
+                ),
+            ],
+            details: [
+                answerDetail(answerID: ownAnswerID, isOwnAnswer: true, textBody: "A walk together."),
+                answerDetail(
+                    answerUserID: TestDailyChallengeIDs.partnerUser,
+                    answerID: partnerAnswerID,
+                    isOwnAnswer: false,
+                    textBody: "Making dinner together."
+                ),
+            ]
+        )
+        let service = RecordingDailyChallengeService(
+            snapshots: [hiddenSnapshot, revealedSnapshot],
+            advancesSnapshotsOnLoad: true
+        )
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider()
+        )
+
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        #expect(!viewModel.isSending(instanceID))
+        #expect(viewModel.snapshot.questions.first?.canViewPartnerAnswer == false)
+
+        let didReveal = await viewModel.awaitAnswerReveal(for: instanceID)
+
+        #expect(didReveal)
+        #expect(viewModel.snapshot.questions.first?.id == instanceID)
+        #expect(viewModel.snapshot.questions.first?.canViewPartnerAnswer == true)
+        #expect(await service.loadCount == 2)
+    }
+
+    @MainActor
     @Test func legacyTextDraftsMigrateToVersionedStore() throws {
         let suiteName = "test.dailyChallenge.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
@@ -2392,6 +2477,7 @@ private func questionRow(
     effectiveLocalDate: String? = nil,
     startsAt: Date = TestDailyChallengeIDs.startsAt,
     endsAt: Date = TestDailyChallengeIDs.endsAt,
+    instanceID: UUID = UUID(),
     slotNumber: Int,
     seededForUserID: UUID,
     status: String = "active",
@@ -2411,7 +2497,7 @@ private func questionRow(
         effectiveLocalDate: effectiveLocalDate,
         startsAt: startsAt,
         endsAt: endsAt,
-        instanceID: UUID(),
+        instanceID: instanceID,
         seededForUserID: seededForUserID,
         slotNumber: slotNumber,
         instanceStatus: status,
