@@ -1,17 +1,18 @@
 import SwiftUI
 
-/// Production support and legal destinations for paired users. They stay grouped
-/// and quiet so they remain easy to find without competing with the relationship
-/// and notification settings above them. Subscription management lives in the
-/// purchases card in `SettingsView`, next to purchase restore.
+/// The support and legal group at the bottom of the Me tab. It stays quiet so it
+/// remains easy to find without competing with the relationship and app settings
+/// above it. Subscription management lives on the purchases screen, next to
+/// purchase restore.
 struct SettingsDestinationLinksView: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            PaeoniaCard(padding: 0) {
+        VStack(spacing: PaeoniaSpacing.space16) {
+            SettingsMenuSection(title: .settingsSectionSupport) {
                 destinationButton(
                     .authSignInSupport,
+                    message: .settingsSupportRowMessage,
                     systemImage: "questionmark.circle",
                     urlString: "https://paeonia.no/support"
                 )
@@ -24,6 +25,7 @@ struct SettingsDestinationLinksView: View {
 
     private func destinationButton(
         _ title: LocalizedStringResource,
+        message: LocalizedStringResource,
         systemImage: String,
         urlString: String
     ) -> some View {
@@ -35,6 +37,7 @@ struct SettingsDestinationLinksView: View {
         } label: {
             PaeoniaDisclosureRow(
                 title: title,
+                message: message,
                 systemImage: systemImage,
                 accessory: .externalLink
             )

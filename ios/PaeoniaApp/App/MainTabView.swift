@@ -73,6 +73,7 @@ struct MainTabView: View {
     @State private var partnerAnswerQuestion: DailyChallengeQuestion?
     /// Question to scroll to and briefly highlight after a notification deep link.
     @State private var focusedDailyQuestionID: UUID?
+    @State private var dailyChatQuestion: DailyChallengeQuestion?
     @Namespace private var zoomNamespace
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -408,6 +409,7 @@ struct MainTabView: View {
                 viewModel: dailyChallengeViewModel,
                 zoomNamespace: zoomNamespace,
                 focusedQuestionID: $focusedDailyQuestionID,
+                chatQuestion: $dailyChatQuestion,
                 onOpenAnswerFlow: { openAnswerFlow(source: .questions) },
                 onTapStreak: openStreakDetails,
                 onRefresh: {
@@ -491,6 +493,19 @@ struct MainTabView: View {
             await refreshDailyChallenge()
             focusedDailyQuestionID = instanceID
             self.deepLink.wrappedValue = nil
+        case .dailyChat(let instanceID):
+            selection.wrappedValue = .questions
+            await refreshDailyChallenge()
+            dailyChatQuestion = await dailyChallengeViewModel.questionForChat(instanceID: instanceID)
+            if dailyChatQuestion == nil {
+                bannerCenter.show(
+                    .error(
+                        title: String(localized: .dailyChatErrorUnavailableTitle),
+                        message: String(localized: .dailyChatErrorUnavailableMessage)
+                    )
+                )
+            }
+            self.deepLink.wrappedValue = nil
         case .dailyToday:
             selection.wrappedValue = .questions
             await refreshDailyChallenge()
@@ -530,7 +545,6 @@ struct MainTabView: View {
                 viewModel: settingsViewModel,
                 currentUserID: currentUserID,
                 currentDisplayName: currentDisplayName,
-                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
                 currentCustomProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
                 currentProviderProfilePhotoAssetID: currentProviderProfilePhotoAssetID,
                 currentAuthProvider: currentAuthProvider,

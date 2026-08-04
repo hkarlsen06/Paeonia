@@ -177,6 +177,11 @@ Record any skipped command with the reason.
 - [ ] Queued answers upload later without duplication.
 - [ ] Media/voice upload failure does not drop user content.
 - [ ] Answer reveal works after both partners answer.
+- [ ] Only fully revealed question cards open their private question chat.
+- [ ] The first follow-up message creates the thread lazily; opening chat never creates an empty thread.
+- [ ] Offline chat messages appear immediately and later send without duplication.
+- [ ] Question-chat notifications route to the right question without exposing message content on the lock screen.
+- [ ] Question-chat UI and notification settings are localized in English and Norwegian Bokmal.
 - [ ] Partner-answer notification does not expose answer content.
 - [ ] Challenge completion notification copy explains that the recipient must answer to see partner content.
 - [ ] Daily challenge history groups questions by effective latest-answer day.

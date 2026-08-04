@@ -1,14 +1,15 @@
 import SwiftUI
-import UIKit
 
-/// The "Me" tab: the couple member's personal corner. Hosts location sharing,
-/// notification settings (collapsed by default to stay compact), and the account
-/// actions — log out, leave the relationship, and delete the account.
+/// The "Me" tab: the couple member's personal corner, and a menu rather than a
+/// control panel.
+///
+/// Every switch and destructive action lives one push away on its own screen, so
+/// this stays short enough to scan and nothing important is reachable by accident
+/// while scrolling past it.
 struct SettingsView: View {
     @State private var viewModel: SettingsViewModel
     let currentUserID: UUID?
     let currentDisplayName: String?
-    let currentProfilePhotoAssetID: UUID?
     let currentCustomProfilePhotoAssetID: UUID?
     let currentProviderProfilePhotoAssetID: UUID?
     let currentAuthProvider: AuthProvider?
@@ -34,15 +35,7 @@ struct SettingsView: View {
     private let privacySafetyService: (any PrivacySafetyServicing)?
     private let privacyOperationProvider: (any SyncClientOperationProviding)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    @Environment(\.openURL) private var openURL
 
-    /// Gates the leave action behind a centered confirmation alert, so the pairing
-    /// can never end on a single stray tap.
-    @State private var isConfirmingLeave = false
-    @State private var isConfirmingDelete = false
-    /// The notifications block is collapsed by default so the tab stays short; the
-    /// user opens it when they want to change an alert.
-    @State private var isNotificationsExpanded = false
     @State private var selectedRelationshipDate = Date()
     @State private var isEditingRelationshipDate = false
 
@@ -51,7 +44,6 @@ struct SettingsView: View {
         viewModel: SettingsViewModel? = nil,
         currentUserID: UUID? = nil,
         currentDisplayName: String? = nil,
-        currentProfilePhotoAssetID: UUID? = nil,
         currentCustomProfilePhotoAssetID: UUID? = nil,
         currentProviderProfilePhotoAssetID: UUID? = nil,
         currentAuthProvider: AuthProvider? = nil,
@@ -72,7 +64,6 @@ struct SettingsView: View {
     ) {
         self.currentUserID = currentUserID
         self.currentDisplayName = currentDisplayName
-        self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
         self.currentCustomProfilePhotoAssetID = currentCustomProfilePhotoAssetID
         self.currentProviderProfilePhotoAssetID = currentProviderProfilePhotoAssetID
         self.currentAuthProvider = currentAuthProvider
@@ -97,20 +88,10 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                profileHeader
+                profileRow
                 relationshipSection
-                locationSection
-                notificationsSection
-                purchasesSection
-
-                // Quiet destination cards read as one cluster, so the headerless
-                // privacy card doesn't float alone between headed sections.
-                VStack(spacing: PaeoniaSpacing.space12) {
-                    privacySafetySection
-                    SettingsDestinationLinksView()
-                }
-
-                accountActionsSection
+                appSection
+                SettingsDestinationLinksView()
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
@@ -123,40 +104,15 @@ struct SettingsView: View {
         .task {
             await viewModel.load()
         }
+        // The notices come from screens pushed on top of this one, but this view
+        // owns the view model and stays alive underneath them, so the banner keeps
+        // working from here.
         .onChange(of: viewModel.notice) { _, notice in
             guard let notice else {
                 return
             }
             showBanner(for: notice)
             viewModel.dismissNotice()
-        }
-        .alert(
-            Text(.pairingUnpairConfirmTitle(partnerName)),
-            isPresented: $isConfirmingLeave
-        ) {
-            Button(role: .destructive, action: leaveRelationship) {
-                Text(.pairingUnpairConfirmAction)
-            }
-
-            Button(role: .cancel, action: {}) {
-                Text(.pairingUnpairConfirmCancel)
-            }
-        } message: {
-            Text(.pairingUnpairConfirmMessage(partnerName))
-        }
-        .alert(
-            Text(.authDeleteAccountConfirmTitle),
-            isPresented: $isConfirmingDelete
-        ) {
-            Button(role: .destructive, action: onDeleteAccount) {
-                Text(.authDeleteAccountConfirmAction)
-            }
-
-            Button(role: .cancel, action: {}) {
-                Text(.authDeleteAccountConfirmCancel)
-            }
-        } message: {
-            Text(.authDeleteAccountConfirmMessage)
         }
         .sheet(isPresented: $isEditingRelationshipDate) {
             RelationshipDateEditorView(
@@ -169,415 +125,169 @@ struct SettingsView: View {
     }
 }
 
+// MARK: - Menu
+
 extension SettingsView {
-    // MARK: - Profile
-
-    /// The tab opens on the user's own identity: a centered avatar and name with a
-    /// quiet edit pill, instead of a small headed row card. The whole header is
-    /// one tap target into the profile editor.
-    private var profileHeader: some View {
-        NavigationLink {
-            PairedProfileEditorView(
-                displayName: profileDisplayName,
-                customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
-                providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID,
-                authProvider: currentAuthProvider,
-                onSave: onUpdateProfile
-            )
-        } label: {
-            VStack(spacing: PaeoniaSpacing.space12) {
-                PaeoniaProfilePhotoAvatar(
-                    mediaAssetID: currentProfilePhotoAssetID,
-                    name: profileDisplayName,
-                    tint: .paeoniaPartnerOne,
-                    size: 84
+    /// The tab opens on the user's own identity. Name and photo are edited on the
+    /// screen behind it, together with the account actions.
+    private var profileRow: some View {
+        PaeoniaCard(padding: 0) {
+            NavigationLink {
+                ProfileSettingsView(
+                    viewModel: viewModel,
+                    savedDisplayName: currentDisplayName,
+                    customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
+                    providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID,
+                    authProvider: currentAuthProvider,
+                    partnerName: partnerName,
+                    onSave: { [onUpdateProfile] displayName, photoUpdate in
+                        await onUpdateProfile(displayName, photoUpdate)
+                    },
+                    onLeftRelationship: onLeftRelationship,
+                    onLogout: onLogout,
+                    onDeleteAccount: onDeleteAccount
                 )
-                .accessibilityHidden(true)
-
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    Text(profileDisplayName)
-                        .font(PaeoniaTypography.title)
-                        .foregroundStyle(.paeoniaTextPrimary)
-
-                    HStack(spacing: PaeoniaSpacing.space4) {
-                        Text(.settingsProfileEditAction)
-
-                        Image(systemName: "chevron.right")
-                            .accessibilityHidden(true)
-                    }
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .padding(.horizontal, PaeoniaSpacing.space12)
-                    .padding(.vertical, PaeoniaSpacing.space8)
-                    .background(.paeoniaSurfaceSecondary)
-                    .clipShape(Capsule(style: .continuous))
-                }
+            } label: {
+                SettingsProfileRow(
+                    displayName: currentDisplayName,
+                    customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
+                    providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID
+                )
             }
-            .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
-
-    private var profileDisplayName: String {
-        currentDisplayName?.trimmedNonEmpty
-            ?? String(localized: .settingsProfileFallbackName)
-    }
-
-    // MARK: - Relationship
 
     private var relationshipSection: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            sectionHeader(.settingsRelationshipSectionTitle)
-
-            PaeoniaCard(padding: 0) {
-                // The date editor is a modal task (Cancel/Save), so it presents as
-                // a sheet — same as from the Us-tab milestone tile — instead of a
-                // push that would nest the editor's own navigation stack.
-                Button {
-                    selectedRelationshipDate = relationshipStartedOn
-                        .flatMap { try? PairingStartDate(rawValue: $0) }
-                        .flatMap { $0.date() }
-                        ?? Date()
-                    isEditingRelationshipDate = true
-                } label: {
-                    PaeoniaDisclosureRow(
-                        title: .settingsRelationshipDateTitle,
-                        message: relationshipStartedOn == nil
-                            ? .settingsRelationshipDateMissingMessage
-                            : .settingsRelationshipDateSetMessage,
-                        systemImage: "calendar"
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    // MARK: - Location
-
-    private var locationSection: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            sectionHeader(.settingsLocationSectionTitle)
-
-            PaeoniaCard {
-                settingRow(
-                    title: .settingsLocationSharingTitle,
-                    subtitle: .settingsLocationSharingSubtitle(partnerName),
-                    isOn: locationSharingBinding,
-                    isEnabled: locationViewModel.isSharingLoaded
+        SettingsMenuSection(title: .settingsRelationshipSectionTitle) {
+            // The date editor is a modal task (Cancel/Save), so it presents as a
+            // sheet — same as from the Us-tab milestone tile — instead of a push
+            // that would nest the editor's own navigation stack.
+            Button {
+                selectedRelationshipDate = relationshipStartedOn
+                    .flatMap { try? PairingStartDate(rawValue: $0) }
+                    .flatMap { $0.date() }
+                    ?? Date()
+                isEditingRelationshipDate = true
+            } label: {
+                PaeoniaDisclosureRow(
+                    title: .settingsRelationshipDateTitle,
+                    message: relationshipStartedOn == nil
+                        ? .settingsRelationshipDateMissingMessage
+                        : .settingsRelationshipDateSetMessage,
+                    systemImage: "calendar"
                 )
             }
-        }
-    }
+            .buttonStyle(.plain)
 
-    // MARK: - Notifications (collapsible)
+            SettingsMenuDivider()
 
-    private var notificationsSection: some View {
-        PaeoniaCard {
-            VStack(alignment: .leading, spacing: 0) {
-                notificationsHeader
-
-                if isNotificationsExpanded {
-                    notificationsContent
-                        .padding(.top, PaeoniaSpacing.space16)
-                        .transition(.opacity)
-                }
-            }
-        }
-    }
-
-    private var notificationsHeader: some View {
-        Button {
-            withAnimation(PaeoniaMotion.stateChange) {
-                isNotificationsExpanded.toggle()
-            }
-        } label: {
-            HStack(spacing: PaeoniaSpacing.space12) {
-                Image(systemName: "bell.badge.fill")
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .foregroundStyle(.paeoniaAccentPrimary)
-                    .frame(width: PaeoniaSpacing.space24)
-                    .accessibilityHidden(true)
-
-                Text(.settingsNotificationsSectionTitle)
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .foregroundStyle(.paeoniaTextPrimary)
-
-                Spacer(minLength: PaeoniaSpacing.space8)
-
-                Image(systemName: "chevron.down")
-                    .font(PaeoniaTypography.button)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .rotationEffect(.degrees(isNotificationsExpanded ? 180 : 0))
-                    .accessibilityHidden(true)
-            }
-            .frame(
-                maxWidth: .infinity,
-                minHeight: PaeoniaSpacing.buttonHeight,
-                alignment: .leading
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityValue(Text(notificationsAccessibilityValue))
-    }
-
-    /// Announces the notifications section's open/closed state to VoiceOver. Typed as
-    /// a `LocalizedStringResource` so the ternary resolves the generated symbols
-    /// without an ambiguous `Text` initializer.
-    private var notificationsAccessibilityValue: LocalizedStringResource {
-        isNotificationsExpanded
-            ? .settingsNotificationsExpandedLabel
-            : .settingsNotificationsCollapsedLabel
-    }
-
-    private var notificationsContent: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            settingRow(
-                title: .settingsNotificationsPartnerAnsweredTitle,
-                subtitle: .settingsNotificationsPartnerAnsweredSubtitle(partnerName),
-                isOn: notificationBinding(.partnerAnswered),
-                isEnabled: viewModel.isLoaded
-            )
-
-            settingRow(
-                title: .settingsNotificationsDailyChallengeTitle,
-                subtitle: .settingsNotificationsDailyChallengeSubtitle(partnerName),
-                isOn: notificationBinding(.dailyChallenge),
-                isEnabled: viewModel.isLoaded
-            )
-
-            settingRow(
-                title: .settingsNotificationsStreakRemindersTitle,
-                subtitle: .settingsNotificationsStreakRemindersSubtitle,
-                isOn: notificationBinding(.streakReminders),
-                isEnabled: viewModel.isLoaded
-            )
-
-            settingRow(
-                title: .settingsNotificationsWidgetAlertsTitle,
-                subtitle: .settingsNotificationsWidgetAlertsSubtitle(partnerName),
-                isOn: notificationBinding(.widgetUpdates),
-                isEnabled: viewModel.isLoaded
-            )
-
-            settingRow(
-                title: .settingsNotificationsMemoriesTitle,
-                subtitle: .settingsNotificationsMemoriesSubtitle(partnerName),
-                isOn: notificationBinding(.memories),
-                isEnabled: viewModel.isLoaded
-            )
-
-            if viewModel.systemNotificationsDenied {
-                systemDisabledNote
-            }
-        }
-    }
-
-    private var systemDisabledNote: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Divider()
-                .overlay(.paeoniaSurfacePressed)
-
-            Text(.settingsNotificationsSystemOffTitle)
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
-            Text(.settingsNotificationsSystemOffMessage)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-
-            Button {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    openURL(url)
-                }
+            NavigationLink {
+                LocationSettingsView(
+                    viewModel: locationViewModel,
+                    partnerName: partnerName
+                )
             } label: {
-                Text(.settingsNotificationsOpenSettingsButton)
+                PaeoniaDisclosureRow(
+                    title: .settingsLocationSectionTitle,
+                    message: .settingsLocationRowMessage(partnerName),
+                    systemImage: "location.fill"
+                )
             }
-            .buttonStyle(PaeoniaSecondaryButtonStyle())
+            .buttonStyle(.plain)
+
+            privacySafetyRows
         }
     }
-
-    // MARK: - Privacy and safety
 
     @ViewBuilder
-    private var privacySafetySection: some View {
+    private var privacySafetyRows: some View {
         if let partnerUserID {
-            PaeoniaCard(padding: 0) {
-                VStack(spacing: 0) {
-                    NavigationLink {
-                        PrivacySafetyView(
-                            partnerUserID: partnerUserID,
-                            partnerName: partnerName,
-                            service: privacySafetyService,
-                            operationProvider: privacyOperationProvider,
-                            onReportedAndLeft: onLeftRelationship
-                        )
-                    } label: {
-                        PaeoniaDisclosureRow(
-                            title: .privacySafetyTitle,
-                            message: .settingsPrivacySafetyMessage,
-                            systemImage: "checkmark.shield.fill"
-                        )
-                    }
-                    .buttonStyle(.plain)
+            SettingsMenuDivider()
 
-                    Divider()
-                        .overlay(.paeoniaSurfacePressed)
-
-                    // Reporting is a safety action, so keep it directly reachable
-                    // from Settings instead of requiring the user to discover it
-                    // inside the privacy-request screen. The destination still
-                    // makes the relationship-ending consequence explicit before
-                    // anything is sent.
-                    NavigationLink {
-                        ReportAndLeaveView(
-                            partnerUserID: partnerUserID,
-                            partnerName: partnerName,
-                            service: privacySafetyService,
-                            operationProvider: privacyOperationProvider,
-                            onReportedAndLeft: onLeftRelationship
-                        )
-                    } label: {
-                        PaeoniaDisclosureRow(
-                            title: .privacySafetyReportTitle(partnerName),
-                            message: .privacySafetyReportDescription(partnerName),
-                            systemImage: "exclamationmark.shield",
-                            iconTint: .paeoniaError
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    /// Subscription management and purchase restore belong together: one card of
-    /// purchase-related rows instead of a lone full-width button between sections.
-    private var purchasesSection: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            sectionHeader(.settingsPurchasesSectionTitle)
-
-            PaeoniaCard(padding: 0) {
-                VStack(spacing: 0) {
-                    Button {
-                        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
-                            openURL(url)
-                        }
-                    } label: {
-                        PaeoniaDisclosureRow(
-                            title: .paywallManageSubscription,
-                            systemImage: "creditcard",
-                            accessory: .externalLink
-                        )
-                    }
-                    .buttonStyle(.plain)
-
-                    Divider()
-                        .overlay(.paeoniaSurfacePressed)
-
-                    Button(action: restorePurchases) {
-                        restorePurchasesRow
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(viewModel.isRestoringPurchases)
-                }
-            }
-        }
-    }
-
-    /// An action row in the purchases card: same leading-icon shape as the
-    /// disclosure rows, but with a spinner instead of a chevron while restoring.
-    private var restorePurchasesRow: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            Image(systemName: "arrow.clockwise")
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .frame(width: PaeoniaSpacing.space24)
-                .accessibilityHidden(true)
-
-            Text(
-                viewModel.isRestoringPurchases
-                    ? .settingsPurchasesRestoring
-                    : .paywallRestorePurchases
-            )
-            .font(PaeoniaTypography.bodyEmphasis)
-            .foregroundStyle(.paeoniaTextPrimary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            if viewModel.isRestoringPurchases {
-                ProgressView()
-                    .tint(.paeoniaTextSecondary)
-                    .accessibilityHidden(true)
-            }
-        }
-        .padding(.horizontal, PaeoniaSpacing.space16)
-        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
-        .contentShape(Rectangle())
-    }
-
-    // MARK: - Account actions
-
-    /// Log out and leave-relationship sit together at the bottom as real buttons.
-    /// Leaving is destructive, so it uses the destructive style and a broken-heart
-    /// icon, and still only opens the confirmation alert — nothing happens until the
-    /// user confirms there.
-    private var accountActionsSection: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            Button(action: onLogout) {
-                Text(.settingsAccountLogoutButton)
-            }
-            .buttonStyle(PaeoniaSecondaryButtonStyle())
-
-            Button {
-                isConfirmingLeave = true
+            NavigationLink {
+                PrivacySafetyView(
+                    partnerUserID: partnerUserID,
+                    partnerName: partnerName,
+                    service: privacySafetyService,
+                    operationProvider: privacyOperationProvider,
+                    onReportedAndLeft: onLeftRelationship
+                )
             } label: {
-                Label {
-                    Text(.settingsUnpairButton)
-                } icon: {
-                    Image(systemName: "heart.slash.fill")
-                        .accessibilityHidden(true)
-                }
+                PaeoniaDisclosureRow(
+                    title: .privacySafetyTitle,
+                    message: .settingsPrivacySafetyMessage,
+                    systemImage: "checkmark.shield.fill"
+                )
             }
-            .buttonStyle(PaeoniaDestructiveButtonStyle())
-            .disabled(viewModel.isLeavingRelationship)
+            .buttonStyle(.plain)
 
-            // Delete stays quiet so it doesn't compete with the leave button
-            // above it: leaving is the likelier intent, deleting is the last resort.
-            Button {
-                isConfirmingDelete = true
+            SettingsMenuDivider()
+
+            // Reporting is a safety action, so keep it directly reachable from the
+            // Me tab instead of requiring the user to discover it inside the
+            // privacy-request screen. The destination still makes the
+            // relationship-ending consequence explicit before anything is sent.
+            NavigationLink {
+                ReportAndLeaveView(
+                    partnerUserID: partnerUserID,
+                    partnerName: partnerName,
+                    service: privacySafetyService,
+                    operationProvider: privacyOperationProvider,
+                    onReportedAndLeft: onLeftRelationship
+                )
             } label: {
-                Text(.authDeleteAccountButton)
-                    .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-                    .contentShape(Rectangle())
+                PaeoniaDisclosureRow(
+                    title: .privacySafetyReportTitle(partnerName),
+                    message: .privacySafetyReportDescription(partnerName),
+                    systemImage: "exclamationmark.shield",
+                    iconTint: .paeoniaError
+                )
             }
-            .buttonStyle(PaeoniaQuietDestructiveButtonStyle())
-            .disabled(viewModel.isLeavingRelationship)
-        }
-        .padding(.top, PaeoniaSpacing.space24)
-    }
-
-    // MARK: - Actions
-
-    private func leaveRelationship() {
-        Task {
-            let didLeave = await viewModel.leaveRelationship()
-            if didLeave {
-                bannerCenter.dismiss()
-                onLeftRelationship()
-            }
+            .buttonStyle(.plain)
         }
     }
 
-    private func restorePurchases() {
-        Task { @MainActor in
-            if await viewModel.restorePurchases() {
-                await onPurchasesRestored()
+    private var appSection: some View {
+        SettingsMenuSection(title: .settingsSectionApp) {
+            NavigationLink {
+                NotificationSettingsView(
+                    viewModel: viewModel,
+                    partnerName: partnerName
+                )
+            } label: {
+                PaeoniaDisclosureRow(
+                    title: .settingsNotificationsSectionTitle,
+                    message: .settingsNotificationsRowMessage,
+                    systemImage: "bell.badge.fill"
+                )
             }
+            .buttonStyle(.plain)
+
+            SettingsMenuDivider()
+
+            NavigationLink {
+                PurchaseSettingsView(
+                    viewModel: viewModel,
+                    onPurchasesRestored: { [onPurchasesRestored] in
+                        await onPurchasesRestored()
+                    }
+                )
+            } label: {
+                PaeoniaDisclosureRow(
+                    title: .settingsPurchasesSectionTitle,
+                    message: .settingsPurchasesRowMessage,
+                    systemImage: "creditcard"
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
+}
 
+// MARK: - Notices
+
+extension SettingsView {
     private func showBanner(for notice: SettingsViewModel.Notice) {
         switch notice {
         case .saveFailed:
@@ -611,77 +321,6 @@ extension SettingsView {
                 )
             )
         }
-    }
-
-}
-
-// MARK: - Building blocks
-
-private extension SettingsView {
-    func sectionHeader(_ title: LocalizedStringResource) -> some View {
-        Text(title)
-            .font(PaeoniaTypography.sectionTitle)
-            .foregroundStyle(.paeoniaTextSecondary)
-    }
-
-    /// A settings row: a title + subtitle column that keeps a comfortable gap from
-    /// the trailing switch, so long copy wraps in its own column and never crowds the
-    /// toggle.
-    func settingRow(
-        title: LocalizedStringResource,
-        subtitle: LocalizedStringResource,
-        isOn: Binding<Bool>,
-        isEnabled: Bool
-    ) -> some View {
-        HStack(alignment: .center, spacing: PaeoniaSpacing.space16) {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                Text(title)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                Text(subtitle)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Toggle("", isOn: isOn)
-                .labelsHidden()
-                .tint(.paeoniaAccentPrimary)
-                .disabled(!isEnabled)
-                .accessibilityLabel(Text(title))
-        }
-    }
-
-    func notificationBinding(_ kind: NotificationPreferenceKind) -> Binding<Bool> {
-        Binding(
-            get: {
-                switch kind {
-                case .streakReminders:
-                    viewModel.streakRemindersEnabled
-                case .dailyChallenge:
-                    viewModel.dailyChallengeEnabled
-                case .partnerAnswered:
-                    viewModel.partnerAnsweredEnabled
-                case .widgetUpdates:
-                    viewModel.widgetAlertsEnabled
-                case .memories:
-                    viewModel.memoriesEnabled
-                }
-            },
-            set: { newValue in
-                Task { await viewModel.setNotificationPreference(kind, enabled: newValue) }
-            }
-        )
-    }
-
-    var locationSharingBinding: Binding<Bool> {
-        Binding(
-            get: { locationViewModel.sharingEnabled },
-            set: { newValue in
-                Task { await locationViewModel.setSharingEnabled(newValue) }
-            }
-        )
     }
 }
 

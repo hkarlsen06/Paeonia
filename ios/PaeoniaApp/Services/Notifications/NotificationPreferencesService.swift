@@ -8,6 +8,7 @@ nonisolated struct NotificationPreferences: Equatable, Sendable {
     var streakRemindersEnabled = true
     var dailyChallengeEnabled = true
     var partnerAnsweredEnabled = true
+    var messagesEnabled = true
     var widgetUpdatesEnabled = true
     var memoriesEnabled = true
 }
@@ -16,6 +17,7 @@ nonisolated enum NotificationPreferenceKind: Equatable, Sendable {
     case streakReminders
     case dailyChallenge
     case partnerAnswered
+    case messages
     case widgetUpdates
     case memories
 
@@ -27,6 +29,8 @@ nonisolated enum NotificationPreferenceKind: Equatable, Sendable {
             "daily_challenge_enabled"
         case .partnerAnswered:
             "partner_answered_enabled"
+        case .messages:
+            "messages_enabled"
         case .widgetUpdates:
             "widget_updates_enabled"
         case .memories:
@@ -53,6 +57,7 @@ actor SupabaseNotificationPreferencesService: NotificationPreferencesProviding {
         "streak_reminders_enabled",
         "daily_challenge_enabled",
         "partner_answered_enabled",
+        "messages_enabled",
         "widget_updates_enabled",
         "memories_enabled",
     ].joined(separator: ",")
@@ -89,6 +94,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
     let streakRemindersEnabled: Bool
     let dailyChallengeEnabled: Bool
     let partnerAnsweredEnabled: Bool
+    let messagesEnabled: Bool
     let widgetUpdatesEnabled: Bool
     let memoriesEnabled: Bool
 
@@ -97,6 +103,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
             streakRemindersEnabled: streakRemindersEnabled,
             dailyChallengeEnabled: dailyChallengeEnabled,
             partnerAnsweredEnabled: partnerAnsweredEnabled,
+            messagesEnabled: messagesEnabled,
             widgetUpdatesEnabled: widgetUpdatesEnabled,
             memoriesEnabled: memoriesEnabled
         )
@@ -106,6 +113,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
         case streakRemindersEnabled = "streak_reminders_enabled"
         case dailyChallengeEnabled = "daily_challenge_enabled"
         case partnerAnsweredEnabled = "partner_answered_enabled"
+        case messagesEnabled = "messages_enabled"
         case widgetUpdatesEnabled = "widget_updates_enabled"
         case memoriesEnabled = "memories_enabled"
     }

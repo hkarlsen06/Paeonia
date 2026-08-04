@@ -23,6 +23,7 @@ final class SettingsViewModel {
     private(set) var streakRemindersEnabled = true
     private(set) var dailyChallengeEnabled = true
     private(set) var partnerAnsweredEnabled = true
+    private(set) var messagesEnabled = true
     private(set) var widgetAlertsEnabled = true
     private(set) var memoriesEnabled = true
     private(set) var isLoaded = false
@@ -138,6 +139,7 @@ final class SettingsViewModel {
         streakRemindersEnabled = preferences.streakRemindersEnabled
         dailyChallengeEnabled = preferences.dailyChallengeEnabled
         partnerAnsweredEnabled = preferences.partnerAnsweredEnabled
+        messagesEnabled = preferences.messagesEnabled
         widgetAlertsEnabled = preferences.widgetUpdatesEnabled
         memoriesEnabled = preferences.memoriesEnabled
     }
@@ -150,6 +152,8 @@ final class SettingsViewModel {
             dailyChallengeEnabled
         case .partnerAnswered:
             partnerAnsweredEnabled
+        case .messages:
+            messagesEnabled
         case .widgetUpdates:
             widgetAlertsEnabled
         case .memories:
@@ -165,6 +169,8 @@ final class SettingsViewModel {
             dailyChallengeEnabled = enabled
         case .partnerAnswered:
             partnerAnsweredEnabled = enabled
+        case .messages:
+            messagesEnabled = enabled
         case .widgetUpdates:
             widgetAlertsEnabled = enabled
         case .memories:

@@ -235,7 +235,7 @@ nonisolated struct DailyChallengeParticipants: Equatable, Sendable {
     }
 }
 
-nonisolated enum DailyQuestionInstanceStatus: Equatable, Sendable {
+nonisolated enum DailyQuestionInstanceStatus: Equatable, Hashable, Sendable {
     case active
     case answered
     case shuffled
@@ -255,12 +255,12 @@ nonisolated enum DailyQuestionInstanceStatus: Equatable, Sendable {
     }
 }
 
-nonisolated struct DailyQuestionAnswerSummary: Equatable, Sendable {
+nonisolated struct DailyQuestionAnswerSummary: Equatable, Hashable, Sendable {
     let id: UUID
     let answeredAt: Date
 }
 
-nonisolated struct DailyQuestionAnswerDetail: Equatable, Sendable {
+nonisolated struct DailyQuestionAnswerDetail: Equatable, Hashable, Sendable {
     let answerUserID: UUID
     let answerID: UUID
     let answeredAt: Date
@@ -282,12 +282,12 @@ nonisolated struct DailyQuestionAnswerDetail: Equatable, Sendable {
     }
 }
 
-nonisolated enum DailyQuestionOrigin: Equatable, Sendable {
+nonisolated enum DailyQuestionOrigin: Equatable, Hashable, Sendable {
     case own
     case partner
 }
 
-nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Sendable {
+nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Sendable {
     let id: UUID
     let coupleDayID: UUID
     let coupleID: UUID

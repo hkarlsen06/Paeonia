@@ -3192,6 +3192,7 @@ begin
           when 'widget_updated' then preference.widget_updates_enabled
           when 'location_updated' then preference.location_updates_enabled
           when 'memory_created' then preference.memories_enabled
+          when 'thread_message_sent' then preference.messages_enabled
           else true
         end,
         false
@@ -3218,6 +3219,7 @@ begin
           when 'widget_updated' then preference.widget_updates_enabled
           when 'location_updated' then preference.location_updates_enabled
           when 'memory_created' then preference.memories_enabled
+          when 'thread_message_sent' then preference.messages_enabled
           else true
         end,
         false
@@ -3391,6 +3393,7 @@ begin
           when 'widget_updated' then (outbox.apns_push_type <> 'alert' or preference.widget_updates_enabled)
           when 'location_updated' then preference.location_updates_enabled
           when 'memory_created' then preference.memories_enabled
+          when 'thread_message_sent' then preference.messages_enabled
           else true
         end,
         false
@@ -3418,6 +3421,7 @@ begin
           when 'widget_updated' then (outbox.apns_push_type <> 'alert' or preference.widget_updates_enabled)
           when 'location_updated' then preference.location_updates_enabled
           when 'memory_created' then preference.memories_enabled
+          when 'thread_message_sent' then preference.messages_enabled
           else true
         end,
         false
@@ -5070,7 +5074,8 @@ begin
     'relationship_ended',
     'entitlement_changed',
     'subscription_trial_reminder',
-    'memory_created'
+    'memory_created',
+    'thread_message_sent'
   ) then
     raise exception 'notification kind is not supported'
       using errcode = '23514';
@@ -5117,12 +5122,26 @@ begin
     nullif(btrim(coalesce(p_apns_collapse_id, '')), ''),
     case
       when p_apns_push_type = 'alert' then
-        internal.notification_alert_title(p_kind, p_payload, device.locale)
+        internal.notification_alert_title(
+          p_kind,
+          p_payload || jsonb_build_object(
+            'lock_screen_detail_level',
+            preference.lock_screen_detail_level
+          ),
+          device.locale
+        )
       else null
     end,
     case
       when p_apns_push_type = 'alert' then
-        internal.notification_alert_body(p_kind, p_payload, device.locale)
+        internal.notification_alert_body(
+          p_kind,
+          p_payload || jsonb_build_object(
+            'lock_screen_detail_level',
+            preference.lock_screen_detail_level
+          ),
+          device.locale
+        )
       else null
     end,
     coalesce(p_scheduled_for, now())
@@ -5140,6 +5159,7 @@ begin
           (p_apns_push_type <> 'alert' or preference.widget_updates_enabled)
         when 'location_updated' then preference.location_updates_enabled
         when 'memory_created' then preference.memories_enabled
+        when 'thread_message_sent' then preference.messages_enabled
         else true
       end
     )
@@ -8265,6 +8285,99 @@ $$;
 ALTER FUNCTION "internal"."handle_daily_challenge_completed"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "internal"."handle_thread_message_created"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'pg_catalog'
+    AS $$
+declare
+  resolved_couple_id uuid;
+  resolved_instance_id uuid;
+  resolved_memory_id uuid;
+  notification_payload jsonb;
+begin
+  if new.deleted_at is not null or new.moderation_status <> 'visible' then
+    return new;
+  end if;
+
+  select
+    thread.couple_id,
+    daily_thread.instance_id,
+    memory_thread.memory_id
+  into
+    resolved_couple_id,
+    resolved_instance_id,
+    resolved_memory_id
+  from public.conversation_threads thread
+  left join public.daily_question_threads daily_thread
+    on daily_thread.thread_id = thread.id
+  left join public.memory_threads memory_thread
+    on memory_thread.thread_id = thread.id
+  where thread.id = new.thread_id
+    and thread.deleted_at is null
+    and thread.moderation_status = 'visible';
+
+  if resolved_couple_id is null
+    or (resolved_instance_id is null and resolved_memory_id is null) then
+    return new;
+  end if;
+
+  perform internal.apply_couple_activity(
+    resolved_couple_id,
+    new.sender_user_id,
+    internal.get_or_create_couple_day_at(resolved_couple_id, new.created_at),
+    'thread_message_sent',
+    new.created_at,
+    'thread_message_sent:' || new.id::text,
+    jsonb_build_object('thread_id', new.thread_id)
+  );
+
+  notification_payload = jsonb_build_object(
+    'type', 'thread_message_sent',
+    'couple_id', resolved_couple_id::text,
+    'thread_id', new.thread_id::text,
+    'message_id', new.id::text,
+    'actor_user_id', new.sender_user_id::text
+  );
+
+  if resolved_instance_id is not null then
+    notification_payload = notification_payload || jsonb_build_object(
+      'route', 'daily',
+      'deeplink', 'paeonia://daily/chat?instanceId=' || resolved_instance_id::text,
+      'instance_id', resolved_instance_id::text
+    );
+  else
+    notification_payload = notification_payload || jsonb_build_object(
+      'route', 'memories',
+      'deeplink', 'paeonia://memories',
+      'memory_id', resolved_memory_id::text
+    );
+  end if;
+
+  -- Push delivery must never make sending a message fail.
+  begin
+    perform internal.enqueue_partner_notification(
+      resolved_couple_id,
+      new.sender_user_id,
+      'thread_message_sent',
+      notification_payload,
+      'thread_message_sent:' || new.id::text,
+      'private',
+      'alert',
+      'thread:' || new.thread_id::text,
+      now()
+    );
+  exception when others then
+    null;
+  end;
+
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "internal"."handle_thread_message_created"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "internal"."handle_widget_drawing_revision_created"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'pg_catalog'
@@ -9951,6 +10064,17 @@ begin
       when 'nb' then 'Åpne Paeonia for å se det.'
       else 'Open Paeonia to see it.'
     end
+    when 'thread_message_sent' then case
+      when p_payload ->> 'lock_screen_detail_level' = 'descriptive' then
+        case language_code
+          when 'nb' then 'Åpne Paeonia for å svare.'
+          else 'Open Paeonia to reply.'
+        end
+      else case language_code
+        when 'nb' then 'Åpne Paeonia for å se hva som er nytt.'
+        else 'Open Paeonia to see what''s new.'
+      end
+    end
     when 'streak_reminder' then case language_code
       when 'nb' then 'Gjør én liten ting i dag. Rekken fortsetter når dere begge har sjekket inn.'
       else 'Do one small thing today. Your streak continues once both of you have checked in.'
@@ -9993,6 +10117,18 @@ begin
     when 'memory_created' then case language_code
       when 'nb' then actor_name || ' la til et nytt minne'
       else actor_name || ' added a new memory'
+    end
+    when 'thread_message_sent' then case
+      when p_payload ->> 'lock_screen_detail_level' = 'descriptive' then
+        case language_code
+          when 'nb' then
+            coalesce(internal.notification_actor_display_name(p_payload), 'Partneren din') ||
+            ' sendte deg en melding'
+          else
+            coalesce(internal.notification_actor_display_name(p_payload), 'Your partner') ||
+            ' sent you a message'
+        end
+      else 'Paeonia'
     end
     when 'streak_reminder' then case language_code
       when 'nb' then 'Sjekk inn før tiden går ut'
@@ -17825,7 +17961,7 @@ CREATE TABLE IF NOT EXISTS "internal"."notification_outbox" (
     CONSTRAINT "notification_outbox_attempt_count_check" CHECK (("attempt_count" >= 0)),
     CONSTRAINT "notification_outbox_body_check" CHECK ((("body" IS NULL) OR (("char_length"("btrim"("body")) >= 1) AND ("char_length"("btrim"("body")) <= 1000)))),
     CONSTRAINT "notification_outbox_dedupe_key_check" CHECK ((("dedupe_key" IS NULL) OR (("char_length"("btrim"("dedupe_key")) >= 1) AND ("char_length"("btrim"("dedupe_key")) <= 320)))),
-    CONSTRAINT "notification_outbox_kind_check" CHECK (("kind" = ANY (ARRAY['streak_reminder'::"text", 'daily_challenge_completed'::"text", 'partner_answered'::"text", 'widget_updated'::"text", 'location_updated'::"text", 'relationship_ended'::"text", 'entitlement_changed'::"text", 'subscription_trial_reminder'::"text", 'memory_created'::"text"]))),
+    CONSTRAINT "notification_outbox_kind_check" CHECK (("kind" = ANY (ARRAY['streak_reminder'::"text", 'daily_challenge_completed'::"text", 'partner_answered'::"text", 'widget_updated'::"text", 'location_updated'::"text", 'relationship_ended'::"text", 'entitlement_changed'::"text", 'subscription_trial_reminder'::"text", 'memory_created'::"text", 'thread_message_sent'::"text"]))),
     CONSTRAINT "notification_outbox_last_error_check" CHECK ((("last_error" IS NULL) OR ("char_length"("last_error") <= 2000))),
     CONSTRAINT "notification_outbox_payload_check" CHECK ((("jsonb_typeof"("payload") = 'object'::"text") AND ("octet_length"(("payload")::"text") <= 4096))),
     CONSTRAINT "notification_outbox_payload_version_check" CHECK (("payload_version" = 1)),
@@ -18611,6 +18747,7 @@ CREATE TABLE IF NOT EXISTS "public"."notification_preferences" (
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "memories_enabled" boolean DEFAULT true NOT NULL,
+    "messages_enabled" boolean DEFAULT true NOT NULL,
     CONSTRAINT "notification_preferences_lock_screen_detail_level_check" CHECK (("lock_screen_detail_level" = ANY (ARRAY['private'::"text", 'descriptive'::"text"]))),
     CONSTRAINT "notification_preferences_revision_check" CHECK (("revision" > 0))
 );
@@ -20451,6 +20588,10 @@ CREATE OR REPLACE TRIGGER "enqueue_partner_answered_notification" AFTER INSERT O
 
 
 CREATE OR REPLACE TRIGGER "handle_daily_challenge_completed" BEFORE UPDATE OF "completed_at" ON "public"."daily_challenges" FOR EACH ROW EXECUTE FUNCTION "internal"."handle_daily_challenge_completed"();
+
+
+
+CREATE OR REPLACE TRIGGER "handle_thread_message_created" AFTER INSERT ON "public"."thread_messages" FOR EACH ROW EXECUTE FUNCTION "internal"."handle_thread_message_created"();
 
 
 
@@ -22388,6 +22529,11 @@ GRANT ALL ON FUNCTION "internal"."handle_daily_challenge_completed"() TO "servic
 
 
 
+REVOKE ALL ON FUNCTION "internal"."handle_thread_message_created"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "internal"."handle_thread_message_created"() TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "internal"."handle_widget_drawing_revision_created"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "internal"."handle_widget_drawing_revision_created"() TO "service_role";
 
@@ -23719,6 +23865,9 @@ GRANT SELECT("updated_at") ON TABLE "public"."notification_preferences" TO "auth
 
 
 GRANT SELECT("memories_enabled"),UPDATE("memories_enabled") ON TABLE "public"."notification_preferences" TO "authenticated";
+
+
+GRANT SELECT("messages_enabled"),UPDATE("messages_enabled") ON TABLE "public"."notification_preferences" TO "authenticated";
 
 
 

@@ -1,9 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
+    "" : {},
     "%lld / %lld" : {
       "localizations" : {
         "en" : {
@@ -14,9 +12,7 @@
         }
       }
     },
-    "+%lld" : {
-
-    },
+    "+%lld" : {},
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -8116,24 +8112,6 @@
         }
       }
     },
-    "settings.notifications.collapsedLabel" : {
-      "comment" : "Accessibility value announced when the notifications section is closed",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Collapsed"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skjult"
-          }
-        }
-      }
-    },
     "settings.notifications.dailyChallenge.subtitle" : {
       "comment" : "Explains daily challenge completion notifications. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -8166,24 +8144,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dagens spørsmål"
-          }
-        }
-      }
-    },
-    "settings.notifications.expandedLabel" : {
-      "comment" : "Accessibility value announced when the notifications section is open",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Expanded"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Utvidet"
           }
         }
       }
@@ -8418,42 +8378,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Administrer dataene dine eller rapporter noe utrygt."
-          }
-        }
-      }
-    },
-    "settings.profile.editAction" : {
-      "comment" : "Edit name or photo",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit name or photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Endre navn eller bilde"
-          }
-        }
-      }
-    },
-    "settings.profile.editor.title" : {
-      "comment" : "Edit profile",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit profile"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rediger profil"
           }
         }
       }
@@ -10363,6 +10287,564 @@
         }
       },
       "comment" : "Subtitle for the new-memory notification preference. The placeholder is the partner's display name."
+    },
+    "settings.profile.discard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard changes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forkast endringene"
+          }
+        }
+      },
+      "comment" : "Button that throws away unsaved name and photo edits in the Me tab"
+    },
+    "settings.section.app" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App"
+          }
+        }
+      },
+      "comment" : "Settings menu group heading for app-wide preferences"
+    },
+    "settings.section.support" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hjelp"
+          }
+        }
+      },
+      "comment" : "Settings menu group heading for help and legal links"
+    },
+    "settings.profile.row.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your name, photo, and account"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navnet ditt, bildet og kontoen"
+          }
+        }
+      },
+      "comment" : "Supporting line on the settings menu row that opens the profile screen"
+    },
+    "settings.location.row.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose whether %@ can see where you are"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg om %@ kan se hvor du er"
+          }
+        }
+      },
+      "comment" : "Supporting line on the settings menu row that opens location sharing. %@ is the partner's name"
+    },
+    "settings.notifications.row.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose what Paeonia tells you about"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg hva Paeonia varsler deg om"
+          }
+        }
+      },
+      "comment" : "Supporting line on the settings menu row that opens notification settings"
+    },
+    "settings.purchases.row.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage your subscription or restore a purchase"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Administrer abonnementet eller hent tilbake et kjøp"
+          }
+        }
+      },
+      "comment" : "Supporting line on the settings menu row that opens subscription and restore actions"
+    },
+    "settings.support.row.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find answers and get in touch"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finn svar og ta kontakt"
+          }
+        }
+      },
+      "comment" : "Supporting line on the settings menu row that opens the support website"
+    },
+    "settings.account.sectionTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto"
+          }
+        }
+      },
+      "comment" : "Heading above log out, leave relationship, and delete account on the profile screen"
+    },
+    "dailyChat.navigation.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question chat"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmålsprat"
+          }
+        }
+      },
+      "comment" : "Navigation title for a daily question conversation"
+    },
+    "dailyChat.empty.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Say something about this question."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si noe om dette spørsmålet."
+          }
+        }
+      },
+      "comment" : "Encouragement shown before either partner sends a follow-up message"
+    },
+    "dailyChat.sending.reassurance" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved on this phone. We'll send it when you're online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret på denne telefonen. Vi sender det når du er på nett."
+          }
+        }
+      },
+      "comment" : "Reassurance shown while chat messages wait to finish sending"
+    },
+    "dailyChat.composer.placeholder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write a message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv en melding"
+          }
+        }
+      },
+      "comment" : "Placeholder in the daily question chat message field"
+    },
+    "dailyChat.composer.signature" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add text"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til tekst"
+          }
+        }
+      },
+      "comment" : "Unused fallback label required by the chat component"
+    },
+    "dailyChat.composer.cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avbryt"
+          }
+        }
+      },
+      "comment" : "Cancel label used by the chat component"
+    },
+    "dailyChat.composer.recent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nylige"
+          }
+        }
+      },
+      "comment" : "Recent-items label required by the chat component"
+    },
+    "dailyChat.composer.offline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for a connection"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på nettilkobling"
+          }
+        }
+      },
+      "comment" : "Network status shown by the chat component while offline"
+    },
+    "dailyChat.composer.recording" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tar opp"
+          }
+        }
+      },
+      "comment" : "Unused recording fallback required by the chat component"
+    },
+    "dailyChat.composer.reply" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reply to"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar til"
+          }
+        }
+      },
+      "comment" : "Unused reply fallback required by the chat component"
+    },
+    "dailyChat.card.open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talk about this question"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snakk om dette spørsmålet"
+          }
+        }
+      },
+      "comment" : "Affordance on a revealed question card that opens its conversation"
+    },
+    "dailyChat.card.preview" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open question chat"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne spørsmålsprat"
+          }
+        }
+      },
+      "comment" : "Accessibility label for a question card with a chat preview"
+    },
+    "dailyChat.error.load.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load the chat"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste inn praten"
+          }
+        }
+      },
+      "comment" : "Title for a chat history loading error"
+    },
+    "dailyChat.error.load.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettilkoblingen og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Message for a chat history loading error"
+    },
+    "dailyChat.error.send.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save your message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre meldingen din"
+          }
+        }
+      },
+      "comment" : "Title when a chat message could not be saved locally"
+    },
+    "dailyChat.error.send.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your message is still here. Check that both answers are revealed, then try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meldingen din er fortsatt her. Sjekk at begge svarene er synlige, og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Message when a chat message could not be saved or the question chat became unavailable"
+    },
+    "dailyChat.error.tooLong.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Message is too long"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meldingen er for lang"
+          }
+        }
+      },
+      "comment" : "Title when a daily question chat message exceeds 4000 characters"
+    },
+    "dailyChat.error.tooLong.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shorten it to 4,000 characters and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kort den ned til 4 000 tegn og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Message when a daily question chat message exceeds 4000 characters"
+    },
+    "dailyChat.error.unavailable.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat isn't available"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Praten er ikke tilgjengelig"
+          }
+        }
+      },
+      "comment" : "Title when a question chat cannot be opened"
+    },
+    "dailyChat.error.unavailable.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can chat after both answers are revealed."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere kan prate etter at begge svarene er synlige."
+          }
+        }
+      },
+      "comment" : "Message when both visible answers are required before opening question chat"
+    },
+    "dailyChat.notifications.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Messages"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meldinger"
+          }
+        }
+      },
+      "comment" : "Title for the question chat message notification preference"
+    },
+    "dailyChat.notifications.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a notification when %@ sends a message about a question."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få et varsel når %@ sender en melding om et spørsmål."
+          }
+        }
+      },
+      "comment" : "Description for question chat message notifications; placeholder is partner name"
     }
   },
   "version" : "1.0"

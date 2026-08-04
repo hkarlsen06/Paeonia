@@ -756,7 +756,7 @@ private actor FakeSupabaseAuthGateway: SupabaseAuthGateway {
         if let loadProfileError {
             throw loadProfileError
         }
-        profile
+        return profile
     }
 
     func updateAuthDisplayName(_ displayName: String) async throws {

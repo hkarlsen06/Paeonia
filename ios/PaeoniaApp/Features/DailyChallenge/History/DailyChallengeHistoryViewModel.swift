@@ -35,6 +35,7 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
     }
 
     private let service: any DailyChallengeServicing
+    private let chatService: any DailyQuestionChatServicing
     /// The partner's questions the user can still answer, read live from the daily
     /// challenge so the history shows the same actionable cards the Questions tab does.
     /// These are carried-forward exchanges (partner answered, the user hasn't), not part
@@ -51,14 +52,17 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
 
     private(set) var state: ViewState = .loading
     private(set) var notice: Notice?
+    private(set) var threadSummariesByInstanceID: [UUID: DailyQuestionThreadSummary] = [:]
 
     init(
         service: any DailyChallengeServicing,
+        chatService: (any DailyQuestionChatServicing)? = nil,
         currentUserID: UUID?,
         participants: DailyChallengeParticipants = DailyChallengeParticipants(),
         pendingPartnerQuestions: @escaping () -> [DailyChallengeQuestion] = { [] }
     ) {
         self.service = service
+        self.chatService = chatService ?? EmptyDailyQuestionChatService()
         self.currentUserID = currentUserID
         self.participants = participants
         self.pendingPartnerQuestionsProvider = pendingPartnerQuestions
@@ -85,8 +89,16 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
         if case .content = state { hasContent = true } else { hasContent = false }
         if !hasContent { state = .loading }
 
+        applyThreadSummaries(await chatService.cachedThreadSummaries(ownerUserID: currentUserID))
+        let threadSummariesTask = Task { [chatService] in
+            try? await chatService.refreshThreadSummaries(ownerUserID: currentUserID)
+        }
+
         do {
             let questions = try await service.loadHistory(currentUserID: currentUserID)
+            if let summaries = await threadSummariesTask.value {
+                applyThreadSummaries(summaries)
+            }
             let days = DailyChallengeHistory.grouped(questions)
             let pending = pendingPartnerQuestions(excluding: questions)
             if days.isEmpty, pending.isEmpty {
@@ -106,6 +118,19 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
         }
     }
 
+    func threadPreview(for instanceID: UUID) -> String? {
+        threadSummariesByInstanceID[instanceID]?.lastMessageBody
+    }
+
+    func refreshThreadSummaries() async {
+        guard let currentUserID else { return }
+        let cached = await chatService.cachedThreadSummaries(ownerUserID: currentUserID)
+        applyThreadSummaries(cached)
+        if let remote = try? await chatService.refreshThreadSummaries(ownerUserID: currentUserID) {
+            applyThreadSummaries(remote)
+        }
+    }
+
     /// Updates the partners' display names and photos without reloading — cosmetic
     /// identity that may arrive after the cover opens. Mirrors the daily challenge's
     /// separation of reloading identity from rendering identity.
@@ -115,6 +140,13 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
 
     func dismissNotice() {
         notice = nil
+    }
+
+    private func applyThreadSummaries(_ summaries: [DailyQuestionThreadSummary]) {
+        threadSummariesByInstanceID = Dictionary(
+            summaries.map { ($0.instanceID, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
     }
 
     /// The partner's still-unanswered questions for the top of the history, most recent

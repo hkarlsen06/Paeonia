@@ -725,7 +725,7 @@ struct RootView: View {
                 return
             }
             self.deepLink = nil
-        case .dailyReveal, .dailyToday:
+        case .dailyReveal, .dailyToday, .dailyChat:
             switch viewModel.state {
             case .paired, .launching:
                 viewModel.selectMainTab(.questions)

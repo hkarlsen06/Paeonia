@@ -1,150 +1,195 @@
 {
-  "originHash" : "4313d2a1ba80c9dca507423b33d032c80c7d9eaec12a020b733859282b2af7a9",
-  "pins" : [
+  "originHash": "0b9f16d821ef4b67f8dee93e9e550a46843d7026e1085b7ebeb0a57970cb2c99",
+  "pins": [
     {
-      "identity" : "app-check",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/google/app-check.git",
-      "state" : {
-        "revision" : "bb4002485ff867768dec13bf904a2ddb050bd1b1",
-        "version" : "11.3.0"
+      "identity": "activityindicatorview",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/exyte/ActivityIndicatorView",
+      "state": {
+        "revision": "aef7fc3234cc2b17e16dac608e5bd8104e603b55",
+        "version": "2.0.1"
       }
     },
     {
-      "identity" : "appauth-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/openid/AppAuth-iOS.git",
-      "state" : {
-        "revision" : "a7caeda164dc5108bf4649472b28a5af65dc6f33",
-        "version" : "2.1.0"
+      "identity": "anchoredpopup",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/exyte/AnchoredPopup.git",
+      "state": {
+        "revision": "dfa61fd6e4e4a3bf8a918d44c69bf66f2ccd9bb7",
+        "version": "1.2.1"
       }
     },
     {
-      "identity" : "googlesignin-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/google/GoogleSignIn-iOS.git",
-      "state" : {
-        "revision" : "08d8dcecafb575f98879ffdbb8302c1b9ad65d19",
-        "version" : "9.2.0"
+      "identity": "app-check",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/google/app-check.git",
+      "state": {
+        "revision": "bb4002485ff867768dec13bf904a2ddb050bd1b1",
+        "version": "11.3.0"
       }
     },
     {
-      "identity" : "googleutilities",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/google/GoogleUtilities.git",
-      "state" : {
-        "revision" : "c46e5f8b7c23265f17c24ca7f9fa1b13ded7a822",
-        "version" : "8.1.1"
+      "identity": "appauth-ios",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/openid/AppAuth-iOS.git",
+      "state": {
+        "revision": "a7caeda164dc5108bf4649472b28a5af65dc6f33",
+        "version": "2.1.0"
       }
     },
     {
-      "identity" : "gtm-session-fetcher",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/google/gtm-session-fetcher.git",
-      "state" : {
-        "revision" : "a2ab612cb980066ee56d90d60d8462992c07f24b",
-        "version" : "3.5.0"
+      "identity": "chat",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/hkarlsen06/Chat.git",
+      "state": {
+        "branch": "main",
+        "revision": "ec1bb93be6bafe6491e97f181cc89400bd2ea23a"
       }
     },
     {
-      "identity" : "gtmappauth",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/google/GTMAppAuth.git",
-      "state" : {
-        "revision" : "56e0ccf09a6dd29dc7e68bdf729598240ca8aa16",
-        "version" : "5.0.0"
+      "identity": "googlesignin-ios",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/google/GoogleSignIn-iOS.git",
+      "state": {
+        "revision": "08d8dcecafb575f98879ffdbb8302c1b9ad65d19",
+        "version": "9.2.0"
       }
     },
     {
-      "identity" : "interop-ios-for-google-sdks",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/google/interop-ios-for-google-sdks.git",
-      "state" : {
-        "revision" : "040d087ac2267d2ddd4cca36c757d1c6a05fdbfe",
-        "version" : "101.0.0"
+      "identity": "googleutilities",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/google/GoogleUtilities.git",
+      "state": {
+        "revision": "c46e5f8b7c23265f17c24ca7f9fa1b13ded7a822",
+        "version": "8.1.1"
       }
     },
     {
-      "identity" : "promises",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/google/promises.git",
-      "state" : {
-        "revision" : "f4a19a3c313dc2616c70bb49d29a799fb16be837",
-        "version" : "2.4.1"
+      "identity": "gtm-session-fetcher",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/google/gtm-session-fetcher.git",
+      "state": {
+        "revision": "a2ab612cb980066ee56d90d60d8462992c07f24b",
+        "version": "3.5.0"
       }
     },
     {
-      "identity" : "supabase-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/supabase/supabase-swift.git",
-      "state" : {
-        "revision" : "0acdb4468ac1a85a5d5bf201c74df7cb9c57b468",
-        "version" : "2.47.1"
+      "identity": "gtmappauth",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/google/GTMAppAuth.git",
+      "state": {
+        "revision": "56e0ccf09a6dd29dc7e68bdf729598240ca8aa16",
+        "version": "5.0.0"
       }
     },
     {
-      "identity" : "swift-asn1",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-asn1.git",
-      "state" : {
-        "revision" : "a9a5efd40eaf558a2bcd48d64b1d1646be686008",
-        "version" : "1.7.1"
+      "identity": "interop-ios-for-google-sdks",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/google/interop-ios-for-google-sdks.git",
+      "state": {
+        "revision": "040d087ac2267d2ddd4cca36c757d1c6a05fdbfe",
+        "version": "101.0.0"
       }
     },
     {
-      "identity" : "swift-clocks",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/pointfreeco/swift-clocks",
-      "state" : {
-        "revision" : "72d749bf341b78851203066ab421869b783ec42a",
-        "version" : "1.1.0"
+      "identity": "kingfisher",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/onevcat/Kingfisher",
+      "state": {
+        "revision": "410984bf301f4fa224fe56277b3f8672cc465c79",
+        "version": "8.11.0"
       }
     },
     {
-      "identity" : "swift-concurrency-extras",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/pointfreeco/swift-concurrency-extras",
-      "state" : {
-        "revision" : "a90e2e40a7a840a853dd29e57cbef5dbb72c9d5b",
-        "version" : "1.4.0"
+      "identity": "mediapicker",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/exyte/MediaPicker.git",
+      "state": {
+        "revision": "ce2eda6300337d1478a78fc033bce8dd9bf4bb2c",
+        "version": "3.3.2"
       }
     },
     {
-      "identity" : "swift-crypto",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-crypto.git",
-      "state" : {
-        "revision" : "1b6b2e274e85105bfa155183145a1dcfd63331f1",
-        "version" : "4.5.0"
+      "identity": "promises",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/google/promises.git",
+      "state": {
+        "revision": "f4a19a3c313dc2616c70bb49d29a799fb16be837",
+        "version": "2.4.1"
       }
     },
     {
-      "identity" : "swift-http-types",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-http-types.git",
-      "state" : {
-        "revision" : "db774a277f60063a32d854f2980299caf06da041",
-        "version" : "1.6.0"
+      "identity": "supabase-swift",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/supabase/supabase-swift.git",
+      "state": {
+        "revision": "0acdb4468ac1a85a5d5bf201c74df7cb9c57b468",
+        "version": "2.47.1"
       }
     },
     {
-      "identity" : "tocropviewcontroller",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/TimOliver/TOCropViewController",
-      "state" : {
-        "revision" : "98527150c27eef8b695482c9b4ad5bdab1b1cb2b",
-        "version" : "3.1.2"
+      "identity": "swift-asn1",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-asn1.git",
+      "state": {
+        "revision": "a9a5efd40eaf558a2bcd48d64b1d1646be686008",
+        "version": "1.7.1"
       }
     },
     {
-      "identity" : "xctest-dynamic-overlay",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
-      "state" : {
-        "revision" : "cb281f343fd953280336dcbd3822cdf47c182f5b",
-        "version" : "1.10.0"
+      "identity": "swift-clocks",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/pointfreeco/swift-clocks",
+      "state": {
+        "revision": "72d749bf341b78851203066ab421869b783ec42a",
+        "version": "1.1.0"
+      }
+    },
+    {
+      "identity": "swift-concurrency-extras",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/pointfreeco/swift-concurrency-extras",
+      "state": {
+        "revision": "a90e2e40a7a840a853dd29e57cbef5dbb72c9d5b",
+        "version": "1.4.0"
+      }
+    },
+    {
+      "identity": "swift-crypto",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-crypto.git",
+      "state": {
+        "revision": "1b6b2e274e85105bfa155183145a1dcfd63331f1",
+        "version": "4.5.0"
+      }
+    },
+    {
+      "identity": "swift-http-types",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-http-types.git",
+      "state": {
+        "revision": "db774a277f60063a32d854f2980299caf06da041",
+        "version": "1.6.0"
+      }
+    },
+    {
+      "identity": "tocropviewcontroller",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/TimOliver/TOCropViewController",
+      "state": {
+        "revision": "98527150c27eef8b695482c9b4ad5bdab1b1cb2b",
+        "version": "3.1.2"
+      }
+    },
+    {
+      "identity": "xctest-dynamic-overlay",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/pointfreeco/xctest-dynamic-overlay",
+      "state": {
+        "revision": "cb281f343fd953280336dcbd3822cdf47c182f5b",
+        "version": "1.10.0"
       }
     }
   ],
-  "version" : 3
+  "version": 3
 }

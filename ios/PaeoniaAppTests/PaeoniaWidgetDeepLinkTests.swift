@@ -53,6 +53,14 @@ struct PaeoniaDeepLinkTests {
         #expect(PaeoniaDeepLink(url) == .dailyToday(coupleDayID: coupleDayID))
     }
 
+    @Test func parsesDailyChatURL() throws {
+        let instanceID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let url = PaeoniaDeepLink.dailyChatURL(instanceID: instanceID)
+
+        #expect(url.absoluteString == "paeonia://daily/chat?instanceId=11111111-1111-1111-1111-111111111111")
+        #expect(PaeoniaDeepLink(url) == .dailyChat(instanceID: instanceID))
+    }
+
     @Test func parsesStreakURL() {
         let url = PaeoniaDeepLink.streakURL
 
@@ -97,6 +105,26 @@ struct PaeoniaDeepLinkTests {
         #expect(PaeoniaDeepLink(notificationUserInfo: userInfo) == .dailyReveal(instanceID: instanceID, coupleDayID: coupleDayID))
     }
 
+    @Test func threadMessagePayloadUsesChatDeeplink() throws {
+        let instanceID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let userInfo: [AnyHashable: Any] = [
+            "type": "thread_message_sent",
+            "deeplink": "paeonia://daily/chat?instanceId=\(instanceID.uuidString)",
+        ]
+
+        #expect(PaeoniaDeepLink(notificationUserInfo: userInfo) == .dailyChat(instanceID: instanceID))
+    }
+
+    @Test func threadMessagePayloadFallsBackToInstanceID() throws {
+        let instanceID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let userInfo: [AnyHashable: Any] = [
+            "type": "thread_message_sent",
+            "instance_id": instanceID.uuidString,
+        ]
+
+        #expect(PaeoniaDeepLink(notificationUserInfo: userInfo) == .dailyChat(instanceID: instanceID))
+    }
+
     @Test func notificationPayloadMapsKnownTypes() {
         #expect(PaeoniaDeepLink(notificationUserInfo: ["type": "widget_updated"]) == .widgetDrawing)
         #expect(PaeoniaDeepLink(notificationUserInfo: ["type": "daily_challenge_completed"]) == .dailyToday(coupleDayID: nil))
@@ -137,6 +165,21 @@ struct PaeoniaDeepLinkTests {
         router.routeNotification(userInfo: ["type": "streak_reminder"])
 
         #expect(router.pendingDeepLink == .streak)
+        router.consumePendingDeepLink()
+    }
+
+    @MainActor
+    @Test func notificationRouterRoutesThreadMessagesToQuestionChat() throws {
+        let instanceID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let router = PaeoniaNotificationRouter.shared
+        router.consumePendingDeepLink()
+
+        router.routeNotification(userInfo: [
+            "type": "thread_message_sent",
+            "instance_id": instanceID.uuidString,
+        ])
+
+        #expect(router.pendingDeepLink == .dailyChat(instanceID: instanceID))
         router.consumePendingDeepLink()
     }
 }

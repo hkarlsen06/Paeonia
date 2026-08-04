@@ -188,6 +188,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let profilePhotoCache: (any ProfilePhotoImageCacheClearing)?
     private let dailyAnswerMediaDraftStore: any DailyAnswerMediaDraftStoring
     private let dailyChallengeSnapshotCache: any DailyChallengeSnapshotCaching
+    private let dailyQuestionChatCache: any DailyQuestionChatCaching
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
     private let temporaryDirectory: URL
 
@@ -200,6 +201,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         profilePhotoCache: (any ProfilePhotoImageCacheClearing)? = ProfilePhotoImageService.shared,
         dailyAnswerMediaDraftStore: any DailyAnswerMediaDraftStoring = FileDailyAnswerMediaDraftStore.live(),
         dailyChallengeSnapshotCache: any DailyChallengeSnapshotCaching = FileDailyChallengeSnapshotCache.live(),
+        dailyQuestionChatCache: any DailyQuestionChatCaching = FileDailyQuestionChatCache.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
         temporaryDirectory: URL = FileManager.default.temporaryDirectory
     ) {
@@ -211,6 +213,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.profilePhotoCache = profilePhotoCache
         self.dailyAnswerMediaDraftStore = dailyAnswerMediaDraftStore
         self.dailyChallengeSnapshotCache = dailyChallengeSnapshotCache
+        self.dailyQuestionChatCache = dailyQuestionChatCache
         self.profilePhotoDiskCache = profilePhotoDiskCache
         self.temporaryDirectory = temporaryDirectory
     }
@@ -229,6 +232,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await profilePhotoCache?.clearAll()
 
         dailyChallengeSnapshotCache.clearAll()
+        await dailyQuestionChatCache.clearAll()
         try? await profilePhotoDiskCache.removeAllProfilePhotoData()
         removeDirectoryIfPresent(DailyAnswerMediaImageService.defaultDirectoryURL())
         removeDirectoryIfPresent(MemoryMediaImageService.defaultDirectoryURL())

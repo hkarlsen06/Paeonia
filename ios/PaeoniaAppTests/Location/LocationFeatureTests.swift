@@ -240,7 +240,7 @@ struct LocationSharingPrimerStoreTests {
             locationAuthorizationState: .authorized,
             pushAuthorization: pushAuthorization
         )
-        pushAuthorization.finishFirstEvaluation()
+        await pushAuthorization.finishFirstEvaluation()
         await staleEvaluation.value
 
         #expect(coordinator.presentedPrimer == .notifications)
@@ -1269,8 +1269,7 @@ private struct StaticPushAuthorization: PushAuthorizationProviding {
     // swiftlint:enable async_without_await
 }
 
-@MainActor
-private final class SequencedPushAuthorization: PushAuthorizationProviding {
+private actor SequencedPushAuthorization: PushAuthorizationProviding {
     private var evaluationCount = 0
     private var firstEvaluationContinuation: CheckedContinuation<Bool, Never>?
     private var firstEvaluationStartWaiters: [CheckedContinuation<Void, Never>] = []

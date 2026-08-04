@@ -30,6 +30,8 @@ struct DailyChallengeReadCard: View {
     var isHighlighted = false
     var onAnswer: () -> Void = {}
     var onReportPartnerAnswer: ((UUID) -> Void)?
+    var lastMessagePreview: String? = nil
+    var onOpenChat: (() -> Void)? = nil
 
     /// A partner question the user can still answer to reveal the reply. When sending,
     /// the card shows the "saved, sending" preview instead, so this stays false.
@@ -47,7 +49,7 @@ struct DailyChallengeReadCard: View {
     var body: some View {
         Group {
             if let reportablePartnerAnswerID, let onReportPartnerAnswer {
-                card
+                presentedCard
                     .contextMenu {
                         Button(role: .destructive) {
                             onReportPartnerAnswer(reportablePartnerAnswerID)
@@ -63,7 +65,7 @@ struct DailyChallengeReadCard: View {
                         onReportPartnerAnswer(reportablePartnerAnswerID)
                     }
             } else {
-                card
+                presentedCard
             }
         }
         // Answerable cards are the source the single-question flow zooms out of, so the
@@ -75,6 +77,16 @@ struct DailyChallengeReadCard: View {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
                     .stroke(.paeoniaAccentPrimary, lineWidth: 2)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var presentedCard: some View {
+        if question.isChatAvailable, let onOpenChat {
+            Button(action: onOpenChat) { card }
+                .buttonStyle(.plain)
+        } else {
+            card
         }
     }
 
@@ -105,9 +117,43 @@ struct DailyChallengeReadCard: View {
                         answerButton
                     } else {
                         DailyAnswerDetailsView(question: question, participants: participants)
+
+                        if question.isChatAvailable, onOpenChat != nil {
+                            chatAffordance
+                        }
                     }
                 }
             }
+        }
+    }
+
+    private var chatAffordance: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            Image(systemName: "bubble.left")
+                .accessibilityHidden(true)
+
+            if let lastMessagePreview, !lastMessagePreview.isEmpty {
+                Text(verbatim: lastMessagePreview)
+                    .lineLimit(1)
+            } else {
+                Text(.dailyChatCardOpen)
+            }
+
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .accessibilityHidden(true)
+        }
+        .font(PaeoniaTypography.caption)
+        .foregroundStyle(.paeoniaTextSecondary)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(chatAccessibilityLabel)
+    }
+
+    private var chatAccessibilityLabel: Text {
+        if let lastMessagePreview, !lastMessagePreview.isEmpty {
+            Text("\(Text(.dailyChatCardPreview)): \(Text(verbatim: lastMessagePreview))")
+        } else {
+            Text(.dailyChatCardOpen)
         }
     }
 

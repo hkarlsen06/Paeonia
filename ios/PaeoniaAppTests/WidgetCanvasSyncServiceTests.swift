@@ -170,7 +170,7 @@ struct WidgetCanvasSyncServiceTests {
             )
         }
         let privacyClear = Task { await env.service.clearForPrivacy() }
-        await Task.yield()
+        await downloader.waitUntilDownloadCancelled()
         await downloader.resume()
 
         await firstSync.value
@@ -305,12 +305,16 @@ private actor SyncSuspendingDownloaderSpy: WidgetPayloadDownloading {
         if downloadCount > 1 {
             return data
         }
-        return await withCheckedContinuation { continuation in
-            downloadContinuation = continuation
-            didStartDownload = true
-            let waiters = downloadStartWaiters
-            downloadStartWaiters.removeAll()
-            waiters.forEach { $0.resume() }
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                downloadContinuation = continuation
+                didStartDownload = true
+                let waiters = downloadStartWaiters
+                downloadStartWaiters.removeAll()
+                waiters.forEach { $0.resume() }
+            }
+        } onCancel: {
+            Task { await self.markDownloadCancelled() }
         }
     }
 
@@ -322,6 +326,28 @@ private actor SyncSuspendingDownloaderSpy: WidgetPayloadDownloading {
         await withCheckedContinuation { continuation in
             downloadStartWaiters.append(continuation)
         }
+    }
+
+    /// Suspends until the in-flight download's task has been cancelled, so a test
+    /// can order a privacy clear strictly before resuming the download.
+    func waitUntilDownloadCancelled() async {
+        guard !didObserveCancellation else {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            cancellationWaiters.append(continuation)
+        }
+    }
+
+    private var didObserveCancellation = false
+    private var cancellationWaiters: [CheckedContinuation<Void, Never>] = []
+
+    private func markDownloadCancelled() {
+        didObserveCancellation = true
+        let waiters = cancellationWaiters
+        cancellationWaiters.removeAll()
+        waiters.forEach { $0.resume() }
     }
 
     func resume() {

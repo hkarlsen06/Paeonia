@@ -16,6 +16,7 @@
 		2A2D04012FDF000000A7BE1A /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D04032FDF000000A7BE1A /* GoogleSignIn */; };
 		2A2D04112FE0000000A7BE1A /* CropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D04132FE0000000A7BE1A /* CropViewController */; };
 		2A2D04142FE0000000A7BE1A /* TOCropViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D04152FE0000000A7BE1A /* TOCropViewController */; };
+		2A2D04212FE1000000A7BE1A /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D04232FE1000000A7BE1A /* ExyteChat */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -159,6 +160,7 @@
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				2A2D04212FE1000000A7BE1A /* ExyteChat in Frameworks */,
 				2A2D03902FDE000000A7BE1A /* Supabase in Frameworks */,
 				2A2D04012FDF000000A7BE1A /* GoogleSignIn in Frameworks */,
 				2A2D04112FE0000000A7BE1A /* CropViewController in Frameworks */,
@@ -253,6 +255,7 @@
 			);
 			name = PaeoniaApp;
 			packageProductDependencies = (
+				2A2D04232FE1000000A7BE1A /* ExyteChat */,
 				2A2D03932FDE000000A7BE1A /* Supabase */,
 				2A2D04032FDF000000A7BE1A /* GoogleSignIn */,
 				2A2D04132FE0000000A7BE1A /* CropViewController */,
@@ -383,6 +386,7 @@
 			mainGroup = 000000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				2A2D04222FE1000000A7BE1A /* XCRemoteSwiftPackageReference "Chat" */,
 				2A2D03922FDE000000A7BE1A /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				2A2D04022FDF000000A7BE1A /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				2A2D04122FE0000000A7BE1A /* XCRemoteSwiftPackageReference "TOCropViewController" */,
@@ -991,6 +995,14 @@
 				minimumVersion = 3.1.2;
 			};
 		};
+		2A2D04222FE1000000A7BE1A /* XCRemoteSwiftPackageReference "Chat" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/hkarlsen06/Chat.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1013,6 +1025,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2A2D04122FE0000000A7BE1A /* XCRemoteSwiftPackageReference "TOCropViewController" */;
 			productName = TOCropViewController;
+		};
+		2A2D04232FE1000000A7BE1A /* ExyteChat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2A2D04222FE1000000A7BE1A /* XCRemoteSwiftPackageReference "Chat" */;
+			productName = ExyteChat;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

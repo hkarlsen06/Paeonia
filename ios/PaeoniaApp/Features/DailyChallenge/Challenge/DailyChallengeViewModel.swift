@@ -38,6 +38,7 @@ final class DailyChallengeViewModel {
     private let mediaDraftStore: any DailyAnswerMediaDraftStoring
     private let pendingOperationStore: any PendingSyncOperationPersisting
     private let snapshotCache: any DailyChallengeSnapshotCaching
+    private let chatService: any DailyQuestionChatServicing
     private let encoder = JSONEncoder()
     #if DEBUG
     private let logger = Logger(
@@ -74,6 +75,7 @@ final class DailyChallengeViewModel {
     /// The couple's shared streak, shown on the completion celebration. Loaded on
     /// demand and kept across failures so a transient error never blanks it.
     private(set) var streak = CoupleStreak.none
+    private(set) var threadSummariesByInstanceID: [UUID: DailyQuestionThreadSummary] = [:]
 
     init(
         service: (any DailyChallengeServicing)? = nil,
@@ -81,7 +83,8 @@ final class DailyChallengeViewModel {
         draftStore: (any DailyChallengeDraftStoring)? = nil,
         mediaDraftStore: (any DailyAnswerMediaDraftStoring)? = nil,
         pendingOperationStore: (any PendingSyncOperationPersisting)? = nil,
-        snapshotCache: (any DailyChallengeSnapshotCaching)? = nil
+        snapshotCache: (any DailyChallengeSnapshotCaching)? = nil,
+        chatService: (any DailyQuestionChatServicing)? = nil
     ) {
         self.service = service ?? DailyChallengeServiceFactory.makeDefault()
         self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
@@ -89,6 +92,13 @@ final class DailyChallengeViewModel {
         self.mediaDraftStore = mediaDraftStore ?? FileDailyAnswerMediaDraftStore.live()
         self.pendingOperationStore = pendingOperationStore ?? Self.makeDefaultPendingOperationStore()
         self.snapshotCache = snapshotCache ?? FileDailyChallengeSnapshotCache.live()
+        if let chatService {
+            self.chatService = chatService
+        } else if service == nil {
+            self.chatService = DailyQuestionChatServiceFactory.makeDefault()
+        } else {
+            self.chatService = EmptyDailyQuestionChatService()
+        }
     }
 
     private static func makeDefaultPendingOperationStore() -> any PendingSyncOperationPersisting {
@@ -178,6 +188,7 @@ final class DailyChallengeViewModel {
     func makeHistoryViewModel() -> DailyChallengeHistoryViewModel {
         DailyChallengeHistoryViewModel(
             service: service,
+            chatService: chatService,
             currentUserID: currentUserID,
             participants: participants,
             // The partner's still-unanswered questions are carried-forward exchanges
@@ -188,6 +199,43 @@ final class DailyChallengeViewModel {
                 self?.snapshot.answerablePartnerQuestions ?? []
             }
         )
+    }
+
+    func makeChatViewModel(question: DailyChallengeQuestion) -> DailyQuestionChatViewModel {
+        DailyQuestionChatViewModel(
+            question: question,
+            participants: participants,
+            service: chatService,
+            operationProvider: operationProvider,
+            syncAfterLocalChange: { [weak self] in
+                guard let self else { return }
+                await self.localChangeSyncHandler?()
+                await self.refreshThreadSummaries()
+            }
+        )
+    }
+
+    func threadPreview(for instanceID: UUID) -> String? {
+        threadSummariesByInstanceID[instanceID]?.lastMessageBody
+    }
+
+    func refreshThreadSummaries() async {
+        guard let currentUserID else { return }
+        applyThreadSummaries(await chatService.cachedThreadSummaries(ownerUserID: currentUserID))
+        if let summaries = try? await chatService.refreshThreadSummaries(ownerUserID: currentUserID) {
+            applyThreadSummaries(summaries)
+        }
+    }
+
+    func questionForChat(instanceID: UUID) async -> DailyChallengeQuestion? {
+        if let question = snapshot.questions.first(where: { $0.id == instanceID && $0.isChatAvailable }) {
+            return question
+        }
+        guard let currentUserID else { return nil }
+        guard let questions = try? await service.loadHistory(currentUserID: currentUserID) else {
+            return nil
+        }
+        return questions.first(where: { $0.id == instanceID && $0.isChatAvailable })
     }
 
     func configure(currentUserID: UUID?) async {
@@ -220,6 +268,7 @@ final class DailyChallengeViewModel {
         // the app — keeps their half-written answers.
         answerDrafts = newUserID.map { draftStore.drafts(for: $0) } ?? [:]
         snapshot = .empty(currentUserID: newUserID)
+        threadSummariesByInstanceID = [:]
 
         guard let newUserID else { return }
 
@@ -237,6 +286,10 @@ final class DailyChallengeViewModel {
         // can never update the newly signed-in user's screen.
         if self.currentUserID == newUserID, let cached {
             apply(cached.loadResult(currentUserID: newUserID, locale: .current))
+        }
+        let cachedThreads = await chatService.cachedThreadSummaries(ownerUserID: newUserID)
+        if self.currentUserID == newUserID {
+            applyThreadSummaries(cachedThreads)
         }
 
         await reload()
@@ -283,6 +336,10 @@ final class DailyChallengeViewModel {
             }
         }
 
+        let threadSummariesTask = Task { [chatService] in
+            try? await chatService.refreshThreadSummaries(ownerUserID: currentUserID)
+        }
+
         do {
             let result = try await service.loadToday(currentUserID: currentUserID)
             guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
@@ -296,6 +353,10 @@ final class DailyChallengeViewModel {
                 }
             }
         }
+        if let summaries = await threadSummariesTask.value,
+           !Task.isCancelled, self.currentUserID == currentUserID {
+            applyThreadSummaries(summaries)
+        }
         guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
         // The first load for this user has now settled — either it applied a result
         // above or it failed (with the banner shown). Either way today's state is
@@ -304,6 +365,13 @@ final class DailyChallengeViewModel {
         // lets the load that replaced it resolve instead.
         hasResolvedTodayState = true
         await refreshSendingState()
+    }
+
+    private func applyThreadSummaries(_ summaries: [DailyQuestionThreadSummary]) {
+        threadSummariesByInstanceID = Dictionary(
+            summaries.map { ($0.instanceID, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
     }
 
     /// Refreshes the couple's streak from the server. Best-effort: on failure the

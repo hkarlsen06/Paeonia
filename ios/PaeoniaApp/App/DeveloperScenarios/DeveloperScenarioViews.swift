@@ -73,7 +73,9 @@
         .id(reloadID)
         .environment(bannerCenter)
         .preferredColorScheme(.dark)
-        .accessibilityIdentifier("developer.scenario.host.\(scenario.rawValue)")
+        // No host-level accessibilityIdentifier here: a container identifier
+        // cascades onto every descendant element, replacing the production
+        // identifiers (auth.welcome.skip, legal.privacy, …) UI tests query.
         .overlay(alignment: .topTrailing) {
           HStack(spacing: PaeoniaSpacing.space8) {
             Button {

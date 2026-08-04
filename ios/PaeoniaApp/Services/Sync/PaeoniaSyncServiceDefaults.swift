@@ -45,6 +45,7 @@ nonisolated enum PaeoniaSyncServiceDefaults {
         let accessGateway = LiveSupabaseAccessGateway(client: client)
         let locationGateway = LiveSupabaseLocationGateway(client: client)
         let memoryGateway = LiveSupabaseMemoryGateway(client: client)
+        let dailyQuestionChatGateway = LiveSupabaseDailyQuestionChatGateway(client: client)
         let locationHandlers: [any PendingSyncOperationHandling] = [
             LocationSharingPreferencePendingOperationHandler(
                 gateway: locationGateway,
@@ -58,6 +59,14 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 mediaUploadService: LiveDailyAnswerMediaUploadService(client: client),
                 gateway: LiveSupabaseDailyChallengeGateway(client: client),
                 mediaDraftStore: FileDailyAnswerMediaDraftStore.live()
+            ),
+            CreateDailyQuestionThreadMessagePendingOperationHandler(
+                gateway: dailyQuestionChatGateway,
+                cache: FileDailyQuestionChatCache.shared
+            ),
+            SendDailyQuestionThreadMessagePendingOperationHandler(
+                gateway: dailyQuestionChatGateway,
+                cache: FileDailyQuestionChatCache.shared
             ),
             RelationshipDatePendingOperationHandler(
                 gateway: LiveSupabaseRelationshipStartedOnGateway(client: client),

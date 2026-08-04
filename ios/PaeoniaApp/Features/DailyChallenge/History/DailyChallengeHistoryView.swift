@@ -21,6 +21,7 @@ struct DailyChallengeHistoryView: View {
     /// by item lets the flow zoom out of the tapped card and carry its own state.
     @State private var answeringQuestion: DailyChallengeQuestion?
     @State private var reportedPartnerAnswerID: UUID?
+    @State private var chattingQuestion: DailyChallengeQuestion?
     /// Source namespace for the answer flow's zoom-out transition; the tapped card marks
     /// itself in it so the flow appears to grow from the card the user tapped.
     @Namespace private var zoomNamespace
@@ -95,6 +96,12 @@ struct DailyChallengeHistoryView: View {
                             )
                         }
                     }
+                    .navigationDestination(item: $chattingQuestion) { question in
+                        DailyQuestionChatView(
+                            viewModel: dailyChallengeViewModel.makeChatViewModel(question: question),
+                            participants: dailyChallengeViewModel.participants
+                        )
+                    }
             }
             .offset(x: dismissDragOffset)
             .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.86), value: dismissDragOffset)
@@ -106,6 +113,10 @@ struct DailyChallengeHistoryView: View {
         .preferredColorScheme(.dark)
         .task { await viewModel.load() }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
+        .onChange(of: chattingQuestion) { oldValue, newValue in
+            guard oldValue != nil, newValue == nil else { return }
+            Task { await viewModel.refreshThreadSummaries() }
+        }
         // Answering a waiting partner question zooms its card out into the focused
         // flow. Sending updates the shared challenge, so on close we reload the history
         // and the question moves from "waiting for you" into the completed timeline.
@@ -188,7 +199,11 @@ struct DailyChallengeHistoryView: View {
                             DailyChallengeReadCard(
                                 question: question,
                                 participants: viewModel.participants,
-                                onReportPartnerAnswer: { reportedPartnerAnswerID = $0 }
+                                onReportPartnerAnswer: { reportedPartnerAnswerID = $0 },
+                                lastMessagePreview: viewModel.threadPreview(for: question.id),
+                                onOpenChat: question.isChatAvailable
+                                    ? { chattingQuestion = question }
+                                    : nil
                             )
                         }
                     }

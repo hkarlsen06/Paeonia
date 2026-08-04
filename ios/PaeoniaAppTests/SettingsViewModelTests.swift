@@ -10,6 +10,7 @@ struct SettingsViewModelTests {
             streakRemindersEnabled: false,
             dailyChallengeEnabled: true,
             partnerAnsweredEnabled: false,
+            messagesEnabled: false,
             widgetUpdatesEnabled: false,
             memoriesEnabled: false
         ))
@@ -24,6 +25,7 @@ struct SettingsViewModelTests {
         #expect(viewModel.streakRemindersEnabled == false)
         #expect(viewModel.dailyChallengeEnabled)
         #expect(viewModel.partnerAnsweredEnabled == false)
+        #expect(viewModel.messagesEnabled == false)
         #expect(viewModel.widgetAlertsEnabled == false)
         #expect(viewModel.memoriesEnabled == false)
         #expect(viewModel.systemNotificationsDenied)
@@ -72,6 +74,21 @@ struct SettingsViewModelTests {
 
         #expect(viewModel.memoriesEnabled == false)
         #expect(await preferences.lastSetKind == .memories)
+        #expect(await preferences.lastSetValue == false)
+    }
+
+    @Test func togglePersistsMessagePreference() async {
+        let preferences = FakeNotificationPreferences()
+        let viewModel = SettingsViewModel(
+            preferences: preferences,
+            authorization: FakePushAuthorization()
+        )
+        await viewModel.load()
+
+        await viewModel.setNotificationPreference(.messages, enabled: false)
+
+        #expect(viewModel.messagesEnabled == false)
+        #expect(await preferences.lastSetKind == .messages)
         #expect(await preferences.lastSetValue == false)
     }
 
@@ -223,6 +240,8 @@ private actor FakeNotificationPreferences: NotificationPreferencesProviding {
             preferences.dailyChallengeEnabled = value
         case .partnerAnswered:
             preferences.partnerAnsweredEnabled = value
+        case .messages:
+            preferences.messagesEnabled = value
         case .widgetUpdates:
             preferences.widgetUpdatesEnabled = value
         case .memories:

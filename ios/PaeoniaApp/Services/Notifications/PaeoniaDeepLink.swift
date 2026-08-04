@@ -4,6 +4,7 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case widgetDrawing
     case widgetRefresh
     case dailyReveal(instanceID: UUID, coupleDayID: UUID?)
+    case dailyChat(instanceID: UUID)
     case dailyToday(coupleDayID: UUID?)
     case memories
     case streak
@@ -45,6 +46,21 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             preconditionFailure("Invalid Paeonia daily today URL")
         }
 
+        return url
+    }
+
+    static func dailyChatURL(instanceID: UUID) -> URL {
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = "daily"
+        components.path = "/chat"
+        components.queryItems = [
+            URLQueryItem(name: "instanceId", value: instanceID.uuidString),
+        ]
+
+        guard let url = components.url else {
+            preconditionFailure("Invalid Paeonia daily chat URL")
+        }
         return url
     }
 
@@ -123,6 +139,9 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             )
         case ("daily", ["today"]):
             self = .dailyToday(coupleDayID: query.uuidValue(named: "coupleDayId"))
+        case ("daily", ["chat"]):
+            guard let instanceID = query.uuidValue(named: "instanceId") else { return nil }
+            self = .dailyChat(instanceID: instanceID)
         case ("memories", []):
             self = .memories
         case ("streak", []):
@@ -162,6 +181,13 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
                 return
             }
             self = .dailyReveal(instanceID: instanceID, coupleDayID: coupleDayID)
+        case "thread_message_sent":
+            if case let .some(.dailyChat(instanceID)) = deeplink {
+                self = .dailyChat(instanceID: instanceID)
+                return
+            }
+            guard let instanceID = userInfo.uuidValue(for: "instance_id") else { return nil }
+            self = .dailyChat(instanceID: instanceID)
         case "daily_challenge_completed":
             if case let .some(.dailyToday(deeplinkCoupleDayID)) = deeplink {
                 self = .dailyToday(coupleDayID: deeplinkCoupleDayID)

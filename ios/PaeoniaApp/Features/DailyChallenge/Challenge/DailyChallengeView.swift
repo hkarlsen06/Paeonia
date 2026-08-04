@@ -15,6 +15,7 @@ struct DailyChallengeScreen: View {
     /// card appears to grow into its full-screen answer flow.
     var zoomNamespace: Namespace.ID?
     var focusedQuestionID: Binding<UUID?> = .constant(nil)
+    var chatQuestion: Binding<DailyChallengeQuestion?> = .constant(nil)
     var onOpenAnswerFlow: () -> Void = {}
     var onTapStreak: () -> Void = {}
     var onRefresh: (() async -> Void)?
@@ -57,7 +58,11 @@ struct DailyChallengeScreen: View {
                                     zoomNamespace: zoomNamespace,
                                     isHighlighted: highlightedQuestionID == question.id,
                                     onAnswer: { onAnswerPartnerQuestion(question) },
-                                    onReportPartnerAnswer: { reportedPartnerAnswerID = $0 }
+                                    onReportPartnerAnswer: { reportedPartnerAnswerID = $0 },
+                                    lastMessagePreview: viewModel.threadPreview(for: question.id),
+                                    onOpenChat: question.isChatAvailable
+                                        ? { chatQuestion.wrappedValue = question }
+                                        : nil
                                 )
                                 .id(question.id)
                             }
@@ -130,6 +135,12 @@ struct DailyChallengeScreen: View {
                     onReportedAndLeft: onReportedAndLeft
                 )
             }
+        }
+        .navigationDestination(item: chatQuestion) { question in
+            DailyQuestionChatView(
+                viewModel: viewModel.makeChatViewModel(question: question),
+                participants: viewModel.participants
+            )
         }
         .onChange(of: viewModel.notice) { _, notice in
             showBanner(for: notice)
