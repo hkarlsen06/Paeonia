@@ -13,7 +13,7 @@
     "start": "bun run --cwd marketing start",
     "lint": "bun run --cwd marketing typecheck",
     "test": "bun run --cwd marketing build",
-    "pages:deploy:marketing": "bun run build && wrangler pages deploy marketing/out --project-name paeonia-marketing",
+    "pages:deploy:marketing": "bun run build && wrangler pages deploy marketing/out --project-name paeonia",
     "open-ios": "open ios/Paeonia.xcodeproj",
     "review-codes:mint": "bun ios/Scripts/mint-review-codes.mjs",
     "review-codes:revoke": "bun ios/Scripts/revoke-review-codes.mjs",

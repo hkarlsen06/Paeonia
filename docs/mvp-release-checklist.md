@@ -35,8 +35,8 @@ These block TestFlight/App Review until resolved.
 - [x] `docs/implementation-map.md` accurately reflects the current feature ownership.
 - [x] No reachable app screen says "test account", "not ready", "still building", or similar placeholder copy.
 - [x] App and widget privacy manifests declare their required-reason API usage.
-- [ ] Public privacy policy is final and live at `https://paeonia.no/privacy`.
-- [ ] Public terms are final and live at `https://paeonia.no/terms`.
+- [x] Public privacy policy is final and live at `https://paeonia.no/privacy`.
+- [x] Public terms are final and live at `https://paeonia.no/terms`.
 - [x] Support page is final and live at `https://paeonia.no/support`.
 - [x] In-app legal/support links open the production URLs.
 - [ ] Account deletion works end-to-end from the app.
@@ -375,7 +375,7 @@ Remote baseline checked on 2026-07-10: all 74 committed migrations are present a
 - [ ] Header/footer links are not duplicated or noisy.
 - [ ] Landing page language matches shipped app state: private beta, TestFlight, or launched.
 - [ ] Landing page does not promise unshipped features.
-- [x] Legal pages are published with production-oriented English and Norwegian privacy and terms text; final operator details and legal review remain release-owner responsibilities.
+- [x] Legal pages are published with production-oriented English and Norwegian privacy and terms text, including final operator details approved by the release owner.
 - [x] Support page lists current support/contact emails.
 - [ ] Open Graph metadata uses final brand assets.
 

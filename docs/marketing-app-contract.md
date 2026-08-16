@@ -167,7 +167,7 @@ This is not required for the app to launch, but it is useful and should stay ava
 
 ## Required Cloudflare Pages Files
 
-`marketing/wrangler.toml` pins the `paeonia-marketing` project, compatibility date, and `out/` deployment directory.
+`marketing/wrangler.toml` pins the `paeonia` project, compatibility date, and `out/` deployment directory.
 
 ### `/_headers`
 
