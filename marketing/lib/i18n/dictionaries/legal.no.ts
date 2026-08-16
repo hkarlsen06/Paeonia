@@ -7,12 +7,12 @@ export const legalNo = {
       description: 'Slik samler Paeonia inn, bruker, deler og beskytter personopplysninger.',
     },
     title: 'Personvern',
-    updated: 'Sist oppdatert 11. juli 2026',
+    updated: 'Sist oppdatert 16. august 2026',
     sections: [
       {
         heading: 'Hvem personvernteksten gjelder for',
         paragraphs: [
-          'Denne teksten forklarer hvordan Paeonia behandler personopplysninger når du bruker Paeonia-appen for iOS, paeonia.no eller kontakter oss. Paeonia er tjenesten som er ansvarlig for behandlingen. Du kan kontakte oss på contact@paeonia.no, eller bruke support@paeonia.no hvis du trenger hjelp med appen.',
+          'Denne teksten forklarer hvordan Paeonia behandler personopplysninger når du bruker Paeonia-appen for iOS, paeonia.no eller kontakter oss. Paeonia drives av Hjalmar Karlsen, Storgata 61, 0182 Oslo, Norge. Hjalmar Karlsen er behandlingsansvarlig for behandlingen som beskrives i personvernteksten. Du kan kontakte oss på contact@paeonia.no, eller bruke support@paeonia.no hvis du trenger hjelp med appen.',
           'Paeonia er et privat fellesrom for to partnere. Tjenesten har ingen offentlige profiler, personsøk, følgere eller annonsepublikum.',
         ],
       },
@@ -128,12 +128,12 @@ export const legalNo = {
       description: 'Vilkårene som gjelder når du oppretter konto eller bruker Paeonia.',
     },
     title: 'Vilkår',
-    updated: 'Sist oppdatert 11. juli 2026',
+    updated: 'Sist oppdatert 16. august 2026',
     sections: [
       {
         heading: 'Avtalen',
         paragraphs: [
-          'Disse vilkårene gjelder når du oppretter konto eller bruker Paeonia-appen og tilknyttede tjenester. Ved å bruke Paeonia godtar du vilkårene og personvernteksten. Hvis du ikke godtar dem, må du ikke bruke tjenesten.',
+          'Disse vilkårene er en avtale mellom deg og Hjalmar Karlsen, Storgata 61, 0182 Oslo, Norge, som driver Paeonia. De gjelder når du oppretter konto eller bruker Paeonia-appen og tilknyttede tjenester. Ved å bruke Paeonia godtar du vilkårene og personvernteksten. Hvis du ikke godtar dem, må du ikke bruke tjenesten.',
           'Du må etter loven kunne godta vilkårene. Hvis loven der du bor krever tillatelse fra en forelder eller verge, må du ha denne tillatelsen.',
         ],
       },

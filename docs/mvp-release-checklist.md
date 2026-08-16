@@ -34,9 +34,10 @@ These block TestFlight/App Review until resolved.
 - [x] No active docs, scripts, or agent instructions point at the removed phase roadmap.
 - [x] `docs/implementation-map.md` accurately reflects the current feature ownership.
 - [x] No reachable app screen says "test account", "not ready", "still building", or similar placeholder copy.
+- [x] App and widget privacy manifests declare their required-reason API usage.
 - [ ] Public privacy policy is final and live at `https://paeonia.no/privacy`.
 - [ ] Public terms are final and live at `https://paeonia.no/terms`.
-- [ ] Support page is final and live at `https://paeonia.no/support`.
+- [x] Support page is final and live at `https://paeonia.no/support`.
 - [x] In-app legal/support links open the production URLs.
 - [ ] Account deletion works end-to-end from the app.
 - [ ] Relationship leave/disconnect hides shared content after sync.

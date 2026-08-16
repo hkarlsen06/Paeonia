@@ -104,6 +104,7 @@
 			membershipExceptions = (
 				Assets.xcassets,
 				Info.plist,
+				PrivacyInfo.xcprivacy,
 				PaeoniaPlaceholderDrawing.swift,
 				PaeoniaWidget.swift,
 				PaeoniaWidgetBundle.swift,

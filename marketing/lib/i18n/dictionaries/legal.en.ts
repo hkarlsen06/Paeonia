@@ -7,12 +7,12 @@ export const legalEn = {
       description: 'How Paeonia collects, uses, shares, and protects your personal data.',
     },
     title: 'Privacy Policy',
-    updated: 'Last updated 11 July 2026',
+    updated: 'Last updated 16 August 2026',
     sections: [
       {
         heading: 'Who this policy is for',
         paragraphs: [
-          'This policy explains how Paeonia handles personal data when you use the Paeonia iOS app, paeonia.no, or contact us. Paeonia is the service responsible for this processing. You can contact us at contact@paeonia.no, or use support@paeonia.no for help with the app.',
+          'This policy explains how Paeonia handles personal data when you use the Paeonia iOS app, paeonia.no, or contact us. Paeonia is operated by Hjalmar Karlsen, Storgata 61, 0182 Oslo, Norway. Hjalmar Karlsen is the data controller responsible for the processing described in this policy. You can contact us at contact@paeonia.no, or use support@paeonia.no for help with the app.',
           'Paeonia is a private shared space for two partners. It has no public profiles, people search, followers, or advertising audience.',
         ],
       },
@@ -128,12 +128,12 @@ export const legalEn = {
       description: 'The terms that apply when you create an account or use Paeonia.',
     },
     title: 'Terms of Service',
-    updated: 'Last updated 11 July 2026',
+    updated: 'Last updated 16 August 2026',
     sections: [
       {
         heading: 'Agreement',
         paragraphs: [
-          'These terms apply when you create an account or use the Paeonia app and related services. By using Paeonia, you agree to these terms and the Privacy Policy. If you do not agree, do not use the service.',
+          'These terms are an agreement between you and Hjalmar Karlsen, Storgata 61, 0182 Oslo, Norway, who operates Paeonia. They apply when you create an account or use the Paeonia app and related services. By using Paeonia, you agree to these terms and the Privacy Policy. If you do not agree, do not use the service.',
           'You must be legally able to agree to these terms. If the law where you live requires permission from a parent or guardian, you must have that permission.',
         ],
       },
