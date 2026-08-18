@@ -7,6 +7,7 @@ struct PaeoniaSubscriptionTests {
     @Test func productIdentifiersMatchChosenStoreKitIDs() {
         #expect(PaeoniaSubscriptionProductID.coupleMonthly.rawValue == "no.paeonia.couple")
         #expect(PaeoniaSubscriptionProductID.coupleYearly.rawValue == "no.paeonia.couple.year")
+        #expect(PaeoniaConsumableProductID.streakRestore.rawValue == "no.paeonia.streak.restore")
     }
 
     @Test func billingPeriodsMatchProductIdentifiers() {

@@ -88,6 +88,9 @@ final class PaywallViewModel: PresentationReadinessProviding {
         do {
             let succeeded = try await storeKitService.purchase(currentProduct)
             purchaseSucceeded = succeeded
+            if !succeeded {
+                error = .purchaseNotConfirmed
+            }
             isPurchasing = false
             return succeeded
         } catch let error as PaeoniaPurchaseError {

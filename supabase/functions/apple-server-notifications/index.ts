@@ -1,10 +1,14 @@
 /// <reference types="jsr:@supabase/functions-js/edge-runtime.d.ts" />
 
 import { Buffer } from "node:buffer";
+import type { KeyObject, X509Certificate } from "crypto";
 import {
   Environment,
   SignedDataVerifier,
-} from "npm:@apple/app-store-server-library";
+  VerificationException,
+  VerificationStatus,
+} from "npm:@apple/app-store-server-library@3.1.0";
+import { X509 as JSRX509 } from "npm:jsrsasign@11.1.3";
 import { type SupabaseContext, withSupabase } from "npm:@supabase/server@1.4.1";
 
 const APPLE_ROOT_CA_G2_URL =
@@ -75,6 +79,53 @@ interface AppleRenewalInfo {
 interface AppleVerificationResult {
   notification: AppleNotificationPayload;
   verifier: SignedDataVerifier;
+}
+
+// Supabase's Deno runtime does not implement X509Certificate.toString() or
+// verify(), so use the same pure-JS certificate checks as Apple's verifier.
+class DenoSignedDataVerifier extends SignedDataVerifier {
+  protected override async verifyCertificateChain(
+    trustedRoots: X509Certificate[],
+    leaf: X509Certificate,
+    intermediate: X509Certificate,
+    effectiveDate: Date,
+  ): Promise<KeyObject> {
+    const jsLeaf = jsCertificate(leaf);
+    const jsIntermediate = jsCertificate(intermediate);
+    const root = trustedRoots.find((candidate) =>
+      intermediate.issuer === candidate.subject &&
+      jsIntermediate.verifySignature(jsCertificate(candidate).getPublicKey())
+    );
+    const valid = root !== undefined &&
+      leaf.issuer === intermediate.subject &&
+      jsLeaf.verifySignature(jsIntermediate.getPublicKey()) &&
+      intermediate.ca &&
+      jsLeaf.getExtInfo("1.2.840.113635.100.6.11.1") !== undefined &&
+      jsIntermediate.getExtInfo("1.2.840.113635.100.6.2.1") !== undefined;
+
+    if (!valid) {
+      throw new VerificationException(VerificationStatus.VERIFICATION_FAILURE);
+    }
+
+    for (const certificate of [leaf, intermediate, root]) {
+      if (
+        new Date(certificate.validFrom).getTime() >
+            effectiveDate.getTime() + 60_000 ||
+        new Date(certificate.validTo).getTime() <
+            effectiveDate.getTime() - 60_000
+      ) {
+        throw new VerificationException(VerificationStatus.INVALID_CERTIFICATE);
+      }
+    }
+
+    return leaf.publicKey;
+  }
+}
+
+function jsCertificate(certificate: X509Certificate): JSRX509 {
+  const parsed = new JSRX509();
+  parsed.readCertHex(certificate.raw.toString("hex"));
+  return parsed;
 }
 
 interface RecordStoreKitNotificationResponse {
@@ -200,7 +251,7 @@ async function verifyAppleNotification(
       } catch (error) {
         console.warn(
           "[apple-server-notifications] verification attempt failed",
-          error instanceof Error ? error.message : error,
+          appleVerificationErrorDescription(error),
         );
       }
     }
@@ -216,6 +267,15 @@ async function verifyAppleNotification(
     );
     return null;
   }
+}
+
+function appleVerificationErrorDescription(error: unknown): string {
+  if (error instanceof VerificationException) {
+    const status = VerificationStatus[error.status] ?? String(error.status);
+    return error.cause?.message ? `${status}: ${error.cause.message}` : status;
+  }
+
+  return error instanceof Error ? error.message || error.name : String(error);
 }
 
 async function appleRootCertificates(): Promise<Buffer[]> {
@@ -243,7 +303,7 @@ function appleVerifiers(
   const environment = appleNotificationEnvironmentHint(signedPayload);
   if (environment === "Sandbox") {
     return [
-      new SignedDataVerifier(
+      new DenoSignedDataVerifier(
         rootCertificates,
         false,
         Environment.SANDBOX,
@@ -254,7 +314,7 @@ function appleVerifiers(
 
   if (environment === "Production") {
     return [
-      new SignedDataVerifier(
+      new DenoSignedDataVerifier(
         rootCertificates,
         false,
         Environment.PRODUCTION,
@@ -265,7 +325,7 @@ function appleVerifiers(
   }
 
   const verifiers = [
-    new SignedDataVerifier(
+    new DenoSignedDataVerifier(
       rootCertificates,
       false,
       Environment.SANDBOX,
@@ -275,7 +335,7 @@ function appleVerifiers(
 
   if (APPLE_APP_APPLE_ID_RAW) {
     verifiers.unshift(
-      new SignedDataVerifier(
+      new DenoSignedDataVerifier(
         rootCertificates,
         false,
         Environment.PRODUCTION,

@@ -3,6 +3,12 @@ import Observation
 import StoreKit
 import Supabase
 
+extension Notification.Name {
+    nonisolated static let paeoniaSubscriptionDidUpdate = Notification.Name(
+        "paeonia.subscription.didUpdate"
+    )
+}
+
 @MainActor
 protocol PaeoniaStoreKitServicing: AnyObject {
     var products: [Product] { get }
@@ -69,6 +75,7 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
     private let clientProvider: PaeoniaSupabaseClientProvider
     private var userID: String?
     private var appAccountToken: UUID?
+    @ObservationIgnored private var transactionUpdatesTask: Task<Void, Never>?
 
     init(clientProvider: PaeoniaSupabaseClientProvider = .shared) {
         self.clientProvider = clientProvider
@@ -80,6 +87,14 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         }
 
         self.userID = userID
+        appAccountToken = nil
+        startTransactionListener()
+    }
+
+    func stopTransactionListener() {
+        transactionUpdatesTask?.cancel()
+        transactionUpdatesTask = nil
+        userID = nil
         appAccountToken = nil
     }
 
@@ -228,6 +243,56 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         }
 
         return recoveredCount
+    }
+
+    private func startTransactionListener() {
+        transactionUpdatesTask?.cancel()
+        transactionUpdatesTask = Task { [weak self] in
+            for await result in Transaction.unfinished {
+                guard let self, !Task.isCancelled else {
+                    return
+                }
+                await self.processTransactionUpdate(result)
+            }
+
+            for await result in Transaction.updates {
+                guard let self, !Task.isCancelled else {
+                    return
+                }
+                await self.processTransactionUpdate(result)
+            }
+        }
+    }
+
+    private func processTransactionUpdate(_ result: VerificationResult<Transaction>) async {
+        guard case let .verified(transaction) = result else {
+            return
+        }
+
+        do {
+            let token = try await configuredAppAccountToken()
+            guard transaction.appAccountToken == token else {
+                return
+            }
+
+            if PaeoniaSubscriptionProductID(rawValue: transaction.productID) != nil {
+                try await confirm(
+                    transaction: transaction,
+                    jwsRepresentation: result.jwsRepresentation,
+                    priceDisplay: productDisplayPrice(for: transaction.productID)
+                )
+                await transaction.finish()
+                NotificationCenter.default.post(name: .paeoniaSubscriptionDidUpdate, object: nil)
+            } else if PaeoniaConsumableProductID(rawValue: transaction.productID) != nil {
+                _ = try await confirmStreakRestore(
+                    transaction: transaction,
+                    jwsRepresentation: result.jwsRepresentation
+                )
+                await transaction.finish()
+            }
+        } catch {
+            // Keep the transaction unfinished so it can be retried on the next launch.
+        }
     }
 
     private func configuredAppAccountToken() async throws -> UUID {

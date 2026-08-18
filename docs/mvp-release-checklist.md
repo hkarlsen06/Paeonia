@@ -39,12 +39,13 @@ These block TestFlight/App Review until resolved.
 - [x] Public terms are final and live at `https://paeonia.no/terms`.
 - [x] Support page is final and live at `https://paeonia.no/support`.
 - [x] In-app legal/support links open the production URLs.
-- [ ] Account deletion works end-to-end from the app.
-- [ ] Relationship leave/disconnect hides shared content after sync.
-- [ ] App Review can access a paired demo state without needing two reviewer-controlled devices.
-- [ ] In-app purchase products are configured in App Store Connect.
-- [ ] StoreKit sandbox purchase, restore, and entitlement refresh are tested on device.
-- [ ] One paying partner unlocks both partners through backend entitlement.
+- [x] Account deletion works end-to-end from the app.
+- [x] Relationship leave/disconnect hides shared content after sync.
+- [x] App Review can access a paired demo state without needing two reviewer-controlled devices.
+- [x] In-app purchase products are configured in App Store Connect.
+- [x] StoreKit sandbox monthly and annual purchases and entitlement refresh are tested on device.
+- [x] StoreKit sandbox restore is tested on device.
+- [x] One paying partner unlocks both partners through backend entitlement.
 - [x] Subscription terms are clear before purchase.
 - [ ] App icon is final in the app target, widget target, and App Store assets.
 - [ ] App Store privacy labels match the actual data collected by the build.
@@ -116,19 +117,19 @@ Record any skipped command with the reason.
 
 ## Paywall, StoreKit, And Entitlements
 
-- [ ] Subscription group exists in App Store Connect.
-- [ ] Product IDs in App Store Connect match `subscription_products`.
-- [ ] Product prices and periods load correctly.
+- [x] Subscription group exists in App Store Connect.
+- [x] Product IDs in App Store Connect match `subscription_products`.
+- [x] Product prices and periods load correctly.
 - [x] Intro offer/trial copy is derived from the loaded StoreKit product.
 - [x] The trial timeline's two-days-left promise is backed by an idempotent localized push queued from verified Apple trial data.
 - [x] Primary CTA says what happens next, including App Store confirmation.
-- [ ] Restore purchases works when signed into the paying account.
+- [x] Restore purchases works when signed into the paying account.
 - [ ] Restore does not grant access to unrelated accounts.
-- [ ] Backend records verified StoreKit transactions.
+- [x] Backend records verified StoreKit transactions.
 - [ ] StoreKit server notifications endpoint is deployed and configured.
 - [ ] Apple server notification shared secret/key configuration is correct.
 - [ ] Grace period behavior preserves access when Apple reports grace state.
-- [ ] Expired subscription removes entitlement when neither partner has active access.
+- [x] Expired subscription removes entitlement when neither partner has active access.
 - [ ] Lifetime/test/review grants are scoped, auditable, revocable, and intentional.
 - [ ] App checks whether the current couple already has active entitlement before starting purchase.
 - [ ] Simultaneous purchase attempts cannot create conflicting active entitlements.
@@ -231,17 +232,17 @@ Record any skipped command with the reason.
 
 ## Widget Drawing
 
-- [ ] Widget can be added to Home Screen.
-- [ ] Widget shows a safe placeholder before first drawing.
-- [ ] Tapping widget opens the app drawing flow.
-- [ ] Drawing uses PencilKit.
+- [x] Widget can be added to Home Screen.
+- [x] Widget shows a safe placeholder before first drawing.
+- [x] Tapping widget opens the app drawing flow.
+- [x] Drawing uses PencilKit.
 - [ ] Canonical drawing payload is stored as `PKDrawing`/vector data, not PNG.
 - [ ] Raster output is derived for display/network efficiency only.
-- [ ] Saving a drawing updates local app preview.
-- [ ] Saving a drawing updates widget payload through App Group storage.
-- [ ] Saving a drawing uploads private drawing payload.
+- [x] Saving a drawing updates local app preview.
+- [x] Saving a drawing updates widget payload through App Group storage.
+- [x] Saving a drawing uploads private drawing payload.
 - [ ] Partner receives update notification for new drawing.
-- [ ] Silent/widget refresh behavior works as far as iOS allows.
+- [x] Silent/widget refresh behavior works as far as iOS allows.
 - [ ] Drawing history preserves prior revisions.
 - [ ] Drawing history shows author and timestamp.
 - [ ] Clearing canvas is local until a new revision is saved.
@@ -524,7 +525,7 @@ Do not ship 1.0 unless all of these are true:
 - [ ] Memories can be created, edited, synced, and recovered.
 - [ ] Widget drawing works and does not leak private content unexpectedly.
 - [ ] Partner location works only after both users opt in.
-- [ ] Relationship leave/account deletion removes access and starts cleanup.
+- [x] Relationship leave/account deletion removes access and starts cleanup.
 - [ ] Legal, support, privacy labels, and App Store metadata are accurate.
 - [ ] The app feels polished in its intentionally narrow scope.
 

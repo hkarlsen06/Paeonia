@@ -116,6 +116,23 @@ struct RootView: View {
             .onChange(of: viewModel.notice) { _, notice in
                 showBanner(for: notice)
             }
+            .onChange(of: viewModel.currentSession?.id, initial: true) { _, userID in
+                guard allowsSystemIntegrations else {
+                    return
+                }
+
+                if let userID {
+                    PaeoniaStoreKitService.shared.configure(userID: userID)
+                } else {
+                    PaeoniaStoreKitService.shared.stopTransactionListener()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .paeoniaSubscriptionDidUpdate)) { _ in
+                guard allowsSystemIntegrations else {
+                    return
+                }
+                subscriptionChanged()
+            }
             .onChange(of: locationViewModel.notice) { _, notice in
                 showBanner(for: notice)
             }
