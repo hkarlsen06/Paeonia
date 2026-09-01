@@ -17,7 +17,7 @@ Current backend decisions:
 - Use service-role flows only for privileged work: cron, cleanup, admin deletion, notification fanout, and internals.
 - Use the Supabase CLI to create migration files when implementation starts.
 - Start with the migration order listed in `docs/phase-3-migration-checklist.md`.
-- Do not deploy or apply remote migrations until the project is intentionally linked.
+- Production runs self-hosted on `mdr`; apply migrations with `./scripts/supabase-db.sh push` and deploy edge functions by syncing `supabase/functions/` to `/srv/paeonia/paeonia-sb/volumes/functions/` on mdr and restarting the `functions` service.
 
 Content tracking:
 

@@ -543,10 +543,10 @@ Paeonia uses Supabase's GitHub integration for remote deploys. On push to `origi
 - Preserve and explicitly round-trip the Paeonia-owned objects attached to managed schemas: both triggers on `auth.users` and both policies on `storage.objects`. Do not dump or declare Supabase-owned Auth or Storage internals wholesale.
 - Preserve `security_invoker` view options, RLS state, function `security definer`/`search_path` settings, comments, triggers, and ACLs. The existing rule for authenticated public wrappers that call `internal.*` remains mandatory.
 - Run `./scripts/check-supabase-schema-drift.sh` after schema or migration changes. A non-empty pg-delta result means the declarative state and migration history disagree and must be reconciled before commit.
-- Committed migrations apply automatically via Supabase's Git integration on push to the configured branch — that's the default path, and for most changes just committing is enough.
-- Pushing with the Supabase CLI is also fine when you need a migration live sooner than the next push (e.g. to unblock testing): run `supabase db push --linked` (add `--dry-run` first to preview, `--yes` to skip the prompt). The CLI applies only migrations missing from the remote history and records each under its file version, so a later Git push sees it already applied and skips it — the two paths don't conflict.
+- Production Supabase is self-hosted on the `mdr` server (since 2026-09-01), so nothing applies migrations automatically on git push. Apply them with `./scripts/supabase-db.sh push` (add `--dry-run` first to preview). The script tunnels to the mdr database over SSH and passes `--db-url`; do not use `--linked`, the hosted project is gone.
+- The CLI applies only migrations missing from the remote history and records each under its file version.
 - New migrations should be rerunnable where the operation allows it: prefer `create or replace` / `drop ... if exists`. To change a function's return type (which `create or replace` cannot do), `drop function if exists` and recreate it in the same reviewed migration.
-- Use `supabase db pull` only when intentionally baselining or reconciling remote-first schema changes.
+- Use `./scripts/supabase-db.sh pull` only when intentionally baselining or reconciling remote-first schema changes.
 - When local Supabase commands need Docker, use Orbstack's socket (`DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock`). If that socket is unavailable and local verification is needed, start Orbstack first, then rerun the command.
 
 ## Product-Specific Quality Bar
