@@ -57,11 +57,13 @@ Use `scripts/sync-question-catalog` from the repository root to validate and
 upload source-controlled question content.
 
 ```bash
-scripts/sync-question-catalog --linked
-scripts/sync-question-catalog --linked --apply
-scripts/sync-question-catalog --database-url "$SUPABASE_DB_URL"
-scripts/sync-question-catalog --database-url "$SUPABASE_DB_URL" --apply
+scripts/sync-question-catalog --database-url "$PAEONIA_MDR_DB_URL"
+scripts/sync-question-catalog --database-url "$PAEONIA_MDR_DB_URL" --apply
 ```
+
+Do not use `--linked` for production; it targets the retired hosted project.
+The MDR database URL must be percent-encoded and typically points through an
+SSH tunnel, like `scripts/supabase-db.sh` uses.
 
 The default mode is a dry run: it reads the database, reports new question keys,
 new version folders, missing localizations, and status changes, but does not

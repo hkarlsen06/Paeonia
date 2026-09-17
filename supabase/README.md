@@ -36,7 +36,7 @@ Previous agents repeatedly looked up the same Supabase context. Use this as the 
 - Product/data decisions: `docs/phase-3-data-contract.md`.
 - SQL implementation order and RLS helper checklist: `docs/phase-3-migration-checklist.md`.
 - Question content source tree: `supabase/questions/README.md` and `supabase/questions/system/*`.
-- Edge Functions: `supabase/functions/`; deploy with Supabase CLI.
+- Edge Functions: `supabase/functions/`; sync them to `/srv/paeonia/paeonia-sb/volumes/functions/` on `mdr` and restart the `functions` service.
 - Local config: `supabase/config.toml`.
 
 Common local checks agents have needed:
@@ -49,7 +49,7 @@ DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELE
 DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase test db --local supabase/tests
 ```
 
-Use Orbstack's Docker socket on this machine when Supabase CLI needs Docker. Do not push remote migrations from the CLI; commit migration files and let the configured Supabase GitHub integration apply them after the branch is pushed intentionally.
+Use Orbstack's Docker socket on this machine when Supabase CLI needs Docker. Git pushes do not deploy backend changes; apply production migrations explicitly with `./scripts/supabase-db.sh push`.
 
 ## Declarative Schema Workflow
 

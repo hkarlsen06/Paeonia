@@ -8,6 +8,8 @@ Paeonia is a private relationship app for couples who want to feel close through
 
 **Supabase API domain:** `api.paeonia.no`
 
+**Backend hosting:** Self-hosted Supabase on the `mdr` server
+
 ## Product Idea
 
 Long-distance relationship apps often have the right intention but poor execution: unreliable widgets, broken streaks, lost content, weak polish, and shallow daily prompts. Paeonia should be built around the opposite promise:

@@ -6,11 +6,11 @@ This file provides guidance to coding agents when working in the Paeonia reposit
 
 Paeonia is an iOS-first private relationship app for couples who want to feel close through distance. The product should prioritize reliability, polish, privacy, local-first behavior, and small daily rituals.
 
-Initial direction:
+Product constraints:
 
 - Native iOS app built with SwiftUI.
 - Static Next.js marketing/legal site deployed to Cloudflare Pages.
-- Local-first persistence, likely SwiftData.
+- Local-first persistence using the existing storage layer.
 - Clear MVVM boundaries.
 - Type-safe localization from the beginning.
 - Shared daily prompts, memories, countdowns, widgets, respectful notifications, and couple pairing.
@@ -23,7 +23,7 @@ Initial direction:
 
 ## Repository Structure
 
-Target structure:
+Repository structure:
 
 ```text
 paeonia/
@@ -34,7 +34,7 @@ paeonia/
 │   ├── PaeoniaAppTests/  # Unit tests
 │   ├── PaeoniaAppUITests/# UI tests
 │   └── Scripts/          # Build/localization/release scripts
-├── supabase/             # Backend, if/when added
+├── supabase/             # Self-hosted Supabase backend
 ├── docs/                 # Architecture and product documentation
 ├── AGENTS.md
 └── README.md
@@ -47,7 +47,7 @@ Do not create placeholder directories or files unless they are needed for the cu
 
 ## Agent Orientation
 
-Previous Codex and Claude sessions repeatedly looked up the same ownership map before making changes. Before broad `rg` exploration, check `docs/implementation-map.md` for the current source map for launch/readiness, Daily Challenge, widget drawing, localization, design-system primitives, sync/access/location, Supabase, and marketing.
+When ownership is unclear or exploration would span the project, consult `docs/implementation-map.md`. A known-file typo or narrow edit does not require a repository tour.
 
 For release planning, use `docs/mvp-release-checklist.md`. Paeonia no longer uses a phase roadmap as the active execution plan; the checklist is the source of truth for what remains before MVP submission.
 
@@ -125,8 +125,8 @@ The developer may run multiple agents in parallel in the same worktree.
 
 - Run commands from the repository root unless explicitly stated otherwise.
 - Prefer fast, focused verification commands.
-- Do not run build or test commands by default. They make each turn significantly slower, and the developer will build locally when needed.
-- Only run builds or tests when the user explicitly asks. You may suggest a relevant build or test command in the final handoff.
+- During interactive debugging where the user is rebuilding in Xcode, avoid duplicate builds and tests. Otherwise, complete focused verification, fix failures caused by the change, and rerun affected checks without an extra handoff. Broaden checks only when risk or failures justify them.
+- Use the repository iOS wrappers; see [iOS verification](docs/agent-guides/ios-verification.md) when building, testing, or changing test behavior. Report anything left unverified.
 - Avoid verbose command modes unless the extra output is needed to debug the issue.
 - Use `rg` for searching text or files when available.
 - Prefer existing project patterns over introducing new abstractions.
@@ -135,419 +135,13 @@ The developer may run multiple agents in parallel in the same worktree.
 - The Xcode project uses filesystem-synchronized groups (`PBXFileSystemSynchronizedRootGroup`), so new `.swift` files under synchronized source folders are auto-included. Do not edit `project.pbxproj` just to add those files.
 - Install local hooks with `./scripts/install-git-hooks.sh` after cloning if they are not already active.
 
-## Marketing Site Guidelines
+## Task-specific guidance
 
-The `marketing/` app should follow Tidex's simple static-site pattern:
+Read only guidance relevant to the change. Commands and source paths in these documents use the repository root unless stated otherwise.
 
-- Use Next.js with static export.
-- Deploy to Cloudflare Pages.
-- Keep public/legal/support pages in the marketing app.
-- Use `paeonia.no` as the canonical domain.
-- Use stable routes for App Store and in-app references:
-  - `/`
-  - `/privacy`
-  - `/terms`
-  - `/support`
-  - `/join/[inviteCode]` or another universal-link route chosen before implementation
-- Avoid server-only runtime dependencies unless the deployment target changes.
-- Keep legal/version metadata structured once legal pages exist.
-
-## iOS Architecture Guidelines
-
-Use Tidex's maintainable architecture lessons as the baseline, adapted for Paeonia.
-
-### Feature-First Organization
-
-Organize by product feature:
-
-```text
-ios/PaeoniaApp/
-├── App/                  # App entry, lifecycle, root navigation
-├── Features/             # Pairing, DailyPrompt, Memories, Countdown, Settings
-├── Services/             # Auth, notifications, media, sync, subscriptions
-├── Storage/              # SwiftData models, repositories, sync/local store
-├── Models/               # Domain models and DTOs
-├── Shared/               # Reusable components, extensions, design system
-└── Resources/            # Assets, localization, sounds
-```
-
-Keep this feature-first structure as a hard maintainability rule. Do not flatten screens into one folder or mix feature implementation details into shared/global modules unless they are genuinely reusable.
-
-Within a substantial feature, prefer responsibility-based subfolders over a generic feature-local `Shared/` folder. This is an example shape, not a literal template:
-
-```text
-ios/PaeoniaApp/Features/FeatureName/
-├── Models/      # Feature-wide domain/UI models and remote DTOs
-├── Data/        # Feature services, repositories, caches, drafts, and sync adapters
-├── Components/  # Reusable UI pieces used by multiple flows in this feature
-├── Timeline/    # Example product surface folder; use the real surface name
-├── Editor/      # Example supporting flow folder; use the real flow name
-└── Milestones/  # Example product logic folder; use the real logic name
-```
-
-Name flow and logic folders after the product responsibility they own, such as `AnswerFlow/`, `History/`, `Audio/`, `Streak/`, `Timeline/`, `Canvas/`, `Offer/`, or `Invite/`. Do not create generic `PrimaryFlow/`, `SecondaryFlow/`, `PureLogic/`, or `Shared/` buckets when a more precise responsibility name fits. Keep app-wide `Shared/` reserved for components, extensions, and design-system code that is genuinely reused across features.
-
-### MVVM Boundaries
-
-- SwiftUI views render state and forward user actions.
-- Use SwiftUI as much as possible for app UI and interaction implementation.
-- If UIKit appears necessary to solve a task, stop before implementing it and report why SwiftUI is insufficient, what UIKit API would be used, and the expected tradeoff.
-- View models own presentation state and async UI flows.
-- Repositories own local data access.
-- Services own platform, backend, notification, media, and subscription integrations.
-- Pure product logic should live outside SwiftUI views.
-
-Examples of pure/testable logic:
-
-- prompt reveal rules
-- streak repair rules
-- countdown calculations
-- time-zone handling
-- pairing state transitions
-- notification planning
-- memory ordering
-- sync conflict handling
-
-### Stable Presentation Readiness
-
-For any screen that can be the first app surface after launch, do not dismiss the launch/loading screen until the screen has a stable first presentation.
-
-- View models for launch-adjacent screens must expose `isPresentationReady` by conforming to `PresentationReadinessProviding`.
-- `isPresentationReady` means all data that can materially change the first visible layout, offer, eligibility, entitlement, pairing, or primary CTA has either loaded successfully or reached a final unavailable/error state.
-- While `isPresentationReady == false`, keep showing the existing app loading surface instead of rendering partial feature UI.
-- The app loading surface should be visually blank and copy-free; it may be present for only a split second, so do not add explanatory loading text that users cannot read.
-- Keep the last known stable state visible during refreshes. Do not clear existing content, pricing, trial, pairing, entitlement, or invite state just because a new fetch has started.
-- Transient errors may be shown through the top banner, but clearing the banner must not make `isPresentationReady` false again if the underlying fetch has already settled.
-- Add or update focused tests when introducing readiness gates, especially for blocked or slow fetches and for error-clearing behavior.
-
-### Local-First Data Flow
-
-Default to local-first behavior:
-
-- Read from local persistence first.
-- Write locally immediately.
-- Mark records as pending/dirty if remote sync is needed.
-- Sync in the background.
-- Keep the UI usable offline where possible.
-- Surface sync errors clearly without blocking ordinary app use.
-
-### Dependency Injection
-
-- Prefer initializer injection for view models, repositories, and services.
-- Use protocols where they materially improve testability.
-- Avoid unnecessary global singletons.
-- Shared production instances are acceptable for app-wide coordination, but business logic should remain testable.
-
-### Swift Concurrency
-
-- Keep UI-facing view models on `@MainActor`.
-- Use actors for serialized mutable state, save pipelines, or sync coordination.
-- Handle task cancellation in async flows.
-- Avoid heavy work in SwiftUI `body` or computed properties.
-- Use `Sendable` for values crossing concurrency boundaries when appropriate.
-
-#### `.task(id:)` keys must be load-bearing only
-
-`SwiftUI`'s `.task(id:)` cancels its running task and restarts it whenever the `id` value changes. So the `id` must contain *only* the inputs that determine what the task loads — never cosmetic data that arrives or refreshes shortly after launch.
-
-- Symptom of getting this wrong: a network request fails with `NSURLErrorCancelled` (`URLError.cancelled`, code `-999`) a beat after the screen appears, then a manual retry works. The launch-time load was aborted because some unrelated field in the `id` changed mid-flight.
-- Concrete case (do not reintroduce): the daily challenge load was keyed on the whole `DailyChallengeParticipants` value (current/partner ids **plus** display names and profile-photo asset ids). Names and avatars populate asynchronously, so each one cancelled the in-flight `get_today_daily_questions` fetch. Fixed by keying `.task(id:)` on `currentUserID` alone and feeding cosmetic identity through a separate non-reloading path (`DailyChallengeViewModel.refreshParticipants` via `.onChange`).
-- Rule: key the load on identity that genuinely changes *what* is fetched (usually a user/couple id). Route display-only updates (names, photos, labels) through `.onChange` into a method that refreshes rendering without re-fetching. When in doubt, prefer a narrow, stable `id` and a separate cosmetic-update path.
-- Note that swallowing `URLError.cancelled` (treating it like Swift's `CancellationError`) hides the *banner*, but the load is still wastefully cancelled and may not auto-retry. Fix the `id`, don't just silence the error.
-
-## Localization
-
-Localization is required for all user-facing strings.
-
-Start with English and Norwegian Bokmal. The setup must make later languages straightforward.
-
-### Rules
-
-- Use Xcode String Catalogs.
-- Use generated `LocalizedStringResource` symbols in Swift code.
-- Do not use raw string keys in localization calls.
-- Avoid patterns such as:
-  - `String(localized: "settings.saveButton")`
-  - `Text("settings.saveButton", tableName: "Localizable")`
-  - `LocalizedStringResource("settings.saveButton", table: "Localizable")`
-  - `NSLocalizedString("settings.saveButton", ...)`
-- If a key has no generated symbol, add or rename the catalog entry so a symbol is generated.
-- Prefer `FormatStyle` for dates, numbers, percentages, and countdowns.
-- Use the system locale. Do not override locale globally unless there is a specific product requirement.
-- Keep source copy simple enough to translate naturally. Avoid idioms, jokes, technical shorthand, and nested clauses.
-
-### Key Naming
-
-Use dot-notation keys:
-
-```text
-feature.context.description
-```
-
-Examples:
-
-```text
-dailyPrompt.reveal.title
-pairing.invite.button
-countdown.daysRemaining
-settings.notifications.title
-```
-
-Generated symbols should be used like:
-
-```swift
-Text(.dailyPromptRevealTitle)
-String(localized: .countdownDaysRemaining(Int32(days)))
-```
-
-### Editing String Catalogs
-
-For ordinary plain string entries, use the repo helper instead of hand-editing `.xcstrings` JSON:
-
-```bash
-./scripts/xcstrings-set ios/PaeoniaApp/Resources/Localization/Localizable.xcstrings pairing.invite.button \
-  --comment "Button that starts partner invitation" \
-  --en "Invite partner" \
-  --nb "Inviter partner"
-```
-
-- New keys must include English, Norwegian Bokmal, and a translator comment.
-- The helper preserves existing catalog order by default to keep diffs focused. Pass `--sort-keys` only when intentionally normalizing a catalog.
-- Use `--locale <code>=<value>` for additional languages if the catalog grows beyond `en` and `nb`.
-- Use Xcode's String Catalog editor or XLIFF export/import for pluralization, substitutions, device variants, or bulk translator workflows.
-- After catalog changes, verify generated symbols in Swift code still match the key names. Run a build only when explicitly requested or when symbol generation needs to be checked.
-
-## Design System
-
-Use semantic colors and design tokens. Do not scatter hardcoded colors, spacing, or typography values through feature views.
-
-Paeonia uses one canonical plum-led brand theme for MVP. Do not design or implement separate light and dark native app appearances unless the user explicitly reopens that product decision. Accessibility settings still matter: preserve Dynamic Type, Reduce Motion, contrast, and VoiceOver behavior within the plum theme.
-
-Suggested semantic colors:
-
-- `paeoniaBackground`
-- `paeoniaBackgroundSecondary`
-- `paeoniaSurfacePrimary`
-- `paeoniaSurfaceSecondary`
-- `paeoniaTextPrimary`
-- `paeoniaTextSecondary`
-- `paeoniaTextMuted`
-- `paeoniaAccent`
-- `paeoniaError`
-- `paeoniaSuccess`
-- `paeoniaWarning`
-
-Also centralize:
-
-- spacing
-- corner radii
-- typography roles
-- animation durations
-- haptic patterns
-- reusable button and card styles
-
-Use cards only when the framed surface has product meaning, such as a distinct repeated item, modal, or tool. Prefer few or no cards, and do not wrap ordinary screen content in cards by default. Place content directly in the screen layout with intentional spacing and hierarchy. Put primary CTA clusters near the bottom of the screen when it improves thumb reach and matches the flow. In bottom button clusters, text-only actions without visible button backgrounds should still occupy button-sized hit targets and be spaced like adjacent buttons, not tucked close to the primary CTA.
-
-### Brand Wordmark
-
-- When `Paeonia` is shown as a standalone single-word app name in the iOS app or widget surfaces, use the shared `PaeoniaWordmark` logo lockup in the app target, or the same mark-left, serif, semibold wordmark treatment in targets that cannot import it.
-- Size may change with layout hierarchy, but the wordmark font treatment should stay consistent.
-- When `app.tagline` is presented as the slogan paired with the stylized wordmark, use `PaeoniaBrandLockup` so the logo-plus-wordmark row is constrained to the same visual width as the tagline. Use the same serif, semibold wordmark family treatment at the appropriate size for that layout.
-- Do not apply the wordmark style automatically when `Paeonia` appears as part of a sentence or longer phrase; use the surrounding copy style in those cases.
-
-### Error Presentation
-
-- Present transient user-facing errors through the app-level top dropdown banner.
-- Mount the shared banner once at the root and send feature errors into that shared surface.
-- Do not add new inline red error panels or system alerts for ordinary recoverable errors.
-- Keep full-screen error states only when the whole screen cannot continue and needs a retry action.
-
-### Confirmation Dialogs
-
-- Confirmations and destructive choices use the centered system alert dialog, app-wide. Use SwiftUI `.alert(_:isPresented:actions:message:)`.
-- Do not use `.confirmationDialog` (the bottom action sheet) for these. It anchors to the bottom or renders as a popover and is not the intended presentation.
-- This is separate from error presentation: errors still go to the top banner (see above); the centered alert is only for confirmations the user must explicitly approve (for example: clear canvas, delete account, leave relationship).
-- Title states the action, the message states the consequence and reversibility, the destructive button uses a verb with the `.destructive` role, and the cancel button uses the `.cancel` role.
-
-## Testing Requirements
-
-Agents should add or update tests when implementing behavior.
-
-### Default Rule
-
-- Feature work should include test coverage for changed behavior, not just compile-clean code.
-- If behavior changes and no tests are added, explain why in the final handoff.
-
-### What To Test
-
-- Happy path: primary user flow works and returns expected values.
-- Edge cases: invalid input, empty states, timezone boundaries, date changes, offline states.
-- Regression guard: at least one test that would fail if the changed logic was removed.
-- Bug fixes: add a test that reproduces the bug when feasible.
-
-### Important Test Areas
-
-- prompt reveal logic
-- streak and streak repair logic
-- countdown date math
-- timezone behavior
-- notification scheduling
-- couple pairing state
-- memory timeline ordering
-- local save/load behavior
-- sync conflict behavior
-- widget payload generation
-- privacy/export/delete flows
-
-### Where To Place Tests
-
-Once the iOS project exists:
-
-- Business logic, repositories, services, sync, and view models: `ios/PaeoniaAppTests/`
-- UI launch/smoke and critical interactions: `ios/PaeoniaAppUITests/`
-
-Prefer small focused unit tests over broad UI tests unless behavior is UI-only.
-
-## iOS Build And Test Commands
-
-Do not run iOS build or test wrappers by default. Only run them when the user explicitly asks, though you may recommend one of these commands in the final handoff when it would be useful.
-
-When the user asks you to build or test and project-specific wrappers exist, use them instead of raw `xcodebuild`.
-
-Recommended future commands:
-
-```bash
-./scripts/xcode-build-agent.sh
-./scripts/xcode-test-agent.sh
-```
-
-### Toolchain Requirement
-
-Build with Xcode 27.0 beta by setting `DEVELOPER_DIR` for the command or by selecting the beta globally with `xcode-select`. On macOS 27 beta, GM Xcode 26.5's `actool` crashes when compiling the app's Icon Composer icon at `ios/PaeoniaApp/Resources/AppIcon/paeonia_app.icon`.
-
-Known bad pairing:
-
-```bash
-/Applications/Xcode.app
-```
-
-Known working beta toolchain:
-
-```bash
-DEVELOPER_DIR="/Applications/Xcode-beta.app/Contents/Developer" xcodebuild ...
-```
-
-Failure symptom:
-
-```text
-Exception while running actool: *** -[__NSPlaceholderArray initWithObjects:count:]: attempt to insert nil object from objects[0]
-```
-
-This is a toolchain bug, not a project icon bug. Do not replace the layered `.icon` with a flat `AppIcon.appiconset` PNG workaround; a prior flat PNG workaround had a transparent background and rendered incorrectly against black in iOS 26/27 dark mode. `ASSETCATALOG_COMPILER_APPICON_NAME` must remain `paeonia_app` so the layered icon keeps the correct plum dark-mode background.
-
-If wrappers do not exist yet:
-
-- Use the project's documented build/test commands.
-- If no documented commands exist, use the least noisy focused command available and report exactly what was run.
-- Prefer `swiftlint --quiet` for fast Swift checks once SwiftLint is configured.
-
-## Supabase Guidelines
-
-Use this section only if/when Paeonia adds Supabase.
-
-Production Supabase API domain: `api.paeonia.no`.
-
-When configuring OAuth providers, include the Supabase Auth callback on the custom domain:
-
-```text
-https://api.paeonia.no/auth/v1/callback
-```
-
-For Google OAuth client setup, use `https://paeonia.no` as the web origin and `https://api.paeonia.no/auth/v1/callback` as the authorized redirect URI.
-
-### Tool Discovery
-
-Supabase MCP tools may be lazy-loaded in Codex sessions. For any Supabase task, first call `tool_search` for:
-
-```text
-Supabase execute_sql get_project_url list_tables
-```
-
-Prefer `mcp__supabase__.execute_sql` for database inspection and narrow, targeted data fixes when available. Use ad hoc service-role scripts only as a fallback when MCP tools are unavailable or insufficient, and explain why.
-
-### PostgREST Client Calls
-
-- Client-side Supabase table writes must include an explicit row filter such as `.eq("user_id", value: session.user.id.uuidString)`. Do not rely on RLS alone to scope `update` or `delete` calls; production rejects unfiltered writes before RLS policies are applied.
-- Before user-scoped RPC writes from the iOS app, make sure the Supabase client has an active `client.auth.session`. If no session exists, fail locally and let local-first pending sync retry after auth is restored instead of sending anonymous PostgREST requests.
-- Keep public RPC wrappers for app-callable functions as thin wrappers around private `internal.*` implementations.
-
-#### App-callable public RPC wrappers that call `internal.*` MUST be `security definer` (this keeps recurring)
-
-This is the single most common backend regression in this repo. A `public.*` RPC wrapper callable by `authenticated` whose body calls any `internal.*` function **must** be declared `security definer` with a fixed `search_path`. `authenticated` has **no USAGE on the `internal` schema**, so a `security invoker` wrapper that reaches into `internal.*` fails for every signed-in user.
-
-- Symptom: PostgREST returns `permission denied for schema internal` with SQLSTATE `42501`; the Postgres log `context` reads `SQL function "<your_wrapper>" during startup`. The feature works for nobody and there is no client-side clue.
-- Default to copy for any new app-callable wrapper:
-
-  ```sql
-  create or replace function public.my_rpc(...)
-  returns ...
-  language sql
-  security definer            -- REQUIRED: authenticated has no USAGE on `internal`
-  set search_path = pg_catalog -- REQUIRED with security definer
-  as $$
-    select * from internal.my_rpc(...);
-  $$;
-
-  revoke all on function public.my_rpc(...) from public, anon;
-  grant execute on function public.my_rpc(...) to authenticated, service_role;
-  ```
-
-- `security definer` does **not** weaken auth here: `auth.uid()` reads the request JWT regardless of the executing role, so authorization stays enforced inside the `internal.*` implementation (via `auth.uid()` / `internal.get_current_entitled_couple_id()`). The wrapper is definer only so it can *reach* the private schema.
-- `security invoker` is correct for public wrappers whose body touches `public.*` / RLS-protected tables and never `internal.*`.
-- `security invoker` is also acceptable for service-role-only maintenance/drain wrappers that call `internal.*`, but only when all of these are true: `anon` and `authenticated` have no `execute`, `service_role` has `execute`, and `search_path` is pinned to `pg_catalog`. This keeps the wrapper unusable if someone accidentally grants it to app users later.
-- Before committing a new app-callable wrapper, grep the migration: if the body contains `internal.` and the function is callable by `authenticated` but is not `security definer`, it is wrong. Prior offenders and the fix pattern: `20260627190239_reconcile_daily_rpc_security_definer.sql`, `20260625093000_harden_public_rpc_wrappers_after_relationship_state.sql`, `20260629000405_fix_daily_history_rpc_security_definer.sql`.
-- An already-applied migration cannot be edited into production (the Git integration won't re-run it). Fix a deployed wrapper with a new migration that `create or replace`s it as `security definer`; leave the original migration as the historical record.
-
-### GitHub Integration Deployments
-
-Paeonia uses Supabase's GitHub integration for remote deploys. On push to `origin` for the remote branch configured in Supabase, the Git integration automatically handles the Supabase deploy steps:
-
-- New migrations are applied.
-- Edge Functions declared in `config.toml` are deployed.
-- Storage buckets declared in `config.toml` are deployed.
-- All other configurations, including API, Auth, and seed files, are ignored by default.
-
-### Edge Functions
-
-- Edit Edge Functions locally in `supabase/functions/`.
-- Deploy via Supabase CLI, not MCP deploy tools.
-- Always include `--no-verify-jwt` when deploying functions that are intended for webhooks, cron, service-role flows, or other non-user JWT callers.
-- For direct user-called functions, do not enable Supabase's "Verify JWT with legacy secret" / platform `verify_jwt` gate when the app uses modern publishable keys. Set `verify_jwt = false` in `supabase/config.toml` and perform auth inside the function with the request `Authorization` header and `auth.getUser()`.
-- Edge Functions that need user auth should read modern `SUPABASE_PUBLISHABLE_KEYS` / `SUPABASE_SECRET_KEYS` when available, with legacy key env vars only as local compatibility fallbacks.
-
-### SQL And Migrations
-
-- `supabase/schemas/*.sql` is the readable current-state source for DDL that pg-delta can reproduce. Files run in lexical order: keep ordinary declarations before `98_managed_schema_integrations.sql`, and keep `99_acl_normalization.sql` last.
-- `supabase/migrations/` remains the immutable deployment and transition history. Always create new migration files with `supabase migration new <migration_name>`, then edit the generated file. Never rewrite an already-applied migration.
-- For representable DDL, edit the declarative schema first, generate a migration with `supabase db diff --use-pg-delta -f <name>`, review every statement, and apply it locally with `supabase migration up --local`. Commit the schema files and reviewed migration together.
-- Do not introduce `supabase/sql/` as another canonical function or policy tree. Paeonia has one readable current-state source in `supabase/schemas/`.
-- Keep these changes in explicit hand-written migrations even when the final representable state is also updated declaratively:
-  - DML, backfills, seed/content changes, and other data-dependent transitions
-  - extension lifecycle or schema moves
-  - `storage.buckets` rows and configuration
-  - cron schedules and unschedule/reschedule operations
-  - publication membership
-  - grants, revokes, ownership, default privileges, and column privileges
-  - renames, destructive changes, type changes that depend on existing data, policy renames, and view ownership or column-order transitions
-- Treat generated migrations as proposals, not trusted output. Reject unexpected drops, table rewrites, locks, privilege changes, or RLS changes and replace them with a safe hand-written transition.
-- Preserve and explicitly round-trip the Paeonia-owned objects attached to managed schemas: both triggers on `auth.users` and both policies on `storage.objects`. Do not dump or declare Supabase-owned Auth or Storage internals wholesale.
-- Preserve `security_invoker` view options, RLS state, function `security definer`/`search_path` settings, comments, triggers, and ACLs. The existing rule for authenticated public wrappers that call `internal.*` remains mandatory.
-- Run `./scripts/check-supabase-schema-drift.sh` after schema or migration changes. A non-empty pg-delta result means the declarative state and migration history disagree and must be reconciled before commit.
-- Production Supabase is self-hosted on the `mdr` server (since 2026-09-01), so nothing applies migrations automatically on git push. Apply them with `./scripts/supabase-db.sh push` (add `--dry-run` first to preview). The script tunnels to the mdr database over SSH and passes `--db-url`; do not use `--linked`, the hosted project is gone.
-- The CLI applies only migrations missing from the remote history and records each under its file version.
-- New migrations should be rerunnable where the operation allows it: prefer `create or replace` / `drop ... if exists`. To change a function's return type (which `create or replace` cannot do), `drop function if exists` and recreate it in the same reviewed migration.
-- Use `./scripts/supabase-db.sh pull` only when intentionally baselining or reconciling remote-first schema changes.
-- When local Supabase commands need Docker, use Orbstack's socket (`DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock`). If that socket is unavailable and local verification is needed, start Orbstack first, then rerun the command.
+- Native iOS work: [ios/AGENTS.md](ios/AGENTS.md).
+- Backend, migrations, OAuth, or iOS auth/RPC integration: [supabase/AGENTS.md](supabase/AGENTS.md). Preserve exact production targets, migration history, RLS, grants, and request authorization. Production remains at `api.paeonia.no` on `mdr`; access is limited to the task-authorized operation.
+- Marketing routes or deployment: [marketing/AGENTS.md](marketing/AGENTS.md).
 
 ## Product-Specific Quality Bar
 
@@ -559,3 +153,60 @@ Paeonia handles private relationship content. Treat reliability and privacy as c
 - Be careful with notification content; avoid exposing sensitive relationship content on locked screens without a clear setting.
 - Prefer forgiving streak rules over punitive engagement mechanics.
 - Make timezone behavior explicit for couple-shared rituals.
+
+## Writing style
+
+Cut AI tells from all prose you write or edit, including docs, comments, release notes, and user-facing copy. Scan for the patterns below, rewrite while preserving meaning and matching the intended tone, then self-audit with "What makes this obviously AI generated?" and fix what remains. If a direct quote or a file format requires the original wording, keep it correct and apply these rules to the rest. Rule numbers are stable ids. A removed rule leaves a gap.
+
+### Content
+
+3. **Superficial -ing phrases.** "highlighting...", "ensuring...", "reflecting...", "showcasing...", "fostering...". Delete or expand with real sources.
+5. **Vague attributions.** "Experts believe", "Industry reports suggest", "Some critics argue". Name the source or delete.
+
+### Language
+
+7. **AI vocabulary.** Additionally, crucial, delve, enduring, enhance, fostering, garner, interplay, intricate, landscape (abstract), pivotal, showcase, tapestry (abstract), testament, underscore, vibrant. Replace with plain words.
+8. **Fancy ways to say "is".** "serves as", "stands as", "boasts", "features". Just say "is" or "has".
+9. **"Not just X, but Y."** State the point directly instead.
+10. **Rule of three.** Forcing ideas into groups of three. Use the natural number.
+11. **Synonym cycling.** Protagonist, main character, central figure, hero all in one paragraph. Pick one, repeat it.
+12. **False ranges.** "from X to Y" where X and Y aren't on a meaningful scale. List topics directly.
+
+### Style
+
+13. **Em dash overuse.** Avoid em dashes entirely. Use periods or commas only (no parentheses, no en dashes, no hyphen-as-dash substitutes). If a thought needs separation, end the sentence or use a comma.
+14. **Colon overuse.** Colons are fine before a list or example. Not as mid-sentence connectors. "If you're coming from traditional automation: instead of registering event handlers, you describe conditions" adds nothing with the colon. Rewrite to let the point stand on its own without comparison framing. "Describing when the scheduler should fire works best as plain English." Same meaning, no crutch punctuation.
+15. **Boldface overuse.** Don't bold every proper noun or acronym.
+16. **Inline-header lists.** The tell is a bold label and colon that restates the line: "**Performance:** Performance improved...". Convert those to prose. A bold lead-in that ends in a period, names the item, and is followed by genuinely new detail ("**Schema in TypeScript.** Tables live in one file.") is fine, not a tell.
+17. **Title case headings.** Use sentence case.
+18. **Decorative emojis.** Remove from headings and bullets.
+19. **Curly quotes.** Replace with straight quotes.
+
+### Communication artifacts
+
+20. **Chatbot phrases.** "I hope this helps!", "Let me know if...", "Of course!", "Certainly!", "Found the smoking gun!" Remove.
+22. **Sycophantic tone.** "Great question! You're absolutely right!" Respond directly.
+
+### Filler
+
+23. **Filler phrases.** "In order to" becomes "To". "Due to the fact that" becomes "Because". "It is important to note that" gets deleted.
+24. **Excessive hedging.** "could potentially possibly be argued that it might" becomes "may".
+25. **Generic conclusions.** "The future looks bright." State specific plans or facts.
+
+### Jargon
+
+26. **Abstract metaphor nouns.** Substrate, wedge, vector, locus, vantage, nexus, primitive (as noun), harness (as metaphor), surface (as in "API surface"), bedrock, scaffolding (as metaphor), modality, paradigm, gold-plating, ratchet (as metaphor), evacuate (for moving code), endgame, north star, flywheel. These read as technical but usually have a plainer concrete word. "Substrate" becomes "base". "Wedge in" becomes "add". "Vector" becomes "way" or "method". "Gold-plating" becomes "more than the job needs". "Ratchet" becomes the mechanism's real name or "a limit that only tightens". "Evacuate" becomes "move out". "Endgame" becomes "the last phase". Pick the concrete word.
+
+### Plain speech
+
+27. **Say what it does, not how it feels.** "the database stays close at hand", "SQL you can read", "types that follow your schema" name a feeling. The fix names the mechanism or a number: "`.toSQL()` returns the exact string sent to the database", "a column rename fails the build". Ask what the sentence tells the reader to do or know, then write that. If you can't restate it as a concrete instruction, fact, or number, cut it. One more check: if the sentence could appear unchanged in another project's docs, it says nothing about this one. Cut it.
+28. **Shorten or split dense sentences.** If the reader has to backtrack to parse a sentence, break it in two or drop clauses. One idea per sentence.
+29. **Active voice.** Prefer it. Catch "is/are/was/were + past participle" and name the actor: "queries are validated" becomes "the compiler validates queries", "the file is parsed by the loader" becomes "the loader parses the file". Passive is fine only when the actor is unknown or genuinely doesn't matter.
+30. **Cut adverbs, or use a stronger verb.** "runs quickly" becomes "is fast" or the number. "significantly improves" becomes the measured delta. An adverb propping up a weak verb means the verb is wrong.
+31. **Prefer the plain word.** "utilize" becomes "use", "leverage" becomes "use", "facilitate" becomes "help", "numerous" becomes "many", "in the event that" becomes "if". The fancier synonym is rarely clearer.
+32. **Mannered prose.** Metaphor or flourish where a literal phrase exists: aphorisms ("wire it or delete it"), rhetorical fragments for effect, personified code ("the plan holds it"), figurative verbs ("rides along", "stands on"), stock framing phrases. "A dial worth turning" becomes "a parameter worth varying". Say what you mean. Rule 26 covers the metaphor nouns.
+33. **Over-compression.** Dropped articles, verbless fragments, symbol-speak, and abbreviations that make the reader decode instead of read. "Parser rejects bad date → exit 2, no write" becomes "The parser rejects a bad date, exits with code 2, and writes nothing." Write whole sentences with their articles and verbs, and spell out arrows and abbreviations.
+
+# Bro keep going
+
+Before you stop, ask yourself "is there a next step that the user would want me to do?" if so, keep going jobs not finished.

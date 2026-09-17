@@ -22,8 +22,9 @@ transition history.
 - [x] Exercised the existing history's additive, rename, type, function,
   trigger, view, grant, and policy transitions through a clean replay and
   rejected pg-delta's redundant default-privilege noise.
-- [x] Preserved the Supabase GitHub integration deployment contract: only new
-  migrations deploy; declarative files are review and drift inputs.
+- [x] Preserved the deployment contract after the 2026-09-01 move to
+  self-hosted Supabase on `mdr`: only new migrations deploy; declarative files
+  remain review and drift inputs.
 - [x] Added contributor guidance and a CI drift, reset, lint, and pgTAP gate.
 
 References: [Supabase declarative database schemas](https://supabase.com/docs/guides/local-development/declarative-database-schemas) and [pg-delta public-alpha announcement](https://github.com/orgs/supabase/discussions/44938).
