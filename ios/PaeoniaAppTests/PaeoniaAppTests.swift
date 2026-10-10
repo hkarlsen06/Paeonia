@@ -1,3 +1,4 @@
+import AuthenticationServices
 import Foundation
 import Testing
 @testable import PaeoniaApp
@@ -634,7 +635,7 @@ struct PaeoniaAppTests {
             authService: AuthServiceSpy()
         )
 
-        await viewModel.signInWithGoogle(using: GoogleSignInProviderSpy())
+        await viewModel.signInWithGoogle()
 
         #expect(viewModel.state == .onboarding)
         #expect(viewModel.currentSession?.provider == .google)
@@ -645,13 +646,14 @@ struct PaeoniaAppTests {
     @Test func cancelledGoogleSignInDoesNotShowFailureNotice() async {
         let viewModel = RootViewModel(
             syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy()
+            authService: AuthServiceSpy(
+                failingOperations: [.signInWithGoogle],
+                failureError: ASWebAuthenticationSessionError(.canceledLogin)
+            )
         )
 
         await viewModel.start()
-        await viewModel.signInWithGoogle(
-            using: GoogleSignInProviderSpy(error: GoogleSignInServiceError.userCancelled)
-        )
+        await viewModel.signInWithGoogle()
 
         #expect(viewModel.state == .unauthenticated)
         #expect(viewModel.notice == nil)
@@ -1096,7 +1098,7 @@ private actor RelationshipEndedAccessRouteService: AccessRouteServicing {
             snapshot: AccessRouteSnapshot(
                 userEntitlement: nil,
                 coupleEntitlement: nil,
-                relationshipState: SupabaseRelationshipState(
+                relationshipState: RemoteRelationshipState(
                     coupleID: coupleID,
                     pairID: UUID(),
                     relationshipStatus: .ended,
@@ -1162,7 +1164,7 @@ private extension AccessRouteResolution {
         partnerDisplayName: String?,
         partnerProfilePhotoAssetID: UUID?,
         pairID: UUID?
-    ) -> SupabaseRelationshipState? {
+    ) -> RemoteRelationshipState? {
         if let partnerDisplayName {
             return .test(
                 partnerDisplayName: partnerDisplayName,
@@ -1184,9 +1186,9 @@ private extension AccessRouteResolution {
     }
 }
 
-private extension SupabaseUserEntitlement {
-    static func testEntitled(userID: UUID) -> SupabaseUserEntitlement {
-        SupabaseUserEntitlement(
+private extension RemoteUserEntitlement {
+    static func testEntitled(userID: UUID) -> RemoteUserEntitlement {
+        RemoteUserEntitlement(
             userID: userID,
             isEntitled: true,
             source: "storekit",
@@ -1198,9 +1200,9 @@ private extension SupabaseUserEntitlement {
     }
 }
 
-private extension SupabaseCoupleEntitlement {
-    static func testEntitled(coupleID: UUID, coveringUserID: UUID) -> SupabaseCoupleEntitlement {
-        SupabaseCoupleEntitlement(
+private extension RemoteCoupleEntitlement {
+    static func testEntitled(coupleID: UUID, coveringUserID: UUID) -> RemoteCoupleEntitlement {
+        RemoteCoupleEntitlement(
             coupleID: coupleID,
             isEntitled: true,
             coveringUserID: coveringUserID,
@@ -1213,14 +1215,14 @@ private extension SupabaseCoupleEntitlement {
     }
 }
 
-private extension SupabaseRelationshipState {
+private extension RemoteRelationshipState {
     static func test(
         coupleID: UUID = UUID(),
         partnerDisplayName: String,
         partnerProfilePhotoAssetID: UUID? = nil,
         pairID: UUID? = nil
-    ) -> SupabaseRelationshipState {
-        SupabaseRelationshipState(
+    ) -> RemoteRelationshipState {
+        RemoteRelationshipState(
             coupleID: coupleID,
             pairID: pairID ?? UUID(),
             relationshipStatus: .active,
@@ -1362,7 +1364,7 @@ private actor OrderedAuthService: AuthServicing {
         .test(profileStatus: .needsOnboarding)
     }
 
-    func signInWithGoogle(_ credential: GoogleSignInCredential) async throws -> AuthSession {
+    func signInWithGoogle() async throws -> AuthSession {
         AuthSession(
             id: "ordered-google-user",
             provider: .google,

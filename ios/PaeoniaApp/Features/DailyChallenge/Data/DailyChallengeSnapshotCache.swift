@@ -35,7 +35,7 @@ nonisolated protocol DailyChallengeSnapshotCaching: Sendable {
 /// - Each file encodes a versioned envelope so a future schema change can be
 ///   detected and the cache silently dropped instead of crashing.
 /// - Dates are encoded with `.iso8601` in both directions, independent of the
-///   Supabase client's own coder.
+///   Convex client's own coder.
 ///
 /// Privacy: keyed by `ownerUserID` so a different signed-in user never reads
 /// another user's cached relationship content. `clearAll()` wipes the whole
@@ -107,7 +107,7 @@ final class FileDailyChallengeSnapshotCache: @unchecked Sendable, DailyChallenge
     }
 
     /// The local cache uses its own date strategy (iso8601) so dates round-trip
-    /// independently of the Supabase client's decoder configuration.
+    /// independently of the Convex client's decoder configuration.
     private func encoder() -> JSONEncoder {
         let coder = JSONEncoder()
         coder.dateEncodingStrategy = .iso8601

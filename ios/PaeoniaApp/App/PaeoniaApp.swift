@@ -1,4 +1,3 @@
-import GoogleSignIn
 import SwiftUI
 
 @main
@@ -11,14 +10,16 @@ struct PaeoniaApp: App {
     @State private var developerDestination = DeveloperScenarioLaunch.destination()
     #endif
 
+    init() {
+        // Clerk must be configured before anything reads `Clerk.shared`. An empty
+        // publishable key leaves it unconfigured and auth reports itself unavailable.
+        PaeoniaClerk.configureIfPossible()
+    }
+
     var body: some Scene {
         WindowGroup {
             appContent
             .onOpenURL { url in
-                if GIDSignIn.sharedInstance.handle(url) {
-                    return
-                }
-
                 if let deepLink = PaeoniaDeepLink(url) {
                     self.deepLink = deepLink
                     return
@@ -26,10 +27,7 @@ struct PaeoniaApp: App {
 
                 if let inviteCode = PairingJoinURL.inviteCode(from: url) {
                     pendingJoinInviteCode = inviteCode
-                    return
                 }
-
-                PaeoniaSupabaseClientProvider.shared.handle(url)
             }
             .onChange(of: pendingJoinInviteCode) { _, inviteCode in
                 if let inviteCode {

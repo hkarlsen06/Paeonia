@@ -18,12 +18,12 @@ Use this skill when the user wants Paeonia iOS App Store release notes, "What's 
 From the Paeonia repo root, inspect commits since the reference:
 
 ```bash
-git log <ref>..HEAD --oneline -- ios/ supabase/
-git log <ref>..HEAD --stat -- ios/ supabase/
-git diff --name-only <ref>..HEAD -- ios/ supabase/
+git log <ref>..HEAD --oneline -- ios/ backend/
+git log <ref>..HEAD --stat -- ios/ backend/
+git diff --name-only <ref>..HEAD -- ios/ backend/
 ```
 
-Focus on `ios/`. Include `supabase/` only when it changes user-visible iOS behavior such as auth, pairing, subscriptions, sync, notifications, media, privacy, or reliability.
+Focus on `ios/`. Include `backend/` only when it changes user-visible iOS behavior such as auth, pairing, subscriptions, sync, notifications, media, privacy, or reliability.
 
 ## Decide What Belongs In Release Notes
 

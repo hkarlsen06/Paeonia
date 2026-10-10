@@ -3,13 +3,13 @@ import Foundation
 struct RelationshipSyncEventsStream: SyncStream {
     nonisolated let streamKey: SyncStreamKey = .relationshipEvents
 
-    private let gateway: any SupabaseAccessGateway
+    private let gateway: any AccessGateway
     private let eventStore: any RelationshipSyncEventPersisting
     private let eventApplier: any RelationshipSyncEventApplying
     private let pageSize: Int
 
     nonisolated init(
-        gateway: any SupabaseAccessGateway,
+        gateway: any AccessGateway,
         eventStore: any RelationshipSyncEventPersisting,
         eventApplier: any RelationshipSyncEventApplying = RelationshipSyncEventApplier(),
         pageSize: Int = 100

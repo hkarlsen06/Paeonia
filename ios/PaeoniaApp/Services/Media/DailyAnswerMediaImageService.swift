@@ -1,5 +1,4 @@
 import Foundation
-import Supabase
 
 nonisolated protocol DailyAnswerMediaImageProviding: Sendable {
     /// Returns the bytes for a revealed answer's media asset, fetching and caching a
@@ -19,13 +18,13 @@ nonisolated protocol DailyAnswerMediaCacheClearing: Sendable {
 actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerMediaCacheClearing {
     nonisolated static let shared: DailyAnswerMediaImageService? = try? live()
 
-    private let client: SupabaseClient
+    private let client: PaeoniaConvexClient
     private let directoryURL: URL
     private let expiresInSeconds = 3_600
     private var inFlightDownloads: [UUID: Task<Data?, Never>] = [:]
 
     init(
-        client: SupabaseClient,
+        client: PaeoniaConvexClient,
         directoryURL: URL = DailyAnswerMediaImageService.defaultDirectoryURL()
     ) {
         self.client = client
@@ -33,7 +32,7 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
     }
 
     nonisolated static func live() throws -> DailyAnswerMediaImageService {
-        DailyAnswerMediaImageService(client: try PaeoniaSupabaseClientProvider.shared.client())
+        DailyAnswerMediaImageService(client: try PaeoniaConvexClientProvider.shared.client())
     }
 
     func imageData(for mediaAssetID: UUID?) async -> Data? {
@@ -90,27 +89,7 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
     }
 
     private func signedURL(for mediaAssetID: UUID) async throws -> URL? {
-        let rows: [DailyAnswerMediaSignedURLAuthorization] = try await client
-            .rpc(
-                "get_media_signed_url",
-                params: DailyAnswerMediaSignedURLRequest(
-                    mediaAssetID: mediaAssetID,
-                    expiresInSeconds: expiresInSeconds
-                )
-            )
-            .execute()
-            .value
-
-        guard let authorization = rows.first else {
-            return nil
-        }
-
-        return try await client.storage
-            .from(authorization.bucket)
-            .createSignedURL(
-                path: authorization.storagePath,
-                expiresIn: authorization.expiresInSeconds
-            )
+        try await client.signedMediaURL(for: mediaAssetID, expiresInSeconds: expiresInSeconds)
     }
 
     private func store(_ data: Data, for mediaAssetID: UUID) {
@@ -126,29 +105,5 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
         FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("DailyAnswerMedia", isDirectory: true)
-    }
-}
-
-nonisolated private struct DailyAnswerMediaSignedURLRequest: Encodable, Sendable {
-    let mediaAssetID: UUID
-    let expiresInSeconds: Int
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "p_media_asset_id"
-        case expiresInSeconds = "p_expires_in_seconds"
-    }
-}
-
-nonisolated private struct DailyAnswerMediaSignedURLAuthorization: Decodable, Sendable {
-    let mediaAssetID: UUID
-    let bucket: String
-    let storagePath: String
-    let expiresInSeconds: Int
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "media_asset_id"
-        case bucket
-        case storagePath = "storage_path"
-        case expiresInSeconds = "expires_in_seconds"
     }
 }

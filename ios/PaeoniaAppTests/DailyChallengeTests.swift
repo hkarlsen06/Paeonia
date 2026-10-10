@@ -605,7 +605,7 @@ struct DailyChallengeMappingTests {
                 ],
             ]
         )
-        let service = SupabaseDailyChallengeService(gateway: gateway, locale: Locale(identifier: "en_US"))
+        let service = DailyChallengeService(gateway: gateway, locale: Locale(identifier: "en_US"))
 
         let result = try await service.loadToday(currentUserID: TestDailyChallengeIDs.currentUser)
 
@@ -2240,7 +2240,7 @@ struct DailyChallengeHistoryTests {
                 answerDetail(answerID: ownAnswerID, isOwnAnswer: true, textBody: "A quiet morning together"),
             ]
         )
-        let service = SupabaseDailyChallengeService(gateway: gateway, locale: Locale(identifier: "en_US"))
+        let service = DailyChallengeService(gateway: gateway, locale: Locale(identifier: "en_US"))
 
         let questions = try await service.loadHistory(currentUserID: TestDailyChallengeIDs.currentUser)
 
@@ -2675,7 +2675,7 @@ private actor RecordingDailyChallengeService: DailyChallengeServicing {
     }
 }
 
-private actor RecordingDailyChallengeReadGateway: SupabaseDailyChallengeGateway {
+private actor RecordingDailyChallengeReadGateway: DailyChallengeGateway {
     private let rows: [DailyQuestionRow]
     private let detailsByCoupleDayID: [UUID: [DailyAnswerDetailRow]]
     private let historyRows: [DailyQuestionRow]
@@ -2871,7 +2871,7 @@ private func sampleImageData() -> Data {
     return image.jpegData(compressionQuality: 0.9) ?? image.pngData() ?? Data()
 }
 
-private actor RecordingDailyChallengeGateway: SupabaseDailyChallengeGateway {
+private actor RecordingDailyChallengeGateway: DailyChallengeGateway {
     private(set) var submittedPayloads: [DailyAnswerPayload] = []
     private(set) var submittedAnswerIDs: [UUID] = []
 

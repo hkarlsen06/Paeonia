@@ -79,7 +79,7 @@ actor PrivacySafetyService: PrivacySafetyServicing {
 
 nonisolated enum PrivacySafetyServiceFactory {
     static func makeDefault() -> (any PrivacySafetyServicing)? {
-        guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
+        guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return nil
         }
 

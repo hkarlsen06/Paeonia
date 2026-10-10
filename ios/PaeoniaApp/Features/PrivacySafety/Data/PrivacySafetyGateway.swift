@@ -1,5 +1,4 @@
 import Foundation
-import Supabase
 
 nonisolated protocol PrivacySafetyGateway: Actor {
     func loadPrivacyRequests() async throws -> [PrivacyRequestRemoteRow]
@@ -20,27 +19,16 @@ nonisolated protocol PrivacySafetyGateway: Actor {
 }
 
 actor LivePrivacySafetyGateway: PrivacySafetyGateway {
-    private enum Constants {
-        static let privacyRequestColumns = "id,request_kind,status,requested_at,visible_status_message"
-    }
+    private let client: PaeoniaConvexClient
+    private let isSignedIn: PaeoniaSignedInCheck
 
-    private let client: SupabaseClient
-
-    init(client: SupabaseClient) {
+    init(client: PaeoniaConvexClient, isSignedIn: @escaping PaeoniaSignedInCheck = PaeoniaSignedIn.live) {
         self.client = client
+        self.isSignedIn = isSignedIn
     }
 
     func loadPrivacyRequests() async throws -> [PrivacyRequestRemoteRow] {
-        let session = try await client.auth.session
-
-        return try await client
-            .from("privacy_requests")
-            .select(Constants.privacyRequestColumns)
-            .eq("user_id", value: session.user.id.uuidString)
-            .order("requested_at", ascending: false)
-            .limit(100)
-            .execute()
-            .value
+        try await client.mutation("identity:get_privacy_requests")
     }
 
     func createPrivacyRequest(
@@ -48,21 +36,14 @@ actor LivePrivacySafetyGateway: PrivacySafetyGateway {
         kind: PrivacyRequestKind,
         requesterNote: String?
     ) async throws -> PrivacyRequestRemoteRow {
-        let session = try await client.auth.session
-        let insert = PrivacyRequestInsert(
-            id: id,
-            userID: session.user.id,
-            requestKind: kind,
-            requesterNote: requesterNote
+        try await client.mutation(
+            "identity:create_privacy_request",
+            args: CreatePrivacyRequestArguments(
+                id: id,
+                kind: kind,
+                requesterNote: requesterNote
+            )
         )
-
-        return try await client
-            .from("privacy_requests")
-            .insert(insert)
-            .select(Constants.privacyRequestColumns)
-            .single()
-            .execute()
-            .value
     }
 
     func submitReportAndLeave(
@@ -72,38 +53,33 @@ actor LivePrivacySafetyGateway: PrivacySafetyGateway {
         blockPartner: Bool,
         operation: SyncClientOperation
     ) async throws -> UUID {
-        // This RPC derives the reporter and active relationship from auth.uid().
-        // Requiring the session locally prevents an anonymous safety request that
-        // cannot end access from looking like it was submitted.
-        _ = try await client.auth.session
+        // The backend derives the reporter and active relationship from the
+        // signed-in user. Requiring the session locally prevents an anonymous
+        // safety request that cannot end access from looking like it was submitted.
+        try await PaeoniaSignedIn.require(isSignedIn)
 
-        return try await client
-            .rpc(
-                "submit_leave_and_report",
-                params: SubmitReportAndLeaveRequest(
-                    target: target,
-                    reason: reason,
-                    note: note,
-                    blockPartner: blockPartner,
-                    operation: operation
-                )
+        return try await client.mutation(
+            "reports:submit_leave_and_report",
+            args: SubmitReportAndLeaveRequest(
+                target: target,
+                reason: reason,
+                note: note,
+                blockPartner: blockPartner,
+                operation: operation
             )
-            .execute()
-            .value
+        )
     }
 }
 
-nonisolated private struct PrivacyRequestInsert: Encodable {
+nonisolated private struct CreatePrivacyRequestArguments: Encodable {
     let id: UUID
-    let userID: UUID
-    let requestKind: PrivacyRequestKind
+    let kind: PrivacyRequestKind
     let requesterNote: String?
 
     enum CodingKeys: String, CodingKey {
-        case id
-        case userID = "user_id"
-        case requestKind = "request_kind"
-        case requesterNote = "requester_note"
+        case id = "p_id"
+        case kind = "p_kind"
+        case requesterNote = "p_requester_note"
     }
 }
 

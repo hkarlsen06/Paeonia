@@ -206,7 +206,7 @@ nonisolated struct DailyAnswerDetailRow: Codable, Equatable, Sendable {
 
 extension DailyChallengeRemoteSnapshotRow {
     /// Converts the raw row into a `DailyChallengeLoadResult` using exactly the
-    /// same field mapping as `SupabaseDailyChallengeService.makeResult`. Extracting
+    /// same field mapping as `DailyChallengeService.makeResult`. Extracting
     /// this here lets both the live service and the local snapshot cache build
     /// domain objects through a single path — no risk of the two diverging.
     ///

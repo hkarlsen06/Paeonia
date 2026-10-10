@@ -1,14 +1,16 @@
 import Foundation
 
+/// Keeps the last profile Convex returned, keyed by the Clerk account that owns
+/// it, so the app can open offline.
 protocol AuthSessionCaching: Actor {
-    func load(userID: String) -> AuthSession?
-    func save(_ session: AuthSession)
+    func load(accountID: String) -> AuthSession?
+    func save(_ session: AuthSession, accountID: String)
     func clear()
 }
 
-/// Auth user ids cross JSON, PostgREST, and the Supabase Swift SDK. UUID text is
-/// case-insensitive, so identity checks must compare parsed UUID values rather
-/// than their transport spelling. The exact fallback keeps local development
+/// User ids cross JSON and the Convex client. UUID text is case-insensitive, so
+/// identity checks must compare parsed UUID values rather than their transport
+/// spelling. The exact fallback keeps local development
 /// identities usable without making two different opaque ids equivalent.
 nonisolated enum AuthUserIdentity {
     static func matches(_ lhs: String, _ rhs: String) -> Bool {
@@ -27,7 +29,7 @@ nonisolated enum AuthSessionFallbackPolicy {
     }
 
     /// Only transport failures may use the last server-verified profile. A
-    /// PostgREST authorization, missing-row, or decoding error must fail closed
+    /// backend authorization, missing-row, or decoding error must fail closed
     /// instead of reviving cached access after the backend rejected the profile.
     static func allowsCachedSession(for error: any Error) -> Bool {
         guard let urlError = error as? URLError else {
@@ -51,21 +53,21 @@ nonisolated enum AuthSessionFallbackPolicy {
 }
 
 actor TransientAuthSessionCache: AuthSessionCaching {
-    private var session: AuthSession?
+    private var stored: (session: AuthSession, accountID: String)?
 
-    func load(userID: String) -> AuthSession? {
-        guard let session, AuthUserIdentity.matches(session.id, userID) else {
+    func load(accountID: String) -> AuthSession? {
+        guard let stored, stored.accountID == accountID else {
             return nil
         }
-        return session
+        return stored.session
     }
 
-    func save(_ session: AuthSession) {
-        self.session = session
+    func save(_ session: AuthSession, accountID: String) {
+        stored = (session, accountID)
     }
 
     func clear() {
-        session = nil
+        stored = nil
     }
 }
 
@@ -73,6 +75,7 @@ actor UserDefaultsAuthSessionCache: AuthSessionCaching {
     static let shared = UserDefaultsAuthSessionCache()
 
     private struct StoredSession: Codable {
+        let accountID: String
         let id: String
         let provider: AuthProvider
         let displayName: String?
@@ -81,7 +84,8 @@ actor UserDefaultsAuthSessionCache: AuthSessionCaching {
         let providerProfilePhotoAssetID: UUID?
         let profileStatus: AuthProfileStatus
 
-        init(_ session: AuthSession) {
+        init(_ session: AuthSession, accountID: String) {
+            self.accountID = accountID
             id = session.id
             provider = session.provider
             displayName = session.displayName
@@ -110,16 +114,16 @@ actor UserDefaultsAuthSessionCache: AuthSessionCaching {
 
     init(
         defaults: UserDefaults = .standard,
-        key: String = "auth.cachedSession.v1"
+        key: String = "auth.cachedSession.v2"
     ) {
         self.defaults = defaults
         self.key = key
     }
 
-    func load(userID: String) -> AuthSession? {
+    func load(accountID: String) -> AuthSession? {
         guard let data = defaults.data(forKey: key),
               let storedSession = try? JSONDecoder().decode(StoredSession.self, from: data),
-              AuthUserIdentity.matches(storedSession.id, userID)
+              storedSession.accountID == accountID
         else {
             return nil
         }
@@ -127,8 +131,8 @@ actor UserDefaultsAuthSessionCache: AuthSessionCaching {
         return storedSession.session
     }
 
-    func save(_ session: AuthSession) {
-        guard let data = try? JSONEncoder().encode(StoredSession(session)) else {
+    func save(_ session: AuthSession, accountID: String) {
+        guard let data = try? JSONEncoder().encode(StoredSession(session, accountID: accountID)) else {
             return
         }
 
@@ -137,5 +141,7 @@ actor UserDefaultsAuthSessionCache: AuthSessionCaching {
 
     func clear() {
         defaults.removeObject(forKey: key)
+        // The Supabase-era cache holds a user id that no longer exists.
+        defaults.removeObject(forKey: "auth.cachedSession.v1")
     }
 }

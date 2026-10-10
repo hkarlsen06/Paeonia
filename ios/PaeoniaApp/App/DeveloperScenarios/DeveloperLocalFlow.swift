@@ -24,7 +24,6 @@
         viewModel: environment.rootViewModel,
         locationViewModel: environment.locationViewModel,
         appleSignInProvider: environment.appleSignInProvider,
-        googleSignInProvider: environment.googleSignInProvider,
         widgetCanvasService: environment.widgetCanvasService,
         widgetCanvasSync: NoOpWidgetCanvasSync(),
         pushAuthorization: DeveloperScenarioPushAuthorization(denied: false),
@@ -51,7 +50,6 @@
     let rootViewModel: RootViewModel
     let locationViewModel: LocationMapViewModel
     let appleSignInProvider = DeveloperLocalFlowAppleSignInProvider()
-    let googleSignInProvider = DeveloperLocalFlowGoogleSignInProvider()
     let widgetCanvasService = DeveloperWidgetCanvasService()
     let featureDependencies: RootFeatureDependencies
 

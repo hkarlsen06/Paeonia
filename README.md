@@ -6,9 +6,9 @@ Paeonia is a private relationship app for couples who want to feel close through
 
 **Canonical domain:** `paeonia.no`
 
-**Supabase API domain:** `api.paeonia.no`
+**Convex API domain:** `api.paeonia.no` (HTTP actions on `actions.paeonia.no`)
 
-**Backend hosting:** Self-hosted Supabase on the `mdr` server
+**Backend hosting:** Self-hosted Convex on the `one-s` server, with Clerk for sign-in. See `backend/AGENTS.md`.
 
 ## Product Idea
 

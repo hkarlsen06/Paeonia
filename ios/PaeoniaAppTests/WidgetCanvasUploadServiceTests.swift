@@ -20,10 +20,14 @@ struct WidgetCanvasUploadServiceTests {
         #expect(reserve.canvasID == gateway.canvas.canvasID)
 
         let upload = try #require(gateway.uploadCalls.first)
-        #expect(upload.bucket == "widget-drawings")
+        #expect(upload.reservation.bucket == "widget-drawings")
         #expect(upload.payloadData == Self.samplePayload.drawingData)
 
-        #expect(gateway.finalizeCount == 1)
+        // The storage id the upload returned reaches finalize as `p_storage_id`.
+        #expect(gateway.finalizeInputs.count == 1)
+        #expect(gateway.finalizeInputs.first?.storageID == WidgetCanvasGatewaySpy.storageID)
+        #expect(gateway.finalizeInputs.first?.reservation == upload.reservation)
+        #expect(gateway.callOrder == ["reserve", "upload", "finalize", "submit"])
 
         let submission = try #require(gateway.submitCalls.first)
         #expect(submission.canvasID == gateway.canvas.canvasID)
@@ -83,6 +87,8 @@ private nonisolated final class WidgetCanvasOperationFactorySpy:
 }
 
 private nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @unchecked Sendable {
+    static let storageID = "kg2storage-id"
+
     let canvas = WidgetCanvasReference(
         canvasID: UUID(),
         coupleID: UUID(),
@@ -92,12 +98,13 @@ private nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @un
     var conflictOnFirstSubmit = false
 
     struct ReserveCall { let coupleID: UUID; let canvasID: UUID; let revisionID: UUID }
-    struct UploadCall { let bucket: String; let storagePath: String; let payloadData: Data }
+    struct UploadCall { let reservation: MediaUploadReservation; let payloadData: Data }
 
     private(set) var getOrCreateCount = 0
     private(set) var reserveCalls: [ReserveCall] = []
     private(set) var uploadCalls: [UploadCall] = []
-    private(set) var finalizeCount = 0
+    private(set) var finalizeInputs: [WidgetDrawingFinalizeInput] = []
+    private(set) var callOrder: [String] = []
     private(set) var submitCalls: [WidgetDrawingRevisionSubmission] = []
     private var submitAttempts = 0
 
@@ -114,24 +121,29 @@ private nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @un
         canvasID: UUID,
         revisionID: UUID,
         operation: WidgetCanvasClientOperation
-    ) -> PendingMediaUploadResponse {
+    ) -> MediaUploadReservation {
+        callOrder.append("reserve")
         reserveCalls.append(ReserveCall(coupleID: coupleID, canvasID: canvasID, revisionID: revisionID))
-        return PendingMediaUploadResponse(
+        return MediaUploadReservation(
             mediaAssetID: UUID(),
             bucket: "widget-drawings",
-            storagePath: "\(coupleID)/\(canvasID)/revisions/\(revisionID)/drawing.pkdrawing"
+            storagePath: "\(coupleID)/\(canvasID)/revisions/\(revisionID)/drawing.pkdrawing",
+            uploadURL: URL(filePath: "/upload/\(revisionID)")
         )
     }
 
-    func uploadPayload(bucket: String, storagePath: String, data: Data) {
-        uploadCalls.append(UploadCall(bucket: bucket, storagePath: storagePath, payloadData: data))
+    func uploadPayload(reservation: MediaUploadReservation, data: Data) -> String {
+        callOrder.append("upload")
+        uploadCalls.append(UploadCall(reservation: reservation, payloadData: data))
+        return Self.storageID
     }
 
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput,
         operation: WidgetCanvasClientOperation
     ) -> FinalizedMediaUploadResponse {
-        finalizeCount += 1
+        callOrder.append("finalize")
+        finalizeInputs.append(input)
         return FinalizedMediaUploadResponse(mediaAssetID: input.reservation.mediaAssetID, uploadStatus: "finalized")
     }
 
@@ -139,6 +151,7 @@ private nonisolated final class WidgetCanvasGatewaySpy: WidgetCanvasGateway, @un
         _ submission: WidgetDrawingRevisionSubmission,
         operation: WidgetCanvasClientOperation
     ) throws -> WidgetDrawingRevisionResult {
+        callOrder.append("submit")
         submitCalls.append(submission)
         submitAttempts += 1
         if conflictOnFirstSubmit, submitAttempts == 1 {

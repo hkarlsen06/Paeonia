@@ -30,7 +30,7 @@ The purchase button grants local entitlement, invite acceptance creates the loca
 relationship, sign-out and deletion clear the local session, leaving the
 relationship returns to pairing, notification preferences mutate in memory, memory
 edits use an in-memory repository, and daily answers use the normal local-first
-queue. No OAuth sheet, StoreKit transaction, APNs registration, Supabase request,
+queue. No sign-in sheet, StoreKit transaction, APNs registration, Convex request,
 or production write occurs.
 
 The circular-arrow control resets the active scenario to its original seed. The
@@ -71,13 +71,14 @@ Every new user-facing feature must decide which coverage it needs:
    a developer-only view; that hides real controls and inevitably drifts.
 5. Route local writes through the same repository, queue, or view-model method as
    production. Replace only the remote endpoint, platform authorization, or opaque
-   StoreKit/OAuth result.
+   StoreKit or sign-in result.
 6. Ensure reset constructs a fresh dependency graph. Do not share scenario state
    with `UserDefaults`, the production local store, App Groups, keychain, or files.
 7. Give important controls stable accessibility identifiers and add at least one UI
    regression test for each new cross-screen local flow.
 8. Keep the `App` scheme as the live configured app. A future dedicated live
-   integration mode must use an explicitly non-production backend and visibly name
+   integration mode must use an explicitly non-production backend, such as a local Convex backend
+   (`CONVEX_AGENT_MODE=anonymous npx convex dev` in `backend/`), and visibly name
    that environment; never relabel the production path as a test environment.
 
 Feature dependencies that must reach routed screens belong in
@@ -90,7 +91,7 @@ harness, the dependency boundary is in the wrong place.
 Before adding or changing a scenario, verify:
 
 - The scenario is compiled only in Debug.
-- Supabase, OAuth, StoreKit, APNs, App Groups, and production persistence cannot be
+- Convex, Clerk, StoreKit, APNs, App Groups, and production persistence cannot be
   reached from the injected dependency graph.
 - Interactive mutations are observable after navigation or refresh.
 - The corresponding production initializer still uses its normal live default.

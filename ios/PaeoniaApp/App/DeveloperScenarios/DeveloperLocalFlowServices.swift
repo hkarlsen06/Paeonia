@@ -105,9 +105,9 @@
       )
     }
 
-    private var userEntitlement: SupabaseUserEntitlement? {
+    private var userEntitlement: RemoteUserEntitlement? {
       guard isEntitled else { return nil }
-      return SupabaseUserEntitlement(
+      return RemoteUserEntitlement(
         userID: DeveloperScenarioFixture.currentUserID,
         isEntitled: true,
         source: "developer_local_flow",
@@ -118,9 +118,9 @@
       )
     }
 
-    private var coupleEntitlement: SupabaseCoupleEntitlement? {
+    private var coupleEntitlement: RemoteCoupleEntitlement? {
       guard isPaired, isEntitled else { return nil }
-      return SupabaseCoupleEntitlement(
+      return RemoteCoupleEntitlement(
         coupleID: DeveloperScenarioFixture.coupleID,
         isEntitled: true,
         coveringUserID: DeveloperScenarioFixture.currentUserID,
@@ -132,9 +132,9 @@
       )
     }
 
-    private var relationship: SupabaseRelationshipState? {
+    private var relationship: RemoteRelationshipState? {
       guard isPaired else { return nil }
-      return SupabaseRelationshipState(
+      return RemoteRelationshipState(
         coupleID: DeveloperScenarioFixture.coupleID,
         pairID: DeveloperLocalFlowIDs.pairID,
         relationshipStatus: .active,
@@ -181,7 +181,7 @@
     func signInWithApple(_: AppleSignInCredential) async throws -> AuthSession {
       await store.signIn(provider: .apple)
     }
-    func signInWithGoogle(_: GoogleSignInCredential) async throws -> AuthSession {
+    func signInWithGoogle() async throws -> AuthSession {
       await store.signIn(provider: .google)
     }
     func signInForDevelopment() async throws -> AuthSession {
@@ -299,17 +299,6 @@
         fullName: "Alex"
       )
     }
-  }
-
-  @MainActor
-  final class DeveloperLocalFlowGoogleSignInProvider: GoogleSignInProviding {
-    func signIn() async throws -> GoogleSignInCredential {
-      GoogleSignInCredential(
-        idToken: "developer-google-token",
-        accessToken: "developer-access-token"
-      )
-    }
-    func signOut() {}
   }
 
   @MainActor

@@ -1,6 +1,5 @@
 import CryptoKit
 import Foundation
-import Supabase
 
 /// What kind of daily-answer media is being uploaded. Drives the backend
 /// `upload_purpose` and `media_type`; both kinds share the `daily_answer_media`
@@ -70,14 +69,14 @@ nonisolated enum DailyAnswerMediaUploadError: Error, Equatable, Sendable {
 /// profile photo uses, but scoped to the `daily_answer_media` parent so the asset
 /// links to a specific answer.
 actor LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
-    private let client: SupabaseClient
+    private let client: PaeoniaConvexClient
 
-    init(client: SupabaseClient) {
+    init(client: PaeoniaConvexClient) {
         self.client = client
     }
 
     static func live() throws -> LiveDailyAnswerMediaUploadService {
-        LiveDailyAnswerMediaUploadService(client: try PaeoniaSupabaseClientProvider.shared.client())
+        LiveDailyAnswerMediaUploadService(client: try PaeoniaConvexClientProvider.shared.client())
     }
 
     func uploadMedia(
@@ -87,44 +86,37 @@ actor LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
         reserveOperation: SyncClientOperation,
         finalizeOperation: SyncClientOperation
     ) async throws -> UUID {
-        let reservation: [PendingMediaUploadResponse] = try await client
-            .rpc(
-                "create_pending_media_upload",
-                params: ReserveDailyAnswerMediaRequest(
-                    operation: reserveOperation,
-                    answerID: answerID,
-                    coupleID: coupleID,
-                    purpose: media.purpose,
-                    fileExtension: media.fileExtension
-                )
+        let reservation: [MediaUploadReservation] = try await client.mutation(
+            "media:create_pending_media_upload",
+            args: ReserveDailyAnswerMediaRequest(
+                operation: reserveOperation,
+                answerID: answerID,
+                coupleID: coupleID,
+                purpose: media.purpose,
+                fileExtension: media.fileExtension
             )
-            .execute()
-            .value
+        )
         guard let reservation = reservation.first else {
             throw DailyAnswerMediaUploadError.reservationFailed
         }
 
-        try await client.storage
-            .from(reservation.bucket)
-            .upload(
-                reservation.storagePath,
-                data: media.data,
-                options: FileOptions(contentType: media.mimeType)
-            )
+        let storageID = try await client.upload(
+            media.data,
+            contentType: media.mimeType,
+            to: reservation.uploadURL
+        )
 
-        let finalized: [FinalizedMediaUploadResponse] = try await client
-            .rpc(
-                "finalize_media_upload",
-                params: FinalizeDailyAnswerMediaRequest(
-                    reservation: reservation,
-                    reservedByClientOperationID: reserveOperation.id,
-                    operation: finalizeOperation,
-                    answerID: answerID,
-                    media: media
-                )
+        let finalized: [FinalizedMediaUploadResponse] = try await client.mutation(
+            "media:finalize_media_upload",
+            args: FinalizeDailyAnswerMediaRequest(
+                reservation: reservation,
+                storageID: storageID,
+                reservedByClientOperationID: reserveOperation.id,
+                operation: finalizeOperation,
+                answerID: answerID,
+                media: media
             )
-            .execute()
-            .value
+        )
         guard let finalized = finalized.first, finalized.uploadStatus == "finalized" else {
             throw DailyAnswerMediaUploadError.finalizeFailed
         }
@@ -186,6 +178,7 @@ nonisolated struct FinalizeDailyAnswerMediaRequest: Encodable {
     let localCreatedAt: Date
     let bucket: String
     let storagePath: String
+    let storageID: String
     let reservedParentKind = "daily_answer_media"
     let reservedParentID: UUID
     let uploadPurpose: String
@@ -198,13 +191,15 @@ nonisolated struct FinalizeDailyAnswerMediaRequest: Encodable {
     let durationMs: Int?
 
     init(
-        reservation: PendingMediaUploadResponse,
+        reservation: MediaUploadReservation,
+        storageID: String,
         reservedByClientOperationID: UUID,
         operation: SyncClientOperation,
         answerID: UUID,
         media: DailyAnswerUploadMedia
     ) {
         mediaAssetID = reservation.mediaAssetID
+        self.storageID = storageID
         self.reservedByClientOperationID = reservedByClientOperationID
         clientOperationID = operation.id
         clientID = operation.clientID
@@ -232,6 +227,7 @@ nonisolated struct FinalizeDailyAnswerMediaRequest: Encodable {
         case localCreatedAt = "p_local_created_at"
         case bucket = "p_bucket"
         case storagePath = "p_storage_path"
+        case storageID = "p_storage_id"
         case reservedParentKind = "p_reserved_parent_kind"
         case reservedParentID = "p_reserved_parent_id"
         case uploadPurpose = "p_upload_purpose"

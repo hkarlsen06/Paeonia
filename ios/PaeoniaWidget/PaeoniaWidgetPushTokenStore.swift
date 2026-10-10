@@ -7,7 +7,7 @@ nonisolated struct PaeoniaWidgetPushTokenSnapshot: Equatable, Sendable {
 }
 
 /// Stores WidgetKit's separate APNs token in the App Group so the signed-in app
-/// can register it with Supabase on launch/foreground.
+/// can register it with the backend on launch/foreground.
 nonisolated final class PaeoniaWidgetPushTokenStore: @unchecked Sendable {
     nonisolated static let shared = PaeoniaWidgetPushTokenStore()
 

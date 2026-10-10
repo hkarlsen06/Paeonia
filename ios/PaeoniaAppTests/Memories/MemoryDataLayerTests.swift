@@ -399,7 +399,7 @@ struct MemoryDataLayerTests {
     }
 }
 
-private actor RecordingMemoryGateway: SupabaseMemoryGateway {
+private actor RecordingMemoryGateway: MemoryGateway {
     struct Request: Equatable {
         let updatedAfter: Date?
         let cursorMemoryID: UUID?

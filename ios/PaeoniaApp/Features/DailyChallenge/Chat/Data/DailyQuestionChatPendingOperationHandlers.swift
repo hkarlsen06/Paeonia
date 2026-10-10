@@ -3,11 +3,11 @@ import Foundation
 struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .createDailyQuestionThreadWithMessage
 
-    private let gateway: any SupabaseDailyQuestionChatGateway
+    private let gateway: any DailyQuestionChatGateway
     private let cache: any DailyQuestionChatCaching
 
     init(
-        gateway: any SupabaseDailyQuestionChatGateway,
+        gateway: any DailyQuestionChatGateway,
         cache: any DailyQuestionChatCaching
     ) {
         self.gateway = gateway
@@ -64,11 +64,11 @@ struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOpera
 struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .sendThreadMessage
 
-    private let gateway: any SupabaseDailyQuestionChatGateway
+    private let gateway: any DailyQuestionChatGateway
     private let cache: any DailyQuestionChatCaching
 
     init(
-        gateway: any SupabaseDailyQuestionChatGateway,
+        gateway: any DailyQuestionChatGateway,
         cache: any DailyQuestionChatCaching
     ) {
         self.gateway = gateway

@@ -23,10 +23,11 @@ struct DailyAnswerMediaUploadServiceTests {
 
     @Test func voiceFinalizeRequestUsesBackendVoiceMediaType() throws {
         let mediaAssetID = try #require(UUID(uuidString: "C90D2C5E-A6B9-4564-9B2C-E58896B42C41"))
-        let reservation = PendingMediaUploadResponse(
+        let reservation = MediaUploadReservation(
             mediaAssetID: mediaAssetID,
             bucket: "couple-media",
-            storagePath: "couple-id/voice/\(mediaAssetID.uuidString).m4a"
+            storagePath: "couple-id/voice/\(mediaAssetID.uuidString).m4a",
+            uploadURL: try #require(URL(string: "https://api.paeonia.test/upload/abc"))
         )
         let media = DailyAnswerUploadMedia(
             data: Data([0x01, 0x02, 0x03]),
@@ -37,6 +38,7 @@ struct DailyAnswerMediaUploadServiceTests {
         )
         let request = FinalizeDailyAnswerMediaRequest(
             reservation: reservation,
+            storageID: "kg2storage-id",
             reservedByClientOperationID: try #require(UUID(uuidString: "3CC4616B-7C22-4B2F-9DA7-6DBF073C5F3D")),
             operation: try Self.operation(),
             answerID: try #require(UUID(uuidString: "8BFA9389-A6F8-4F24-893C-42C881D23633")),
@@ -49,6 +51,7 @@ struct DailyAnswerMediaUploadServiceTests {
         #expect(payload["p_media_type"] as? String == "voice")
         #expect(payload["p_mime_type"] as? String == "audio/mp4")
         #expect(payload["p_duration_ms"] as? Int == 1_500)
+        #expect(payload["p_storage_id"] as? String == "kg2storage-id")
     }
 
     private static func operation() throws -> SyncClientOperation {

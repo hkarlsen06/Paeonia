@@ -118,9 +118,8 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
             operation: reserveOperation
         )
 
-        try await gateway.uploadPayload(
-            bucket: reservation.bucket,
-            storagePath: reservation.storagePath,
+        let storageID = try await gateway.uploadPayload(
+            reservation: reservation,
             data: payload.drawingData
         )
 
@@ -129,6 +128,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
         _ = try await gateway.finalizeDrawingUpload(
             WidgetDrawingFinalizeInput(
                 reservation: reservation,
+                storageID: storageID,
                 revisionID: revisionID,
                 reservedByOperationID: reserveOperation.id,
                 byteSize: Int64(payload.drawingData.count),
@@ -162,7 +162,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     }
 }
 
-/// Used when no Supabase client is configured; saving stays local-only.
+/// Used when no Convex client is configured; saving stays local-only.
 nonisolated struct NoOpWidgetCanvasUpload: WidgetCanvasUploading {
     func enqueueUpload(_ payload: WidgetDrawingUploadPayload) {}
     func uploadPending(_ payload: WidgetDrawingUploadPayload) async throws {}
@@ -170,12 +170,12 @@ nonisolated struct NoOpWidgetCanvasUpload: WidgetCanvasUploading {
 
 nonisolated enum WidgetCanvasUploadServiceFactory {
     static func makeDefault() -> any WidgetCanvasUploading {
-        guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
+        guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return NoOpWidgetCanvasUpload()
         }
 
         return WidgetCanvasUploadService(
-            gateway: LiveSupabaseWidgetCanvasGateway(client: client),
+            gateway: LiveWidgetCanvasGateway(client: client),
             operationFactory: WidgetCanvasClientOperationFactory.shared
         )
     }

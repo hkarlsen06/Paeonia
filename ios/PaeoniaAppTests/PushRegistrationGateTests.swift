@@ -4,7 +4,7 @@ import Testing
 
 struct PushRegistrationGateTests {
     private func fingerprint(
-        userID: UUID? = UUID(uuidString: "11111111-1111-1111-1111-111111111111"),
+        userID: String? = "user_first",
         token: String = "token-a"
     ) -> String {
         PushRegistrationGate.fingerprint(
@@ -46,8 +46,8 @@ struct PushRegistrationGateTests {
     }
 
     @Test func fingerprintChangesWithUser() {
-        let firstUser = fingerprint(userID: UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
-        let secondUser = fingerprint(userID: UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let firstUser = fingerprint(userID: "user_first")
+        let secondUser = fingerprint(userID: "user_second")
         #expect(firstUser != secondUser)
     }
 

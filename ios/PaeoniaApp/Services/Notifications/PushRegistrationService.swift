@@ -1,5 +1,4 @@
 import Foundation
-import Supabase
 #if DEBUG
 import OSLog
 #endif
@@ -10,7 +9,7 @@ nonisolated protocol PushRegistering: Sendable {
     func registerDevice(pushToken: String) async
 }
 
-actor SupabasePushRegistrationService: PushRegistering {
+actor ConvexPushRegistrationService: PushRegistering {
     /// Sandbox for development builds, production otherwise — this selects the
     /// correct APNs endpoint server-side.
     nonisolated static var apnsEnvironment: String {
@@ -21,7 +20,8 @@ actor SupabasePushRegistrationService: PushRegistering {
         #endif
     }
 
-    private let client: SupabaseClient
+    private let client: PaeoniaConvexClient
+    private let currentAccountID: @Sendable () async -> String?
     private let fingerprintStore: PushRegistrationFingerprintStore
 
     #if DEBUG
@@ -32,22 +32,24 @@ actor SupabasePushRegistrationService: PushRegistering {
     #endif
 
     init(
-        client: SupabaseClient,
+        client: PaeoniaConvexClient,
+        currentAccountID: @escaping @Sendable () async -> String? = { PaeoniaClerk.currentAccountID() },
         fingerprintStore: PushRegistrationFingerprintStore = PushRegistrationFingerprintStore(channel: .device)
     ) {
         self.client = client
+        self.currentAccountID = currentAccountID
         self.fingerprintStore = fingerprintStore
     }
 
     func registerDevice(pushToken: String) async {
         // iOS re-delivers the APNs token on every foreground; without an active
-        // session there is nobody to register for, so skip rather than fire an
-        // anonymous RPC and let a later authenticated activation register.
-        guard let session = try? await client.auth.session else {
+        // session there is nobody to register for, so skip rather than send an
+        // anonymous request and let a later authenticated activation register.
+        guard let accountID = await currentAccountID() else {
             return
         }
 
-        let fingerprint = fingerprint(userID: session.user.id, token: pushToken)
+        let fingerprint = fingerprint(accountID: accountID, token: pushToken)
         let now = Date()
         guard PushRegistrationGate.shouldSend(
             current: fingerprint,
@@ -58,19 +60,16 @@ actor SupabasePushRegistrationService: PushRegistering {
         }
 
         do {
-            let _: UUID = try await client
-                .rpc(
-                    "register_user_device",
-                    params: RegisterDeviceRequest(
-                        pushToken: pushToken,
-                        apnsEnvironment: Self.apnsEnvironment,
-                        locale: Locale.current.identifier,
-                        timeZoneID: TimeZone.current.identifier,
-                        appVersion: Self.appVersion
-                    )
+            let _: UUID = try await client.mutation(
+                "identity:register_user_device",
+                args: RegisterDeviceRequest(
+                    pushToken: pushToken,
+                    apnsEnvironment: Self.apnsEnvironment,
+                    locale: Locale.current.identifier,
+                    timeZoneID: TimeZone.current.identifier,
+                    appVersion: Self.appVersion
                 )
-                .execute()
-                .value
+            )
             fingerprintStore.recordSent(PushRegistrationRecord(fingerprint: fingerprint, sentAt: now))
         } catch {
             // Best effort: a failed registration just means no silent push yet;
@@ -81,10 +80,10 @@ actor SupabasePushRegistrationService: PushRegistering {
         }
     }
 
-    private func fingerprint(userID: UUID, token: String) -> String {
+    private func fingerprint(accountID: String, token: String) -> String {
         PushRegistrationGate.fingerprint(
             PushRegistrationInputs(
-                userID: userID,
+                userID: accountID,
                 platform: "ios",
                 token: token,
                 apnsEnvironment: Self.apnsEnvironment,
@@ -100,17 +99,17 @@ actor SupabasePushRegistrationService: PushRegistering {
     }
 }
 
-/// Used when no Supabase client is configured.
+/// Used when no Convex client is configured.
 nonisolated struct NoOpPushRegistration: PushRegistering {
     func registerDevice(pushToken: String) {}
 }
 
 nonisolated enum PushRegistrationServiceFactory {
     static func makeDefault() -> any PushRegistering {
-        guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
+        guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return NoOpPushRegistration()
         }
-        return SupabasePushRegistrationService(client: client)
+        return ConvexPushRegistrationService(client: client)
     }
 }
 

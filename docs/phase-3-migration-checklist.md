@@ -1,5 +1,7 @@
 # Phase 3 Migration Checklist
 
+> This document describes the retired Supabase schema. `backend/convex/schema.ts` is current.
+
 This checklist records the design and audit criteria used to turn `docs/phase-3-data-contract.md` into the first Supabase migration slices.
 
 Status: implemented as a migration series. This document is now a historical schema/security audit reference, not the active progress tracker. Use `docs/mvp-release-checklist.md` for release readiness and inspect `supabase/migrations/` for the applied source history. Unchecked boxes below are review criteria retained for traceability; they do not mean that no SQL exists.

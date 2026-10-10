@@ -16,7 +16,6 @@ struct RootView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     private let appleSignInProvider: any AppleSignInProviding
-    private let googleSignInProvider: any GoogleSignInProviding
     private let widgetCanvasService: any WidgetCanvasManaging
     private let widgetCanvasSync: any WidgetCanvasSyncing
     private let pushAuthorization: any PushAuthorizationProviding
@@ -35,7 +34,6 @@ struct RootView: View {
         viewModel: RootViewModel? = nil,
         locationViewModel: LocationMapViewModel? = nil,
         appleSignInProvider: (any AppleSignInProviding)? = nil,
-        googleSignInProvider: (any GoogleSignInProviding)? = nil,
         widgetCanvasService: (any WidgetCanvasManaging)? = nil,
         widgetCanvasSync: (any WidgetCanvasSyncing)? = nil,
         pushAuthorization: (any PushAuthorizationProviding)? = nil,
@@ -59,7 +57,6 @@ struct RootView: View {
         _deepLink = deepLink
         _pendingJoinInviteCode = pendingJoinInviteCode
         self.appleSignInProvider = appleSignInProvider ?? AppleSignInService()
-        self.googleSignInProvider = googleSignInProvider ?? GoogleSignInService.shared
         self.widgetCanvasService = widgetCanvasService ?? WidgetCanvasService.shared
         self.widgetCanvasSync = widgetCanvasSync ?? WidgetCanvasSyncServiceFactory.makeDefault()
         self.pushAuthorization = pushAuthorization ?? PushAuthorizationService()
@@ -619,7 +616,7 @@ struct RootView: View {
 
     private func signInWithGoogle() {
         Task {
-            await viewModel.signInWithGoogle(using: googleSignInProvider)
+            await viewModel.signInWithGoogle()
         }
     }
 
@@ -674,7 +671,6 @@ struct RootView: View {
             return
         }
 
-        googleSignInProvider.signOut()
         pendingJoinInviteCode = nil
     }
 
@@ -731,7 +727,7 @@ struct RootView: View {
             viewModel.openWidgetDrawing()
             self.deepLink = nil
         case .widgetRefresh:
-            // A widget extension cannot use the signed-in Supabase session.
+            // A widget extension cannot always use the signed-in session.
             // Route refresh through the host app, keep the destination useful,
             // and await the real paired sync before consuming the request.
             viewModel.openWidgetDrawing()

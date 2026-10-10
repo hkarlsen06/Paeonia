@@ -3,11 +3,11 @@ import Foundation
 struct LocationSharingPreferencePendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .updateLocationSharingPreference
 
-    private let gateway: any SupabaseLocationGateway
+    private let gateway: any LocationGateway
     private let visibilityStore: any LocationVisibilitySnapshotPersisting
 
     init(
-        gateway: any SupabaseLocationGateway,
+        gateway: any LocationGateway,
         visibilityStore: any LocationVisibilitySnapshotPersisting
     ) {
         self.gateway = gateway
@@ -42,11 +42,11 @@ struct LocationSharingPreferencePendingOperationHandler: PendingSyncOperationHan
 struct LatestPartnerLocationPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .updateLatestPartnerLocation
 
-    private let gateway: any SupabaseLocationGateway
+    private let gateway: any LocationGateway
     private let ownLocationStore: any OwnLocationSnapshotPersisting
 
     init(
-        gateway: any SupabaseLocationGateway,
+        gateway: any LocationGateway,
         ownLocationStore: any OwnLocationSnapshotPersisting
     ) {
         self.gateway = gateway

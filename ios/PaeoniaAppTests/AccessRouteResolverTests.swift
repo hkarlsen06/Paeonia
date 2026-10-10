@@ -145,12 +145,12 @@ struct AccessRouteResolverTests {
     }
 
     @Test func serviceLoadsRpcContractsBeforeResolvingRoute() async throws {
-        let gateway = FakeSupabaseAccessGateway(
+        let gateway = FakeAccessGateway(
             userEntitlement: .entitled(),
             coupleEntitlement: nil,
             relationshipState: nil
         )
-        let service = SupabaseAccessRouteService(gateway: gateway)
+        let service = RemoteAccessRouteService(gateway: gateway)
 
         let route = try await service.resolveRoute()
 
@@ -160,29 +160,29 @@ struct AccessRouteResolverTests {
 }
 
 // swiftlint:disable async_without_await
-private actor FakeSupabaseAccessGateway: SupabaseAccessGateway {
+private actor FakeAccessGateway: AccessGateway {
     enum Call: Equatable, Sendable {
         case loadAccessSnapshot
     }
 
-    private let userEntitlement: SupabaseUserEntitlement?
-    private let coupleEntitlement: SupabaseCoupleEntitlement?
-    private let relationshipState: SupabaseRelationshipState?
+    private let userEntitlement: RemoteUserEntitlement?
+    private let coupleEntitlement: RemoteCoupleEntitlement?
+    private let relationshipState: RemoteRelationshipState?
     private(set) var calls: [Call] = []
 
     init(
-        userEntitlement: SupabaseUserEntitlement?,
-        coupleEntitlement: SupabaseCoupleEntitlement?,
-        relationshipState: SupabaseRelationshipState?
+        userEntitlement: RemoteUserEntitlement?,
+        coupleEntitlement: RemoteCoupleEntitlement?,
+        relationshipState: RemoteRelationshipState?
     ) {
         self.userEntitlement = userEntitlement
         self.coupleEntitlement = coupleEntitlement
         self.relationshipState = relationshipState
     }
 
-    func loadAccessSnapshot() async throws -> SupabaseAccessSnapshot {
+    func loadAccessSnapshot() async throws -> RemoteAccessSnapshot {
         calls.append(.loadAccessSnapshot)
-        return SupabaseAccessSnapshot(
+        return RemoteAccessSnapshot(
             userEntitlement: userEntitlement,
             coupleEntitlement: coupleEntitlement,
             relationshipState: relationshipState
@@ -192,7 +192,7 @@ private actor FakeSupabaseAccessGateway: SupabaseAccessGateway {
     func loadRelationshipSyncEvents(
         after _: SyncCursor,
         limit _: Int
-    ) async throws -> [SupabaseRelationshipSyncEvent] {
+    ) async throws -> [RemoteRelationshipSyncEvent] {
         []
     }
 
@@ -202,9 +202,9 @@ private actor FakeSupabaseAccessGateway: SupabaseAccessGateway {
 
 private extension AccessRouteSnapshot {
     static func test(
-        userEntitlement: SupabaseUserEntitlement? = nil,
-        coupleEntitlement: SupabaseCoupleEntitlement? = nil,
-        relationshipState: SupabaseRelationshipState? = nil,
+        userEntitlement: RemoteUserEntitlement? = nil,
+        coupleEntitlement: RemoteCoupleEntitlement? = nil,
+        relationshipState: RemoteRelationshipState? = nil,
         hasPendingInvite: Bool = false
     ) -> AccessRouteSnapshot {
         AccessRouteSnapshot(
@@ -216,9 +216,9 @@ private extension AccessRouteSnapshot {
     }
 }
 
-private extension SupabaseUserEntitlement {
-    static func entitled() -> SupabaseUserEntitlement {
-        SupabaseUserEntitlement(
+private extension RemoteUserEntitlement {
+    static func entitled() -> RemoteUserEntitlement {
+        RemoteUserEntitlement(
             userID: UUID(),
             isEntitled: true,
             source: "storekit",
@@ -229,8 +229,8 @@ private extension SupabaseUserEntitlement {
         )
     }
 
-    static func notEntitled() -> SupabaseUserEntitlement {
-        SupabaseUserEntitlement(
+    static func notEntitled() -> RemoteUserEntitlement {
+        RemoteUserEntitlement(
             userID: UUID(),
             isEntitled: false,
             source: nil,
@@ -242,9 +242,9 @@ private extension SupabaseUserEntitlement {
     }
 }
 
-private extension SupabaseCoupleEntitlement {
-    static func entitled() -> SupabaseCoupleEntitlement {
-        SupabaseCoupleEntitlement(
+private extension RemoteCoupleEntitlement {
+    static func entitled() -> RemoteCoupleEntitlement {
+        RemoteCoupleEntitlement(
             coupleID: UUID(),
             isEntitled: true,
             coveringUserID: UUID(),
@@ -256,8 +256,8 @@ private extension SupabaseCoupleEntitlement {
         )
     }
 
-    static func notEntitled() -> SupabaseCoupleEntitlement {
-        SupabaseCoupleEntitlement(
+    static func notEntitled() -> RemoteCoupleEntitlement {
+        RemoteCoupleEntitlement(
             coupleID: UUID(),
             isEntitled: false,
             coveringUserID: nil,
@@ -270,8 +270,8 @@ private extension SupabaseCoupleEntitlement {
     }
 }
 
-private extension SupabaseRelationshipState {
-    static func active() -> SupabaseRelationshipState {
+private extension RemoteRelationshipState {
+    static func active() -> RemoteRelationshipState {
         test(
             relationshipStatus: .active,
             memberStatus: .active,
@@ -279,7 +279,7 @@ private extension SupabaseRelationshipState {
         )
     }
 
-    static func endedNoticePending() -> SupabaseRelationshipState {
+    static func endedNoticePending() -> RemoteRelationshipState {
         test(
             relationshipStatus: .ended,
             memberStatus: .endedNoticePending,
@@ -288,11 +288,11 @@ private extension SupabaseRelationshipState {
     }
 
     static func test(
-        relationshipStatus: SupabaseRelationshipStatus,
-        memberStatus: SupabaseRelationshipMemberStatus,
+        relationshipStatus: RemoteRelationshipStatus,
+        memberStatus: RemoteRelationshipMemberStatus,
         endedNoticeSeenAt: Date?
-    ) -> SupabaseRelationshipState {
-        SupabaseRelationshipState(
+    ) -> RemoteRelationshipState {
+        RemoteRelationshipState(
             coupleID: UUID(),
             pairID: UUID(),
             relationshipStatus: relationshipStatus,

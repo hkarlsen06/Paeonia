@@ -16,7 +16,7 @@ This is the first stop when an agent needs to find the current owner of a Paeoni
 - `ios/PaeoniaApp/App/RootViewModel.swift`: launch-adjacent auth/access/pairing state and `PresentationReadinessProviding` readiness.
 - `ios/PaeoniaApp/App/RootPrivacyLifecycle.swift`: cold-launch/foreground draining and bounded recovery for durable local privacy-purge retries; blocks a new paired route and sync startup until an older owner-scoped purge has completed.
 - `ios/PaeoniaApp/App/MainTabView.swift` and `ios/PaeoniaApp/App/MainTab.swift`: tab layout and high-level feature entry points.
-- `ios/PaeoniaApp/App/DeveloperScenarios/`, `ios/PaeoniaApp/App/RootFeatureDependencies.swift`, and the shared `Scenarios` Xcode scheme: Debug-only deterministic state launcher plus interactive local flows through the production root. It replaces OAuth, StoreKit, Supabase, APNs, sync, and persistence boundaries with in-memory dependencies. Use `PAEONIA_SCENARIO=<id>` or `-paeonia-scenario <id>` for direct UI-test launches. The extension contract is in `docs/developer-scenario-harness.md`.
+- `ios/PaeoniaApp/App/DeveloperScenarios/`, `ios/PaeoniaApp/App/RootFeatureDependencies.swift`, and the shared `Scenarios` Xcode scheme: Debug-only deterministic state launcher plus interactive local flows through the production root. It replaces sign-in, StoreKit, Convex, APNs, sync, and persistence boundaries with in-memory dependencies. Use `PAEONIA_SCENARIO=<id>` or `-paeonia-scenario <id>` for direct UI-test launches. The extension contract is in `docs/developer-scenario-harness.md`.
 - `ios/PaeoniaApp/App/RootNoticeLocalization.swift`: root-level user-facing notice copy.
 - `ios/PaeoniaAppTests/AccessRouteResolverTests.swift`: access route behavior around launch and relationship access.
 
@@ -29,8 +29,8 @@ When a launch-time network call is cancelled with `NSURLErrorCancelled` / `URLEr
 - `ios/PaeoniaApp/Features/DailyChallenge/Challenge/DailyChallengeStepBar.swift`: step/progress UI for the main challenge flow.
 - `ios/PaeoniaApp/Features/DailyChallenge/Challenge/DailyChallengeNoticeLocalization.swift`: localized title/message mapping for `DailyChallengeViewModel.Notice`.
 - `ios/PaeoniaApp/Features/DailyChallenge/Models/DailyChallengeModels.swift`: UI/domain models and answer-kind shape.
-- `ios/PaeoniaApp/Features/DailyChallenge/Models/DailyChallengeRemoteRows.swift`: DTOs matching Supabase RPC/read-model rows.
-- `ios/PaeoniaApp/Features/DailyChallenge/Data/DailyChallengeService.swift`: Supabase calls for challenge/day/question/answer behavior.
+- `ios/PaeoniaApp/Features/DailyChallenge/Models/DailyChallengeRemoteRows.swift`: DTOs matching the `backend/convex/daily.ts` function results.
+- `ios/PaeoniaApp/Features/DailyChallenge/Data/DailyChallengeService.swift`: Convex calls for challenge/day/question/answer behavior.
 - `ios/PaeoniaApp/Features/DailyChallenge/Data/DailyChallengeDraftStore.swift`: local answer draft persistence.
 - `ios/PaeoniaApp/Features/DailyChallenge/Data/DailyChallengeSnapshotCache.swift`: local-first cold-launch cache. The live service writes the raw `DailyChallengeRemoteSnapshotRow` (keyed per user) on every successful snapshot load; `DailyChallengeViewModel.configure` seeds `snapshot`+`streak` from it via `DailyChallengeRemoteSnapshotRow.loadResult` before the network `reload()`, so returning users see real content (not placeholders) on the first frame. The centralized local privacy purger clears it on relationship access loss or user departure.
 - `ios/PaeoniaApp/Features/DailyChallenge/Data/DailyChallengePendingOperationHandler.swift`: local-first retry handling for queued challenge writes.
@@ -49,16 +49,16 @@ When a launch-time network call is cancelled with `NSURLErrorCancelled` / `URLEr
 - `ios/PaeoniaApp/Services/Media/DailyAnswerMediaDraftStore.swift`, `DailyAnswerMediaUploadService.swift`, and `DailyAnswerMediaImageService.swift`: photo/voice draft storage, upload, and display support.
 - `ios/PaeoniaAppTests/DailyChallengeTests.swift`: main regression suite for question state, answer flow, reveal behavior, cancellation, and media handling.
 
-Question content is authored in `supabase/questions/`; read `docs/couple-question-guidelines.md` before changing prompts. For combined `text` + `photo` or `text` + `partner_choice` questions, both composers can be shown at once and each part is optional.
+Question content is authored in `backend/questions/`; read `docs/couple-question-guidelines.md` before changing prompts. For combined `text` + `photo` or `text` + `partner_choice` questions, both composers can be shown at once and each part is optional.
 
-Questions history reads through `public.get_daily_questions_history()` and `public.get_daily_answer_history_details()` (migration `20260628234249_add_daily_questions_history_rpcs.sql`): thin public wrappers over security-definer internal implementations, scoped to instances the viewer has answered, reusing the existing per-answer reveal rules.
+Questions history reads through `daily:get_daily_questions_history` and `daily:get_daily_answer_history_details` in `backend/convex/daily.ts`. Both are scoped to instances the viewer has answered and reuse the per-answer reveal rules.
 
-A daily question belongs to the couple-local day of its *latest* answer, not its seed day (migration `20260629004244_place_daily_questions_in_latest_answer_day.sql`). `get_daily_questions_history` returns `effective_local_date` (the latest answer's date in the couple's anchor timezone) and `DailyChallengeHistory.grouped` buckets on it; `get_today_daily_questions` keeps a carried-over instance in the Questions tab while its latest answer falls on the current couple-local date, so answering a partner's carried question doesn't make it vanish until the next day. The Questions tab is one list (`DailyChallengeSnapshot.readOverviewQuestions`) sorted by `questionsTabOrder`: a partner question still awaiting the user's answer (`DailyChallengeQuestion.isAwaitingCurrentUserAnswer`) is pinned on top so the actionable cards are never buried, then everything else by `readOverviewOrder` (most recent answer first, via `DailyChallengeQuestion.latestAnswerDate`). The history's within-day order uses `readOverviewOrder` directly. The tab no longer freezes the order or scrolls-to/highlights after answering — answering a partner question reveals the reply inside the cover (`DailyPartnerAnswerFlow`), so it's fine that the card then re-sorts down into the timeline.
+A daily question belongs to the couple-local day of its *latest* answer, not its seed day (`backend/convex/daily.ts`). `get_daily_questions_history` returns `effective_local_date` (the latest answer's date in the couple's anchor timezone) and `DailyChallengeHistory.grouped` buckets on it; `get_today_daily_questions` keeps a carried-over instance in the Questions tab while its latest answer falls on the current couple-local date, so answering a partner's carried question doesn't make it vanish until the next day. The Questions tab is one list (`DailyChallengeSnapshot.readOverviewQuestions`) sorted by `questionsTabOrder`: a partner question still awaiting the user's answer (`DailyChallengeQuestion.isAwaitingCurrentUserAnswer`) is pinned on top so the actionable cards are never buried, then everything else by `readOverviewOrder` (most recent answer first, via `DailyChallengeQuestion.latestAnswerDate`). The history's within-day order uses `readOverviewOrder` directly. The tab no longer freezes the order or scrolls-to/highlights after answering — answering a partner question reveals the reply inside the cover (`DailyPartnerAnswerFlow`), so it's fine that the card then re-sorts down into the timeline.
 
 ## Memories
 
 - `ios/PaeoniaApp/Features/Memories/Timeline/MemoriesScreen.swift`: the Memories tab — local-first timeline of memory cards, empty state, toolbar `+` to create, pull-to-refresh, push navigation to detail, and banner-routed notices. Owns its `MemoriesViewModel` as `@State` and configures it in `.task(id: currentUserID)` (load-bearing key); the active couple id flows through `.onChange` so it never cancels a load.
-- `ios/PaeoniaApp/Features/Memories/Timeline/MemoriesViewModel.swift`: `@MainActor @Observable` screen state and all mutations (create, update title/date, upsert own note, attach/remove photos, hide/delete). Talks only to `MemoryDataServicing`; never the repository or Supabase gateway directly. After each local change it flushes through an injected sync handler (wired to `RootViewModel.syncAfterLocalChange` via `MainTabView.onMemoriesLocalChange`) and reloads the cache.
+- `ios/PaeoniaApp/Features/Memories/Timeline/MemoriesViewModel.swift`: `@MainActor @Observable` screen state and all mutations (create, update title/date, upsert own note, attach/remove photos, hide/delete). Talks only to `MemoryDataServicing`; never the repository or the gateway directly. After each local change it flushes through an injected sync handler (wired to `RootViewModel.syncAfterLocalChange` via `MainTabView.onMemoriesLocalChange`) and reloads the cache.
 - `ios/PaeoniaApp/Features/Memories/Timeline/MemoryTimeline.swift`: pure day-grouping/ordering (newest day first, newest-created first within a day), visibility filtering (hidden/removed/pending-delete dropped), and `yyyy-MM-dd` couple-local date parse/format helpers. Unit-tested.
 - `ios/PaeoniaApp/Features/Memories/Timeline/MemoryCardView.swift`: one memory's timeline card (date, title, photo strip, note preview, subtle "saved on this phone" while dirty). `MemoryDateStyle` holds the shared UTC date format styles.
 - `ios/PaeoniaApp/Features/Memories/Editor/MemoryEditorView.swift`: the new-memory form sheet (title + date required, plus a note or at least one photo). `MemoryTextField` is the shared styled multiline field used across the memory sheets.
@@ -72,10 +72,10 @@ Memory photos require an online upload at save time: `MemoryMediaUploading` rese
 
 - `ios/PaeoniaApp/Features/Countdown/Milestones/RelationshipMilestone.swift`: pure milestone schedule. `RelationshipMilestoneCalculator.nextMilestone(startedOn:now:)` parses `couples.started_on` (`yyyy-MM-dd`) and returns the single soonest upcoming `RelationshipMilestone` (`.firstMonth`, `.months`, `.halfYear`, `.firstAnniversary`, `.years`, `.days`) with its date and `daysRemaining`. Months carry the first year, then yearly anniversaries plus round day counts (100, 500, then every 1,000) fill the gaps. No SwiftUI; unit-tested in `RelationshipMilestoneTests.swift`.
 - `ios/PaeoniaApp/Features/Countdown/Milestones/RelationshipMilestoneViewModel.swift`: presentation state for the relationship date. It reads the durable pending value before the server snapshot, keeps newer queued edits visible during refresh, and requests sync after an optimistic local save.
-- `ios/PaeoniaApp/Features/Countdown/Data/`: local-first relationship-date service, Supabase gateway, and pending-operation handler for `set_couple_started_on`.
+- `ios/PaeoniaApp/Features/Countdown/Data/`: local-first relationship-date service, gateway, and pending-operation handler for `set_couple_started_on`.
 - `ios/PaeoniaApp/Features/Countdown/Components/MilestoneCountdownCard.swift` and `RelationshipDateEditorView.swift`: the Us-tab square tile plus honest missing-date setup/edit sheet. The tile derives its number/date/name from `RelationshipMilestoneCalculator`; either partner can set or correct the date, but future dates are rejected. `started_on` flows from `RootViewModel` through `MainTabView`/`PairedHomeView`, and local changes flow back through the shared sync callback. It is never part of a `.task(id:)` key.
 - `ios/PaeoniaAppTests/RelationshipMilestoneTests.swift`: schedule coverage across each life stage (new couple, monthly, 100/500/1,000 days, half-year, first/later anniversaries, on-the-day, unparseable date).
-- `ios/PaeoniaAppTests/RelationshipStartedOnTests.swift` and `supabase/tests/relationship_started_on_test.sql`: queued local state, partner propagation, timezone-correct validation, authorization, idempotency, stale-sequence protection, and App Review dispatch coverage.
+- `ios/PaeoniaAppTests/RelationshipStartedOnTests.swift` and `backend/convex/relationship.test.ts`: queued local state, partner propagation, timezone-correct validation, authorization, idempotency, stale-sequence protection, and App Review dispatch coverage.
 
 ## Pairing, Paywall, And Streak Restore
 
@@ -98,19 +98,19 @@ Memory photos require an online upload at save time: `MemoryMediaUploading` rese
 - `ios/PaeoniaApp/Features/Settings/Notifications/NotificationSettingsView.swift`, `Location/LocationSettingsView.swift`, and `Purchases/PurchaseSettingsView.swift`: the notification toggles and system-off note, the location-sharing toggle, and Apple subscription management next to purchase restore. All three read the shared `SettingsViewModel` (or `LocationMapViewModel`) passed down from the hub.
 - `ios/PaeoniaApp/Features/Settings/SettingsDestinationLinksView.swift`: the support section and legal footer at the bottom of the Me tab.
 - `ios/PaeoniaApp/Features/PrivacySafety/`: data access/export/correction requests plus conduct report-and-leave/block UI. `PrivacySafetyService` owns the authenticated RPC/table boundary, view models own validation/deduplication, and Settings supplies the current partner identity.
-- `ios/PaeoniaApp/Services/Auth/GoogleSignInService.swift`, `ProviderAvatarImageLoader.swift`, and `SupabaseAuthService.swift`: transient Google provider-avatar import. Only bounded HTTPS image bytes from Google-hosted SDK URLs are accepted; Paeonia stores a distinct private fallback asset ID, never the public provider URL. A user-uploaded override can be removed to reveal this fallback, but the provider fallback itself is not removable in Settings.
+- `ios/PaeoniaApp/Services/Auth/ProviderAvatarImageLoader.swift` and `ClerkAuthService.swift`: transient Google provider-avatar import. Only bounded HTTPS image bytes from Google-hosted URLs are accepted; Paeonia stores a distinct private fallback asset ID, never the public provider URL. A user-uploaded override can be removed to reveal this fallback, but the provider fallback itself is not removable in Settings.
 - `ios/PaeoniaApp/Services/Notifications/NotificationPreferencesService.swift`: reads and writes the user's server-backed notification preferences.
 - `ios/PaeoniaApp/Features/Auth/Permissions/PushPermissionPrimerView.swift` and `ios/PaeoniaApp/Services/Notifications/PushPermissionPrimerStore.swift`: localized one-benefit notification primer and installation-scoped response persistence. "Not now" suppresses future automatic primers on that installation.
 - `ios/PaeoniaApp/Services/Notifications/PushAuthorizationService.swift`, `PushRegistrationService.swift`, and `PushRegistrationGate.swift`: system authorization and APNs device registration gating. The authorization service exposes the not-determined state so the primer never appears after iOS already has a choice.
 - `ios/PaeoniaApp/Services/Notifications/PaeoniaDeepLink.swift` and `PaeoniaNotificationRouter.swift`: notification payload routing into Daily Challenge, widget drawing, streak, and App Store subscription-management surfaces.
-- `supabase/migrations/20260711212432_queue_subscription_trial_reminders.sql`: Tidex-pattern server reminder for verified initial Apple free trials; queues one localized, idempotent push per device two days before trial expiry and routes taps to App Store subscription management.
+- `backend/convex/storekit.ts` (`queue_subscription_trial_reminders`, hourly cron in `backend/convex/crons.ts`): Tidex-pattern server reminder for verified initial Apple free trials; queues one localized, idempotent push per device two days before trial expiry and routes taps to App Store subscription management.
 - `ios/PaeoniaApp/Services/Subscription/PaeoniaStoreKitService.swift`: StoreKit product loading, account-specific introductory-offer eligibility, purchase, restore, and backend transaction verification calls. `PaywallViewModel` does not become presentation-ready until both products and offer eligibility settle, and keeps the last stable offer during refresh.
 
 ## Account Lifecycle And Local Privacy
 
 - `ios/PaeoniaApp/App/RootViewModel.swift` and `ios/PaeoniaApp/Services/Auth/`: root-owned sign-out/deletion lifecycle, paired profile updates, and access re-resolution. Account deletion obtains a fresh Apple authorization code when possible, while cancellation still proceeds through the documented manual-revocation fallback.
-- `supabase/migrations/20260709232648_finish_account_deletion_workflow.sql`: atomic Paeonia-data deletion boundary, relationship ending, device/location/notification cleanup, profile anonymization, permanent JWT tombstone guards, retryable Auth-user deletion jobs, and operator retry functions.
-- `supabase/functions/delete-account/` and `supabase/functions/_shared/appleSignInDeletion.ts`: authenticated deletion worker, global session revocation, Sign in with Apple code exchange/revocation, hard Auth deletion, and secret-protected queue draining. Required production secrets and recovery steps live in `supabase/README.md`.
+- `backend/convex/accountDeletion.ts` and `backend/convex/lib/accountDeletion.ts`: atomic Paeonia-data deletion boundary, relationship ending, device/location/notification cleanup, profile anonymization, retryable deletion jobs drained by a cron, and operator retry functions. `identity:delete_account` is the app-callable action.
+- `backend/convex/lib/accountDeletionProviders.ts`: outbound calls for account deletion, Clerk user deletion and Sign in with Apple token revocation. Required environment variables are listed in `backend/AGENTS.md`.
 - `ios/PaeoniaApp/Storage/Privacy/`: centralized, idempotent owner-scoped privacy purge. Temporary entitlement loss hides widget/media/location derivatives while preserving drafts and pending work; permanent relationship loss purges relationship content; sign-out/account deletion remove all owner SwiftData rows, drafts, caches, widget/App Group files, invite credentials, and persisted relationship identifiers.
 - `ios/PaeoniaApp/Services/Sync/Streams/RelationshipSyncEventApplier.swift`: maps backend `local_purge_scope` hints to temporary-hide or permanent-purge behavior, treating relationship-end `pending_uploads: review` as permanent for MVP because no recovery UI exists. Purge-driving events require the sync session's current `relationshipCoupleID`; an old relationship event cannot erase a newly paired couple's local state, and unknown relationship identity favors no data loss until Root resolves the access snapshot.
 - `ios/PaeoniaAppTests/Sync/LocalPrivacyPurgeTests.swift`, `PaeoniaSyncServiceTests.swift`, and `RelationshipSyncEventsStreamTests.swift`: owner isolation, idempotence, temporary-versus-permanent retention, coordinator wiring, and cross-couple regression coverage.
@@ -134,8 +134,8 @@ MVP drawing payloads are PencilKit-based. Do not replace them with hand-rolled s
 - `ios/PaeoniaApp/Services/Sync/PaeoniaSyncService.swift` and `PaeoniaSyncServiceDefaults.swift`: orchestration for local-first sync work.
 - `ios/PaeoniaApp/Services/Sync/SyncClientOperation.swift` and `SyncTypes.swift`: queued operation envelope and shared sync types.
 - `ios/PaeoniaApp/Services/Sync/Streams/`: individual sync streams for access events, pending operation drain, relationship events, and location visibility.
-- `ios/PaeoniaApp/Services/Access/AccessRouteService.swift`, `AccessRoute.swift`, `SupabaseAccessGateway.swift`, and `SupabaseAccessDTOs.swift`: current relationship/access routing.
-- `ios/PaeoniaApp/Services/Location/`: foreground location capture, Supabase gateway, models, and pending operation handling.
+- `ios/PaeoniaApp/Services/Access/AccessRouteService.swift`, `AccessRoute.swift`, `AccessGateway.swift`, and `AccessDTOs.swift`: current relationship/access routing.
+- `ios/PaeoniaApp/Services/Location/`: foreground location capture, gateway, models, and pending operation handling.
 - `ios/PaeoniaApp/Features/Location/Map/CoupleMapCard.swift`, `LocationMapViewModel.swift`, and `LocationNoticeLocalization.swift`: map card UI and user-facing state. The permission action first explains latest-location-only, foreground-only, no-history behavior. Last-known locations do not expire; after 24 hours the partner marker dims and ordinary text states when it was recorded.
 - `ios/PaeoniaAppTests/Sync/`: sync coordinator, local store, operation drain, and relationship/access stream tests.
 - `ios/PaeoniaAppTests/Location/LocationFeatureTests.swift`: partner location and visibility behavior.
@@ -166,21 +166,24 @@ Use generated `LocalizedStringResource` symbols in Swift, not raw string keys. U
 
 Prefer these tokens and components over local hardcoded colors, fonts, button shapes, banners, and cards.
 
-## Supabase
+## Backend
 
-- `supabase/README.md`: working rules and common local commands.
-- `docs/phase-3-data-contract.md`: source of truth for data-model and privacy decisions.
-- `docs/phase-3-migration-checklist.md`: migration order, RLS helpers, table surface classification, and grants.
-- `supabase/migrations/`: migration files. Create new files with `supabase migration new <name>`.
-- `supabase/functions/`: Edge Functions. Deploy with the Supabase CLI, not MCP deploy tools.
-- `supabase/questions/README.md`: question catalog file structure.
-- `supabase/questions/system/*`: source-controlled system question content.
-- `supabase/functions/apple-verify-purchase/`, `apple-redeem-streak-restore/`, and `apple-server-notifications/`: StoreKit verification, streak-restore redemption, and App Store Server Notification handling.
-- `supabase/functions/send-push-notifications/`: APNs outbox drain for alert and background notifications.
-- `supabase/functions/cleanup-media-storage/`: trusted media and report-snapshot Storage deletion drain.
-- `ios/Scripts/mint-review-codes.mjs` and `revoke-review-codes.mjs`: App Review demo-pair access lifecycle. Codes are operational output and must never be committed.
+- `backend/AGENTS.md`: working rules, function contracts, module map, local commands, and production access and deploy steps.
+- `backend/convex/schema.ts`: every table and index. Current source of truth for the data model. `docs/phase-3-data-contract.md` holds the original product decisions, written for the retired Supabase schema.
+- `backend/convex/<module>.ts`: app-callable functions by feature (`identity`, `pairing`, `relationship`, `access`, `daily`, `streaks`, `threads`, `memories`, `media`, `widget`, `location`, `reports`). Each test file sits next to its module.
+- `backend/convex/lib/`: shared helpers for authorization (`access.ts`, `auth.ts`), entitlements, time zones, notifications, streaks, and cleanup.
+- `backend/convex/http.ts`: HTTP actions on `actions.paeonia.no`, which are `GET /media` (signed media URLs) and `POST /apple/server-notifications`.
+- `backend/convex/crons.ts`: every scheduled job.
+- `backend/convex/storekit.ts`, `storekitNode.ts`, `access.ts` (`verify_purchase`, `redeem_streak_restore`), and `lib/appleStoreKit.ts`: StoreKit verification, streak-restore redemption, and App Store Server Notification handling.
+- `backend/convex/push.ts`, `pushQueue.ts`, `lib/apns.ts`, and `lib/apnsDrain.ts`: APNs outbox drain for alert and background notifications.
+- `backend/convex/media.ts`, `moderation.ts`, and `lib/mediaOrphans.ts`: media storage cleanup and report-snapshot copying and deletion.
+- `backend/convex/review.ts` and `lib/reviewAccess.ts`: App Review demo access operator functions.
+- `backend/questions/README.md`: question catalog file structure.
+- `backend/questions/system/*`: source-controlled system question content. `scripts/sync-question-catalog` uploads it.
+- `ios/PaeoniaShared/PaeoniaConvexClient.swift` and `ios/PaeoniaShared/PaeoniaClerk.swift`: the iOS Convex HTTP client and Clerk configuration.
+- `ios/Scripts/mint-review-codes.mjs` and `revoke-review-codes.mjs`: App Review demo-pair access lifecycle, run against the production deployment with the admin key. Codes are operational output and must never be committed.
 
-Most backend changes should start by checking the data contract and migration checklist before inspecting individual SQL files.
+Most backend changes should start by reading `backend/AGENTS.md` and the module that owns the behavior.
 
 ## Marketing
 
@@ -194,4 +197,4 @@ Most backend changes should start by checking the data contract and migration ch
 - `marketing/public/_headers` and `marketing/public/_redirects`: Cloudflare Pages behavior.
 - `marketing/public/.well-known/apple-app-site-association`: Universal Links file when present in the export/public tree.
 
-Do not route Supabase traffic through the marketing app. `paeonia.no` is public web and Universal Links; `api.paeonia.no` is Supabase.
+Do not route backend traffic through the marketing app. `paeonia.no` is public web and Universal Links; `api.paeonia.no` is the Convex API.

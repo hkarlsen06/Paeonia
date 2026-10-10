@@ -112,7 +112,7 @@ struct PairingInviteCodeTests {
     }
 }
 
-struct SupabasePairingServiceTests {
+struct RemotePairingServiceTests {
     private let canonicalCode = "01ABCD"
 
     @Test func createInviteUsesGeneratedCodeAndReturnsJoinURL() async throws {
@@ -126,8 +126,8 @@ struct SupabasePairingServiceTests {
             localCreatedAt: Date(timeIntervalSince1970: 10)
         )
         let expiresAt = Date(timeIntervalSince1970: 20)
-        let gateway = FakeSupabasePairingGateway(createdInviteID: inviteID)
-        let service = SupabasePairingService(
+        let gateway = FakePairingGateway(createdInviteID: inviteID)
+        let service = RemotePairingService(
             gateway: gateway,
             generateInviteCode: { "01-ab-cd" }
         )
@@ -153,12 +153,12 @@ struct SupabasePairingServiceTests {
             clientSequence: 7
         )
         let expiresAt = Date(timeIntervalSince1970: 20)
-        let gateway = FakeSupabasePairingGateway(
+        let gateway = FakePairingGateway(
             createdInviteID: inviteID,
             createFailuresBeforeSuccess: 2
         )
         let generatedCodes = GeneratedInviteCodeSequence(["01ABCD", "02BCDE", "03CDEF"])
-        let service = SupabasePairingService(
+        let service = RemotePairingService(
             gateway: gateway,
             generateInviteCode: { generatedCodes.next() }
         )
@@ -178,9 +178,9 @@ struct SupabasePairingServiceTests {
             clientID: try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
             clientSequence: 7
         )
-        let gateway = FakeSupabasePairingGateway(createFailuresBeforeSuccess: 3)
+        let gateway = FakePairingGateway(createFailuresBeforeSuccess: 3)
         let generatedCodes = GeneratedInviteCodeSequence(["01ABCD", "02BCDE", "03CDEF", "04DEFG"])
-        let service = SupabasePairingService(
+        let service = RemotePairingService(
             gateway: gateway,
             generateInviteCode: { generatedCodes.next() }
         )
@@ -203,8 +203,8 @@ struct SupabasePairingServiceTests {
             expiresAt: Date(timeIntervalSince1970: 30),
             hasSafetyWarning: false
         )
-        let gateway = FakeSupabasePairingGateway(preview: preview)
-        let service = SupabasePairingService(gateway: gateway)
+        let gateway = FakePairingGateway(preview: preview)
+        let service = RemotePairingService(gateway: gateway)
 
         let result = try await service.previewInvite(
             codeInput: "https://paeonia.no/join/01-ab-cd"
@@ -221,8 +221,8 @@ struct SupabasePairingServiceTests {
             status: .pending,
             expiresAt: Date(timeIntervalSince1970: 30)
         )
-        let gateway = FakeSupabasePairingGateway(validation: validation)
-        let service = SupabasePairingService(gateway: gateway)
+        let gateway = FakePairingGateway(validation: validation)
+        let service = RemotePairingService(gateway: gateway)
         let invite = PairingInvite(
             id: inviteID,
             code: "01-ab-cd",
@@ -251,12 +251,12 @@ struct SupabasePairingServiceTests {
             joinURL: try PairingJoinURL.make(inviteCode: canonicalCode),
             expiresAt: Date(timeIntervalSince1970: 10)
         )
-        let gateway = FakeSupabasePairingGateway(
+        let gateway = FakePairingGateway(
             createFailuresBeforeSuccess: 1,
             rotatedInviteID: rotatedInviteID
         )
         let generatedCodes = GeneratedInviteCodeSequence(["01ABCD", "02BCDE"])
-        let service = SupabasePairingService(
+        let service = RemotePairingService(
             gateway: gateway,
             generateInviteCode: { generatedCodes.next() }
         )
@@ -284,8 +284,8 @@ struct SupabasePairingServiceTests {
             clientID: clientID,
             clientSequence: 8
         )
-        let gateway = FakeSupabasePairingGateway(acceptedCoupleID: acceptedCoupleID)
-        let service = SupabasePairingService(gateway: gateway)
+        let gateway = FakePairingGateway(acceptedCoupleID: acceptedCoupleID)
+        let service = RemotePairingService(gateway: gateway)
 
         let relationship = try await service.acceptInvite(
             codeInput: "https://paeonia.no/join/01-ab-cd",
@@ -305,8 +305,8 @@ struct SupabasePairingServiceTests {
             clientID: clientID,
             clientSequence: 12
         )
-        let gateway = FakeSupabasePairingGateway(leaveResult: true)
-        let service = SupabasePairingService(gateway: gateway)
+        let gateway = FakePairingGateway(leaveResult: true)
+        let service = RemotePairingService(gateway: gateway)
 
         let didLeave = try await service.leaveRelationship(operation: operation)
 
@@ -841,7 +841,7 @@ struct PaywallErrorTests {
 }
 
 // swiftlint:disable async_without_await
-private actor FakeSupabasePairingGateway: SupabasePairingGateway {
+private actor FakePairingGateway: PairingGateway {
     private let createdInviteID: UUID
     private var createFailuresBeforeSuccess: Int
     private let preview: PairingInvitePreview?

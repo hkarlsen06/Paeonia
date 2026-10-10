@@ -3,11 +3,11 @@ import Foundation
 struct RelationshipDatePendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .setRelationshipStartedOn
 
-    private let gateway: any SupabaseRelationshipStartedOnGateway
+    private let gateway: any RelationshipStartedOnGateway
     private let accessSnapshotStore: any AccessSyncSnapshotPersisting
 
     init(
-        gateway: any SupabaseRelationshipStartedOnGateway,
+        gateway: any RelationshipStartedOnGateway,
         accessSnapshotStore: any AccessSyncSnapshotPersisting
     ) {
         self.gateway = gateway

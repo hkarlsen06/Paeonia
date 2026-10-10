@@ -1,0 +1,80 @@
+# Question Catalog Content
+
+This folder tracks source-controlled content for Paeonia questions.
+Schema changes belong in `backend/convex/schema.ts`; question rows are content.
+
+Before adding, versioning, or localizing questions, follow
+`docs/couple-question-guidelines.md`.
+
+## Structure
+
+Use collection folders that match `question_collections.kind`:
+
+```text
+backend/questions/
+|-- system/
+|   `-- <question_key>/
+|       |-- question.md
+|       `-- versions/
+|           `-- v001/
+|               |-- version.md
+|               `-- locales/
+|                   |-- en.md
+|                   `-- nb.md
+|-- custom/
+`-- mini_game/
+```
+
+`<question_key>` maps to `questions.key` and should stay stable for the
+same prompt intent. Version folders map to
+`question_versions.version_number` using zero-padded names such as `v001`
+and `v002`.
+
+Each version tracks its answer-kind contract in `version.md`. Locale files map to
+`public.question_version_localizations` and must include the required locales,
+`en` and `nb`, with full and short prompts.
+
+When prompt meaning, short prompt meaning, answer kinds, or meaningful
+localization changes, add a new version folder instead of editing a historical
+version in place.
+
+## File Format
+
+Use YAML front matter in each file:
+
+- `question.md`: `collection`, `key`, `status`, `resurfaceable`,
+  `resurface_after_months`.
+- `version.md`: `version_number`, `status`, `active_from`, `retired_at`,
+  `answer_kinds`.
+- `locales/<locale>.md`: `locale`, `prompt`, `short_prompt`.
+
+Keep generated database metadata intact when backfilling existing rows. For new
+drafts, use the same fields with draft status until content is applied.
+
+## Sync Script
+
+Use `scripts/sync-question-catalog` from the repository root to validate and
+upload source-controlled question content. It parses this folder, then runs the
+internal mutation `catalog:sync_catalog` with `npx convex run` from `backend/`.
+
+```bash
+scripts/sync-question-catalog
+scripts/sync-question-catalog --apply
+scripts/sync-question-catalog --emit-json
+```
+
+The target deployment comes from `backend/.env.local` for dev. For production,
+export `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_KEY` in the shell
+first. Never commit either value.
+
+The default mode is a dry run. It reads the deployment and reports new question
+keys, new version folders, missing localizations, and status changes. It does
+not write. `--apply` uploads the pending changes in chunks of 30 questions, after
+a dry run of every chunk found no errors. `--emit-json` prints the payload and
+exits, without contacting a deployment.
+
+Existing version prompts, short prompts, and answer kinds are immutable. If the
+script reports drift for an existing version, create the next `vNNN` folder
+instead of editing the old version in place. An active version needs both `en`
+and `nb` localizations and one or two answer kinds. The sync rejects anything
+else.

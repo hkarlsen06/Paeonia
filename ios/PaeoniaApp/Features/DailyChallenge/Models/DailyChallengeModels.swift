@@ -459,7 +459,7 @@ extension DailyChallengeQuestion {
     /// survive. The caller decides how to slice or group the result.
     ///
     /// `nonisolated` so the nonisolated `DailyChallengeSnapshot.make` and the
-    /// `SupabaseDailyChallengeService` actor can both build questions off the main
+    /// `DailyChallengeService` actor can both build questions off the main
     /// actor (an extension doesn't inherit the type's `nonisolated` by default).
     nonisolated static func list(
         currentUserID: UUID,

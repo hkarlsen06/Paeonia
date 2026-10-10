@@ -1,5 +1,4 @@
 import Foundation
-import Supabase
 #if DEBUG
 import OSLog
 #endif
@@ -41,7 +40,7 @@ nonisolated enum NotificationPreferenceKind: Equatable, Sendable {
 
 /// Reads and writes the couple member's notification preferences. The visible
 /// widget alert is user-toggleable; the separate silent widget refresh is not.
-/// Row access is scoped to the caller by RLS.
+/// The backend returns and updates only the signed-in user's row.
 nonisolated protocol NotificationPreferencesProviding: Sendable {
     /// Loads all user-facing MVP notification toggles.
     func loadNotificationPreferences() async throws -> NotificationPreferences
@@ -50,41 +49,36 @@ nonisolated protocol NotificationPreferencesProviding: Sendable {
     func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled: Bool) async throws
 }
 
-actor SupabaseNotificationPreferencesService: NotificationPreferencesProviding {
-    private let client: SupabaseClient
-    private static let table = "notification_preferences"
-    private static let columns = [
-        "streak_reminders_enabled",
-        "daily_challenge_enabled",
-        "partner_answered_enabled",
-        "messages_enabled",
-        "widget_updates_enabled",
-        "memories_enabled",
-    ].joined(separator: ",")
+actor ConvexNotificationPreferencesService: NotificationPreferencesProviding {
+    private let client: PaeoniaConvexClient
 
-    init(client: SupabaseClient) {
+    init(client: PaeoniaConvexClient) {
         self.client = client
     }
 
     func loadNotificationPreferences() async throws -> NotificationPreferences {
-        let row: NotificationPreferencesRow = try await client
-            .from(Self.table)
-            .select(Self.columns)
-            .single()
-            .execute()
-            .value
+        let row: NotificationPreferencesRow = try await client.mutation(
+            "identity:get_notification_preferences"
+        )
 
         return row.preferences
     }
 
     func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled: Bool) async throws {
-        let session = try await client.auth.session
+        try await client.mutation(
+            "identity:set_notification_preference",
+            args: SetNotificationPreferenceRequest(column: kind.columnName, enabled: enabled)
+        )
+    }
+}
 
-        try await client
-            .from(Self.table)
-            .update([kind.columnName: enabled])
-            .eq("user_id", value: session.user.id.uuidString)
-            .execute()
+nonisolated private struct SetNotificationPreferenceRequest: Encodable {
+    let column: String
+    let enabled: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case column = "p_column"
+        case enabled = "p_enabled"
     }
 }
 
@@ -121,9 +115,9 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
 
 nonisolated enum NotificationPreferencesServiceFactory {
     static func makeDefault() -> (any NotificationPreferencesProviding)? {
-        guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
+        guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return nil
         }
-        return SupabaseNotificationPreferencesService(client: client)
+        return ConvexNotificationPreferencesService(client: client)
     }
 }

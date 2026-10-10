@@ -1,5 +1,4 @@
 import Foundation
-import Supabase
 
 /// Canvas reference returned by `get_or_create_widget_canvas`.
 nonisolated struct WidgetCanvasReference: Decodable, Sendable {
@@ -31,7 +30,9 @@ nonisolated struct WidgetDrawingRevisionSubmission: Sendable {
 
 /// Inputs to finalize a reserved widget drawing upload.
 nonisolated struct WidgetDrawingFinalizeInput: Sendable {
-    let reservation: PendingMediaUploadResponse
+    let reservation: MediaUploadReservation
+    /// Storage id returned by the upload, passed to finalize as `p_storage_id`.
+    let storageID: String
     let revisionID: UUID
     let reservedByOperationID: UUID
     let byteSize: Int64
@@ -85,7 +86,7 @@ enum WidgetCanvasGatewayError: Error, Equatable {
     case parentRevisionConflict
 }
 
-/// Typed wrapper over the widget canvas RPCs and Storage upload.
+/// Typed wrapper over the widget canvas calls and the media upload.
 nonisolated protocol WidgetCanvasGateway: Sendable {
     func getOrCreateCanvas() async throws -> WidgetCanvasReference
 
@@ -94,9 +95,10 @@ nonisolated protocol WidgetCanvasGateway: Sendable {
         canvasID: UUID,
         revisionID: UUID,
         operation: WidgetCanvasClientOperation
-    ) async throws -> PendingMediaUploadResponse
+    ) async throws -> MediaUploadReservation
 
-    func uploadPayload(bucket: String, storagePath: String, data: Data) async throws
+    /// Uploads the payload bytes and returns the storage id for finalize.
+    func uploadPayload(reservation: MediaUploadReservation, data: Data) async throws -> String
 
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput,
@@ -125,25 +127,26 @@ nonisolated protocol WidgetCanvasGateway: Sendable {
     ) async throws -> [WidgetDrawingRevisionSummary]
 }
 
-actor LiveSupabaseWidgetCanvasGateway: WidgetCanvasGateway {
+actor LiveWidgetCanvasGateway: WidgetCanvasGateway {
     nonisolated static let payloadMimeType = "application/octet-stream"
     nonisolated static let payloadFileExtension = "pkdrawing"
     nonisolated static let rendererVersion = "1"
     nonisolated static let validationVersion = "1"
+    nonisolated static let signedURLExpiresInSeconds = 900
 
     // Internal (not private) so the history-gateway extension in another file
-    // can issue its own RPC.
-    let client: SupabaseClient
+    // can issue its own call.
+    let client: PaeoniaConvexClient
 
-    init(client: SupabaseClient) {
+    init(client: PaeoniaConvexClient) {
         self.client = client
     }
 
     func getOrCreateCanvas() async throws -> WidgetCanvasReference {
-        let rows: [WidgetCanvasReference] = try await client
-            .rpc("get_or_create_widget_canvas", params: GetOrCreateWidgetCanvasRequest())
-            .execute()
-            .value
+        let rows: [WidgetCanvasReference] = try await client.mutation(
+            "widget:get_or_create_widget_canvas",
+            args: GetOrCreateWidgetCanvasRequest()
+        )
         guard let canvas = rows.first else {
             throw WidgetCanvasGatewayError.emptyResponse
         }
@@ -155,46 +158,34 @@ actor LiveSupabaseWidgetCanvasGateway: WidgetCanvasGateway {
         canvasID: UUID,
         revisionID: UUID,
         operation: WidgetCanvasClientOperation
-    ) async throws -> PendingMediaUploadResponse {
-        let rows: [PendingMediaUploadResponse] = try await client
-            .rpc(
-                "create_pending_media_upload",
-                params: CreatePendingWidgetDrawingUploadRequest(
-                    operation: operation,
-                    coupleID: coupleID,
-                    canvasID: canvasID,
-                    revisionID: revisionID
-                )
+    ) async throws -> MediaUploadReservation {
+        let rows: [MediaUploadReservation] = try await client.mutation(
+            "media:create_pending_media_upload",
+            args: CreatePendingWidgetDrawingUploadRequest(
+                operation: operation,
+                coupleID: coupleID,
+                canvasID: canvasID,
+                revisionID: revisionID
             )
-            .execute()
-            .value
+        )
         guard let reservation = rows.first else {
             throw WidgetCanvasGatewayError.emptyResponse
         }
         return reservation
     }
 
-    func uploadPayload(bucket: String, storagePath: String, data: Data) async throws {
-        try await client.storage
-            .from(bucket)
-            .upload(
-                storagePath,
-                data: data,
-                options: FileOptions(contentType: Self.payloadMimeType)
-            )
+    func uploadPayload(reservation: MediaUploadReservation, data: Data) async throws -> String {
+        try await client.upload(data, contentType: Self.payloadMimeType, to: reservation.uploadURL)
     }
 
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput,
         operation: WidgetCanvasClientOperation
     ) async throws -> FinalizedMediaUploadResponse {
-        let rows: [FinalizedMediaUploadResponse] = try await client
-            .rpc(
-                "finalize_media_upload",
-                params: FinalizeWidgetDrawingUploadRequest(input: input, operation: operation)
-            )
-            .execute()
-            .value
+        let rows: [FinalizedMediaUploadResponse] = try await client.mutation(
+            "media:finalize_media_upload",
+            args: FinalizeWidgetDrawingUploadRequest(input: input, operation: operation)
+        )
         guard let finalized = rows.first else {
             throw WidgetCanvasGatewayError.emptyResponse
         }
@@ -209,13 +200,10 @@ actor LiveSupabaseWidgetCanvasGateway: WidgetCanvasGateway {
         operation: WidgetCanvasClientOperation
     ) async throws -> WidgetDrawingRevisionResult {
         do {
-            let rows: [WidgetDrawingRevisionResult] = try await client
-                .rpc(
-                    "submit_widget_drawing_revision",
-                    params: SubmitWidgetDrawingRevisionRequest(submission: submission, operation: operation)
-                )
-                .execute()
-                .value
+            let rows: [WidgetDrawingRevisionResult] = try await client.mutation(
+                "widget:submit_widget_drawing_revision",
+                args: SubmitWidgetDrawingRevisionRequest(submission: submission, operation: operation)
+            )
             guard let result = rows.first else {
                 throw WidgetCanvasGatewayError.emptyResponse
             }
@@ -226,24 +214,15 @@ actor LiveSupabaseWidgetCanvasGateway: WidgetCanvasGateway {
     }
 
     func getCanvasState() async throws -> WidgetCanvasState? {
-        let rows: [WidgetCanvasState] = try await client
-            .rpc("get_widget_canvas", params: GetOrCreateWidgetCanvasRequest())
-            .execute()
-            .value
+        let rows: [WidgetCanvasState] = try await client.mutation(
+            "widget:get_widget_canvas",
+            args: GetOrCreateWidgetCanvasRequest()
+        )
         return rows.first
     }
 
     func signedPayloadURL(mediaAssetID: UUID) async throws -> URL? {
-        let rows: [WidgetSignedURLAuthorization] = try await client
-            .rpc("get_media_signed_url", params: WidgetSignedURLRequest(mediaAssetID: mediaAssetID))
-            .execute()
-            .value
-        guard let authorization = rows.first else {
-            return nil
-        }
-        return try await client.storage
-            .from(authorization.bucket)
-            .createSignedURL(path: authorization.storagePath, expiresIn: authorization.expiresInSeconds)
+        try await client.signedMediaURL(for: mediaAssetID, expiresInSeconds: Self.signedURLExpiresInSeconds)
     }
 
     private static func isParentRevisionConflict(_ error: any Error) -> Bool {
@@ -259,28 +238,6 @@ nonisolated private struct GetOrCreateWidgetCanvasRequest: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case coupleID = "p_couple_id"
-    }
-}
-
-nonisolated private struct WidgetSignedURLRequest: Encodable {
-    let mediaAssetID: UUID
-    let expiresInSeconds = 900
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "p_media_asset_id"
-        case expiresInSeconds = "p_expires_in_seconds"
-    }
-}
-
-nonisolated private struct WidgetSignedURLAuthorization: Decodable {
-    let bucket: String
-    let storagePath: String
-    let expiresInSeconds: Int
-
-    enum CodingKeys: String, CodingKey {
-        case bucket
-        case storagePath = "storage_path"
-        case expiresInSeconds = "expires_in_seconds"
     }
 }
 
@@ -301,7 +258,7 @@ nonisolated private struct CreatePendingWidgetDrawingUploadRequest: Encodable {
     let reservedParentID: UUID
     let uploadPurpose = "widget_drawing_payload"
     let mediaType = "drawing_payload"
-    let fileExtension = LiveSupabaseWidgetCanvasGateway.payloadFileExtension
+    let fileExtension = LiveWidgetCanvasGateway.payloadFileExtension
     let coupleID: UUID
     let pathContext: WidgetDrawingPathContext
 
@@ -344,11 +301,12 @@ nonisolated private struct FinalizeWidgetDrawingUploadRequest: Encodable {
     let localCreatedAt: Date
     let bucket: String
     let storagePath: String
+    let storageID: String
     let reservedParentKind = "widget_drawing_revision"
     let reservedParentID: UUID
     let uploadPurpose = "widget_drawing_payload"
     let mediaType = "drawing_payload"
-    let mimeType = LiveSupabaseWidgetCanvasGateway.payloadMimeType
+    let mimeType = LiveWidgetCanvasGateway.payloadMimeType
     let byteSize: Int64
     let sha256Hex: String
 
@@ -361,6 +319,7 @@ nonisolated private struct FinalizeWidgetDrawingUploadRequest: Encodable {
         self.localCreatedAt = operation.localCreatedAt
         self.bucket = input.reservation.bucket
         self.storagePath = input.reservation.storagePath
+        self.storageID = input.storageID
         self.reservedParentID = input.revisionID
         self.byteSize = input.byteSize
         self.sha256Hex = input.sha256Hex
@@ -375,6 +334,7 @@ nonisolated private struct FinalizeWidgetDrawingUploadRequest: Encodable {
         case localCreatedAt = "p_local_created_at"
         case bucket = "p_bucket"
         case storagePath = "p_storage_path"
+        case storageID = "p_storage_id"
         case reservedParentKind = "p_reserved_parent_kind"
         case reservedParentID = "p_reserved_parent_id"
         case uploadPurpose = "p_upload_purpose"
@@ -397,8 +357,8 @@ nonisolated private struct SubmitWidgetDrawingRevisionRequest: Encodable {
     let bounds: WidgetDrawingBounds
     let sha256Hex: String
     let clientDecodeValidatedAt: Date
-    let clientRendererVersion = LiveSupabaseWidgetCanvasGateway.rendererVersion
-    let clientValidationVersion = LiveSupabaseWidgetCanvasGateway.validationVersion
+    let clientRendererVersion = LiveWidgetCanvasGateway.rendererVersion
+    let clientValidationVersion = LiveWidgetCanvasGateway.validationVersion
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64

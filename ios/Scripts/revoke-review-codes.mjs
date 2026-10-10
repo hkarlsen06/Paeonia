@@ -6,54 +6,22 @@
 // accounts and their registry entries are left in place for the next cycle; the
 // leftover demo couple data is unreachable and gets wiped by the next mint.
 //
-// Reads credentials from the repo-root .env (git-ignored):
-//   SUPABASE_URL         e.g. https://api.paeonia.no
-//   SUPABASE_SECRET_KEY  Supabase secret/service-role key (SUPABASE_SERVICE_ROLE_KEY also accepted)
+// Calls the Convex operator function review:revoke_review_access_codes on the
+// production deployment with `npx convex run` from backend/. See
+// ios/Scripts/convex-operator.mjs for the environment it reads
+// (CONVEX_SELF_HOSTED_URL, CONVEX_SELF_HOSTED_ADMIN_KEY).
 //
 // Usage:
 //   bun run review-codes:revoke
 //   (or: bun ios/Scripts/revoke-review-codes.mjs)
 
-// Bun loads the repo-root .env automatically; CI and shell variables still work.
+import { convexTargetUrl, runConvex } from "./convex-operator.mjs";
 
-const SUPABASE_URL = requireEnv("SUPABASE_URL").replace(/\/+$/, "");
-const SERVICE_KEY = requireEnv("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY");
-
-main().catch((error) => {
+try {
+  const target = convexTargetUrl();
+  const revoked = runConvex("review:revoke_review_access_codes");
+  console.log(`✓ Revoked ${revoked ?? 0} active review code(s) on ${target}.`);
+} catch (error) {
   console.error(`\n✗ ${error.message}`);
-  process.exit(1);
-});
-
-async function main() {
-  const revoked = await rpc("revoke_review_access_codes");
-  console.log(`✓ Revoked ${revoked ?? 0} active review code(s).`);
-}
-
-async function rpc(fn, args) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
-    method: "POST",
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(args ?? {}),
-  });
-
-  if (!res.ok) {
-    throw new Error(`rpc ${fn} failed (${res.status}): ${await res.text()}`);
-  }
-
-  if (res.status === 204) return null;
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
-}
-
-function requireEnv(...names) {
-  for (const name of names) {
-    if (process.env[name]) return process.env[name];
-  }
-  console.error(`Missing required environment variable: ${names.join(" or ")}`);
   process.exit(1);
 }

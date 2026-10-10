@@ -5,18 +5,6 @@ import Foundation
 /// idempotent.
 typealias AuthClientOperation = SyncClientOperation
 
-nonisolated struct PendingMediaUploadResponse: Decodable, Sendable {
-    let mediaAssetID: UUID
-    let bucket: String
-    let storagePath: String
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "media_asset_id"
-        case bucket
-        case storagePath = "storage_path"
-    }
-}
-
 nonisolated struct FinalizedMediaUploadResponse: Decodable, Sendable {
     let mediaAssetID: UUID
     let uploadStatus: String
@@ -73,6 +61,7 @@ nonisolated struct FinalizeProfilePhotoUploadRequest: Encodable {
     let localCreatedAt: Date
     let bucket: String
     let storagePath: String
+    let storageID: String
     let reservedParentKind = "profile_photo"
     let reservedParentID: UUID
     let uploadPurpose = "profile_photo"
@@ -84,13 +73,15 @@ nonisolated struct FinalizeProfilePhotoUploadRequest: Encodable {
     let height: Int
 
     init(
-        reservation: PendingMediaUploadResponse,
+        reservation: MediaUploadReservation,
+        storageID: String,
         reservedByClientOperationID: UUID,
         operation: AuthClientOperation,
         reservedParentID: UUID,
         image: ImageCompressor.CompressedImage
     ) {
         self.mediaAssetID = reservation.mediaAssetID
+        self.storageID = storageID
         self.reservedByClientOperationID = reservedByClientOperationID
         self.clientOperationID = operation.id
         self.clientID = operation.clientID
@@ -115,6 +106,7 @@ nonisolated struct FinalizeProfilePhotoUploadRequest: Encodable {
         case localCreatedAt = "p_local_created_at"
         case bucket = "p_bucket"
         case storagePath = "p_storage_path"
+        case storageID = "p_storage_id"
         case reservedParentKind = "p_reserved_parent_kind"
         case reservedParentID = "p_reserved_parent_id"
         case uploadPurpose = "p_upload_purpose"

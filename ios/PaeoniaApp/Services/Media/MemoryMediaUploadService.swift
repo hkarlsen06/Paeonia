@@ -1,6 +1,5 @@
 import CryptoKit
 import Foundation
-import Supabase
 
 nonisolated enum MemoryMediaPurpose: String, Codable, Sendable, Equatable {
     case photo = "memory_photo"
@@ -79,14 +78,16 @@ nonisolated enum MemoryMediaUploadError: Error, Equatable, Sendable {
 }
 
 actor LiveMemoryMediaUploadService: MemoryMediaUploading {
-    private let client: SupabaseClient
+    private let client: PaeoniaConvexClient
+    private let isSignedIn: PaeoniaSignedInCheck
 
-    init(client: SupabaseClient) {
+    init(client: PaeoniaConvexClient, isSignedIn: @escaping PaeoniaSignedInCheck = PaeoniaSignedIn.live) {
         self.client = client
+        self.isSignedIn = isSignedIn
     }
 
     static func live() throws -> LiveMemoryMediaUploadService {
-        LiveMemoryMediaUploadService(client: try PaeoniaSupabaseClientProvider.shared.client())
+        LiveMemoryMediaUploadService(client: try PaeoniaConvexClientProvider.shared.client())
     }
 
     func uploadMedia(
@@ -96,46 +97,39 @@ actor LiveMemoryMediaUploadService: MemoryMediaUploading {
         reserveOperation: SyncClientOperation,
         finalizeOperation: SyncClientOperation
     ) async throws -> MemoryMediaUploadResult {
-        _ = try await client.auth.session
+        try await PaeoniaSignedIn.require(isSignedIn)
 
-        let reservationRows: [PendingMediaUploadResponse] = try await client
-            .rpc(
-                "create_pending_media_upload",
-                params: ReserveMemoryMediaRequest(
-                    operation: reserveOperation,
-                    memoryMediaID: memoryMediaID,
-                    coupleID: coupleID,
-                    purpose: media.purpose,
-                    fileExtension: media.fileExtension
-                )
+        let reservationRows: [MediaUploadReservation] = try await client.mutation(
+            "media:create_pending_media_upload",
+            args: ReserveMemoryMediaRequest(
+                operation: reserveOperation,
+                memoryMediaID: memoryMediaID,
+                coupleID: coupleID,
+                purpose: media.purpose,
+                fileExtension: media.fileExtension
             )
-            .execute()
-            .value
+        )
         guard let reservation = reservationRows.first else {
             throw MemoryMediaUploadError.reservationFailed
         }
 
-        try await client.storage
-            .from(reservation.bucket)
-            .upload(
-                reservation.storagePath,
-                data: media.data,
-                options: FileOptions(contentType: media.mimeType)
-            )
+        let storageID = try await client.upload(
+            media.data,
+            contentType: media.mimeType,
+            to: reservation.uploadURL
+        )
 
-        let finalizedRows: [FinalizedMediaUploadResponse] = try await client
-            .rpc(
-                "finalize_media_upload",
-                params: FinalizeMemoryMediaRequest(
-                    reservation: reservation,
-                    reservedByClientOperationID: reserveOperation.id,
-                    operation: finalizeOperation,
-                    memoryMediaID: memoryMediaID,
-                    media: media
-                )
+        let finalizedRows: [FinalizedMediaUploadResponse] = try await client.mutation(
+            "media:finalize_media_upload",
+            args: FinalizeMemoryMediaRequest(
+                reservation: reservation,
+                storageID: storageID,
+                reservedByClientOperationID: reserveOperation.id,
+                operation: finalizeOperation,
+                memoryMediaID: memoryMediaID,
+                media: media
             )
-            .execute()
-            .value
+        )
         guard let finalized = finalizedRows.first, finalized.uploadStatus == "finalized" else {
             throw MemoryMediaUploadError.finalizeFailed
         }
@@ -200,6 +194,7 @@ nonisolated struct FinalizeMemoryMediaRequest: Encodable {
     let localCreatedAt: Date
     let bucket: String
     let storagePath: String
+    let storageID: String
     let reservedParentKind = "memory_media"
     let reservedParentID: UUID
     let uploadPurpose: String
@@ -212,13 +207,15 @@ nonisolated struct FinalizeMemoryMediaRequest: Encodable {
     let durationMs: Int?
 
     init(
-        reservation: PendingMediaUploadResponse,
+        reservation: MediaUploadReservation,
+        storageID: String,
         reservedByClientOperationID: UUID,
         operation: SyncClientOperation,
         memoryMediaID: UUID,
         media: MemoryUploadMedia
     ) {
         mediaAssetID = reservation.mediaAssetID
+        self.storageID = storageID
         self.reservedByClientOperationID = reservedByClientOperationID
         clientOperationID = operation.id
         clientID = operation.clientID
@@ -246,6 +243,7 @@ nonisolated struct FinalizeMemoryMediaRequest: Encodable {
         case localCreatedAt = "p_local_created_at"
         case bucket = "p_bucket"
         case storagePath = "p_storage_path"
+        case storageID = "p_storage_id"
         case reservedParentKind = "p_reserved_parent_kind"
         case reservedParentID = "p_reserved_parent_id"
         case uploadPurpose = "p_upload_purpose"

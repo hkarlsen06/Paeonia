@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Shared provider for memory photos, created once. Nil when the Supabase client
+/// Shared provider for memory photos, created once. Nil when the Convex client
 /// can't be configured (previews/tests), in which case photos show a quiet
 /// placeholder instead of loading.
 nonisolated enum MemoryMediaImageProviderFactory {

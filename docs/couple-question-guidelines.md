@@ -50,7 +50,7 @@ Avoid questions that:
 ## Originality And Specificity
 
 Before drafting a new question, inspect the existing catalog in
-`supabase/questions/system/` and, when needed, the live database catalog. Compare
+`backend/questions/system/` and, when needed, the live database catalog. Compare
 the stable key, full prompt, short prompt, answer kinds, and underlying user
 intent. Do not add near-duplicates. If the intent already exists, either skip the
 new question or version the existing question when the wording or answer contract
@@ -121,7 +121,7 @@ The wording must match the answer kinds, and for combined questions it should in
 
 ## Localization
 
-Question content lives in the database, not in Xcode String Catalog generated symbols. Add both localizations directly to `public.question_version_localizations`.
+Question content lives in the database, not in Xcode String Catalog generated symbols. Add both localizations in the question's `locales/` folder.
 
 Required locales:
 
@@ -145,7 +145,7 @@ Bad:
 - EN: "What is one memory you have of me that you keep thinking of?"
 - NB: "Hva er ett minne om meg som du stadig tenker på?"
 
-For app chrome around the question UI, keep using String Catalog symbols and the `./scripts/xcstrings-set` helper. For server-authored question content, use database localizations.
+For app chrome around the question UI, keep using String Catalog symbols and the `./scripts/xcstrings-set` helper. For server-authored question content, use the localization files in `backend/questions/`.
 
 ## Database Model
 
@@ -170,161 +170,18 @@ Do not insert daily instances directly for content authoring. The backend RPCs c
 
 ## Adding Questions
 
-Question catalog rows are content, not schema. For inserting, updating, retiring, or versioning questions, run SQL directly through the Supabase MCP `execute_sql` tool. Do not create migrations solely for question-content rows; that adds noise.
+Question catalog rows are content, not schema. The source of truth is the markdown tree in `backend/questions/` (see `backend/questions/README.md` for the file format). Add or change a question there, then run the sync script.
 
-Before writing SQL, check `supabase/questions/system/` and the target database
-for existing questions. Confirm the new prompt is original in intent, not only in
-wording, and record the new or changed content in `supabase/questions/`.
+Before writing a question, check `backend/questions/system/` for existing questions. Confirm the new prompt is original in intent, not only in wording.
 
-Use migrations only when the change modifies schema, constraints, indexes, RPCs, triggers, policies, grants, or other database behavior that must be replayed through deployment history.
+1. Create `backend/questions/system/<question_key>/question.md` and a `versions/v001/` folder with `version.md`, `locales/en.md`, and `locales/nb.md`. Start with `status: draft` on the question and the version.
+2. Run `scripts/sync-question-catalog` for a dry run. It validates the files and lists what would change.
+3. Set `status: active` on the question and its version, and run the script again.
+4. Run `scripts/sync-question-catalog --apply`.
 
-Use a transaction-safe `do $$ ... $$;` block. Insert into draft states first, then activate after localizations and answer kinds exist. The readiness triggers require active versions to have both `en` and `nb` localizations and at least one answer kind.
+The sync rejects an active version that lacks an `en` or `nb` localization, or that has no answer kinds or more than two. After applying, the app-facing catalog is readable through `daily:get_active_question_catalog`.
 
-Use this shape for a batch:
-
-```sql
-do $$
-declare
-  system_collection_id uuid;
-  inserted_question_id uuid;
-  inserted_version_id uuid;
-  seed_row record;
-  seed_answer_kind text;
-begin
-  select id
-  into system_collection_id
-  from public.question_collections
-  where kind = 'system'
-    and status = 'active'
-  order by created_at
-  limit 1;
-
-  if system_collection_id is null then
-    insert into public.question_collections (kind, status)
-    values ('system', 'draft')
-    returning id into system_collection_id;
-  end if;
-
-  for seed_row in
-    select *
-    from (
-      values
-        (
-          'memory_that_stayed',
-          'What is one memory you have of them that you keep thinking of?',
-          'A memory that stayed',
-          'Hva er ett minne om partneren din som du stadig tenker på?',
-          'Et minne som ble værende',
-          true,
-          6::smallint,
-          array['text']::text[]
-        )
-    ) as seed(
-      question_key,
-      en_prompt,
-      en_short_prompt,
-      nb_prompt,
-      nb_short_prompt,
-      resurfaceable,
-      resurface_after_months,
-      answer_kinds
-    )
-  loop
-    insert into public.questions (
-      collection_id,
-      key,
-      status,
-      resurfaceable,
-      resurface_after_months
-    ) values (
-      system_collection_id,
-      seed_row.question_key,
-      'draft',
-      seed_row.resurfaceable,
-      seed_row.resurface_after_months
-    )
-    returning id into inserted_question_id;
-
-    insert into public.question_versions (
-      question_id,
-      version_number,
-      status,
-      active_from
-    ) values (
-      inserted_question_id,
-      1,
-      'draft',
-      now()
-    )
-    returning id into inserted_version_id;
-
-    insert into public.question_version_localizations (
-      question_version_id,
-      locale,
-      prompt,
-      short_prompt
-    ) values
-      (inserted_version_id, 'en', seed_row.en_prompt, seed_row.en_short_prompt),
-      (inserted_version_id, 'nb', seed_row.nb_prompt, seed_row.nb_short_prompt);
-
-    foreach seed_answer_kind in array seed_row.answer_kinds loop
-      insert into public.question_answer_kinds (
-        question_version_id,
-        answer_kind
-      ) values (
-        inserted_version_id,
-        seed_answer_kind
-      );
-    end loop;
-
-    update public.question_versions
-    set status = 'active'
-    where id = inserted_version_id;
-
-    update public.questions
-    set status = 'active'
-    where id = inserted_question_id;
-  end loop;
-
-  update public.question_collections
-  set status = 'active'
-  where id = system_collection_id
-    and status = 'draft';
-end;
-$$;
-```
-
-After applying locally or remotely, verify:
-
-```sql
-select
-  question.key,
-  version.version_number,
-  version.status,
-  array_agg(answer_kind.answer_kind order by answer_kind.answer_kind) as answer_kinds,
-  count(localization.locale) filter (where localization.locale = 'en') as en_count,
-  count(localization.locale) filter (where localization.locale = 'nb') as nb_count
-from public.question_collections collection
-join public.questions question
-  on question.collection_id = collection.id
-join public.question_versions version
-  on version.question_id = question.id
-join public.question_answer_kinds answer_kind
-  on answer_kind.question_version_id = version.id
-join public.question_version_localizations localization
-  on localization.question_version_id = version.id
-where collection.kind = 'system'
-group by question.key, version.version_number, version.status
-order by question.key;
-```
-
-Also check the app-facing catalog shape:
-
-```sql
-select *
-from public.get_active_question_catalog(null)
-order by question_key, locale;
-```
+To point the script at production, export `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_KEY` in the shell first.
 
 ## Versioning
 
@@ -340,11 +197,9 @@ Keep the same `questions.key` when the intent is the same. Create a new question
 
 To replace an active version:
 
-1. Insert the new version as `draft` with `version_number = previous max + 1`.
-2. Insert both `en` and `nb` localizations.
-3. Insert one or two `question_answer_kinds`.
-4. Retire the old active version by setting `status = 'retired'` and `retired_at = now()`.
-5. Activate the new version by setting `status = 'active'` and `active_from = now()`.
+1. Add the next `versions/vNNN/` folder with `version.md` and both locale files. Set `status: active`.
+2. In the old version's `version.md`, set `status: retired` and add a `retired_at` timestamp. Leave its prompts and answer kinds unchanged.
+3. Run `scripts/sync-question-catalog`, then `--apply`. The sync retires the old active version and activates the new one.
 
 Do not edit historical versions in place after they have been used by daily instances. Old answers should continue to point at the version the user actually answered.
 
@@ -375,4 +230,4 @@ Before adding or changing questions, confirm:
 - The question can be answered without guilt, pressure, or sensitive disclosure.
 - The key is stable, lowercase snake case, and describes the durable intent.
 - Versioning preserves old answers and daily instances.
-- The SQL is scoped to the intended target database and verified with follow-up reads.
+- The dry run of `scripts/sync-question-catalog` lists only the intended changes.

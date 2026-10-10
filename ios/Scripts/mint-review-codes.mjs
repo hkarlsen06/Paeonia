@@ -2,31 +2,37 @@
 // Mint App Review demo access codes.
 //
 // Run this before every App Store submission. It:
-//   1. Ensures three reusable demo partner accounts exist (auth users + profiles).
+//   1. Checks that three reusable demo partner accounts are registered.
 //   2. Revokes any previously issued review codes.
 //   3. Resets each demo partner's world (deletes their prior demo couple and all
-//      couple-owned data via the couple-delete cascade, plus the seeded expired
-//      subscription) so every review cycle starts clean.
+//      couple-owned data, plus the seeded expired subscription) so every review
+//      cycle starts clean.
 //   4. Issues three fresh 6-char codes and prints them to paste into App Review
 //      notes. Only the code hashes are stored in the database.
 //
 // Because this deletes the previous cycle's demo couples, only run it when you
 // are starting a new review cycle (not while a review is mid-flight).
 //
-// Reads credentials from the repo-root .env (git-ignored):
-//   SUPABASE_URL         e.g. https://api.paeonia.no
-//   SUPABASE_SECRET_KEY  Supabase secret/service-role key (SUPABASE_SERVICE_ROLE_KEY also accepted)
+// It calls the Convex operator functions in backend/convex/review.ts on the
+// production deployment with `npx convex run` from backend/. See
+// ios/Scripts/convex-operator.mjs for the environment it reads
+// (CONVEX_SELF_HOSTED_URL, CONVEX_SELF_HOSTED_ADMIN_KEY).
+//
+// Demo partners are ordinary Paeonia users, and Convex only creates users when a
+// Clerk account signs in. To add a partner, sign in once on a spare Clerk
+// account (Apple or Google) in the app, copy that user's `id` from the `users`
+// table in the Convex dashboard, and pass it here:
+//   --partner SLOT=USER_ID     (SLOT is 1, 2, or 3; repeat for each new partner)
+// A slot that is already registered does not need the flag. Passing the flag for
+// a registered slot replaces that slot's partner.
 //
 // Usage:
 //   bun run review-codes:mint
+//   bun run review-codes:mint -- --partner 1=<uuid> --partner 2=<uuid> --partner 3=<uuid>
 //   (or: bun ios/Scripts/mint-review-codes.mjs)
 
-import { randomBytes, randomInt } from "node:crypto";
-
-// Bun loads the repo-root .env automatically; CI and shell variables still work.
-
-const SUPABASE_URL = requireEnv("SUPABASE_URL").replace(/\/+$/, "");
-const SERVICE_KEY = requireEnv("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY");
+import { randomInt } from "node:crypto";
+import { convexTargetUrl, runConvex } from "./convex-operator.mjs";
 
 const SLOT_COUNT = 3;
 // Neutral, non-partner-sounding demo names (the copy must never read like it came
@@ -37,55 +43,58 @@ const CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const CODE_LENGTH = 6;
 const EXPIRES_DAYS = 30;
 // One reviewer per code. A seeded demo partner can only be in one active couple
-// at a time, so a second reviewer must use a *different* code; that is why we
+// at a time, so a second reviewer must use a different code; that is why we
 // mint one code per demo partner rather than one shared code.
 const MAX_REDEMPTIONS = 1;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-main().catch((error) => {
+try {
+  main();
+} catch (error) {
   console.error(`\n✗ ${error.message}`);
   process.exit(1);
-});
+}
 
-async function main() {
-  console.log("Minting App Review demo codes…\n");
+function main() {
+  const requested = parsePartnerFlags(process.argv.slice(2));
+  console.log(`Minting App Review demo codes on ${convexTargetUrl()}...\n`);
 
-  // 1. Ensure the three demo partners exist and are registered.
-  const registered = await rpc("list_review_demo_partners");
-  const bySlot = new Map((registered ?? []).map((row) => [row.slot, row]));
+  // 1. Resolve a user for every demo slot before changing anything.
+  const registered = runConvex("review:list_review_demo_partners") ?? [];
+  const bySlot = new Map(registered.map((row) => [row.slot, row]));
 
   const partners = [];
+  const missing = [];
   for (let slot = 1; slot <= SLOT_COUNT; slot++) {
-    const name = DEMO_NAMES[slot - 1];
-    let userId = bySlot.get(slot)?.user_id;
-    const createdNow = !userId;
-
-    if (createdNow) {
-      userId = await createDemoPartnerUser(slot);
-      console.log(`  · created demo partner for slot ${slot}`);
+    const userId = requested.get(slot) ?? bySlot.get(slot)?.user_id;
+    if (!userId) {
+      missing.push(slot);
+      continue;
     }
+    partners.push({ slot, userId, name: DEMO_NAMES[slot - 1] });
+  }
+  if (missing.length > 0) {
+    throw new Error(
+      `No demo partner is registered for slot ${missing.join(", ")}. ` +
+        "Sign in once on a spare Clerk account in the app, copy that user's id from the " +
+        "users table in the Convex dashboard, and rerun with " +
+        missing.map((slot) => `--partner ${slot}=<uuid>`).join(" ") +
+        ".",
+    );
+  }
 
-    try {
-      await rpc("register_review_demo_partner", {
-        p_slot: slot,
-        p_user_id: userId,
-        p_display_name: name,
-      });
-    } catch (error) {
-      // If registration fails for a user we just created, delete the orphan so a
-      // retry does not leak a second dormant auth user for this slot. (An
-      // unregistered user is invisible to list_review_demo_partners, so the next
-      // run would otherwise mint yet another one.)
-      if (createdNow) {
-        await deleteDemoPartnerUser(userId).catch(() => {});
-      }
-      throw error;
-    }
-    partners.push({ slot, userId, name });
+  // Register (or refresh) each partner so its profile is complete and visible.
+  for (const partner of partners) {
+    runConvex("review:register_review_demo_partner", {
+      p_slot: partner.slot,
+      p_user_id: partner.userId,
+      p_display_name: partner.name,
+    });
   }
 
   // 2 + 3. Revoke old codes, then wipe the previous cycle's demo couples.
-  const revoked = await rpc("revoke_review_access_codes");
-  const clearedCouples = await rpc("reset_review_demo");
+  const revoked = runConvex("review:revoke_review_access_codes");
+  const clearedCouples = runConvex("review:reset_review_demo");
   console.log(
     `  · revoked ${revoked ?? 0} old code(s), cleared ${clearedCouples ?? 0} demo couple(s)\n`,
   );
@@ -95,7 +104,7 @@ async function main() {
   const issued = [];
   for (const partner of partners) {
     const code = generateCode();
-    await rpc("issue_review_access_code", {
+    runConvex("review:issue_review_access_code", {
       p_code: code,
       p_seeded_partner_user_id: partner.userId,
       p_scenario: "pre_paired_paywalled",
@@ -108,81 +117,34 @@ async function main() {
   printResult(issued, expiresAt);
 }
 
+function parsePartnerFlags(argv) {
+  const requested = new Map();
+  for (let index = 0; index < argv.length; index++) {
+    const flag = argv[index];
+    if (flag === "--") continue;
+    if (flag !== "--partner") {
+      throw new Error(`Unknown argument: ${flag}. The only flag is --partner SLOT=USER_ID.`);
+    }
+    const value = argv[++index] ?? "";
+    const [slotText, userId] = value.split("=");
+    const slot = Number(slotText);
+    if (!Number.isInteger(slot) || slot < 1 || slot > SLOT_COUNT || !UUID_PATTERN.test(userId ?? "")) {
+      throw new Error(`Bad --partner value "${value}". Use SLOT=USER_ID, with SLOT from 1 to ${SLOT_COUNT}.`);
+    }
+    requested.set(slot, userId.toLowerCase());
+  }
+  return requested;
+}
+
 function printResult(issued, expiresAt) {
   console.log("✓ Review codes ready. Paste these into App Review notes:\n");
   for (const { code, name } of issued) {
-    console.log(`    ${code}   (pairs with demo partner “${name}”)`);
+    console.log(`    ${code}   (pairs with demo partner "${name}")`);
   }
   console.log(
-    `\n  Valid until ${expiresAt}. Give each reviewer a different code — one code pairs one reviewer with one demo partner.`,
+    `\n  Valid until ${expiresAt}. Give each reviewer a different code. One code pairs one reviewer with one demo partner.`,
   );
   console.log("  After the app is approved, run: bun ios/Scripts/revoke-review-codes.mjs\n");
-}
-
-// Creates a dormant auth user for a demo partner. It never signs in; it exists so
-// the couple, profile, and location FKs resolve. A profile is auto-created by the
-// auth trigger and then filled in by register_review_demo_partner.
-async function createDemoPartnerUser(slot) {
-  const email = `review-partner-${slot}-${randomBytes(4).toString("hex")}@paeonia-demo.invalid`;
-  const body = {
-    email,
-    password: randomBytes(24).toString("hex"),
-    email_confirm: true,
-  };
-
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    throw new Error(`admin create user failed (${res.status}): ${await res.text()}`);
-  }
-
-  const user = await res.json();
-  if (!user?.id) {
-    throw new Error(`admin create user returned no id: ${JSON.stringify(user)}`);
-  }
-  return user.id;
-}
-
-// Removes a dormant demo auth user. Used only to roll back a user we created this
-// run when its registration failed, so a partial failure does not leak accounts.
-async function deleteDemoPartnerUser(userId) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
-    method: "DELETE",
-    headers: authHeaders(),
-  });
-
-  if (!res.ok && res.status !== 404) {
-    throw new Error(`admin delete user failed (${res.status}): ${await res.text()}`);
-  }
-}
-
-async function rpc(fn, args) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(args ?? {}),
-  });
-
-  if (!res.ok) {
-    throw new Error(`rpc ${fn} failed (${res.status}): ${await res.text()}`);
-  }
-
-  if (res.status === 204) return null;
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
-}
-
-function authHeaders() {
-  return {
-    apikey: SERVICE_KEY,
-    Authorization: `Bearer ${SERVICE_KEY}`,
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
 }
 
 function generateCode() {
@@ -191,12 +153,4 @@ function generateCode() {
     code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
   }
   return code;
-}
-
-function requireEnv(...names) {
-  for (const name of names) {
-    if (process.env[name]) return process.env[name];
-  }
-  console.error(`Missing required environment variable: ${names.join(" or ")}`);
-  process.exit(1);
 }

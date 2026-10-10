@@ -5,22 +5,22 @@ protocol AccessRouteServicing: Actor {
     func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws
 }
 
-actor SupabaseAccessRouteService: AccessRouteServicing {
-    private let gateway: any SupabaseAccessGateway
+actor RemoteAccessRouteService: AccessRouteServicing {
+    private let gateway: any AccessGateway
     private let resolver: AccessRouteResolver
 
     init(
-        gateway: any SupabaseAccessGateway,
+        gateway: any AccessGateway,
         resolver: AccessRouteResolver = AccessRouteResolver()
     ) {
         self.gateway = gateway
         self.resolver = resolver
     }
 
-    static func live() throws -> SupabaseAccessRouteService {
-        let client = try PaeoniaSupabaseClientProvider.shared.client()
-        return SupabaseAccessRouteService(
-            gateway: LiveSupabaseAccessGateway(client: client)
+    static func live() throws -> RemoteAccessRouteService {
+        let client = try PaeoniaConvexClientProvider.shared.client()
+        return RemoteAccessRouteService(
+            gateway: LiveAccessGateway(client: client)
         )
     }
 

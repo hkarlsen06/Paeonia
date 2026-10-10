@@ -419,8 +419,10 @@ private nonisolated final class SyncGatewaySpy: WidgetCanvasGateway, @unchecked 
         canvasID: UUID,
         revisionID: UUID,
         operation: WidgetCanvasClientOperation
-    ) throws -> PendingMediaUploadResponse { throw WidgetCanvasGatewayError.emptyResponse }
-    func uploadPayload(bucket: String, storagePath: String, data: Data) {}
+    ) throws -> MediaUploadReservation { throw WidgetCanvasGatewayError.emptyResponse }
+    func uploadPayload(reservation: MediaUploadReservation, data: Data) throws -> String {
+        throw WidgetCanvasGatewayError.emptyResponse
+    }
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput,
         operation: WidgetCanvasClientOperation

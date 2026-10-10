@@ -24,7 +24,7 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
         now: @escaping @MainActor () -> Date = Date.init
     ) {
         self.userID = userID
-        self.pairingService = pairingService ?? (try? SupabasePairingService.live())
+        self.pairingService = pairingService ?? (try? RemotePairingService.live())
         self.operationProvider = operationProvider ?? PairingClientOperationFactory.shared
         self.inviteStore = inviteStore ?? UserDefaultsPairingInviteStore.shared
         self.now = now

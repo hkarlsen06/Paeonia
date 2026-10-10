@@ -5,7 +5,7 @@ import Testing
 struct AccessSyncStreamTests {
     @Test func accessStreamCachesRelationshipAndEntitlementSnapshot() async throws {
         let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
-        let gateway = FakeSupabaseAccessGateway(
+        let gateway = FakeAccessGateway(
             userEntitlement: .testUserEntitlement(userID: ownerUserID),
             coupleEntitlement: try .testCoupleEntitlement(),
             relationshipState: try .testRelationshipState()
@@ -33,23 +33,23 @@ struct AccessSyncStreamTests {
     }
 }
 
-private actor FakeSupabaseAccessGateway: SupabaseAccessGateway {
-    private let userEntitlement: SupabaseUserEntitlement?
-    private let coupleEntitlement: SupabaseCoupleEntitlement?
-    private let relationshipState: SupabaseRelationshipState?
+private actor FakeAccessGateway: AccessGateway {
+    private let userEntitlement: RemoteUserEntitlement?
+    private let coupleEntitlement: RemoteCoupleEntitlement?
+    private let relationshipState: RemoteRelationshipState?
 
     init(
-        userEntitlement: SupabaseUserEntitlement?,
-        coupleEntitlement: SupabaseCoupleEntitlement?,
-        relationshipState: SupabaseRelationshipState?
+        userEntitlement: RemoteUserEntitlement?,
+        coupleEntitlement: RemoteCoupleEntitlement?,
+        relationshipState: RemoteRelationshipState?
     ) {
         self.userEntitlement = userEntitlement
         self.coupleEntitlement = coupleEntitlement
         self.relationshipState = relationshipState
     }
 
-    func loadAccessSnapshot() async throws -> SupabaseAccessSnapshot {
-        SupabaseAccessSnapshot(
+    func loadAccessSnapshot() async throws -> RemoteAccessSnapshot {
+        RemoteAccessSnapshot(
             userEntitlement: userEntitlement,
             coupleEntitlement: coupleEntitlement,
             relationshipState: relationshipState
@@ -59,16 +59,16 @@ private actor FakeSupabaseAccessGateway: SupabaseAccessGateway {
     func loadRelationshipSyncEvents(
         after _: SyncCursor,
         limit _: Int
-    ) async throws -> [SupabaseRelationshipSyncEvent] {
+    ) async throws -> [RemoteRelationshipSyncEvent] {
         []
     }
 
     func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
 }
 
-private extension SupabaseUserEntitlement {
-    static func testUserEntitlement(userID: UUID) -> SupabaseUserEntitlement {
-        SupabaseUserEntitlement(
+private extension RemoteUserEntitlement {
+    static func testUserEntitlement(userID: UUID) -> RemoteUserEntitlement {
+        RemoteUserEntitlement(
             userID: userID,
             isEntitled: true,
             source: "storekit",
@@ -80,9 +80,9 @@ private extension SupabaseUserEntitlement {
     }
 }
 
-private extension SupabaseCoupleEntitlement {
-    static func testCoupleEntitlement() throws -> SupabaseCoupleEntitlement {
-        try SupabaseCoupleEntitlement(
+private extension RemoteCoupleEntitlement {
+    static func testCoupleEntitlement() throws -> RemoteCoupleEntitlement {
+        try RemoteCoupleEntitlement(
             coupleID: #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333")),
             isEntitled: true,
             coveringUserID: UUID(uuidString: "44444444-4444-4444-4444-444444444444"),
@@ -95,9 +95,9 @@ private extension SupabaseCoupleEntitlement {
     }
 }
 
-private extension SupabaseRelationshipState {
-    static func testRelationshipState() throws -> SupabaseRelationshipState {
-        try SupabaseRelationshipState(
+private extension RemoteRelationshipState {
+    static func testRelationshipState() throws -> RemoteRelationshipState {
+        try RemoteRelationshipState(
             coupleID: #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333")),
             pairID: #require(UUID(uuidString: "66666666-6666-6666-6666-666666666666")),
             relationshipStatus: .active,

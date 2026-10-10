@@ -43,7 +43,7 @@ final class PaywallViewModel: PresentationReadinessProviding {
         operationProvider: (any PairingClientOperationProviding)? = nil
     ) {
         self.storeKitService = storeKitService ?? PaeoniaStoreKitService.shared
-        self.pairingService = pairingService ?? (try? SupabasePairingService.live())
+        self.pairingService = pairingService ?? (try? RemotePairingService.live())
         self.operationProvider = operationProvider ?? PairingClientOperationFactory.shared
 
         if let userID {

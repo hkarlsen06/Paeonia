@@ -1,5 +1,4 @@
 import Foundation
-import Supabase
 import WidgetKit
 #if DEBUG
 import OSLog
@@ -9,8 +8,9 @@ nonisolated protocol WidgetPushRegistering: Sendable {
     func registerCurrentWidgetPushToken() async
 }
 
-actor SupabaseWidgetPushRegistrationService: WidgetPushRegistering {
-    private let client: SupabaseClient
+actor ConvexWidgetPushRegistrationService: WidgetPushRegistering {
+    private let client: PaeoniaConvexClient
+    private let currentAccountID: @Sendable () async -> String?
     private let tokenStore: PaeoniaWidgetPushTokenStore
     private let fingerprintStore: PushRegistrationFingerprintStore
 
@@ -22,11 +22,13 @@ actor SupabaseWidgetPushRegistrationService: WidgetPushRegistering {
     #endif
 
     init(
-        client: SupabaseClient,
+        client: PaeoniaConvexClient,
+        currentAccountID: @escaping @Sendable () async -> String? = { PaeoniaClerk.currentAccountID() },
         tokenStore: PaeoniaWidgetPushTokenStore = .shared,
         fingerprintStore: PushRegistrationFingerprintStore = PushRegistrationFingerprintStore(channel: .widget)
     ) {
         self.client = client
+        self.currentAccountID = currentAccountID
         self.tokenStore = tokenStore
         self.fingerprintStore = fingerprintStore
     }
@@ -38,11 +40,11 @@ actor SupabaseWidgetPushRegistrationService: WidgetPushRegistering {
 
         // No active session: don't send an anonymous registration; a later
         // authenticated activation will register once auth is restored.
-        guard let session = try? await client.auth.session else {
+        guard let accountID = await currentAccountID() else {
             return
         }
 
-        let fingerprint = fingerprint(userID: session.user.id, token: token)
+        let fingerprint = fingerprint(accountID: accountID, token: token)
         let now = Date()
         guard PushRegistrationGate.shouldSend(
             current: fingerprint,
@@ -53,20 +55,17 @@ actor SupabaseWidgetPushRegistrationService: WidgetPushRegistering {
         }
 
         do {
-            let _: UUID = try await client
-                .rpc(
-                    "register_widget_push_device",
-                    params: RegisterWidgetPushDeviceRequest(
-                        widgetKind: PaeoniaAppGroup.widgetKind,
-                        widgetPushToken: token,
-                        apnsEnvironment: SupabasePushRegistrationService.apnsEnvironment,
-                        locale: Locale.current.identifier,
-                        timeZoneID: TimeZone.current.identifier,
-                        appVersion: SupabasePushRegistrationService.appVersion
-                    )
+            let _: UUID = try await client.mutation(
+                "widget:register_widget_push_device",
+                args: RegisterWidgetPushDeviceRequest(
+                    widgetKind: PaeoniaAppGroup.widgetKind,
+                    widgetPushToken: token,
+                    apnsEnvironment: ConvexPushRegistrationService.apnsEnvironment,
+                    locale: Locale.current.identifier,
+                    timeZoneID: TimeZone.current.identifier,
+                    appVersion: ConvexPushRegistrationService.appVersion
                 )
-                .execute()
-                .value
+            )
             fingerprintStore.recordSent(PushRegistrationRecord(fingerprint: fingerprint, sentAt: now))
         } catch {
             #if DEBUG
@@ -75,16 +74,16 @@ actor SupabaseWidgetPushRegistrationService: WidgetPushRegistering {
         }
     }
 
-    private func fingerprint(userID: UUID, token: String) -> String {
+    private func fingerprint(accountID: String, token: String) -> String {
         PushRegistrationGate.fingerprint(
             PushRegistrationInputs(
-                userID: userID,
+                userID: accountID,
                 platform: PaeoniaAppGroup.widgetKind,
                 token: token,
-                apnsEnvironment: SupabasePushRegistrationService.apnsEnvironment,
+                apnsEnvironment: ConvexPushRegistrationService.apnsEnvironment,
                 locale: Locale.current.identifier,
                 timeZoneID: TimeZone.current.identifier,
-                appVersion: SupabasePushRegistrationService.appVersion
+                appVersion: ConvexPushRegistrationService.appVersion
             )
         )
     }
@@ -106,10 +105,10 @@ nonisolated struct NoOpWidgetPushRegistration: WidgetPushRegistering {
 
 nonisolated enum WidgetPushRegistrationServiceFactory {
     static func makeDefault() -> any WidgetPushRegistering {
-        guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
+        guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return NoOpWidgetPushRegistration()
         }
-        return SupabaseWidgetPushRegistrationService(client: client)
+        return ConvexWidgetPushRegistrationService(client: client)
     }
 }
 

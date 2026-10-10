@@ -2,7 +2,7 @@ import Foundation
 
 nonisolated protocol RelationshipSyncEventApplying: Sendable {
     func apply(
-        _ events: [SupabaseRelationshipSyncEvent],
+        _ events: [RemoteRelationshipSyncEvent],
         context: SyncContext
     ) async throws
 }
@@ -20,7 +20,7 @@ struct RelationshipSyncEventApplier: RelationshipSyncEventApplying {
     }
 
     func apply(
-        _ events: [SupabaseRelationshipSyncEvent],
+        _ events: [RemoteRelationshipSyncEvent],
         context: SyncContext
     ) async throws {
         // Owner-wide deletion is intentionally never inferred without a current
@@ -47,7 +47,7 @@ struct RelationshipSyncEventApplier: RelationshipSyncEventApplying {
     }
 
     private func relationshipPurgeScope(
-        for events: [SupabaseRelationshipSyncEvent]
+        for events: [RemoteRelationshipSyncEvent]
     ) -> LocalPrivacyPurgeScope? {
         guard events.contains(where: requiresRelationshipContentPurge) else {
             return nil
@@ -70,14 +70,14 @@ struct RelationshipSyncEventApplier: RelationshipSyncEventApplying {
     }
 
     private func requiresRelationshipContentPurge(
-        _ event: SupabaseRelationshipSyncEvent
+        _ event: RemoteRelationshipSyncEvent
     ) -> Bool {
         event.localPurgeScope["relationship_content"] == "hide"
             || event.localPurgeScope["relationship_content"] == "purge"
             || Self.widgetClearingEventKinds.contains(event.eventKind)
     }
 
-    private func shouldClearWidgetCache(for events: [SupabaseRelationshipSyncEvent]) -> Bool {
+    private func shouldClearWidgetCache(for events: [RemoteRelationshipSyncEvent]) -> Bool {
         events.contains { event in
             if event.localPurgeScope["widget_cache"] == "purge" {
                 return true
@@ -113,7 +113,7 @@ struct RelationshipSyncEventApplier: RelationshipSyncEventApplying {
 
 struct NoOpRelationshipSyncEventApplier: RelationshipSyncEventApplying {
     func apply(
-        _ events: [SupabaseRelationshipSyncEvent],
+        _ events: [RemoteRelationshipSyncEvent],
         context: SyncContext
     ) async throws {}
 }

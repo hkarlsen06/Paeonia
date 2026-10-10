@@ -1,5 +1,4 @@
 import Foundation
-import Supabase
 
 protocol DailyQuestionChatServicing: Actor {
     func cachedThreadSummaries(ownerUserID: UUID) async -> [DailyQuestionThreadSummary]
@@ -23,7 +22,7 @@ protocol DailyQuestionChatServicing: Actor {
     ) async throws -> DailyQuestionChatMessage
 }
 
-protocol SupabaseDailyQuestionChatGateway: Actor {
+protocol DailyQuestionChatGateway: Actor {
     func loadThreadSummaries() async throws -> [DailyQuestionThreadSummary]
     func loadMessages(threadID: UUID, instanceID: UUID) async throws -> [DailyQuestionChatMessage]
     func createThreadWithMessage(
@@ -38,13 +37,13 @@ protocol SupabaseDailyQuestionChatGateway: Actor {
 }
 
 actor DailyQuestionChatService: DailyQuestionChatServicing {
-    private let gateway: any SupabaseDailyQuestionChatGateway
+    private let gateway: any DailyQuestionChatGateway
     private let cache: any DailyQuestionChatCaching
     private let pendingOperationStore: any PendingSyncOperationPersisting
     private let encoder = JSONEncoder()
 
     init(
-        gateway: any SupabaseDailyQuestionChatGateway,
+        gateway: any DailyQuestionChatGateway,
         cache: any DailyQuestionChatCaching,
         pendingOperationStore: any PendingSyncOperationPersisting
     ) {
@@ -207,26 +206,28 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
     }
 }
 
-actor LiveSupabaseDailyQuestionChatGateway: SupabaseDailyQuestionChatGateway {
-    private let client: SupabaseClient
+actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
+    private let client: PaeoniaConvexClient
+    private let isSignedIn: PaeoniaSignedInCheck
 
-    init(client: SupabaseClient) {
+    init(client: PaeoniaConvexClient, isSignedIn: @escaping PaeoniaSignedInCheck = PaeoniaSignedIn.live) {
         self.client = client
+        self.isSignedIn = isSignedIn
     }
 
     func loadThreadSummaries() async throws -> [DailyQuestionThreadSummary] {
-        let rows: [ConversationThreadRow] = try await client
-            .rpc("get_conversation_threads")
-            .execute()
-            .value
+        let rows: [ConversationThreadRow] = try await client.mutation(
+            "threads:get_conversation_threads",
+            args: PaeoniaConvexNoArgs()
+        )
         return rows.compactMap(\.dailyQuestionSummary)
     }
 
     func loadMessages(threadID: UUID, instanceID: UUID) async throws -> [DailyQuestionChatMessage] {
-        let rows: [ThreadMessageRow] = try await client
-            .rpc("get_thread_messages", params: ThreadMessagesRequest(threadID: threadID))
-            .execute()
-            .value
+        let rows: [ThreadMessageRow] = try await client.mutation(
+            "threads:get_thread_messages",
+            args: ThreadMessagesRequest(threadID: threadID)
+        )
         return rows.compactMap { $0.message(instanceID: instanceID) }
     }
 
@@ -234,14 +235,11 @@ actor LiveSupabaseDailyQuestionChatGateway: SupabaseDailyQuestionChatGateway {
         _ payload: CreateDailyQuestionThreadMessageOperationPayload,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse {
-        _ = try await client.auth.session
-        let rows: [DailyQuestionThreadMessageResponse] = try await client
-            .rpc(
-                "create_daily_question_thread_with_message",
-                params: CreateThreadMessageRequest(payload: payload, operation: operation)
-            )
-            .execute()
-            .value
+        try await PaeoniaSignedIn.require(isSignedIn)
+        let rows: [DailyQuestionThreadMessageResponse] = try await client.mutation(
+            "threads:create_daily_question_thread_with_message",
+            args: CreateThreadMessageRequest(payload: payload, operation: operation)
+        )
         guard let response = rows.first else { throw DailyQuestionChatServiceError.missingResponse }
         return response
     }
@@ -251,18 +249,15 @@ actor LiveSupabaseDailyQuestionChatGateway: SupabaseDailyQuestionChatGateway {
         body: String,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse {
-        _ = try await client.auth.session
-        let rows: [DailyQuestionThreadMessageResponse] = try await client
-            .rpc(
-                "send_thread_message",
-                params: SendThreadMessageRequest(
-                    threadID: threadID,
-                    body: body,
-                    operation: operation
-                )
+        try await PaeoniaSignedIn.require(isSignedIn)
+        let rows: [DailyQuestionThreadMessageResponse] = try await client.mutation(
+            "threads:send_thread_message",
+            args: SendThreadMessageRequest(
+                threadID: threadID,
+                body: body,
+                operation: operation
             )
-            .execute()
-            .value
+        )
         guard let response = rows.first else { throw DailyQuestionChatServiceError.missingResponse }
         return response
     }
@@ -283,9 +278,9 @@ nonisolated enum DailyQuestionChatServiceFactory {
             pendingStore = InMemoryPendingSyncOperationRepository()
         }
 
-        let gateway: any SupabaseDailyQuestionChatGateway
-        if let client = try? PaeoniaSupabaseClientProvider.shared.client() {
-            gateway = LiveSupabaseDailyQuestionChatGateway(client: client)
+        let gateway: any DailyQuestionChatGateway
+        if let client = try? PaeoniaConvexClientProvider.shared.client() {
+            gateway = LiveDailyQuestionChatGateway(client: client)
         } else {
             gateway = UnavailableDailyQuestionChatGateway()
         }
@@ -319,7 +314,7 @@ actor EmptyDailyQuestionChatService: DailyQuestionChatServicing {
     ) async throws -> DailyQuestionChatMessage { throw DailyQuestionChatServiceError.unavailable }
 }
 
-private actor UnavailableDailyQuestionChatGateway: SupabaseDailyQuestionChatGateway {
+private actor UnavailableDailyQuestionChatGateway: DailyQuestionChatGateway {
     func loadThreadSummaries() async throws -> [DailyQuestionThreadSummary] { throw DailyQuestionChatServiceError.unavailable }
     func loadMessages(threadID _: UUID, instanceID _: UUID) async throws -> [DailyQuestionChatMessage] { throw DailyQuestionChatServiceError.unavailable }
     func createThreadWithMessage(

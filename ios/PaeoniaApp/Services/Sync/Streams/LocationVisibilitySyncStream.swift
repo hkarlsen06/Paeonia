@@ -3,11 +3,11 @@ import Foundation
 struct LocationVisibilitySyncStream: SyncStream {
     nonisolated let streamKey: SyncStreamKey = .location
 
-    private let gateway: any SupabaseLocationGateway
+    private let gateway: any LocationGateway
     private let visibilityStore: any LocationVisibilitySnapshotPersisting
 
     init(
-        gateway: any SupabaseLocationGateway,
+        gateway: any LocationGateway,
         visibilityStore: any LocationVisibilitySnapshotPersisting
     ) {
         self.gateway = gateway

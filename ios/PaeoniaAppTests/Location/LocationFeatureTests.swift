@@ -460,7 +460,7 @@ struct LocationPendingOperationHandlerTests {
     }
 }
 
-struct SupabaseLocationGatewayRequestEncodingTests {
+struct LocationGatewayRequestEncodingTests {
     @Test
     func preferenceRequestEncodesNilConsentVersionAsNull() throws {
         let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
@@ -980,7 +980,7 @@ struct RoutineLocationThrottleTests {
     }
 }
 
-private actor RecordingLocationGateway: SupabaseLocationGateway {
+private actor RecordingLocationGateway: LocationGateway {
     private let visibilitySnapshot: LocationVisibilitySnapshot?
     private let preferenceResponse: LocationSharingPreferenceUpdateResponse?
     private let locationResponse: LatestPartnerLocationUpdateResponse?

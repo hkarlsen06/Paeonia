@@ -2,7 +2,7 @@
 
 This document defines what `marketing/` must serve for the iOS app to work correctly.
 
-Paeonia uses `paeonia.no` as the public marketing and Universal Link domain. Supabase lives separately at `api.paeonia.no`.
+Paeonia uses `paeonia.no` as the public marketing and Universal Link domain. The Convex backend lives separately at `api.paeonia.no`.
 
 ## Required Domains
 
@@ -19,18 +19,16 @@ Required for:
 
 ### `api.paeonia.no`
 
-Owned by Supabase.
+Owned by the self-hosted Convex backend (see `backend/AGENTS.md`).
 
 Required for:
 
-- Supabase API
-- Supabase Auth
-- Supabase Storage
-- Supabase Realtime
-- Supabase Edge Functions
-- OAuth provider callback URL: `https://api.paeonia.no/auth/v1/callback`
+- Convex client API (mutations and actions called by the iOS app)
+- Convex file storage upload URLs
 
-Do not route Supabase traffic through the marketing app.
+`actions.paeonia.no` serves the Convex HTTP actions: signed media URLs (`GET /media`) and Apple App Store server notifications (`POST /apple/server-notifications`). Sign-in runs through Clerk, so the backend hosts no OAuth callback.
+
+Do not route backend traffic through the marketing app.
 
 ## Implementation Structure
 
@@ -230,20 +228,16 @@ Keep `marketing/app/layout.tsx` metadata and `marketing/public/site.webmanifest`
 
 The marketing app must not contain:
 
-- Supabase service-role keys
+- Convex admin keys or Clerk secret keys
 - private API secrets
 - authenticated app data
 - invite lookup logic
 - relationship state
 - subscription state
 - OAuth provider secrets
-- Supabase Auth callback handling
+- sign-in callback handling
 
-OAuth provider callback handling belongs to:
-
-```text
-https://api.paeonia.no/auth/v1/callback
-```
+Google sign-in goes through Clerk, which handles the OAuth callback. The marketing app never receives it.
 
 Native app callbacks use:
 

@@ -255,7 +255,7 @@ struct LocalPrivacyPurgeTests {
         )
         context.insert(LocalAccessSyncSnapshot(ownerUserID: ownerUserID, refreshedAt: now))
 
-        let relationshipEvent = SupabaseRelationshipSyncEvent(
+        let relationshipEvent = RemoteRelationshipSyncEvent(
             id: UUID(),
             userID: ownerUserID,
             coupleID: coupleID,

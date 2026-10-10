@@ -2,7 +2,7 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
-/// Shared provider for revealed answer images, created once. Nil when the Supabase
+/// Shared provider for revealed answer images, created once. Nil when the Convex
 /// client can't be configured (previews/tests), in which case images show a quiet
 /// placeholder instead of loading.
 nonisolated enum DailyAnswerMediaImageProviderFactory {

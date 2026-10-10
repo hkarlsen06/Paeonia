@@ -36,16 +36,16 @@ nonisolated enum AccessRoute: Equatable, Sendable {
 }
 
 nonisolated struct AccessRouteSnapshot: Equatable, Sendable {
-    let userEntitlement: SupabaseUserEntitlement?
-    let coupleEntitlement: SupabaseCoupleEntitlement?
-    let relationshipState: SupabaseRelationshipState?
+    let userEntitlement: RemoteUserEntitlement?
+    let coupleEntitlement: RemoteCoupleEntitlement?
+    let relationshipState: RemoteRelationshipState?
     let hasPendingInvite: Bool
 
     // swiftlint:disable:next unneeded_synthesized_initializer
     nonisolated init(
-        userEntitlement: SupabaseUserEntitlement?,
-        coupleEntitlement: SupabaseCoupleEntitlement?,
-        relationshipState: SupabaseRelationshipState?,
+        userEntitlement: RemoteUserEntitlement?,
+        coupleEntitlement: RemoteCoupleEntitlement?,
+        relationshipState: RemoteRelationshipState?,
         hasPendingInvite: Bool
     ) {
         self.userEntitlement = userEntitlement

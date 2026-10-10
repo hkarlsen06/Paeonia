@@ -17,15 +17,18 @@ actor AuthServiceSpy: AuthServicing {
 
     private var session: AuthSession?
     private let failingOperations: Set<Operation>
+    private let failureError: any Error
     private let accountDeletionOutcome: AccountDeletionOutcome
 
     init(
         session: AuthSession? = nil,
         failingOperations: Set<Operation> = [],
+        failureError: any Error = AuthServiceError.noActiveSession,
         accountDeletionOutcome: AccountDeletionOutcome = .completed
     ) {
         self.session = session
         self.failingOperations = failingOperations
+        self.failureError = failureError
         self.accountDeletionOutcome = accountDeletionOutcome
     }
 
@@ -49,7 +52,7 @@ actor AuthServiceSpy: AuthServicing {
         return session
     }
 
-    func signInWithGoogle(_ credential: GoogleSignInCredential) async throws -> AuthSession {
+    func signInWithGoogle() async throws -> AuthSession {
         try failIfNeeded(.signInWithGoogle)
 
         let session = AuthSession(
@@ -137,7 +140,7 @@ actor AuthServiceSpy: AuthServicing {
 
     private func failIfNeeded(_ operation: Operation) throws {
         if failingOperations.contains(operation) {
-            throw AuthServiceError.noActiveSession
+            throw failureError
         }
     }
 }
@@ -180,7 +183,7 @@ actor BlockingDeleteAuthService: AuthServicing {
         return session
     }
 
-    func signInWithGoogle(_ credential: GoogleSignInCredential) async throws -> AuthSession {
+    func signInWithGoogle() async throws -> AuthSession {
         let session = AuthSession(
             id: "google-test-user",
             provider: .google,
@@ -256,31 +259,6 @@ actor BlockingDeleteAuthService: AuthServicing {
 
         session = nil
         return .completed
-    }
-}
-
-@MainActor
-final class GoogleSignInProviderSpy: GoogleSignInProviding {
-    private let credential: GoogleSignInCredential
-    private let error: Error?
-
-    init(
-        credential: GoogleSignInCredential = GoogleSignInCredential(
-            idToken: "google-id-token",
-            accessToken: "google-access-token"
-        ),
-        error: Error? = nil
-    ) {
-        self.credential = credential
-        self.error = error
-    }
-
-    func signIn() async throws -> GoogleSignInCredential {
-        if let error {
-            throw error
-        }
-
-        return credential
     }
 }
 

@@ -1,5 +1,4 @@
 import Foundation
-import Supabase
 
 nonisolated struct DailyChallengeLoadResult: Equatable, Sendable {
     let snapshot: DailyChallengeSnapshot
@@ -22,7 +21,7 @@ protocol DailyChallengeServicing: Actor {
     ) async throws -> DailyChallengeLoadResult
 }
 
-protocol SupabaseDailyChallengeGateway: Actor {
+protocol DailyChallengeGateway: Actor {
     func loadTodaySnapshot() async throws -> DailyChallengeRemoteSnapshotRow
     func startDailyChallenge(operation: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow
     func loadHistoryQuestions() async throws -> [DailyQuestionRow]
@@ -35,8 +34,8 @@ protocol SupabaseDailyChallengeGateway: Actor {
     func shuffleQuestion(slotNumber: Int, operation: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow
 }
 
-actor SupabaseDailyChallengeService: DailyChallengeServicing {
-    private let gateway: any SupabaseDailyChallengeGateway
+actor DailyChallengeService: DailyChallengeServicing {
+    private let gateway: any DailyChallengeGateway
     private let locale: Locale
     /// Injected so tests can supply an in-memory stand-in; the live path uses
     /// `FileDailyChallengeSnapshotCache.live()` by default. The cache is an
@@ -45,7 +44,7 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
     private let cache: any DailyChallengeSnapshotCaching
 
     init(
-        gateway: any SupabaseDailyChallengeGateway,
+        gateway: any DailyChallengeGateway,
         locale: Locale = .current,
         cache: (any DailyChallengeSnapshotCaching)? = nil
     ) {
@@ -54,10 +53,10 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
         self.cache = cache ?? FileDailyChallengeSnapshotCache.live()
     }
 
-    static func live() throws -> SupabaseDailyChallengeService {
-        let client = try PaeoniaSupabaseClientProvider.shared.client()
-        return SupabaseDailyChallengeService(
-            gateway: LiveSupabaseDailyChallengeGateway(client: client)
+    static func live() throws -> DailyChallengeService {
+        let client = try PaeoniaConvexClientProvider.shared.client()
+        return DailyChallengeService(
+            gateway: LiveDailyChallengeGateway(client: client)
         )
     }
 
@@ -172,50 +171,29 @@ actor SupabaseDailyChallengeService: DailyChallengeServicing {
     }
 }
 
-actor LiveSupabaseDailyChallengeGateway: SupabaseDailyChallengeGateway {
-    private let client: SupabaseClient
+actor LiveDailyChallengeGateway: DailyChallengeGateway {
+    private let client: PaeoniaConvexClient
 
-    init(client: SupabaseClient) {
+    init(client: PaeoniaConvexClient) {
         self.client = client
     }
 
     func loadTodaySnapshot() async throws -> DailyChallengeRemoteSnapshotRow {
-        try await snapshotRPC("get_today_daily_challenge_snapshot")
+        try await snapshotMutation("daily:get_today_daily_challenge_snapshot", args: PaeoniaConvexNoArgs())
     }
 
     func startDailyChallenge(operation: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow {
-        try await snapshotRPC(
-            "start_daily_challenge_snapshot",
-            params: DailyChallengeClientOperationRequest(operation: operation)
+        try await snapshotMutation(
+            "daily:start_daily_challenge_snapshot",
+            args: DailyChallengeClientOperationRequest(operation: operation)
         )
     }
 
-    private func snapshotRPC(
-        _ name: String
+    private func snapshotMutation(
+        _ path: String,
+        args: some Encodable
     ) async throws -> DailyChallengeRemoteSnapshotRow {
-        let rows: [DailyChallengeRemoteSnapshotRow] = try await client
-            .rpc(name)
-            .execute()
-            .value
-        return rows.first ?? DailyChallengeRemoteSnapshotRow(
-            questions: [],
-            answerDetails: [],
-            streak: nil,
-            generatedAt: Date()
-        )
-    }
-
-    private func snapshotRPC<Params: Encodable>(
-        _ name: String,
-        params: Params
-    ) async throws -> DailyChallengeRemoteSnapshotRow {
-        let rows: [DailyChallengeRemoteSnapshotRow] = try await client
-            .rpc(
-                name,
-                params: params
-            )
-            .execute()
-            .value
+        let rows: [DailyChallengeRemoteSnapshotRow] = try await client.mutation(path, args: args)
         return rows.first ?? DailyChallengeRemoteSnapshotRow(
             questions: [],
             answerDetails: [],
@@ -225,35 +203,26 @@ actor LiveSupabaseDailyChallengeGateway: SupabaseDailyChallengeGateway {
     }
 
     func loadHistoryQuestions() async throws -> [DailyQuestionRow] {
-        try await client
-            .rpc("get_daily_questions_history")
-            .execute()
-            .value
+        try await client.mutation("daily:get_daily_questions_history", args: PaeoniaConvexNoArgs())
     }
 
     func loadHistoryAnswerDetails() async throws -> [DailyAnswerDetailRow] {
-        try await client
-            .rpc("get_daily_answer_history_details")
-            .execute()
-            .value
+        try await client.mutation("daily:get_daily_answer_history_details", args: PaeoniaConvexNoArgs())
     }
 
     func loadCoupleStreak() async throws -> CoupleStreak {
-        let rows: [CoupleStreakRow] = try await client
-            .rpc("get_couple_streak")
-            .execute()
-            .value
+        let rows: [CoupleStreakRow] = try await client.mutation(
+            "streaks:get_couple_streak",
+            args: PaeoniaConvexNoArgs()
+        )
         return rows.first?.streak ?? .none
     }
 
     func loadAnswerDetails(coupleDayID: UUID) async throws -> [DailyAnswerDetailRow] {
-        try await client
-            .rpc(
-                "get_daily_answer_details",
-                params: DailyAnswerDetailsRequest(coupleDayID: coupleDayID)
-            )
-            .execute()
-            .value
+        try await client.mutation(
+            "daily:get_daily_answer_details",
+            args: DailyAnswerDetailsRequest(coupleDayID: coupleDayID)
+        )
     }
 
     func submitAnswer(
@@ -262,18 +231,15 @@ actor LiveSupabaseDailyChallengeGateway: SupabaseDailyChallengeGateway {
         payload: DailyAnswerPayload,
         operation: SyncClientOperation
     ) async throws -> UUID {
-        try await client
-            .rpc(
-                "submit_daily_answer",
-                params: SubmitDailyAnswerRequest(
-                    instanceID: instanceID,
-                    answerID: answerID,
-                    payload: payload,
-                    operation: operation
-                )
+        try await client.mutation(
+            "daily:submit_daily_answer",
+            args: SubmitDailyAnswerRequest(
+                instanceID: instanceID,
+                answerID: answerID,
+                payload: payload,
+                operation: operation
             )
-            .execute()
-            .value
+        )
     }
 
     func editTextAnswer(
@@ -281,17 +247,14 @@ actor LiveSupabaseDailyChallengeGateway: SupabaseDailyChallengeGateway {
         text: String,
         operation: SyncClientOperation
     ) async throws -> UUID {
-        try await client
-            .rpc(
-                "update_daily_answer_text",
-                params: EditDailyTextAnswerRequest(
-                    instanceID: instanceID,
-                    text: text,
-                    operation: operation
-                )
+        try await client.mutation(
+            "daily:update_daily_answer_text",
+            args: EditDailyTextAnswerRequest(
+                instanceID: instanceID,
+                text: text,
+                operation: operation
             )
-            .execute()
-            .value
+        )
     }
 
     func editPartnerChoice(
@@ -299,26 +262,23 @@ actor LiveSupabaseDailyChallengeGateway: SupabaseDailyChallengeGateway {
         selectedUserID: UUID,
         operation: SyncClientOperation
     ) async throws -> UUID {
-        try await client
-            .rpc(
-                "update_daily_answer_partner_choice",
-                params: EditDailyPartnerChoiceRequest(
-                    instanceID: instanceID,
-                    selectedUserID: selectedUserID,
-                    operation: operation
-                )
+        try await client.mutation(
+            "daily:update_daily_answer_partner_choice",
+            args: EditDailyPartnerChoiceRequest(
+                instanceID: instanceID,
+                selectedUserID: selectedUserID,
+                operation: operation
             )
-            .execute()
-            .value
+        )
     }
 
     func shuffleQuestion(
         slotNumber: Int,
         operation: SyncClientOperation
     ) async throws -> DailyChallengeRemoteSnapshotRow {
-        try await snapshotRPC(
-            "shuffle_daily_question_snapshot",
-            params: ShuffleDailyQuestionRequest(
+        try await snapshotMutation(
+            "daily:shuffle_daily_question_snapshot",
+            args: ShuffleDailyQuestionRequest(
                 slotNumber: slotNumber,
                 operation: operation
             )
@@ -328,7 +288,7 @@ actor LiveSupabaseDailyChallengeGateway: SupabaseDailyChallengeGateway {
 
 nonisolated enum DailyChallengeServiceFactory {
     static func makeDefault() -> any DailyChallengeServicing {
-        guard let service = try? SupabaseDailyChallengeService.live() else {
+        guard let service = try? DailyChallengeService.live() else {
             return EmptyDailyChallengeService()
         }
         return service

@@ -1,0 +1,584 @@
+import { v } from "convex/values";
+import { internal } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
+import { httpAction, internalMutation, internalQuery } from "./_generated/server";
+import { listActiveMembers, userHasDirectEntitlement } from "./lib/access";
+import {
+  type AppleRenewalInfo,
+  type AppleTransactionInfo,
+  millisToIsoOrNull,
+  requireString,
+  revocationReason,
+  stringOrNull,
+  determineSubscriptionStatus,
+  toDatabaseEnvironment,
+} from "./lib/appleStoreKit";
+import { getByUuid, withUpdatedAt } from "./lib/db";
+import { fail } from "./lib/errors";
+import { timestampArg, uuidArg } from "./lib/ids";
+import { isJsonObject } from "./lib/json";
+import { enqueueNotificationForUser } from "./lib/notifications";
+import { createRelationshipSyncEvent } from "./lib/syncEvents";
+import {
+  findAppAccountTokenOwner,
+  patchStorekitTransaction,
+  recordStorekitServerNotification,
+  recordVerifiedStorekitTransaction,
+  recordVerifiedStreakRestore,
+} from "./lib/storekit";
+import { addHours, addMs, nowIso } from "./lib/time";
+
+const STREAK_RESTORE_PRODUCT_ID = "no.paeonia.streak.restore";
+
+const nullableString = v.optional(v.union(v.null(), v.string()));
+
+// ---- StoreKit recording (Edge Functions call these through the actions in access.ts and the webhook below) ----
+
+export const record_verified_storekit_transaction = internalMutation({
+  args: {
+    p_user_id: nullableString,
+    p_app_account_token: nullableString,
+    p_apple_product_id: nullableString,
+    p_environment: v.string(),
+    p_original_transaction_id: v.string(),
+    p_transaction_id: v.string(),
+    p_web_order_line_item_id: nullableString,
+    p_status: nullableString,
+    p_purchased_at: nullableString,
+    p_expires_at: nullableString,
+    p_revoked_at: nullableString,
+    p_revocation_reason: nullableString,
+    p_signed_payload: nullableString,
+    p_payload_json: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => await recordVerifiedStorekitTransaction(ctx, args),
+});
+
+export const record_verified_streak_restore = internalMutation({
+  args: {
+    p_user_id: nullableString,
+    p_app_account_token: nullableString,
+    p_apple_product_id: nullableString,
+    p_environment: v.string(),
+    p_original_transaction_id: v.string(),
+    p_transaction_id: v.string(),
+    p_purchased_at: nullableString,
+    p_signed_payload: nullableString,
+    p_payload_json: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => await recordVerifiedStreakRestore(ctx, args),
+});
+
+export const record_storekit_server_notification = internalMutation({
+  args: {
+    p_notification_uuid: nullableString,
+    p_notification_type: nullableString,
+    p_subtype: nullableString,
+    p_environment: v.string(),
+    p_original_transaction_id: nullableString,
+    p_transaction_id: nullableString,
+    p_app_account_token: nullableString,
+    p_apple_product_id: nullableString,
+    p_web_order_line_item_id: nullableString,
+    p_status: nullableString,
+    p_purchased_at: nullableString,
+    p_expires_at: nullableString,
+    p_revoked_at: nullableString,
+    p_revocation_reason: nullableString,
+    p_signed_notification_payload: nullableString,
+    p_signed_transaction_info: nullableString,
+    p_payload_json: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => await recordStorekitServerNotification(ctx, args),
+});
+
+/** Port of `internal.mark_streak_restore_refunded`. Keeps the restored streak and flags the purchase. */
+export const mark_streak_restore_refunded = internalMutation({
+  args: { p_environment: v.string(), p_transaction_id: v.string() },
+  handler: async (ctx, args) => {
+    const restoration = await ctx.db
+      .query("streak_restorations")
+      .withIndex("by_environment_transaction_id", (q) =>
+        q.eq("environment", args.p_environment as Doc<"streak_restorations">["environment"]).eq("transaction_id", args.p_transaction_id),
+      )
+      .unique();
+    if (!restoration || restoration.status === "refunded") {
+      return false;
+    }
+    await ctx.db.patch(restoration._id, { status: "refunded", refunded_at: nowIso() });
+    return true;
+  },
+});
+
+/** Port of `internal.get_user_id_by_app_account_token`. */
+export const get_user_id_by_app_account_token = internalQuery({
+  args: { p_token: v.string() },
+  handler: async (ctx, args) => await findAppAccountTokenOwner(ctx, uuidArg(args.p_token)),
+});
+
+// ---- Reconciliation queue ----
+
+const ACTIVE_STATUSES = ["active", "grace", "billing_retry"] as const;
+
+function compareNullsFirst(a: string | undefined, b: string | undefined): number {
+  if (a === b) return 0;
+  if (a === undefined) return -1;
+  if (b === undefined) return 1;
+  return a < b ? -1 : 1;
+}
+
+/**
+ * Port of `internal.claim_storekit_transactions_for_reconciliation`. The SQL
+ * took intervals; here they are seconds (`p_reconcile_after_seconds` default
+ * 21600, `p_retry_after_seconds` default 900). Nothing in the SQL schedule
+ * called it, so this is an operator tool.
+ */
+export const claim_storekit_transactions_for_reconciliation = internalMutation({
+  args: {
+    p_now: nullableString,
+    p_limit: v.optional(v.number()),
+    p_reconcile_after_seconds: v.optional(v.union(v.null(), v.number())),
+    p_retry_after_seconds: v.optional(v.union(v.null(), v.number())),
+    p_max_attempts: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const now = args.p_now === undefined ? nowIso() : args.p_now === null ? null : timestampArg(args.p_now);
+    const reconcileAfter = args.p_reconcile_after_seconds === undefined ? 21_600 : args.p_reconcile_after_seconds;
+    const retryAfter = args.p_retry_after_seconds === undefined ? 900 : args.p_retry_after_seconds;
+    if (now === null || reconcileAfter === null || retryAfter === null) {
+      return fail("23514", "StoreKit reconciliation timestamps are required");
+    }
+    const limit = args.p_limit ?? 100;
+    if (limit < 1 || limit > 500) {
+      return fail("23514", "StoreKit reconciliation claim limit is out of range");
+    }
+    const maxAttempts = args.p_max_attempts ?? 10;
+    if (maxAttempts < 1 || maxAttempts > 100) {
+      return fail("23514", "StoreKit reconciliation max attempts is out of range");
+    }
+
+    const reconcileBefore = addMs(now, -reconcileAfter * 1000);
+    const retryBefore = addMs(now, -retryAfter * 1000);
+    const expiryHorizon = addHours(now, 24);
+
+    const candidates: Doc<"storekit_transactions">[] = [];
+    for (const status of ACTIVE_STATUSES) {
+      const rows = await ctx.db
+        .query("storekit_transactions")
+        .withIndex("by_status_expires_at_last_reconciled_at_claimed_at", (q) => q.eq("status", status))
+        .collect();
+      for (const tx of rows) {
+        const due =
+          tx.last_reconciled_at === undefined ||
+          tx.last_reconciled_at <= reconcileBefore ||
+          (tx.expires_at !== undefined && tx.expires_at <= expiryHorizon);
+        const unclaimed = tx.reconciliation_claimed_at === undefined || tx.reconciliation_claimed_at <= retryBefore;
+        if (tx.reconciliation_attempts < maxAttempts && due && unclaimed) {
+          candidates.push(tx);
+        }
+      }
+    }
+    candidates.sort(
+      (a, b) =>
+        compareNullsFirst(a.expires_at, b.expires_at) ||
+        compareNullsFirst(a.last_reconciled_at, b.last_reconciled_at) ||
+        compareNullsFirst(a.id, b.id),
+    );
+
+    const claimed = [];
+    for (const tx of candidates.slice(0, limit)) {
+      const attempts = tx.reconciliation_attempts + 1;
+      await patchStorekitTransaction(ctx, tx, {
+        reconciliation_claimed_at: now,
+        reconciliation_attempts: attempts,
+        last_reconciliation_error: undefined,
+      });
+      claimed.push({
+        transaction_id: tx.id,
+        user_id: tx.user_id,
+        product_id: tx.product_id,
+        environment: tx.environment,
+        app_account_token: tx.app_account_token ?? null,
+        original_transaction_id: tx.original_transaction_id,
+        storekit_transaction_id: tx.transaction_id,
+        status: tx.status,
+        expires_at: tx.expires_at ?? null,
+        reconciliation_attempts: attempts,
+      });
+    }
+    return claimed;
+  },
+});
+
+export const mark_storekit_transaction_reconciled = internalMutation({
+  args: { p_transaction_id: v.string() },
+  handler: async (ctx, args) => {
+    const tx = await getByUuid(ctx, "storekit_transactions", uuidArg(args.p_transaction_id));
+    if (!tx) return false;
+    await patchStorekitTransaction(ctx, tx, {
+      last_reconciled_at: nowIso(),
+      reconciliation_claimed_at: undefined,
+      reconciliation_attempts: 0,
+      last_reconciliation_error: undefined,
+    });
+    return true;
+  },
+});
+
+export const mark_storekit_transaction_reconciliation_failed = internalMutation({
+  args: { p_transaction_id: v.string(), p_error: nullableString },
+  handler: async (ctx, args) => {
+    const tx = await getByUuid(ctx, "storekit_transactions", uuidArg(args.p_transaction_id));
+    if (!tx) return false;
+    const message = (args.p_error ?? "").trim();
+    await patchStorekitTransaction(ctx, tx, {
+      reconciliation_claimed_at: nowIso(),
+      last_reconciliation_error: message === "" ? undefined : message.slice(0, 4000),
+    });
+    return true;
+  },
+});
+
+// ---- Expiry ----
+
+/**
+ * Port of `internal.expire_stale_entitlements`. Marks lapsed StoreKit
+ * transactions and grants as expired and tells the members of a couple that
+ * lost its last entitlement. The SQL schedule never ran it, so this is an
+ * operator tool; access checks compare `expires_at` themselves.
+ */
+export const expire_stale_entitlements = internalMutation({
+  args: { p_now: nullableString, p_limit: v.optional(v.union(v.null(), v.number())) },
+  handler: async (ctx, args) => {
+    const now = args.p_now === undefined ? nowIso() : args.p_now === null ? null : timestampArg(args.p_now);
+    if (now === null) {
+      return fail("23514", "entitlement expiry timestamp is required");
+    }
+    const limit = args.p_limit === undefined ? 500 : args.p_limit;
+    if (limit === null || limit < 1 || limit > 5000) {
+      return fail("23514", "entitlement expiry limit is out of range");
+    }
+
+    const expiredTransactions: Doc<"storekit_transactions">[] = [];
+    for (const status of ACTIVE_STATUSES) {
+      expiredTransactions.push(
+        ...(await ctx.db
+          .query("storekit_transactions")
+          .withIndex("by_status_expires_at_last_reconciled_at_claimed_at", (q) =>
+            q.eq("status", status).gt("expires_at", "").lte("expires_at", now),
+          )
+          .take(limit)),
+      );
+    }
+    expiredTransactions.sort((a, b) => compareNullsFirst(a.expires_at, b.expires_at) || compareNullsFirst(a.id, b.id));
+    const affectedUserIds = new Set<string>();
+    const transactionsToExpire = expiredTransactions.slice(0, limit);
+    for (const tx of transactionsToExpire) {
+      await patchStorekitTransaction(ctx, tx, { status: "expired" });
+      affectedUserIds.add(tx.user_id);
+    }
+
+    const expiredGrants = (
+      await ctx.db
+        .query("entitlement_grants")
+        .withIndex("by_status_expires_at", (q) => q.eq("status", "active").gt("expires_at", "").lte("expires_at", now))
+        .take(limit)
+    ).sort((a, b) => compareNullsFirst(a.expires_at, b.expires_at) || compareNullsFirst(a.id, b.id));
+    for (const grant of expiredGrants) {
+      await ctx.db.patch(grant._id, withUpdatedAt({ status: "expired" as const }));
+      affectedUserIds.add(grant.user_id);
+    }
+
+    const couplesToNotify = new Map<string, Doc<"couples">>();
+    for (const userId of affectedUserIds) {
+      const memberships = await ctx.db
+        .query("couple_members")
+        .withIndex("by_user_id_status_couple_id", (q) => q.eq("user_id", userId).eq("status", "active"))
+        .collect();
+      for (const membership of memberships) {
+        const couple = await getByUuid(ctx, "couples", membership.couple_id);
+        if (couple?.status === "active") {
+          couplesToNotify.set(couple.id, couple);
+        }
+      }
+    }
+    for (const couple of couplesToNotify.values()) {
+      let someoneEntitled = false;
+      for (const member of await listActiveMembers(ctx, couple.id)) {
+        if (await userHasDirectEntitlement(ctx, member.user_id)) {
+          someoneEntitled = true;
+          break;
+        }
+      }
+      if (someoneEntitled) continue;
+      const members = await ctx.db
+        .query("couple_members")
+        .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", couple.id))
+        .collect();
+      for (const member of members) {
+        await createRelationshipSyncEvent(ctx, {
+          user_id: member.user_id,
+          couple_id: couple.id,
+          event_kind: "entitlement_lost",
+          reason: "entitlement_expired",
+          relationship_status: couple.status,
+          member_status: member.status,
+          ended_at: couple.ended_at,
+          delete_after: couple.delete_after,
+          local_purge_scope: {
+            entitlement: "refresh",
+            relationship_content: "hide",
+            media_cache: "purge",
+            widget_cache: "purge",
+          },
+        });
+      }
+    }
+
+    return [
+      { storekit_transactions_expired: transactionsToExpire.length, entitlement_grants_expired: expiredGrants.length },
+    ];
+  },
+});
+
+// ---- Trial reminders ----
+
+const TRIAL_REMINDER_DAYS_BEFORE_END = 2;
+
+/**
+ * Port of `internal.queue_subscription_trial_reminders` (pg_cron job
+ * `queue-subscription-trial-reminders`, `15 * * * *`). Queues one reminder per
+ * device for verified initial free trials that end within the next two days and
+ * an hour. Returns the number of outbox rows queued.
+ */
+export const queue_subscription_trial_reminders = internalMutation({
+  args: { p_batch_size: v.optional(v.union(v.null(), v.number())) },
+  handler: async (ctx, args) => {
+    const batchSize = Math.max(args.p_batch_size ?? 500, 1);
+    const now = nowIso();
+    const reminderMs = TRIAL_REMINDER_DAYS_BEFORE_END * 86_400_000;
+    // tx.expires_at - 2 days <= now + 1 hour
+    const horizon = addMs(now, reminderMs + 3_600_000);
+
+    const candidates: Doc<"storekit_transactions">[] = [];
+    for (const status of ["active", "grace"] as const) {
+      candidates.push(
+        ...(await ctx.db
+          .query("storekit_transactions")
+          .withIndex("by_status_expires_at_last_reconciled_at_claimed_at", (q) =>
+            q.eq("status", status).gt("expires_at", now).lte("expires_at", horizon),
+          )
+          .collect()),
+      );
+    }
+    candidates.sort((a, b) => compareNullsFirst(a.expires_at, b.expires_at));
+
+    let queued = 0;
+    let picked = 0;
+    for (const tx of candidates) {
+      if (picked >= batchSize) break;
+      if (tx.transaction_id !== tx.original_transaction_id || !tx.raw_payload_id || !tx.expires_at) continue;
+      const product = await getByUuid(ctx, "subscription_products", tx.product_id);
+      if (!product || !product.is_active || product.kind !== "couple_subscription") continue;
+      const payload = await getByUuid(ctx, "storekit_payloads", tx.raw_payload_id);
+      const info = isJsonObject(payload?.payload_json) ? payload.payload_json.transactionInfo : undefined;
+      if (
+        !isJsonObject(info) ||
+        String(info.offerType) !== "1" ||
+        String(info.offerDiscountType ?? "").toUpperCase() !== "FREE_TRIAL"
+      ) {
+        continue;
+      }
+
+      const preference = await ctx.db
+        .query("notification_preferences")
+        .withIndex("by_user_id", (q) => q.eq("user_id", tx.user_id))
+        .unique();
+      if (!preference) continue;
+      const devices = await ctx.db
+        .query("user_devices")
+        .withIndex("by_user_id_disabled_at", (q) => q.eq("user_id", tx.user_id).eq("disabled_at", undefined))
+        .collect();
+      let hasUnqueuedDevice = false;
+      for (const device of devices) {
+        const existing = await ctx.db
+          .query("notification_outbox")
+          .withIndex("by_dedupe_key", (q) => q.eq("dedupe_key", `subscription_trial_reminder:${tx.id}:${device.id}`))
+          .first();
+        if (!existing) {
+          hasUnqueuedDevice = true;
+          break;
+        }
+      }
+      if (!hasUnqueuedDevice) continue;
+
+      picked += 1;
+      const deliverAt = addMs(tx.expires_at, -reminderMs);
+      queued += await enqueueNotificationForUser(ctx, {
+        recipient_user_id: tx.user_id,
+        kind: "subscription_trial_reminder",
+        payload: {
+          type: "subscription_trial_reminder",
+          route: "subscription",
+          deeplink: "paeonia://settings/subscription",
+          subscription_id: tx.id,
+          trial_ends_at: tx.expires_at,
+          days_left: TRIAL_REMINDER_DAYS_BEFORE_END,
+        },
+        dedupe_key: `subscription_trial_reminder:${tx.id}`,
+        redaction_level: "private",
+        apns_push_type: "alert",
+        apns_collapse_id: "subscription-trial",
+        scheduled_for: deliverAt > now ? deliverAt : now,
+      });
+    }
+    return queued;
+  },
+});
+
+// ---- Apple App Store Server Notifications webhook ----
+
+function jsonResponse(status: number, body: Record<string, unknown>): Response {
+  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+}
+
+function uuidOrNull(value: unknown): string | null {
+  const text = stringOrNull(value);
+  return text && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text) ? text : null;
+}
+
+type NotificationPayload = {
+  notificationType: string;
+  subtype?: string | null;
+  notificationUUID: string;
+  data?: { environment?: "Sandbox" | "Production"; signedTransactionInfo?: string; signedRenewalInfo?: string };
+};
+
+function revocationState(
+  notificationType: string,
+  transactionInfo: AppleTransactionInfo,
+): { revokedAt: string | null; reason: string | null } {
+  if (transactionInfo.revocationDate) {
+    return { revokedAt: millisToIsoOrNull(transactionInfo.revocationDate), reason: revocationReason(transactionInfo) };
+  }
+  if (notificationType === "REFUND") {
+    return { revokedAt: nowIso(), reason: "customer_refund" };
+  }
+  if (notificationType === "REVOKE") {
+    return { revokedAt: nowIso(), reason: "developer_revoked" };
+  }
+  return { revokedAt: null, reason: null };
+}
+
+/**
+ * `POST /apple/server-notifications`. Port of the apple-server-notifications
+ * Edge Function. Apple verifies nothing about the caller, so the signed payload
+ * is checked against Apple's root certificates before anything is stored.
+ */
+export const apple_server_notifications = httpAction(async (ctx, request) => {
+  if (request.method !== "POST") {
+    return jsonResponse(405, { ok: false, error: "Method not allowed" });
+  }
+
+  try {
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      throw new Error("Request body must be JSON");
+    }
+    const signedPayload = stringOrNull(body.signedPayload);
+    if (!signedPayload) {
+      return jsonResponse(400, { ok: false, error: "Missing signedPayload" });
+    }
+
+    const verification = await ctx.runAction(internal.storekitNode.verify_notification, { signedPayload });
+    if (!verification) {
+      return jsonResponse(400, { ok: false, error: "Invalid Apple notification" });
+    }
+    const notification = verification.notification as NotificationPayload;
+    const transactionInfo = verification.transactionInfo as AppleTransactionInfo | null;
+    const renewalInfo = verification.renewalInfo as AppleRenewalInfo | null;
+    const notificationType = requireString(notification.notificationType, "notificationType");
+
+    // The streak-restore consumable lives outside the subscription tables.
+    // Refunds are logged; the restored streak is intentionally kept.
+    if (transactionInfo?.productId === STREAK_RESTORE_PRODUCT_ID) {
+      let processed = false;
+      if (notificationType === "REFUND" || notificationType === "REVOKE") {
+        try {
+          await ctx.runMutation(internal.storekit.mark_streak_restore_refunded, {
+            p_environment: toDatabaseEnvironment(transactionInfo.environment),
+            p_transaction_id: transactionInfo.transactionId,
+          });
+          processed = true;
+        } catch (error) {
+          console.error("[apple-server-notifications] streak restore refund failed", error);
+          return jsonResponse(500, {
+            received: false,
+            processed: false,
+            error: "Could not record streak restore refund",
+          });
+        }
+      }
+      return jsonResponse(200, { received: true, duplicate: false, processed });
+    }
+
+    const environment = toDatabaseEnvironment(transactionInfo?.environment ?? notification.data?.environment);
+    const status = transactionInfo ? determineSubscriptionStatus(transactionInfo, renewalInfo, notificationType) : null;
+    const revocation = transactionInfo
+      ? revocationState(notificationType, transactionInfo)
+      : { revokedAt: null, reason: null };
+
+    let result: Record<string, unknown>;
+    try {
+      result = await ctx.runMutation(internal.storekit.record_storekit_server_notification, {
+        p_notification_uuid: requireString(notification.notificationUUID, "notificationUUID"),
+        p_notification_type: notificationType,
+        p_subtype: stringOrNull(notification.subtype),
+        p_environment: environment,
+        p_original_transaction_id: transactionInfo?.originalTransactionId ?? null,
+        p_transaction_id: transactionInfo?.transactionId ?? null,
+        p_app_account_token: uuidOrNull(transactionInfo?.appAccountToken),
+        p_apple_product_id: transactionInfo?.productId ?? null,
+        p_web_order_line_item_id: transactionInfo?.webOrderLineItemId ?? null,
+        p_status: status,
+        p_purchased_at: millisToIsoOrNull(transactionInfo?.purchaseDate),
+        p_expires_at: millisToIsoOrNull(transactionInfo?.expiresDate),
+        p_revoked_at: revocation.revokedAt,
+        p_revocation_reason: revocation.reason,
+        p_signed_notification_payload: signedPayload,
+        p_signed_transaction_info: notification.data?.signedTransactionInfo ?? null,
+        p_payload_json: JSON.parse(
+          JSON.stringify({
+            notification,
+            transactionInfo,
+            renewalInfo,
+            signedRenewalInfo: notification.data?.signedRenewalInfo ?? null,
+            processedAt: nowIso(),
+          }),
+        ),
+      });
+    } catch (error) {
+      console.error("[apple-server-notifications] mutation failed", error);
+      return jsonResponse(500, { received: false, processed: false, error: "Could not record Apple notification" });
+    }
+
+    const resultStatus = typeof result.status === "number" ? result.status : 500;
+    if (result.ok !== true && resultStatus >= 500) {
+      return jsonResponse(resultStatus, {
+        received: false,
+        processed: false,
+        error: typeof result.error === "string" ? result.error : "Could not process Apple notification",
+      });
+    }
+    return jsonResponse(200, {
+      received: true,
+      duplicate: result.duplicate === true,
+      processed: result.processed === true,
+    });
+  } catch (error) {
+    console.error("[apple-server-notifications]", error);
+    return jsonResponse(500, { received: false, processed: false, error: "Unexpected error" });
+  }
+});

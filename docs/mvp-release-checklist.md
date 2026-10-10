@@ -6,13 +6,15 @@ Use this instead of a phase roadmap. Paeonia is now past early planning: the imp
 
 Checklist status was reconciled against repository source and public endpoint availability on 2026-07-11. Checked source/configuration items are not substitutes for device or production-flow QA; those stay unchecked until they are exercised in the environment named by the item.
 
+The backend moved from self-hosted Supabase to self-hosted Convex with Clerk auth after that reconciliation. Items that were verified against the Supabase backend are unchecked below with a "Re-verify on Convex" note until someone exercises them on the Convex deployment. Nothing in this file records a result from the Convex backend yet.
+
 ## Shipping Standard
 
 Paeonia is ready for MVP when:
 
 - a real couple can sign in, pay, pair, use the core features, and recover from ordinary failures without developer help
 - one partner can pay and both partners receive access through server-enforced entitlement
-- private relationship content is protected by RLS, private Storage, local cache clearing, and relationship access-loss handling
+- private relationship content is protected by explicit server-side access checks, signed media URLs, local cache clearing, and relationship access-loss handling
 - App Review can verify the app without needing two physical devices
 - every public claim, screenshot, legal page, and privacy label matches the shipped build
 - no reachable surface contains test, placeholder, or "not ready" language
@@ -20,8 +22,9 @@ Paeonia is ready for MVP when:
 ## Source Documents
 
 - Implementation owners: `docs/implementation-map.md`
-- Product/data contract: `docs/phase-3-data-contract.md`
-- Migration and RLS checklist: `docs/phase-3-migration-checklist.md`
+- Backend rules, contracts, and production access: `backend/AGENTS.md`
+- Current data model: `backend/convex/schema.ts`
+- Original product/data decisions (retired Supabase schema): `docs/phase-3-data-contract.md`
 - Marketing/app contract: `docs/marketing-app-contract.md`
 - Design and copy rules: `docs/phase-2-design/`
 - Historical UX audit with a current status summary: `docs/ux-friction-report.md`
@@ -39,13 +42,13 @@ These block TestFlight/App Review until resolved.
 - [x] Public terms are final and live at `https://paeonia.no/terms`.
 - [x] Support page is final and live at `https://paeonia.no/support`.
 - [x] In-app legal/support links open the production URLs.
-- [x] Account deletion works end-to-end from the app.
-- [x] Relationship leave/disconnect hides shared content after sync.
-- [x] App Review can access a paired demo state without needing two reviewer-controlled devices.
+- [ ] Account deletion works end-to-end from the app. Re-verify on Convex.
+- [ ] Relationship leave/disconnect hides shared content after sync. Re-verify on Convex.
+- [ ] App Review can access a paired demo state without needing two reviewer-controlled devices. Re-verify on Convex.
 - [x] In-app purchase products are configured in App Store Connect.
-- [x] StoreKit sandbox monthly and annual purchases and entitlement refresh are tested on device.
-- [x] StoreKit sandbox restore is tested on device.
-- [x] One paying partner unlocks both partners through backend entitlement.
+- [ ] StoreKit sandbox monthly and annual purchases and entitlement refresh are tested on device. Re-verify on Convex.
+- [ ] StoreKit sandbox restore is tested on device. Re-verify on Convex.
+- [ ] One paying partner unlocks both partners through backend entitlement. Re-verify on Convex.
 - [x] Subscription terms are clear before purchase.
 - [ ] App icon is final in the app target, widget target, and App Store assets.
 - [ ] App Store privacy labels match the actual data collected by the build.
@@ -54,10 +57,11 @@ These block TestFlight/App Review until resolved.
 
 - [ ] Worktree is clean before release candidate tagging.
 - [ ] Local branch is pushed intentionally before remote deployment.
-- [x] No secrets, service-role keys, APNs keys, StoreKit secrets, or review access codes are committed.
-- [x] `.gitignore` excludes generated build output, Xcode derived data, local Supabase temp files, and local environment files.
+- [ ] No secrets, Convex admin keys, Clerk secret keys, APNs keys, StoreKit secrets, or review access codes are committed. Re-scan before release.
+- [x] `.gitignore` excludes generated build output, Xcode derived data, local Convex state, and local environment files.
 - [x] `AGENTS.md` points agents to `docs/mvp-release-checklist.md` and `docs/implementation-map.md` as the active planning/navigation docs.
 - [x] CI smoke checks run on pushes.
+- [ ] Backend CI (`.github/workflows/backend.yml`: typecheck and tests) passes on GitHub.
 - [ ] The committed project opens cleanly in Xcode.
 - [ ] The committed SwiftPM/package state is portable for a fresh checkout.
 - [x] Local-only/debug-only surfaces are either removed or hidden behind debug configuration.
@@ -71,9 +75,8 @@ Run these before a release candidate.
 - [x] `./scripts/xcode-build-agent.sh --json` (Xcode 27 beta; succeeded).
 - [x] `./scripts/xcode-test-agent.sh --json` (468 tests, 0 failures).
 - [x] `bun run build`
-- [x] `DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase db lint --local --schema public,internal --fail-on error`
-- [x] `DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase db reset --local --no-seed`
-- [x] `DOCKER_HOST=unix:///Users/hjalmarkarlsen/.orbstack/run/docker.sock SUPABASE_TELEMETRY_DISABLED=1 supabase test db` (168 pgTAP tests, 0 failures).
+- [ ] `cd backend && npm run typecheck` (Node 20, 22, or 24; Convex Node actions fail on Node 26).
+- [ ] `cd backend && npm test`
 
 Record any skipped command with the reason.
 
@@ -93,21 +96,22 @@ Record any skipped command with the reason.
 - [x] Notification Service Extension is configured if required by the shipped notification behavior.
 - [x] App icon asset is linked correctly in all relevant targets.
 - [x] Launch screen uses final brand treatment or an intentionally minimal native launch.
-- [x] Release build configuration points at production Supabase and production marketing URLs.
+- [ ] Release build configuration points at the production Convex URL (`https://api.paeonia.no`), the production Clerk publishable key, and production marketing URLs. `ios/release.xcconfig` has an empty Clerk key at the time of writing.
 - [x] Debug/test account shortcuts are unavailable in release builds.
 
 ## Authentication And Onboarding
 
-- [ ] Sign in with Apple works with normal Apple ID.
+- [ ] Sign in with Apple works with normal Apple ID (native ID token exchanged through Clerk).
 - [ ] Sign in with Apple works with private relay email.
-- [ ] Google Sign-In works.
+- [ ] Google Sign-In works (Clerk's OAuth sheet).
 - [x] No email/password, magic-link, or passkey sign-up surface is reachable in MVP.
 - [ ] Auth errors are understandable to a normal user.
-- [x] OAuth profile name is used when available.
-- [x] Name fallback flow works when OAuth does not provide a usable name.
+- [ ] The production Clerk instance has the Convex integration enabled (session tokens carry `aud: convex`) and its issuer matches `CLERK_JWT_ISSUER_DOMAIN` on the production deployment.
+- [ ] OAuth profile name is used when available. Re-verify on Convex. The name now comes from Clerk claims.
+- [ ] Name fallback flow works when OAuth does not provide a usable name. Re-verify on Convex.
 - [x] Display name can be changed later.
-- [x] Profile photo upload and replacement have a tested source path.
-- [x] A private OAuth profile-photo fallback appears when the user-uploaded override is missing and cannot itself be removed.
+- [ ] Profile photo upload and replacement have a tested source path. Re-verify on Convex.
+- [ ] A private OAuth profile-photo fallback appears when the user-uploaded override is missing and cannot itself be removed. Re-verify on Convex.
 - [x] Relationship start date is collected contextually from the milestone card, not during onboarding.
 - [x] Relationship start date validation is clear.
 - [x] The user sees paywall after account creation and before pairing, per product decision.
@@ -121,15 +125,15 @@ Record any skipped command with the reason.
 - [x] Product IDs in App Store Connect match `subscription_products`.
 - [x] Product prices and periods load correctly.
 - [x] Intro offer/trial copy is derived from the loaded StoreKit product.
-- [x] The trial timeline's two-days-left promise is backed by an idempotent localized push queued from verified Apple trial data.
+- [ ] The trial timeline's two-days-left promise is backed by an idempotent localized push queued from verified Apple trial data. Re-verify on Convex.
 - [x] Primary CTA says what happens next, including App Store confirmation.
 - [x] Restore purchases works when signed into the paying account.
 - [ ] Restore does not grant access to unrelated accounts.
-- [x] Backend records verified StoreKit transactions.
-- [ ] StoreKit server notifications endpoint is deployed and configured.
-- [ ] Apple server notification shared secret/key configuration is correct.
+- [ ] Backend records verified StoreKit transactions. Re-verify on Convex.
+- [ ] StoreKit server notifications endpoint is deployed and configured. App Store Connect must point at `https://actions.paeonia.no/apple/server-notifications`.
+- [ ] Apple server notification and in-app purchase key configuration is correct (`APPLE_IAP_*` and `APPLE_BUNDLE_ID` Convex environment variables).
 - [ ] Grace period behavior preserves access when Apple reports grace state.
-- [x] Expired subscription removes entitlement when neither partner has active access.
+- [ ] Expired subscription removes entitlement when neither partner has active access. Re-verify on Convex.
 - [ ] Lifetime/test/review grants are scoped, auditable, revocable, and intentional.
 - [ ] App checks whether the current couple already has active entitlement before starting purchase.
 - [ ] Simultaneous purchase attempts cannot create conflicting active entitlements.
@@ -154,8 +158,8 @@ Record any skipped command with the reason.
 - [x] Relationship ended notice is a real screen/state, not an unavailable placeholder.
 - [x] Leaving a relationship is clearly warned.
 - [x] Leaving immediately removes local access to shared relationship content.
-- [x] Leaving schedules backend cleanup according to retention policy.
-- [x] Account deletion while paired has the same relationship effect as leaving.
+- [ ] Leaving schedules backend cleanup according to retention policy. Re-verify on Convex.
+- [ ] Account deletion while paired has the same relationship effect as leaving. Re-verify on Convex.
 - [x] Prior report/block safety warnings behave as documented if re-pairing is attempted.
 - [x] No public discovery, user search, or profile lookup is reachable.
 
@@ -226,7 +230,7 @@ Record any skipped command with the reason.
 - [ ] Photo upload failure leaves the draft intact.
 - [ ] Memory photos are loaded through private signed URLs.
 - [ ] Memory media cache clears on relationship access loss.
-- [ ] Memory deletion/hide behavior matches product decision and RLS.
+- [ ] Memory deletion/hide behavior matches product decision and the access checks in `backend/convex/memories.ts`.
 - [ ] Memory thread-message write path is either surfaced in UI or intentionally deferred.
 - [x] Memory voice notes are cut from MVP; active product copy and App Store materials must not imply that memories include voice.
 
@@ -279,7 +283,7 @@ Record any skipped command with the reason.
 
 ## Notifications
 
-- [ ] APNs auth key/certificate is configured.
+- [ ] APNs auth key is configured (`APNS_*` Convex environment variables).
 - [ ] Push registration works on device.
 - [ ] Device token is stored with environment and user relationship context.
 - [ ] Notification preferences are available in settings.
@@ -299,7 +303,7 @@ Record any skipped command with the reason.
 
 - [x] Settings tab/screen exposes profile, relationship, subscription, notification, location, legal, support, sign-out, and deletion paths as appropriate.
 - [x] User can update display name.
-- [x] User can update a custom profile photo; the OAuth fallback remains available.
+- [ ] User can update a custom profile photo; the OAuth fallback remains available. Re-verify on Convex.
 - [x] User can sign out.
 - [x] User can restore purchases through StoreKit and refresh access.
 - [x] User can manage subscription.
@@ -333,32 +337,22 @@ Record any skipped command with the reason.
 - [ ] Recoverable sync errors route through the shared banner or local status, not raw technical messages.
 - [ ] No private content is written to logs.
 
-## Supabase Schema, RLS, And Storage
+## Convex Backend
 
-Remote baseline checked on 2026-07-10: all 74 committed migrations are present and the five expected Edge Functions are active. Advisors have no blocking findings. The security advisor reports 64 warnings for authenticated `security definer` public wrappers; these are intentional thin wrappers over authorized `internal.*` implementations required by Paeonia's schema boundary. The performance advisor reports 67 unused-index informational findings on the pre-launch dataset; retain the relationship, RLS, cleanup, and foreign-key indexes until representative production usage exists.
+Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earlier Supabase checks (migrations, RLS, pgTAP, advisors, Edge Functions, Storage buckets) no longer apply.
 
-- [x] All migrations apply cleanly to a fresh local database.
-- [x] Supabase lint has no blocking findings.
-- [x] RLS is enabled on all client-facing tables.
-- [x] Public app RPC wrappers that call `internal.*` are thin `security definer` wrappers with fixed `search_path`; service-only invoker wrappers remain restricted.
-- [x] Internal app functions perform `auth.uid()` authorization checks where user context is required.
-- [x] Foreign keys and indexes exist for relationship/user/couple access paths.
-- [x] `internal` schema is not broadly exposed to ordinary clients.
-- [x] Storage buckets are private.
-- [x] Profile photo bucket policy covers custom and private provider-fallback assets.
-- [x] Couple media bucket policy is covered by the security surface tests.
-- [x] Widget drawing payload bucket policy is covered by the security surface tests.
-- [x] Report snapshot bucket policy is covered by the security surface tests.
-- [x] Media reservation/finalize flow prevents path spoofing.
-- [x] Orphaned media cleanup behavior is covered by pgTAP.
-- [ ] Relationship cleanup job works.
-- [x] StoreKit notification endpoint is deployed.
-- [x] Widget push endpoint is deployed.
-- [x] Cleanup media endpoint is deployed.
-- [ ] Edge Function environment variables are configured in production.
-- [x] `api.paeonia.no` custom domain works for Supabase.
-- [x] Advisors are checked and intentional findings are documented.
-- [x] No service-role credential/path is reachable from the client source.
+- [ ] `npx convex deploy` from `backend/` succeeds against `https://api.paeonia.no`.
+- [ ] Production environment variables are set: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KEY`, `PAEONIA_MEDIA_URL_SECRET`, `APNS_*`, `APPLE_IAP_*`, `APPLE_BUNDLE_ID`, `APPLE_APP_APPLE_ID`.
+- [ ] `https://api.paeonia.no` and `https://actions.paeonia.no` serve over TLS. `https://convex.paeonia.no` is reachable on the tailnet only.
+- [ ] Every app-callable function checks membership, entitlement, block state, and ownership from the session, never from arguments. Convex has no row level security, so the tests in `backend/convex/*.test.ts` are the safety net.
+- [ ] Media uploads reject a mismatched size or content type, and signed media URLs (`GET /media`) expire and reject a bad signature.
+- [ ] Orphaned media cleanup crons run (`cleanup-media-storage`, `sweep-orphan-media-storage`).
+- [ ] Relationship cleanup crons run (`paeonia-cleanup-expired-relationship-content`, `paeonia-purge-deleted-relationship-content`).
+- [ ] Question catalog is synced to production with `scripts/sync-question-catalog --apply`, and subscription products are seeded.
+- [ ] A push drain delivers an alert and a widget update to a real device.
+- [ ] Production data in `/srv/paeonia/convex/data` is backed up, and a restore has been tried.
+- [ ] No Convex admin key or Clerk secret key is reachable from the client source or the marketing app.
+- [ ] `ios/Scripts/mint-review-codes.mjs` works against production, including registered demo partners.
 
 ## Marketing Site
 
@@ -436,7 +430,7 @@ Run these on real devices where possible.
 - [ ] User disables location; map hides or updates as expected.
 - [ ] User leaves relationship; private content disappears after sync.
 - [ ] User signs out and signs back in; state restores correctly.
-- [ ] User deletes account; state and backend behavior are correct.
+- [ ] User deletes account; state and backend behavior are correct (Clerk user removed, Sign in with Apple token revoked).
 
 ## Failure Mode QA
 

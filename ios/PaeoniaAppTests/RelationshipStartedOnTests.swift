@@ -130,7 +130,7 @@ struct RelationshipStartedOnDataServiceTests {
         let partnerUserID = try #require(UUID(uuidString: "99999999-9999-9999-9999-999999999999"))
         let accessStore = InMemoryAccessSyncSnapshotRepository()
         let gateway = RelationshipStartedOnAccessGateway(
-            snapshot: SupabaseAccessSnapshot(
+            snapshot: RemoteAccessSnapshot(
                 userEntitlement: nil,
                 coupleEntitlement: nil,
                 relationshipState: try relationshipState(startedOn: "2024-02-29")
@@ -154,8 +154,8 @@ struct RelationshipStartedOnDataServiceTests {
         )
     }
 
-    private func relationshipState(startedOn: String?) throws -> SupabaseRelationshipState {
-        SupabaseRelationshipState(
+    private func relationshipState(startedOn: String?) throws -> RemoteRelationshipState {
+        RemoteRelationshipState(
             coupleID: try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444")),
             pairID: try #require(UUID(uuidString: "55555555-5555-5555-5555-555555555555")),
             relationshipStatus: .active,
@@ -236,7 +236,7 @@ struct RelationshipMilestoneViewModelTests {
 }
 
 // swiftlint:disable async_without_await
-private actor RelationshipStartedOnGatewaySpy: SupabaseRelationshipStartedOnGateway {
+private actor RelationshipStartedOnGatewaySpy: RelationshipStartedOnGateway {
     private(set) var receivedStartedOn: PairingStartDate?
     private(set) var receivedOperation: SyncClientOperation?
 
@@ -250,21 +250,21 @@ private actor RelationshipStartedOnGatewaySpy: SupabaseRelationshipStartedOnGate
     }
 }
 
-private actor RelationshipStartedOnAccessGateway: SupabaseAccessGateway {
-    private let snapshot: SupabaseAccessSnapshot
+private actor RelationshipStartedOnAccessGateway: AccessGateway {
+    private let snapshot: RemoteAccessSnapshot
 
-    init(snapshot: SupabaseAccessSnapshot) {
+    init(snapshot: RemoteAccessSnapshot) {
         self.snapshot = snapshot
     }
 
-    func loadAccessSnapshot() async throws -> SupabaseAccessSnapshot {
+    func loadAccessSnapshot() async throws -> RemoteAccessSnapshot {
         snapshot
     }
 
     func loadRelationshipSyncEvents(
         after cursor: SyncCursor,
         limit: Int
-    ) async throws -> [SupabaseRelationshipSyncEvent] {
+    ) async throws -> [RemoteRelationshipSyncEvent] {
         []
     }
 

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "aa9d8299-64b9-4210-a96f-67f666f34a23",
+    "apple_product_id": "no.paeonia.couple",
+    "kind": "couple_subscription",
+    "billing_period": "monthly",
+    "is_active": true,
+    "created_at": "2026-10-10T10:56:33.022Z",
+    "updated_at": "2026-10-10T10:56:33.022Z"
+  },
+  {
+    "id": "13ccebd9-f1c9-4cd4-8800-a2449fc7afe6",
+    "apple_product_id": "no.paeonia.couple.year",
+    "kind": "couple_subscription",
+    "billing_period": "yearly",
+    "is_active": true,
+    "created_at": "2026-10-10T10:56:33.022Z",
+    "updated_at": "2026-10-10T10:56:33.022Z"
+  },
+  {
+    "id": "860fc197-905a-45f2-bcc5-11d804ad3088",
+    "apple_product_id": "no.paeonia.streak.restore",
+    "kind": "streak_restore",
+    "billing_period": "one_time",
+    "is_active": true,
+    "created_at": "2026-10-10T10:56:33.463Z",
+    "updated_at": "2026-10-10T10:56:33.463Z"
+  }
+]

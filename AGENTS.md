@@ -34,14 +34,20 @@ paeonia/
 │   ├── PaeoniaAppTests/  # Unit tests
 │   ├── PaeoniaAppUITests/# UI tests
 │   └── Scripts/          # Build/localization/release scripts
-├── supabase/             # Self-hosted Supabase backend
+├── backend/              # Self-hosted Convex backend
 ├── docs/                 # Architecture and product documentation
 ├── AGENTS.md
 └── README.md
 ```
 
 Use `paeonia.no` as the canonical public domain for marketing, support, legal pages, and universal links.
-Use `api.paeonia.no` as the canonical Supabase API domain for production client configuration, Auth callbacks, Storage, Realtime, and Edge Functions. Do not use the raw Supabase project URL in production OAuth, app, or web configuration when the custom domain can be used.
+The backend is a self-hosted Convex deployment on the `one-s` server, with Clerk for auth. Production origins:
+
+- `https://api.paeonia.no` is the Convex client API origin. Use it for all production client configuration.
+- `https://actions.paeonia.no` is the Convex HTTP actions origin. It serves signed media URLs (`GET /media`) and Apple App Store server notifications (`POST /apple/server-notifications`).
+- `https://convex.paeonia.no` is the Convex dashboard. It is reachable on the tailnet only.
+
+Production deploy and access details are in [backend/AGENTS.md](backend/AGENTS.md).
 
 Do not create placeholder directories or files unless they are needed for the current task.
 
@@ -55,11 +61,12 @@ Keep `AGENTS.md` for durable rules and constraints. Put feature ownership maps, 
 
 - `docs/implementation-map.md`: first stop for "which file owns this behavior?"
 - `docs/mvp-release-checklist.md`: active MVP release-readiness checklist.
-- `docs/phase-3-data-contract.md`: product/data-model decisions before schema work.
-- `docs/phase-3-migration-checklist.md`: Supabase migration slice plan and RLS helper checklist.
+- `docs/phase-3-data-contract.md`: product and data-model decisions, written for the retired Supabase schema. `backend/convex/schema.ts` is current.
+- `docs/phase-3-migration-checklist.md`: historical Supabase migration plan. The backend now runs on Convex.
 - `docs/couple-question-guidelines.md`: required reading before writing, seeding, localizing, or versioning couple questions.
 - `docs/marketing-app-contract.md`: public routes, Universal Links, Cloudflare static files, and marketing app structure.
-- `supabase/README.md`: backend working rules, local command examples, and question catalog notes.
+- `backend/AGENTS.md`: backend working rules, local commands, production access, and deploy steps.
+- `backend/questions/README.md`: question catalog source files and sync notes.
 
 ## Agent Behavior Guidelines
 
@@ -140,7 +147,7 @@ The developer may run multiple agents in parallel in the same worktree.
 Read only guidance relevant to the change. Commands and source paths in these documents use the repository root unless stated otherwise.
 
 - Native iOS work: [ios/AGENTS.md](ios/AGENTS.md).
-- Backend, migrations, OAuth, or iOS auth/RPC integration: [supabase/AGENTS.md](supabase/AGENTS.md). Preserve exact production targets, migration history, RLS, grants, and request authorization. Production remains at `api.paeonia.no` on `mdr`; access is limited to the task-authorized operation.
+- Backend, Clerk auth, or iOS auth/RPC integration: [backend/AGENTS.md](backend/AGENTS.md). Preserve the function contracts, explicit authorization checks, and the exact production targets. Production access is limited to the task-authorized operation.
 - Marketing routes or deployment: [marketing/AGENTS.md](marketing/AGENTS.md).
 
 ## Product-Specific Quality Bar

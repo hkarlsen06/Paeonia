@@ -23,7 +23,7 @@ Resolved since the original review:
 
 Still open or only partially addressed:
 
-- the account-deletion migration and Edge Function are deployed, and the source path, retry queue, provider-revocation fallback, and local purge are implemented and tested; production environment validation and real-provider/device QA remain
+- the account-deletion backend was deployed on Supabase and has since been ported to Convex (`backend/convex/accountDeletion.ts`), and the source path, retry queue, provider-revocation fallback, and local purge are implemented and tested; production environment validation and real-provider/device QA remain
 - paired Settings now includes profile editing, private OAuth-photo fallback, restore purchases, reporting, deletion, legal/support, and privacy/export requests; device accessibility and real-service QA remain
 - the live legal pages still need the controller/operator entity name, postal address, organization number, and intended legal review before final release sign-off
 

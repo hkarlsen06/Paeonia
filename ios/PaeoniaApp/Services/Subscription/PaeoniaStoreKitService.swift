@@ -1,7 +1,6 @@
 import Foundation
 import Observation
 import StoreKit
-import Supabase
 
 extension Notification.Name {
     nonisolated static let paeoniaSubscriptionDidUpdate = Notification.Name(
@@ -72,12 +71,12 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
 
     private(set) var products: [Product] = []
 
-    private let clientProvider: PaeoniaSupabaseClientProvider
+    private let clientProvider: PaeoniaConvexClientProvider
     private var userID: String?
     private var appAccountToken: UUID?
     @ObservationIgnored private var transactionUpdatesTask: Task<Void, Never>?
 
-    init(clientProvider: PaeoniaSupabaseClientProvider = .shared) {
+    init(clientProvider: PaeoniaConvexClientProvider = .shared) {
         self.clientProvider = clientProvider
     }
 
@@ -305,10 +304,10 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         }
 
         let client = try clientProvider.client()
-        let tokenString: String = try await client
-            .rpc("get_or_create_app_account_token", params: ["p_user_id": userID])
-            .execute()
-            .value
+        let tokenString: String = try await client.mutation(
+            "access:get_or_create_app_account_token",
+            args: ["p_user_id": userID]
+        )
 
         guard let token = UUID(uuidString: tokenString) else {
             throw PaeoniaPurchaseError.invalidUserID
@@ -338,15 +337,15 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
                 priceDisplay: priceDisplay
             )
 
-            let response: PaeoniaStoreKitUploadResponse = try await client.functions.invoke(
-                "apple-verify-purchase",
-                options: FunctionInvokeOptions(body: request)
+            let response: PaeoniaStoreKitUploadResponse = try await client.action(
+                "access:verify_purchase",
+                args: request
             )
 
             guard response.isConfirmed else {
                 throw purchaseError(fromConfirmationReason: response.error)
             }
-        } catch let error as FunctionsError {
+        } catch let error as PaeoniaConvexError {
             throw purchaseError(fromConfirmationReason: confirmationFailureReason(from: error))
         }
     }
@@ -365,9 +364,9 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
                 environment: environmentName(for: transaction)
             )
 
-            let response: PaeoniaStreakRestoreUploadResponse = try await client.functions.invoke(
-                "apple-redeem-streak-restore",
-                options: FunctionInvokeOptions(body: request)
+            let response: PaeoniaStreakRestoreUploadResponse = try await client.action(
+                "access:redeem_streak_restore",
+                args: request
             )
 
             guard response.isConfirmed else {
@@ -375,7 +374,7 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
             }
 
             return response.restoredCount ?? 0
-        } catch let error as FunctionsError {
+        } catch let error as PaeoniaConvexError {
             throw streakRestoreError(fromConfirmationReason: confirmationFailureReason(from: error))
         }
     }
@@ -412,24 +411,24 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         }
     }
 
-    private func confirmationFailureReason(from error: FunctionsError) -> String {
+    /// The backend turns a failed purchase check into `server(code: "http_<status>",
+    /// message: <reason>)`, where the message is the verifier's own reason text.
+    private func confirmationFailureReason(from error: PaeoniaConvexError) -> String {
         switch error {
-        case .relayError:
-            return "Supabase could not reach the purchase verifier."
-        case let .httpError(code, data):
-            let response = try? JSONDecoder().decode(PaeoniaStoreKitUploadResponse.self, from: data)
-            if let responseError = response?.error, !responseError.isEmpty {
-                return responseError
+        case let .server(code, message):
+            if !message.isEmpty {
+                return message
+            }
+            return "Purchase verifier returned \(code ?? "an error")."
+        case let .http(status, body):
+            let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedBody.isEmpty else {
+                return "Purchase verifier returned HTTP \(status)."
             }
 
-            let body = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let body, !body.isEmpty else {
-                return "Purchase verifier returned HTTP \(code)."
-            }
-
-            return "Purchase verifier returned HTTP \(code): \(body)"
-        @unknown default:
-            return "Purchase verifier failed."
+            return "Purchase verifier returned HTTP \(status): \(trimmedBody)"
+        case .notAuthenticated:
+            return "Purchase verifier needs a signed-in user."
         }
     }
 }

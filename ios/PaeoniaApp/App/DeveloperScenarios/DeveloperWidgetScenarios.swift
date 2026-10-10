@@ -64,10 +64,12 @@
     func reserveDrawingUpload(
       coupleID _: UUID, canvasID _: UUID, revisionID _: UUID,
       operation _: WidgetCanvasClientOperation
-    ) async throws -> PendingMediaUploadResponse {
+    ) async throws -> MediaUploadReservation {
       throw WidgetCanvasGatewayError.emptyResponse
     }
-    func uploadPayload(bucket _: String, storagePath _: String, data _: Data) async throws {}
+    func uploadPayload(reservation _: MediaUploadReservation, data _: Data) async throws -> String {
+      throw WidgetCanvasGatewayError.emptyResponse
+    }
     func finalizeDrawingUpload(
       _: WidgetDrawingFinalizeInput, operation _: WidgetCanvasClientOperation
     ) async throws -> FinalizedMediaUploadResponse {

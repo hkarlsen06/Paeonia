@@ -425,7 +425,7 @@ private final class ChatTestFixture {
     }
 }
 
-private actor ChatTestGateway: SupabaseDailyQuestionChatGateway {
+private actor ChatTestGateway: DailyQuestionChatGateway {
     private let threadID: UUID
     private let messageID: UUID
     private var summaries: [DailyQuestionThreadSummary] = []

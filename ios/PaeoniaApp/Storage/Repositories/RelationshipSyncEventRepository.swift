@@ -2,8 +2,8 @@ import Foundation
 import SwiftData
 
 protocol RelationshipSyncEventPersisting: Actor {
-    func save(_ events: [SupabaseRelationshipSyncEvent]) async throws
-    func events(ownerUserID: UUID) async throws -> [SupabaseRelationshipSyncEvent]
+    func save(_ events: [RemoteRelationshipSyncEvent]) async throws
+    func events(ownerUserID: UUID) async throws -> [RemoteRelationshipSyncEvent]
     func deleteEvents(ownerUserID: UUID) async throws
 }
 
@@ -16,7 +16,7 @@ actor SwiftDataRelationshipSyncEventRepository: RelationshipSyncEventPersisting 
         self.container = container
     }
 
-    func save(_ events: [SupabaseRelationshipSyncEvent]) async throws {
+    func save(_ events: [RemoteRelationshipSyncEvent]) async throws {
         guard !events.isEmpty else {
             return
         }
@@ -41,7 +41,7 @@ actor SwiftDataRelationshipSyncEventRepository: RelationshipSyncEventPersisting 
         try context.save()
     }
 
-    func events(ownerUserID: UUID) async throws -> [SupabaseRelationshipSyncEvent] {
+    func events(ownerUserID: UUID) async throws -> [RemoteRelationshipSyncEvent] {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<LocalRelationshipSyncEvent>(
             predicate: #Predicate { event in
@@ -86,8 +86,8 @@ actor SwiftDataRelationshipSyncEventRepository: RelationshipSyncEventPersisting 
 
     private func event(
         from localEvent: LocalRelationshipSyncEvent
-    ) throws -> SupabaseRelationshipSyncEvent {
-        SupabaseRelationshipSyncEvent(
+    ) throws -> RemoteRelationshipSyncEvent {
+        RemoteRelationshipSyncEvent(
             id: localEvent.id,
             userID: localEvent.ownerUserID,
             coupleID: localEvent.coupleID,
@@ -110,15 +110,15 @@ actor SwiftDataRelationshipSyncEventRepository: RelationshipSyncEventPersisting 
 }
 
 actor InMemoryRelationshipSyncEventRepository: RelationshipSyncEventPersisting {
-    private var eventsByID: [UUID: SupabaseRelationshipSyncEvent] = [:]
+    private var eventsByID: [UUID: RemoteRelationshipSyncEvent] = [:]
 
-    func save(_ events: [SupabaseRelationshipSyncEvent]) async throws {
+    func save(_ events: [RemoteRelationshipSyncEvent]) async throws {
         for event in events {
             eventsByID[event.id] = event
         }
     }
 
-    func events(ownerUserID: UUID) async throws -> [SupabaseRelationshipSyncEvent] {
+    func events(ownerUserID: UUID) async throws -> [RemoteRelationshipSyncEvent] {
         eventsByID.values
             .filter { $0.userID == ownerUserID }
             .sorted {

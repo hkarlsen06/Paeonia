@@ -82,12 +82,12 @@ Collect each item at the latest moment it is actually needed, tied to the benefi
 
 Turns a faked value into an honest, contextual moment and unblocks accurate countdowns.
 
-- [x] New migration: make `couples.started_on` nullable. Follow `docs/phase-3-migration-checklist.md`; create with `supabase migration new <name>`.
-- [x] Add a `set_couple_started_on` public RPC wrapper over an `internal.*` implementation. It **must** be `security definer` with a pinned `search_path` (authenticated has no USAGE on `internal` — see AGENTS.md and `docs/phase-3-migration-checklist.md`). Writable by either partner in the couple; authorization enforced inside the internal function via `auth.uid()` / entitled-couple checks.
-- [x] Pairing: drop the hard-coded `PairingStartDate(date: Date())` in `ios/PaeoniaApp/Features/Paywall/Offer/PaywallViewModel.swift`; make `PairingStartDate` / the `p_started_on` param optional through `PairingService.acceptInvite` and `SupabasePairingGateway` so accept no longer sets a date.
+- [x] Make `couples.started_on` optional in `backend/convex/schema.ts`.
+- [x] Add the public `relationship:set_couple_started_on` mutation in `backend/convex/relationship.ts`. Either partner in the couple can write it. The function checks membership and entitlement from the session, never from arguments (see `backend/AGENTS.md`).
+- [x] Pairing: drop the hard-coded `PairingStartDate(date: Date())` in `ios/PaeoniaApp/Features/Paywall/Offer/PaywallViewModel.swift`; make `PairingStartDate` / the `p_started_on` param optional through `PairingService.acceptInvite` and `PairingGateway` so accept no longer sets a date.
 - [x] Us tab: give `MilestoneCountdownCard` a setup state when `startedOn == nil` — a calm "Set the day you got together" prompt with a date picker — instead of hiding or faking. The card already takes `startedOn: String?`, so this is additive (`ios/PaeoniaApp/Features/Countdown/Components/MilestoneCountdownCard.swift`).
 - [x] Wire the write through local-first sync so both partners see the update, and keep it editable later.
-- [x] Tests: milestone card nil → setup → set transition; RPC scoping/authorization; sync propagation to the partner; `RelationshipMilestoneCalculator` with a set date (existing coverage in `ios/PaeoniaAppTests/RelationshipMilestoneTests.swift`).
+- [x] Tests: milestone card nil → setup → set transition; function scoping and authorization; sync propagation to the partner; `RelationshipMilestoneCalculator` with a set date (existing coverage in `ios/PaeoniaAppTests/RelationshipMilestoneTests.swift`).
 
 ### 2. Pre-auth hook + first-class code entry
 
@@ -113,11 +113,11 @@ Turns a faked value into an honest, contextual moment and unblocks accurate coun
 ## Related Docs
 
 - `docs/implementation-map.md` — feature ownership (launch/auth/pairing/paywall/countdown).
-- `docs/phase-3-data-contract.md` — product/data-model decisions before schema work.
-- `docs/phase-3-migration-checklist.md` — migration order, RLS helpers, RPC grants.
+- `docs/phase-3-data-contract.md` — product/data-model decisions, written for the retired Supabase schema. `backend/convex/schema.ts` is current.
+- `backend/AGENTS.md` — backend function contracts and authorization rules.
 - `docs/phase-2-design/07-voice-and-copy.md` — copy tone for all new strings.
 - `docs/ux-friction-report.md` — current UX risks in auth/onboarding/paywall.
-- `AGENTS.md` — RPC security-definer rule, presentation readiness, localization, copy clarity.
+- `AGENTS.md` — presentation readiness, localization, copy clarity.
 
 ## Research Basis
 

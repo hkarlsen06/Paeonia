@@ -3,11 +3,11 @@ import Foundation
 struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .createMemory
 
-    private let gateway: any SupabaseMemoryGateway
+    private let gateway: any MemoryGateway
     private let memoryStore: any MemoryRecordPersisting
 
     init(
-        gateway: any SupabaseMemoryGateway,
+        gateway: any MemoryGateway,
         memoryStore: any MemoryRecordPersisting
     ) {
         self.gateway = gateway
@@ -51,11 +51,11 @@ struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
 struct UpdateMemoryPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .updateMemory
 
-    private let gateway: any SupabaseMemoryGateway
+    private let gateway: any MemoryGateway
     private let memoryStore: any MemoryRecordPersisting
 
     init(
-        gateway: any SupabaseMemoryGateway,
+        gateway: any MemoryGateway,
         memoryStore: any MemoryRecordPersisting
     ) {
         self.gateway = gateway
@@ -99,11 +99,11 @@ struct UpdateMemoryPendingOperationHandler: PendingSyncOperationHandling {
 struct HideMemoryPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .hideMemory
 
-    private let gateway: any SupabaseMemoryGateway
+    private let gateway: any MemoryGateway
     private let memoryStore: any MemoryRecordPersisting
 
     init(
-        gateway: any SupabaseMemoryGateway,
+        gateway: any MemoryGateway,
         memoryStore: any MemoryRecordPersisting
     ) {
         self.gateway = gateway
@@ -147,11 +147,11 @@ struct HideMemoryPendingOperationHandler: PendingSyncOperationHandling {
 struct UpsertMemoryNotePendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .upsertMemoryNote
 
-    private let gateway: any SupabaseMemoryGateway
+    private let gateway: any MemoryGateway
     private let memoryStore: any MemoryRecordPersisting
 
     init(
-        gateway: any SupabaseMemoryGateway,
+        gateway: any MemoryGateway,
         memoryStore: any MemoryRecordPersisting
     ) {
         self.gateway = gateway
@@ -195,11 +195,11 @@ struct UpsertMemoryNotePendingOperationHandler: PendingSyncOperationHandling {
 struct AttachMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .attachMemoryMedia
 
-    private let gateway: any SupabaseMemoryGateway
+    private let gateway: any MemoryGateway
     private let memoryStore: any MemoryRecordPersisting
 
     init(
-        gateway: any SupabaseMemoryGateway,
+        gateway: any MemoryGateway,
         memoryStore: any MemoryRecordPersisting
     ) {
         self.gateway = gateway
@@ -229,11 +229,11 @@ struct AttachMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
 struct RemoveMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .removeMemoryMedia
 
-    private let gateway: any SupabaseMemoryGateway
+    private let gateway: any MemoryGateway
     private let memoryStore: any MemoryRecordPersisting
 
     init(
-        gateway: any SupabaseMemoryGateway,
+        gateway: any MemoryGateway,
         memoryStore: any MemoryRecordPersisting
     ) {
         self.gateway = gateway
@@ -263,11 +263,11 @@ struct RemoveMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
 struct CreateMemoryThreadMessagePendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .createMemoryThreadWithMessage
 
-    private let gateway: any SupabaseMemoryGateway
+    private let gateway: any MemoryGateway
     private let memoryStore: any MemoryRecordPersisting
 
     init(
-        gateway: any SupabaseMemoryGateway,
+        gateway: any MemoryGateway,
         memoryStore: any MemoryRecordPersisting
     ) {
         self.gateway = gateway
@@ -296,7 +296,7 @@ struct CreateMemoryThreadMessagePendingOperationHandler: PendingSyncOperationHan
 
 private enum MemoryPendingOperationRefresh {
     nonisolated static func refresh(
-        gateway: any SupabaseMemoryGateway,
+        gateway: any MemoryGateway,
         memoryStore: any MemoryRecordPersisting,
         ownerUserID: UUID,
         confirmedOperationID: UUID,

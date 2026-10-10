@@ -273,10 +273,12 @@ private nonisolated final class StubGateway: WidgetCanvasGateway, @unchecked Sen
     }
     func reserveDrawingUpload(
         coupleID: UUID, canvasID: UUID, revisionID: UUID, operation: WidgetCanvasClientOperation
-    ) throws -> PendingMediaUploadResponse {
+    ) throws -> MediaUploadReservation {
         throw WidgetCanvasGatewayError.emptyResponse
     }
-    func uploadPayload(bucket: String, storagePath: String, data: Data) {}
+    func uploadPayload(reservation: MediaUploadReservation, data: Data) throws -> String {
+        throw WidgetCanvasGatewayError.emptyResponse
+    }
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput, operation: WidgetCanvasClientOperation
     ) throws -> FinalizedMediaUploadResponse {

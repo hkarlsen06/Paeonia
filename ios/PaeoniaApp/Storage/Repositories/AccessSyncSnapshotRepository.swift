@@ -3,16 +3,16 @@ import SwiftData
 
 nonisolated struct AccessSyncSnapshot: Equatable, Sendable {
     let ownerUserID: UUID
-    let userEntitlement: SupabaseUserEntitlement?
-    let coupleEntitlement: SupabaseCoupleEntitlement?
-    let relationshipState: SupabaseRelationshipState?
+    let userEntitlement: RemoteUserEntitlement?
+    let coupleEntitlement: RemoteCoupleEntitlement?
+    let relationshipState: RemoteRelationshipState?
     let refreshedAt: Date
 
     init(
         ownerUserID: UUID,
-        userEntitlement: SupabaseUserEntitlement?,
-        coupleEntitlement: SupabaseCoupleEntitlement?,
-        relationshipState: SupabaseRelationshipState?,
+        userEntitlement: RemoteUserEntitlement?,
+        coupleEntitlement: RemoteCoupleEntitlement?,
+        relationshipState: RemoteRelationshipState?,
         refreshedAt: Date = Date()
     ) {
         self.ownerUserID = ownerUserID
@@ -91,15 +91,15 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
         return AccessSyncSnapshot(
             ownerUserID: snapshot.ownerUserID,
             userEntitlement: try decode(
-                SupabaseUserEntitlement.self,
+                RemoteUserEntitlement.self,
                 from: snapshot.userEntitlementData
             ),
             coupleEntitlement: try decode(
-                SupabaseCoupleEntitlement.self,
+                RemoteCoupleEntitlement.self,
                 from: snapshot.coupleEntitlementData
             ),
             relationshipState: try decode(
-                SupabaseRelationshipState.self,
+                RemoteRelationshipState.self,
                 from: snapshot.relationshipStateData
             ),
             refreshedAt: snapshot.refreshedAt

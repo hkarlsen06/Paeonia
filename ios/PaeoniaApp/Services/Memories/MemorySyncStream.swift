@@ -3,12 +3,12 @@ import Foundation
 struct MemorySyncStream: SyncStream {
     nonisolated let streamKey: SyncStreamKey = .memories
 
-    private let gateway: any SupabaseMemoryGateway
+    private let gateway: any MemoryGateway
     private let memoryStore: any MemoryRecordPersisting
     private let pageSize: Int
 
     nonisolated init(
-        gateway: any SupabaseMemoryGateway,
+        gateway: any MemoryGateway,
         memoryStore: any MemoryRecordPersisting,
         pageSize: Int = 100
     ) {

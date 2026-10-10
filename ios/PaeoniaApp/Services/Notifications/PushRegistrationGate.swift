@@ -11,7 +11,7 @@ nonisolated struct PushRegistrationRecord: Codable, Equatable, Sendable {
 /// Every field a registration RPC sends. A change to any of these should
 /// re-register the device; nothing else should.
 nonisolated struct PushRegistrationInputs: Sendable {
-    let userID: UUID?
+    let userID: String?
     let platform: String
     let token: String
     let apnsEnvironment: String
@@ -54,7 +54,7 @@ nonisolated enum PushRegistrationGate {
     /// clears the stored record) followed by a sign back in re-registers too.
     static func fingerprint(_ inputs: PushRegistrationInputs) -> String {
         let material = [
-            inputs.userID?.uuidString.lowercased() ?? "-",
+            inputs.userID?.lowercased() ?? "-",
             inputs.platform,
             inputs.token,
             inputs.apnsEnvironment,

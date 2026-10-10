@@ -1,5 +1,7 @@
 # Phase 3 Data Contract
 
+> This document describes the retired Supabase schema. `backend/convex/schema.ts` is current.
+
 This document captures product and data-model decisions before writing Supabase migrations.
 
 The goal is to make backend behavior explicit before schema, RLS, local sync, and UI flows start depending on hidden assumptions.

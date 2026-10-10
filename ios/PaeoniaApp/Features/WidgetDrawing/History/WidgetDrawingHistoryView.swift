@@ -2,13 +2,13 @@ import SwiftUI
 import UIKit
 
 /// Builds the gateway the history timeline reads through, falling back to a
-/// no-op when no Supabase client is configured (previews, signed-out states).
+/// no-op when no Convex client is configured (previews, signed-out states).
 nonisolated enum WidgetDrawingHistoryFactory {
     static func makeGateway() -> any WidgetCanvasGateway {
-        guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
+        guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return NoOpWidgetCanvasGateway()
         }
-        return LiveSupabaseWidgetCanvasGateway(client: client)
+        return LiveWidgetCanvasGateway(client: client)
     }
 }
 

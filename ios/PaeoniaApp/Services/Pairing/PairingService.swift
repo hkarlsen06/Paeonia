@@ -33,22 +33,22 @@ protocol PairingServicing: Actor {
     func leaveRelationship(operation: PairingClientOperation) async throws -> Bool
 }
 
-actor SupabasePairingService: PairingServicing {
-    private let gateway: any SupabasePairingGateway
+actor RemotePairingService: PairingServicing {
+    private let gateway: any PairingGateway
     private let generateInviteCode: PairingInviteCodeGenerator
     private let maxCreateInviteAttempts = 3
 
     init(
-        gateway: any SupabasePairingGateway,
+        gateway: any PairingGateway,
         generateInviteCode: @escaping PairingInviteCodeGenerator = PairingInviteCode.generate
     ) {
         self.gateway = gateway
         self.generateInviteCode = generateInviteCode
     }
 
-    static func live() throws -> SupabasePairingService {
-        let client = try PaeoniaSupabaseClientProvider.shared.client()
-        return SupabasePairingService(gateway: LiveSupabasePairingGateway(client: client))
+    static func live() throws -> RemotePairingService {
+        let client = try PaeoniaConvexClientProvider.shared.client()
+        return RemotePairingService(gateway: LivePairingGateway(client: client))
     }
 
     func createInvite(

@@ -62,12 +62,12 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .submitDailyAnswer
 
     private let mediaUploadService: any DailyAnswerMediaUploading
-    private let gateway: any SupabaseDailyChallengeGateway
+    private let gateway: any DailyChallengeGateway
     private let mediaDraftStore: any DailyAnswerMediaDraftStoring
 
     init(
         mediaUploadService: any DailyAnswerMediaUploading,
-        gateway: any SupabaseDailyChallengeGateway,
+        gateway: any DailyChallengeGateway,
         mediaDraftStore: any DailyAnswerMediaDraftStoring
     ) {
         self.mediaUploadService = mediaUploadService

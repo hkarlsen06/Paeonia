@@ -184,7 +184,7 @@ final class RootViewModel {
         self.syncService = resolvedSyncService
         self.privacyLifecycle = RootPrivacyLifecycle(syncService: resolvedSyncService)
         self.authService = authService ?? AuthServiceFactory.makeDefault()
-        self.accessRouteService = accessRouteService ?? (try? SupabaseAccessRouteService.live())
+        self.accessRouteService = accessRouteService ?? (try? RemoteAccessRouteService.live())
         self.accessSnapshotStore = accessSnapshotStore ?? Self.makeDefaultAccessSnapshotStore()
         self.inviteStore = inviteStore ?? UserDefaultsPairingInviteStore.shared
         self.pairingCelebrationStore = pairingCelebrationStore ?? UserDefaultsPairingCelebrationStore.shared
@@ -237,10 +237,9 @@ final class RootViewModel {
         }
     }
 
-    func signInWithGoogle(using googleSignInProvider: any GoogleSignInProviding) async {
+    func signInWithGoogle() async {
         await performAuthAction(failureNotice: .signInFailed) {
-            let credential = try await googleSignInProvider.signIn()
-            let session = try await authService.signInWithGoogle(credential)
+            let session = try await authService.signInWithGoogle()
             await apply(AuthRoute(session: session))
             await startSyncIfNeeded()
         }
@@ -548,14 +547,12 @@ final class RootViewModel {
     }
 
     private static func isUserCancelledAuthError(_ error: Error) -> Bool {
-        if let googleError = error as? GoogleSignInServiceError,
-           googleError == .userCancelled {
-            return true
-        }
-
         let nsError = error as NSError
-        return nsError.domain == ASAuthorizationError.errorDomain
-            && nsError.code == ASAuthorizationError.canceled.rawValue
+        // Apple's sheet and the Google web sheet (Clerk) report a dismissal differently.
+        return (nsError.domain == ASAuthorizationError.errorDomain
+            && nsError.code == ASAuthorizationError.canceled.rawValue)
+            || (nsError.domain == ASWebAuthenticationSessionError.errorDomain
+                && nsError.code == ASWebAuthenticationSessionError.canceledLogin.rawValue)
     }
 
     private func logAuthError(_ error: Error, notice: RootNotice?) {
@@ -982,7 +979,7 @@ final class RootViewModel {
     }
 
     private static func isKnownEndedRelationship(
-        _ relationshipState: SupabaseRelationshipState
+        _ relationshipState: RemoteRelationshipState
     ) -> Bool {
         if relationshipState.endedAt != nil {
             return true

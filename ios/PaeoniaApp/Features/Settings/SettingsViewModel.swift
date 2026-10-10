@@ -46,7 +46,7 @@ final class SettingsViewModel {
     ) {
         self.preferences = preferences
         self.authorization = authorization
-        self.pairingService = pairingService ?? (try? SupabasePairingService.live())
+        self.pairingService = pairingService ?? (try? RemotePairingService.live())
         self.operationProvider = operationProvider ?? PairingClientOperationFactory.shared
         self.storeKitService = storeKitService ?? PaeoniaStoreKitService.shared
         if let userID {

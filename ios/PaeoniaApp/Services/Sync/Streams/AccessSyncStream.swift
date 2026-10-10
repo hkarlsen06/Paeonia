@@ -3,11 +3,11 @@ import Foundation
 struct AccessSyncStream: SyncStream {
     nonisolated let streamKey: SyncStreamKey = .relationship
 
-    private let gateway: any SupabaseAccessGateway
+    private let gateway: any AccessGateway
     private let snapshotStore: any AccessSyncSnapshotPersisting
 
     nonisolated init(
-        gateway: any SupabaseAccessGateway,
+        gateway: any AccessGateway,
         snapshotStore: any AccessSyncSnapshotPersisting
     ) {
         self.gateway = gateway

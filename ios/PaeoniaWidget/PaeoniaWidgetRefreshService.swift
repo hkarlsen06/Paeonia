@@ -1,16 +1,13 @@
 import CryptoKit
 import Foundation
 import PencilKit
-import Supabase
 import UIKit
 
 /// Performs the small authenticated read needed by the interactive widget.
-/// Session refresh is handled by Supabase using the keychain access group shared
-/// with the host app.
+/// Clerk reads the session from the keychain access group shared with the host
+/// app and refreshes the token.
 enum PaeoniaWidgetRefreshService {
     private static let appGroupIdentifier = "group.no.paeonia.app"
-    private static let authStorageKey = "paeonia-auth-session"
-    private static let authAccessGroup = "48ZSLD4RMP.no.paeonia.shared"
     private static let payloadPath = "Widget/current.json"
     private static let previewsDirectory = "Widget/Previews"
     private static let pendingUploadKey = "paeonia.widgetCanvas.pendingUpload"
@@ -18,8 +15,13 @@ enum PaeoniaWidgetRefreshService {
 
     @MainActor
     static func refresh() async throws {
-        let client = try makeClient()
-        _ = try await client.auth.session
+        guard PaeoniaClerk.configureIfPossible() else {
+            throw RefreshError.missingConfiguration
+        }
+        guard PaeoniaClerk.currentAccountID() != nil else {
+            throw RefreshError.notSignedIn
+        }
+        let client = try PaeoniaConvexClientProvider.shared.client()
         guard let remoteDrawing = try await loadRemoteDrawing(client: client),
               shouldPublish(remoteContentHash: contentHash(for: remoteDrawing.drawingData))
         else {
@@ -29,12 +31,9 @@ enum PaeoniaWidgetRefreshService {
     }
 
     @MainActor
-    private static func loadRemoteDrawing(client: SupabaseClient) async throws -> RemoteDrawing? {
-        let states: [CanvasState] = try await client
-            .rpc("get_widget_canvas", params: EmptyRequest())
-            .execute()
-            .value
-        guard let state = states.first,
+    private static func loadRemoteDrawing(client: PaeoniaConvexClient) async throws -> RemoteDrawing? {
+        let states: FirstRow<CanvasState> = try await client.mutation("widget:get_widget_canvas")
+        guard let state = states.row,
               let revisionID = state.activeRevisionID,
               let mediaAssetID = state.payloadMediaAssetID
         else {
@@ -65,55 +64,14 @@ enum PaeoniaWidgetRefreshService {
     }
 
     private static func signedPayloadURL(
-        client: SupabaseClient,
+        client: PaeoniaConvexClient,
         mediaAssetID: UUID
     ) async throws -> URL? {
-        let authorizations: [SignedURLAuthorization] = try await client
-            .rpc(
-                "get_media_signed_url",
-                params: SignedURLRequest(mediaAssetID: mediaAssetID)
-            )
-            .execute()
-            .value
-        guard let authorization = authorizations.first else {
-            return nil
-        }
-
-        return try await client.storage
-            .from(authorization.bucket)
-            .createSignedURL(
-                path: authorization.storagePath,
-                expiresIn: authorization.expiresInSeconds
-            )
-    }
-
-    private static func makeClient() throws -> SupabaseClient {
-        guard let urlString = Bundle.main.object(
-            forInfoDictionaryKey: "PaeoniaSupabaseURL"
-        ) as? String,
-              let url = URL(string: urlString),
-              let publishableKey = Bundle.main.object(
-                forInfoDictionaryKey: "PaeoniaSupabasePublishableKey"
-              ) as? String
-        else {
-            throw RefreshError.missingConfiguration
-        }
-
-        return SupabaseClient(
-            supabaseURL: url,
-            supabaseKey: publishableKey,
-            options: SupabaseClientOptions(
-                auth: SupabaseClientOptions.AuthOptions(
-                    storage: KeychainLocalStorage(
-                        service: "supabase.gotrue.swift",
-                        accessGroup: authAccessGroup
-                    ),
-                    storageKey: authStorageKey,
-                    autoRefreshToken: true,
-                    emitLocalSessionAsInitialSession: true
-                )
-            )
+        let authorizations: [SignedURLAuthorization] = try await client.mutation(
+            "media:get_media_signed_url",
+            args: SignedURLRequest(mediaAssetID: mediaAssetID)
         )
+        return authorizations.first?.signedURL
     }
 
     @MainActor
@@ -254,11 +212,10 @@ enum PaeoniaWidgetRefreshService {
 private extension PaeoniaWidgetRefreshService {
     enum RefreshError: Error {
         case missingConfiguration
+        case notSignedIn
         case unavailableAppGroup
         case renderFailed
     }
-
-    struct EmptyRequest: Encodable {}
 
     struct PendingUpload: Decodable {
         let contentHash: String
@@ -295,14 +252,10 @@ private extension PaeoniaWidgetRefreshService {
     }
 
     struct SignedURLAuthorization: Decodable {
-        let bucket: String
-        let storagePath: String
-        let expiresInSeconds: Int
+        let signedURL: URL
 
         enum CodingKeys: String, CodingKey {
-            case bucket
-            case storagePath = "storage_path"
-            case expiresInSeconds = "expires_in_seconds"
+            case signedURL = "signed_url"
         }
     }
 

@@ -202,11 +202,11 @@ struct RelationshipSyncEventsStreamTests {
         createdAt: TimeInterval,
         eventKind: String = "relationship_ended",
         localPurgeScope: [String: String] = ["relationship": "hide"]
-    ) throws -> SupabaseRelationshipSyncEvent {
+    ) throws -> RemoteRelationshipSyncEvent {
         let resolvedCoupleID = try coupleID ?? #require(
             UUID(uuidString: "44444444-4444-4444-4444-444444444444")
         )
-        return SupabaseRelationshipSyncEvent(
+        return RemoteRelationshipSyncEvent(
             id: try #require(UUID(uuidString: id)),
             userID: userID,
             coupleID: resolvedCoupleID,
@@ -242,15 +242,15 @@ struct RelationshipSyncEventsStreamTests {
     }
 }
 
-private actor RelationshipEventsGateway: SupabaseAccessGateway {
-    private let events: [SupabaseRelationshipSyncEvent]
+private actor RelationshipEventsGateway: AccessGateway {
+    private let events: [RemoteRelationshipSyncEvent]
 
-    init(events: [SupabaseRelationshipSyncEvent]) {
+    init(events: [RemoteRelationshipSyncEvent]) {
         self.events = events
     }
 
-    func loadAccessSnapshot() async throws -> SupabaseAccessSnapshot {
-        SupabaseAccessSnapshot(
+    func loadAccessSnapshot() async throws -> RemoteAccessSnapshot {
+        RemoteAccessSnapshot(
             userEntitlement: nil,
             coupleEntitlement: nil,
             relationshipState: nil
@@ -260,7 +260,7 @@ private actor RelationshipEventsGateway: SupabaseAccessGateway {
     func loadRelationshipSyncEvents(
         after cursor: SyncCursor,
         limit: Int
-    ) async throws -> [SupabaseRelationshipSyncEvent] {
+    ) async throws -> [RemoteRelationshipSyncEvent] {
         events
             .filter { event in
                 guard let updatedAt = cursor.updatedAt else {
@@ -293,7 +293,7 @@ private actor RecordingRelationshipSyncEventApplier: RelationshipSyncEventApplyi
     }
 
     func apply(
-        _ events: [SupabaseRelationshipSyncEvent],
+        _ events: [RemoteRelationshipSyncEvent],
         context _: SyncContext
     ) async throws {
         appliedIDs.append(contentsOf: events.map(\.id))

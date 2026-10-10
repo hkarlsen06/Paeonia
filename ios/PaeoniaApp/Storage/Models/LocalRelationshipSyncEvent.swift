@@ -18,7 +18,7 @@ final class LocalRelationshipSyncEvent {
     var createdAt: Date
     var updatedAt: Date
 
-    init(event: SupabaseRelationshipSyncEvent, localPurgeScopeData: Data?) {
+    init(event: RemoteRelationshipSyncEvent, localPurgeScopeData: Data?) {
         self.id = event.id
         self.ownerUserID = event.userID
         self.coupleID = event.coupleID
@@ -35,7 +35,7 @@ final class LocalRelationshipSyncEvent {
         self.updatedAt = event.updatedAt
     }
 
-    func update(from event: SupabaseRelationshipSyncEvent, localPurgeScopeData: Data?) {
+    func update(from event: RemoteRelationshipSyncEvent, localPurgeScopeData: Data?) {
         ownerUserID = event.userID
         coupleID = event.coupleID
         initiatedByUserID = event.initiatedByUserID

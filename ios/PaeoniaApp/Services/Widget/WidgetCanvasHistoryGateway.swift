@@ -1,5 +1,4 @@
 import Foundation
-import Supabase
 
 /// One revision row from `get_widget_drawing_revisions`, trimmed to what the
 /// history timeline needs. The RPC returns *every* revision but nulls the
@@ -22,29 +21,26 @@ nonisolated struct WidgetDrawingRevisionSummary: Decodable, Sendable {
     }
 }
 
-extension LiveSupabaseWidgetCanvasGateway {
+extension LiveWidgetCanvasGateway {
     func listRevisions(
         canvasID: UUID,
         limit: Int,
         createdBefore: Date?,
         createdBeforeRevisionID: UUID?
     ) async throws -> [WidgetDrawingRevisionSummary] {
-        try await client
-            .rpc(
-                "get_widget_drawing_revisions",
-                params: ListWidgetDrawingRevisionsRequest(
-                    canvasID: canvasID,
-                    limit: limit,
-                    createdBefore: createdBefore,
-                    createdBeforeRevisionID: createdBeforeRevisionID
-                )
+        try await client.mutation(
+            "widget:get_widget_drawing_revisions",
+            args: ListWidgetDrawingRevisionsRequest(
+                canvasID: canvasID,
+                limit: limit,
+                createdBefore: createdBefore,
+                createdBeforeRevisionID: createdBeforeRevisionID
             )
-            .execute()
-            .value
+        )
     }
 }
 
-/// Used when no Supabase client is configured (previews, signed-out states).
+/// Used when no Convex client is configured (previews, signed-out states).
 /// History reads resolve to "no canvas / no drawings" instead of erroring.
 nonisolated struct NoOpWidgetCanvasGateway: WidgetCanvasGateway {
     func getOrCreateCanvas() throws -> WidgetCanvasReference {
@@ -52,10 +48,12 @@ nonisolated struct NoOpWidgetCanvasGateway: WidgetCanvasGateway {
     }
     func reserveDrawingUpload(
         coupleID: UUID, canvasID: UUID, revisionID: UUID, operation: WidgetCanvasClientOperation
-    ) throws -> PendingMediaUploadResponse {
+    ) throws -> MediaUploadReservation {
         throw WidgetCanvasGatewayError.emptyResponse
     }
-    func uploadPayload(bucket: String, storagePath: String, data: Data) {}
+    func uploadPayload(reservation: MediaUploadReservation, data: Data) throws -> String {
+        throw WidgetCanvasGatewayError.emptyResponse
+    }
     func finalizeDrawingUpload(
         _ input: WidgetDrawingFinalizeInput, operation: WidgetCanvasClientOperation
     ) throws -> FinalizedMediaUploadResponse {

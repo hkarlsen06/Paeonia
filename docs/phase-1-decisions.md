@@ -1,5 +1,7 @@
 # Phase 1 Decisions
 
+> This document describes the retired Supabase schema. `backend/convex/schema.ts` is current.
+
 Status: historical foundation record. These decisions were adopted during project setup and are retained to explain the repository's baseline. They are not an active plan; use `docs/mvp-release-checklist.md` for release work and `AGENTS.md` for current constraints.
 
 ## iOS Project

@@ -1,5 +1,4 @@
 import Foundation
-import Supabase
 
 nonisolated protocol MemoryMediaImageProviding: Sendable {
     /// Returns the bytes for a memory's photo asset, fetching and caching a signed
@@ -67,13 +66,13 @@ actor MemoryMediaImageDiskCache: MemoryMediaImageCacheWriting {
 actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheClearing {
     nonisolated static let shared: MemoryMediaImageService? = try? live()
 
-    private let client: SupabaseClient
+    private let client: PaeoniaConvexClient
     private let cache: MemoryMediaImageDiskCache
     private let expiresInSeconds = 3_600
     private var inFlightDownloads: [UUID: Task<Data?, Never>] = [:]
 
     init(
-        client: SupabaseClient,
+        client: PaeoniaConvexClient,
         directoryURL: URL = MemoryMediaImageService.defaultDirectoryURL()
     ) {
         self.client = client
@@ -81,7 +80,7 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
     }
 
     nonisolated static func live() throws -> MemoryMediaImageService {
-        MemoryMediaImageService(client: try PaeoniaSupabaseClientProvider.shared.client())
+        MemoryMediaImageService(client: try PaeoniaConvexClientProvider.shared.client())
     }
 
     func imageData(for mediaAssetID: UUID?) async -> Data? {
@@ -135,54 +134,10 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
     }
 
     private func signedURL(for mediaAssetID: UUID) async throws -> URL? {
-        let rows: [MemoryMediaSignedURLAuthorization] = try await client
-            .rpc(
-                "get_media_signed_url",
-                params: MemoryMediaSignedURLRequest(
-                    mediaAssetID: mediaAssetID,
-                    expiresInSeconds: expiresInSeconds
-                )
-            )
-            .execute()
-            .value
-
-        guard let authorization = rows.first else {
-            return nil
-        }
-
-        return try await client.storage
-            .from(authorization.bucket)
-            .createSignedURL(
-                path: authorization.storagePath,
-                expiresIn: authorization.expiresInSeconds
-            )
+        try await client.signedMediaURL(for: mediaAssetID, expiresInSeconds: expiresInSeconds)
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {
         MemoryMediaImageDiskCache.defaultDirectoryURL()
-    }
-}
-
-nonisolated private struct MemoryMediaSignedURLRequest: Encodable, Sendable {
-    let mediaAssetID: UUID
-    let expiresInSeconds: Int
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "p_media_asset_id"
-        case expiresInSeconds = "p_expires_in_seconds"
-    }
-}
-
-nonisolated private struct MemoryMediaSignedURLAuthorization: Decodable, Sendable {
-    let mediaAssetID: UUID
-    let bucket: String
-    let storagePath: String
-    let expiresInSeconds: Int
-
-    enum CodingKeys: String, CodingKey {
-        case mediaAssetID = "media_asset_id"
-        case bucket
-        case storagePath = "storage_path"
-        case expiresInSeconds = "expires_in_seconds"
     }
 }

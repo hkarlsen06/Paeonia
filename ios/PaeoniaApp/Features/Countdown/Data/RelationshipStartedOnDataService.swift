@@ -82,7 +82,7 @@ actor RelationshipStartedOnDataService: RelationshipStartedOnDataServicing {
 
         // The queued payload is the durable source of truth while offline. Updating
         // the access snapshot too makes the chosen date available on the next render
-        // even before the retry reaches Supabase.
+        // even before the retry reaches the server.
         try? await accessSnapshotStore.replaceRelationshipStartedOn(
             ownerUserID: ownerUserID,
             startedOn: startedOn.rawValue,

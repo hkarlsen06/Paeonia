@@ -127,7 +127,7 @@ actor ProfilePhotoImageService:
     }
 
     nonisolated static func live() throws -> ProfilePhotoImageService {
-        try ProfilePhotoImageService(urlProvider: SupabaseProfilePhotoURLService.live())
+        try ProfilePhotoImageService(urlProvider: ProfilePhotoURLService.live())
     }
 
     func profilePhotoData(for mediaAssetID: UUID?) async -> Data? {

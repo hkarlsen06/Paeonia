@@ -38,14 +38,14 @@ nonisolated enum PaeoniaSyncServiceDefaults {
         localPrivacyPurger: any LocalPrivacyPurging,
         pendingOperationHandlers: [any PendingSyncOperationHandling] = []
     ) -> [any SyncStream] {
-        guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
+        guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return []
         }
 
-        let accessGateway = LiveSupabaseAccessGateway(client: client)
-        let locationGateway = LiveSupabaseLocationGateway(client: client)
-        let memoryGateway = LiveSupabaseMemoryGateway(client: client)
-        let dailyQuestionChatGateway = LiveSupabaseDailyQuestionChatGateway(client: client)
+        let accessGateway = LiveAccessGateway(client: client)
+        let locationGateway = LiveLocationGateway(client: client)
+        let memoryGateway = LiveMemoryGateway(client: client)
+        let dailyQuestionChatGateway = LiveDailyQuestionChatGateway(client: client)
         let locationHandlers: [any PendingSyncOperationHandling] = [
             LocationSharingPreferencePendingOperationHandler(
                 gateway: locationGateway,
@@ -57,7 +57,7 @@ nonisolated enum PaeoniaSyncServiceDefaults {
             ),
             DailySubmitAnswerPendingOperationHandler(
                 mediaUploadService: LiveDailyAnswerMediaUploadService(client: client),
-                gateway: LiveSupabaseDailyChallengeGateway(client: client),
+                gateway: LiveDailyChallengeGateway(client: client),
                 mediaDraftStore: FileDailyAnswerMediaDraftStore.live()
             ),
             CreateDailyQuestionThreadMessagePendingOperationHandler(
@@ -69,7 +69,7 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 cache: FileDailyQuestionChatCache.shared
             ),
             RelationshipDatePendingOperationHandler(
-                gateway: LiveSupabaseRelationshipStartedOnGateway(client: client),
+                gateway: LiveRelationshipStartedOnGateway(client: client),
                 accessSnapshotStore: accessSnapshotStore
             ),
             CreateMemoryPendingOperationHandler(

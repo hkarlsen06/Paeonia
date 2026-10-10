@@ -307,10 +307,10 @@ nonisolated enum WidgetCanvasSyncServiceFactory {
     }
 
     private static func makeLive() -> any WidgetCanvasSyncing {
-        guard let client = try? PaeoniaSupabaseClientProvider.shared.client() else {
+        guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return NoOpWidgetCanvasSync()
         }
-        let gateway = LiveSupabaseWidgetCanvasGateway(client: client)
+        let gateway = LiveWidgetCanvasGateway(client: client)
         let pendingStore = WidgetPendingUploadStore.shared
         let uploader = WidgetCanvasUploadService(
             gateway: gateway,
