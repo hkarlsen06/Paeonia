@@ -1317,66 +1317,6 @@ struct DailyChallengeMappingTests {
     }
 
     @MainActor
-    @Test func answerRevealWaitsForFreshSnapshotAfterSendAlreadySettled() async throws {
-        let instanceID = UUID()
-        let ownAnswerID = UUID()
-        let partnerAnswerID = UUID()
-        let hiddenSnapshot = makeSnapshot(rows: [
-            questionRow(
-                instanceID: instanceID,
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
-                partnerAnswerID: partnerAnswerID,
-                partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
-                canViewPartnerAnswer: false
-            ),
-        ])
-        let revealedSnapshot = makeSnapshot(
-            rows: [
-                questionRow(
-                    instanceID: instanceID,
-                    slotNumber: 1,
-                    seededForUserID: TestDailyChallengeIDs.partnerUser,
-                    status: "answered",
-                    ownAnswerID: ownAnswerID,
-                    ownAnsweredAt: TestDailyChallengeIDs.answerDate.addingTimeInterval(10),
-                    partnerAnswerID: partnerAnswerID,
-                    partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
-                    canViewPartnerAnswer: true
-                ),
-            ],
-            details: [
-                answerDetail(answerID: ownAnswerID, isOwnAnswer: true, textBody: "A walk together."),
-                answerDetail(
-                    answerUserID: TestDailyChallengeIDs.partnerUser,
-                    answerID: partnerAnswerID,
-                    isOwnAnswer: false,
-                    textBody: "Making dinner together."
-                ),
-            ]
-        )
-        let service = RecordingDailyChallengeService(
-            snapshots: [hiddenSnapshot, revealedSnapshot],
-            advancesSnapshotsOnLoad: true
-        )
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedDailyChallengeOperationProvider()
-        )
-
-        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        #expect(!viewModel.isSending(instanceID))
-        #expect(viewModel.snapshot.questions.first?.canViewPartnerAnswer == false)
-
-        let didReveal = await viewModel.awaitAnswerReveal(for: instanceID)
-
-        #expect(didReveal)
-        #expect(viewModel.snapshot.questions.first?.id == instanceID)
-        #expect(viewModel.snapshot.questions.first?.canViewPartnerAnswer == true)
-        #expect(await service.loadCount == 2)
-    }
-
-    @MainActor
     @Test func legacyTextDraftsMigrateToVersionedStore() throws {
         let suiteName = "test.dailyChallenge.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
@@ -2966,4 +2906,479 @@ private func dailyChallengeSyncContext() -> SyncContext {
         stateStore: InMemorySyncStateRepository(),
         pendingOperationStore: InMemoryPendingSyncOperationRepository()
     )
+}
+
+// MARK: - Live feed
+
+/// Opens one stream per subscription and lets a test push a result into the latest
+/// stream for a path, like the server pushing a query update.
+private final class DailyPushTransport: LiveQueryTransport, @unchecked Sendable {
+    private let streams = LockedBox<[(path: String, continuation: AsyncThrowingStream<Data, any Error>.Continuation)]>([])
+    let openedPaths = LockedBox<[String]>([])
+    let openedArgs = LockedBox<[[String: String]]>([])
+
+    func updates(path: String, args: [String: String]) -> AsyncThrowingStream<Data, any Error> {
+        openedPaths.mutate { $0.append(path) }
+        openedArgs.mutate { $0.append(args) }
+        return AsyncThrowingStream { continuation in
+            streams.mutate { $0.append((path, continuation)) }
+        }
+    }
+
+    func push(_ rows: [DailyChallengeRemoteSnapshotRow], to path: String) async throws {
+        let data = try PaeoniaConvexClient.encoder.encode(rows)
+        _ = await waitUntil { streams.value.contains { $0.path == path } }
+        streams.value.last { $0.path == path }?.continuation.yield(data)
+    }
+}
+
+private final class LockedSnapshotCache: DailyChallengeSnapshotCaching, @unchecked Sendable {
+    private let rows = LockedBox<[UUID: DailyChallengeRemoteSnapshotRow]>([:])
+
+    func load(ownerUserID: UUID) -> DailyChallengeRemoteSnapshotRow? {
+        rows.value[ownerUserID]
+    }
+
+    func save(_ row: DailyChallengeRemoteSnapshotRow, ownerUserID: UUID) {
+        rows.mutate { $0[ownerUserID] = row }
+    }
+
+    func clearAll() {
+        rows.mutate { $0.removeAll() }
+    }
+}
+
+/// Holds the shuffle request until a test opens it, like a slow network response.
+private actor GatedShuffleGateway: DailyChallengeGateway {
+    private let response: DailyChallengeRemoteSnapshotRow
+    private var started = false
+    private var isOpen: Bool
+    private var waiter: CheckedContinuation<Void, Never>?
+
+    init(response: DailyChallengeRemoteSnapshotRow, isOpen: Bool = false) {
+        self.response = response
+        self.isOpen = isOpen
+    }
+
+    func hasStarted() -> Bool { started }
+
+    func open() {
+        isOpen = true
+        waiter?.resume()
+        waiter = nil
+    }
+
+    func shuffleQuestion(slotNumber _: Int, operation _: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow {
+        started = true
+        if !isOpen {
+            await withCheckedContinuation { waiter = $0 }
+        }
+        return response
+    }
+
+    func loadTodaySnapshot() async throws -> DailyChallengeRemoteSnapshotRow { response }
+    func startDailyChallenge(operation _: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow { response }
+    func loadHistoryQuestions() async throws -> [DailyQuestionRow] { [] }
+    func loadHistoryAnswerDetails() async throws -> [DailyAnswerDetailRow] { [] }
+    func loadCoupleStreak() async throws -> CoupleStreak { .none }
+    func loadAnswerDetails(coupleDayID _: UUID) async throws -> [DailyAnswerDetailRow] { [] }
+    func submitAnswer(
+        instanceID _: UUID,
+        answerID _: UUID,
+        payload _: DailyAnswerPayload,
+        operation _: SyncClientOperation
+    ) async throws -> UUID { UUID() }
+    func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation) async throws -> UUID { UUID() }
+    func editPartnerChoice(instanceID _: UUID, selectedUserID _: UUID, operation _: SyncClientOperation) async throws -> UUID { UUID() }
+}
+
+// MARK: - Gateway requests
+
+/// Answers every request to its host with `{"status":"success","value":[]}` and
+/// records the endpoint and body.
+private final class DailyGatewayStubProtocol: URLProtocol, @unchecked Sendable {
+    nonisolated(unsafe) static var requests = LockedBox<[(path: String, body: [String: Any])]>([])
+
+    // swiftlint:disable static_over_final_class
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    // swiftlint:enable static_over_final_class
+
+    override func startLoading() {
+        guard let url = request.url, let stream = request.httpBodyStream else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+        stream.open()
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 4_096)
+        while stream.hasBytesAvailable {
+            let count = stream.read(&buffer, maxLength: buffer.count)
+            if count <= 0 { break }
+            data.append(buffer, count: count)
+        }
+        stream.close()
+        let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
+        Self.requests.mutate { $0.append((url.path(), body)) }
+        let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)
+        if let response {
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        }
+        client?.urlProtocol(self, didLoad: Data(#"{"status":"success","value":[]}"#.utf8))
+        client?.urlProtocolDidFinishLoading(self)
+    }
+
+    override func stopLoading() {}
+}
+
+@Suite(.serialized)
+struct DailyChallengeGatewayRequestTests {
+    private func makeGateway() -> LiveDailyChallengeGateway {
+        DailyGatewayStubProtocol.requests.mutate { $0.removeAll() }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [DailyGatewayStubProtocol.self]
+        let client = PaeoniaConvexClient(
+            deploymentURL: URL(string: "https://daily.test") ?? URL(fileURLWithPath: "/"),
+            session: URLSession(configuration: configuration),
+            tokenProvider: { "token" }
+        )
+        return LiveDailyChallengeGateway(client: client)
+    }
+
+    @Test func todaysSnapshotIsReadWithAQueryAndADayKey() async throws {
+        let gateway = makeGateway()
+
+        _ = try await gateway.loadTodaySnapshot()
+
+        let request = try #require(DailyGatewayStubProtocol.requests.value.first)
+        #expect(request.path == "/api/query")
+        #expect(request.body["path"] as? String == "daily:get_today_daily_challenge_snapshot")
+        let args = try #require(request.body["args"] as? [String: Any])
+        let dayKey = try #require(args["p_day_key"] as? String)
+        #expect(dayKey.wholeMatch(of: /\d{4}-\d{2}-\d{2}/) != nil)
+    }
+
+    @Test func startAndShuffleStayMutations() async throws {
+        let gateway = makeGateway()
+        let operation = fixedClientOperation()
+
+        _ = try await gateway.startDailyChallenge(operation: operation)
+        _ = try await gateway.shuffleQuestion(slotNumber: 1, operation: operation)
+
+        let requests = DailyGatewayStubProtocol.requests.value
+        #expect(requests.map(\.path) == ["/api/mutation", "/api/mutation"])
+        #expect(requests.map { $0.body["path"] as? String } == [
+            "daily:start_daily_challenge_snapshot",
+            "daily:shuffle_daily_question_snapshot",
+        ])
+    }
+}
+
+@MainActor
+private func waitForDaily(timeout: Duration = .seconds(5), _ condition: @MainActor () -> Bool) async -> Bool {
+    let deadline = ContinuousClock.now.advanced(by: timeout)
+    while ContinuousClock.now < deadline {
+        if condition() { return true }
+        try? await Task.sleep(for: .milliseconds(5))
+    }
+    return condition()
+}
+
+@MainActor
+struct DailyChallengeLiveTests {
+    private let user = fixedUUID("a1a1a1a1-0000-0000-0000-000000000001")
+    private let partner = fixedUUID("a1a1a1a1-0000-0000-0000-000000000002")
+    private let dayID = fixedUUID("a1a1a1a1-0000-0000-0000-0000000000d1")
+
+    private func row(
+        dayID: UUID?,
+        endsAt: Date?,
+        partnerAnswered: Bool = false,
+        revealed: Bool = false,
+        streak: Int = 0
+    ) -> DailyChallengeRemoteSnapshotRow {
+        let instanceID = fixedUUID("a1a1a1a1-0000-0000-0000-0000000000e1")
+        let ownAnswerID = fixedUUID("a1a1a1a1-0000-0000-0000-0000000000f1")
+        let partnerAnswerID = fixedUUID("a1a1a1a1-0000-0000-0000-0000000000f2")
+        let questions: [DailyQuestionRow] = dayID == nil ? [] : [
+            questionRow(
+                coupleDayID: dayID ?? UUID(),
+                instanceID: instanceID,
+                slotNumber: 1,
+                seededForUserID: partner,
+                status: revealed ? "answered" : "active",
+                ownAnswerID: ownAnswerID,
+                ownAnsweredAt: TestDailyChallengeIDs.answerDate,
+                partnerAnswerID: partnerAnswered ? partnerAnswerID : nil,
+                partnerAnsweredAt: partnerAnswered ? TestDailyChallengeIDs.answerDate : nil,
+                canViewPartnerAnswer: revealed
+            ),
+        ]
+        let details: [DailyAnswerDetailRow] = revealed ? [
+            answerDetail(answerUserID: user, answerID: ownAnswerID, isOwnAnswer: true, textBody: "A walk."),
+            answerDetail(
+                answerUserID: partner,
+                answerID: partnerAnswerID,
+                isOwnAnswer: false,
+                textBody: "Dinner."
+            ),
+        ] : []
+        return DailyChallengeRemoteSnapshotRow(
+            questions: questions,
+            answerDetails: details,
+            streak: CoupleStreakRow(
+                currentCount: streak,
+                longestCount: streak,
+                lastQualifiedDate: nil,
+                restoreAvailable: false,
+                restorableCount: 0,
+                restoreDeadline: nil
+            ),
+            generatedAt: Date(timeIntervalSince1970: 1_782_450_000),
+            coupleDayID: dayID,
+            endsAt: endsAt
+        )
+    }
+
+    /// A view model whose one-shot load returns `today`, so a live result is the only change.
+    private func makeViewModel(
+        cache: LockedSnapshotCache,
+        today: DailyChallengeRemoteSnapshotRow
+    ) -> (DailyChallengeViewModel, RecordingDailyChallengeService) {
+        let loaded = today.loadResult(currentUserID: user, locale: Locale(identifier: "en_US"))
+        let service = RecordingDailyChallengeService(snapshots: [loaded.snapshot], streak: loaded.streak)
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            snapshotCache: cache
+        )
+        return (viewModel, service)
+    }
+
+    @Test func partnerAnswerRevealAndStreakAppearWithoutAReload() async throws {
+        let endsAt = Date().addingTimeInterval(3_600)
+        let cache = LockedSnapshotCache()
+        let initial = row(dayID: dayID, endsAt: endsAt, partnerAnswered: false, streak: 2)
+        cache.save(initial, ownerUserID: user)
+        let (viewModel, service) = makeViewModel(cache: cache, today: initial)
+        let transport = DailyPushTransport()
+        let session = SyncSession(userID: user, activeCoupleID: UUID())
+        let feed = DailyChallengeLiveFeed(cache: cache)
+        let task = Task { await feed.run(session: session, live: LiveQueryService(transport: transport)) }
+
+        await viewModel.configure(currentUserID: user)
+        #expect(viewModel.snapshot.questions.first?.canViewPartnerAnswer == false)
+
+        try await transport.push(
+            [row(dayID: dayID, endsAt: endsAt, partnerAnswered: true, revealed: true, streak: 3)],
+            to: "daily:get_daily_challenge_snapshot"
+        )
+
+        let revealed = await waitForDaily {
+            viewModel.snapshot.questions.first?.canViewPartnerAnswer == true && viewModel.streak.currentCount == 3
+        }
+        #expect(revealed)
+        #expect(await service.loadCount == 1)
+        #expect(transport.openedPaths.value == ["daily:get_daily_challenge_snapshot"])
+        #expect(transport.openedArgs.value == [["p_couple_day_id": "\"\(dayID.uuidString.lowercased())\""]])
+        task.cancel()
+        await task.value
+    }
+
+    @Test func awaitAnswerRevealReturnsWhenTheLiveSnapshotRevealsThePartnerAnswer() async {
+        let cache = LockedSnapshotCache()
+        let initial = row(dayID: dayID, endsAt: .distantFuture, partnerAnswered: true)
+        cache.save(initial, ownerUserID: user)
+        let (viewModel, service) = makeViewModel(cache: cache, today: initial)
+        await viewModel.configure(currentUserID: user)
+        let instanceID = fixedUUID("a1a1a1a1-0000-0000-0000-0000000000e1")
+        #expect(viewModel.snapshot.questions.first?.canViewPartnerAnswer == false)
+
+        let waiting = Task { await viewModel.awaitAnswerReveal(for: instanceID) }
+        try? await Task.sleep(for: .milliseconds(30))
+        cache.save(row(dayID: dayID, endsAt: .distantFuture, partnerAnswered: true, revealed: true), ownerUserID: user)
+        LocalStoreChanges.post(.dailyChallenge, ownerUserID: user)
+
+        #expect(await waiting.value)
+        #expect(viewModel.snapshot.questions.first?.canViewPartnerAnswer == true)
+        #expect(await service.loadCount == 1)
+    }
+
+    @Test func partnerStartingTheDayMovesTheFeedFromTodayToThatDay() async throws {
+        let endsAt = Date().addingTimeInterval(3_600)
+        let cache = LockedSnapshotCache()
+        let (viewModel, _) = makeViewModel(cache: cache, today: row(dayID: nil, endsAt: nil))
+        let transport = DailyPushTransport()
+        let session = SyncSession(userID: user, activeCoupleID: UUID())
+        let feed = DailyChallengeLiveFeed(cache: cache)
+        let task = Task { await feed.run(session: session, live: LiveQueryService(transport: transport)) }
+        await viewModel.configure(currentUserID: user)
+        #expect(!viewModel.snapshot.hasAnyQuestions)
+
+        try await transport.push([row(dayID: nil, endsAt: nil)], to: "daily:get_today_daily_challenge_snapshot")
+        try await transport.push([row(dayID: dayID, endsAt: endsAt)], to: "daily:get_today_daily_challenge_snapshot")
+
+        #expect(await waitForDaily { viewModel.snapshot.hasAnyQuestions })
+        #expect(await waitUntil {
+            transport.openedPaths.value == [
+                "daily:get_today_daily_challenge_snapshot",
+                "daily:get_daily_challenge_snapshot",
+            ]
+        })
+        #expect(transport.openedArgs.value.first?["p_day_key"] != nil)
+        task.cancel()
+        await task.value
+    }
+
+    @Test func dayEndOpensANewTodaySubscriptionWithADifferentKey() async throws {
+        let startOfTest = Date(timeIntervalSince1970: 1_800_000_000)
+        let endsAt = startOfTest.addingTimeInterval(3_600)
+        let clock = LockedBox(startOfTest)
+        let dayEnded = LockedBox(false)
+        let sleeps = LockedBox(0)
+        let cache = LockedSnapshotCache()
+        let initial = row(dayID: dayID, endsAt: endsAt, partnerAnswered: true)
+        cache.save(initial, ownerUserID: user)
+        let (viewModel, _) = makeViewModel(cache: cache, today: initial)
+        let transport = DailyPushTransport()
+        let session = SyncSession(userID: user, activeCoupleID: UUID())
+        let feed = DailyChallengeLiveFeed(
+            cache: cache,
+            now: { clock.value },
+            sleep: { _ in
+                // The first sleep is the wait for the day to end. Later ones wait for local midnight.
+                let isDayEndWait = sleeps.value == 0
+                sleeps.mutate { $0 += 1 }
+                if isDayEndWait {
+                    _ = await waitUntil { dayEnded.value }
+                    clock.mutate { $0 = endsAt.addingTimeInterval(1) }
+                } else {
+                    try await Task.sleep(for: .seconds(3_600))
+                }
+            }
+        )
+        let task = Task { await feed.run(session: session, live: LiveQueryService(transport: transport)) }
+        await viewModel.configure(currentUserID: user)
+        #expect(viewModel.snapshot.hasAnyQuestions)
+
+        // The old day is still on screen until its end passes.
+        #expect(await waitUntil { transport.openedPaths.value == ["daily:get_daily_challenge_snapshot"] })
+        dayEnded.mutate { $0 = true }
+        #expect(await waitUntil { transport.openedPaths.value.count == 2 })
+        #expect(transport.openedPaths.value.last == "daily:get_today_daily_challenge_snapshot")
+        let key = try #require(transport.openedArgs.value.last?["p_day_key"])
+        #expect(key.contains(endsAt.formatted(.iso8601)))
+
+        // The new day has no couple day yet, and nothing starts one for the user.
+        try await transport.push([row(dayID: nil, endsAt: nil)], to: "daily:get_today_daily_challenge_snapshot")
+        #expect(await waitForDaily { !viewModel.snapshot.hasAnyQuestions })
+        #expect(viewModel.homeCardState.kind == .noChallenge)
+        #expect(transport.openedPaths.value.count == 2)
+        task.cancel()
+        await task.value
+    }
+
+    // MARK: Ordering of live results and request responses
+
+    @Test func shuffleResponseThatIsOlderThanALiveResultDoesNotOverwriteIt() async throws {
+        // Whole seconds, so the row survives the JSON round trip of the live feed unchanged.
+        let endsAt = Date(timeIntervalSince1970: Date().timeIntervalSince1970.rounded() + 3_600)
+        let stale = row(dayID: dayID, endsAt: endsAt, partnerAnswered: false)
+        let cache = LockedSnapshotCache()
+        let clock = DailyChallengeLiveWriteClock()
+        let gateway = GatedShuffleGateway(response: stale)
+        let service = DailyChallengeService(
+            gateway: gateway,
+            locale: Locale(identifier: "en_US"),
+            cache: cache,
+            liveWrites: clock
+        )
+        let transport = DailyPushTransport()
+        let session = SyncSession(userID: user, activeCoupleID: UUID())
+        let feed = DailyChallengeLiveFeed(cache: cache, liveWrites: clock)
+        let feedTask = Task { await feed.run(session: session, live: LiveQueryService(transport: transport)) }
+        let currentUser = user
+
+        // The shuffle request is in flight when the partner answers.
+        let shuffle = Task {
+            try await service.shuffleQuestion(currentUserID: currentUser, slotNumber: 1, operation: fixedClientOperation())
+        }
+        #expect(await waitUntil { await gateway.hasStarted() })
+        let answered = row(dayID: dayID, endsAt: endsAt, partnerAnswered: true, revealed: true)
+        try await transport.push([answered], to: "daily:get_today_daily_challenge_snapshot")
+        #expect(await waitUntil { cache.load(ownerUserID: currentUser) == answered })
+        await gateway.open()
+
+        let result = try await shuffle.value
+        #expect(result.snapshot.questions.first?.canViewPartnerAnswer == true)
+        #expect(cache.load(ownerUserID: user) == answered)
+        feedTask.cancel()
+        await feedTask.value
+    }
+
+    @Test func responseIsSavedWhenNoLiveResultLandedWhileItWasInFlight() async throws {
+        let endsAt = Date().addingTimeInterval(3_600)
+        let cache = LockedSnapshotCache()
+        let clock = DailyChallengeLiveWriteClock()
+        // A live result from before the request does not make the response stale.
+        clock.recordLiveWrite(row(dayID: dayID, endsAt: endsAt), ownerUserID: user, cache: cache)
+        let response = row(dayID: dayID, endsAt: endsAt, partnerAnswered: true)
+        let service = DailyChallengeService(
+            gateway: GatedShuffleGateway(response: response, isOpen: true),
+            locale: Locale(identifier: "en_US"),
+            cache: cache,
+            liveWrites: clock
+        )
+
+        _ = try await service.shuffleQuestion(currentUserID: user, slotNumber: 1, operation: fixedClientOperation())
+
+        #expect(cache.load(ownerUserID: user) == response)
+    }
+
+    @Test func responseForANewDayReplacesALiveResultOfTheOldDay() async throws {
+        let endsAt = Date().addingTimeInterval(3_600)
+        let newDayID = fixedUUID("a1a1a1a1-0000-0000-0000-0000000000d2")
+        let cache = LockedSnapshotCache()
+        let clock = DailyChallengeLiveWriteClock()
+        let response = row(dayID: newDayID, endsAt: endsAt.addingTimeInterval(86_400))
+        let start = clock.count(ownerUserID: user)
+        clock.recordLiveWrite(row(dayID: dayID, endsAt: endsAt), ownerUserID: user, cache: cache)
+
+        let used = clock.saveResponse(response, ownerUserID: user, since: start, cache: cache)
+
+        #expect(used == response)
+        #expect(cache.load(ownerUserID: user) == response)
+    }
+
+    @Test func responseForAnOlderDayKeepsTheNewerLiveResult() async throws {
+        let endsAt = Date().addingTimeInterval(3_600)
+        let yesterdayID = fixedUUID("a1a1a1a1-0000-0000-0000-0000000000d3")
+        let cache = LockedSnapshotCache()
+        let clock = DailyChallengeLiveWriteClock()
+        let live = row(dayID: dayID, endsAt: endsAt)
+        let start = clock.count(ownerUserID: user)
+        clock.recordLiveWrite(live, ownerUserID: user, cache: cache)
+
+        let used = clock.saveResponse(
+            row(dayID: yesterdayID, endsAt: endsAt.addingTimeInterval(-86_400)),
+            ownerUserID: user,
+            since: start,
+            cache: cache
+        )
+
+        #expect(used == live)
+        #expect(cache.load(ownerUserID: user) == live)
+    }
+
+    @Test func feedReturnsAtOnceWithoutAnActiveCouple() async {
+        let transport = DailyPushTransport()
+        let feed = DailyChallengeLiveFeed(cache: LockedSnapshotCache())
+
+        await feed.run(
+            session: SyncSession(userID: user, activeCoupleID: nil),
+            live: LiveQueryService(transport: transport)
+        )
+
+        #expect(transport.openedPaths.value.isEmpty)
+    }
 }

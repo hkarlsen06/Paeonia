@@ -50,7 +50,7 @@ describe("record_verified_storekit_transaction", () => {
     expect(rows[0].last_reconciled_at).toBe(NOW.toISOString());
     expect(result).toMatchObject({ productId: rows[0].product_id, transactionId: rows[0].id, payloadId: rows[0].raw_payload_id });
 
-    const snapshot = await user.as.mutation(api.access.get_access_snapshot, {});
+    const snapshot = await user.as.query(api.access.get_access_snapshot, {});
     expect(snapshot[0].user_entitlement).toMatchObject({ is_entitled: true, source: "storekit", status: "active" });
   });
 
@@ -154,22 +154,22 @@ describe("record_verified_storekit_transaction", () => {
     const outsider = await createSignedInUser(t);
     const [first, second] = [couple.first, couple.second];
 
-    expect((await second.as.mutation(api.access.get_my_couple_entitlement, {}))[0]).toMatchObject({ is_entitled: false });
+    expect((await second.as.query(api.access.get_my_couple_entitlement, {}))[0]).toMatchObject({ is_entitled: false });
 
     await t.mutation(
       internal.storekit.record_verified_storekit_transaction,
       storekitArgs({ userId: first.userId, token: await tokenFor(first), expiresAt: hoursFromNow(72) }),
     );
 
-    const [secondUser] = await second.as.mutation(api.access.get_my_entitlement, {});
+    const [secondUser] = await second.as.query(api.access.get_my_entitlement, {});
     expect(secondUser.is_entitled).toBe(false);
-    const [secondCouple] = await second.as.mutation(api.access.get_my_couple_entitlement, {});
+    const [secondCouple] = await second.as.query(api.access.get_my_couple_entitlement, {});
     expect(secondCouple).toMatchObject({ couple_id: couple.coupleId, is_entitled: true, covering_user_id: first.userId });
-    const [snapshot] = await second.as.mutation(api.access.get_access_snapshot, {});
+    const [snapshot] = await second.as.query(api.access.get_access_snapshot, {});
     expect(snapshot.relationship_state).toMatchObject({ couple_id: couple.coupleId, partner_user_id: first.userId });
 
-    expect(await outsider.as.mutation(api.access.get_my_couple_entitlement, {})).toEqual([]);
-    expect((await outsider.as.mutation(api.access.get_my_entitlement, {}))[0]).toMatchObject({ is_entitled: false });
+    expect(await outsider.as.query(api.access.get_my_couple_entitlement, {})).toEqual([]);
+    expect((await outsider.as.query(api.access.get_my_entitlement, {}))[0]).toMatchObject({ is_entitled: false });
   });
 });
 
@@ -310,7 +310,7 @@ describe("record_storekit_server_notification", () => {
     );
     const [row] = await transactions(t);
     expect(row).toMatchObject({ status: "refunded", revocation_reason: "customer_refund" });
-    expect((await user.as.mutation(api.access.get_my_entitlement, {}))[0].is_entitled).toBe(false);
+    expect((await user.as.query(api.access.get_my_entitlement, {}))[0].is_entitled).toBe(false);
   });
 });
 
@@ -547,6 +547,24 @@ describe("expire_stale_entitlements", () => {
     vi.setSystemTime(new Date(NOW.getTime() + 2 * 3_600_000));
     await t.mutation(internal.storekit.expire_stale_entitlements, {});
     expect(await t.run((ctx) => ctx.db.query("relationship_sync_events").collect())).toHaveLength(0);
+  });
+
+  test("runs every five minutes, and queries report a lapsed row as not entitled before it runs", async () => {
+    const job = (crons as unknown as { crons: Record<string, { schedule: unknown }> }).crons["expire-stale-entitlements"];
+    expect(job.schedule).toEqual({ type: "interval", minutes: 5 });
+
+    const t = newTest();
+    await seedProducts(t);
+    const couple = await createCouple(t, { entitled: false });
+    await t.mutation(
+      internal.storekit.record_verified_storekit_transaction,
+      storekitArgs({ userId: couple.first.userId, token: await tokenFor(couple.first), expiresAt: hoursFromNow(1) }),
+    );
+    vi.setSystemTime(new Date(NOW.getTime() + 2 * 3_600_000));
+    expect((await couple.first.as.query(api.access.get_my_entitlement, {}))[0].is_entitled).toBe(false);
+    expect((await transactions(t))[0].status).not.toBe("expired");
+    await t.mutation(internal.storekit.expire_stale_entitlements, {});
+    expect((await transactions(t))[0].status).toBe("expired");
   });
 
   test("validates its limits", async () => {

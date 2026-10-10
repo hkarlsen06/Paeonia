@@ -159,6 +159,12 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
         inFlightSync = nil
     }
 
+    /// The revision this device last showed or confirmed as its own. The live
+    /// feed compares it with the pushed canvas to decide whether a sync is due.
+    nonisolated static func lastSyncedRevisionID(defaults: UserDefaults = .standard) -> String? {
+        defaults.string(forKey: lastSyncedKey)
+    }
+
     nonisolated static func clearPersistedState(defaults: UserDefaults = .standard) {
         defaults.removeObject(forKey: lastSyncedKey)
     }

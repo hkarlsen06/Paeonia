@@ -1,10 +1,6 @@
 import Foundation
 
 protocol LocationGateway: Actor {
-    func loadPartnerLocationVisibility(
-        ownerUserID: UUID,
-        coupleID: UUID
-    ) async throws -> LocationVisibilitySnapshot?
     func updateLocationSharingPreference(
         payload: LocationSharingPreferenceOperationPayload,
         operation: SyncClientOperation
@@ -22,18 +18,6 @@ actor LiveLocationGateway: LocationGateway {
     init(client: PaeoniaConvexClient, isSignedIn: @escaping PaeoniaSignedInCheck = PaeoniaSignedIn.live) {
         self.client = client
         self.isSignedIn = isSignedIn
-    }
-
-    func loadPartnerLocationVisibility(
-        ownerUserID: UUID,
-        coupleID: UUID
-    ) async throws -> LocationVisibilitySnapshot? {
-        let rows: [PartnerLocationVisibility] = try await client.mutation(
-            "location:get_partner_location_visibility",
-            args: PartnerLocationVisibilityRequest(coupleID: coupleID)
-        )
-
-        return rows.first?.snapshot(ownerUserID: ownerUserID, refreshedAt: Date())
     }
 
     func updateLocationSharingPreference(
@@ -146,14 +130,6 @@ nonisolated struct LatestPartnerLocationUpdateResponse: Decodable, Equatable, Se
     }
 }
 
-nonisolated private struct PartnerLocationVisibilityRequest: Encodable {
-    let coupleID: UUID
-
-    enum CodingKeys: String, CodingKey {
-        case coupleID = "p_couple_id"
-    }
-}
-
 nonisolated struct UpdateLocationSharingPreferenceRequest: Encodable {
     let coupleID: UUID
     let isEnabled: Bool
@@ -260,7 +236,7 @@ nonisolated struct UpdateLatestPartnerLocationRequest: Encodable {
     }
 }
 
-nonisolated private struct PartnerLocationVisibility: Decodable, Equatable, Sendable {
+nonisolated struct PartnerLocationVisibility: Decodable, Equatable, Sendable {
     let coupleID: UUID
     let viewerUserID: UUID
     let partnerUserID: UUID?

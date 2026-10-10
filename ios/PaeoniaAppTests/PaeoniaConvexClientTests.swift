@@ -46,6 +46,37 @@ struct PaeoniaConvexClientTests {
         #expect(args["p_note"] == nil)
     }
 
+    @Test func queryUsesTheQueryEndpointAndSameEnvelope() async throws {
+        let recorder = RequestRecorder()
+        StubURLProtocol.handler = { request in
+            recorder.record(request)
+            return (200, Data(#"{"status":"success","value":[{"name":"Alex"}]}"#.utf8))
+        }
+        let client = Self.makeClient(token: "clerk-token")
+
+        let rows: [Row] = try await client.query("identity:get_thing")
+        try await client.query("identity:get_thing")
+
+        #expect(rows == [Row(name: "Alex")])
+        let request = try #require(recorder.last)
+        #expect(request.url?.path == "/api/query")
+        #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer clerk-token")
+        let body = try #require(try JSONSerialization.jsonObject(with: request.bodyData) as? [String: Any])
+        #expect(body["path"] as? String == "identity:get_thing")
+        #expect(body["format"] as? String == "json")
+    }
+
+    @Test func queryMapsFunctionErrorsToServerErrors() async {
+        StubURLProtocol.handler = { _ in
+            (200, Data(#"{"status":"error","errorMessage":"boom","errorData":{"code":"42501","message":"denied"}}"#.utf8))
+        }
+        let client = Self.makeClient()
+
+        await #expect(throws: PaeoniaConvexError.server(code: "42501", message: "denied")) {
+            let _: Row = try await client.query("identity:get_thing")
+        }
+    }
+
     @Test func actionUsesTheActionEndpoint() async throws {
         let recorder = RequestRecorder()
         StubURLProtocol.handler = { request in

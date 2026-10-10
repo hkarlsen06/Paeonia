@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, internalQuery, mutation, type ActionCtx } from "./_generated/server";
+import { action, internalQuery, mutation, query, type ActionCtx } from "./_generated/server";
 import { resolveCurrentCoupleEntitlement, resolveUserEntitlement } from "./lib/access";
 import {
   type AppleRenewalInfo,
@@ -29,7 +29,7 @@ import { nowIso } from "./lib/time";
 // ---- App-callable reads and token handling ----
 
 /** Port of `get_access_snapshot`. One row with the three JSON objects the app routes on. */
-export const get_access_snapshot = mutation({
+export const get_access_snapshot = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
@@ -44,13 +44,13 @@ export const get_access_snapshot = mutation({
 });
 
 /** Port of `get_my_entitlement`. */
-export const get_my_entitlement = mutation({
+export const get_my_entitlement = query({
   args: {},
   handler: async (ctx) => [await resolveUserEntitlement(ctx, await requireUserId(ctx))],
 });
 
 /** Port of `get_my_couple_entitlement`. Empty when the caller has no active couple. */
-export const get_my_couple_entitlement = mutation({
+export const get_my_couple_entitlement = query({
   args: {},
   handler: async (ctx) => {
     const entitlement = await resolveCurrentCoupleEntitlement(ctx, await requireUserId(ctx));

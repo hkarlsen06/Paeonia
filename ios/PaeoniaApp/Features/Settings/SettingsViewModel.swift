@@ -35,6 +35,7 @@ final class SettingsViewModel {
     private(set) var isLeavingRelationship = false
     private(set) var isRestoringPurchases = false
     private(set) var notice: Notice?
+    private var savesInFlight = [NotificationPreferenceKind: Int]()
 
     init(
         preferences: (any NotificationPreferencesProviding)? = NotificationPreferencesServiceFactory.makeDefault(),
@@ -70,6 +71,17 @@ final class SettingsViewModel {
         isLoaded = true
     }
 
+    /// Applies preference changes from the server (another device, defaults).
+    /// Runs until the screen's task is cancelled.
+    func observe() async {
+        guard let preferences else {
+            return
+        }
+        for await latest in preferences.notificationPreferenceUpdates() {
+            apply(latest)
+        }
+    }
+
     func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled: Bool) async {
         guard enabled != value(for: kind) else {
             return
@@ -77,6 +89,8 @@ final class SettingsViewModel {
 
         let previous = value(for: kind)
         setLocalValue(enabled, for: kind)
+        savesInFlight[kind, default: 0] += 1
+        defer { savesInFlight[kind, default: 1] -= 1 }
 
         guard let preferences else {
             return
@@ -135,13 +149,18 @@ final class SettingsViewModel {
         notice = nil
     }
 
+    /// Skips toggles with a save in flight, so a value read before the save
+    /// reached the server cannot flip the toggle back.
     private func apply(_ preferences: NotificationPreferences) {
-        streakRemindersEnabled = preferences.streakRemindersEnabled
-        dailyChallengeEnabled = preferences.dailyChallengeEnabled
-        partnerAnsweredEnabled = preferences.partnerAnsweredEnabled
-        messagesEnabled = preferences.messagesEnabled
-        widgetAlertsEnabled = preferences.widgetUpdatesEnabled
-        memoriesEnabled = preferences.memoriesEnabled
+        func isIdle(_ kind: NotificationPreferenceKind) -> Bool {
+            savesInFlight[kind, default: 0] == 0
+        }
+        if isIdle(.streakReminders) { streakRemindersEnabled = preferences.streakRemindersEnabled }
+        if isIdle(.dailyChallenge) { dailyChallengeEnabled = preferences.dailyChallengeEnabled }
+        if isIdle(.partnerAnswered) { partnerAnsweredEnabled = preferences.partnerAnsweredEnabled }
+        if isIdle(.messages) { messagesEnabled = preferences.messagesEnabled }
+        if isIdle(.widgetUpdates) { widgetAlertsEnabled = preferences.widgetUpdatesEnabled }
+        if isIdle(.memories) { memoriesEnabled = preferences.memoriesEnabled }
     }
 
     private func value(for kind: NotificationPreferenceKind) -> Bool {

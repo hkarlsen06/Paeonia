@@ -141,6 +141,28 @@ struct PrivacySafetyViewModelTests {
     }
 }
 
+extension PrivacySafetyViewModelTests {
+    @Test func liveUpdatesShowStatusChanges() async {
+        let service = FakePrivacySafetyService()
+        let viewModel = PrivacySafetyViewModel(service: service)
+        let observing = Task { await viewModel.observe() }
+
+        await service.emit([makeRequest(kind: .export, status: .submitted)])
+        await waitForRequest(in: viewModel, status: .submitted)
+        await service.emit([makeRequest(kind: .export, status: .completed)])
+        await waitForRequest(in: viewModel, status: .completed)
+
+        #expect(viewModel.latestRequest(for: .export)?.status == .completed)
+        observing.cancel()
+    }
+
+    private func waitForRequest(in viewModel: PrivacySafetyViewModel, status: PrivacyRequestStatus) async {
+        for _ in 0..<200 where viewModel.latestRequest(for: .export)?.status != status {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+    }
+}
+
 @MainActor
 struct ReportAndLeaveViewModelTests {
     @Test func blockingIsOffByDefaultAndReasonIsRequired() {
@@ -311,6 +333,7 @@ private actor FakePrivacySafetyService: PrivacySafetyServicing {
     private let failReport: Bool
     private let failFirstReport: Bool
     private var didFailFirstReport = false
+    private let updates = AsyncStream<[PrivacyRequest]>.makeStream()
     private(set) var privacyRequestCallCount = 0
     private(set) var lastReportSubmission: CapturedReportSubmission?
     private(set) var reportOperations = [SyncClientOperation]()
@@ -331,6 +354,14 @@ private actor FakePrivacySafetyService: PrivacySafetyServicing {
 
     func loadPrivacyRequests() -> [PrivacyRequest] {
         requests
+    }
+
+    nonisolated func privacyRequestUpdates() -> AsyncStream<[PrivacyRequest]> {
+        updates.stream
+    }
+
+    func emit(_ requests: [PrivacyRequest]) {
+        updates.continuation.yield(requests)
     }
 
     func submitPrivacyRequest(

@@ -83,6 +83,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         }
 
         try context.save()
+        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
     func saveLocal(_ record: MemoryRecord) async throws {
@@ -106,6 +107,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         }
 
         try context.save()
+        LocalStoreChanges.post(.memories, ownerUserID: record.snapshot.ownerUserID)
     }
 
     func load(
@@ -156,6 +158,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         record.pendingOperationID = nil
         record.localUpdatedAt = Date()
         try context.save()
+        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
     func delete(
@@ -166,6 +169,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         if let record = try fetch(ownerUserID: ownerUserID, memoryID: memoryID, in: context) {
             context.delete(record)
             try context.save()
+            LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
         }
     }
 
@@ -182,6 +186,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         }
 
         try context.save()
+        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
     private func localRecord(from record: MemoryRecord) throws -> LocalMemoryRecord {
@@ -310,10 +315,12 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
                 localUpdatedAt: row.syncUpdatedAt
             )
         }
+        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
     func saveLocal(_ record: MemoryRecord) async throws {
         records[key(ownerUserID: record.snapshot.ownerUserID, memoryID: record.snapshot.memoryID)] = record
+        LocalStoreChanges.post(.memories, ownerUserID: record.snapshot.ownerUserID)
     }
 
     func load(
@@ -356,6 +363,7 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
         record.conflictReason = reason
         record.localUpdatedAt = Date()
         records[recordKey] = record
+        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
     func delete(
@@ -363,10 +371,12 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
         memoryID: UUID
     ) async throws {
         records[key(ownerUserID: ownerUserID, memoryID: memoryID)] = nil
+        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
     func deleteAll(ownerUserID: UUID) async throws {
         records = records.filter { $0.value.snapshot.ownerUserID != ownerUserID }
+        LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
     private func key(ownerUserID: UUID, memoryID: UUID) -> String {

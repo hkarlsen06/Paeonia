@@ -62,14 +62,14 @@ describe("profile", () => {
     expect(first).toMatchObject({ display_name: "Ada", revision: 1, moderation_status: "visible", deleted_at: null });
     const second = await as.mutation(api.identity.ensure_current_user, {});
     expect(second?.user_id).toBe(first?.user_id);
-    expect(await as.mutation(api.identity.get_own_profile, {})).toMatchObject({ user_id: first?.user_id });
-    const preferences = await as.mutation(api.identity.get_notification_preferences, {});
+    expect(await as.query(api.identity.get_own_profile, {})).toMatchObject({ user_id: first?.user_id });
+    const preferences = await as.query(api.identity.get_notification_preferences, {});
     expect(preferences).toMatchObject({ streak_reminders_enabled: true, location_updates_enabled: true });
   });
 
   test("signed out callers are rejected", async () => {
     const t = newTest();
-    await expectFail(t.mutation(api.identity.get_own_profile, {}), "42501", "authenticated user required");
+    await expectFail(t.query(api.identity.get_own_profile, {}), "42501", "authenticated user required");
     await expectFail(t.mutation(api.identity.ensure_current_user, {}), "42501");
     await expectFail(
       t.mutation(api.identity.register_user_device, {
@@ -192,10 +192,10 @@ describe("profile", () => {
     const provider = await addProfilePhoto(t, first.userId, "provider");
     await first.as.mutation(api.identity.set_own_provider_profile_photo, { p_profile_photo_asset_id: provider, p_source: "google" });
     await first.as.mutation(api.identity.update_own_profile, { p_display_name: "First", p_profile_photo_asset_id: custom });
-    const before = await second.as.mutation(api.relationship.get_current_relationship_state, {});
+    const before = await second.as.query(api.relationship.get_current_relationship_state, {});
     expect(before[0].partner_profile_photo_asset_id).toBe(custom);
     await first.as.mutation(api.identity.update_own_profile, { p_display_name: "First", p_profile_photo_asset_id: null });
-    const after = await second.as.mutation(api.relationship.get_current_relationship_state, {});
+    const after = await second.as.query(api.relationship.get_current_relationship_state, {});
     expect(after[0].partner_profile_photo_asset_id).toBe(provider);
     expect(after[0].partner_display_name).toBe("First");
   });
@@ -289,7 +289,7 @@ describe("notification preferences", () => {
     const user = await createSignedInUser(t, {});
     const row = await user.as.mutation(api.identity.set_notification_preference, { p_column: "messages_enabled", p_enabled: false });
     expect(row).toMatchObject({ messages_enabled: false, streak_reminders_enabled: true, revision: 2 });
-    expect(await user.as.mutation(api.identity.get_notification_preferences, {})).toMatchObject({ messages_enabled: false });
+    expect(await user.as.query(api.identity.get_notification_preferences, {})).toMatchObject({ messages_enabled: false });
   });
 
   test("only the six user-facing toggles can be changed", async () => {
@@ -310,7 +310,7 @@ describe("notification preferences", () => {
     const first = await createSignedInUser(t, {});
     const second = await createSignedInUser(t, {});
     await first.as.mutation(api.identity.set_notification_preference, { p_column: "memories_enabled", p_enabled: false });
-    expect(await second.as.mutation(api.identity.get_notification_preferences, {})).toMatchObject({ memories_enabled: true });
+    expect(await second.as.query(api.identity.get_notification_preferences, {})).toMatchObject({ memories_enabled: true });
   });
 });
 
@@ -338,7 +338,7 @@ describe("privacy requests", () => {
     const secondId = newUuid();
     await user.as.mutation(api.identity.create_privacy_request, { p_id: secondId, p_kind: "access" });
     await other.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "access" });
-    const listed = await user.as.mutation(api.identity.get_privacy_requests, {});
+    const listed = await user.as.query(api.identity.get_privacy_requests, {});
     expect(listed.map((row) => row.id)).toEqual([secondId, firstId]);
   });
 

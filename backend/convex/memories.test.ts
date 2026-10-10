@@ -37,7 +37,7 @@ async function createMemory(user: TestUser, overrides: Record<string, unknown> =
   return memory.memoryId;
 }
 
-const getMemories = (user: TestUser, args: Record<string, unknown> = {}) => user.as.mutation(api.memories.get_memories, args);
+const getMemories = (user: TestUser, args: Record<string, unknown> = {}) => user.as.query(api.memories.get_memories, args);
 const memoryRow = async (t: TestConvex, id: string) =>
   await t.run((ctx) => ctx.db.query("memories").withIndex("by_uuid", (q) => q.eq("id", id)).unique());
 const outbox = (t: TestConvex) => t.run((ctx) => ctx.db.query("notification_outbox").collect());

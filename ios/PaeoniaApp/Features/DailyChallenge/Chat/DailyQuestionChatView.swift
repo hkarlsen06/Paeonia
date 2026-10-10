@@ -33,6 +33,7 @@ struct DailyQuestionChatView: View {
         .navigationTitle(Text(.dailyChatNavigationTitle))
         .navigationBarTitleDisplayMode(.inline)
         .task(id: viewModel.question.id) { await viewModel.load() }
+        .task(id: viewModel.question.id) { await viewModel.observeLiveUpdates() }
         .onChange(of: participants) { _, participants in
             viewModel.refreshParticipants(participants)
         }

@@ -214,7 +214,7 @@ actor LiveWidgetCanvasGateway: WidgetCanvasGateway {
     }
 
     func getCanvasState() async throws -> WidgetCanvasState? {
-        let rows: [WidgetCanvasState] = try await client.mutation(
+        let rows: [WidgetCanvasState] = try await client.query(
             "widget:get_widget_canvas",
             args: GetOrCreateWidgetCanvasRequest()
         )

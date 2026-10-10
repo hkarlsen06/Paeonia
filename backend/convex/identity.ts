@@ -1,10 +1,10 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { action, mutation, type MutationCtx } from "./_generated/server";
+import { action, mutation, query, type MutationCtx } from "./_generated/server";
 import { requestAccountDeletion, runDeleteAccount } from "./accountDeletion";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { authProviderFromIdentity, ensureCurrentUser, requireUserId, requireUserIdIncludingDeleted } from "./lib/auth";
-import { orNull, withTouch } from "./lib/db";
+import { orNull, type ReaderCtx, withTouch } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalUuidArg, uuidArg } from "./lib/ids";
 import { sha256Hex } from "./lib/crypto";
@@ -37,7 +37,7 @@ export const ensure_current_user = mutation({
   },
 });
 
-export const get_own_profile = mutation({
+export const get_own_profile = query({
   args: {},
   handler: async (ctx) => {
     const profile = await findProfile(ctx, await requireUserId(ctx));
@@ -250,7 +250,7 @@ const NOTIFICATION_COLUMNS = [
   "memories_enabled",
 ] as const;
 
-async function findNotificationPreferences(ctx: MutationCtx, userId: string) {
+async function findNotificationPreferences(ctx: ReaderCtx, userId: string) {
   return await ctx.db
     .query("notification_preferences")
     .withIndex("by_user_id", (q) => q.eq("user_id", userId))
@@ -274,7 +274,7 @@ function notificationPreferencesRow(row: NonNullable<Awaited<ReturnType<typeof f
   };
 }
 
-export const get_notification_preferences = mutation({
+export const get_notification_preferences = query({
   args: {},
   handler: async (ctx) => {
     const row = await findNotificationPreferences(ctx, await requireUserId(ctx));
@@ -320,7 +320,7 @@ function privacyRequestRow(row: Doc<"privacy_requests">) {
   };
 }
 
-export const get_privacy_requests = mutation({
+export const get_privacy_requests = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);

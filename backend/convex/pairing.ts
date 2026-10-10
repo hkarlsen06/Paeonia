@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { internalMutation, mutation, type MutationCtx } from "./_generated/server";
+import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
 import { findCurrentCouple, findRelationshipPairId, getOrCreateRelationshipPair, hasActiveRelationshipBlock } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
@@ -197,7 +197,7 @@ export const revoke_pairing_invite = mutation({
   },
 });
 
-export const validate_my_pairing_invite = mutation({
+export const validate_my_pairing_invite = query({
   args: { p_invite_id: v.union(v.null(), v.string()), p_invite_code: v.union(v.null(), v.string()) },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
@@ -207,7 +207,7 @@ export const validate_my_pairing_invite = mutation({
     }
     const inviteId = uuidArg(args.p_invite_id);
     const codeHash = await hashPairingInviteCode(args.p_invite_code);
-    let invite = await getByUuid(ctx, "pairing_invites", inviteId);
+    const invite = await getByUuid(ctx, "pairing_invites", inviteId);
     const secret = invite
       ? await ctx.db
           .query("pairing_invite_secrets")
@@ -217,11 +217,9 @@ export const validate_my_pairing_invite = mutation({
     if (!invite || invite.created_by_user_id !== userId || !secret.some((row) => row.code_hash === codeHash)) {
       return notFound;
     }
-    if (invite.status === "pending" && invite.expires_at <= nowIso()) {
-      await ctx.db.patch(invite._id, withUpdatedAt({ status: "expired" as const }));
-      invite = (await getByUuid(ctx, "pairing_invites", inviteId))!;
-    }
-    return [{ invite_id: invite.id, status: invite.status, expires_at: invite.expires_at }];
+    // Read-only: the hourly expire_stale_pairing_invites cron persists the status.
+    const status = invite.status === "pending" && invite.expires_at <= nowIso() ? "expired" : invite.status;
+    return [{ invite_id: invite.id, status, expires_at: invite.expires_at }];
   },
 });
 

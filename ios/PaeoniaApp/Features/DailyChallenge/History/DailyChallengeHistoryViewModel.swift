@@ -131,6 +131,15 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
         }
     }
 
+    /// Keeps the message previews current while the screen is open, until the calling
+    /// task is cancelled. A reply from the partner shows up without a pull to refresh.
+    func observeThreadSummaries() async {
+        guard let currentUserID else { return }
+        for await change in LocalStoreChanges.changes(in: .dailyChat) where change.ownerUserID == currentUserID {
+            applyThreadSummaries(await chatService.cachedThreadSummaries(ownerUserID: currentUserID))
+        }
+    }
+
     /// Updates the partners' display names and photos without reloading — cosmetic
     /// identity that may arrive after the cover opens. Mirrors the daily challenge's
     /// separation of reloading identity from rendering identity.

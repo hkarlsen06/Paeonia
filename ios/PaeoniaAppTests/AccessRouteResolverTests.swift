@@ -189,13 +189,6 @@ private actor FakeAccessGateway: AccessGateway {
         )
     }
 
-    func loadRelationshipSyncEvents(
-        after _: SyncCursor,
-        limit _: Int
-    ) async throws -> [RemoteRelationshipSyncEvent] {
-        []
-    }
-
     func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
 }
 // swiftlint:enable async_without_await

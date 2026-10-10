@@ -60,4 +60,9 @@ crons.interval("cleanup-media-storage", { minutes: 5 }, internal.media.cleanup_m
 // removes uploaded blobs that no media asset references. See media.ts.
 crons.interval("sweep-orphan-media-storage", { hours: 6 }, internal.media.sweep_orphan_storage, {});
 
+// New in Convex: internal.expire_stale_entitlements had no pg_cron job. Entitlement checks compare
+// expires_at to the clock, but queries cannot write, so this persists the expired status and sends
+// the entitlement_lost sync events. Covers StoreKit transactions and entitlement grants, 500 rows per run.
+crons.interval("expire-stale-entitlements", { minutes: 5 }, internal.storekit.expire_stale_entitlements, {});
+
 export default crons;

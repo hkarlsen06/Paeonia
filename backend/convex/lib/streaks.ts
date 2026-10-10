@@ -1,6 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 import { getCurrentEntitledCoupleId } from "./access";
-import { getOrCreateCoupleDayAt } from "./coupleDays";
+import { findCoupleDayAt, getOrCreateCoupleDayAt } from "./coupleDays";
 import { runClientOperation, type ClientOperationInput } from "./clientOperations";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
@@ -244,11 +244,15 @@ export async function recordCoupleActivity(
 }
 
 /**
- * Port of `internal.refresh_streak_deadline`. Recomputes the live deadline from
- * the last qualified day and current partner zones. Returns the deadline or null.
+ * The deadline `refreshStreakDeadline` would store: the live deadline from the
+ * last qualified day and the current partner zones, or the stored one when it
+ * cannot be recomputed. Reads only.
  */
-export async function refreshStreakDeadline(ctx: WriterCtx, coupleId: string): Promise<string | null> {
-  const state = await getStreakState(ctx, coupleId);
+async function liveStreakDeadline(
+  ctx: ReaderCtx,
+  coupleId: string,
+  state: Doc<"streak_states"> | null,
+): Promise<string | null> {
   if (!state || state.current_count <= 0 || state.restorable_count > 0) {
     return state?.next_activity_deadline_at ?? null;
   }
@@ -269,12 +273,24 @@ export async function refreshStreakDeadline(ctx: WriterCtx, coupleId: string): P
   if (qualifiedAt === null) {
     return state.next_activity_deadline_at ?? null;
   }
-  const resolvedDeadline = await resolveNextActivityDeadlineAt(ctx, coupleId, qualifiedAt);
-  if (state.next_activity_deadline_at !== resolvedDeadline) {
-    await ctx.db.patch(state._id, withUpdatedAt({ next_activity_deadline_at: resolvedDeadline }));
-  }
-  return resolvedDeadline;
+  return await resolveNextActivityDeadlineAt(ctx, coupleId, qualifiedAt);
 }
+
+/**
+ * Port of `internal.refresh_streak_deadline`. Recomputes the live deadline from
+ * the last qualified day and current partner zones. Returns the deadline or null.
+ */
+export async function refreshStreakDeadline(ctx: WriterCtx, coupleId: string): Promise<string | null> {
+  const state = await getStreakState(ctx, coupleId);
+  const deadline = await liveStreakDeadline(ctx, coupleId, state);
+  if (state && deadline !== null && state.next_activity_deadline_at !== deadline) {
+    await ctx.db.patch(state._id, withUpdatedAt({ next_activity_deadline_at: deadline }));
+  }
+  return deadline;
+}
+
+/** Hours a restore offer stays open after the deadline passes. */
+const RESTORE_WINDOW_HOURS = 24;
 
 /**
  * Port of `internal.detect_streak_break`. When the live deadline has passed and
@@ -293,7 +309,7 @@ export async function detectStreakBreak(ctx: WriterCtx, coupleId: string): Promi
   ) {
     return;
   }
-  const restoreDeadline = addHours(resolvedDeadline, 24);
+  const restoreDeadline = addHours(resolvedDeadline, RESTORE_WINDOW_HOURS);
   await ctx.db.patch(
     state._id,
     withUpdatedAt({
@@ -314,7 +330,41 @@ export type CoupleStreak = {
   restore_deadline: string | null;
 };
 
-/** Port of `internal.get_couple_streak_for_couple`. Writes a restore offer when the streak just broke, so call it from a mutation. */
+/**
+ * Port of `internal.get_couple_streak_for_couple`, without the writes. Reports
+ * the state `detectStreakBreak` would store right now: a zone-moved deadline, and
+ * a streak that just broke as count 0 with its restore offer open. Safe in a
+ * query. The streak cron persists the same state, so a subscribed query flips
+ * when the stored row changes. Between the deadline and the next cron run the
+ * clock alone changes the answer, which a cached query does not see.
+ */
+export async function readCoupleStreak(
+  ctx: ReaderCtx,
+  coupleId: string | null | undefined,
+): Promise<CoupleStreak> {
+  if (!coupleId) {
+    return fail("42501", "active entitled couple access is required");
+  }
+  const state = await getStreakState(ctx, coupleId);
+  const now = nowIso();
+  const deadline = await liveStreakDeadline(ctx, coupleId, state);
+  let restorableCount = state?.restorable_count ?? 0;
+  let restoreDeadline = state?.restore_deadline;
+  if (state && state.current_count > 0 && restorableCount === 0 && deadline !== null && now >= deadline) {
+    restorableCount = state.current_count;
+    restoreDeadline = addHours(deadline, RESTORE_WINDOW_HOURS);
+  }
+  return {
+    current_count: deadline !== null && now >= deadline ? 0 : (state?.current_count ?? 0),
+    longest_count: state?.longest_count ?? 0,
+    last_qualified_date: state?.last_qualified_date ?? null,
+    restore_available: restorableCount > 0 && restoreDeadline !== undefined && restoreDeadline > now,
+    restorable_count: restorableCount,
+    restore_deadline: restoreDeadline ?? null,
+  };
+}
+
+/** Port of `internal.get_couple_streak_for_couple`. Persists the restore offer first, then reads. */
 export async function getCoupleStreakForCouple(
   ctx: WriterCtx,
   coupleId: string | null | undefined,
@@ -323,53 +373,22 @@ export async function getCoupleStreakForCouple(
     return fail("42501", "active entitled couple access is required");
   }
   await detectStreakBreak(ctx, coupleId);
-  const streak = await getStreakState(ctx, coupleId);
-  const now = nowIso();
-  return {
-    current_count:
-      streak?.next_activity_deadline_at !== undefined && now >= streak.next_activity_deadline_at
-        ? 0
-        : (streak?.current_count ?? 0),
-    longest_count: streak?.longest_count ?? 0,
-    last_qualified_date: streak?.last_qualified_date ?? null,
-    restore_available:
-      (streak?.restorable_count ?? 0) > 0 &&
-      streak?.restore_deadline !== undefined &&
-      streak.restore_deadline > now,
-    restorable_count: streak?.restorable_count ?? 0,
-    restore_deadline: streak?.restore_deadline ?? null,
-  };
+  return await readCoupleStreak(ctx, coupleId);
 }
 
-/** Port of `internal.get_couple_streak_participation_for_user`. */
-export async function getCoupleStreakParticipationForUser(
+export type StreakParticipation = { current_user_contributed_today: boolean; partner_contributed_today: boolean };
+
+/** Who has contributed on one couple day. Reads only data of that day, so it does not depend on the clock. */
+export async function getCoupleStreakParticipationForDay(
   ctx: ReaderCtx,
   coupleId: string,
   currentUserId: string,
-  observedAt: string = nowIso(),
-): Promise<{ current_user_contributed_today: boolean; partner_contributed_today: boolean }> {
-  const earliestStart = new Date(Date.parse(observedAt) - 2 * 86_400_000).toISOString();
-  let currentDayId: string | null = null;
-  const days = ctx.db
-    .query("couple_days")
-    .withIndex("by_couple_id_starts_at", (q) =>
-      q.eq("couple_id", coupleId).gte("starts_at", earliestStart).lte("starts_at", observedAt),
-    )
-    .order("desc");
-  for await (const day of days) {
-    if (observedAt >= day.starts_at && observedAt < day.ends_at) {
-      currentDayId = day.id;
-      break;
-    }
-  }
-  if (currentDayId === null) {
-    return { current_user_contributed_today: false, partner_contributed_today: false };
-  }
-  const dayId = currentDayId;
+  coupleDayId: string,
+): Promise<StreakParticipation> {
   const events = (
     await ctx.db
       .query("couple_activity_events")
-      .withIndex("by_couple_day_id", (q) => q.eq("couple_day_id", dayId))
+      .withIndex("by_couple_day_id", (q) => q.eq("couple_day_id", coupleDayId))
       .collect()
   ).filter((event) => event.couple_id === coupleId);
   const members = await ctx.db
@@ -383,6 +402,20 @@ export async function getCoupleStreakParticipationForUser(
       (event) => event.user_id !== currentUserId && activeIds.has(event.user_id),
     ),
   };
+}
+
+/** Port of `internal.get_couple_streak_participation_for_user`. */
+export async function getCoupleStreakParticipationForUser(
+  ctx: ReaderCtx,
+  coupleId: string,
+  currentUserId: string,
+  observedAt: string = nowIso(),
+): Promise<StreakParticipation> {
+  const day = await findCoupleDayAt(ctx, coupleId, observedAt);
+  if (!day) {
+    return { current_user_contributed_today: false, partner_contributed_today: false };
+  }
+  return await getCoupleStreakParticipationForDay(ctx, coupleId, currentUserId, day.id);
 }
 
 async function activeCoupleIdsForUser(ctx: ReaderCtx, userId: string): Promise<string[]> {
@@ -476,6 +509,8 @@ export async function applyStreakRestore(
     return { ok: true, restoredCount: replay.restored_count, replayed: true };
   }
 
+  // The offer may not be stored yet if the deadline passed since the last cron run.
+  await detectStreakBreak(ctx, args.couple_id);
   const state = await getStreakState(ctx, args.couple_id);
   const now = nowIso();
   if (

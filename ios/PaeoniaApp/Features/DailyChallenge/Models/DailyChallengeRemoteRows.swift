@@ -5,12 +5,18 @@ nonisolated struct DailyChallengeRemoteSnapshotRow: Codable, Equatable, Sendable
     let answerDetails: [DailyAnswerDetailRow]
     let streak: CoupleStreakRow?
     let generatedAt: Date
+    /// The couple day this snapshot is for, and when it ends. Both are nil when
+    /// today has no couple day yet, and absent in snapshots cached by older builds.
+    var coupleDayID: UUID?
+    var endsAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case questions
         case answerDetails = "answer_details"
         case streak
         case generatedAt = "generated_at"
+        case coupleDayID = "couple_day_id"
+        case endsAt = "ends_at"
     }
 }
 

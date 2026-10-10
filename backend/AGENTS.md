@@ -15,14 +15,15 @@ Paeonia's backend is a self-hosted Convex deployment. This folder replaced the S
 
 ## iOS contract
 
-The iOS app calls Convex over the HTTP API (`POST /api/mutation` with `{"path","args","format":"json"}`) using a Clerk session token as the bearer. It does not use the ConvexMobile client or subscriptions.
+The iOS app subscribes to reads over the ConvexMobile WebSocket client and writes the results into its local store, so partner changes show up live. Writes and one-shot reads go over the HTTP API (`POST /api/mutation`, `/api/query`, `/api/action` with `{"path","args","format":"json"}`) through the app's offline outbox. Both use the Clerk session token. The widget extension uses HTTP only.
 
 Every Convex function ported from a Supabase RPC keeps that RPC's contract:
 
 - The export name is the Supabase function name, unchanged (`create_memory`). The path is `<module>:<name>`, for example `memories:create_memory`.
 - Argument names are the SQL parameter names, unchanged, including the `p_` prefix. Optional SQL parameters with defaults become `v.optional(...)`; `null` must also be accepted where SQL accepted NULL (`v.optional(v.union(v.null(), ...))`).
 - The return value is the JSON PostgREST returned: `jsonb` results keep their keys; `returns table`/`setof` become an array of row objects with the SQL column names; a scalar becomes the bare value; `void` becomes `null`.
-- Every app-callable function is a public `mutation`, including reads. iOS only calls `/api/mutation`. Service-role or operator-only SQL functions become `internalMutation`/`internalQuery`/`internalAction` and are run with `npx convex run`.
+- Reads are public `query` functions so the app can subscribe to them. A query must not depend on the clock for which rows it picks, because Convex re-runs it only when the data it read changes. Pass the day or cursor as an argument instead, and let a cron write time-based state changes (expired entitlements, broken streaks, expired invites) so subscribers update. Reads that must write (get-or-create, rate-limit bookkeeping) or that sign time-limited URLs (`get_media_signed_url`) stay mutations. The app calls an `ensure` mutation such as `get_or_create_widget_canvas` or `start_daily_challenge_snapshot` once, then subscribes to the matching query.
+- Writes are public `mutation`s or `action`s. Service-role or operator-only SQL functions become `internalMutation`/`internalQuery`/`internalAction` and are run with `npx convex run`.
 - Errors use `fail(code, message)` from `lib/errors.ts`, which throws `ConvexError({ code, message })`. Keep the exact SQL `raise exception` message and SQLSTATE code. The app matches substrings such as `stale location update`, `revision conflict`, `40001`, and `pairing_invite_secrets_code_hash_unique`.
 
 ## Data conventions
@@ -98,7 +99,7 @@ Rules that come with them:
 - Postgres ran orphan media triggers at commit time (deferred). Call the `queue*IfOrphaned` helpers after the mutation's last write to the referencing rows.
 - After writing `user_devices`, call `refreshStreakAfterDeviceTimeZoneChange`. After changing `profiles.time_zone_id`, call `refreshStreakAfterProfileTimeZoneChange`. After a daily answer insert, call `enqueuePartnerAnsweredNotification`. After a memory insert, call `enqueueMemoryCreatedNotification`. After a widget revision insert, call `enqueueWidgetUpdateAlert`.
 - Insert outbox rows only through `insertNotificationOutbox` and `insertWidgetPushOutbox`. They apply the check constraints, dedupe keys, and payload safety rule. Callers then call `scheduleNotificationDrain` or `scheduleWidgetPushDrain`. The `enqueue*` helpers do this already.
-- `getCoupleStreakForCouple` can write (it opens a restore offer when the streak just broke), so call it from a mutation.
+- `readCoupleStreak` is the pure streak reader for queries. A just-broken streak shows as broken with its restore offer, without writing. `getCoupleStreakForCouple` first persists the break with `detectStreakBreak`, so call it only from a mutation. The streak cron and `applyStreakRestore` persist breaks, so `restorable_count` is stored before a restore needs it.
 - Time zone math uses `Intl.DateTimeFormat`. It follows the Postgres rules at daylight saving changes: a local time in a spring-forward gap uses the offset from before the gap, and an ambiguous fall-back time resolves to standard time.
 
 ## Tests
@@ -136,7 +137,7 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `pairing` | `create_pairing_invite`, `preview_pairing_invite`, `validate_my_pairing_invite`, `accept_pairing_invite`, `revoke_pairing_invite`, `rotate_pairing_invite` |
 | `relationship` | `get_current_relationship_state`, `get_relationship_sync_events`, `leave_relationship`, `block_relationship`, `unblock_pair`, `mark_relationship_ended_notice_seen`, `set_couple_started_on` |
 | `access` | `get_access_snapshot`, `get_my_entitlement`, `get_my_couple_entitlement`, `get_or_create_app_account_token`, `complete_review_access_session`, `verify_purchase` (action), `redeem_streak_restore` (action) |
-| `daily` | `get_active_question_catalog`, `start_daily_challenge`, `start_daily_challenge_snapshot`, `get_today_daily_challenge_snapshot`, `get_today_daily_questions`, `shuffle_daily_question`, `shuffle_daily_question_snapshot`, `submit_daily_answer`, `update_daily_answer_text`, `update_daily_answer_partner_choice`, `get_daily_answer_details`, `get_daily_answer_details_for_couple_days`, `get_daily_answer_reveal_state`, `get_daily_questions_history`, `get_daily_answer_history_details`, `get_question_answer_history` |
+| `daily` | `get_active_question_catalog`, `start_daily_challenge`, `start_daily_challenge_snapshot`, `get_today_daily_challenge_snapshot`, `get_daily_challenge_snapshot` (query by `p_couple_day_id`; subscribe to this one, since its rows do not depend on the clock), `get_today_daily_questions`, `shuffle_daily_question`, `shuffle_daily_question_snapshot`, `submit_daily_answer`, `update_daily_answer_text`, `update_daily_answer_partner_choice`, `get_daily_answer_details`, `get_daily_answer_details_for_couple_days`, `get_daily_answer_reveal_state`, `get_daily_questions_history`, `get_daily_answer_history_details`, `get_question_answer_history` |
 | `streaks` | `get_couple_streak` |
 | `threads` | `get_conversation_threads`, `get_thread_messages`, `send_thread_message`, `create_daily_question_thread_with_message`, `create_memory_thread_with_message` |
 | `memories` | `create_memory`, `update_memory`, `hide_memory`, `get_memories`, `upsert_memory_note`, `attach_memory_media`, `remove_memory_media` |

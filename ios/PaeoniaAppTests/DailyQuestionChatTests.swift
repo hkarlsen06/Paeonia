@@ -343,6 +343,317 @@ struct DailyQuestionChatPendingOperationHandlerTests {
 }
 
 @MainActor
+private func waitForMain(timeout: Duration = .seconds(5), _ condition: @MainActor () -> Bool) async -> Bool {
+    let deadline = ContinuousClock.now.advanced(by: timeout)
+    while ContinuousClock.now < deadline {
+        if condition() { return true }
+        try? await Task.sleep(for: .milliseconds(5))
+    }
+    return condition()
+}
+
+@MainActor
+struct DailyQuestionChatLiveTests {
+    private func partnerMessage(_ fixture: ChatTestFixture, body: String, id: UUID = UUID(), at seconds: Double = 5) -> DailyQuestionChatMessage {
+        DailyQuestionChatMessage(
+            id: id,
+            threadID: fixture.threadID,
+            instanceID: fixture.question.id,
+            senderUserID: fixture.partnerUserID,
+            body: body,
+            createdAt: Date(timeIntervalSince1970: seconds),
+            clientOperationID: nil,
+            isSending: false
+        )
+    }
+
+    @Test func partnerMessageAppearsWhileTheChatIsOpenAndIsCached() async {
+        let fixture = ChatTestFixture()
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        let viewModel = fixture.makeViewModel()
+        let observing = Task { await viewModel.observeLiveUpdates() }
+
+        await fixture.gateway.liveSource.push([partnerMessage(fixture, body: "Thinking of you")])
+
+        let appeared = await waitForMain { viewModel.messages.map(\.body) == ["Thinking of you"] }
+        #expect(appeared)
+        // Offline reopen reads the cache, so the message must be stored there.
+        let cached = await fixture.cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        #expect(cached.map(\.body) == ["Thinking of you"])
+        observing.cancel()
+        await observing.value
+    }
+
+    @Test func serverCopyOfAStillSendingMessageDoesNotDuplicateIt() async throws {
+        let fixture = ChatTestFixture()
+        let source = fixture.gateway.liveSource
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        let viewModel = fixture.makeViewModel()
+        let observing = Task { await viewModel.observeLiveUpdates() }
+        #expect(await waitForMain { source.subscriptionCount.value == 1 })
+
+        #expect(await viewModel.send("On my way"))
+        #expect(viewModel.messages.map(\.isSending) == [true])
+
+        // The server copy arrives before the send's own response confirms it.
+        let serverCopy = DailyQuestionChatMessage(
+            id: fixture.messageID,
+            threadID: fixture.threadID,
+            instanceID: fixture.question.id,
+            senderUserID: fixture.ownerUserID,
+            body: "On my way",
+            createdAt: Date(timeIntervalSince1970: 3),
+            clientOperationID: nil,
+            isSending: false
+        )
+        await fixture.gateway.liveSource.push([serverCopy])
+        let settled = await waitForMain { viewModel.messages.map(\.id) == [fixture.messageID] }
+        #expect(settled)
+        #expect(viewModel.messages.first?.isSending == false)
+
+        // The confirmation that follows keeps a single message.
+        let sends = try await fixture.pendingStore.inFlightOperations(
+            ownerUserID: fixture.ownerUserID,
+            kind: .sendThreadMessage
+        )
+        let operation = try #require(sends.first)
+        await fixture.cache.confirm(
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id,
+            coupleID: fixture.question.coupleID,
+            clientOperationID: operation.operation.id,
+            threadID: fixture.threadID,
+            messageID: fixture.messageID,
+            body: "On my way",
+            senderUserID: fixture.ownerUserID,
+            createdAt: operation.operation.localCreatedAt
+        )
+        LocalStoreChanges.post(.dailyChat, ownerUserID: fixture.ownerUserID)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(viewModel.messages.map(\.id) == [fixture.messageID])
+        observing.cancel()
+        await observing.value
+    }
+
+    @Test func aStillSendingMessageStaysVisibleWhenOtherMessagesArrive() async {
+        let fixture = ChatTestFixture()
+        let source = fixture.gateway.liveSource
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        let viewModel = fixture.makeViewModel()
+        let observing = Task { await viewModel.observeLiveUpdates() }
+        #expect(await waitForMain { source.subscriptionCount.value == 1 })
+        _ = await viewModel.send("Not sent yet")
+
+        await fixture.gateway.liveSource.push([partnerMessage(fixture, body: "Hello")])
+
+        let both = await waitForMain { viewModel.messages.map(\.body).sorted() == ["Hello", "Not sent yet"] }
+        #expect(both)
+        #expect(viewModel.messages.first(where: { $0.body == "Not sent yet" })?.isSending == true)
+        observing.cancel()
+        await observing.value
+    }
+
+    @Test func aThreadThePartnerStartsOpensTheMessageSubscription() async {
+        let fixture = ChatTestFixture()
+        let source = fixture.gateway.liveSource
+        let viewModel = fixture.makeViewModel()
+        let observing = Task { await viewModel.observeLiveUpdates() }
+        try? await Task.sleep(for: .milliseconds(30))
+        #expect(source.subscriptionCount.value == 0)
+
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        LocalStoreChanges.post(.dailyChat, ownerUserID: fixture.ownerUserID)
+        #expect(await waitForMain { source.subscriptionCount.value == 1 })
+
+        await fixture.gateway.liveSource.push([partnerMessage(fixture, body: "Hi")])
+        #expect(await waitForMain { viewModel.messages.map(\.body) == ["Hi"] })
+        observing.cancel()
+        await observing.value
+    }
+
+    @Test func summaryFeedWritesTheChatCache() async throws {
+        let fixture = ChatTestFixture()
+        let cache = fixture.cache
+        let transport = ChatPushTransport()
+        let session = SyncSession(userID: fixture.ownerUserID, activeCoupleID: fixture.question.coupleID)
+        let feed = DailyQuestionChatLiveFeed(cache: cache)
+        let task = Task { await feed.run(session: session, live: LiveQueryService(transport: transport)) }
+
+        await transport.push(
+            """
+            [{"thread_id":"\(fixture.threadID.uuidString)","couple_id":"\(fixture.question.coupleID.uuidString)",
+            "kind":"daily_question","daily_question_instance_id":"\(fixture.question.id.uuidString)",
+            "created_at":"2026-05-01T10:00:00.000Z","updated_at":"2026-05-01T10:00:05.000Z","deleted_at":null,
+            "moderation_status":"visible","last_message_id":"\(fixture.messageID.uuidString)",
+            "last_message_at":"2026-05-01T10:00:05.000Z","last_message_sender_user_id":"\(fixture.partnerUserID.uuidString)",
+            "last_message_deleted_at":null,"last_message_moderation_status":"visible","last_message_body":"Miss you"}]
+            """
+        )
+
+        let owner = fixture.ownerUserID
+        let stored = await waitUntil { await cache.summaries(ownerUserID: owner).count == 1 }
+        #expect(stored)
+        let summaries = await cache.summaries(ownerUserID: owner)
+        #expect(summaries.first?.lastMessageBody == "Miss you")
+        #expect(summaries.first?.threadID == fixture.threadID)
+        #expect(transport.openedPaths.value == ["threads:get_conversation_threads"])
+        task.cancel()
+        await task.value
+    }
+
+    @Test func aSecondLiveResultBeforeTheSendResponseDoesNotShowTheMessageTwice() async throws {
+        let fixture = ChatTestFixture()
+        let source = fixture.gateway.liveSource
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        let viewModel = fixture.makeViewModel()
+        let observing = Task { await viewModel.observeLiveUpdates() }
+        #expect(await waitForMain { source.subscriptionCount.value == 1 })
+        #expect(await viewModel.send("On my way"))
+
+        let serverCopy = DailyQuestionChatMessage(
+            id: fixture.messageID,
+            threadID: fixture.threadID,
+            instanceID: fixture.question.id,
+            senderUserID: fixture.ownerUserID,
+            body: "On my way",
+            createdAt: Date(timeIntervalSince1970: 3),
+            clientOperationID: nil,
+            isSending: false
+        )
+        await source.push([serverCopy])
+        #expect(await waitForMain { viewModel.messages.map(\.id) == [fixture.messageID] })
+
+        // The next live result arrives before the send's own response. It carries the
+        // same server copy, still without an operation id.
+        await source.push([serverCopy, partnerMessage(fixture, body: "Hello", at: 6)])
+        #expect(await waitForMain { viewModel.messages.count >= 2 })
+        try await Task.sleep(for: .milliseconds(50))
+
+        #expect(viewModel.messages.map(\.body) == ["On my way", "Hello"])
+        #expect(!viewModel.hasSendingMessages)
+        observing.cancel()
+        await observing.value
+    }
+
+    @Test func claimingPendingKeepsTheOperationOfAMessageTheCacheAlreadyClaimed() {
+        let owner = UUID()
+        let instance = UUID()
+        let serverID = UUID()
+        let operation = UUID()
+        func message(_ id: UUID, operation: UUID? = nil, sending: Bool = false) -> DailyQuestionChatMessage {
+            DailyQuestionChatMessage(
+                id: id, threadID: nil, instanceID: instance, senderUserID: owner, body: "ok",
+                createdAt: Date(timeIntervalSince1970: 3), clientOperationID: operation, isSending: sending
+            )
+        }
+        let pending = message(operation, operation: operation, sending: true)
+
+        let result = DailyQuestionChatMessage.claimingPending(
+            remote: [message(serverID)],
+            cached: [message(serverID, operation: operation)],
+            pending: [pending]
+        )
+
+        #expect(result.first?.clientOperationID == operation)
+        #expect(DailyQuestionChatMessage.visibleOrdered(remote: result, optimistic: [pending]).count == 1)
+    }
+
+    @Test func aLiveResultThatArrivesAfterAPurgeIsNotWrittenBack() async {
+        let fixture = ChatTestFixture()
+        let service = DailyQuestionChatService(
+            gateway: fixture.gateway,
+            cache: fixture.cache,
+            pendingOperationStore: fixture.pendingStore
+        )
+        let updates = service.liveMessageUpdates(
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id,
+            threadID: fixture.threadID
+        )
+        var iterator = updates.makeAsyncIterator()
+
+        await fixture.gateway.liveSource.push([partnerMessage(fixture, body: "Before")])
+        await iterator.next()
+        #expect(await fixture.cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id).count == 1)
+
+        // Sign-out clears the cache. The subscription can still deliver one more result.
+        await fixture.cache.clearAll()
+        await fixture.gateway.liveSource.push([partnerMessage(fixture, body: "After")])
+
+        #expect(await iterator.next() == nil)
+        #expect(await fixture.cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id).isEmpty)
+    }
+
+    @Test func theFileCacheRefusesAMessageSaveThatStartedBeforeAPurge() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ChatCachePurge-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = FileDailyQuestionChatCache(directoryURL: directory)
+        let fixture = ChatTestFixture()
+        let message = partnerMessage(fixture, body: "Private")
+
+        let started = await cache.purgeGeneration()
+        await cache.clearAll()
+        let wrote = await cache.saveMessages(
+            [message],
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id,
+            unlessPurgedSince: started
+        )
+
+        #expect(!wrote)
+        #expect(!FileManager.default.fileExists(atPath: directory.path))
+        let current = await cache.purgeGeneration()
+        #expect(await cache.saveMessages(
+            [message],
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id,
+            unlessPurgedSince: current
+        ))
+        #expect(await cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id).count == 1)
+    }
+
+    @Test func claimingPendingMatchesTheOldestSendingMessageOnce() {
+        let owner = UUID()
+        let instance = UUID()
+        func message(_ id: UUID, _ body: String, at seconds: Double, operation: UUID? = nil, sending: Bool = false) -> DailyQuestionChatMessage {
+            DailyQuestionChatMessage(
+                id: id, threadID: nil, instanceID: instance, senderUserID: owner, body: body,
+                createdAt: Date(timeIntervalSince1970: seconds), clientOperationID: operation, isSending: sending
+            )
+        }
+        let earlierServerID = UUID()
+        let newServerID = UUID()
+        let operation = UUID()
+        // "ok" was sent earlier and is already known. Only the new server copy belongs to the sending one.
+        let claimed = DailyQuestionChatMessage.claimingPending(
+            remote: [message(earlierServerID, "ok", at: 1), message(newServerID, "ok", at: 9)],
+            cached: [message(earlierServerID, "ok", at: 1)],
+            pending: [message(operation, "ok", at: 8, operation: operation, sending: true)]
+        )
+        #expect(claimed.first(where: { $0.id == earlierServerID })?.clientOperationID == nil)
+        #expect(claimed.first(where: { $0.id == newServerID })?.clientOperationID == operation)
+    }
+}
+
+private final class ChatPushTransport: LiveQueryTransport, @unchecked Sendable {
+    private let open = LockedBox<AsyncThrowingStream<Data, any Error>.Continuation?>(nil)
+    let openedPaths = LockedBox<[String]>([])
+
+    func updates(path: String, args _: [String: String]) -> AsyncThrowingStream<Data, any Error> {
+        openedPaths.mutate { $0.append(path) }
+        return AsyncThrowingStream { continuation in
+            open.mutate { $0 = continuation }
+        }
+    }
+
+    func push(_ json: String) async {
+        _ = await waitUntil { open.value != nil }
+        open.value?.yield(Data(json.utf8))
+    }
+}
+
+@MainActor
 private final class ChatTestOperationProvider: SyncClientOperationProviding {
     private var sequence: Int64 = 0
     let clientID = UUID()
@@ -425,7 +736,27 @@ private final class ChatTestFixture {
     }
 }
 
+/// Stands in for the messages subscription. Tests push the full message list, like
+/// the server pushing a new query result.
+private final class LiveMessageSource: @unchecked Sendable {
+    private let open = LockedBox<AsyncStream<[DailyQuestionChatMessage]>.Continuation?>(nil)
+    let subscriptionCount = LockedBox(0)
+
+    func stream() -> AsyncStream<[DailyQuestionChatMessage]> {
+        subscriptionCount.mutate { $0 += 1 }
+        return AsyncStream { continuation in
+            open.mutate { $0 = continuation }
+        }
+    }
+
+    func push(_ messages: [DailyQuestionChatMessage]) async {
+        _ = await waitUntil { open.value != nil }
+        open.value?.yield(messages)
+    }
+}
+
 private actor ChatTestGateway: DailyQuestionChatGateway {
+    nonisolated let liveSource = LiveMessageSource()
     private let threadID: UUID
     private let messageID: UUID
     private var summaries: [DailyQuestionThreadSummary] = []
@@ -461,6 +792,10 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
         return messages
     }
 
+    nonisolated func liveMessages(threadID _: UUID, instanceID _: UUID) -> AsyncStream<[DailyQuestionChatMessage]> {
+        liveSource.stream()
+    }
+
     func createThreadWithMessage(
         _: CreateDailyQuestionThreadMessageOperationPayload,
         operation _: SyncClientOperation
@@ -484,6 +819,7 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
 private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
     private var storedSummaries: [UUID: [DailyQuestionThreadSummary]] = [:]
     private var storedMessages: [UUID: [UUID: [DailyQuestionChatMessage]]] = [:]
+    private var generation = 0
 
     func summaries(ownerUserID: UUID) -> [DailyQuestionThreadSummary] {
         storedSummaries[ownerUserID] ?? []
@@ -573,8 +909,24 @@ private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
     }
 
     func clearAll() {
+        generation += 1
         storedSummaries = [:]
         storedMessages = [:]
+    }
+
+    func purgeGeneration() -> Int {
+        generation
+    }
+
+    func saveMessages(
+        _ messages: [DailyQuestionChatMessage],
+        ownerUserID: UUID,
+        instanceID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool {
+        guard generation == self.generation else { return false }
+        saveMessages(messages, ownerUserID: ownerUserID, instanceID: instanceID)
+        return true
     }
 }
 

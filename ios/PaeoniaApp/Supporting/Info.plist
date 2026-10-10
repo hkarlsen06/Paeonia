@@ -35,10 +35,6 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<key>PaeoniaClerkPublishableKey</key>
-	<string>$(PAEONIA_CLERK_PUBLISHABLE_KEY)</string>
-	<key>PaeoniaConvexURL</key>
-	<string>$(PAEONIA_CONVEX_URL)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
@@ -49,16 +45,16 @@
 	<string>Paeonia uses your microphone so you can record a voice answer to the daily question.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Paeonia saves a drawing to your photos when you tap save.</string>
-	<key>NSUserNotificationsUsageDescription</key>
-	<string>Paeonia sends notifications for partner drawings, answered questions, and check-in reminders.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
-		<!-- The partner widget-update alert is a communication notification (it
-		     donates an INSendMessageIntent for the avatar/name). Tapping it
-		     continues that intent as a user activity; declaring it here lets the
-		     app launch and handle the tap instead of failing to open. -->
 		<string>INSendMessageIntent</string>
 	</array>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Paeonia sends notifications for partner drawings, answered questions, and check-in reminders.</string>
+	<key>PaeoniaClerkPublishableKey</key>
+	<string>$(PAEONIA_CLERK_PUBLISHABLE_KEY)</string>
+	<key>PaeoniaConvexURL</key>
+	<string>$(PAEONIA_CONVEX_URL)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

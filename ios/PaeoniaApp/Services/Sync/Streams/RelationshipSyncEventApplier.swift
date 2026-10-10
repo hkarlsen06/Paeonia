@@ -3,7 +3,7 @@ import Foundation
 nonisolated protocol RelationshipSyncEventApplying: Sendable {
     func apply(
         _ events: [RemoteRelationshipSyncEvent],
-        context: SyncContext
+        session: SyncSession
     ) async throws
 }
 
@@ -21,13 +21,13 @@ struct RelationshipSyncEventApplier: RelationshipSyncEventApplying {
 
     func apply(
         _ events: [RemoteRelationshipSyncEvent],
-        context: SyncContext
+        session: SyncSession
     ) async throws {
         // Owner-wide deletion is intentionally never inferred without a current
         // relationship identity. Root access resolution owns that nil-identity
         // case using its current and persisted access snapshots. This prevents
         // a delayed event from an old couple erasing a newer invite or draft.
-        guard let relationshipCoupleID = context.session.relationshipCoupleID else {
+        guard let relationshipCoupleID = session.relationshipCoupleID else {
             return
         }
         let privacyRelevantEvents = events.filter { $0.coupleID == relationshipCoupleID }
@@ -35,7 +35,7 @@ struct RelationshipSyncEventApplier: RelationshipSyncEventApplying {
         if let purgeScope = relationshipPurgeScope(for: privacyRelevantEvents),
            let localPrivacyPurger {
             await localPrivacyPurger.purge(
-                ownerUserID: context.session.userID,
+                ownerUserID: session.userID,
                 scope: purgeScope
             )
             return
@@ -114,6 +114,6 @@ struct RelationshipSyncEventApplier: RelationshipSyncEventApplying {
 struct NoOpRelationshipSyncEventApplier: RelationshipSyncEventApplying {
     func apply(
         _ events: [RemoteRelationshipSyncEvent],
-        context: SyncContext
+        session: SyncSession
     ) async throws {}
 }

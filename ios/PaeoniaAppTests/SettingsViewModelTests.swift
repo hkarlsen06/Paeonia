@@ -205,6 +205,53 @@ struct SettingsViewModelTests {
     }
 }
 
+extension SettingsViewModelTests {
+    @Test func liveValuesUpdateToggles() async {
+        let preferences = FakeNotificationPreferences()
+        let viewModel = SettingsViewModel(preferences: preferences, authorization: FakePushAuthorization())
+        let observing = Task { await viewModel.observe() }
+
+        await preferences.emit(NotificationPreferences(messagesEnabled: false))
+        await waitUntil { viewModel.messagesEnabled == false }
+
+        #expect(viewModel.messagesEnabled == false)
+        #expect(viewModel.memoriesEnabled)
+        observing.cancel()
+    }
+
+    @Test func staleLiveValueDoesNotRevertToggleWithSaveInFlight() async {
+        let preferences = FakeNotificationPreferences(holdSets: true)
+        let viewModel = SettingsViewModel(preferences: preferences, authorization: FakePushAuthorization())
+        let observing = Task { await viewModel.observe() }
+
+        let saving = Task { await viewModel.setNotificationPreference(.messages, enabled: false) }
+        await waitUntil { await preferences.heldSetCount == 1 }
+
+        // The server still reports the old messages value and a new memories value.
+        await preferences.emit(NotificationPreferences(memoriesEnabled: false))
+        await waitUntil { viewModel.memoriesEnabled == false }
+
+        #expect(viewModel.messagesEnabled == false)
+        #expect(viewModel.memoriesEnabled == false)
+
+        await preferences.releaseSets()
+        await saving.value
+
+        // Later live values apply again once the save finished.
+        await preferences.emit(NotificationPreferences(messagesEnabled: true, memoriesEnabled: false))
+        await waitUntil { viewModel.messagesEnabled }
+        #expect(viewModel.messagesEnabled)
+        observing.cancel()
+    }
+}
+
+@MainActor
+private func waitUntil(_ condition: () async -> Bool) async {
+    for _ in 0..<200 where !(await condition()) {
+        try? await Task.sleep(for: .milliseconds(10))
+    }
+}
+
 private enum FakePreferencesError: Error {
     case failed
 }
@@ -213,21 +260,49 @@ private enum FakePreferencesError: Error {
 private actor FakeNotificationPreferences: NotificationPreferencesProviding {
     private var preferences: NotificationPreferences
     private let failOnSet: Bool
+    private let holdSets: Bool
+    private var heldSets = [CheckedContinuation<Void, Never>]()
+    private let updates = AsyncStream<NotificationPreferences>.makeStream()
     private(set) var setCallCount = 0
     private(set) var lastSetKind: NotificationPreferenceKind?
     private(set) var lastSetValue: Bool?
 
-    init(preferences: NotificationPreferences = NotificationPreferences(), failOnSet: Bool = false) {
+    init(
+        preferences: NotificationPreferences = NotificationPreferences(),
+        failOnSet: Bool = false,
+        holdSets: Bool = false
+    ) {
         self.preferences = preferences
         self.failOnSet = failOnSet
+        self.holdSets = holdSets
+    }
+
+    nonisolated func notificationPreferenceUpdates() -> AsyncStream<NotificationPreferences> {
+        updates.stream
+    }
+
+    func emit(_ value: NotificationPreferences) {
+        updates.continuation.yield(value)
+    }
+
+    var heldSetCount: Int {
+        heldSets.count
+    }
+
+    func releaseSets() {
+        heldSets.forEach { $0.resume() }
+        heldSets = []
     }
 
     func loadNotificationPreferences() -> NotificationPreferences {
         preferences
     }
 
-    func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled value: Bool) throws {
+    func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled value: Bool) async throws {
         setCallCount += 1
+        if holdSets {
+            await withCheckedContinuation { heldSets.append($0) }
+        }
         if failOnSet {
             throw FakePreferencesError.failed
         }

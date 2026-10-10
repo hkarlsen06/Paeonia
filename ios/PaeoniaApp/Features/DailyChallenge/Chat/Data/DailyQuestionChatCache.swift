@@ -23,6 +23,18 @@ protocol DailyQuestionChatCaching: Actor {
         createdAt: Date
     )
     func clearAll()
+    /// Counts purges. A writer that suspends between reading and saving reads this
+    /// first, then saves with `saveMessages(_:ownerUserID:instanceID:unlessPurgedSince:)`.
+    func purgeGeneration() -> Int
+    /// Like `saveMessages`, but writes nothing when `clearAll()` ran after `generation`
+    /// was read. Returns whether it wrote.
+    @discardableResult
+    func saveMessages(
+        _ messages: [DailyQuestionChatMessage],
+        ownerUserID: UUID,
+        instanceID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool
 }
 
 actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
@@ -30,6 +42,7 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
 
     private static let schemaVersion = 2
     private let directoryURL: URL
+    private var generation = 0
 
     init(directoryURL: URL = FileDailyQuestionChatCache.defaultDirectoryURL()) {
         self.directoryURL = directoryURL
@@ -175,7 +188,24 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         save(document, ownerUserID: ownerUserID)
     }
 
+    func purgeGeneration() -> Int {
+        generation
+    }
+
+    @discardableResult
+    func saveMessages(
+        _ messages: [DailyQuestionChatMessage],
+        ownerUserID: UUID,
+        instanceID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool {
+        guard generation == self.generation else { return false }
+        saveMessages(messages, ownerUserID: ownerUserID, instanceID: instanceID)
+        return true
+    }
+
     func clearAll() {
+        generation += 1
         guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }
         try? FileManager.default.removeItem(at: directoryURL)
     }

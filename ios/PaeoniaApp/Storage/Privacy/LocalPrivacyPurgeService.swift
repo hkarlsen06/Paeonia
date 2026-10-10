@@ -251,6 +251,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await MainActor.run {
             if shouldPurgeOwnedContent {
                 UserDefaultsDailyChallengeDraftStore.shared.clearDrafts(for: ownerUserID)
+                LocalMemoryDraftStore.shared.clearDraft(for: ownerUserID)
                 FileWidgetDrawingDraftStore.shared.clearDraft(for: ownerUserID)
                 UserDefaultsPairingCelebrationStore.shared.clearAll()
             }

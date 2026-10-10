@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { canAccessCoupleContent, getCurrentEntitledCoupleId, isActiveCoupleMember } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
@@ -516,7 +516,7 @@ export const remove_memory_media = mutation({
   },
 });
 
-export const get_memories = mutation({
+export const get_memories = query({
   args: {
     p_updated_after: v.optional(v.union(v.null(), v.string())),
     p_cursor_memory_id: v.optional(v.union(v.null(), v.string())),

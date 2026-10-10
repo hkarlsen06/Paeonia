@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import {
   canAccessCoupleContent,
   getCurrentEntitledCoupleId,
@@ -255,7 +255,7 @@ function latest(...values: (string | undefined)[]): string {
   return values.reduce<string>((best, value) => (value !== undefined && value > best ? value : best), "");
 }
 
-export const get_widget_canvas = mutation({
+export const get_widget_canvas = query({
   args: { p_couple_id: v.optional(v.union(v.null(), v.string())) },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
@@ -290,7 +290,7 @@ export const get_widget_canvas = mutation({
   },
 });
 
-export const get_widget_drawing_revisions = mutation({
+export const get_widget_drawing_revisions = query({
   args: {
     p_canvas_id: v.string(),
     p_updated_after: v.optional(v.union(v.null(), v.string())),

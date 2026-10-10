@@ -119,7 +119,7 @@ describe("access snapshot", () => {
   test("a user without a couple gets an empty relationship and couple entitlement", async () => {
     const t = newTest();
     const user = await createSignedInUser(t);
-    const rows = await user.as.mutation(api.access.get_access_snapshot, {});
+    const rows = await user.as.query(api.access.get_access_snapshot, {});
     expect(rows).toEqual([
       {
         user_entitlement: {
@@ -135,13 +135,13 @@ describe("access snapshot", () => {
         relationship_state: null,
       },
     ]);
-    await expect(t.mutation(api.access.get_access_snapshot, {})).rejects.toThrow(/42501.*authenticated user required/);
+    await expect(t.query(api.access.get_access_snapshot, {})).rejects.toThrow(/42501.*authenticated user required/);
   });
 
   test("a lifetime grant on one partner covers the couple", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const [row] = await couple.second.as.mutation(api.access.get_access_snapshot, {});
+    const [row] = await couple.second.as.query(api.access.get_access_snapshot, {});
     expect(row.user_entitlement).toMatchObject({ is_entitled: false });
     expect(row.couple_entitlement).toMatchObject({
       couple_id: couple.coupleId,
@@ -204,7 +204,7 @@ describe("verify_purchase", () => {
     expect(
       verify("sha256", Buffer.from(`${header}.${claims}`), { key: keys.publicKey, dsaEncoding: "ieee-p1363" }, Buffer.from(signature, "base64url")),
     ).toBe(true);
-    expect(await user.as.mutation(api.access.get_my_entitlement, {})).toMatchObject([{ is_entitled: true, source: "storekit" }]);
+    expect(await user.as.query(api.access.get_my_entitlement, {})).toMatchObject([{ is_entitled: true, source: "storekit" }]);
   });
 
   test("tries the other environment when Apple answers 404", async () => {

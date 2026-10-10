@@ -126,34 +126,6 @@ struct RelationshipStartedOnDataServiceTests {
         #expect(cached?.relationshipState?.startedOn == "2024-02-29")
     }
 
-    @Test func partnerAccessPullReceivesChangedDate() async throws {
-        let partnerUserID = try #require(UUID(uuidString: "99999999-9999-9999-9999-999999999999"))
-        let accessStore = InMemoryAccessSyncSnapshotRepository()
-        let gateway = RelationshipStartedOnAccessGateway(
-            snapshot: RemoteAccessSnapshot(
-                userEntitlement: nil,
-                coupleEntitlement: nil,
-                relationshipState: try relationshipState(startedOn: "2024-02-29")
-            )
-        )
-        let stream = AccessSyncStream(gateway: gateway, snapshotStore: accessStore)
-
-        _ = try await stream.pull(
-            context: SyncContext(
-                session: SyncSession(userID: partnerUserID),
-                reason: .foreground,
-                stateStore: InMemorySyncStateRepository(),
-                pendingOperationStore: InMemoryPendingSyncOperationRepository()
-            )
-        )
-
-        #expect(
-            try await accessStore.load(ownerUserID: partnerUserID)?
-                .relationshipState?
-                .startedOn == "2024-02-29"
-        )
-    }
-
     private func relationshipState(startedOn: String?) throws -> RemoteRelationshipState {
         RemoteRelationshipState(
             coupleID: try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444")),
@@ -248,27 +220,6 @@ private actor RelationshipStartedOnGatewaySpy: RelationshipStartedOnGateway {
         receivedOperation = operation
         return startedOn.rawValue
     }
-}
-
-private actor RelationshipStartedOnAccessGateway: AccessGateway {
-    private let snapshot: RemoteAccessSnapshot
-
-    init(snapshot: RemoteAccessSnapshot) {
-        self.snapshot = snapshot
-    }
-
-    func loadAccessSnapshot() async throws -> RemoteAccessSnapshot {
-        snapshot
-    }
-
-    func loadRelationshipSyncEvents(
-        after cursor: SyncCursor,
-        limit: Int
-    ) async throws -> [RemoteRelationshipSyncEvent] {
-        []
-    }
-
-    func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws {}
 }
 
 private actor RelationshipStartedOnDataServiceSpy: RelationshipStartedOnDataServicing {

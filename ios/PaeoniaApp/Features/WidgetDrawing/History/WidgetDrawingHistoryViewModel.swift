@@ -101,6 +101,30 @@ final class WidgetDrawingHistoryViewModel {
         await loadFirstPage()
     }
 
+    /// Adds drawings newer than the loaded ones, for example a partner's drawing
+    /// that synced in while the timeline is open. Keeps the scroll position, the
+    /// older-page cursor, and the save states. Failures are ignored because the
+    /// list on screen is still correct.
+    func refreshNewest() async {
+        guard phase == .loaded else {
+            return
+        }
+        guard let canvasID else {
+            // The first load found no canvas, so there is nothing to merge into yet.
+            await loadFirstPage()
+            return
+        }
+        guard let page = try? await gateway.listRevisions(
+            canvasID: canvasID,
+            limit: pageSize,
+            createdBefore: nil,
+            createdBeforeRevisionID: nil
+        ) else {
+            return
+        }
+        items.insert(contentsOf: newItems(from: page), at: 0)
+    }
+
     /// The save button state for a drawing, defaulting to idle.
     func saveState(for id: UUID) -> SaveButtonState {
         saveStates[id] ?? .idle
@@ -222,7 +246,12 @@ final class WidgetDrawingHistoryViewModel {
         }
         hasMore = page.count == pageSize
 
-        let newItems = page.compactMap { summary -> WidgetDrawingHistoryItem? in
+        items.append(contentsOf: newItems(from: page))
+    }
+
+    /// The showable rows of `page` not yet in the timeline, marked as seen.
+    private func newItems(from page: [WidgetDrawingRevisionSummary]) -> [WidgetDrawingHistoryItem] {
+        page.compactMap { summary -> WidgetDrawingHistoryItem? in
             guard let mediaAssetID = summary.payloadMediaAssetID,
                   !seenRevisionIDs.contains(summary.revisionID)
             else {
@@ -239,6 +268,5 @@ final class WidgetDrawingHistoryViewModel {
                 canvasSide: summary.bounds.map { CGFloat($0.canvasSide) } ?? WidgetDrawingViewModel.fallbackCanvasSide
             )
         }
-        items.append(contentsOf: newItems)
     }
 }

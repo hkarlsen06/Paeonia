@@ -293,7 +293,7 @@ describe("accept_pairing_invite", () => {
     });
     expect(rows.attempts).toEqual([expect.objectContaining({ success: true, matched_invite_id: inviteId })]);
 
-    const state = await guest.as.mutation(api.relationship.get_current_relationship_state, {});
+    const state = await guest.as.query(api.relationship.get_current_relationship_state, {});
     expect(state[0]).toMatchObject({ couple_id: coupleId, partner_user_id: owner.userId, started_on: "2024-02-29" });
   });
 
@@ -429,17 +429,24 @@ describe("revoke, validate, and rotate", () => {
     const id = await createInvite(owner);
     const notFound = [{ invite_id: null, status: "not_found", expires_at: null }];
 
-    expect(await owner.as.mutation(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "ABC123" })).toEqual([
+    expect(await owner.as.query(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "ABC123" })).toEqual([
       { invite_id: id, status: "pending", expires_at: inDays(7) },
     ]);
-    expect(await other.as.mutation(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "ABC123" })).toEqual(notFound);
-    expect(await owner.as.mutation(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "ZZZZZZ" })).toEqual(notFound);
-    expect(await owner.as.mutation(api.pairing.validate_my_pairing_invite, { p_invite_id: null, p_invite_code: "ABC123" })).toEqual(notFound);
-    expect(await owner.as.mutation(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "  " })).toEqual(notFound);
-    await expectFail(owner.as.mutation(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "bad" }), "23514");
+    expect(await other.as.query(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "ABC123" })).toEqual(notFound);
+    expect(await owner.as.query(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "ZZZZZZ" })).toEqual(notFound);
+    expect(await owner.as.query(api.pairing.validate_my_pairing_invite, { p_invite_id: null, p_invite_code: "ABC123" })).toEqual(notFound);
+    expect(await owner.as.query(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "  " })).toEqual(notFound);
+    await expectFail(owner.as.query(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "bad" }), "23514");
 
     vi.setSystemTime(new Date(inDays(8)));
-    expect(await owner.as.mutation(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "ABC123" })).toEqual([
+    expect(await owner.as.query(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "ABC123" })).toEqual([
+      { invite_id: id, status: "expired", expires_at: inDays(7) },
+    ]);
+    // The query does not write. The expiry cron persists the status.
+    expect(await t.run((ctx) => ctx.db.query("pairing_invites").first())).toMatchObject({ status: "pending" });
+    expect(await t.mutation(internal.pairing.expire_stale_pairing_invites, {})).toBe(1);
+    expect(await t.run((ctx) => ctx.db.query("pairing_invites").first())).toMatchObject({ status: "expired" });
+    expect(await owner.as.query(api.pairing.validate_my_pairing_invite, { p_invite_id: id, p_invite_code: "ABC123" })).toEqual([
       { invite_id: id, status: "expired", expires_at: inDays(7) },
     ]);
   });

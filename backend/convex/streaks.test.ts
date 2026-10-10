@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { liveInstancesFor, seedCatalog, textQuestions } from "./daily.setup";
 import { newUuid } from "./lib/ids";
+import { applyStreakRestore, detectStreakBreak } from "./lib/streaks";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestUser } from "./test.setup";
 
 const CLIENT_ID = newUuid();
@@ -47,7 +48,7 @@ async function streakCouple() {
 describe("get_couple_streak", () => {
   test("returns one row with zero counts before any activity", async () => {
     const { a } = await streakCouple();
-    expect(await a.as.mutation(api.streaks.get_couple_streak, {})).toEqual([
+    expect(await a.as.query(api.streaks.get_couple_streak, {})).toEqual([
       {
         current_count: 0,
         longest_count: 0,
@@ -63,21 +64,21 @@ describe("get_couple_streak", () => {
 
   test("needs a signed-in user in an entitled couple", async () => {
     const t = newTest();
-    await expect(t.mutation(api.streaks.get_couple_streak, {})).rejects.toThrow(/42501.*authenticated user required/);
+    await expect(t.query(api.streaks.get_couple_streak, {})).rejects.toThrow(/42501.*authenticated user required/);
     const lonely = await createSignedInUser(t);
-    await expect(lonely.as.mutation(api.streaks.get_couple_streak, {})).rejects.toThrow(
+    await expect(lonely.as.query(api.streaks.get_couple_streak, {})).rejects.toThrow(
       /42501.*active entitled couple access is required/,
     );
   });
 
-  test("a streak that missed its deadline reads zero and opens a restore offer", async () => {
+  test("a streak that missed its deadline reads zero with a restore offer", async () => {
     const { t, a, b } = await streakCouple();
     await answerAll(t, a);
     await answerAll(t, b);
-    expect((await a.as.mutation(api.streaks.get_couple_streak, {}))[0].current_count).toBe(1);
+    expect((await a.as.query(api.streaks.get_couple_streak, {}))[0].current_count).toBe(1);
     // The deadline is local midnight two days after the qualifying day: 2026-10-11T22:00Z in Oslo.
     vi.setSystemTime(new Date("2026-10-12T00:00:00.000Z"));
-    const [broken] = await a.as.mutation(api.streaks.get_couple_streak, {});
+    const [broken] = await a.as.query(api.streaks.get_couple_streak, {});
     expect(broken).toMatchObject({
       current_count: 0,
       restore_available: true,
@@ -85,6 +86,149 @@ describe("get_couple_streak", () => {
       restore_deadline: "2026-10-12T22:00:00.000Z",
       current_user_contributed_today: false,
     });
+  });
+});
+
+async function bothQualified() {
+  const ctx = await streakCouple();
+  await answerAll(ctx.t, ctx.a);
+  await answerAll(ctx.t, ctx.b);
+  const state = () => ctx.t.run((db) => db.db.query("streak_states").first());
+  return { ...ctx, state };
+}
+
+describe("streak break without a write", () => {
+  test("the query reports the break virtually, then the cron stores the same state", async () => {
+    const { t, a, state } = await bothQualified();
+    // The deadline is 2026-10-11T22:00Z, so the restore offer runs to 2026-10-12T22:00Z.
+    vi.setSystemTime(new Date("2026-10-12T00:00:00.000Z"));
+    const virtual = await a.as.query(api.streaks.get_couple_streak, {});
+    expect(virtual[0]).toMatchObject({
+      current_count: 0,
+      restorable_count: 1,
+      restore_available: true,
+      restore_deadline: "2026-10-12T22:00:00.000Z",
+    });
+    // The query wrote nothing.
+    expect(await state()).toMatchObject({ current_count: 1, restorable_count: 0, restore_available: false });
+
+    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    expect(await state()).toMatchObject({
+      current_count: 1,
+      restorable_count: 1,
+      restore_available: true,
+      restore_deadline: "2026-10-12T22:00:00.000Z",
+    });
+    expect(await a.as.query(api.streaks.get_couple_streak, {})).toEqual(virtual);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("an expired offer agrees too", async () => {
+    const { t, a } = await bothQualified();
+    vi.setSystemTime(new Date("2026-10-13T00:00:00.000Z"));
+    const virtual = await a.as.query(api.streaks.get_couple_streak, {});
+    expect(virtual[0]).toMatchObject({ current_count: 0, restorable_count: 1, restore_available: false });
+    await t.run(async (ctx) => {
+      const row = (await ctx.db.query("streak_states").first())!;
+      await detectStreakBreak(ctx, row.couple_id);
+    });
+    expect(await a.as.query(api.streaks.get_couple_streak, {})).toEqual(virtual);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a stale stored deadline is re-resolved in memory without a write", async () => {
+    const { t, a, state } = await bothQualified();
+    vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
+    await t.run(async (ctx) => {
+      const row = (await ctx.db.query("streak_states").first())!;
+      await ctx.db.patch(row._id, { next_activity_deadline_at: "2026-10-11T00:00:00.000Z" });
+    });
+    const [streak] = await a.as.query(api.streaks.get_couple_streak, {});
+    expect(streak).toMatchObject({ current_count: 1, restorable_count: 0, restore_available: false });
+    expect((await state())!.next_activity_deadline_at).toBe("2026-10-11T00:00:00.000Z");
+    // The cron stores the corrected deadline and does not open an offer.
+    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    expect(await state()).toMatchObject({ next_activity_deadline_at: "2026-10-11T22:00:00.000Z", restorable_count: 0 });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("already-broken streaks and ended couples don't use up the cron's batch", async () => {
+    const { t, state } = await bothQualified();
+    vi.setSystemTime(new Date("2026-10-12T00:00:00.000Z"));
+    // Older rows whose deadlines sit before ours in the index: ended couples and broken streaks.
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 500; i++) {
+        // An unbroken streak of a couple that no longer exists or is not active.
+        await ctx.db.insert("streak_states", {
+          couple_id: crypto.randomUUID(),
+          current_count: 3,
+          longest_count: 3,
+          restore_available: false,
+          restorable_count: 0,
+          next_activity_deadline_at: "2026-10-11T01:00:00.000Z",
+          updated_at: "2026-10-11T01:00:00.000Z",
+        });
+      }
+      for (let i = 0; i < 500; i++) {
+        await ctx.db.insert("streak_states", {
+          couple_id: crypto.randomUUID(),
+          current_count: 3,
+          longest_count: 3,
+          restore_available: true,
+          restorable_count: 3,
+          next_activity_deadline_at: "2026-10-11T01:00:00.000Z",
+          updated_at: "2026-10-11T01:00:00.000Z",
+        });
+      }
+    });
+    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    expect(await state()).toMatchObject({ restorable_count: 1, restore_available: true });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("the cron leaves a streak that already has an offer alone", async () => {
+    const { t, state } = await bothQualified();
+    vi.setSystemTime(new Date("2026-10-12T00:00:00.000Z"));
+    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    const first = await state();
+    vi.setSystemTime(new Date("2026-10-12T00:05:00.000Z"));
+    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    expect(await state()).toEqual(first);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a restore works when only the deadline passed and the cron has not run", async () => {
+    const { t, couple, state } = await bothQualified();
+    vi.setSystemTime(new Date("2026-10-12T00:00:00.000Z"));
+    expect(await state()).toMatchObject({ restorable_count: 0 });
+    const result = await t.run((ctx) =>
+      applyStreakRestore(ctx, {
+        couple_id: couple.coupleId,
+        purchaser_user_id: couple.first.userId,
+        product_id: newUuid(),
+        environment: "sandbox",
+        transaction_id: "restore-before-cron",
+      }),
+    );
+    expect(result).toEqual({ ok: true, restoredCount: 1, replayed: false });
+    expect(await state()).toMatchObject({ current_count: 1, restorable_count: 0, restore_available: false });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a restore after the offer expired is refused", async () => {
+    const { t, couple } = await bothQualified();
+    vi.setSystemTime(new Date("2026-10-13T00:00:00.000Z"));
+    const result = await t.run((ctx) =>
+      applyStreakRestore(ctx, {
+        couple_id: couple.coupleId,
+        purchaser_user_id: couple.first.userId,
+        product_id: newUuid(),
+        environment: "sandbox",
+        transaction_id: "restore-too-late",
+      }),
+    );
+    expect(result).toEqual({ ok: false, error: "No streak is available to restore", status: 409 });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
 
@@ -136,7 +280,7 @@ describe("enqueue_due_streak_reminders", () => {
     await answerAll(t, a);
     await answerAll(t, b);
     vi.setSystemTime(new Date("2026-10-12T00:00:00.000Z"));
-    await a.as.mutation(api.streaks.get_couple_streak, {});
+    await a.as.query(api.streaks.get_couple_streak, {});
     expect(await t.mutation(internal.streaks.enqueue_due_streak_reminders, {})).toBe(0);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });

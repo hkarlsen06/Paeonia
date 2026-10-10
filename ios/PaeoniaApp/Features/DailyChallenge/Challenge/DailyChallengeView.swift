@@ -141,6 +141,7 @@ struct DailyChallengeScreen: View {
                 viewModel: viewModel.makeChatViewModel(question: question),
                 participants: viewModel.participants
             )
+            .id(question.id)
         }
         .onChange(of: viewModel.notice) { _, notice in
             showBanner(for: notice)
@@ -211,15 +212,18 @@ struct DailyChallengeScreen: View {
             highlightedQuestionID = questionID
         }
 
-        focusedQuestionID.wrappedValue = nil
-
+        // Clearing the focused id changes this task's id and cancels it, so keep
+        // the id until the highlight time is over.
         try? await Task.sleep(for: .seconds(2))
-        guard highlightedQuestionID == questionID else {
+        guard !Task.isCancelled else {
             return
         }
 
         withAnimation(PaeoniaMotion.stateChange) {
-            highlightedQuestionID = nil
+            if highlightedQuestionID == questionID {
+                highlightedQuestionID = nil
+            }
+            focusedQuestionID.wrappedValue = nil
         }
     }
 }

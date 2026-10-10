@@ -138,6 +138,137 @@ struct MemoriesViewModelTests {
         #expect(counter.count >= 1)
     }
 
+    @Test func observeStoreChangesShowsAPartnersMemoryAndRemovesItWhenHidden() async throws {
+        let env = makeEnvironment()
+        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
+        let observer = Task { await env.viewModel.observeStoreChanges() }
+        let memoryID = UUID()
+        func row(deletedAt: Date? = nil, revision: Int) -> MemoryRemoteRow {
+            .fixture(
+                ownerUserID: env.userID,
+                memoryID: memoryID,
+                coupleID: env.coupleID,
+                title: "From my partner",
+                revision: revision,
+                deletedAt: deletedAt,
+                syncUpdatedAt: Date(timeIntervalSince1970: 100)
+            )
+        }
+
+        try await env.memoryStore.saveRemote([row(revision: 1)], ownerUserID: env.userID, mergePolicy: .preserveLocalChanges)
+        await waitUntil { env.viewModel.record(for: memoryID) != nil }
+        #expect(env.viewModel.record(for: memoryID)?.snapshot.title == "From my partner")
+
+        try await env.memoryStore.saveRemote(
+            [row(deletedAt: Date(timeIntervalSince1970: 200), revision: 2)],
+            ownerUserID: env.userID,
+            mergePolicy: .preserveLocalChanges
+        )
+        await waitUntil { env.viewModel.record(for: memoryID) == nil }
+        #expect(env.viewModel.record(for: memoryID) == nil)
+        observer.cancel()
+    }
+
+    @Test func observeStoreChangesIgnoresAnotherUsersWrites() async throws {
+        let env = makeEnvironment()
+        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
+        let observer = Task { await env.viewModel.observeStoreChanges() }
+        let otherUserID = UUID()
+        let memoryID = UUID()
+
+        try await env.memoryStore.saveRemote(
+            [.fixture(
+                ownerUserID: otherUserID,
+                memoryID: memoryID,
+                coupleID: env.coupleID,
+                title: "Not mine",
+                syncUpdatedAt: Date(timeIntervalSince1970: 100)
+            )],
+            ownerUserID: otherUserID,
+            mergePolicy: .preserveLocalChanges
+        )
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(env.viewModel.timeline.isEmpty)
+        observer.cancel()
+    }
+
+    // MARK: - New memory draft
+
+    @Test func draftIsSavedPerUserAndRestoredWhenTheSessionReloads() async {
+        let store = makeIsolatedMemoryDraftStore()
+        let first = makeEnvironment(draftStore: store)
+        await first.viewModel.configure(currentUserID: first.userID, coupleID: first.coupleID)
+        first.viewModel.updateDraft(MemoryDraft(title: "Lake", note: "Cold water"))
+
+        // A new view model stands in for the tab being torn down and rebuilt.
+        let second = makeEnvironment(draftStore: store)
+        #expect(second.viewModel.draft.isEmpty)
+        await second.viewModel.configure(currentUserID: first.userID, coupleID: first.coupleID)
+
+        #expect(second.viewModel.draft.title == "Lake")
+        #expect(second.viewModel.draft.note == "Cold water")
+    }
+
+    @Test func draftDoesNotLeakToAnotherUser() async {
+        let store = makeIsolatedMemoryDraftStore()
+        let env = makeEnvironment(draftStore: store)
+        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
+        env.viewModel.updateDraft(MemoryDraft(title: "Private", note: "Mine"))
+
+        await env.viewModel.configure(currentUserID: UUID(), coupleID: env.coupleID)
+        #expect(env.viewModel.draft.isEmpty)
+
+        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
+        #expect(env.viewModel.draft.title == "Private")
+    }
+
+    @Test func savingTheMemoryClearsTheSavedDraft() async {
+        let store = makeIsolatedMemoryDraftStore()
+        let env = makeEnvironment(draftStore: store)
+        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
+        env.viewModel.updateDraft(MemoryDraft(title: "Trip", note: "Great"))
+        #expect(store.draft(for: env.userID) != nil)
+
+        let saved = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Great", photos: [])
+
+        #expect(saved)
+        #expect(env.viewModel.draft.isEmpty)
+        #expect(store.draft(for: env.userID) == nil)
+    }
+
+    @Test func aFailedSaveKeepsTheSavedDraft() async {
+        let store = makeIsolatedMemoryDraftStore()
+        let env = makeEnvironment(
+            uploader: StubMemoryMediaUploader(shouldFail: true),
+            draftStore: store
+        )
+        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
+        env.viewModel.updateDraft(MemoryDraft(title: "Trip", photos: [makeImageData()]))
+
+        let saved = await env.viewModel.createMemory(
+            title: "Trip",
+            date: "2026-06-30",
+            note: "",
+            photos: [makeImageData()]
+        )
+
+        #expect(!saved)
+        #expect(store.draft(for: env.userID)?.title == "Trip")
+        #expect(store.draft(for: env.userID)?.photos.count == 1)
+    }
+
+    @Test func discardingTheDraftClearsTheSavedCopy() async {
+        let store = makeIsolatedMemoryDraftStore()
+        let env = makeEnvironment(draftStore: store)
+        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
+        env.viewModel.updateDraft(MemoryDraft(title: "Trip", note: "Great"))
+
+        env.viewModel.updateDraft(MemoryDraft())
+
+        #expect(store.draft(for: env.userID) == nil)
+    }
+
     // MARK: - Environment
 
     private struct Environment {
@@ -149,7 +280,10 @@ struct MemoriesViewModelTests {
         let coupleID: UUID
     }
 
-    private func makeEnvironment(uploader: (any MemoryMediaUploading)? = nil) -> Environment {
+    private func makeEnvironment(
+        uploader: (any MemoryMediaUploading)? = nil,
+        draftStore: (any MemoryDraftStoring)? = nil
+    ) -> Environment {
         let memoryStore = InMemoryMemoryRecordRepository()
         let pendingStore = InMemoryPendingSyncOperationRepository()
         let service = MemoryDataService(memoryStore: memoryStore, pendingOperationStore: pendingStore)
@@ -158,7 +292,8 @@ struct MemoriesViewModelTests {
             memoryService: service,
             operationProvider: StubOperationProvider(),
             mediaUploader: uploader,
-            mediaImageCache: imageCache
+            mediaImageCache: imageCache,
+            draftStore: draftStore ?? makeIsolatedMemoryDraftStore()
         )
         return Environment(
             viewModel: viewModel,
@@ -234,4 +369,16 @@ private actor StubMemoryMediaUploader: MemoryMediaUploading {
         }
         return MemoryMediaUploadResult(memoryMediaID: memoryMediaID, mediaAssetID: UUID())
     }
+}
+
+/// A draft store backed by a throwaway defaults suite and temp directory, so tests never
+/// touch the app's real drafts.
+@MainActor
+func makeIsolatedMemoryDraftStore() -> LocalMemoryDraftStore {
+    let name = "MemoryDraftTests-\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: name) ?? .standard
+    defaults.removePersistentDomain(forName: name)
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(name, isDirectory: true)
+    return LocalMemoryDraftStore(defaults: defaults, directoryURL: directory)
 }

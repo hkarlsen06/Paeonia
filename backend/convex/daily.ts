@@ -1,10 +1,11 @@
 import { v } from "convex/values";
-import { internalMutation, mutation, type MutationCtx } from "./_generated/server";
-import { getCurrentEntitledCoupleId, getEntitledCoupleIdForUser } from "./lib/access";
+import type { Doc } from "./_generated/dataModel";
+import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
+import { canAccessCoupleContent, getCurrentEntitledCoupleId, getEntitledCoupleIdForUser } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { runClientOperation } from "./lib/clientOperations";
-import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
-import { getByUuid } from "./lib/db";
+import { findCoupleDayAt, getOrCreateCoupleDayAt } from "./lib/coupleDays";
+import { getByUuid, type ReaderCtx } from "./lib/db";
 import {
   getDailyAnswerDetails,
   getDailyAnswerDetailsForContext,
@@ -19,6 +20,7 @@ import {
 } from "./lib/dailyAnswers";
 import {
   ensureDailyChallengeSlots,
+  getDailyQuestionsForCoupleDay,
   getDailyQuestionsHistory,
   getTodayDailyQuestionsForContext,
   insertDailyQuestionInstance,
@@ -27,12 +29,17 @@ import {
 } from "./lib/dailyQuestions";
 import { fail } from "./lib/errors";
 import { newUuid, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
-import { getCoupleStreakForCouple, getCoupleStreakParticipationForUser } from "./lib/streaks";
+import {
+  getCoupleStreakForCouple,
+  getCoupleStreakParticipationForDay,
+  readCoupleStreak,
+  type CoupleStreak,
+} from "./lib/streaks";
 import { addDaysToInstant, nowIso } from "./lib/time";
 
 /**
- * Daily questions and answers. Every app-callable function is a mutation, including
- * reads, because the iOS client only calls /api/mutation. Return values keep the
+ * Daily questions and answers. Writes are mutations. Reads are queries, so the iOS
+ * client can both call them once and subscribe to them. Return values keep the
  * shape PostgREST returned for the Supabase RPCs.
  */
 
@@ -69,7 +76,7 @@ function operationFrom(args: OperationArgs): ClientOperationArgs {
 
 // ---- catalog ----
 
-export const get_active_question_catalog = mutation({
+export const get_active_question_catalog = query({
   args: { p_locale: nullableString },
   handler: async (ctx, args) => {
     await requireUserId(ctx);
@@ -128,10 +135,10 @@ export const get_active_question_catalog = mutation({
 
 // ---- today's challenge ----
 
-async function startChallenge(ctx: MutationCtx, userId: string, args: OperationArgs): Promise<void> {
+async function startChallenge(ctx: MutationCtx, userId: string, args: OperationArgs): Promise<string> {
   const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
   const operation = operationFrom(args);
-  await runClientOperation(
+  const stored = await runClientOperation(
     ctx,
     userId,
     {
@@ -149,20 +156,21 @@ async function startChallenge(ctx: MutationCtx, userId: string, args: OperationA
       return { couple_day_id: coupleDayId };
     },
   );
+  return stored.couple_day_id;
 }
 
 async function shuffleQuestion(
   ctx: MutationCtx,
   userId: string,
   args: OperationArgs & { p_slot_number: number },
-): Promise<void> {
+): Promise<string | null> {
   const slot = args.p_slot_number;
   if (!Number.isInteger(slot) || slot < 1 || slot > 3) {
     fail("23514", "slot number is out of range");
   }
   const operation = operationFrom(args);
   const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-  await runClientOperation(
+  const stored = await runClientOperation(
     ctx,
     userId,
     {
@@ -235,12 +243,14 @@ async function shuffleQuestion(
         skipped_at: now,
         exclude_until: addDaysToInstant(now, SHUFFLE_EXCLUDE_DAYS),
       });
-      return { replacement_instance_id: replacementId };
+      return { replacement_instance_id: replacementId, couple_day_id: coupleDayId };
     },
   );
+  // Responses stored before this field existed have no day.
+  return (stored as { couple_day_id?: string }).couple_day_id ?? null;
 }
 
-async function todayQuestions(ctx: MutationCtx, userId: string): Promise<DailyQuestionRow[]> {
+async function todayQuestions(ctx: ReaderCtx, userId: string): Promise<DailyQuestionRow[]> {
   const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
   return await getTodayDailyQuestionsForContext(ctx, userId, coupleId);
 }
@@ -249,40 +259,78 @@ function byString(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** Port of `internal.get_today_daily_challenge_snapshot`: one row with the questions, answer details, and streak. */
-async function todaySnapshot(ctx: MutationCtx, userId: string) {
-  const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-  const questions = await getTodayDailyQuestionsForContext(ctx, userId, coupleId);
+/**
+ * The snapshot row. `couple_day_id`, `local_date`, `starts_at`, and `ends_at` describe the couple day
+ * the snapshot is for (null when today has no couple day yet), so the client knows when to start a new day.
+ */
+async function snapshotRow(
+  ctx: ReaderCtx,
+  userId: string,
+  coupleId: string,
+  source: { kind: "today" } | { kind: "day"; day: Doc<"couple_days"> },
+  streak: CoupleStreak,
+) {
+  const now = nowIso();
+  const day = source.kind === "day" ? source.day : await findCoupleDayAt(ctx, coupleId, now);
+  const questions =
+    source.kind === "day"
+      ? await getDailyQuestionsForCoupleDay(ctx, userId, source.day)
+      : await getTodayDailyQuestionsForContext(ctx, userId, coupleId);
   const answerDetails = await getDailyAnswerDetailsForContext(
     ctx,
     questions.map((row) => row.couple_day_id),
     userId,
     coupleId,
   );
-  const streak = await getCoupleStreakForCouple(ctx, coupleId);
-  const participation = await getCoupleStreakParticipationForUser(ctx, coupleId, userId, nowIso());
+  const participation = day
+    ? await getCoupleStreakParticipationForDay(ctx, coupleId, userId, day.id)
+    : { current_user_contributed_today: false, partner_contributed_today: false };
+  questions.sort((a, b) => {
+    if (a.is_current_day !== b.is_current_day) return a.is_current_day ? -1 : 1;
+    return (
+      byString(b.starts_at, a.starts_at) ||
+      byString(a.seeded_for_user_id, b.seeded_for_user_id) ||
+      a.slot_number - b.slot_number ||
+      byString(a.instance_id, b.instance_id)
+    );
+  });
+  answerDetails.sort(
+    (a, b) =>
+      byString(a.couple_day_id, b.couple_day_id) ||
+      a.slot_number - b.slot_number ||
+      byString(a.answered_at, b.answered_at) ||
+      byString(a.answer_id, b.answer_id),
+  );
+  // A day snapshot must not change with the clock, so its generated_at is the newest
+  // data timestamp. The iOS decoder needs the field, so it cannot be dropped.
+  const generatedAt =
+    source.kind === "day"
+      ? [source.day.starts_at, ...answerDetails.map((row) => row.answered_at)].reduce((a, b) => (a > b ? a : b))
+      : now;
   return [
     {
-      questions: questions.sort((a, b) => {
-        if (a.is_current_day !== b.is_current_day) return a.is_current_day ? -1 : 1;
-        return (
-          byString(b.starts_at, a.starts_at) ||
-          byString(a.seeded_for_user_id, b.seeded_for_user_id) ||
-          a.slot_number - b.slot_number ||
-          byString(a.instance_id, b.instance_id)
-        );
-      }),
-      answer_details: answerDetails.sort(
-        (a, b) =>
-          byString(a.couple_day_id, b.couple_day_id) ||
-          a.slot_number - b.slot_number ||
-          byString(a.answered_at, b.answered_at) ||
-          byString(a.answer_id, b.answer_id),
-      ),
+      questions,
+      answer_details: answerDetails,
       streak: { ...streak, ...participation },
-      generated_at: nowIso(),
+      generated_at: generatedAt,
+      couple_day_id: day?.id ?? null,
+      local_date: day?.local_date ?? null,
+      starts_at: day?.starts_at ?? null,
+      ends_at: day?.ends_at ?? null,
     },
   ];
+}
+
+/**
+ * Port of `internal.get_today_daily_challenge_snapshot` for the mutations: the snapshot of the couple day
+ * the operation targeted, or today when it is unknown. Also stores a restore offer if the streak just broke.
+ */
+async function snapshotAfterOperation(ctx: MutationCtx, userId: string, coupleDayId: string | null) {
+  const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+  const streak = await getCoupleStreakForCouple(ctx, coupleId);
+  const day = coupleDayId === null ? null : await getByUuid(ctx, "couple_days", coupleDayId);
+  const source = day && day.couple_id === coupleId ? ({ kind: "day", day } as const) : ({ kind: "today" } as const);
+  return await snapshotRow(ctx, userId, coupleId, source, streak);
 }
 
 export const start_daily_challenge = mutation({
@@ -298,17 +346,46 @@ export const start_daily_challenge_snapshot = mutation({
   args: clientOperationArgs,
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
-    await startChallenge(ctx, userId, args);
-    return await todaySnapshot(ctx, userId);
+    const coupleDayId = await startChallenge(ctx, userId, args);
+    return await snapshotAfterOperation(ctx, userId, coupleDayId);
   },
 });
 
-export const get_today_daily_challenge_snapshot = mutation({
-  args: {},
-  handler: async (ctx) => await todaySnapshot(ctx, await requireUserId(ctx)),
+/**
+ * Today's snapshot by the server clock. A query, so it is right for one-shot reads. Convex reruns a query only
+ * when data it read changes, so a result that depends on the clock can come back stale after midnight, even to a
+ * new subscription with the same arguments. `p_day_key` is ignored. A client changes it once per day (for
+ * example to the previous day's `ends_at`) so each day is a separate cached query. Subscribers that know their
+ * couple day should use `get_daily_challenge_snapshot` instead.
+ */
+export const get_today_daily_challenge_snapshot = query({
+  args: { p_day_key: v.optional(v.string()) },
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+    return await snapshotRow(ctx, userId, coupleId, { kind: "today" }, await readCoupleStreak(ctx, coupleId));
+  },
 });
 
-export const get_today_daily_questions = mutation({
+/**
+ * The snapshot for one couple day, built only from stored data (apart from the streak counts, which read the
+ * clock). Every write that changes it touches a row it reads, so a subscription stays current until `ends_at`.
+ * After that the client calls `start_daily_challenge_snapshot` and subscribes to the new `couple_day_id`.
+ */
+export const get_daily_challenge_snapshot = query({
+  args: { p_couple_day_id: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const day = await getByUuid(ctx, "couple_days", uuidArg(args.p_couple_day_id));
+    // An unknown day and a day of another couple fail the same way, so ids do not leak.
+    if (!day || !(await canAccessCoupleContent(ctx, userId, day.couple_id))) {
+      return fail("42501", "active entitled couple access is required");
+    }
+    return await snapshotRow(ctx, userId, day.couple_id, { kind: "day", day }, await readCoupleStreak(ctx, day.couple_id));
+  },
+});
+
+export const get_today_daily_questions = query({
   args: {},
   handler: async (ctx) => await todayQuestions(ctx, await requireUserId(ctx)),
 });
@@ -326,8 +403,8 @@ export const shuffle_daily_question_snapshot = mutation({
   args: { p_slot_number: v.number(), ...clientOperationArgs },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
-    await shuffleQuestion(ctx, userId, args);
-    return await todaySnapshot(ctx, userId);
+    const coupleDayId = await shuffleQuestion(ctx, userId, args);
+    return await snapshotAfterOperation(ctx, userId, coupleDayId);
   },
 });
 
@@ -368,13 +445,13 @@ export const update_daily_answer_partner_choice = mutation({
 
 // ---- answer reads ----
 
-export const get_daily_answer_details = mutation({
+export const get_daily_answer_details = query({
   args: { p_couple_day_id: v.string() },
   handler: async (ctx, args) =>
     await getDailyAnswerDetails(ctx, await requireUserId(ctx), uuidArg(args.p_couple_day_id)),
 });
 
-export const get_daily_answer_details_for_couple_days = mutation({
+export const get_daily_answer_details_for_couple_days = query({
   args: { p_couple_day_ids: v.optional(v.union(v.null(), v.array(v.string()))) },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
@@ -384,13 +461,13 @@ export const get_daily_answer_details_for_couple_days = mutation({
   },
 });
 
-export const get_daily_answer_reveal_state = mutation({
+export const get_daily_answer_reveal_state = query({
   args: { p_couple_day_id: v.string() },
   handler: async (ctx, args) =>
     await getDailyAnswerRevealState(ctx, await requireUserId(ctx), uuidArg(args.p_couple_day_id)),
 });
 
-export const get_daily_questions_history = mutation({
+export const get_daily_questions_history = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
@@ -398,7 +475,7 @@ export const get_daily_questions_history = mutation({
   },
 });
 
-export const get_daily_answer_history_details = mutation({
+export const get_daily_answer_history_details = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
@@ -406,7 +483,7 @@ export const get_daily_answer_history_details = mutation({
   },
 });
 
-export const get_question_answer_history = mutation({
+export const get_question_answer_history = query({
   args: { p_question_id: v.string() },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);

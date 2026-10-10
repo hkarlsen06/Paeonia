@@ -8,6 +8,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
     private let minimumForegroundSyncInterval: TimeInterval
     private let syncTimeoutNanoseconds: UInt64
     private let failedRunRetryDelay: TimeInterval
+    private let liveSync: (any LiveSyncCoordinating)?
 
     private var session: SyncSession?
     private var hasStarted = false
@@ -34,7 +35,6 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         stateStore: (any SyncStatePersisting)? = nil,
         pendingOperationStore: (any PendingSyncOperationPersisting)? = nil,
         accessSnapshotStore: (any AccessSyncSnapshotPersisting)? = nil,
-        relationshipEventStore: (any RelationshipSyncEventPersisting)? = nil,
         locationVisibilityStore: (any LocationVisibilitySnapshotPersisting)? = nil,
         ownLocationStore: (any OwnLocationSnapshotPersisting)? = nil,
         memoryStore: (any MemoryRecordPersisting)? = nil,
@@ -43,12 +43,12 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         pendingOperationHandlers: [any PendingSyncOperationHandling] = [],
         minimumForegroundSyncInterval: TimeInterval = 60,
         syncTimeoutNanoseconds: UInt64 = 30_000_000_000,
-        failedRunRetryDelay: TimeInterval = 60
+        failedRunRetryDelay: TimeInterval = 60,
+        liveSync: (any LiveSyncCoordinating)? = nil
     ) {
         let needsDefaultStreamStores = streams.isEmpty
         && (
             accessSnapshotStore == nil
-            || relationshipEventStore == nil
             || locationVisibilityStore == nil
             || ownLocationStore == nil
             || memoryStore == nil
@@ -71,7 +71,6 @@ actor PaeoniaSyncService: PaeoniaSyncing {
 
         if streams.isEmpty {
             guard let resolvedAccessSnapshotStore = accessSnapshotStore ?? fallbackStores?.accessSnapshotStore,
-                  let resolvedRelationshipEventStore = relationshipEventStore ?? fallbackStores?.relationshipEventStore,
                   let resolvedLocationVisibilityStore = locationVisibilityStore
                     ?? fallbackStores?.locationVisibilityStore,
                   let resolvedOwnLocationStore = ownLocationStore ?? fallbackStores?.ownLocationStore,
@@ -81,11 +80,9 @@ actor PaeoniaSyncService: PaeoniaSyncing {
 
             self.streams = PaeoniaSyncServiceDefaults.makeStreams(
                 accessSnapshotStore: resolvedAccessSnapshotStore,
-                relationshipEventStore: resolvedRelationshipEventStore,
                 locationVisibilityStore: resolvedLocationVisibilityStore,
                 ownLocationStore: resolvedOwnLocationStore,
                 memoryStore: resolvedMemoryStore,
-                localPrivacyPurger: resolvedLocalPrivacyPurger,
                 pendingOperationHandlers: pendingOperationHandlers
             )
         } else {
@@ -103,6 +100,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         self.minimumForegroundSyncInterval = minimumForegroundSyncInterval
         self.syncTimeoutNanoseconds = syncTimeoutNanoseconds
         self.failedRunRetryDelay = failedRunRetryDelay
+        self.liveSync = liveSync
     }
 
     func configure(session: SyncSession?) {
@@ -217,6 +215,9 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         ownerUserID: UUID,
         permanently: Bool
     ) async -> LocalPrivacyPurgeResult {
+        // Live feeds write to the same store. Stop them before the purge deletes
+        // rows, and accept new sessions again only after it finishes.
+        await liveSync?.pause()
         await quiesceActiveWorkForPrivacyPurge()
         let result = await localPrivacyPurger.purge(
             ownerUserID: ownerUserID,
@@ -225,6 +226,7 @@ actor PaeoniaSyncService: PaeoniaSyncing {
                 : .relationshipAccessHidden
         )
         finishPrivacyPurgeQuiescence()
+        await liveSync?.resume()
         return result
     }
 

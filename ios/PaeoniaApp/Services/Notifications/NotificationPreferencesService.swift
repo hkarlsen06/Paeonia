@@ -12,7 +12,7 @@ nonisolated struct NotificationPreferences: Equatable, Sendable {
     var memoriesEnabled = true
 }
 
-nonisolated enum NotificationPreferenceKind: Equatable, Sendable {
+nonisolated enum NotificationPreferenceKind: Hashable, Sendable {
     case streakReminders
     case dailyChallenge
     case partnerAnswered
@@ -47,6 +47,17 @@ nonisolated protocol NotificationPreferencesProviding: Sendable {
 
     /// Persists one user-facing notification toggle.
     func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled: Bool) async throws
+
+    /// Emits the preferences now and again whenever they change on the server.
+    /// The stream ends when the consuming task is cancelled.
+    func notificationPreferenceUpdates() -> AsyncStream<NotificationPreferences>
+}
+
+nonisolated extension NotificationPreferencesProviding {
+    /// Providers without a live source emit nothing.
+    func notificationPreferenceUpdates() -> AsyncStream<NotificationPreferences> {
+        AsyncStream { $0.finish() }
+    }
 }
 
 actor ConvexNotificationPreferencesService: NotificationPreferencesProviding {
@@ -57,11 +68,19 @@ actor ConvexNotificationPreferencesService: NotificationPreferencesProviding {
     }
 
     func loadNotificationPreferences() async throws -> NotificationPreferences {
-        let row: NotificationPreferencesRow = try await client.mutation(
+        let row: NotificationPreferencesRow = try await client.query(
             "identity:get_notification_preferences"
         )
 
         return row.preferences
+    }
+
+    nonisolated func notificationPreferenceUpdates() -> AsyncStream<NotificationPreferences> {
+        ScreenLiveUpdates.values(
+            "identity:get_notification_preferences",
+            as: NotificationPreferencesRow.self,
+            map: \.preferences
+        )
     }
 
     func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled: Bool) async throws {

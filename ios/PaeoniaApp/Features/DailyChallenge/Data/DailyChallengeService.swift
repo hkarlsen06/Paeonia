@@ -42,15 +42,18 @@ actor DailyChallengeService: DailyChallengeServicing {
     /// implementation detail of the live service — it is not part of the
     /// `DailyChallengeServicing` protocol, which stays unchanged.
     private let cache: any DailyChallengeSnapshotCaching
+    private let liveWrites: DailyChallengeLiveWriteClock
 
     init(
         gateway: any DailyChallengeGateway,
         locale: Locale = .current,
-        cache: (any DailyChallengeSnapshotCaching)? = nil
+        cache: (any DailyChallengeSnapshotCaching)? = nil,
+        liveWrites: DailyChallengeLiveWriteClock = .shared
     ) {
         self.gateway = gateway
         self.locale = locale
         self.cache = cache ?? FileDailyChallengeSnapshotCache.live()
+        self.liveWrites = liveWrites
     }
 
     static func live() throws -> DailyChallengeService {
@@ -61,20 +64,36 @@ actor DailyChallengeService: DailyChallengeServicing {
     }
 
     func loadToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
+        let liveWritesBefore = liveWrites.count(ownerUserID: currentUserID)
         let remote = try await gateway.loadTodaySnapshot()
         // Persist the raw row so the view model can seed itself on the next cold
-        // launch before this network call returns.
-        cache.save(remote, ownerUserID: currentUserID)
-        return makeResult(currentUserID: currentUserID, remote: remote)
+        // launch before this network call returns. A newer live result wins.
+        return makeResult(
+            currentUserID: currentUserID,
+            remote: liveWrites.saveResponse(
+                remote,
+                ownerUserID: currentUserID,
+                since: liveWritesBefore,
+                cache: cache
+            )
+        )
     }
 
     func startToday(
         currentUserID: UUID,
         operation: SyncClientOperation
     ) async throws -> DailyChallengeLoadResult {
+        let liveWritesBefore = liveWrites.count(ownerUserID: currentUserID)
         let remote = try await gateway.startDailyChallenge(operation: operation)
-        cache.save(remote, ownerUserID: currentUserID)
-        return makeResult(currentUserID: currentUserID, remote: remote)
+        return makeResult(
+            currentUserID: currentUserID,
+            remote: liveWrites.saveResponse(
+                remote,
+                ownerUserID: currentUserID,
+                since: liveWritesBefore,
+                cache: cache
+            )
+        )
     }
 
     /// Reads the couple's full answered-question history in two parallel calls — the
@@ -145,6 +164,7 @@ actor DailyChallengeService: DailyChallengeServicing {
         slotNumber: Int,
         operation: SyncClientOperation
     ) async throws -> DailyChallengeLoadResult {
+        let liveWritesBefore = liveWrites.count(ownerUserID: currentUserID)
         let remote: DailyChallengeRemoteSnapshotRow
         do {
             remote = try await gateway.shuffleQuestion(slotNumber: slotNumber, operation: operation)
@@ -157,8 +177,15 @@ actor DailyChallengeService: DailyChallengeServicing {
             }
             throw error
         }
-        cache.save(remote, ownerUserID: currentUserID)
-        return makeResult(currentUserID: currentUserID, remote: remote)
+        return makeResult(
+            currentUserID: currentUserID,
+            remote: liveWrites.saveResponse(
+                remote,
+                ownerUserID: currentUserID,
+                since: liveWritesBefore,
+                cache: cache
+            )
+        )
     }
 
     private func makeResult(
@@ -179,7 +206,28 @@ actor LiveDailyChallengeGateway: DailyChallengeGateway {
     }
 
     func loadTodaySnapshot() async throws -> DailyChallengeRemoteSnapshotRow {
-        try await snapshotMutation("daily:get_today_daily_challenge_snapshot", args: PaeoniaConvexNoArgs())
+        // A query since the backend moved it off the mutation path. The server
+        // ignores `p_day_key`, but a different key each local day is a different
+        // cached query, so a result computed before midnight is not served after it.
+        let rows: [DailyChallengeRemoteSnapshotRow] = try await client.query(
+            "daily:get_today_daily_challenge_snapshot",
+            args: DailyChallengeTodayRequest(dayKey: Self.localDayKey())
+        )
+        return Self.firstOrEmpty(rows)
+    }
+
+    private static func localDayKey(now: Date = Date()) -> String {
+        let parts = Calendar.current.dateComponents([.year, .month, .day], from: now)
+        return String(format: "%04ld-%02ld-%02ld", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+
+    private static func firstOrEmpty(_ rows: [DailyChallengeRemoteSnapshotRow]) -> DailyChallengeRemoteSnapshotRow {
+        rows.first ?? DailyChallengeRemoteSnapshotRow(
+            questions: [],
+            answerDetails: [],
+            streak: nil,
+            generatedAt: Date()
+        )
     }
 
     func startDailyChallenge(operation: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow {
@@ -194,24 +242,19 @@ actor LiveDailyChallengeGateway: DailyChallengeGateway {
         args: some Encodable
     ) async throws -> DailyChallengeRemoteSnapshotRow {
         let rows: [DailyChallengeRemoteSnapshotRow] = try await client.mutation(path, args: args)
-        return rows.first ?? DailyChallengeRemoteSnapshotRow(
-            questions: [],
-            answerDetails: [],
-            streak: nil,
-            generatedAt: Date()
-        )
+        return Self.firstOrEmpty(rows)
     }
 
     func loadHistoryQuestions() async throws -> [DailyQuestionRow] {
-        try await client.mutation("daily:get_daily_questions_history", args: PaeoniaConvexNoArgs())
+        try await client.query("daily:get_daily_questions_history", args: PaeoniaConvexNoArgs())
     }
 
     func loadHistoryAnswerDetails() async throws -> [DailyAnswerDetailRow] {
-        try await client.mutation("daily:get_daily_answer_history_details", args: PaeoniaConvexNoArgs())
+        try await client.query("daily:get_daily_answer_history_details", args: PaeoniaConvexNoArgs())
     }
 
     func loadCoupleStreak() async throws -> CoupleStreak {
-        let rows: [CoupleStreakRow] = try await client.mutation(
+        let rows: [CoupleStreakRow] = try await client.query(
             "streaks:get_couple_streak",
             args: PaeoniaConvexNoArgs()
         )
@@ -219,7 +262,7 @@ actor LiveDailyChallengeGateway: DailyChallengeGateway {
     }
 
     func loadAnswerDetails(coupleDayID: UUID) async throws -> [DailyAnswerDetailRow] {
-        try await client.mutation(
+        try await client.query(
             "daily:get_daily_answer_details",
             args: DailyAnswerDetailsRequest(coupleDayID: coupleDayID)
         )
@@ -349,6 +392,14 @@ nonisolated struct DailyChallengeShuffleLimitError: Error, Equatable, Sendable {
 /// Raised when an answer can no longer be edited because the partner has already
 /// answered the same question (so the content is revealed).
 nonisolated struct DailyChallengeEditLockedError: Error, Equatable, Sendable {}
+
+nonisolated private struct DailyChallengeTodayRequest: Encodable {
+    let dayKey: String
+
+    enum CodingKeys: String, CodingKey {
+        case dayKey = "p_day_key"
+    }
+}
 
 nonisolated private struct DailyChallengeClientOperationRequest: Encodable {
     let clientOperationID: UUID

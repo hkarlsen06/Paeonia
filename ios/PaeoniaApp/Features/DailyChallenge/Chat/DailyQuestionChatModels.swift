@@ -45,6 +45,64 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
             return $0.id.uuidString < $1.id.uuidString
         }
     }
+
+    /// Links live server copies of this device's still-sending messages to their
+    /// operations. The live query can deliver a message before the send's own
+    /// response confirms it, and the server copy carries no client operation id,
+    /// so `visibleOrdered` would show it twice.
+    ///
+    /// A server message that already has an operation id in `cached` keeps it, so
+    /// the next live result before the send's response does not drop the link. A
+    /// server message that the cache has not seen yet is matched to the oldest
+    /// sending message with the same sender and text, and takes over that message's
+    /// operation id. A message with the same text sent earlier is already in
+    /// `cached` and never matches again.
+    static func claimingPending(
+        remote: [DailyQuestionChatMessage],
+        cached: [DailyQuestionChatMessage],
+        pending: [DailyQuestionChatMessage]
+    ) -> [DailyQuestionChatMessage] {
+        let confirmed = cached.filter { !$0.isSending && !$0.sendFailed }
+        let claimedOperations = Dictionary(
+            confirmed.compactMap { message in message.clientOperationID.map { (message.id, $0) } },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let claimedOperationIDs = Set(claimedOperations.values)
+        var waiting = pending
+            .filter { message in
+                guard message.isSending, let operationID = message.clientOperationID else { return false }
+                return !claimedOperationIDs.contains(operationID)
+            }
+            .sorted { $0.createdAt < $1.createdAt }
+        guard !waiting.isEmpty || !claimedOperations.isEmpty else { return remote }
+
+        let knownIDs = Set(confirmed.map(\.id))
+        return remote.sorted { $0.createdAt < $1.createdAt }.map { message in
+            guard message.clientOperationID == nil else { return message }
+            if let operationID = claimedOperations[message.id] {
+                return message.confirmed(by: operationID)
+            }
+            guard !knownIDs.contains(message.id),
+                  let index = waiting.firstIndex(where: {
+                      $0.senderUserID == message.senderUserID && $0.body == message.body
+                  })
+            else { return message }
+            return message.confirmed(by: waiting.remove(at: index).clientOperationID)
+        }
+    }
+
+    private func confirmed(by operationID: UUID?) -> DailyQuestionChatMessage {
+        DailyQuestionChatMessage(
+            id: id,
+            threadID: threadID,
+            instanceID: instanceID,
+            senderUserID: senderUserID,
+            body: body,
+            createdAt: createdAt,
+            clientOperationID: operationID,
+            isSending: false
+        )
+    }
 }
 
 extension DailyChallengeQuestion {

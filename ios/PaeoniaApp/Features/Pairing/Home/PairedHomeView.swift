@@ -159,18 +159,15 @@ struct PairedHomeView: View {
         .zoomSource(DailyFlowZoom.home, in: zoomNamespace)
     }
 
-    @ViewBuilder
     private var milestoneAndWidget: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            VStack(spacing: PaeoniaSpacing.space16) {
-                milestoneCard
-                HomeWidgetCard(onOpen: onOpenWidgetDrawing)
-            }
-        } else {
-            HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
-                milestoneCard
-                HomeWidgetCard(onOpen: onOpenWidgetDrawing)
-            }
+        // One layout keeps the cards' identity, so a text size change doesn't
+        // reset them or close the milestone sheet.
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: PaeoniaSpacing.space16))
+        return layout {
+            milestoneCard
+            HomeWidgetCard(onOpen: onOpenWidgetDrawing)
         }
     }
 

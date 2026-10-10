@@ -188,50 +188,6 @@ struct MemoryDataLayerTests {
         #expect(payload.noteBody == "We made it.")
     }
 
-    @Test func memorySyncStreamStoresPulledRowsAndAdvancesCursor() async throws {
-        let ownerUserID = try fixedUUID("11111111-1111-1111-1111-111111111111")
-        let coupleID = try fixedUUID("22222222-2222-2222-2222-222222222222")
-        let firstMemoryID = try fixedUUID("33333333-3333-3333-3333-333333333333")
-        let secondMemoryID = try fixedUUID("44444444-4444-4444-4444-444444444444")
-        let firstRow = remoteRow(
-            ownerUserID: ownerUserID,
-            memoryID: firstMemoryID,
-            coupleID: coupleID,
-            title: "First",
-            syncUpdatedAt: Date(timeIntervalSince1970: 100)
-        )
-        let secondRow = remoteRow(
-            ownerUserID: ownerUserID,
-            memoryID: secondMemoryID,
-            coupleID: coupleID,
-            title: "Second",
-            syncUpdatedAt: Date(timeIntervalSince1970: 200)
-        )
-        let gateway = RecordingMemoryGateway(pages: [[firstRow, secondRow], []])
-        let memoryStore = InMemoryMemoryRecordRepository()
-        let stream = MemorySyncStream(
-            gateway: gateway,
-            memoryStore: memoryStore,
-            pageSize: 2
-        )
-        let context = SyncContext(
-            session: SyncSession(userID: ownerUserID, activeCoupleID: coupleID),
-            reason: .startup,
-            stateStore: InMemorySyncStateRepository(),
-            pendingOperationStore: InMemoryPendingSyncOperationRepository()
-        )
-
-        let cursor = try await stream.pull(context: context)
-        let cached = try await memoryStore.load(ownerUserID: ownerUserID, includeHidden: true)
-        let requests = await gateway.requests
-
-        #expect(Set(cached.map(\.snapshot.memoryID)) == Set([firstMemoryID, secondMemoryID]))
-        #expect(cursor == SyncCursor(updatedAt: Date(timeIntervalSince1970: 200), tieID: secondMemoryID))
-        #expect(requests.map(\.limit) == [2, 2])
-        #expect(requests.last?.updatedAfter == Date(timeIntervalSince1970: 200))
-        #expect(requests.last?.cursorMemoryID == secondMemoryID)
-    }
-
     @Test func dataServiceAdvancesLocalRevisionsForConsecutiveQueuedEdits() async throws {
         let ownerUserID = try fixedUUID("11111111-1111-1111-1111-111111111111")
         let coupleID = try fixedUUID("22222222-2222-2222-2222-222222222222")

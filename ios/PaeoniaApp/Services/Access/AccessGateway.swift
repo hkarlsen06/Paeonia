@@ -2,10 +2,6 @@ import Foundation
 
 protocol AccessGateway: Actor {
     func loadAccessSnapshot() async throws -> RemoteAccessSnapshot
-    func loadRelationshipSyncEvents(
-        after cursor: SyncCursor,
-        limit: Int
-    ) async throws -> [RemoteRelationshipSyncEvent]
     func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws
 }
 
@@ -19,26 +15,12 @@ actor LiveAccessGateway: AccessGateway {
     }
 
     func loadAccessSnapshot() async throws -> RemoteAccessSnapshot {
-        let rows: FirstRow<RemoteAccessSnapshot> = try await client.mutation("access:get_access_snapshot")
+        let rows: FirstRow<RemoteAccessSnapshot> = try await client.query("access:get_access_snapshot")
 
         return rows.row ?? RemoteAccessSnapshot(
             userEntitlement: nil,
             coupleEntitlement: nil,
             relationshipState: nil
-        )
-    }
-
-    func loadRelationshipSyncEvents(
-        after cursor: SyncCursor,
-        limit: Int
-    ) async throws -> [RemoteRelationshipSyncEvent] {
-        try await client.mutation(
-            "relationship:get_relationship_sync_events",
-            args: RelationshipSyncEventsRequest(
-                afterCreatedAt: cursor.updatedAt,
-                afterID: cursor.tieID,
-                limit: limit
-            )
         )
     }
 
@@ -51,18 +33,6 @@ actor LiveAccessGateway: AccessGateway {
             "relationship:mark_relationship_ended_notice_seen",
             args: MarkRelationshipEndedNoticeSeenRequest(coupleID: coupleID)
         )
-    }
-}
-
-nonisolated private struct RelationshipSyncEventsRequest: Encodable {
-    let afterCreatedAt: Date?
-    let afterID: UUID?
-    let limit: Int
-
-    enum CodingKeys: String, CodingKey {
-        case afterCreatedAt = "p_after_created_at"
-        case afterID = "p_after_id"
-        case limit = "p_limit"
     }
 }
 

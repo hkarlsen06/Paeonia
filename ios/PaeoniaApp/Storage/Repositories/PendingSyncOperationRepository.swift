@@ -26,6 +26,12 @@ nonisolated struct PendingSyncOperationRequest: Equatable, Sendable {
     }
 }
 
+/// `markSending` throws this when the operation was cancelled or finished after
+/// the drain read its batch.
+nonisolated enum PendingSyncOperationClaimError: Error, Equatable, Sendable {
+    case notPending
+}
+
 nonisolated struct PendingSyncOperationSnapshot: Equatable, Sendable {
     let ownerUserID: UUID
     let operation: SyncClientOperation
@@ -100,6 +106,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
             )
         )
         try context.save()
+        LocalStoreChanges.post(.pendingOperations, ownerUserID: request.ownerUserID)
     }
 
     func readyOperations(
@@ -185,9 +192,18 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
     }
 
     func markSending(clientOperationID: UUID, at date: Date) async throws {
-        try update(clientOperationID: clientOperationID) { operation in
-            operation.markSending(at: date)
+        let context = ModelContext(container)
+        guard let operation = try fetchOperation(id: clientOperationID, in: context) else {
+            return
         }
+        // The batch was read earlier. An operation cancelled or finished since then
+        // must not be sent.
+        guard operation.status != .failedTerminal, operation.status != .succeeded else {
+            throw PendingSyncOperationClaimError.notPending
+        }
+        operation.markSending(at: date)
+        try context.save()
+        LocalStoreChanges.post(.pendingOperations, ownerUserID: operation.ownerUserID)
     }
 
     func markSucceeded(clientOperationID: UUID, at date: Date) async throws {
@@ -234,6 +250,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         }
 
         try context.save()
+        LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
     }
 
     func resetInFlight(ownerUserID: UUID) async throws {
@@ -249,6 +266,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         }
 
         try context.save()
+        LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
     }
 
     private func update(
@@ -263,6 +281,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
 
         mutate(operation)
         try context.save()
+        LocalStoreChanges.post(.pendingOperations, ownerUserID: operation.ownerUserID)
     }
 
     private func fetchOperation(
@@ -302,6 +321,7 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
     private var operations: [UUID: PendingSyncOperationSnapshot] = [:]
 
     func enqueue(_ request: PendingSyncOperationRequest) async throws {
+        defer { LocalStoreChanges.post(.pendingOperations, ownerUserID: request.ownerUserID) }
         operations[request.operation.id] = operations[request.operation.id] ?? PendingSyncOperationSnapshot(
             ownerUserID: request.ownerUserID,
             operation: request.operation,
@@ -388,6 +408,9 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
     }
 
     func markSending(clientOperationID: UUID, at date: Date) async throws {
+        if let status = operations[clientOperationID]?.status, status == .failedTerminal || status == .succeeded {
+            throw PendingSyncOperationClaimError.notPending
+        }
         update(id: clientOperationID) { operation in
             snapshot(
                 from: operation,
@@ -456,6 +479,7 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
         operations = operations.filter {
             $0.value.ownerUserID != ownerUserID || $0.value.status != .succeeded
         }
+        LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
     }
 
     func resetInFlight(ownerUserID: UUID) async throws {
@@ -471,6 +495,7 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
                 completedAt: operation.completedAt
             )
         }
+        LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
     }
 
     private func update(
@@ -482,6 +507,7 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
         }
 
         operations[id] = transform(operation)
+        LocalStoreChanges.post(.pendingOperations, ownerUserID: operation.ownerUserID)
     }
 
     private func snapshot(

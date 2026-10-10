@@ -28,7 +28,7 @@ extension LiveWidgetCanvasGateway {
         createdBefore: Date?,
         createdBeforeRevisionID: UUID?
     ) async throws -> [WidgetDrawingRevisionSummary] {
-        try await client.mutation(
+        try await client.query(
             "widget:get_widget_drawing_revisions",
             args: ListWidgetDrawingRevisionsRequest(
                 canvasID: canvasID,

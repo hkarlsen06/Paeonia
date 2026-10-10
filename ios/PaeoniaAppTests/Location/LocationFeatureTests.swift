@@ -274,38 +274,6 @@ struct LocationSharingPrimerStoreTests {
     }
 }
 
-struct LocationVisibilitySyncStreamTests {
-    @Test
-    func pullStoresVisibilitySnapshotAndAdvancesCursor() async throws {
-        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
-        let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
-        let snapshot = try visibilitySnapshot(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            visibilityState: .visible,
-            partnerLocationIsStale: false
-        )
-        let gateway = RecordingLocationGateway(visibilitySnapshot: snapshot)
-        let visibilityStore = InMemoryLocationVisibilitySnapshotRepository()
-        let stream = LocationVisibilitySyncStream(
-            gateway: gateway,
-            visibilityStore: visibilityStore
-        )
-        let context = SyncContext(
-            session: SyncSession(userID: ownerUserID, activeCoupleID: coupleID),
-            reason: .manualRefresh,
-            stateStore: InMemorySyncStateRepository(),
-            pendingOperationStore: InMemoryPendingSyncOperationRepository()
-        )
-
-        let cursor = try await stream.pull(context: context)
-
-        let stored = try await visibilityStore.load(ownerUserID: ownerUserID, coupleID: coupleID)
-        #expect(stored == snapshot)
-        #expect(cursor == SyncCursor(updatedAt: snapshot.updatedAt, tieID: snapshot.coupleID))
-    }
-}
-
 struct LocationPendingOperationHandlerTests {
     @Test
     func preferenceHandlerSendsRpcPayloadAndUpdatesLocalPreference() async throws {
@@ -349,6 +317,55 @@ struct LocationPendingOperationHandlerTests {
         #expect(preferencePayloads == [payload])
         let stored = try await visibilityStore.load(ownerUserID: ownerUserID, coupleID: coupleID)
         #expect(stored?.viewerSharingEnabled == true)
+    }
+
+    @Test
+    func preferenceHandlerKeepsANewerLocalChoiceWhenAnOlderOperationSucceeds() async throws {
+        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let operation = try operation(id: "33333333-3333-3333-3333-333333333333")
+        let payload = LocationSharingPreferenceOperationPayload(
+            coupleID: coupleID,
+            isEnabled: true,
+            consentVersion: "location-sharing-v1",
+            source: .settingsToggle
+        )
+        let gateway = RecordingLocationGateway(
+            preferenceResponse: LocationSharingPreferenceUpdateResponse(
+                coupleID: coupleID,
+                userID: ownerUserID,
+                isEnabled: true,
+                enabledAt: Date(timeIntervalSince1970: 100),
+                disabledAt: nil,
+                updatedAt: Date(timeIntervalSince1970: 101)
+            )
+        )
+        let visibilityStore = InMemoryLocationVisibilitySnapshotRepository()
+        // The user turned sharing back off after this operation was queued.
+        try await visibilityStore.setViewerSharingEnabled(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            isEnabled: false,
+            updatedAt: Date(timeIntervalSince1970: 102)
+        )
+        let handler = LocationSharingPreferencePendingOperationHandler(
+            gateway: gateway,
+            visibilityStore: visibilityStore
+        )
+
+        let result = try await handler.send(
+            pendingOperation(
+                ownerUserID: ownerUserID,
+                operation: operation,
+                kind: .updateLocationSharingPreference,
+                payload: payload
+            ),
+            context: syncContext(ownerUserID: ownerUserID, coupleID: coupleID)
+        )
+
+        #expect(result == .succeeded)
+        let stored = try await visibilityStore.load(ownerUserID: ownerUserID, coupleID: coupleID)
+        #expect(stored?.viewerSharingEnabled == false)
     }
 
     @Test
@@ -634,7 +651,8 @@ struct LocationMapViewModelTests {
         let current = ownLocationSnapshot()
         let visible = try visibilitySnapshot(
             visibilityState: .visible,
-            partnerLocationIsStale: false
+            partnerLocationIsStale: false,
+            partnerLocationCapturedAt: Date()
         )
         let partnerLocation = try #require(visible.partnerLocation)
 
@@ -774,6 +792,38 @@ struct LocationMapViewModelTests {
             now: Date(timeIntervalSince1970: 1_000)
         )
         #expect(readyOperations.isEmpty)
+    }
+
+    @MainActor
+    @Test
+    func turningSharingOffCancelsQueuedLocationUploads() async throws {
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let coupleID = testUUID("22222222-2222-2222-2222-222222222222")
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let viewModel = LocationMapViewModel(
+            visibilityStore: InMemoryLocationVisibilitySnapshotRepository(),
+            ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
+            pendingOperationStore: pendingStore,
+            operationProvider: UniqueOperationProvider(),
+            locationCapture: StubLocationCapture(
+                location: LocationPoint(latitude: 59.91, longitude: 10.75, capturedAt: Date(timeIntervalSince1970: 100))
+            )
+        )
+        await viewModel.configure(identity: LocationIdentity(currentUserID: ownerUserID, coupleID: coupleID))
+        await viewModel.setSharingEnabled(true)
+        let queuedUploads = try await pendingStore.inFlightOperations(
+            ownerUserID: ownerUserID,
+            kind: .updateLatestPartnerLocation
+        )
+        #expect(queuedUploads.count == 1)
+
+        await viewModel.setSharingEnabled(false)
+
+        let remainingUploads = try await pendingStore.inFlightOperations(
+            ownerUserID: ownerUserID,
+            kind: .updateLatestPartnerLocation
+        )
+        #expect(remainingUploads.isEmpty)
     }
 
     @Test
@@ -981,7 +1031,6 @@ struct RoutineLocationThrottleTests {
 }
 
 private actor RecordingLocationGateway: LocationGateway {
-    private let visibilitySnapshot: LocationVisibilitySnapshot?
     private let preferenceResponse: LocationSharingPreferenceUpdateResponse?
     private let locationResponse: LatestPartnerLocationUpdateResponse?
     private let locationError: (any Error)?
@@ -989,22 +1038,13 @@ private actor RecordingLocationGateway: LocationGateway {
     private(set) var latestLocationPayloads: [LatestPartnerLocationOperationPayload] = []
 
     init(
-        visibilitySnapshot: LocationVisibilitySnapshot? = nil,
         preferenceResponse: LocationSharingPreferenceUpdateResponse? = nil,
         locationResponse: LatestPartnerLocationUpdateResponse? = nil,
         locationError: (any Error)? = nil
     ) {
-        self.visibilitySnapshot = visibilitySnapshot
         self.preferenceResponse = preferenceResponse
         self.locationResponse = locationResponse
         self.locationError = locationError
-    }
-
-    func loadPartnerLocationVisibility(
-        ownerUserID _: UUID,
-        coupleID _: UUID
-    ) async throws -> LocationVisibilitySnapshot? {
-        visibilitySnapshot
     }
 
     func updateLocationSharingPreference(
@@ -1042,6 +1082,11 @@ private actor IdentitySwitchVisibilityStore: LocationVisibilitySnapshotPersistin
 
     func save(_ snapshot: LocationVisibilitySnapshot) async throws {}
 
+    func saveRemote(
+        _ snapshot: LocationVisibilitySnapshot,
+        preservingLocalSharingChoiceIf hasPendingSharingOperation: Bool
+    ) async throws {}
+
     func load(ownerUserID: UUID, coupleID _: UUID) async throws -> LocationVisibilitySnapshot? {
         guard ownerUserID == suspendedOwnerUserID else { return nil }
         return await withCheckedContinuation { continuation in
@@ -1053,7 +1098,16 @@ private actor IdentitySwitchVisibilityStore: LocationVisibilitySnapshotPersistin
         ownerUserID: UUID,
         coupleID: UUID,
         isEnabled: Bool,
-        updatedAt: Date
+        updatedAt: Date,
+        isPendingConfirmation: Bool
+    ) async throws {}
+
+    func confirmViewerSharing(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        isEnabled: Bool,
+        updatedAt: Date,
+        otherChoicesPending: Bool
     ) async throws {}
 
     func delete(ownerUserID: UUID, coupleID: UUID) async throws {}

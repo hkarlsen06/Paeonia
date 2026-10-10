@@ -75,6 +75,48 @@ struct WidgetDrawingHistoryViewModelTests {
         #expect(viewModel.items[1].isMine == false)
     }
 
+    @Test func refreshNewestPrependsNewDrawingsAndKeepsTheOlderCursor() async {
+        let existing = makeSummary(createdAt: date(100))
+        let arrived = makeSummary(createdAt: date(200))
+        // The refresh page re-includes `existing`, which must not duplicate.
+        let gateway = StubGateway(canvasState: makeState(), pages: [[existing], [arrived, existing]])
+        let viewModel = makeViewModel(gateway: gateway, pageSize: 10)
+        await viewModel.loadInitialIfNeeded()
+
+        await viewModel.refreshNewest()
+
+        #expect(viewModel.items.map(\.id) == [arrived.revisionID, existing.revisionID])
+        #expect(gateway.listCursors.count == 2)
+        #expect(gateway.listCursors[1].before == nil)
+        #expect(viewModel.hasMore == false)
+    }
+
+    @Test func refreshNewestKeepsTheListWhenTheReadFails() async {
+        let existing = makeSummary(createdAt: date(100))
+        let gateway = StubGateway(canvasState: makeState(), pages: [[existing]])
+        let viewModel = makeViewModel(gateway: gateway, pageSize: 10)
+        await viewModel.loadInitialIfNeeded()
+        gateway.listError = URLError(.notConnectedToInternet)
+
+        await viewModel.refreshNewest()
+
+        #expect(viewModel.items.map(\.id) == [existing.revisionID])
+        #expect(viewModel.phase == .loaded)
+    }
+
+    @Test func refreshNewestLoadsTheFirstPageWhenNoCanvasExistedBefore() async {
+        let drawing = makeSummary(createdAt: date(100))
+        let gateway = StubGateway(canvasState: nil, pages: [[drawing]])
+        let viewModel = makeViewModel(gateway: gateway, pageSize: 10)
+        await viewModel.loadInitialIfNeeded()
+        #expect(viewModel.isEmpty)
+
+        gateway.canvasState = makeState()
+        await viewModel.refreshNewest()
+
+        #expect(viewModel.items.map(\.id) == [drawing.revisionID])
+    }
+
     @Test func noCanvasShowsEmpty() async {
         let gateway = StubGateway(canvasState: nil, pages: [])
         let viewModel = makeViewModel(gateway: gateway)

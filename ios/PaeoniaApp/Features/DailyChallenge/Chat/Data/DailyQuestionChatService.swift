@@ -9,6 +9,10 @@ protocol DailyQuestionChatServicing: Actor {
         instanceID: UUID,
         threadID: UUID
     ) async throws -> [DailyQuestionChatMessage]
+    /// Follows one thread's messages while the caller iterates. Each result is
+    /// merged into the chat cache before the stream yields, so the caller re-reads
+    /// the cache. The stream ends when the caller's task is cancelled.
+    nonisolated func liveMessageUpdates(ownerUserID: UUID, instanceID: UUID, threadID: UUID) -> AsyncStream<Void>
     func pendingMessages(ownerUserID: UUID, instanceID: UUID) async -> [DailyQuestionChatMessage]
     func hasPendingThreadCreation(ownerUserID: UUID, instanceID: UUID) async -> Bool
     func queueMessage(
@@ -22,9 +26,18 @@ protocol DailyQuestionChatServicing: Actor {
     ) async throws -> DailyQuestionChatMessage
 }
 
+extension DailyQuestionChatServicing {
+    /// Services without a live connection (previews, scenarios) have nothing to follow.
+    nonisolated func liveMessageUpdates(ownerUserID _: UUID, instanceID _: UUID, threadID _: UUID) -> AsyncStream<Void> {
+        AsyncStream { $0.finish() }
+    }
+}
+
 protocol DailyQuestionChatGateway: Actor {
     func loadThreadSummaries() async throws -> [DailyQuestionThreadSummary]
     func loadMessages(threadID: UUID, instanceID: UUID) async throws -> [DailyQuestionChatMessage]
+    /// Every result of the thread's messages query, newest state only.
+    nonisolated func liveMessages(threadID: UUID, instanceID: UUID) -> AsyncStream<[DailyQuestionChatMessage]>
     func createThreadWithMessage(
         _ payload: CreateDailyQuestionThreadMessageOperationPayload,
         operation: SyncClientOperation
@@ -34,6 +47,12 @@ protocol DailyQuestionChatGateway: Actor {
         body: String,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse
+}
+
+extension DailyQuestionChatGateway {
+    nonisolated func liveMessages(threadID _: UUID, instanceID _: UUID) -> AsyncStream<[DailyQuestionChatMessage]> {
+        AsyncStream { $0.finish() }
+    }
 }
 
 actor DailyQuestionChatService: DailyQuestionChatServicing {
@@ -74,6 +93,53 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
         let messages = try await gateway.loadMessages(threadID: threadID, instanceID: instanceID)
         await cache.saveMessages(messages, ownerUserID: ownerUserID, instanceID: instanceID)
         return await cache.messages(ownerUserID: ownerUserID, instanceID: instanceID)
+    }
+
+    nonisolated func liveMessageUpdates(
+        ownerUserID: UUID,
+        instanceID: UUID,
+        threadID: UUID
+    ) -> AsyncStream<Void> {
+        let results = gateway.liveMessages(threadID: threadID, instanceID: instanceID)
+        return AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+            let task = Task {
+                // Read before the first result, so a purge that starts while this
+                // writer is suspended makes every later save a no-op.
+                let generation = await cache.purgeGeneration()
+                for await remote in results {
+                    guard !Task.isCancelled else { break }
+                    guard await saveLiveMessages(
+                        remote,
+                        ownerUserID: ownerUserID,
+                        instanceID: instanceID,
+                        purgeGeneration: generation
+                    ) else { break }
+                    continuation.yield()
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private func saveLiveMessages(
+        _ remote: [DailyQuestionChatMessage],
+        ownerUserID: UUID,
+        instanceID: UUID,
+        purgeGeneration: Int
+    ) async -> Bool {
+        let cached = await cache.messages(ownerUserID: ownerUserID, instanceID: instanceID)
+        let pending = await pendingMessages(ownerUserID: ownerUserID, instanceID: instanceID)
+        // The screen's task is cancelled on sign-out and account switch, but nothing
+        // waits for this writer. Stop here, and let the cache refuse the save if a
+        // purge ran since the subscription started.
+        guard !Task.isCancelled else { return false }
+        return await cache.saveMessages(
+            DailyQuestionChatMessage.claimingPending(remote: remote, cached: cached, pending: pending),
+            ownerUserID: ownerUserID,
+            instanceID: instanceID,
+            unlessPurgedSince: purgeGeneration
+        )
     }
 
     func pendingMessages(ownerUserID: UUID, instanceID: UUID) async -> [DailyQuestionChatMessage] {
@@ -216,7 +282,7 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
     }
 
     func loadThreadSummaries() async throws -> [DailyQuestionThreadSummary] {
-        let rows: [ConversationThreadRow] = try await client.mutation(
+        let rows: [ConversationThreadRow] = try await client.query(
             "threads:get_conversation_threads",
             args: PaeoniaConvexNoArgs()
         )
@@ -224,11 +290,31 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
     }
 
     func loadMessages(threadID: UUID, instanceID: UUID) async throws -> [DailyQuestionChatMessage] {
-        let rows: [ThreadMessageRow] = try await client.mutation(
+        let rows: [ThreadMessageRow] = try await client.query(
             "threads:get_thread_messages",
             args: ThreadMessagesRequest(threadID: threadID)
         )
         return rows.compactMap { $0.message(instanceID: instanceID) }
+    }
+
+    nonisolated func liveMessages(threadID: UUID, instanceID: UUID) -> AsyncStream<[DailyQuestionChatMessage]> {
+        AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+            let task = Task { @MainActor in
+                let live = LiveQueryService(transport: ConvexLiveTransport(connection: .shared))
+                let results = live.subscribe(
+                    "threads:get_thread_messages",
+                    args: ["p_thread_id": threadID.uuidString.lowercased()],
+                    as: [ThreadMessageRow].self
+                )
+                for await result in results {
+                    if case let .value(rows) = result {
+                        continuation.yield(rows.compactMap { $0.message(instanceID: instanceID) })
+                    }
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
     }
 
     func createThreadWithMessage(
@@ -328,7 +414,7 @@ private actor UnavailableDailyQuestionChatGateway: DailyQuestionChatGateway {
     ) async throws -> DailyQuestionThreadMessageResponse { throw DailyQuestionChatServiceError.unavailable }
 }
 
-nonisolated private struct ConversationThreadRow: Decodable {
+nonisolated struct ConversationThreadRow: Decodable {
     let threadID: UUID
     let coupleID: UUID
     let kind: String

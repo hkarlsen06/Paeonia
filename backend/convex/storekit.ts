@@ -244,8 +244,11 @@ export const mark_storekit_transaction_reconciliation_failed = internalMutation(
 /**
  * Port of `internal.expire_stale_entitlements`. Marks lapsed StoreKit
  * transactions and grants as expired and tells the members of a couple that
- * lost its last entitlement. The SQL schedule never ran it, so this is an
- * operator tool; access checks compare `expires_at` themselves.
+ * lost its last entitlement. The SQL schedule never ran it. In Convex the
+ * `expire-stale-entitlements` cron runs it, because queries cannot write and
+ * would otherwise report a lapsed row as entitled until the next write.
+ * Each run handles at most `p_limit` rows (default 500) and expired rows no
+ * longer match, so a backlog drains over several runs.
  */
 export const expire_stale_entitlements = internalMutation({
   args: { p_now: nullableString, p_limit: v.optional(v.union(v.null(), v.number())) },

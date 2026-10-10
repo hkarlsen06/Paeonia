@@ -63,10 +63,14 @@ struct PendingSyncOperationDrainStream: SyncStream {
 
             let attemptNumber = operation.attemptCount + 1
 
-            try await context.pendingOperationStore.markSending(
-                clientOperationID: operation.operation.id,
-                at: Date()
-            )
+            do {
+                try await context.pendingOperationStore.markSending(
+                    clientOperationID: operation.operation.id,
+                    at: Date()
+                )
+            } catch PendingSyncOperationClaimError.notPending {
+                continue
+            }
 
             do {
                 switch try await handler.send(operation, context: context) {

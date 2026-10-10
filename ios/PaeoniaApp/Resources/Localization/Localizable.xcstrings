@@ -1,9 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
+    "" : {},
     "%@: %@" : {
       "localizations" : {
         "en" : {
@@ -24,9 +22,7 @@
         }
       }
     },
-    "+%lld" : {
-
-    },
+    "+%lld" : {},
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -10859,6 +10855,78 @@
           }
         }
       }
+    },
+    "memories.editor.removed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This memory was deleted"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette minnet ble slettet"
+          }
+        }
+      },
+      "comment" : "Heading on the edit form when the partner deleted the memory the user was editing"
+    },
+    "memories.editor.removed.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner deleted it, so your changes can't be saved. You can copy your text before you close this."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din slettet det, så endringene dine kan ikke lagres. Du kan kopiere teksten din før du lukker dette."
+          }
+        }
+      },
+      "comment" : "Explains why the edit form can no longer save after the memory was deleted"
+    },
+    "memories.editor.removed.copy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy my text"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopier teksten min"
+          }
+        }
+      },
+      "comment" : "Button that copies the user's unsaved memory text to the clipboard"
+    },
+    "memories.editor.removed.copied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copied"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiert"
+          }
+        }
+      },
+      "comment" : "Button label after the user's memory text was copied"
     }
   },
   "version" : "1.0"

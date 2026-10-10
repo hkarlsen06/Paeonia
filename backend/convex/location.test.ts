@@ -280,7 +280,7 @@ describe("get_partner_location_visibility", () => {
     const t = newTest();
     const couple = await createCouple(t);
     const read = (user = couple.first, args: Record<string, unknown> = {}) =>
-      user.as.mutation(api.location.get_partner_location_visibility, args);
+      user.as.query(api.location.get_partner_location_visibility, args);
 
     let [row] = await read();
     expect(row).toMatchObject({
@@ -296,6 +296,10 @@ describe("get_partner_location_visibility", () => {
     await enableSharing(couple.first, couple.coupleId);
     [row] = await read(couple.first, { p_couple_id: couple.coupleId });
     expect(row).toMatchObject({ visibility_state: "not_sharing", viewer_sharing_enabled: true, partner_sharing_enabled: false });
+    // Without a location, updated_at comes from stored rows, so it does not move with the clock.
+    vi.setSystemTime(new Date("2026-06-28T13:30:00.000Z"));
+    expect((await read(couple.first))[0].updated_at).toBe(row.updated_at);
+    vi.setSystemTime(new Date("2026-06-28T12:30:00.000Z"));
 
     await enableSharing(couple.second, couple.coupleId);
     [row] = await read();
@@ -337,7 +341,7 @@ describe("get_partner_location_visibility", () => {
     const t = newTest();
     const couple = await createCouple(t);
     const outsider = (await createCouple(t)).first;
-    await expect(outsider.as.mutation(api.location.get_partner_location_visibility, { p_couple_id: couple.coupleId })).rejects.toThrow(
+    await expect(outsider.as.query(api.location.get_partner_location_visibility, { p_couple_id: couple.coupleId })).rejects.toThrow(
       /42501.*relationship was not found/,
     );
     await t.run(async (ctx) => {
@@ -347,7 +351,7 @@ describe("get_partner_location_visibility", () => {
         .unique();
       await ctx.db.patch(row!._id, { status: "ended", ended_at: "2026-06-28T12:00:00.000Z" });
     });
-    const [row] = await couple.first.as.mutation(api.location.get_partner_location_visibility, { p_couple_id: couple.coupleId });
+    const [row] = await couple.first.as.query(api.location.get_partner_location_visibility, { p_couple_id: couple.coupleId });
     expect(row).toMatchObject({
       visibility_state: "relationship_ended",
       viewer_sharing_enabled: false,
@@ -358,6 +362,6 @@ describe("get_partner_location_visibility", () => {
 
   test("requires a signed-in user", async () => {
     const t = newTest();
-    await expect(t.mutation(api.location.get_partner_location_visibility, {})).rejects.toThrow(/42501.*authenticated user required/);
+    await expect(t.query(api.location.get_partner_location_visibility, {})).rejects.toThrow(/42501.*authenticated user required/);
   });
 });

@@ -101,6 +101,7 @@ struct DailyChallengeHistoryView: View {
                             viewModel: dailyChallengeViewModel.makeChatViewModel(question: question),
                             participants: dailyChallengeViewModel.participants
                         )
+                        .id(question.id)
                     }
             }
             .offset(x: dismissDragOffset)
@@ -112,6 +113,7 @@ struct DailyChallengeHistoryView: View {
         }
         .preferredColorScheme(.dark)
         .task { await viewModel.load() }
+        .task { await viewModel.observeThreadSummaries() }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
         .onChange(of: chattingQuestion) { oldValue, newValue in
             guard oldValue != nil, newValue == nil else { return }

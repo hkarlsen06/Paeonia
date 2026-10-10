@@ -29,6 +29,9 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     private var identity = LocationIdentity(currentUserID: nil, coupleID: nil)
     private var reloadGeneration = 0
     private var activeLocationOperationID: UUID?
+    private var storeChangesTask: Task<Void, Never>?
+    private var reloadsInFlight = 0
+    private var storeChangedDuringReload = false
 
     private(set) var mapState: CoupleMapState = .loading
     private(set) var isPresentationReady = false
@@ -67,6 +70,7 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     }
 
     func configure(identity: LocationIdentity) async {
+        observeStoreChanges()
         guard self.identity != identity else {
             await reload()
             return
@@ -87,11 +91,46 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         await reload()
     }
 
+    /// Re-reads the store whenever the live feed or a local write changes the
+    /// partner's location state or our own location. Starts once and stops when
+    /// the view model is gone.
+    private func observeStoreChanges() {
+        guard storeChangesTask == nil else { return }
+        let changes = LocalStoreChanges.changes(in: .locationVisibility, .ownLocation)
+        storeChangesTask = Task { [weak self] in
+            for await change in changes {
+                guard let self else { return }
+                guard change.ownerUserID == identity.currentUserID else { continue }
+                await reloadAfterStoreChange()
+            }
+        }
+    }
+
+    /// A store change must not cancel a reload that a caller is awaiting, or that
+    /// caller returns before the state is set. It queues one more reload instead.
+    private func reloadAfterStoreChange() async {
+        if reloadsInFlight > 0 {
+            storeChangedDuringReload = true
+        } else {
+            await reload()
+        }
+    }
+
     func setLocalChangeSyncHandler(_ handler: (@MainActor () async -> Void)?) {
         localChangeSyncHandler = handler
     }
 
     func reload() async {
+        reloadsInFlight += 1
+        await performReload()
+        reloadsInFlight -= 1
+        if reloadsInFlight == 0, storeChangedDuringReload {
+            storeChangedDuringReload = false
+            await reload()
+        }
+    }
+
+    private func performReload() async {
         reloadGeneration &+= 1
         let activeReloadGeneration = reloadGeneration
         let requestedIdentity = identity
@@ -329,8 +368,25 @@ final class LocationMapViewModel: PresentationReadinessProviding {
             }
         } else {
             try? await ownLocationStore.delete(ownerUserID: ownerUserID, coupleID: coupleID)
+            await cancelQueuedLocationUploads(ownerUserID: ownerUserID)
         }
         try requireCurrentIdentity(operationIdentity)
+    }
+
+    /// A location queued before the opt-out must not reach the server after it.
+    /// The outbox can send it first when the opt-out is waiting for a retry.
+    private func cancelQueuedLocationUploads(ownerUserID: UUID) async {
+        let queued = (try? await pendingOperationStore.inFlightOperations(
+            ownerUserID: ownerUserID,
+            kind: .updateLatestPartnerLocation
+        )) ?? []
+        for operation in queued where operation.status != .sending {
+            try? await pendingOperationStore.markTerminalFailure(
+                clientOperationID: operation.operation.id,
+                errorDescription: "cancelled because location sharing was turned off",
+                at: Date()
+            )
+        }
     }
 
     private func restoreSharingChange(
@@ -342,11 +398,13 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     ) async {
         guard identity == operationIdentity else { return }
         sharingEnabled = previousValue
+        // Nothing was queued for this value, so it is not waiting on the server.
         try? await visibilityStore.setViewerSharingEnabled(
             ownerUserID: ownerUserID,
             coupleID: coupleID,
             isEnabled: previousValue,
-            updatedAt: Date()
+            updatedAt: Date(),
+            isPendingConfirmation: false
         )
         guard identity == operationIdentity else { return }
         notice = notice(for: error)

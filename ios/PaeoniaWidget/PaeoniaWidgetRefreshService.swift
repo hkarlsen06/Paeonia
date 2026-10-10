@@ -32,7 +32,7 @@ enum PaeoniaWidgetRefreshService {
 
     @MainActor
     private static func loadRemoteDrawing(client: PaeoniaConvexClient) async throws -> RemoteDrawing? {
-        let states: FirstRow<CanvasState> = try await client.mutation("widget:get_widget_canvas")
+        let states: FirstRow<CanvasState> = try await client.query("widget:get_widget_canvas")
         guard let state = states.row,
               let revisionID = state.activeRevisionID,
               let mediaAssetID = state.payloadMediaAssetID

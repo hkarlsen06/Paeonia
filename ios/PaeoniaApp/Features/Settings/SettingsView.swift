@@ -104,6 +104,9 @@ struct SettingsView: View {
         .task {
             await viewModel.load()
         }
+        .task {
+            await viewModel.observe()
+        }
         // The notices come from screens pushed on top of this one, but this view
         // owns the view model and stays alive underneath them, so the banner keeps
         // working from here.

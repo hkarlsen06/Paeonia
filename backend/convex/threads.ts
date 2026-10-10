@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import {
   canAccessCoupleContent,
   getCurrentEntitledCoupleId,
@@ -379,7 +379,7 @@ export const create_memory_thread_with_message = mutation({
   },
 });
 
-export const get_conversation_threads = mutation({
+export const get_conversation_threads = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
@@ -442,7 +442,7 @@ export const get_conversation_threads = mutation({
   },
 });
 
-export const get_thread_messages = mutation({
+export const get_thread_messages = query({
   args: { p_thread_id: v.string() },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);

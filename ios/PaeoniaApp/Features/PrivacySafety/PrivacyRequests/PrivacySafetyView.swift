@@ -49,6 +49,9 @@ struct PrivacySafetyView: View {
         .task {
             await viewModel.load()
         }
+        .task {
+            await viewModel.observe()
+        }
         .refreshable {
             await viewModel.load()
         }

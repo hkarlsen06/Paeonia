@@ -31,18 +31,15 @@ nonisolated enum PaeoniaSyncServiceDefaults {
 
     static func makeStreams(
         accessSnapshotStore: any AccessSyncSnapshotPersisting,
-        relationshipEventStore: any RelationshipSyncEventPersisting,
         locationVisibilityStore: any LocationVisibilitySnapshotPersisting,
         ownLocationStore: any OwnLocationSnapshotPersisting,
         memoryStore: any MemoryRecordPersisting,
-        localPrivacyPurger: any LocalPrivacyPurging,
         pendingOperationHandlers: [any PendingSyncOperationHandling] = []
     ) -> [any SyncStream] {
         guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return []
         }
 
-        let accessGateway = LiveAccessGateway(client: client)
         let locationGateway = LiveLocationGateway(client: client)
         let memoryGateway = LiveMemoryGateway(client: client)
         let dailyQuestionChatGateway = LiveDailyQuestionChatGateway(client: client)
@@ -103,30 +100,11 @@ nonisolated enum PaeoniaSyncServiceDefaults {
         ]
 
         return [
-            AccessSyncStream(
-                gateway: accessGateway,
-                snapshotStore: accessSnapshotStore
-            ),
-            RelationshipSyncEventsStream(
-                gateway: accessGateway,
-                eventStore: relationshipEventStore,
-                eventApplier: RelationshipSyncEventApplier(
-                    localPrivacyPurger: localPrivacyPurger
-                )
-            ),
             PendingSyncOperationDrainStream(
                 handlers: mergedHandlers(
                     customHandlers: pendingOperationHandlers,
                     defaultHandlers: locationHandlers
                 )
-            ),
-            MemorySyncStream(
-                gateway: memoryGateway,
-                memoryStore: memoryStore
-            ),
-            LocationVisibilitySyncStream(
-                gateway: locationGateway,
-                visibilityStore: locationVisibilityStore
             ),
         ]
     }

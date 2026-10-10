@@ -89,6 +89,9 @@ final class RootViewModel {
     }
 
     private let syncService: any PaeoniaSyncing
+    /// Live subscriptions follow the same session as `syncService`. Nil in tests
+    /// and developer scenarios that inject their own sync service.
+    private let liveSync: (any LiveSyncCoordinating)?
     private let privacyLifecycle: RootPrivacyLifecycle
     private let authService: any AuthServicing
     private let accessRouteService: (any AccessRouteServicing)?
@@ -115,6 +118,9 @@ final class RootViewModel {
         id: UUID,
         task: Task<LocalPrivacyPurgeResult, Never>
     )?
+    /// Re-routes when the live access feed writes a new snapshot. One task per
+    /// signed-in user, started with sync and stopped on sign-out.
+    @ObservationIgnored private var accessObservation: (userID: UUID, task: Task<Void, Never>)?
     private var opensWidgetDrawingWhenPaired = false
     private var shouldMarkPresentedPairingCelebrationSeenWhenKeyArrives = false
 
@@ -178,10 +184,13 @@ final class RootViewModel {
         accessSnapshotStore: (any AccessSyncSnapshotPersisting)? = nil,
         inviteStore: (any PairingInviteStoring)? = nil,
         pairingCelebrationStore: (any PairingCelebrationStoring)? = nil,
-        systemSideEffects: (any RootSystemSideEffecting)? = nil
+        systemSideEffects: (any RootSystemSideEffecting)? = nil,
+        liveSync: (any LiveSyncCoordinating)? = nil
     ) {
-        let resolvedSyncService = syncService ?? PaeoniaSyncService()
+        let resolvedLiveSync = liveSync ?? (syncService == nil ? LiveSyncCoordinator.makeDefault() : nil)
+        let resolvedSyncService = syncService ?? PaeoniaSyncService(liveSync: resolvedLiveSync)
         self.syncService = resolvedSyncService
+        self.liveSync = resolvedLiveSync
         self.privacyLifecycle = RootPrivacyLifecycle(syncService: resolvedSyncService)
         self.authService = authService ?? AuthServiceFactory.makeDefault()
         self.accessRouteService = accessRouteService ?? (try? RemoteAccessRouteService.live())
@@ -321,10 +330,12 @@ final class RootViewModel {
     func signOut() async {
         await performAuthAction(failureNotice: .signOutFailed) {
             try await authService.signOut()
+            stopObservingAccessChanges()
             invalidateAccessResolution()
             clearPairingCelebrationPresentation()
             clearPendingWidgetDrawingOpen()
             route = .signedOut
+            await liveSync?.stop()
             await syncService.resetForUserChange()
             systemSideEffects.resetPushRegistrationState()
             hasStartedSync = false
@@ -351,9 +362,11 @@ final class RootViewModel {
                 appleAuthorizationCode: appleAuthorizationCode
             )
             requiresManualAppleRevocation = outcome == .manualAppleRevocationRequired
+            stopObservingAccessChanges()
             invalidateAccessResolution()
             clearPairingCelebrationPresentation()
             route = .signedOut
+            await liveSync?.stop()
             await syncService.resetForUserChange()
             systemSideEffects.resetPushRegistrationState()
             hasStartedSync = false
@@ -380,8 +393,8 @@ final class RootViewModel {
 
     /// Saves the paired user's canonical profile while preserving the resolved
     /// relationship route. The updated session is committed immediately so all
-    /// current-user labels and avatars refresh together, then a sync pass pulls
-    /// the latest partner/access snapshot without making the save depend on it.
+    /// current-user labels and avatars refresh together, then access is resolved
+    /// again without making the save depend on it.
     func updateCurrentProfile(
         displayName: String,
         profilePhotoUpdate: AuthProfilePhotoUpdate
@@ -480,7 +493,6 @@ final class RootViewModel {
         }
 
         _ = await syncService.runOnce(reason: .foreground)
-        await applySyncedAccessSnapshotIfAvailable()
     }
 
     func syncAfterLocalLocationChange() async {
@@ -509,7 +521,6 @@ final class RootViewModel {
         }
 
         _ = await syncService.runOnce(reason: .manualRefresh)
-        await applySyncedAccessSnapshotIfAvailable()
     }
 
     private func refreshAuthRoute() async {
@@ -517,6 +528,7 @@ final class RootViewModel {
             let session = try await authService.restoreSession()
             await apply(AuthRoute(session: session))
         } catch {
+            stopObservingAccessChanges()
             invalidateAccessResolution()
             route = .signedOut
             notice = .sessionLoadFailed
@@ -571,11 +583,13 @@ final class RootViewModel {
     private func apply(_ authRoute: AuthRoute) async {
         switch authRoute {
         case .signedOut:
+            stopObservingAccessChanges()
             invalidateAccessResolution()
             clearPairingCelebrationPresentation()
             clearPendingWidgetDrawingOpen()
             route = .signedOut
         case let .onboarding(session):
+            stopObservingAccessChanges()
             invalidateAccessResolution()
             clearPairingCelebrationPresentation()
             clearPendingWidgetDrawingOpen()
@@ -667,8 +681,36 @@ final class RootViewModel {
         }
     }
 
-    private func applySyncedAccessSnapshotIfAvailable() async {
-        guard let session = currentSession else {
+    private func observeAccessChanges(for userID: UUID) {
+        guard accessObservation?.userID != userID else {
+            return
+        }
+
+        accessObservation?.task.cancel()
+        // Subscribe before the task starts so a write that lands in between is not missed.
+        let changes = LocalStoreChanges.changes(in: .access)
+        let task = Task { [weak self] in
+            for await change in changes where change.ownerUserID == userID {
+                guard let self else {
+                    return
+                }
+                await self.applyLiveAccessSnapshot()
+            }
+        }
+        accessObservation = (userID, task)
+    }
+
+    private func stopObservingAccessChanges() {
+        accessObservation?.task.cancel()
+        accessObservation = nil
+    }
+
+    /// Routes from the snapshot the live access feed just stored. Covers a partner
+    /// accepting an invite, leaving or blocking, an entitlement change, and
+    /// partner name, photo, or start date edits. An unchanged snapshot (a
+    /// resubscribe, or the echo of an HTTP re-resolve) does nothing.
+    private func applyLiveAccessSnapshot() async {
+        guard let session = currentSession, isAccessRouteSettled || isResolvingAccess else {
             return
         }
 
@@ -680,15 +722,39 @@ final class RootViewModel {
             return
         }
 
-        let generation = accessResolutionGeneration
-        let previousAccessResolution = route.accessResolution
+        // The store read suspended. Sign-out, account deletion, or a user change may have won.
+        guard let currentSession,
+              AuthUserIdentity.matches(currentSession.id, session.id),
+              isAccessRouteSettled || isResolvingAccess,
+              !(isAccessRouteSettled && route.accessResolution == resolution)
+        else {
+            return
+        }
+
+        // Claim the generation so an older HTTP resolve that is still in flight
+        // cannot overwrite this newer snapshot.
+        let generation = beginAccessResolution()
         await finishAccessResolution(
             generation,
             resolution: resolution,
             for: session,
-            previous: previousAccessResolution
+            previous: route.accessResolution
         )
         await startSyncIfNeeded()
+    }
+
+    private var isAccessRouteSettled: Bool {
+        if case .access = route {
+            return true
+        }
+        return false
+    }
+
+    private var isResolvingAccess: Bool {
+        if case .resolvingAccess = route {
+            return true
+        }
+        return false
     }
 
     private func syncedAccessResolution(
@@ -998,17 +1064,23 @@ final class RootViewModel {
     }
 
     private func startSyncIfNeeded() async {
-        guard !privacyLifecycle.hasPendingRetry else {
+        // The purge pauses live feeds and resumes them before it returns here.
+        // Starting them now would subscribe the old couple again before the
+        // new route commits. The resolution that ran the purge starts sync
+        // afterwards.
+        guard !privacyLifecycle.hasPendingRetry, inFlightAccessPrivacyPurge == nil else {
             return
         }
 
         switch authRoute {
         case .signedOut, .onboarding:
+            stopObservingAccessChanges()
             return
         case let .limitedAuthenticated(session):
             guard let userID = UUID(uuidString: session.id) else {
                 return
             }
+            observeAccessChanges(for: userID)
 
             let syncSession = SyncSession(
                 userID: userID,
@@ -1019,6 +1091,8 @@ final class RootViewModel {
                 await syncService.configure(session: syncSession)
                 configuredSyncSession = syncSession
             }
+            // Idempotent. Also restarts feeds that a privacy purge stopped.
+            await liveSync?.start(session: syncSession)
 
             if !hasStartedSync {
                 await syncService.start()

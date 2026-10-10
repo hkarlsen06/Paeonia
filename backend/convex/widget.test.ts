@@ -117,7 +117,7 @@ describe("get_or_create_widget_canvas", () => {
     expect(await failure(stranger.as.mutation(api.widget.get_or_create_widget_canvas, {}))).toEqual(denied);
     expect(await failure(stranger.as.mutation(api.widget.get_or_create_widget_canvas, { p_couple_id: couple.coupleId }))).toEqual(denied);
     expect(await failure(unentitled.first.as.mutation(api.widget.get_or_create_widget_canvas, {}))).toEqual(denied);
-    expect(await failure(unentitled.first.as.mutation(api.widget.get_widget_canvas, {}))).toEqual(denied);
+    expect(await failure(unentitled.first.as.query(api.widget.get_widget_canvas, {}))).toEqual(denied);
     await endCouple(t, couple.coupleId, couple.first.userId);
     expect(await failure(couple.second.as.mutation(api.widget.get_or_create_widget_canvas, {}))).toEqual(denied);
     expect(await failure(couple.first.as.mutation(api.widget.get_or_create_widget_canvas, { p_couple_id: couple.coupleId }))).toEqual(denied);
@@ -351,9 +351,9 @@ describe("reads", () => {
   test("get_widget_canvas is empty-valued before the first drawing", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    expect(await couple.first.as.mutation(api.widget.get_widget_canvas, {})).toEqual([]);
+    expect(await couple.first.as.query(api.widget.get_widget_canvas, {})).toEqual([]);
     const canvas = await canvasOf(couple.first);
-    const [row] = await couple.first.as.mutation(api.widget.get_widget_canvas, { p_couple_id: couple.coupleId });
+    const [row] = await couple.first.as.query(api.widget.get_widget_canvas, { p_couple_id: couple.coupleId });
     expect(row).toMatchObject({
       canvas_id: canvas.canvas_id,
       couple_id: couple.coupleId,
@@ -380,7 +380,7 @@ describe("reads", () => {
     tick();
     const { revisionId, assetId } = await submitDrawing(t, couple.first, couple, canvas.canvas_id, null);
     const asset = await t.run((ctx) => ctx.db.query("media_assets").first());
-    const [row] = await couple.second.as.mutation(api.widget.get_widget_canvas, {});
+    const [row] = await couple.second.as.query(api.widget.get_widget_canvas, {});
     expect(row).toEqual({
       canvas_id: canvas.canvas_id,
       couple_id: couple.coupleId,
@@ -414,7 +414,7 @@ describe("reads", () => {
       const revision = await ctx.db.query("widget_drawing_revisions").first();
       await ctx.db.patch(revision!._id, { moderation_status: "hidden" });
     });
-    const [hidden] = await couple.second.as.mutation(api.widget.get_widget_canvas, {});
+    const [hidden] = await couple.second.as.query(api.widget.get_widget_canvas, {});
     expect(hidden).toMatchObject({
       active_revision_id: revisionId,
       active_revision_moderation_status: "hidden",
@@ -438,7 +438,7 @@ describe("reads", () => {
       ids.push(drawing.revisionId);
     }
     const read = (args: Record<string, unknown>) =>
-      couple.first.as.mutation(api.widget.get_widget_drawing_revisions, { p_canvas_id: canvas.canvas_id, ...args });
+      couple.first.as.query(api.widget.get_widget_drawing_revisions, { p_canvas_id: canvas.canvas_id, ...args });
 
     const history = await read({});
     expect(history.map((row: { revision_id: string }) => row.revision_id)).toEqual([...ids].reverse());
@@ -468,7 +468,7 @@ describe("reads", () => {
     const couple = await createCouple(t);
     const canvas = await canvasOf(couple.first);
     const read = (args: Record<string, unknown>) =>
-      failure(couple.first.as.mutation(api.widget.get_widget_drawing_revisions, { p_canvas_id: canvas.canvas_id, ...args }));
+      failure(couple.first.as.query(api.widget.get_widget_drawing_revisions, { p_canvas_id: canvas.canvas_id, ...args }));
     const now = new Date().toISOString();
     const id = newUuid();
     expect(await read({ p_limit: 0 })).toEqual({ code: "23514", message: "widget drawing revision read limit is out of range" });
@@ -491,13 +491,13 @@ describe("reads", () => {
     const canvas = await canvasOf(couple.first);
     const stranger = await createSignedInUser(t);
     const denied = { code: "42501", message: "active entitled widget canvas access is required" };
-    const read = (user: TestUser) => user.as.mutation(api.widget.get_widget_drawing_revisions, { p_canvas_id: canvas.canvas_id });
+    const read = (user: TestUser) => user.as.query(api.widget.get_widget_drawing_revisions, { p_canvas_id: canvas.canvas_id });
     expect(await failure(read(stranger))).toEqual(denied);
     expect(await read(couple.second)).toEqual([]);
     await endCouple(t, couple.coupleId, couple.first.userId);
     expect(await failure(read(couple.first))).toEqual(denied);
     expect(await failure(read(couple.second))).toEqual(denied);
-    expect(await failure(stranger.as.mutation(api.widget.get_widget_canvas, { p_couple_id: couple.coupleId }))).toEqual({
+    expect(await failure(stranger.as.query(api.widget.get_widget_canvas, { p_couple_id: couple.coupleId }))).toEqual({
       code: "42501",
       message: "active entitled couple access is required",
     });

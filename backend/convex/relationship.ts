@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation, mutation } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { findCurrentCouple, getCurrentEntitledCoupleId } from "./lib/access";
 import { runClientOperation } from "./lib/clientOperations";
 import { userLocalDate } from "./lib/coupleDays";
@@ -15,7 +15,7 @@ import { requireUserId } from "./lib/auth";
 import { createRelationshipSyncEvent } from "./lib/syncEvents";
 import { nowIso } from "./lib/time";
 
-export const get_current_relationship_state = mutation({
+export const get_current_relationship_state = query({
   args: {},
   handler: async (ctx) => {
     const state = await getCurrentRelationshipState(ctx, await requireUserId(ctx));
@@ -23,7 +23,7 @@ export const get_current_relationship_state = mutation({
   },
 });
 
-export const get_relationship_sync_events = mutation({
+export const get_relationship_sync_events = query({
   args: {
     p_after_created_at: v.optional(v.union(v.null(), v.string())),
     p_after_id: v.optional(v.union(v.null(), v.string())),

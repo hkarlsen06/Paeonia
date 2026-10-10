@@ -14,6 +14,10 @@ struct MemoryDetailView: View {
 
     @State private var isEditingMemory = false
     @State private var editDraft = MemoryDraft()
+    /// The memory as it was when the edit sheet opened. The sheet keeps using it if the
+    /// memory is deleted mid-edit, so the typed text stays on screen.
+    @State private var editingRecord: MemoryRecord?
+    @State private var wasRemovedWhileEditing = false
     @State private var isConfirmingDelete = false
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
     @State private var loadedImagesByMediaAssetID: [UUID: UIImage] = [:]
@@ -40,9 +44,16 @@ struct MemoryDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarMenu }
         .onChange(of: record == nil) { _, isGone in
-            if isGone { dismiss() }
+            guard isGone else { return }
+            // Closing the screen now would also close the edit sheet and drop the
+            // unsaved text. Keep the sheet open and explain instead.
+            if isEditingMemory {
+                wasRemovedWhileEditing = true
+            } else {
+                dismiss()
+            }
         }
-        .sheet(isPresented: $isEditingMemory) { memoryEditorSheet }
+        .sheet(isPresented: $isEditingMemory, onDismiss: closeAfterRemoval) { memoryEditorSheet }
         .alert(
             Text(.memoriesDeleteTitle),
             isPresented: $isConfirmingDelete
@@ -168,12 +179,13 @@ struct MemoryDetailView: View {
 
     @ViewBuilder
     private var memoryEditorSheet: some View {
-        if let record {
+        if let record = record ?? editingRecord {
             MemoryEditorView(
                 draft: $editDraft,
                 mode: .edit,
                 existingMedia: visibleMedia(for: record),
                 currentUserID: currentUserID,
+                isMemoryRemoved: wasRemovedWhileEditing,
                 allowsPhotos: viewModel.canAttachPhotos
             ) { title, date, note, photos, removedMedia in
                 await saveMemoryEdits(
@@ -208,7 +220,19 @@ struct MemoryDetailView: View {
             note: record.snapshot.ownNote?.body ?? "",
             photos: []
         )
+        editingRecord = record
+        wasRemovedWhileEditing = false
         isEditingMemory = true
+    }
+
+    /// After the sheet closes on a memory that was deleted, there is nothing left to
+    /// show, so leave the detail screen.
+    private func closeAfterRemoval() {
+        editingRecord = nil
+        if wasRemovedWhileEditing || record == nil {
+            wasRemovedWhileEditing = false
+            dismiss()
+        }
     }
 
     private func deleteMemory() async {

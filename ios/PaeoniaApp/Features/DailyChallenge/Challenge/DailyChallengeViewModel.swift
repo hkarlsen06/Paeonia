@@ -59,6 +59,9 @@ final class DailyChallengeViewModel {
     /// real, last-known state through later refreshes instead of dropping back to
     /// loading. Reset when the signed-in user changes.
     private var hasResolvedTodayState = false
+    /// Callers of `awaitAnswerReveal`, signalled each time a snapshot is applied.
+    private var snapshotWaiters: [UUID: AsyncStream<Void>.Continuation] = [:]
+    private var liveUpdatesTask: Task<Void, Never>?
 
     private(set) var participants = DailyChallengeParticipants()
     private(set) var snapshot = DailyChallengeSnapshot.empty(currentUserID: nil)
@@ -149,33 +152,37 @@ final class DailyChallengeViewModel {
     /// snapshot arrives, so sending state alone is not reveal readiness: returning in
     /// that gap makes an answering cover close before it can turn over to the exchange.
     ///
-    /// Once the send settles, perform one fresh read in case the sync-triggered reload
-    /// raced the backend commit. The wait stays capped, so an offline answer never holds
+    /// The reply arrives as the next applied snapshot, from the live feed or from the
+    /// reload after the send. The wait stays capped, so an offline answer never holds
     /// the flow open indefinitely; the queued send still retries in the background.
     @discardableResult
     func awaitAnswerReveal(for instanceID: UUID) async -> Bool {
         if hasRevealedPartnerAnswer(for: instanceID) { return true }
 
-        let deadline = ContinuousClock.now.advanced(by: .seconds(1.2))
-        var didReloadAfterSendSettled = false
-
-        while ContinuousClock.now < deadline {
-            try? await Task.sleep(for: .milliseconds(80))
-            if Task.isCancelled { return false }
-            if hasRevealedPartnerAnswer(for: instanceID) { return true }
-
-            if !isSending(instanceID), !didReloadAfterSendSettled {
-                didReloadAfterSendSettled = true
-                // Give the background reload that cleared sending state a chance to
-                // finish its bookkeeping, then start a genuinely fresh read.
-                await Task.yield()
-                Task { @MainActor [weak self] in
-                    await self?.reload()
-                }
-            }
+        let waiterID = UUID()
+        let (applied, appliedContinuation) = AsyncStream.makeStream(
+            of: Void.self,
+            bufferingPolicy: .bufferingNewest(1)
+        )
+        snapshotWaiters[waiterID] = appliedContinuation
+        let timeout = Task {
+            try? await Task.sleep(for: .seconds(1.2))
+            appliedContinuation.finish()
+        }
+        defer {
+            timeout.cancel()
+            snapshotWaiters[waiterID] = nil
+            appliedContinuation.finish()
         }
 
-        return hasRevealedPartnerAnswer(for: instanceID)
+        return await withTaskCancellationHandler {
+            for await _ in applied where hasRevealedPartnerAnswer(for: instanceID) {
+                return true
+            }
+            return hasRevealedPartnerAnswer(for: instanceID)
+        } onCancel: {
+            appliedContinuation.finish()
+        }
     }
 
     private func hasRevealedPartnerAnswer(for instanceID: UUID) -> Bool {
@@ -260,6 +267,8 @@ final class DailyChallengeViewModel {
         reloadTask?.cancel()
         reloadTask = nil
         reloadTaskUserID = nil
+        liveUpdatesTask?.cancel()
+        liveUpdatesTask = nil
         isLoading = false
         // A new user hasn't resolved today's state yet, so the card returns to its
         // loading state until this user's first load settles.
@@ -271,6 +280,8 @@ final class DailyChallengeViewModel {
         threadSummariesByInstanceID = [:]
 
         guard let newUserID else { return }
+
+        observeLiveUpdates(for: newUserID)
 
         // Seed from the local cache so the first render uses real data instead of
         // placeholders. The cache holds the last successful network load for this
@@ -365,6 +376,37 @@ final class DailyChallengeViewModel {
         // lets the load that replaced it resolve instead.
         hasResolvedTodayState = true
         await refreshSendingState()
+    }
+
+    /// Re-reads the local store when the live feeds write to it, so a partner's
+    /// answer, shuffle, or new day and a new message preview appear without a reload.
+    /// The task ends when the signed-in user changes.
+    private func observeLiveUpdates(for userID: UUID) {
+        liveUpdatesTask = Task { @MainActor [weak self] in
+            for await change in LocalStoreChanges.changes(in: .dailyChallenge, .dailyChat) {
+                guard change.ownerUserID == userID else { continue }
+                guard let self, self.currentUserID == userID else { return }
+                switch change.domain {
+                case .dailyChallenge:
+                    await self.applyCachedSnapshot(for: userID)
+                case .dailyChat:
+                    self.applyThreadSummaries(await self.chatService.cachedThreadSummaries(ownerUserID: userID))
+                default:
+                    break
+                }
+            }
+        }
+    }
+
+    private func applyCachedSnapshot(for userID: UUID) async {
+        let snapshotCache = self.snapshotCache
+        let cached = await Task.detached(priority: .userInitiated) {
+            snapshotCache.load(ownerUserID: userID)
+        }.value
+        guard currentUserID == userID, let cached else { return }
+        // The feed wrote this from a server result, so today's state is known.
+        hasResolvedTodayState = true
+        apply(cached.loadResult(currentUserID: userID, locale: .current))
     }
 
     private func applyThreadSummaries(_ summaries: [DailyQuestionThreadSummary]) {
@@ -899,6 +941,7 @@ final class DailyChallengeViewModel {
     private func apply(_ result: DailyChallengeLoadResult) {
         snapshot = result.snapshot
         streak = result.streak
+        snapshotWaiters.values.forEach { $0.yield() }
     }
 
     /// A refresh can fail after the screen already has a usable, previously-loaded

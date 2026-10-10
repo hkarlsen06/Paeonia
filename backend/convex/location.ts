@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { canAccessCoupleContent, getCurrentEntitledCoupleId } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
@@ -317,7 +317,7 @@ export const update_location_sharing_preference = mutation({
 const VIEWER_STATUSES = ["active", "left", "ended_notice_pending", "ended_notice_seen"];
 
 /** Port of `get_partner_location_visibility`. */
-export const get_partner_location_visibility = mutation({
+export const get_partner_location_visibility = query({
   args: { p_couple_id: v.optional(v.union(v.null(), v.string())) },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
@@ -352,6 +352,7 @@ export const get_partner_location_visibility = mutation({
       state: string,
       viewerEnabled: boolean,
       partnerEnabled: boolean,
+      updatedAt: string,
       location?: Doc<"latest_partner_locations">,
     ) => [
       {
@@ -365,35 +366,41 @@ export const get_partner_location_visibility = mutation({
         partner_location_longitude: location?.longitude ?? null,
         partner_location_accuracy_m: orNull(location?.accuracy_m),
         partner_location_captured_at: location?.captured_at ?? null,
+        // Query results are cached, so clients should recompute staleness from partner_location_captured_at.
         partner_location_is_stale: location ? location.captured_at < addMs(now, -24 * 3_600_000) : false,
-        updated_at: location?.updated_at ?? now,
+        updated_at: location?.updated_at ?? updatedAt,
       },
     ];
 
     if (couple.status !== "active" || viewer.status !== "active" || !partner) {
-      return result("relationship_ended", false, false);
+      return result("relationship_ended", false, false, couple.updated_at);
     }
     if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
       fail("42501", "active entitled couple access is required");
     }
 
-    const enabledFor = async (memberId: string) =>
-      (
-        await ctx.db
-          .query("location_sharing_preferences")
-          .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", memberId))
-          .unique()
-      )?.is_enabled ?? false;
-    const viewerEnabled = await enabledFor(userId);
-    const partnerEnabled = await enabledFor(partner.user_id);
-    if (!viewerEnabled) return result("disabled", false, partnerEnabled);
-    if (!partnerEnabled) return result("not_sharing", true, false);
+    const preferenceFor = (memberId: string) =>
+      ctx.db
+        .query("location_sharing_preferences")
+        .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", memberId))
+        .unique();
+    const viewerPreference = await preferenceFor(userId);
+    const partnerPreference = await preferenceFor(partner.user_id);
+    const viewerEnabled = viewerPreference?.is_enabled ?? false;
+    const partnerEnabled = partnerPreference?.is_enabled ?? false;
+    // Without a location, updated_at is the newest sharing preference change, so the value is stable between writes.
+    const preferencesUpdatedAt = [couple.updated_at, viewerPreference?.updated_at, partnerPreference?.updated_at].reduce<string>(
+      (best, value) => (value !== undefined && value > best ? value : best),
+      "",
+    );
+    if (!viewerEnabled) return result("disabled", false, partnerEnabled, preferencesUpdatedAt);
+    if (!partnerEnabled) return result("not_sharing", true, false, preferencesUpdatedAt);
 
     const location = await ctx.db
       .query("latest_partner_locations")
       .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", partner.user_id))
       .unique();
-    if (!location) return result("not_sharing", true, true);
-    return result("visible", true, true, location);
+    if (!location) return result("not_sharing", true, true, preferencesUpdatedAt);
+    return result("visible", true, true, preferencesUpdatedAt, location);
   },
 });

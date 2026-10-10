@@ -167,16 +167,15 @@ struct RootView: View {
                 // Re-arm APNs so a rotated token reaches registration; the
                 // fingerprint gate drops the RPC when nothing changed.
                 registerForRemoteNotificationsIfSignedIn(viewModel.currentSession?.id)
-                // One ordered pass per activation instead of four racing tasks:
-                // refresh our location, run a single foreground sync, reload the
-                // map, then pull the partner's widget drawing.
+                // One ordered pass per activation instead of racing tasks: refresh
+                // our location, run a single foreground sync, then pull the
+                // partner's widget drawing. The map follows store changes itself.
                 Task {
                     await locationViewModel.refreshOwnLocationIfSharingEnabled(
                         source: .foregroundOpen,
                         mayPromptForAuthorization: false
                     )
                     await viewModel.refreshAfterForegroundActivation()
-                    await locationViewModel.reload()
                     if let identity = stablePairedLocationIdentity {
                         await presentPermissionPrimerIfNeeded(for: identity)
                     }
@@ -302,10 +301,9 @@ struct RootView: View {
     private var routedRootContent: some View {
         ZStack {
             Group {
-                if PendingJoinInviteFlowResolver().shouldPresentInviteAcceptance(
-                    for: viewModel.state,
-                    pendingInviteCode: pendingJoinInviteCode
-                ) {
+                // One branch for every paywall route, so saving a pending invite
+                // code doesn't swap in a new PaywallView and drop its confirm alert.
+                if showsPaywallScreen {
                     paywallScreen
                 } else {
                     routedContentForCurrentState
@@ -316,6 +314,18 @@ struct RootView: View {
         .animation(PaeoniaMotion.meaningfulMoment, value: viewModel.state)
     }
 
+    private var showsPaywallScreen: Bool {
+        switch viewModel.state {
+        case .limitedAuthenticated, .pairedPaywalled, .entitlementLost:
+            true
+        default:
+            PendingJoinInviteFlowResolver().shouldPresentInviteAcceptance(
+                for: viewModel.state,
+                pendingInviteCode: pendingJoinInviteCode
+            )
+        }
+    }
+
     @ViewBuilder
     private var routedContentForCurrentState: some View {
         switch viewModel.state {
@@ -324,8 +334,6 @@ struct RootView: View {
                 .ignoresSafeArea()
         case .unauthenticated:
             welcomeScreen
-        case .limitedAuthenticated, .pairedPaywalled, .entitlementLost:
-            paywallScreen
         case .onboarding:
             onboardingScaffold
         case .unpaired, .invitePending:
@@ -683,6 +691,7 @@ struct RootView: View {
     private func inviteAccepted() {
         Task {
             await viewModel.refreshAfterInviteAccepted()
+            pendingJoinInviteCode = nil
         }
     }
 
@@ -812,7 +821,6 @@ struct RootView: View {
             mayPromptForAuthorization: false
         )
         await performWidgetSyncIfPaired(viewModel.state)
-        await locationViewModel.reload()
     }
 
     private var pairingPermissionPrimerBinding: Binding<RootPairingPermissionPrimerCoordinator.Primer?> {

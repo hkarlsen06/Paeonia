@@ -2,8 +2,8 @@ import SwiftUI
 
 /// The Memories tab: a calm timeline of the couple's saved moments, newest first. Each
 /// memory opens its full detail; the toolbar's plus opens the new-memory form. The list
-/// is local-first, so cached memories show immediately and a background pull refreshes
-/// them. Recoverable errors route into the shared top banner.
+/// is local-first, so cached memories show immediately and the partner's changes
+/// arrive live. Recoverable errors route into the shared top banner.
 struct MemoriesScreen: View {
     let currentUserID: UUID?
     let coupleID: UUID?
@@ -13,10 +13,6 @@ struct MemoriesScreen: View {
 
     @State private var viewModel: MemoriesViewModel
     @State private var isCreating = false
-    /// The in-progress new-memory form, held here rather than inside the sheet so an
-    /// accidental swipe-to-dismiss never throws away a half-written memory. Reopening
-    /// the form restores it; a successful save (or a deliberate Cancel) clears it.
-    @State private var draft = MemoryDraft()
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     init(
@@ -54,17 +50,19 @@ struct MemoriesScreen: View {
                 )
             }
             .sheet(isPresented: $isCreating) {
-                MemoryEditorView(draft: $draft, allowsPhotos: viewModel.canAttachPhotos) { title, date, note, photos, _ in
-                    let saved = await viewModel.createMemory(title: title, date: date, note: note, photos: photos)
-                    if saved {
-                        draft = MemoryDraft()
-                    }
-                    return saved
+                // The view model keeps the draft and saves it on the device, so a swipe-down
+                // or a route change never throws away a half-written memory. A successful
+                // save or a deliberate Cancel clears it.
+                MemoryEditorView(draft: draftBinding, allowsPhotos: viewModel.canAttachPhotos) { title, date, note, photos, _ in
+                    await viewModel.createMemory(title: title, date: date, note: note, photos: photos)
                 }
             }
             .task(id: currentUserID) {
                 viewModel.setLocalChangeSyncHandler(onLocalChange)
                 await viewModel.configure(currentUserID: currentUserID, coupleID: coupleID)
+            }
+            .task(id: currentUserID) {
+                await viewModel.observeStoreChanges()
             }
             .onChange(of: coupleID) { _, newCoupleID in
                 viewModel.updateContext(coupleID: newCoupleID)
@@ -147,10 +145,16 @@ struct MemoriesScreen: View {
     /// Opens the new-memory form. A fresh (empty) draft defaults its date to today;
     /// a draft left over from an earlier dismissal is restored untouched.
     private func openCreate() {
-        if draft.isEmpty {
-            draft.date = Date()
+        if viewModel.draft.isEmpty {
+            var fresh = viewModel.draft
+            fresh.date = Date()
+            viewModel.updateDraft(fresh)
         }
         isCreating = true
+    }
+
+    private var draftBinding: Binding<MemoryDraft> {
+        Binding(get: { viewModel.draft }, set: { viewModel.updateDraft($0) })
     }
 
     private func showBanner(for notice: MemoriesViewModel.Notice?) {

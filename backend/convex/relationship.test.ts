@@ -200,7 +200,7 @@ describe("leaving and blocking", () => {
     expect(await couple.first.as.mutation(api.relationship.mark_relationship_ended_notice_seen, { p_couple_id: couple.coupleId })).toBe(false);
     expect(await couple.second.as.mutation(api.relationship.mark_relationship_ended_notice_seen, { p_couple_id: couple.coupleId })).toBe(true);
     expect(await couple.second.as.mutation(api.relationship.mark_relationship_ended_notice_seen, { p_couple_id: couple.coupleId })).toBe(false);
-    const state = await couple.second.as.mutation(api.relationship.get_current_relationship_state, {});
+    const state = await couple.second.as.query(api.relationship.get_current_relationship_state, {});
     expect(state[0]).toMatchObject({ member_status: "ended_notice_seen", ended_notice_seen_at: NOW });
   });
 });
@@ -213,7 +213,7 @@ describe("get_current_relationship_state", () => {
       const couplesRow = (await ctx.db.query("couples").first())!;
       await ctx.db.patch(couplesRow._id, { started_on: "2024-05-01" });
     });
-    const active = await couple.first.as.mutation(api.relationship.get_current_relationship_state, {});
+    const active = await couple.first.as.query(api.relationship.get_current_relationship_state, {});
     expect(active).toEqual([
       {
         couple_id: couple.coupleId,
@@ -231,13 +231,13 @@ describe("get_current_relationship_state", () => {
     ]);
 
     await couple.first.as.mutation(api.relationship.leave_relationship, operation());
-    const ended = await couple.second.as.mutation(api.relationship.get_current_relationship_state, {});
+    const ended = await couple.second.as.query(api.relationship.get_current_relationship_state, {});
     expect(ended[0]).toMatchObject({ relationship_status: "ended", member_status: "ended_notice_pending", ended_at: NOW });
-    const leaver = await couple.first.as.mutation(api.relationship.get_current_relationship_state, {});
+    const leaver = await couple.first.as.query(api.relationship.get_current_relationship_state, {});
     expect(leaver[0]).toMatchObject({ relationship_status: "ended", member_status: "left" });
 
     const stranger = await createSignedInUser(t, {});
-    expect(await stranger.as.mutation(api.relationship.get_current_relationship_state, {})).toEqual([]);
+    expect(await stranger.as.query(api.relationship.get_current_relationship_state, {})).toEqual([]);
   });
 
   test("hides a partner profile that is not visible", async () => {
@@ -250,7 +250,7 @@ describe("get_current_relationship_state", () => {
         .unique();
       await ctx.db.patch(profile!._id, { moderation_status: "hidden" });
     });
-    const state = await couple.first.as.mutation(api.relationship.get_current_relationship_state, {});
+    const state = await couple.first.as.query(api.relationship.get_current_relationship_state, {});
     expect(state[0]).toMatchObject({ partner_user_id: couple.second.userId, partner_display_name: null });
   });
 });
@@ -267,37 +267,37 @@ describe("get_relationship_sync_events", () => {
       vi.setSystemTime(new Date(time));
       await couple.first.as.mutation(api.relationship.set_couple_started_on, { p_started_on: value, ...operation() });
     }
-    const all = await couple.first.as.mutation(api.relationship.get_relationship_sync_events, { p_limit: 100 });
+    const all = await couple.first.as.query(api.relationship.get_relationship_sync_events, { p_limit: 100 });
     expect(all).toHaveLength(3);
     expect(all.map((event) => event.created_at)).toEqual([...all.map((event) => event.created_at)].sort());
     expect(all.every((event) => event.user_id === couple.first.userId)).toBe(true);
     expect(all[0]).toMatchObject({ event_kind: "relationship_updated", reason: "relationship_start_date_changed", ended_at: null });
 
-    const page = await couple.first.as.mutation(api.relationship.get_relationship_sync_events, { p_limit: 2 });
+    const page = await couple.first.as.query(api.relationship.get_relationship_sync_events, { p_limit: 2 });
     expect(page.map((event) => event.id)).toEqual(all.slice(0, 2).map((event) => event.id));
-    const next = await couple.first.as.mutation(api.relationship.get_relationship_sync_events, {
+    const next = await couple.first.as.query(api.relationship.get_relationship_sync_events, {
       p_after_created_at: page[1].created_at,
       p_after_id: page[1].id.toUpperCase(),
       p_limit: 2,
     });
     expect(next.map((event) => event.id)).toEqual([all[2].id]);
     expect(
-      await couple.first.as.mutation(api.relationship.get_relationship_sync_events, {
+      await couple.first.as.query(api.relationship.get_relationship_sync_events, {
         p_after_created_at: all[2].created_at,
         p_after_id: all[2].id,
         p_limit: 10,
       }),
     ).toEqual([]);
-    await expectFail(couple.first.as.mutation(api.relationship.get_relationship_sync_events, { p_limit: 0 }), "23514");
+    await expectFail(couple.first.as.query(api.relationship.get_relationship_sync_events, { p_limit: 0 }), "23514");
     const stranger = await createSignedInUser(t, {});
-    expect(await stranger.as.mutation(api.relationship.get_relationship_sync_events, { p_limit: 10 })).toEqual([]);
+    expect(await stranger.as.query(api.relationship.get_relationship_sync_events, { p_limit: 10 })).toEqual([]);
   });
 
   test("the partner gets a relationship_ended event with the purge scope", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     await couple.first.as.mutation(api.relationship.leave_relationship, operation());
-    const second = await couple.second.as.mutation(api.relationship.get_relationship_sync_events, { p_limit: 10 });
+    const second = await couple.second.as.query(api.relationship.get_relationship_sync_events, { p_limit: 10 });
     expect(second).toHaveLength(1);
     expect(second[0]).toMatchObject({ event_kind: "relationship_ended", member_status: "ended_notice_pending", relationship_status: "ended" });
     expect(second[0].local_purge_scope).toEqual({

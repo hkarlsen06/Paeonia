@@ -1,11 +1,11 @@
 import Foundation
 
-/// Calls Convex functions over the HTTP API (`/api/mutation`, `/api/action`).
+/// Calls Convex functions over the HTTP API (`/api/query`, `/api/mutation`, `/api/action`).
 ///
 /// Arguments and results use the same JSON conventions the Supabase RPCs used:
 /// snake_case keys come from each type's `CodingKeys`, and dates are ISO-8601
-/// strings with fractional seconds. Every app-callable backend function is a
-/// mutation, except the few StoreKit actions.
+/// strings with fractional seconds. Reads are queries, writes are mutations, and
+/// the few StoreKit calls are actions.
 nonisolated final class PaeoniaConvexClient: Sendable {
     typealias TokenProvider = @Sendable () async throws -> String?
 
@@ -21,6 +21,18 @@ nonisolated final class PaeoniaConvexClient: Sendable {
         self.deploymentURL = deploymentURL
         self.session = session
         self.tokenProvider = tokenProvider
+    }
+
+    /// One-shot read of a Convex query function (`POST /api/query`).
+    func query<Result: Decodable>(
+        _ path: String,
+        args: some Encodable = PaeoniaConvexNoArgs()
+    ) async throws -> Result {
+        try await call(kind: "query", path: path, args: args)
+    }
+
+    func query(_ path: String, args: some Encodable = PaeoniaConvexNoArgs()) async throws {
+        let _: PaeoniaConvexIgnoredResult = try await call(kind: "query", path: path, args: args)
     }
 
     func mutation<Result: Decodable>(

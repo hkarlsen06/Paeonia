@@ -50,7 +50,7 @@ actor LiveMemoryGateway: MemoryGateway {
         cursorMemoryID: UUID?,
         limit: Int
     ) async throws -> [MemoryRemoteRow] {
-        try await client.mutation(
+        try await client.query(
             "memories:get_memories",
             args: GetMemoriesRequest(
                 updatedAfter: updatedAfter,

@@ -3,6 +3,10 @@ import Foundation
 nonisolated protocol PrivacySafetyServicing: Sendable {
     func loadPrivacyRequests() async throws -> [PrivacyRequest]
 
+    /// Emits the requests now and again whenever one changes on the server, newest
+    /// first. The stream ends when the consuming task is cancelled.
+    func privacyRequestUpdates() -> AsyncStream<[PrivacyRequest]>
+
     func submitPrivacyRequest(
         kind: PrivacyRequestKind,
         requesterNote: String?
@@ -15,6 +19,13 @@ nonisolated protocol PrivacySafetyServicing: Sendable {
         blockPartner: Bool,
         operation: SyncClientOperation
     ) async throws -> UUID
+}
+
+nonisolated extension PrivacySafetyServicing {
+    /// Services without a live source emit nothing.
+    func privacyRequestUpdates() -> AsyncStream<[PrivacyRequest]> {
+        AsyncStream { $0.finish() }
+    }
 }
 
 nonisolated enum PrivacySafetyServiceError: Error, Equatable {
@@ -34,6 +45,15 @@ actor PrivacySafetyService: PrivacySafetyServicing {
             .loadPrivacyRequests()
             .map(\.request)
             .sorted { $0.requestedAt > $1.requestedAt }
+    }
+
+    nonisolated func privacyRequestUpdates() -> AsyncStream<[PrivacyRequest]> {
+        ScreenLiveUpdates.values(
+            "identity:get_privacy_requests",
+            as: [PrivacyRequestRemoteRow].self
+        ) { rows in
+            rows.map(\.request).sorted { $0.requestedAt > $1.requestedAt }
+        }
     }
 
     func submitPrivacyRequest(

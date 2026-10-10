@@ -27,7 +27,7 @@ function op(at: string = new Date().toISOString()) {
 }
 
 const start = (user: TestUser) => user.as.mutation(api.daily.start_daily_challenge, op());
-const today = (user: TestUser) => user.as.mutation(api.daily.get_today_daily_questions, {});
+const today = (user: TestUser) => user.as.query(api.daily.get_today_daily_questions, {});
 
 function submit(user: TestUser, instanceId: string, payload: Record<string, unknown>, at?: string) {
   return user.as.mutation(api.daily.submit_daily_answer, { p_instance_id: instanceId, p_payload: payload, ...op(at) });
@@ -66,7 +66,7 @@ describe("question catalog", () => {
       });
     });
     const user = await createSignedInUser(t);
-    const all = await user.as.mutation(api.daily.get_active_question_catalog, {});
+    const all = await user.as.query(api.daily.get_active_question_catalog, {});
     expect(all.map((row) => `${row.question_key}/${row.locale}`)).toEqual(["alpha/en", "alpha/nb", "zeta/en", "zeta/nb"]);
     expect(all[0]).toMatchObject({
       version_number: 1,
@@ -77,9 +77,9 @@ describe("question catalog", () => {
       resurface_after_months: 3,
     });
     expect(all[2].answer_kinds).toEqual(["photo", "text"]);
-    const nb = await user.as.mutation(api.daily.get_active_question_catalog, { p_locale: "nb" });
+    const nb = await user.as.query(api.daily.get_active_question_catalog, { p_locale: "nb" });
     expect(nb.map((row) => row.locale)).toEqual(["nb", "nb"]);
-    await expect(t.mutation(api.daily.get_active_question_catalog, {})).rejects.toThrow(/42501.*authenticated user required/);
+    await expect(t.query(api.daily.get_active_question_catalog, {})).rejects.toThrow(/42501.*authenticated user required/);
   });
 });
 
@@ -128,7 +128,7 @@ describe("start_daily_challenge", () => {
 
   test("returns the snapshot shape the app decodes", async () => {
     const { a } = await readyCouple();
-    const [snapshot] = await a.as.mutation(api.daily.get_today_daily_challenge_snapshot, {});
+    const [snapshot] = await a.as.query(api.daily.get_today_daily_challenge_snapshot, {});
     expect(snapshot.questions).toHaveLength(3);
     expect(snapshot.answer_details).toEqual([]);
     expect(snapshot.streak).toEqual({
@@ -178,13 +178,13 @@ describe("answers and the reveal rule", () => {
 
     const dayId = row.couple_day_id;
     const reads = [
-      await b.as.mutation(api.daily.get_daily_answer_details, { p_couple_day_id: dayId }),
-      await b.as.mutation(api.daily.get_daily_answer_reveal_state, { p_couple_day_id: dayId }),
-      await b.as.mutation(api.daily.get_daily_answer_details_for_couple_days, { p_couple_day_ids: [dayId] }),
-      await b.as.mutation(api.daily.get_daily_answer_history_details, {}),
-      await b.as.mutation(api.daily.get_daily_questions_history, {}),
-      await b.as.mutation(api.daily.get_today_daily_challenge_snapshot, {}),
-      await b.as.mutation(api.daily.get_question_answer_history, { p_question_id: row.question_id }),
+      await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId }),
+      await b.as.query(api.daily.get_daily_answer_reveal_state, { p_couple_day_id: dayId }),
+      await b.as.query(api.daily.get_daily_answer_details_for_couple_days, { p_couple_day_ids: [dayId] }),
+      await b.as.query(api.daily.get_daily_answer_history_details, {}),
+      await b.as.query(api.daily.get_daily_questions_history, {}),
+      await b.as.query(api.daily.get_today_daily_challenge_snapshot, {}),
+      await b.as.query(api.daily.get_question_answer_history, { p_question_id: row.question_id }),
     ];
     expect(JSON.stringify(reads)).not.toContain(secret);
     expect(reads[0]).toEqual([expect.objectContaining({ answer_id: answerId, can_view_answer: false, text_body: null, media_asset_ids: [] })]);
@@ -195,25 +195,25 @@ describe("answers and the reveal rule", () => {
     expect(reads[6]).toEqual([expect.objectContaining({ answer_id: answerId, can_view_answer: false, text_body: null })]);
 
     // The author sees their own text, the outsider sees nothing at all.
-    const own = await a.as.mutation(api.daily.get_daily_answer_details, { p_couple_day_id: dayId });
+    const own = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId });
     expect(own[0]).toMatchObject({ can_view_answer: true, is_own_answer: true, text_body: secret });
     const outsider = await createCouple(t);
-    expect(await outsider.first.as.mutation(api.daily.get_daily_answer_details, { p_couple_day_id: dayId })).toEqual([]);
-    expect(await outsider.first.as.mutation(api.daily.get_daily_answer_reveal_state, { p_couple_day_id: dayId })).toEqual([]);
-    expect(await outsider.first.as.mutation(api.daily.get_question_answer_history, { p_question_id: row.question_id })).toEqual([]);
+    expect(await outsider.first.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId })).toEqual([]);
+    expect(await outsider.first.as.query(api.daily.get_daily_answer_reveal_state, { p_couple_day_id: dayId })).toEqual([]);
+    expect(await outsider.first.as.query(api.daily.get_question_answer_history, { p_question_id: row.question_id })).toEqual([]);
 
     // The partner answers, and now both sides see both answers.
     await submit(b, aFirst.id, { text: "reply" });
-    const afterB = await b.as.mutation(api.daily.get_daily_answer_details, { p_couple_day_id: dayId });
+    const afterB = await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId });
     expect(afterB.map((item) => [item.text_body, item.can_view_answer]).sort()).toEqual([
       [secret, true],
       ["reply", true],
     ]);
-    const afterA = await a.as.mutation(api.daily.get_daily_answer_details_for_couple_days, { p_couple_day_ids: [dayId] });
+    const afterA = await a.as.query(api.daily.get_daily_answer_details_for_couple_days, { p_couple_day_ids: [dayId] });
     expect(afterA.map((item) => item.text_body).sort()).toEqual(["reply", secret].sort());
-    const history = await b.as.mutation(api.daily.get_daily_answer_history_details, {});
+    const history = await b.as.query(api.daily.get_daily_answer_history_details, {});
     expect(history).toHaveLength(2);
-    const [bView] = (await b.as.mutation(api.daily.get_today_daily_challenge_snapshot, {}));
+    const [bView] = (await b.as.query(api.daily.get_today_daily_challenge_snapshot, {}));
     expect(bView.questions.find((item) => item.instance_id === aFirst.id)?.can_view_partner_answer).toBe(true);
     expect(couple.coupleId).toBeTruthy();
   });
@@ -282,9 +282,9 @@ describe("answers and the reveal rule", () => {
     const assetId = await insertAnswerAsset(t, { ownerUserId: a.userId, coupleId: couple.coupleId, answerId });
     await submit(a, first.id, { text: "caption", answer_id: answerId, media_asset_ids: [assetId.toUpperCase()] });
     const day = (await today(a))[0].couple_day_id;
-    const mine = await a.as.mutation(api.daily.get_daily_answer_details, { p_couple_day_id: day });
+    const mine = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
     expect(mine[0]).toMatchObject({ text_body: "caption", media_asset_ids: [assetId], can_view_answer: true });
-    const theirs = await b.as.mutation(api.daily.get_daily_answer_details, { p_couple_day_id: day });
+    const theirs = await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
     expect(theirs[0]).toMatchObject({ text_body: null, media_asset_ids: [], can_view_answer: false });
     // The asset has to be reserved for this answer.
     const [second] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId).slice(1);
@@ -296,7 +296,7 @@ describe("answers and the reveal rule", () => {
       const asset = (await ctx.db.query("media_assets").collect())[0];
       await ctx.db.patch(asset._id, { moderation_status: "hidden" });
     });
-    const hidden = await a.as.mutation(api.daily.get_daily_answer_details, { p_couple_day_id: day });
+    const hidden = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
     expect(hidden[0].media_asset_ids).toEqual([]);
   });
 
@@ -311,14 +311,14 @@ describe("answers and the reveal rule", () => {
     );
     const answerId = await submit(a, first.id, { partner_choice_user_id: a.userId.toUpperCase(), text: "me" });
     const day = (await today(a))[0].couple_day_id;
-    expect((await a.as.mutation(api.daily.get_daily_answer_details, { p_couple_day_id: day }))[0].selected_user_id).toBe(a.userId);
+    expect((await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day }))[0].selected_user_id).toBe(a.userId);
     const edited = await a.as.mutation(api.daily.update_daily_answer_partner_choice, {
       p_instance_id: first.id,
       p_selected_user_id: couple.second.userId,
       ...op(),
     });
     expect(edited).toBe(answerId);
-    expect((await a.as.mutation(api.daily.get_daily_answer_details, { p_couple_day_id: day }))[0].selected_user_id).toBe(
+    expect((await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day }))[0].selected_user_id).toBe(
       couple.second.userId,
     );
     await expect(
@@ -343,7 +343,7 @@ describe("answers and the reveal rule", () => {
       a.as.mutation(api.daily.update_daily_answer_text, { p_instance_id: first.id, p_text: text, ...op() });
     expect(await edit("  better  ")).toBe(answerId);
     const day = (await today(a))[0].couple_day_id;
-    const [detail] = await a.as.mutation(api.daily.get_daily_answer_details, { p_couple_day_id: day });
+    const [detail] = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
     expect(detail).toMatchObject({ text_body: "better", answered_at: "2026-10-10T10:30:00.000Z" });
     await expect(edit("   ")).rejects.toThrow(/23514.*answer text is required/);
     await expect(edit(null)).rejects.toThrow(/23514.*answer text is required/);
@@ -504,17 +504,17 @@ describe("history", () => {
     const { t, a, b } = await readyCouple();
     const [aFirst, aSecond] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
     await submit(a, aFirst.id, { text: "one" });
-    expect(await b.as.mutation(api.daily.get_daily_questions_history, {})).toEqual([]);
+    expect(await b.as.query(api.daily.get_daily_questions_history, {})).toEqual([]);
     vi.setSystemTime(new Date("2026-10-11T10:00:00.000Z"));
     await submit(b, aFirst.id, { text: "reply" });
     vi.setSystemTime(new Date("2026-10-12T10:00:00.000Z"));
     await submit(a, aSecond.id, { text: "two" }, "2026-10-10T20:00:00.000Z");
-    const rows = await a.as.mutation(api.daily.get_daily_questions_history, {});
+    const rows = await a.as.query(api.daily.get_daily_questions_history, {});
     expect(rows.map((row) => [row.instance_id, row.effective_local_date, row.can_view_partner_answer])).toEqual([
       [aSecond.id, "2026-10-12", false],
       [aFirst.id, "2026-10-11", true],
     ]);
-    const details = await a.as.mutation(api.daily.get_daily_answer_history_details, {});
+    const details = await a.as.query(api.daily.get_daily_answer_history_details, {});
     expect(details.map((row) => row.text_body)).toEqual(["one", "reply", "two"]);
   });
 
@@ -531,7 +531,7 @@ describe("history", () => {
       await submit(a, instance.id, { text: `a-${instance.slot_number}` });
     }
     const resurfaceable = rows.find((row) => row.question_key !== "one_time")!;
-    const history = await a.as.mutation(api.daily.get_question_answer_history, { p_question_id: resurfaceable.question_id });
+    const history = await a.as.query(api.daily.get_question_answer_history, { p_question_id: resurfaceable.question_id });
     expect(history).toHaveLength(1);
     expect(history[0]).toMatchObject({
       question_id: resurfaceable.question_id,
@@ -541,9 +541,9 @@ describe("history", () => {
     });
     const oneTime = rows.find((row) => row.question_key === "one_time");
     if (oneTime) {
-      expect(await a.as.mutation(api.daily.get_question_answer_history, { p_question_id: oneTime.question_id })).toEqual([]);
+      expect(await a.as.query(api.daily.get_question_answer_history, { p_question_id: oneTime.question_id })).toEqual([]);
     }
-    expect(await b.as.mutation(api.daily.get_question_answer_history, { p_question_id: resurfaceable.question_id })).toEqual([
+    expect(await b.as.query(api.daily.get_question_answer_history, { p_question_id: resurfaceable.question_id })).toEqual([
       expect.objectContaining({ answer_user_id: a.userId, can_view_answer: false, text_body: null }),
     ]);
   });
@@ -567,6 +567,126 @@ describe("questions already answered", () => {
   });
 });
 
+describe("get_daily_challenge_snapshot", () => {
+  async function todayDayId(t: TestConvex) {
+    return await t.run(async (ctx) => (await ctx.db.query("couple_days").first())!.id);
+  }
+
+  test("matches the start mutation's snapshot for the same day and names the day window", async () => {
+    const { t, a } = await readyCouple();
+    const dayId = await todayDayId(t);
+    const [started] = await a.as.mutation(api.daily.start_daily_challenge_snapshot, op());
+    const [watched] = await a.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: dayId });
+    expect(watched).toEqual(started);
+    expect(watched.questions).toHaveLength(3);
+    expect(watched).toMatchObject({
+      couple_day_id: dayId,
+      local_date: "2026-10-10",
+      starts_at: "2026-10-09T22:00:00.000Z",
+      ends_at: "2026-10-10T22:00:00.000Z",
+    });
+    const [oneShot] = await a.as.query(api.daily.get_today_daily_challenge_snapshot, {});
+    expect(oneShot.couple_day_id).toBe(dayId);
+    expect(oneShot.ends_at).toBe(watched.ends_at);
+  });
+
+  test("today's snapshot ignores the day key and finds the new day after midnight", async () => {
+    const { t, a } = await readyCouple();
+    const dayId = await todayDayId(t);
+    const [keyed] = await a.as.query(api.daily.get_today_daily_challenge_snapshot, { p_day_key: "2026-10-10" });
+    expect(keyed.couple_day_id).toBe(dayId);
+    vi.setSystemTime(new Date("2026-10-10T22:30:00.000Z"));
+    const [afterMidnight] = await a.as.query(api.daily.get_today_daily_challenge_snapshot, {
+      p_day_key: keyed.ends_at ?? undefined,
+    });
+    expect(afterMidnight.couple_day_id).toBeNull();
+    expect(afterMidnight.ends_at).toBeNull();
+  });
+
+  test("accepts an uppercase id and does not change with the clock", async () => {
+    const { t, a } = await readyCouple();
+    const dayId = await todayDayId(t);
+    const [first] = await a.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: dayId.toUpperCase() });
+    vi.setSystemTime(new Date("2026-10-10T15:00:00.000Z"));
+    const [later] = await a.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: dayId });
+    expect(later).toEqual(first);
+  });
+
+  test("a partner's answer, a reveal, and a shuffle change the result", async () => {
+    const { t, a, b } = await readyCouple();
+    const dayId = await todayDayId(t);
+    const read = async (user: TestUser) => (await user.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: dayId }))[0];
+    const before = await read(b);
+    const [aFirst] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
+
+    await submit(a, aFirst.id, { text: "hello" });
+    const partnerAnswered = await read(b);
+    expect(partnerAnswered).not.toEqual(before);
+    const aRow = partnerAnswered.questions.find((row) => row.instance_id === aFirst.id)!;
+    expect(aRow.partner_answer_id).not.toBeNull();
+    expect(aRow.can_view_partner_answer).toBe(false);
+    expect(partnerAnswered.answer_details.every((row) => row.text_body === null || row.is_own_answer)).toBe(true);
+
+    await submit(b, aFirst.id, { text: "reply" });
+    const revealed = await read(b);
+    expect(revealed.questions.find((row) => row.instance_id === aFirst.id)!.can_view_partner_answer).toBe(true);
+    expect(revealed.answer_details.find((row) => !row.is_own_answer)!.text_body).toBe("hello");
+
+    const mineB = (await liveInstancesFor(t, b.userId)).filter((row) => row.seeded_for_user_id === b.userId);
+    await b.as.mutation(api.daily.shuffle_daily_question_snapshot, { p_slot_number: mineB[2].slot_number, ...op() });
+    const shuffled = await read(b);
+    expect(shuffled.questions.map((row) => row.instance_id)).not.toEqual(revealed.questions.map((row) => row.instance_id));
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("the shuffle snapshot carries the day it shuffled", async () => {
+    const { t, a } = await readyCouple();
+    const dayId = await todayDayId(t);
+    const [snapshot] = await a.as.mutation(api.daily.shuffle_daily_question_snapshot, { p_slot_number: 1, ...op() });
+    expect(snapshot.couple_day_id).toBe(dayId);
+  });
+
+  test("shows the streak with the day's contributions", async () => {
+    const { t, a, b } = await readyCouple();
+    const dayId = await todayDayId(t);
+    await completeDay(t, a);
+    const [snapshot] = await b.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: dayId });
+    expect(snapshot.streak).toMatchObject({ current_user_contributed_today: false, partner_contributed_today: true });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("fails for people outside the couple, unknown days, and signed-out callers", async () => {
+    const { t, a } = await readyCouple();
+    const dayId = await todayDayId(t);
+    const outsider = await createCouple(t, { timeZones: OSLO });
+    const denied = /42501.*active entitled couple access is required/;
+    await expect(
+      outsider.first.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: dayId }),
+    ).rejects.toThrow(denied);
+    await expect(
+      a.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: newUuid() }),
+    ).rejects.toThrow(denied);
+    await expect(t.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: dayId })).rejects.toThrow(
+      /42501.*authenticated user required/,
+    );
+    await expect(a.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: "nope" })).rejects.toThrow(/22P02/);
+  });
+
+  test("fails once the couple lost access", async () => {
+    const t = newTest();
+    await seedCatalog(t, textQuestions(12));
+    const couple = await createCouple(t, { timeZones: OSLO });
+    await start(couple.first);
+    const dayId = await todayDayId(t);
+    await t.run(async (ctx) => {
+      for (const row of await ctx.db.query("entitlement_grants").collect()) await ctx.db.delete(row._id);
+    });
+    await expect(
+      couple.first.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: dayId }),
+    ).rejects.toThrow(/42501/);
+  });
+});
+
 describe("completing the day", () => {
   test("three answers complete the challenge, tell the partner, and both partners together start the streak", async () => {
     const { t, a, b } = await readyCouple();
@@ -578,13 +698,13 @@ describe("completing the day", () => {
     expect(challenge).toMatchObject({ completed_at: "2026-10-10T10:00:00.000Z", partner_notified_at: "2026-10-10T10:00:00.000Z" });
     const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
     expect(outbox.map((row) => [row.kind, row.recipient_user_id])).toEqual([["daily_challenge_completed", b.userId]]);
-    expect(await a.as.mutation(api.streaks.get_couple_streak, {})).toEqual([
+    expect(await a.as.query(api.streaks.get_couple_streak, {})).toEqual([
       expect.objectContaining({ current_count: 0, current_user_contributed_today: true, partner_contributed_today: false }),
     ]);
     expect(await t.run((ctx) => ctx.db.query("streak_states").collect())).toEqual([]);
 
     await completeDay(t, b);
-    const [streak] = await b.as.mutation(api.streaks.get_couple_streak, {});
+    const [streak] = await b.as.query(api.streaks.get_couple_streak, {});
     expect(streak).toEqual({
       current_count: 1,
       longest_count: 1,
@@ -595,7 +715,7 @@ describe("completing the day", () => {
       current_user_contributed_today: true,
       partner_contributed_today: true,
     });
-    const [snapshot] = await b.as.mutation(api.daily.get_today_daily_challenge_snapshot, {});
+    const [snapshot] = await b.as.query(api.daily.get_today_daily_challenge_snapshot, {});
     expect(snapshot.streak).toMatchObject({ current_count: 1 });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });

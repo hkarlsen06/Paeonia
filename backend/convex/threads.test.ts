@@ -317,7 +317,7 @@ describe("send_thread_message", () => {
     const a = await uploadAsset(t, couple.first, photo(couple.coupleId, "thread_message_media", "thread_media"));
     const [row] = await send(couple.first, threadId, { p_body: null, p_media_asset_ids: [a.assetId] });
     expect(row.message_id).toBe(a.parentId);
-    const messages = await couple.second.as.mutation(api.threads.get_thread_messages, { p_thread_id: threadId });
+    const messages = await couple.second.as.query(api.threads.get_thread_messages, { p_thread_id: threadId });
     const message = messages.find((item: { message_id: string }) => item.message_id === a.parentId);
     expect(message).toMatchObject({ body: null, media_asset_ids: [a.assetId] });
     expect(message!.media_states).toEqual([
@@ -394,7 +394,7 @@ describe("reads", () => {
       });
     });
 
-    const rows = await couple.second.as.mutation(api.threads.get_conversation_threads, {});
+    const rows = await couple.second.as.query(api.threads.get_conversation_threads, {});
     expect(rows.map((row: { thread_id: string }) => row.thread_id)).toEqual([
       "00000000-0000-4000-8000-0000000000aa",
       memoryThreadId,
@@ -434,7 +434,7 @@ describe("reads", () => {
       const message = await ctx.db.query("thread_messages").withIndex("by_uuid", (q) => q.eq("id", second.message_id)).unique();
       await ctx.db.patch(message!._id, { moderation_status: "hidden" });
     });
-    const rows = await couple.first.as.mutation(api.threads.get_thread_messages, { p_thread_id: thread_id });
+    const rows = await couple.first.as.query(api.threads.get_thread_messages, { p_thread_id: thread_id });
     expect(rows.map((row: { message_id: string }) => row.message_id)).toEqual([message_id, second.message_id]);
     expect(rows[0]).toEqual({
       thread_id,
@@ -457,17 +457,17 @@ describe("reads", () => {
     const memoryId = await createMemory(couple.first);
     const [{ thread_id }] = await memoryThread(couple.first, memoryId);
     const stranger = await createSignedInUser(t);
-    const read = (user: TestUser) => user.as.mutation(api.threads.get_thread_messages, { p_thread_id: thread_id });
+    const read = (user: TestUser) => user.as.query(api.threads.get_thread_messages, { p_thread_id: thread_id });
     expect(await read(stranger)).toEqual([]);
     expect(await read(couple.second)).toHaveLength(1);
-    expect(await failure(stranger.as.mutation(api.threads.get_conversation_threads, {}))).toEqual({
+    expect(await failure(stranger.as.query(api.threads.get_conversation_threads, {}))).toEqual({
       code: "42501",
       message: "active entitled couple access is required",
     });
     await endCouple(t, couple.coupleId, couple.first.userId);
     expect(await read(couple.first)).toEqual([]);
     expect(await read(couple.second)).toEqual([]);
-    expect(await failure(couple.second.as.mutation(api.threads.get_conversation_threads, {}))).toMatchObject({ code: "42501" });
+    expect(await failure(couple.second.as.query(api.threads.get_conversation_threads, {}))).toMatchObject({ code: "42501" });
   });
 
   test("an unentitled couple gets nothing", async () => {
@@ -478,7 +478,7 @@ describe("reads", () => {
     await t.run(async (ctx) => {
       for (const grant of await ctx.db.query("entitlement_grants").collect()) await ctx.db.delete(grant._id);
     });
-    expect(await couple.first.as.mutation(api.threads.get_thread_messages, { p_thread_id: thread_id })).toEqual([]);
-    expect(await failure(couple.first.as.mutation(api.threads.get_conversation_threads, {}))).toMatchObject({ code: "42501" });
+    expect(await couple.first.as.query(api.threads.get_thread_messages, { p_thread_id: thread_id })).toEqual([]);
+    expect(await failure(couple.first.as.query(api.threads.get_conversation_threads, {}))).toMatchObject({ code: "42501" });
   });
 });

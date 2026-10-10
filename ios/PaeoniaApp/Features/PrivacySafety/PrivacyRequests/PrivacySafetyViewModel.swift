@@ -44,6 +44,17 @@ final class PrivacySafetyViewModel {
         }
     }
 
+    /// Applies status changes as the server reports them. Runs until the screen's
+    /// task is cancelled.
+    func observe() async {
+        guard let service else {
+            return
+        }
+        for await latest in service.privacyRequestUpdates() {
+            requests = latest
+        }
+    }
+
     @discardableResult
     func submitRequest(kind: PrivacyRequestKind, requesterNote: String? = nil) async -> Bool {
         if kind == .correction {

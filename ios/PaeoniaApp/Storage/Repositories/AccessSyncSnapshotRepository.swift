@@ -79,6 +79,7 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
         localSnapshot.refreshedAt = snapshot.refreshedAt
 
         try context.save()
+        LocalStoreChanges.post(.access, ownerUserID: snapshot.ownerUserID)
     }
 
     func load(ownerUserID: UUID) async throws -> AccessSyncSnapshot? {
@@ -112,6 +113,7 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
         if let snapshot = try fetchSnapshot(ownerUserID: ownerUserID, in: context) {
             context.delete(snapshot)
             try context.save()
+            LocalStoreChanges.post(.access, ownerUserID: ownerUserID)
         }
     }
 
@@ -153,6 +155,7 @@ actor InMemoryAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
 
     func save(_ snapshot: AccessSyncSnapshot) async throws {
         snapshots[snapshot.ownerUserID] = snapshot
+        LocalStoreChanges.post(.access, ownerUserID: snapshot.ownerUserID)
     }
 
     func load(ownerUserID: UUID) async throws -> AccessSyncSnapshot? {
@@ -161,5 +164,6 @@ actor InMemoryAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
 
     func delete(ownerUserID: UUID) async throws {
         snapshots[ownerUserID] = nil
+        LocalStoreChanges.post(.access, ownerUserID: ownerUserID)
     }
 }

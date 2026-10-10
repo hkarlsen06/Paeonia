@@ -257,7 +257,7 @@ struct PaywallView: View {
         // A manual submission updates the durable binding after it starts. Do not
         // interpret that persistence update as a second request to preview the same
         // code while its overlay is already visible.
-        guard !showInviteOverlay || inviteCode != normalizedCode else {
+        guard !showInviteOverlay || (try? PairingInviteCode.normalized(inviteCode)) != normalizedCode else {
             return
         }
 
@@ -362,8 +362,9 @@ struct PaywallView: View {
             if didAccept {
                 viewModel.clearError()
                 bannerCenter.dismiss()
-                pendingInviteCode = nil
                 dismissInviteOverlay()
+                // Root clears the pending code once the paired route is in place.
+                // Clearing it here would route back to pairing for a frame first.
                 onInviteAccepted()
             } else {
                 inviteFieldFocused = true

@@ -1,44 +1,65 @@
 import { v } from "convex/values";
-import { internalMutation, mutation } from "./_generated/server";
+import { internalMutation, query } from "./_generated/server";
 import { getCurrentEntitledCoupleId } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import { getByUuid } from "./lib/db";
 import { optionalTimestampArg } from "./lib/ids";
 import { enqueueNotificationForUser } from "./lib/notifications";
-import { getCoupleStreakForCouple, getCoupleStreakParticipationForUser, refreshStreakDeadline } from "./lib/streaks";
+import { detectStreakBreak, getCoupleStreakParticipationForUser, readCoupleStreak } from "./lib/streaks";
 import { addHours, nowIso } from "./lib/time";
 
-/** The streak card: counts, restore offer, and who has contributed today. Returns one row, like the SQL function. */
-export const get_couple_streak = mutation({
+/**
+ * The streak card: counts, restore offer, and who has contributed today. Returns one row, like the SQL function.
+ * A query cannot store the restore offer. It reports a just-broken streak from the clock and the stored deadline,
+ * and `enqueue_due_streak_reminders` persists the same state within one cron interval.
+ */
+export const get_couple_streak = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-    const streak = await getCoupleStreakForCouple(ctx, coupleId);
+    const streak = await readCoupleStreak(ctx, coupleId);
     const participation = await getCoupleStreakParticipationForUser(ctx, coupleId, userId, nowIso());
     return [{ ...streak, ...participation }];
   },
 });
 
+/** Streaks whose deadline passed longer ago than this have an expired restore offer, so the cron skips them. */
+const BREAK_LOOKBACK_HOURS = 48;
+/** Most streaks the cron inspects per run for a newly passed deadline. */
+const BREAK_BATCH_LIMIT = 500;
+
 /**
  * Port of `internal.enqueue_due_streak_reminders`. Queues a check-in reminder for
  * each partner who has not contributed today, for streaks whose deadline falls
  * within the next hour. Returns how many notifications were queued.
+ *
+ * It also stores the broken state for streaks whose deadline just passed, which
+ * opens the restore offer. `get_couple_streak` is a query and cannot write, so
+ * this run is what makes a subscribed streak card flip.
  */
 export const enqueue_due_streak_reminders = internalMutation({
   args: { p_now: v.optional(v.union(v.null(), v.string())) },
   handler: async (ctx, args) => {
     const now = optionalTimestampArg(args.p_now) ?? nowIso();
 
-    // Zone changes can move a stored deadline, so re-resolve every running streak first.
-    // ponytail: scans all streak rows each run. Page through them if the table outgrows one mutation.
-    const states = await ctx.db.query("streak_states").collect();
-    for (const state of states) {
+    // The index range holds only deadlines that passed in the lookback window, oldest first.
+    // Already-broken rows and ended couples keep their deadline, so skip them before
+    // counting toward the limit. Otherwise they would hide newer breaks for the whole window.
+    // ponytail: unbroken rows past the limit wait for the next run. Raise it if breaks pile up faster than 500 per 5 minutes.
+    let broken = 0;
+    for await (const state of ctx.db
+      .query("streak_states")
+      .withIndex("by_next_activity_deadline_at", (q) =>
+        q.gt("next_activity_deadline_at", addHours(now, -BREAK_LOOKBACK_HOURS)).lte("next_activity_deadline_at", now),
+      )) {
+      if (state.current_count <= 0 || state.restorable_count !== 0) continue;
       const couple = await getByUuid(ctx, "couples", state.couple_id);
-      if (couple?.status === "active" && state.current_count > 0 && state.restorable_count === 0) {
-        await refreshStreakDeadline(ctx, state.couple_id);
-      }
+      if (couple?.status !== "active") continue;
+      if (broken >= BREAK_BATCH_LIMIT) break;
+      broken += 1;
+      await detectStreakBreak(ctx, state.couple_id);
     }
 
     const horizon = addHours(now, 1);

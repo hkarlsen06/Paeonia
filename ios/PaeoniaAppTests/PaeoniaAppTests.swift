@@ -211,35 +211,6 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
-    @Test func cachedAccessSnapshotCanRecoverAccessRouteAfterSync() async throws {
-        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
-        let coupleID = try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333"))
-        let syncService = TestPaeoniaSyncService()
-        let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
-        let viewModel = RootViewModel(
-            syncService: syncService,
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated),
-            accessSnapshotStore: accessSnapshotStore
-        )
-        await viewModel.start()
-        #expect(viewModel.state == .limitedAuthenticated)
-
-        try await accessSnapshotStore.save(
-            .testPaired(ownerUserID: ownerUserID, coupleID: coupleID, partnerDisplayName: "Riley")
-        )
-
-        await viewModel.refreshAfterForegroundActivation()
-
-        #expect(viewModel.state == .paired)
-        #expect(viewModel.currentPartnerDisplayName == "Riley")
-        #expect(await syncService.runOnceReasons == [.foreground])
-        let configuredSessions = await syncService.configuredSessions
-        let latestSession = configuredSessions.last ?? nil
-        #expect(latestSession?.activeCoupleID == coupleID)
-    }
-
-    @MainActor
     @Test func cachedAccessSnapshotIsFallbackWhenLiveAccessFails() async throws {
         let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
@@ -914,6 +885,157 @@ struct PaeoniaAppTests {
     }
 }
 
+/// The live access feed writes the snapshot store, and Root re-routes on its own.
+struct RootLiveAccessTests {
+    @MainActor
+    private final class Fixture {
+        let userID: UUID
+        let store: InMemoryAccessSyncSnapshotRepository
+        let syncService: TestPaeoniaSyncService
+        let celebrationStore: TestPairingCelebrationStore
+
+        init() {
+            userID = UUID()
+            store = InMemoryAccessSyncSnapshotRepository()
+            syncService = TestPaeoniaSyncService()
+            celebrationStore = TestPairingCelebrationStore()
+        }
+
+        func makeViewModel(
+            route: AccessRoute,
+            invite: PairingInvite? = nil,
+            authService: AuthServiceSpy? = nil
+        ) -> RootViewModel {
+            RootViewModel(
+                syncService: syncService,
+                authService: authService ?? AuthServiceSpy(
+                    session: .test(id: userID.uuidString, profileStatus: .complete)
+                ),
+                accessRouteService: StaticAccessRouteService(route: route),
+                accessSnapshotStore: store,
+                inviteStore: TestPairingInviteStore(invite: invite, userID: userID.uuidString),
+                pairingCelebrationStore: celebrationStore
+            )
+        }
+    }
+
+    @MainActor
+    @Test func inviterWaitingScreenMovesToPairedWhenThePartnerAccepts() async throws {
+        let fixture = Fixture()
+        let coupleID = UUID()
+        let viewModel = fixture.makeViewModel(route: .invitePending, invite: .test())
+        await viewModel.start()
+        #expect(viewModel.state == .invitePending)
+
+        try await fixture.store.save(
+            .testPaired(ownerUserID: fixture.userID, coupleID: coupleID, partnerDisplayName: "Riley")
+        )
+
+        #expect(await waitUntil { @MainActor in viewModel.state == .paired })
+        #expect(viewModel.currentPartnerDisplayName == "Riley")
+        #expect(viewModel.isPairingCelebrationPresented)
+        // Sync restarts for the new couple without a refresh.
+        let syncService = fixture.syncService
+        #expect(await waitUntil { (await syncService.configuredSessions.last ?? nil)?.activeCoupleID == coupleID })
+    }
+
+    @MainActor
+    @Test func partnerLeavingRoutesToTheEndedNoticeAndPurgesOnce() async throws {
+        let fixture = Fixture()
+        let viewModel = fixture.makeViewModel(route: .paired)
+        await viewModel.start()
+        #expect(viewModel.state == .paired)
+
+        let ended = AccessSyncSnapshot.testEnded(ownerUserID: fixture.userID)
+        try await fixture.store.save(ended)
+
+        #expect(await waitUntil { @MainActor in viewModel.state == .relationshipEndedNotice })
+        #expect(await fixture.syncService.relationshipAccessPurgePermanence == [true])
+
+        // The feed restarts after a purge and writes the same snapshot again.
+        // That must not purge a second time.
+        try await fixture.store.save(ended)
+        try? await Task.sleep(for: .milliseconds(100))
+        #expect(viewModel.state == .relationshipEndedNotice)
+        #expect(await fixture.syncService.relationshipAccessPurgePermanence == [true])
+    }
+
+    @MainActor
+    @Test func lostCoupleEntitlementRoutesToThePaywallAndHidesContent() async throws {
+        let fixture = Fixture()
+        let viewModel = fixture.makeViewModel(route: .paired)
+        await viewModel.start()
+
+        try await fixture.store.save(.testPaywalled(ownerUserID: fixture.userID))
+
+        #expect(await waitUntil { @MainActor in viewModel.state == .pairedPaywalled })
+        #expect(await fixture.syncService.relationshipAccessPurgePermanence == [false])
+    }
+
+    @MainActor
+    @Test func partnerNameChangeShowsWithoutARefresh() async throws {
+        let fixture = Fixture()
+        let coupleID = UUID()
+        let viewModel = fixture.makeViewModel(route: .paired)
+        await viewModel.start()
+
+        try await fixture.store.save(
+            .testPaired(ownerUserID: fixture.userID, coupleID: coupleID, partnerDisplayName: "Riley")
+        )
+        #expect(await waitUntil { @MainActor in viewModel.currentPartnerDisplayName == "Riley" })
+
+        try await fixture.store.save(
+            .testPaired(ownerUserID: fixture.userID, coupleID: coupleID, partnerDisplayName: "Rae")
+        )
+        #expect(await waitUntil { @MainActor in viewModel.currentPartnerDisplayName == "Rae" })
+        #expect(viewModel.state == .paired)
+        #expect(await fixture.syncService.relationshipAccessPurgePermanence.isEmpty)
+    }
+
+    @MainActor
+    @Test func snapshotsForAnotherUserAreIgnored() async throws {
+        let fixture = Fixture()
+        let viewModel = fixture.makeViewModel(route: .paired)
+        await viewModel.start()
+        let partnerBefore = viewModel.currentPartnerDisplayName
+
+        try await fixture.store.save(.testPaired(ownerUserID: UUID(), partnerDisplayName: "Someone else"))
+        try? await Task.sleep(for: .milliseconds(100))
+
+        #expect(viewModel.currentPartnerDisplayName == partnerBefore)
+    }
+
+    @MainActor
+    @Test func snapshotsAfterSignOutDoNotRoute() async throws {
+        let fixture = Fixture()
+        let viewModel = fixture.makeViewModel(route: .unpaired)
+        await viewModel.start()
+        await viewModel.signOut()
+        #expect(viewModel.state == .unauthenticated)
+
+        try await fixture.store.save(.testPaired(ownerUserID: fixture.userID))
+        try? await Task.sleep(for: .milliseconds(100))
+
+        #expect(viewModel.state == .unauthenticated)
+    }
+
+    @MainActor
+    @Test func foregroundActivationDoesNotRereadTheSnapshotItself() async throws {
+        let fixture = Fixture()
+        let viewModel = fixture.makeViewModel(route: .limitedAuthenticated)
+        // No observation yet: write before the model starts, so only an explicit
+        // re-read could route from this snapshot.
+        try await fixture.store.save(.testPaired(ownerUserID: fixture.userID, partnerDisplayName: "Riley"))
+        await viewModel.start()
+        let stateAfterStart = viewModel.state
+
+        await viewModel.refreshAfterForegroundActivation()
+
+        #expect(viewModel.state == stateAfterStart)
+        #expect(await fixture.syncService.runOnceReasons == [.foreground])
+    }
+}
+
 private actor TestPaeoniaSyncService: PaeoniaSyncing {
     private(set) var startCallCount = 0
     private(set) var requestedReasons: [SyncRequestReason] = []
@@ -1131,6 +1253,49 @@ private extension AccessSyncSnapshot {
                 coupleID: coupleID,
                 partnerDisplayName: partnerDisplayName
             ),
+            refreshedAt: Date(timeIntervalSince1970: 2_000_000_000)
+        )
+    }
+}
+
+private extension AccessSyncSnapshot {
+    static func testEnded(ownerUserID: UUID, coupleID: UUID = UUID()) -> AccessSyncSnapshot {
+        AccessSyncSnapshot(
+            ownerUserID: ownerUserID,
+            userEntitlement: .testEntitled(userID: ownerUserID),
+            coupleEntitlement: nil,
+            relationshipState: RemoteRelationshipState(
+                coupleID: coupleID,
+                pairID: UUID(),
+                relationshipStatus: .ended,
+                memberStatus: .endedNoticePending,
+                partnerUserID: UUID(),
+                partnerDisplayName: "Partner",
+                partnerProfilePhotoAssetID: nil,
+                startedOn: "2026-06-24",
+                endedAt: Date(timeIntervalSince1970: 1_900_000_000),
+                deleteAfter: nil,
+                endedNoticeSeenAt: nil
+            ),
+            refreshedAt: Date(timeIntervalSince1970: 2_000_000_000)
+        )
+    }
+
+    static func testPaywalled(ownerUserID: UUID, coupleID: UUID = UUID()) -> AccessSyncSnapshot {
+        AccessSyncSnapshot(
+            ownerUserID: ownerUserID,
+            userEntitlement: nil,
+            coupleEntitlement: RemoteCoupleEntitlement(
+                coupleID: coupleID,
+                isEntitled: false,
+                coveringUserID: nil,
+                source: nil,
+                status: "expired",
+                productID: nil,
+                currentPeriodEnd: nil,
+                updatedAt: Date(timeIntervalSince1970: 1_800_000_000)
+            ),
+            relationshipState: .test(coupleID: coupleID, partnerDisplayName: "Partner"),
             refreshedAt: Date(timeIntervalSince1970: 2_000_000_000)
         )
     }

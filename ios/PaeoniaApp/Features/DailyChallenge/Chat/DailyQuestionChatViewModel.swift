@@ -50,7 +50,7 @@ final class DailyQuestionChatViewModel {
         self.participants = participants
     }
 
-    func load(surfacingFailure: Bool = true) async {
+    func load() async {
         guard let ownerUserID = participants.currentUserID else {
             notice = .unavailable
             return
@@ -63,15 +63,7 @@ final class DailyQuestionChatViewModel {
         isLoading = messages.isEmpty
         defer { isLoading = false }
 
-        let cachedSummaries = await service.cachedThreadSummaries(ownerUserID: ownerUserID)
-        threadID = cachedSummaries.first(where: { $0.instanceID == question.id })?.threadID
-        let cached = await service.cachedMessages(ownerUserID: ownerUserID, instanceID: question.id)
-        let pending = await service.pendingMessages(ownerUserID: ownerUserID, instanceID: question.id)
-        hasQueuedThreadCreation = await service.hasPendingThreadCreation(
-            ownerUserID: ownerUserID,
-            instanceID: question.id
-        )
-        messages = DailyQuestionChatMessage.visibleOrdered(remote: cached, optimistic: pending)
+        await readStore(ownerUserID: ownerUserID)
         if messages.contains(where: \.sendFailed) {
             notice = .sendFailed
         }
@@ -96,8 +88,65 @@ final class DailyQuestionChatViewModel {
                 )
             }
         } catch {
-            if surfacingFailure, !isCancellation(error), messages.isEmpty {
+            if !isCancellation(error), messages.isEmpty {
                 notice = .loadFailed
+            }
+        }
+    }
+
+    /// Re-reads the thread, the cached messages, and the messages still sending.
+    private func readStore(ownerUserID: UUID) async {
+        let cachedSummaries = await service.cachedThreadSummaries(ownerUserID: ownerUserID)
+        threadID = cachedSummaries.first(where: { $0.instanceID == question.id })?.threadID ?? threadID
+        let cached = await service.cachedMessages(ownerUserID: ownerUserID, instanceID: question.id)
+        let pending = await service.pendingMessages(ownerUserID: ownerUserID, instanceID: question.id)
+        hasQueuedThreadCreation = await service.hasPendingThreadCreation(
+            ownerUserID: ownerUserID,
+            instanceID: question.id
+        )
+        messages = DailyQuestionChatMessage.visibleOrdered(remote: cached, optimistic: pending)
+    }
+
+    /// Keeps the chat current while the screen is open, until the calling task is
+    /// cancelled. Messages that arrive from the partner, and a thread the partner
+    /// starts, show up without a reload. The live results are written to the chat
+    /// cache first, so reopening the chat offline shows the same messages.
+    func observeLiveUpdates() async {
+        guard let ownerUserID = participants.currentUserID, question.isChatAvailable else { return }
+
+        var followedThreadID: UUID?
+        var messageUpdates: Task<Void, Never>?
+        defer { messageUpdates?.cancel() }
+
+        let changes = LocalStoreChanges.changes(in: .dailyChat)
+        // Check once before waiting, in case the thread arrived before this started.
+        var shouldRead = true
+        var iterator = changes.makeAsyncIterator()
+        while shouldRead {
+            await readStore(ownerUserID: ownerUserID)
+            if let threadID, threadID != followedThreadID {
+                followedThreadID = threadID
+                messageUpdates?.cancel()
+                let instanceID = question.id
+                messageUpdates = Task { @MainActor [weak self, service] in
+                    let updates = service.liveMessageUpdates(
+                        ownerUserID: ownerUserID,
+                        instanceID: instanceID,
+                        threadID: threadID
+                    )
+                    for await _ in updates {
+                        guard let self else { return }
+                        await self.readStore(ownerUserID: ownerUserID)
+                    }
+                }
+            }
+            // Wait for the next change to this user's chats. Other users' changes are skipped.
+            shouldRead = false
+            while let change = await iterator.next() {
+                if change.ownerUserID == ownerUserID {
+                    shouldRead = true
+                    break
+                }
             }
         }
     }
@@ -143,7 +192,10 @@ final class DailyQuestionChatViewModel {
         Task { @MainActor [weak self] in
             guard let self else { return }
             await syncAfterLocalChange?()
-            await load(surfacingFailure: false)
+            // The send confirmation lands in the cache. A full reload here could
+            // overwrite a newer live result with an older server read.
+            guard let ownerUserID = participants.currentUserID else { return }
+            await readStore(ownerUserID: ownerUserID)
         }
     }
 

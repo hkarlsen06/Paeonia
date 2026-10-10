@@ -241,7 +241,7 @@ describe("request_account_deletion", () => {
     const t = newTest();
     const { first, second } = await appleCoupleWithData(t);
     await first.as.mutation(api.identity.request_account_deletion, {});
-    expect(await second.as.mutation(api.identity.get_own_profile, {})).toMatchObject({ deleted_at: null });
+    expect(await second.as.query(api.identity.get_own_profile, {})).toMatchObject({ deleted_at: null });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
@@ -297,7 +297,7 @@ describe("job state machine", () => {
       "42501",
       "not authorized",
     );
-    await expectFail(first.as.mutation(api.identity.get_own_profile, {}), "42501", "authenticated user required");
+    await expectFail(first.as.query(api.identity.get_own_profile, {}), "42501", "authenticated user required");
     expect(await t.run((ctx) => ctx.db.query("app_account_tokens").collect())).toHaveLength(0);
 
     const done = await t.run(async (ctx) => ({

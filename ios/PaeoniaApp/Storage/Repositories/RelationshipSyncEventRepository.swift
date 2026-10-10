@@ -39,6 +39,7 @@ actor SwiftDataRelationshipSyncEventRepository: RelationshipSyncEventPersisting 
         }
 
         try context.save()
+        postChanges(for: events)
     }
 
     func events(ownerUserID: UUID) async throws -> [RemoteRelationshipSyncEvent] {
@@ -69,6 +70,7 @@ actor SwiftDataRelationshipSyncEventRepository: RelationshipSyncEventPersisting 
         }
 
         try context.save()
+        LocalStoreChanges.post(.relationshipEvents, ownerUserID: ownerUserID)
     }
 
     private func fetchEvent(
@@ -116,6 +118,7 @@ actor InMemoryRelationshipSyncEventRepository: RelationshipSyncEventPersisting {
         for event in events {
             eventsByID[event.id] = event
         }
+        postChanges(for: events)
     }
 
     func events(ownerUserID: UUID) async throws -> [RemoteRelationshipSyncEvent] {
@@ -132,5 +135,16 @@ actor InMemoryRelationshipSyncEventRepository: RelationshipSyncEventPersisting {
 
     func deleteEvents(ownerUserID: UUID) async throws {
         eventsByID = eventsByID.filter { $0.value.userID != ownerUserID }
+        LocalStoreChanges.post(.relationshipEvents, ownerUserID: ownerUserID)
+    }
+}
+
+nonisolated private func postChanges(for events: [RemoteRelationshipSyncEvent]) {
+    guard !events.isEmpty else {
+        return
+    }
+
+    for ownerUserID in Set(events.map(\.userID)) {
+        LocalStoreChanges.post(.relationshipEvents, ownerUserID: ownerUserID)
     }
 }

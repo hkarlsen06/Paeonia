@@ -64,6 +64,10 @@ struct WidgetDrawingHistoryView: View {
         .task {
             await viewModel.loadInitialIfNeeded()
         }
+        // The live canvas feed saved a new drawing while the timeline is open.
+        .onReceive(NotificationCenter.default.publisher(for: .paeoniaWidgetCanvasDidUpdate)) { _ in
+            Task { await viewModel.refreshNewest() }
+        }
         .alert(
             Text(.widgetHistorySavePermissionTitle),
             isPresented: saveAlertBinding

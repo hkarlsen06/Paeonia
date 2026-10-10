@@ -148,6 +148,15 @@ function isLive(instance: Doc<"daily_question_instances">): boolean {
   return instance.status === "active" || instance.status === "answered";
 }
 
+/** What "today" means for the today read model. */
+type TodayFrame = {
+  /** Instant the carry-over window counts back from. */
+  now: string;
+  anchorTimeZoneId: string;
+  todayLocalDate: string;
+  currentDay: Doc<"couple_days"> | null;
+};
+
 /** Port of `internal.get_today_daily_questions_for_context`. */
 export async function getTodayDailyQuestionsForContext(
   ctx: ReaderCtx,
@@ -156,8 +165,39 @@ export async function getTodayDailyQuestionsForContext(
 ): Promise<DailyQuestionRow[]> {
   const now = nowIso();
   const anchor = await resolveCoupleDayAnchor(ctx, coupleId);
-  const todayLocalDate = localDateOf(now, anchor.anchor_time_zone_id);
-  const currentDay = await findCoupleDayAt(ctx, coupleId, now);
+  return await todayQuestionsForFrame(ctx, currentUserId, coupleId, {
+    now,
+    anchorTimeZoneId: anchor.anchor_time_zone_id,
+    todayLocalDate: localDateOf(now, anchor.anchor_time_zone_id),
+    currentDay: await findCoupleDayAt(ctx, coupleId, now),
+  });
+}
+
+/**
+ * The today read model for one specific couple day, taking "today" from the day's
+ * own window and anchor zone instead of the clock. The result changes only when
+ * the data it reads changes, so a subscribed query stays valid until then.
+ */
+export async function getDailyQuestionsForCoupleDay(
+  ctx: ReaderCtx,
+  currentUserId: string,
+  day: Doc<"couple_days">,
+): Promise<DailyQuestionRow[]> {
+  return await todayQuestionsForFrame(ctx, currentUserId, day.couple_id, {
+    now: day.starts_at,
+    anchorTimeZoneId: day.anchor_time_zone_id,
+    todayLocalDate: day.local_date,
+    currentDay: day,
+  });
+}
+
+async function todayQuestionsForFrame(
+  ctx: ReaderCtx,
+  currentUserId: string,
+  coupleId: string,
+  frame: TodayFrame,
+): Promise<DailyQuestionRow[]> {
+  const { now, currentDay, todayLocalDate } = frame;
 
   type Selected = {
     day: Doc<"couple_days">;
@@ -199,7 +239,7 @@ export async function getTodayDailyQuestionsForContext(
         .pop();
       const partnerAnsweredMine = instance.seeded_for_user_id !== currentUserId && seededAnswer && !viewerAnswer;
       const iAnsweredMine = instance.seeded_for_user_id === currentUserId && viewerAnswer && !otherAnswer;
-      const finishedToday = latest !== undefined && localDateOf(latest, anchor.anchor_time_zone_id) === todayLocalDate;
+      const finishedToday = latest !== undefined && localDateOf(latest, frame.anchorTimeZoneId) === todayLocalDate;
       if (partnerAnsweredMine || iAnsweredMine || finishedToday) {
         selected.push({ day, instance, isCurrentDay: false, answers });
       }

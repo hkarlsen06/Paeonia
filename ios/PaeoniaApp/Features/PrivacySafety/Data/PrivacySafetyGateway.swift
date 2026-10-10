@@ -28,7 +28,7 @@ actor LivePrivacySafetyGateway: PrivacySafetyGateway {
     }
 
     func loadPrivacyRequests() async throws -> [PrivacyRequestRemoteRow] {
-        try await client.mutation("identity:get_privacy_requests")
+        try await client.query("identity:get_privacy_requests")
     }
 
     func createPrivacyRequest(

@@ -16,24 +16,30 @@ struct LocationSharingPreferencePendingOperationHandler: PendingSyncOperationHan
 
     func send(
         _ operation: PendingSyncOperationSnapshot,
-        context _: SyncContext
+        context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
         guard let requestData = operation.requestData else {
             return .terminalFailure("Missing location preference payload")
         }
 
         let payload = try JSONDecoder().decode(LocationSharingPreferenceOperationPayload.self, from: requestData)
-        if let response = try await gateway.updateLocationSharingPreference(
+        let response = try await gateway.updateLocationSharingPreference(
             payload: payload,
             operation: operation.operation
-        ) {
-            try await visibilityStore.setViewerSharingEnabled(
-                ownerUserID: response.userID,
-                coupleID: response.coupleID,
-                isEnabled: response.isEnabled,
-                updatedAt: response.updatedAt
-            )
-        }
+        )
+        // A newer choice may be waiting behind this one. Its own answer is the
+        // one that should reach the local store.
+        let otherChoicesPending = try await context.pendingOperationStore.inFlightOperations(
+            ownerUserID: operation.ownerUserID,
+            kind: .updateLocationSharingPreference
+        ).contains { $0.operation.id != operation.operation.id }
+        try await visibilityStore.confirmViewerSharing(
+            ownerUserID: response?.userID ?? operation.ownerUserID,
+            coupleID: response?.coupleID ?? payload.coupleID,
+            isEnabled: response?.isEnabled ?? payload.isEnabled,
+            updatedAt: response?.updatedAt ?? Date(),
+            otherChoicesPending: otherChoicesPending
+        )
 
         return .succeeded
     }

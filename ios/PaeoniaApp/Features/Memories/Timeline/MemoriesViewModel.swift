@@ -42,6 +42,7 @@ final class MemoriesViewModel {
     private let operationProvider: any SyncClientOperationProviding
     private let mediaUploader: (any MemoryMediaUploading)?
     private let mediaImageCache: (any MemoryMediaImageCacheWriting)?
+    private let draftStore: any MemoryDraftStoring
     private var localChangeSyncHandler: (@MainActor @Sendable () async -> Void)?
     #if DEBUG
     private let logger = Logger(
@@ -60,16 +61,24 @@ final class MemoriesViewModel {
     private(set) var hasLoadedOnce = false
     var notice: Notice?
 
+    /// The in-progress new-memory form. It lives here, not in the sheet or the screen,
+    /// so a swipe-down or the tab being torn down keeps the work. Changes are saved per
+    /// user on the device and restored when the user's session loads. A successful save
+    /// or a deliberate discard clears it.
+    private(set) var draft = MemoryDraft()
+
     init(
         memoryService: (any MemoryDataServicing)? = nil,
         operationProvider: (any SyncClientOperationProviding)? = nil,
         mediaUploader: (any MemoryMediaUploading)? = MemoriesViewModel.makeDefaultUploader(),
-        mediaImageCache: (any MemoryMediaImageCacheWriting)? = MemoryMediaImageDiskCache()
+        mediaImageCache: (any MemoryMediaImageCacheWriting)? = MemoryMediaImageDiskCache(),
+        draftStore: (any MemoryDraftStoring)? = nil
     ) {
         self.memoryService = memoryService ?? MemoryDataServiceFactory.makeDefault()
         self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.mediaUploader = mediaUploader
         self.mediaImageCache = mediaImageCache
+        self.draftStore = draftStore ?? LocalMemoryDraftStore.shared
     }
 
     private nonisolated static func makeDefaultUploader() -> (any MemoryMediaUploading)? {
@@ -102,12 +111,13 @@ final class MemoriesViewModel {
         self.currentUserID = currentUserID
         timeline = []
         hasLoadedOnce = false
+        draft = currentUserID.flatMap { draftStore.draft(for: $0) } ?? MemoryDraft()
 
         guard currentUserID != nil else { return }
 
         await load()
-        // Show what's on the device first, then pull the server's memories in the
-        // background and reload once they land.
+        // Show what's on the device first, then send any queued writes. The live
+        // feed brings in the partner's changes and `observeStoreChanges` reloads.
         syncInBackground()
     }
 
@@ -115,6 +125,17 @@ final class MemoriesViewModel {
     /// for new memories). Safe to call from `.onChange` without triggering a reload.
     func updateContext(coupleID: UUID?) {
         self.coupleID = coupleID
+    }
+
+    // MARK: - New memory draft
+
+    /// Replaces the form contents and saves them for the signed-in user. An empty draft
+    /// removes the saved one, which is how Cancel discards a draft.
+    func updateDraft(_ newDraft: MemoryDraft) {
+        guard newDraft != draft else { return }
+        draft = newDraft
+        guard let currentUserID else { return }
+        draftStore.setDraft(newDraft, for: currentUserID)
     }
 
     // MARK: - Loading
@@ -137,8 +158,23 @@ final class MemoriesViewModel {
         hasLoadedOnce = true
     }
 
-    /// Pull-to-refresh: flush any pending local memory writes and pull the latest from
-    /// the server, then re-read the local cache.
+    /// Re-reads the timeline whenever the local memory store changes, so a partner's new
+    /// memory, edit, note, photo, or delete shows up without a refresh. Runs until the
+    /// calling task is cancelled. Call it from a task tied to the screen.
+    func observeStoreChanges() async {
+        let changes = LocalStoreChanges.changes(in: .memories)
+        // `configure` does the first load. If it already finished, a write may have landed
+        // before this subscription started, so read again.
+        if hasLoadedOnce {
+            await load()
+        }
+        for await change in changes where change.ownerUserID == currentUserID {
+            await load()
+        }
+    }
+
+    /// Pull-to-refresh: send any queued local memory writes, then re-read the local
+    /// cache. Partner changes arrive on their own through the live feed.
     func refresh() async {
         await localChangeSyncHandler?()
         await load()
@@ -189,6 +225,7 @@ final class MemoriesViewModel {
         guard await performCreate(input) else { return false }
 
         PaeoniaHaptics.memorySaved()
+        updateDraft(MemoryDraft())
         await load()
         syncInBackground()
         return true

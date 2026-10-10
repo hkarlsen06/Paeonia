@@ -2,10 +2,10 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
-/// The in-progress contents of the new-memory form. Held by the presenting screen, not
-/// by the sheet, so dismissing the sheet — including an accidental swipe-down while
-/// reaching for the keyboard — keeps the work. Reopening restores it; a successful save
-/// (or a deliberate Cancel) resets it.
+/// The in-progress contents of the new-memory form. Held by the memories view model and
+/// saved on the device, not by the sheet, so dismissing the sheet (including an
+/// accidental swipe-down while reaching for the keyboard) keeps the work. Reopening
+/// restores it; a successful save (or a deliberate Cancel) resets it.
 struct MemoryDraft: Equatable {
     var title: String = ""
     var date: Date = Date()
@@ -16,6 +16,14 @@ struct MemoryDraft: Equatable {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && photos.isEmpty
+    }
+
+    /// The written parts, for copying out when the memory can no longer be saved.
+    var copyableText: String {
+        [title, note]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n")
     }
 }
 
@@ -43,6 +51,10 @@ struct MemoryEditorView: View {
     var mode: Mode = .create
     var existingMedia: [MemoryMediaSnapshot] = []
     var currentUserID: UUID?
+    /// True when the memory being edited no longer exists (the partner deleted it). The
+    /// form stays open so the typed text isn't lost, explains why it can't be saved,
+    /// and offers to copy the text.
+    var isMemoryRemoved = false
     /// Whether photo attachment is available (false in previews/tests without an
     /// uploader, or before the active couple is known). When false the photo controls
     /// are hidden and a note is required.
@@ -62,6 +74,7 @@ struct MemoryEditorView: View {
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var isCameraPresented = false
     @State private var isSaving = false
+    @State private var didCopyText = false
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
     @State private var removedExistingMediaIDs: Set<UUID> = []
     @FocusState private var focusedField: Field?
@@ -77,6 +90,9 @@ struct MemoryEditorView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
+                    if isMemoryRemoved {
+                        removedNotice
+                    }
                     titleField
                     dateField
                     noteField
@@ -116,6 +132,35 @@ struct MemoryEditorView: View {
     }
 
     // MARK: - Fields
+
+    private var removedNotice: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            Text(.memoriesEditorRemovedTitle)
+                .font(PaeoniaTypography.body.weight(.semibold))
+                .foregroundStyle(.paeoniaTextPrimary)
+            Text(.memoriesEditorRemovedMessage)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+            if !draft.copyableText.isEmpty {
+                Button {
+                    UIPasteboard.general.string = draft.copyableText
+                    didCopyText = true
+                } label: {
+                    Label {
+                        Text(didCopyText ? .memoriesEditorRemovedCopied : .memoriesEditorRemovedCopy)
+                    } icon: {
+                        Image(systemName: didCopyText ? "checkmark" : "doc.on.doc").accessibilityHidden(true)
+                    }
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+            }
+        }
+        .padding(PaeoniaSpacing.space12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.paeoniaBackgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+        .accessibilityElement(children: .contain)
+    }
 
     private var titleField: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
@@ -309,6 +354,7 @@ struct MemoryEditorView: View {
     }
 
     private var canSave: Bool {
+        guard !isMemoryRemoved else { return false }
         guard !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return false
         }

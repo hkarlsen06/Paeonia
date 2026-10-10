@@ -58,7 +58,7 @@ actor LivePairingGateway: PairingGateway {
     }
 
     func validateInvite(inviteID: UUID, inviteCode: String) async throws -> PairingInviteValidation {
-        let validations: [PairingInviteValidation] = try await client.mutation(
+        let validations: [PairingInviteValidation] = try await client.query(
             "pairing:validate_my_pairing_invite",
             args: ValidatePairingInviteRequest(inviteID: inviteID, inviteCode: inviteCode)
         )

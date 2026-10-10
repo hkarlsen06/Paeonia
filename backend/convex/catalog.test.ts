@@ -54,7 +54,7 @@ describe("sync_catalog", () => {
     expect(result.changes).toEqual(["new question system/memory_that_stayed", "new question system/quiet_draft"]);
 
     const user = await createSignedInUser(t);
-    const catalog = await user.as.mutation(api.daily.get_active_question_catalog, {});
+    const catalog = await user.as.query(api.daily.get_active_question_catalog, {});
     expect(catalog.map((row) => [row.question_key, row.locale])).toEqual([
       ["memory_that_stayed", "en"],
       ["memory_that_stayed", "nb"],
@@ -123,7 +123,7 @@ describe("sync_catalog", () => {
     expect(byNumber[2]).toMatchObject({ status: "active" });
     expect(byNumber[2].retired_at).toBeUndefined();
     const user = await createSignedInUser(t);
-    const catalog = await user.as.mutation(api.daily.get_active_question_catalog, { p_locale: "en" });
+    const catalog = await user.as.query(api.daily.get_active_question_catalog, { p_locale: "en" });
     expect(catalog.map((row) => [row.version_number, row.prompt])).toEqual([[2, "A fresher memory"]]);
   });
 
@@ -155,7 +155,7 @@ describe("sync_catalog", () => {
     const draft = question("not_ready", { status: "draft", versions: [version(1, "Work in progress", { status: "draft", answer_kinds: [] })] });
     expect((await sync(t, [draft], true)).applied).toBe(true);
     const user = await createSignedInUser(t);
-    expect(await user.as.mutation(api.daily.get_active_question_catalog, {})).toEqual([]);
+    expect(await user.as.query(api.daily.get_active_question_catalog, {})).toEqual([]);
   });
 
   test("reports resurfacing and status changes without touching the prompts", async () => {
