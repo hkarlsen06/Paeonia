@@ -2,61 +2,87 @@ import SwiftUI
 
 /// The routed screens. Each `AppState` maps to exactly one screen.
 extension RootView {
-    /// The routed surfaces crossfade into each other (sign-in → profile setup →
-    /// paywall) instead of swapping in one frame, so moving through the flow reads
-    /// as one continuous journey. A fade only, so Reduce Motion needs no branch.
+    /// The routed surfaces crossfade into each other instead of swapping in one
+    /// frame. The screens between sign-in and the paired app share one frame, so
+    /// from profile setup through the paywall to pairing the logo stays in place
+    /// and only the content under it changes. A fade only, so Reduce Motion needs
+    /// no branch.
     var routedRootContent: some View {
         ZStack {
-            Group {
-                // One branch for every paywall route, so saving a pending invite
-                // code doesn't swap in a new PaywallView and drop its confirm alert.
-                if showsPaywallScreen {
-                    paywallScreen
-                } else {
-                    routedContentForCurrentState
+            if let framedScreen {
+                RootBrandedFrame {
+                    framedContent(framedScreen)
+                        .id(framedScreen)
+                        .transition(.opacity)
                 }
+                .transition(.opacity)
+            } else {
+                unframedContent
+                    .transition(.opacity)
             }
-            .transition(.opacity)
         }
         .animation(PaeoniaMotion.meaningfulMoment, value: viewModel.state)
     }
 
-    private var showsPaywallScreen: Bool {
+    private var framedScreen: RootFramedScreen? {
         switch viewModel.state {
+        case .onboarding:
+            .onboarding
+        // One screen for every paywall state, so saving a pending invite code
+        // doesn't swap in a new PaywallView and drop its confirm alert.
         case .limitedAuthenticated, .pairedPaywalled:
-            true
+            .paywall
         case .entitlementLost, .entitlementRestored:
             // The access resolver does not produce these today. The paywall is
             // the screen that can recover access if it ever does.
-            true
-        default:
-            false
+            .paywall
+        case .unpaired, .invitePending:
+            .pairing
+        case .relationshipEndedNotice:
+            .relationshipEnded
+        case .deletingAccount:
+            .deletingAccount
+        case .launching, .unauthenticated, .paired:
+            nil
         }
     }
 
     @ViewBuilder
-    private var routedContentForCurrentState: some View {
+    private func framedContent(_ screen: RootFramedScreen) -> some View {
+        switch screen {
+        case .onboarding:
+            AuthOnboardingView(
+                session: viewModel.currentSession,
+                isWorking: viewModel.isWorking,
+                onCompleteOnboarding: completeOnboarding,
+                onSignOut: signOut,
+                onDeleteAccount: deleteAccount
+            )
+        case .paywall:
+            paywallScreen
+        case .pairing:
+            pairingScreen
+        case .relationshipEnded:
+            RelationshipEndedNoticeView(
+                isWorking: viewModel.isWorking,
+                onAcknowledge: acknowledgeRelationshipEnded
+            )
+        case .deletingAccount:
+            AuthDeletingAccountView()
+        }
+    }
+
+    @ViewBuilder
+    private var unframedContent: some View {
         switch viewModel.state {
-        case .launching:
+        case .unauthenticated:
+            welcomeScreen
+        case .paired:
+            pairedScaffold
+        default:
             // Only seen under the cold-launch intro.
             Color.paeoniaBackgroundPrimary
                 .ignoresSafeArea()
-        case .unauthenticated:
-            welcomeScreen
-        case .onboarding:
-            onboardingScaffold
-        case .unpaired, .invitePending:
-            pairingScaffold
-        case .paired:
-            pairedScaffold
-        case .relationshipEndedNotice:
-            relationshipEndedScaffold
-        case .deletingAccount,
-             .limitedAuthenticated,
-             .pairedPaywalled,
-             .entitlementLost,
-             .entitlementRestored:
-            deletingAccountScaffold
         }
     }
 
@@ -76,6 +102,7 @@ extension RootView {
             session: viewModel.currentSession,
             pendingInviteCode: $pendingJoinInviteCode,
             audience: paywallAudience,
+            isCheckingAccess: viewModel.route.isResolvingAccess,
             onPurchaseConfirmed: subscriptionChanged,
             onInviteAccepted: inviteAccepted,
             onSignOut: signOut,
@@ -100,17 +127,15 @@ extension RootView {
 
     /// A subscribed user who is not paired yet. A partner's code from a link or
     /// the welcome screen is joined right here instead of on the paywall.
-    private var pairingScaffold: some View {
-        brandedScaffold {
-            PairingInviteView(
-                session: viewModel.currentSession,
-                viewModel: featureDependencies.pairingInviteViewModel,
-                pendingJoinCode: pendingJoinCodeForPairing,
-                onClearPendingJoinCode: { pendingJoinInviteCode = nil },
-                onInviteAccepted: inviteAccepted,
-                onRefreshAccess: refreshPairing
-            )
-        }
+    private var pairingScreen: some View {
+        PairingInviteView(
+            session: viewModel.currentSession,
+            viewModel: featureDependencies.pairingInviteViewModel,
+            pendingJoinCode: pendingJoinCodeForPairing,
+            onClearPendingJoinCode: { pendingJoinInviteCode = nil },
+            onInviteAccepted: inviteAccepted,
+            onRefreshAccess: refreshPairing
+        )
     }
 
     private var pendingJoinCodeForPairing: String? {
@@ -122,57 +147,6 @@ extension RootView {
         }
 
         return pendingJoinInviteCode
-    }
-
-    private var relationshipEndedScaffold: some View {
-        brandedScaffold {
-            RelationshipEndedNoticeView(
-                isWorking: viewModel.isWorking,
-                onAcknowledge: acknowledgeRelationshipEnded
-            )
-        }
-    }
-
-    private var onboardingScaffold: some View {
-        brandedScaffold {
-            AuthOnboardingView(
-                session: viewModel.currentSession,
-                isWorking: viewModel.isWorking,
-                onCompleteOnboarding: completeOnboarding,
-                onSignOut: signOut,
-                onDeleteAccount: deleteAccount
-            )
-        }
-    }
-
-    private var deletingAccountScaffold: some View {
-        brandedScaffold {
-            AuthDeletingAccountView()
-        }
-    }
-
-    /// The pre-pairing screens share one frame: the brand lockup on top and the
-    /// screen's own content filling the rest.
-    private func brandedScaffold(@ViewBuilder content: () -> some View) -> some View {
-        NavigationStack {
-            VStack(spacing: PaeoniaSpacing.sectionSpacing) {
-                PaeoniaBrandLockup(
-                    wordmarkSize: 36,
-                    taglineSize: 17,
-                    taglineColor: .paeoniaTextSecondary
-                )
-                .frame(maxWidth: .infinity)
-                .screenEntrance(order: 0)
-
-                content()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            }
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.screenTopSpacing)
-            .padding(.bottom, PaeoniaSpacing.space16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(.paeoniaBackgroundPrimary)
-        }
     }
 
     private var pairedScaffold: some View {

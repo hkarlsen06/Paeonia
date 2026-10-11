@@ -66,15 +66,27 @@ final class PaywallViewModel: PresentationReadinessProviding {
     }
 
     var currentProduct: Product? {
-        storeKitService.product(for: selectedProductID)
+        product(for: billingPeriod)
     }
 
     var currentFreeTrial: PaeoniaFreeTrial? {
-        eligibleFreeTrials[selectedProductID]
+        freeTrial(for: billingPeriod)
     }
 
     var selectedProductID: PaeoniaSubscriptionProductID {
-        switch billingPeriod {
+        Self.productID(for: billingPeriod)
+    }
+
+    func product(for period: PaeoniaBillingPeriod) -> Product? {
+        storeKitService.product(for: Self.productID(for: period))
+    }
+
+    func freeTrial(for period: PaeoniaBillingPeriod) -> PaeoniaFreeTrial? {
+        eligibleFreeTrials[Self.productID(for: period)]
+    }
+
+    private static func productID(for period: PaeoniaBillingPeriod) -> PaeoniaSubscriptionProductID {
+        switch period {
         case .monthly:
             .coupleMonthly
         case .yearly:

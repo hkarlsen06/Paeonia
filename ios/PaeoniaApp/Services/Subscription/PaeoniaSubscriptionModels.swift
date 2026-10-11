@@ -58,19 +58,6 @@ nonisolated struct PaeoniaFreeTrial: Equatable, Sendable {
         "\(value) \(String(localized: unitLabel))"
     }
 
-    var approximateDayCount: Int {
-        switch unit {
-        case .day:
-            value
-        case .week:
-            value * 7
-        case .month:
-            value * 30
-        case .year:
-            value * 365
-        }
-    }
-
     private var unitLabel: LocalizedStringResource {
         switch unit {
         case .day:

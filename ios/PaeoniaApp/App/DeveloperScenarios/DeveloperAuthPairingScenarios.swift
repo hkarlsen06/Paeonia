@@ -148,17 +148,19 @@
       hasTrial ? PaeoniaFreeTrial(value: 14, unit: .day) : nil
     }
     var body: some View {
-      PaywallView(
-        session: DeveloperScenarioFixture.completeSession,
-        audience: audience,
-        onPurchaseConfirmed: {},
-        onInviteAccepted: {},
-        onSignOut: {},
-        onUnpaired: {},
-        onDeleteAccount: {},
-        viewModel: viewModel,
-        presentationOverride: presentationOverride
-      )
+      RootBrandedFrame {
+        PaywallView(
+          session: DeveloperScenarioFixture.completeSession,
+          audience: audience,
+          onPurchaseConfirmed: {},
+          onInviteAccepted: {},
+          onSignOut: {},
+          onUnpaired: {},
+          onDeleteAccount: {},
+          viewModel: viewModel,
+          presentationOverride: presentationOverride
+        )
+      }
     }
 
     private var viewModel: PaywallViewModel {
@@ -182,28 +184,15 @@
             freeTrial: trial,
             isPurchasing: false,
             isLoading: false,
-            displayPrice: (billingPeriod == .monthly ? 49 : 399)
-              .formatted(.currency(code: "NOK").precision(.fractionLength(0)))
+            price: PaywallPrice(
+              amount: billingPeriod == .monthly ? 49 : 399,
+              format: .currency(code: "NOK")
+            )
           )
         },
-        priceLine: priceLine(for:),
         purchaseIsEnabled: true,
         onPurchase: { true }
       )
-    }
-
-    private func priceLine(for billingPeriod: PaeoniaBillingPeriod) -> String {
-      let amount = billingPeriod == .monthly ? 49 : 399
-      let price = amount.formatted(.currency(code: "NOK").precision(.fractionLength(0)))
-      let period = String(
-        localized: billingPeriod == .monthly
-          ? .paywallPeriodMonthlyCompact
-          : .paywallPeriodYearlyCompact
-      )
-      guard let trial else { return "\(price)\(period)" }
-      let free = String(localized: .paywallTrialFreeWord)
-      let then = String(localized: .paywallTrialThen).lowercased(with: .current)
-      return "\(trial.localizedDurationText) \(free), \(then) \(price)\(period)"
     }
   }
 #endif

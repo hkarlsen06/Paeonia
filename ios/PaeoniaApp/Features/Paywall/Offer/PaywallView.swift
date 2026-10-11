@@ -1,13 +1,16 @@
 import Foundation
 import SwiftUI
 
-// swiftlint:disable:next type_body_length
+/// The subscription offer, shown in the root's branded frame between profile setup
+/// and pairing. It shows right away; only the prices wait for the App Store, as
+/// placeholders, so nothing jumps when they arrive.
 struct PaywallView: View {
     @State private var viewModel: PaywallViewModel
     @Binding private var pendingInviteCode: String?
     private let presentationOverride: PaywallPresentationOverride?
+    /// The root is checking access after a purchase or a join.
+    private let isCheckingAccess: Bool
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let onPurchaseConfirmed: () -> Void
     let onInviteAccepted: () -> Void
@@ -19,15 +22,17 @@ struct PaywallView: View {
     @State private var isConfirmingDelete = false
     @State private var isConfirmingUnpair = false
     @State private var isConfirmingInvite = false
-    @State private var inviteCode = ""
-    @State private var showInviteOverlay = false
-    @State private var hasPresentedPaywallContent = false
-    @FocusState private var inviteFieldFocused: Bool
+    @State private var isEnteringInviteCode = false
+    /// A purchase, restore, or join went through and the next screen is on its
+    /// way. The buttons wait instead of offering to buy again. If the access check
+    /// ends with the paywall still up, they come back.
+    @State private var isOpening = false
 
     init(
         session: AuthSession?,
         pendingInviteCode: Binding<String?> = .constant(nil),
         audience: PaywallAudience,
+        isCheckingAccess: Bool = false,
         onPurchaseConfirmed: @escaping () -> Void,
         onInviteAccepted: @escaping () -> Void,
         onSignOut: @escaping () -> Void,
@@ -41,6 +46,7 @@ struct PaywallView: View {
         )
         _pendingInviteCode = pendingInviteCode
         self.presentationOverride = presentationOverride
+        self.isCheckingAccess = isCheckingAccess
         self.audience = audience
         self.onPurchaseConfirmed = onPurchaseConfirmed
         self.onInviteAccepted = onInviteAccepted
@@ -53,47 +59,55 @@ struct PaywallView: View {
         audience.allowsInviteEntry
     }
 
-    private var isPresentationReady: Bool {
-        presentationOverride != nil || viewModel.isPresentationReady
-    }
-
     var body: some View {
-        ZStack {
-            if isPresentationReady {
-                GeometryReader { geometry in
-                    paywallScene(geometry: geometry)
-                }
-                .transition(.opacity)
-            } else {
-                AuthLaunchingView()
-                    // The quiet petal surface fades out on top while the paywall's
-                    // own content entrance starts underneath, so loading dissolves
-                    // into the offer instead of blinking away.
-                    .transition(.opacity)
-                    .zIndex(1)
+        ScrollView {
+            VStack(spacing: 0) {
+                PaywallContentView(
+                    audience: audience,
+                    plans: plans,
+                    isLoadingPlans: selectedPresentation.isLoading,
+                    showsTrialReminder: selectedPresentation.hasFreeTrial,
+                    billingPeriod: $viewModel.billingPeriod
+                )
+
+                footerActions
+                    .padding(.top, PaeoniaSpacing.space40)
             }
+            .padding(.top, PaeoniaSpacing.space16)
+            .padding(.bottom, PaeoniaSpacing.space16)
         }
-        .animation(PaeoniaMotion.meaningfulMoment, value: isPresentationReady)
+        .scrollIndicators(.hidden)
+        .scrollBounceBehavior(.basedOnSize)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            bottomBar
+        }
         .task {
             guard presentationOverride == nil else {
                 return
             }
             await viewModel.loadProducts()
         }
-        .task(id: isPresentationReady) {
-            await presentPaywallContentIfReady()
-        }
-        .task(id: PendingInvitePresentationID(
-            code: pendingInviteCode, allowsInviteEntry: allowsInviteEntry,
-            isPresentationReady: isPresentationReady
-        )) {
-            await presentPendingInviteIfAvailable()
+        .task(id: allowsInviteEntry ? pendingInviteCode : nil) {
+            await previewPendingInvite()
         }
         .onChange(of: viewModel.error) { _, error in
             showBanner(for: error)
         }
+        .onChange(of: isCheckingAccess) { wasChecking, isChecking in
+            if wasChecking, !isChecking {
+                isOpening = false
+            }
+        }
         .sensoryFeedback(.success, trigger: viewModel.purchaseSucceeded) { _, succeeded in
             succeeded
+        }
+        .sheet(isPresented: $isEnteringInviteCode, onDismiss: confirmInviteIfPreviewed) {
+            PairingCodeEntrySheet(
+                title: .pairingCodeEntryTitle,
+                message: .paywallInviteSheetMessage,
+                submitTitle: .pairingCodeEntrySubmit,
+                onSubmit: previewEnteredInvite
+            )
         }
         .modifier(
             PaywallConfirmationAlerts(
@@ -109,276 +123,74 @@ struct PaywallView: View {
             )
         )
     }
+}
 
-    private func paywallScene(geometry: GeometryProxy) -> some View {
-        ZStack {
-            Color.paeoniaSurfacePrimary
-                .ignoresSafeArea()
+private extension PaywallView {
+    // MARK: - Offer
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    paywallContent(geometry: geometry)
-                    footerActions
-                        .padding(.horizontal, PaeoniaSpacing.space20)
-                        .padding(.top, PaeoniaSpacing.space32)
-                }
-                .padding(.bottom, PaeoniaSpacing.space16)
-                .frame(maxWidth: .infinity)
-                .background(.paeoniaSurfacePrimary)
-            }
-            .scrollDismissesKeyboard(.immediately)
-            .ignoresSafeArea(edges: .top)
-            .opacity(paywallEntranceOpacity)
-            .offset(y: paywallEntranceOffset)
-
-            if showInviteOverlay {
-                inviteOverlay
-                    .transition(.opacity.animation(overlayAnimation))
-            }
+    /// Trial copy waits until the App Store has said whether this account can
+    /// still get the trial, so nobody sees a trial that then disappears.
+    func presentation(for period: PaeoniaBillingPeriod) -> PaywallPresentation {
+        if let presentationOverride {
+            return presentationOverride.presentation(period)
         }
-        .safeAreaInset(edge: .bottom) {
-            // While the invite overlay is up, the card owns its own submit button,
-            // so the purchase CTA steps aside (it would otherwise draw on top of the
-            // dimmer, above the keyboard). Fade only — keep its height so the layout
-            // doesn't shift under the rising keyboard.
-            bottomCTA
-                .opacity(showInviteOverlay ? 0 : paywallEntranceOpacity)
-                .offset(y: paywallEntranceOffset)
-                .allowsHitTesting(!showInviteOverlay)
-        }
-    }
 
-    // MARK: - Invite Overlay
-
-    private var inviteOverlay: some View {
-        PaywallInviteOverlay(
-            code: $inviteCode,
-            focus: $inviteFieldFocused,
-            isSubmitting: viewModel.isPreviewingInvite || viewModel.isAcceptingInvite,
-            hasPendingInvite: pendingInviteCode != nil,
-            onSubmit: submitInvite,
-            onDismiss: dismissInviteOverlay,
-            onContinueWithoutInvite: continueWithoutPendingInvite
-        )
-        .task { await focusInviteFieldAfterPresentation() }
-    }
-
-    // MARK: - Content
-
-    private func paywallContent(geometry: GeometryProxy) -> some View {
-        PaywallContentView(
-            topSafeAreaInset: geometry.safeAreaInsets.top,
-            heroHeight: PaywallContentView.heroHeight(for: geometry),
-            aboveFoldMinHeight: PaywallContentView.aboveFoldMinHeight(for: geometry),
-            billingPeriod: $viewModel.billingPeriod,
-            headlineTitle: headlineTitle,
-            subtitle: subtitle,
-            priceLine: presentationOverride?.priceLine(viewModel.billingPeriod)
-                ?? presentation.priceLine,
-            spokenPriceLine: presentation.spokenPriceLine,
-            timelineItems: presentation.timelineItems,
-            allowsInviteEntry: allowsInviteEntry,
-            showsArtworkHeader: !audience.isPaired,
-            onRevealInvite: {
-                withAnimation(overlayAnimation) {
-                    showInviteOverlay = true
-                }
-                inviteFieldFocused = true
-            }
+        let isReady = viewModel.isPresentationReady
+        return PaywallPresentation(
+            billingPeriod: period,
+            product: isReady ? viewModel.product(for: period) : nil,
+            freeTrial: isReady ? viewModel.freeTrial(for: period) : nil,
+            isPurchasing: viewModel.isPurchasing,
+            isLoading: viewModel.isLoading || !isReady
         )
     }
 
-    private var headlineTitle: LocalizedStringResource {
-        audience.headlineTitle(hasFreeTrial: presentation.hasFreeTrial)
+    var selectedPresentation: PaywallPresentation {
+        presentation(for: viewModel.billingPeriod)
     }
 
-    private var subtitle: LocalizedStringResource {
-        audience.subtitle(hasFreeTrial: presentation.hasFreeTrial)
+    var plans: [PaywallPlanOption] {
+        PaywallPlanOption.options(
+            monthly: presentation(for: .monthly),
+            yearly: presentation(for: .yearly)
+        )
     }
 
-    private func submitInvite() {
-        let sanitizedCode = PaywallInviteCodeView.sanitize(inviteCode)
-        if sanitizedCode != inviteCode {
-            inviteCode = sanitizedCode
+    // MARK: - Bottom bar
+
+    var bottomBar: some View {
+        let selected = selectedPresentation
+        let hasOffer = presentationOverride != nil || selected.product != nil
+        let canRetry = !hasOffer && !selected.isLoading
+        let title: LocalizedStringResource = canRetry ? .paywallProductsRetry : selected.primaryButtonTitle
+        let isEnabled: Bool = presentationOverride?.purchaseIsEnabled
+            ?? (hasOffer ? selected.primaryButtonIsEnabled : canRetry)
+        var inviteAction: (() -> Void)?
+        if allowsInviteEntry {
+            inviteAction = { showInviteCodeEntry() }
         }
 
-        if sanitizedCode.count == PaywallInviteCodeView.codeLength {
-            previewInvite(codeInput: sanitizedCode)
-        } else if !sanitizedCode.isEmpty {
-            inviteFieldFocused = true
-        }
+        return PaywallBottomCTAView(
+            title: title,
+            caption: selected.billingDisclosure,
+            isEnabled: isEnabled,
+            isBusy: hasOffer ? selected.isPurchasing : selected.isLoading,
+            isDone: isOpening,
+            isJoiningPartner: viewModel.isPreviewingInvite || viewModel.isAcceptingInvite,
+            onPrimaryAction: {
+                if hasOffer {
+                    purchase()
+                } else {
+                    retryProducts()
+                }
+            },
+            onHaveInviteCode: inviteAction
+        )
     }
 
-    @MainActor
-    private func presentPendingInviteIfAvailable() async {
-        guard isPresentationReady,
-              allowsInviteEntry,
-              let pendingCode = pendingInviteCode,
-              let normalizedCode = try? PairingInviteCode.normalized(pendingCode)
-        else {
-            return
-        }
-
-        // A manual submission updates the durable binding after it starts. Do not
-        // interpret that persistence update as a second request to preview the same
-        // code while its overlay is already visible.
-        guard !showInviteOverlay || (try? PairingInviteCode.normalized(inviteCode)) != normalizedCode else {
-            return
-        }
-
-        inviteCode = normalizedCode
-
-        withAnimation(overlayAnimation) {
-            showInviteOverlay = true
-        }
-
-        await focusInviteFieldAfterPresentation()
-
-        guard await viewModel.previewInvite(codeInput: normalizedCode) != nil,
-              showInviteOverlay
-        else {
-            // A wrong or expired code would otherwise open this overlay again on
-            // every launch. The typed code stays in the field to fix or replace.
-            if viewModel.lastInviteCodeWasUnusable {
-                pendingInviteCode = nil
-            }
-            inviteFieldFocused = true
-            return
-        }
-
-        inviteFieldFocused = false
-        isConfirmingInvite = true
-    }
-
-    // MARK: - Bottom CTA
-
-    private var bottomCTA: some View {
-        Group {
-            if let presentationOverride {
-                PaywallBottomCTAView(
-                    title: presentation.primaryButtonTitle,
-                    caption: presentation.billingDisclosure,
-                    isEnabled: presentationOverride.purchaseIsEnabled,
-                    isBusy: presentation.isPurchasing,
-                    action: {
-                        Task { @MainActor in
-                            if await presentationOverride.onPurchase() {
-                                onPurchaseConfirmed()
-                            }
-                        }
-                    }
-                )
-            } else {
-                PaywallPurchaseCTAView(
-                    presentation: presentation,
-                    hasProduct: viewModel.currentProduct != nil,
-                    onPurchase: purchase,
-                    onRetry: retryProducts
-                )
-            }
-        }
-    }
-
-    private var paywallEntranceOpacity: Double {
-        hasPresentedPaywallContent ? 1 : 0
-    }
-
-    private var paywallEntranceOffset: CGFloat {
-        hasPresentedPaywallContent || reduceMotion ? 0 : -10
-    }
-
-    private var overlayAnimation: Animation? {
-        reduceMotion ? nil : PaeoniaMotion.stateChange
-    }
-
-    private func previewInvite(codeInput: String) {
-        guard !viewModel.isPreviewingInvite,
-              !viewModel.isAcceptingInvite
-        else {
-            return
-        }
-
-        Task {
-            let preview = await viewModel.previewInvite(codeInput: codeInput)
-
-            guard preview != nil else {
-                inviteFieldFocused = true
-                return
-            }
-
-            // Remember only a code that works, so a typo is not reopened on the
-            // next launch.
-            pendingInviteCode = codeInput
-
-            guard showInviteOverlay else {
-                viewModel.clearInvitePreview()
-                return
-            }
-
-            inviteFieldFocused = false
-            isConfirmingInvite = true
-        }
-    }
-
-    private func redeemPreviewedInvite() {
-        guard !viewModel.isAcceptingInvite else {
-            return
-        }
-
-        Task {
-            let didAccept = await viewModel.acceptPreviewedInvite()
-            if didAccept {
-                viewModel.clearError()
-                bannerCenter.dismiss()
-                dismissInviteOverlay()
-                // Root clears the pending code once the paired route is in place.
-                // Clearing it here would route back to pairing for a frame first.
-                onInviteAccepted()
-            } else {
-                inviteFieldFocused = true
-            }
-        }
-    }
-
-    private func focusInviteFieldAfterPresentation() async {
-        await Task.yield()
-
-        await MainActor.run {
-            guard showInviteOverlay else {
-                return
-            }
-
-            inviteFieldFocused = true
-        }
-    }
-
-    private func dismissInviteOverlay() {
-        isConfirmingInvite = false
-        viewModel.clearInvitePreview()
-        inviteFieldFocused = false
-
-        Task { @MainActor in
-            await Task.yield()
-
-            inviteFieldFocused = false
-            showInviteOverlay = false
-        }
-    }
-
-    private func cancelInviteConfirmation() {
-        viewModel.clearInvitePreview()
-        inviteFieldFocused = true
-    }
-
-    private func continueWithoutPendingInvite() {
-        pendingInviteCode = nil
-        inviteCode = ""
-        dismissInviteOverlay()
-    }
-
-    private var footerActions: some View {
+    var footerActions: some View {
         PaywallFooterActionsView(
-            isBusyWithStore: viewModel.isBusyWithStore,
+            isBusyWithStore: viewModel.isBusyWithStore || isOpening,
             isRestoring: viewModel.isRestoring,
             showsUnpair: audience.isPaired,
             isLeavingRelationship: viewModel.isLeavingRelationship,
@@ -393,27 +205,23 @@ struct PaywallView: View {
         )
     }
 
-    private var presentation: PaywallPresentation {
-        presentationOverride?.presentation(viewModel.billingPeriod)
-            ?? PaywallPresentation(
-                billingPeriod: viewModel.billingPeriod,
-                product: viewModel.currentProduct,
-                freeTrial: viewModel.currentFreeTrial,
-                isPurchasing: viewModel.isPurchasing,
-                isLoading: viewModel.isLoading
-            )
-    }
+    // MARK: - Store actions
 
-    private func purchase() {
+    func purchase() {
         Task {
-            let didPurchase = await viewModel.purchaseSelectedProduct()
+            let didPurchase: Bool
+            if let presentationOverride {
+                didPurchase = await presentationOverride.onPurchase()
+            } else {
+                didPurchase = await viewModel.purchaseSelectedProduct()
+            }
             if didPurchase {
-                onPurchaseConfirmed()
+                startOpening(then: onPurchaseConfirmed)
             }
         }
     }
 
-    private func retryProducts() {
+    func retryProducts() {
         Task {
             await viewModel.loadProducts()
             if viewModel.currentProduct != nil {
@@ -422,16 +230,20 @@ struct PaywallView: View {
         }
     }
 
-    private func restorePurchases() {
+    func restorePurchases() {
         Task {
-            let didRestore = await viewModel.restorePurchases()
-            if didRestore {
-                onPurchaseConfirmed()
+            if await viewModel.restorePurchases() {
+                startOpening(then: onPurchaseConfirmed)
             }
         }
     }
 
-    private func unpair() {
+    func startOpening(then next: () -> Void) {
+        isOpening = true
+        next()
+    }
+
+    func unpair() {
         Task {
             let didLeave = await viewModel.leaveRelationship()
             if didLeave {
@@ -441,7 +253,7 @@ struct PaywallView: View {
         }
     }
 
-    private func showBanner(for error: PaywallError?) {
+    func showBanner(for error: PaywallError?) {
         guard let error else {
             return
         }
@@ -450,20 +262,78 @@ struct PaywallView: View {
         viewModel.clearError()
     }
 
-    private func presentPaywallContentIfReady() async {
-        guard isPresentationReady else {
-            hasPresentedPaywallContent = false
+    // MARK: - Joining a partner
+
+    /// An earlier preview that was never accepted would otherwise come back as
+    /// the confirmation when the sheet closes.
+    func showInviteCodeEntry() {
+        viewModel.clearInvitePreview()
+        isEnteringInviteCode = true
+    }
+
+    /// A code saved from a link or the welcome screen goes straight to the
+    /// confirmation, without the code sheet.
+    func previewPendingInvite() async {
+        // A code typed in the sheet is saved as the pending code once it previews.
+        // That save is not a second request to preview it, so a code with a
+        // preview already in hand is left alone.
+        guard allowsInviteEntry,
+              let pendingInviteCode,
+              viewModel.invitePreview == nil,
+              !isEnteringInviteCode,
+              !isConfirmingInvite
+        else {
             return
         }
 
-        await Task.yield()
+        if await viewModel.previewInvite(codeInput: pendingInviteCode) != nil {
+            isConfirmingInvite = true
+        } else if viewModel.lastInviteCodeWasUnusable {
+            // A wrong or expired code would otherwise come back on every launch.
+            self.pendingInviteCode = nil
+        }
+    }
 
-        if reduceMotion {
-            hasPresentedPaywallContent = true
-        } else {
-            withAnimation(.easeOut(duration: PaeoniaMotion.motionSlow)) {
-                hasPresentedPaywallContent = true
+    /// Keeps the sheet open with the keyboard up when the code doesn't work. The
+    /// banner says why.
+    func previewEnteredInvite(_ code: String) async -> Bool {
+        guard await viewModel.previewInvite(codeInput: code) != nil else {
+            return false
+        }
+
+        // Remember only a code that works, so a typo is not reopened on the next
+        // launch.
+        pendingInviteCode = code
+        return true
+    }
+
+    /// Runs after the code sheet has closed. Showing the alert any earlier can lose
+    /// it to the sheet's closing animation.
+    func confirmInviteIfPreviewed() {
+        if viewModel.invitePreview != nil {
+            isConfirmingInvite = true
+        }
+    }
+
+    func redeemPreviewedInvite() {
+        guard !viewModel.isAcceptingInvite else {
+            return
+        }
+
+        Task {
+            if await viewModel.acceptPreviewedInvite() {
+                bannerCenter.dismiss()
+                // Root clears the pending code once the paired route is in place.
+                // Clearing it here would route back to pairing for a frame first.
+                startOpening(then: onInviteAccepted)
             }
         }
+    }
+
+    /// "Not now" also forgets a code that came from a link, so it doesn't ask again
+    /// on the next launch.
+    func cancelInviteConfirmation() {
+        viewModel.clearInvitePreview()
+        pendingInviteCode = nil
     }
 }

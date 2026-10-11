@@ -30,25 +30,21 @@ nonisolated enum PaywallAudience: Equatable, Sendable {
         }
     }
 
-    func headlineTitle(hasFreeTrial: Bool) -> LocalizedStringResource {
+    var headline: LocalizedStringResource {
         switch self {
         case .unpaired:
-            hasFreeTrial ? .paywallTrialTitle : .paywallTitle
+            .paywallTitle
         case .paired:
-            .paywallPairedTitle(partnerNameForCopy)
+            .paywallPairedHeadline
         }
     }
 
-    func subtitle(hasFreeTrial: Bool) -> LocalizedStringResource {
-        switch (self, hasFreeTrial) {
-        case (.unpaired, true):
-            .paywallTrialSubtitle
-        case (.unpaired, false):
+    var message: LocalizedStringResource {
+        switch self {
+        case .unpaired:
             .paywallSubtitle
-        case (.paired, true):
-            .paywallPairedTrialSubtitle
-        case (.paired, false):
-            .paywallPairedSubtitle
+        case .paired:
+            .paywallPairedMessage(partnerNameForCopy)
         }
     }
 

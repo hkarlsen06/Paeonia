@@ -1,95 +1,94 @@
 import SwiftUI
 
+/// The scrolling part of the paywall: what Paeonia is, what you get, and the plans.
+/// It cascades in under the logo like the profile screen before it.
 struct PaywallContentView: View {
-    let topSafeAreaInset: CGFloat
-    let heroHeight: CGFloat
-    let aboveFoldMinHeight: CGFloat
+    let audience: PaywallAudience
+    let plans: [PaywallPlanOption]
+    let isLoadingPlans: Bool
+    let showsTrialReminder: Bool
     @Binding var billingPeriod: PaeoniaBillingPeriod
 
-    let headlineTitle: LocalizedStringResource
-    let subtitle: LocalizedStringResource
-    let priceLine: String
-    let spokenPriceLine: String?
-    let timelineItems: [PaywallTimelineItem]
-    let allowsInviteEntry: Bool
-    let showsArtworkHeader: Bool
-    let onRevealInvite: () -> Void
-
-    static func heroHeight(for geometry: GeometryProxy) -> CGFloat {
-        let band = min(max(geometry.size.height * 0.15, 128), 156)
-        return geometry.safeAreaInsets.top + band
-    }
-
-    static func aboveFoldMinHeight(for geometry: GeometryProxy) -> CGFloat {
-        geometry.size.height + geometry.safeAreaInsets.top - 120
-    }
-
     var body: some View {
-        aboveFold
-            .frame(minHeight: aboveFoldMinHeight, alignment: .top)
-            .background(.paeoniaSurfacePrimary)
-    }
+        VStack(spacing: PaeoniaSpacing.space24) {
+            header
+                .screenEntrance(order: 1)
 
-    private var aboveFold: some View {
-        VStack(spacing: 0) {
-            if showsArtworkHeader {
-                PaywallArtworkHeader(topSafeAreaInset: topSafeAreaInset, height: heroHeight)
-            } else {
-                // No brand hero here (the paired paywall drops it to make room for
-                // the longer copy). Reserve the status-bar area so the title still
-                // clears the notch, since the scroll view ignores the top safe area.
-                Color.clear
-                    .frame(height: topSafeAreaInset + PaeoniaSpacing.space8)
-            }
+            PaywallFeatureList()
+                .screenEntrance(order: 2)
 
-            VStack(alignment: .leading, spacing: 0) {
-                headlineBlock
+            VStack(spacing: PaeoniaSpacing.space12) {
+                PaywallPlanPicker(plans: plans, isLoading: isLoadingPlans, selection: $billingPeriod)
 
-                PaywallBillingSelector(billingPeriod: $billingPeriod)
-                    .padding(.top, PaeoniaSpacing.space20)
-
-                Spacer(minLength: PaeoniaSpacing.space32)
-
-                PaywallTimelineView(items: timelineItems)
-
-                Spacer(minLength: PaeoniaSpacing.space24)
-
-                if allowsInviteEntry {
-                    PaywallScrollCue(onTap: onRevealInvite)
-                        .padding(.bottom, PaeoniaSpacing.space20)
+                if showsTrialReminder {
+                    trialReminder
                 }
             }
-            .padding(.horizontal, PaeoniaSpacing.space20)
-            .padding(.top, PaeoniaSpacing.space24)
-            .frame(maxWidth: 430)
-            .frame(maxWidth: .infinity)
-            .frame(maxHeight: .infinity, alignment: .top)
+            .screenEntrance(order: 3)
         }
     }
 
-    private var headlineBlock: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(headlineTitle)
-                .font(PaeoniaTypography.largeTitle)
+    private var header: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            Text(audience.headline)
+                .font(PaeoniaTypography.title)
                 .foregroundStyle(.paeoniaTextPrimary)
-                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
 
-            Text(subtitle)
+            Text(audience.message)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text(priceLine)
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, PaeoniaSpacing.space2)
-                .accessibilityLabel(Text(spokenPriceLine ?? priceLine))
-
-            Text(.paywallOneSubscription)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var trialReminder: some View {
+        Label {
+            Text(.paywallTrialReminder)
+        } icon: {
+            Image(systemName: "bell.fill")
+                .foregroundStyle(.paeoniaAccentPrimary)
+        }
+        .font(PaeoniaTypography.caption)
+        .foregroundStyle(.paeoniaTextSecondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, PaeoniaSpacing.space4)
+    }
+}
+
+/// What a subscription opens, one line per feature. The same features the welcome
+/// screen describes, kept short here so the plans stay in view.
+private struct PaywallFeatureList: View {
+    private let features: [(systemImage: String, title: LocalizedStringResource)] = [
+        ("scribble.variable", .welcomeFeatureDrawingTitle),
+        ("bubble.left.and.bubble.right.fill", .welcomeFeatureQuestionsTitle),
+        ("photo.on.rectangle.angled", .welcomeFeatureMemoriesTitle),
+        ("calendar.badge.clock", .welcomeFeatureMilestonesTitle),
+    ]
+
+    @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 32
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            ForEach(features, id: \.systemImage) { feature in
+                HStack(spacing: PaeoniaSpacing.space12) {
+                    Image(systemName: feature.systemImage)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.paeoniaAccentPrimary)
+                        .frame(width: iconSize, height: iconSize)
+                        .background(.paeoniaAccentPrimary.opacity(0.14), in: Circle())
+                        .accessibilityHidden(true)
+
+                    Text(feature.title)
+                        .font(PaeoniaTypography.bodyEmphasis)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, PaeoniaSpacing.space4)
     }
 }

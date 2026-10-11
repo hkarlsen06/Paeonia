@@ -51,3 +51,19 @@ struct PaywallConfirmationAlerts: ViewModifier {
             }
     }
 }
+
+enum PaywallInviteConfirmation {
+    static func title(for preview: PairingInvitePreview?) -> LocalizedStringResource {
+        guard let inviterName = preview?.inviterDisplayName?.trimmedNonEmpty else {
+            return .paywallInviteConfirmTitleFallback
+        }
+
+        return .paywallInviteConfirmTitle(inviterName)
+    }
+
+    static func message(for preview: PairingInvitePreview?) -> LocalizedStringResource {
+        preview?.hasSafetyWarning == true
+            ? .paywallInviteConfirmSafetyMessage
+            : .paywallInviteConfirmMessage
+    }
+}

@@ -93,11 +93,13 @@ struct PairingInviteContent: View {
     private var content: some View {
         ZStack {
             if !viewModel.isPresentationReady {
-                // The quiet petal surface fades out on top while the invite content
-                // (and its code tiles' own entrance) starts underneath, so loading
-                // dissolves into the invite instead of blinking away. A fade only,
-                // so Reduce Motion needs no branch.
-                AuthLaunchingView()
+                // A quiet spinner under the logo, which stays in place from the
+                // paywall. It fades out on top while the invite content (and its
+                // code tiles' own entrance) starts underneath. A fade only, so
+                // Reduce Motion needs no branch.
+                ProgressView()
+                    .tint(.paeoniaAccentPrimary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .transition(.opacity)
                     .zIndex(1)
             } else if let invite = viewModel.invite {

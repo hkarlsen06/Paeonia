@@ -47,14 +47,12 @@ struct AuthOnboardingView: View {
         .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            completeButton
-                .padding(.top, PaeoniaSpacing.space12)
-                .screenEntrance(order: 4)
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                accountMenu
+            VStack(spacing: PaeoniaSpacing.space4) {
+                completeButton
+                accountActions
             }
+            .padding(.top, PaeoniaSpacing.space12)
+            .screenEntrance(order: 4)
         }
         .task(id: selectedProfilePhotoItem) {
             await loadProfilePhoto(from: selectedProfilePhotoItem)
@@ -163,30 +161,34 @@ struct AuthOnboardingView: View {
         .accessibilityIdentifier("auth.onboarding.complete")
     }
 
-    private var accountMenu: some View {
-        Menu {
+    /// Quiet links under Continue, like the paywall's footer. They sit here rather
+    /// than in a navigation bar, so the logo above stays at the same height from
+    /// this screen to the next.
+    private var accountActions: some View {
+        HStack(spacing: PaeoniaSpacing.space12) {
             Button(action: onSignOut) {
-                Label {
-                    Text(.authOnboardingSignOutButton)
-                } icon: {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                }
+                accountActionLabel(.authOnboardingSignOutButton)
             }
 
-            Button(role: .destructive) {
+            Text(verbatim: "·")
+                .accessibilityHidden(true)
+
+            Button {
                 isConfirmingDelete = true
             } label: {
-                Label {
-                    Text(.authDeleteAccountButton)
-                } icon: {
-                    Image(systemName: "trash")
-                }
+                accountActionLabel(.authDeleteAccountButton)
             }
-        } label: {
-            Image(systemName: "ellipsis")
-                .accessibilityLabel(Text(.authOnboardingMenu))
         }
+        .buttonStyle(.plain)
+        .font(PaeoniaTypography.caption)
+        .foregroundStyle(.paeoniaTextTertiary)
         .disabled(isWorking)
+    }
+
+    private func accountActionLabel(_ title: LocalizedStringResource) -> some View {
+        Text(title)
+            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+            .contentShape(Rectangle())
     }
 
     private func complete() {

@@ -831,42 +831,18 @@ struct PaywallAudienceTests {
         #expect(PaywallAudience.paired(partnerName: "   ").partnerNameForCopy == fallback)
     }
 
-    @Test func unpairedAudienceUsesTrialCopyOnlyWhenTrialIsAvailable() {
+    @Test func unpairedAudienceUsesTheOfferCopy() {
         let audience = PaywallAudience.unpaired
 
-        #expect(
-            String(localized: audience.headlineTitle(hasFreeTrial: true))
-                == String(localized: .paywallTrialTitle)
-        )
-        #expect(
-            String(localized: audience.subtitle(hasFreeTrial: true))
-                == String(localized: .paywallTrialSubtitle)
-        )
-        #expect(
-            String(localized: audience.headlineTitle(hasFreeTrial: false))
-                == String(localized: .paywallTitle)
-        )
-        #expect(
-            String(localized: audience.subtitle(hasFreeTrial: false))
-                == String(localized: .paywallSubtitle)
-        )
+        #expect(String(localized: audience.headline) == String(localized: .paywallTitle))
+        #expect(String(localized: audience.message) == String(localized: .paywallSubtitle))
     }
 
-    @Test func pairedAudienceUsesPartnerNameAndTrialSpecificSubtitle() {
+    @Test func pairedAudienceNamesThePartnerInTheMessage() {
         let audience = PaywallAudience.paired(partnerName: "  Riley  ")
 
-        #expect(
-            String(localized: audience.headlineTitle(hasFreeTrial: true))
-                == String(localized: .paywallPairedTitle("Riley"))
-        )
-        #expect(
-            String(localized: audience.subtitle(hasFreeTrial: true))
-                == String(localized: .paywallPairedTrialSubtitle)
-        )
-        #expect(
-            String(localized: audience.subtitle(hasFreeTrial: false))
-                == String(localized: .paywallPairedSubtitle)
-        )
+        #expect(String(localized: audience.headline) == String(localized: .paywallPairedHeadline))
+        #expect(String(localized: audience.message) == String(localized: .paywallPairedMessage("Riley")))
     }
 }
 

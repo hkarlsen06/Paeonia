@@ -48,7 +48,9 @@ struct PairingInviteView: View {
                     onRefreshAccess: onRefreshAccess
                 )
             } else {
-                AuthLaunchingView()
+                ProgressView()
+                    .tint(.paeoniaAccentPrimary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .task {

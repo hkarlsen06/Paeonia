@@ -20,7 +20,9 @@ struct WelcomeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: PaeoniaSpacing.space32) {
-                PaeoniaBrandLockup(wordmarkSize: 40, taglineSize: 17)
+                // Same size and place as the lockup in `RootBrandedFrame`, so the
+                // logo stays still while the screens after sign-in fade in under it.
+                PaeoniaBrandLockup(wordmarkSize: 36, taglineSize: 17)
                     .frame(maxWidth: .infinity)
                     .accessibilityElement(children: .combine)
                     .accessibilityAddTraits(.isHeader)
@@ -32,7 +34,7 @@ struct WelcomeView: View {
             .frame(maxWidth: 430)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.space40)
+            .padding(.top, PaeoniaSpacing.screenTopSpacing)
             .padding(.bottom, PaeoniaSpacing.space24)
         }
         .scrollIndicators(.hidden)
@@ -63,7 +65,7 @@ struct WelcomeView: View {
             }
             .launchEntrance(order: 2)
         }
-        .background(background)
+        .background(PaeoniaGlowBackground())
         .sheet(isPresented: $isInviteSheetPresented) {
             PairingCodeEntrySheet(
                 title: .welcomeInviteCodeTitle,
@@ -74,23 +76,6 @@ struct WelcomeView: View {
                 return true
             }
         }
-    }
-
-    private var background: some View {
-        ZStack {
-            Color.paeoniaBackgroundPrimary
-
-            // A soft petal glow as ambient light. Static, so it is comfortable
-            // with Reduce Motion and never competes with the content.
-            RadialGradient(
-                colors: [.paeoniaAccentPrimary.opacity(0.16), .clear],
-                center: .top,
-                startRadius: 0,
-                endRadius: 380
-            )
-        }
-        .ignoresSafeArea()
-        .accessibilityHidden(true)
     }
 }
 

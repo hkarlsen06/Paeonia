@@ -170,12 +170,11 @@
             freeTrial: trial,
             isPurchasing: false,
             isLoading: false,
-            displayPrice: (billingPeriod == .monthly ? 49 : 399)
-              .formatted(.currency(code: "NOK").precision(.fractionLength(0)))
+            price: PaywallPrice(
+              amount: billingPeriod == .monthly ? 49 : 399,
+              format: .currency(code: "NOK")
+            )
           )
-        },
-        priceLine: { billingPeriod in
-          DeveloperLocalFlowPriceLine.text(for: billingPeriod, trial: trial)
         },
         purchaseIsEnabled: true,
         onPurchase: {
@@ -183,25 +182,6 @@
           return true
         }
       )
-    }
-  }
-
-  @MainActor
-  private enum DeveloperLocalFlowPriceLine {
-    static func text(
-      for billingPeriod: PaeoniaBillingPeriod,
-      trial: PaeoniaFreeTrial
-    ) -> String {
-      let amount = billingPeriod == .monthly ? 49 : 399
-      let price = amount.formatted(.currency(code: "NOK").precision(.fractionLength(0)))
-      let period = String(
-        localized: billingPeriod == .monthly
-          ? .paywallPeriodMonthlyCompact
-          : .paywallPeriodYearlyCompact
-      )
-      let free = String(localized: .paywallTrialFreeWord)
-      let then = String(localized: .paywallTrialThen).lowercased(with: .current)
-      return "\(trial.localizedDurationText) \(free), \(then) \(price)\(period)"
     }
   }
 
