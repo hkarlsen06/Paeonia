@@ -110,6 +110,7 @@ struct DailyChallengeAnswerFlow: View {
                         sending: viewModel.sendingPreview(
                             for: revealedQuestion(for: partnerRevealQuestion.id) ?? partnerRevealQuestion
                         ),
+                        onRevealed: viewModel.markPartnerAnswerSeen,
                         onDone: finishPartnerReveal
                     )
                     .transition(.opacity)

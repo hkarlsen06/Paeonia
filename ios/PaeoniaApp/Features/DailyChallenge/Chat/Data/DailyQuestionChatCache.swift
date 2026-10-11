@@ -62,12 +62,21 @@ protocol DailyQuestionChatCaching: Actor {
     /// nothing. Returns whether it wrote.
     @discardableResult
     func markRead(ownerUserID: UUID, threadID: UUID, through date: Date) -> Bool
+    /// Questions whose page the user has opened since the partner's answer showed up.
+    /// Only kept on this phone.
+    func seenPartnerAnswers(ownerUserID: UUID) -> Set<UUID>
+    /// Records that the user has seen the partner's answer. Returns whether it wrote.
+    @discardableResult
+    func markPartnerAnswerSeen(ownerUserID: UUID, instanceID: UUID) -> Bool
 }
 
 extension DailyQuestionChatCaching {
     func readMarks(ownerUserID _: UUID) -> [UUID: Date] { [:] }
     @discardableResult
     func markRead(ownerUserID _: UUID, threadID _: UUID, through _: Date) -> Bool { false }
+    func seenPartnerAnswers(ownerUserID _: UUID) -> Set<UUID> { [] }
+    @discardableResult
+    func markPartnerAnswerSeen(ownerUserID _: UUID, instanceID _: UUID) -> Bool { false }
 }
 
 actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
@@ -136,7 +145,8 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
                 lastMessageID: message.id,
                 lastMessageAt: message.createdAt,
                 lastMessageSenderUserID: message.senderUserID,
-                lastMessageBody: message.body
+                lastMessageBody: message.body,
+                viewerReadThroughAt: summary.viewerReadThroughAt
             )
         }
         save(document, ownerUserID: ownerUserID)
@@ -229,7 +239,8 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
                 lastMessageID: messageID,
                 lastMessageAt: createdAt,
                 lastMessageSenderUserID: senderUserID,
-                lastMessageBody: body
+                lastMessageBody: body,
+                viewerReadThroughAt: summary.viewerReadThroughAt
             )
         } else {
             document.summaries.append(
@@ -312,6 +323,20 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         return true
     }
 
+    func seenPartnerAnswers(ownerUserID: UUID) -> Set<UUID> {
+        Set(document(ownerUserID: ownerUserID).seenPartnerAnswerInstanceIDs.compactMap(UUID.init(uuidString:)))
+    }
+
+    @discardableResult
+    func markPartnerAnswerSeen(ownerUserID: UUID, instanceID: UUID) -> Bool {
+        var document = document(ownerUserID: ownerUserID)
+        let key = instanceID.uuidString
+        guard !document.seenPartnerAnswerInstanceIDs.contains(key) else { return false }
+        document.seenPartnerAnswerInstanceIDs.append(key)
+        save(document, ownerUserID: ownerUserID)
+        return true
+    }
+
     func clearAll() {
         generation += 1
         guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }
@@ -366,10 +391,12 @@ nonisolated private struct CacheDocument: Codable {
     var summaries: [DailyQuestionThreadSummary] = []
     var messagesByInstanceID: [String: [DailyQuestionChatMessage]] = [:]
     var readThroughByThreadID: [String: Date] = [:]
+    var seenPartnerAnswerInstanceIDs: [String] = []
 
     init() {}
 
-    // Files written before read marks existed lack the key and keep their messages.
+    // Files written before read marks or seen answers existed lack those keys and
+    // keep their messages.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         summaries = try container.decode([DailyQuestionThreadSummary].self, forKey: .summaries)
@@ -381,5 +408,9 @@ nonisolated private struct CacheDocument: Codable {
             [String: Date].self,
             forKey: .readThroughByThreadID
         ) ?? [:]
+        seenPartnerAnswerInstanceIDs = try container.decodeIfPresent(
+            [String].self,
+            forKey: .seenPartnerAnswerInstanceIDs
+        ) ?? []
     }
 }

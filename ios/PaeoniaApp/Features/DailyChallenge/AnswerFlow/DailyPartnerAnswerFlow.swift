@@ -180,6 +180,7 @@ struct DailyPartnerAnswerFlow: View {
             revealedQuestion: revealedQuestion,
             participants: viewModel.participants,
             sending: viewModel.sendingPreview(for: liveQuestion),
+            onRevealed: viewModel.markPartnerAnswerSeen,
             onDone: dismiss
         )
     }
@@ -265,6 +266,8 @@ struct DailyPartnerAnswerRevealView: View {
     let participants: DailyChallengeParticipants
     /// The user's answer while it's still sending, shown before the server has it.
     var sending: DailySendingPreview?
+    /// The partner's answer is on screen, so it counts as seen.
+    var onRevealed: (DailyChallengeQuestion) -> Void = { _ in }
     let onDone: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -317,6 +320,9 @@ struct DailyPartnerAnswerRevealView: View {
         .animation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment, value: isRevealed)
         .onChange(of: revealedQuestion, initial: true) { _, question in
             if Self.isUnlocked(question) { lastRevealed = question }
+        }
+        .onChange(of: shownQuestion?.id, initial: true) {
+            if let shownQuestion { onRevealed(shownQuestion) }
         }
         .onChange(of: isRevealed) { _, revealed in
             if revealed { PaeoniaHaptics.answerRevealed() }

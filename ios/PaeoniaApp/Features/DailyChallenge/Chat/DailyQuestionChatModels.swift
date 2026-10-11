@@ -12,6 +12,8 @@ nonisolated struct DailyQuestionThreadSummary: Codable, Equatable, Sendable {
     let lastMessageBody: String?
     /// The media type of the newest message's first attachment ("image" or "voice").
     var lastMessageMediaType: String?
+    /// How far this user has read the chat on any of their devices, from the server.
+    var viewerReadThroughAt: Date?
 
     /// What to show for the newest message. A shown message with no text has an
     /// attachment, because the server only leaves out the text of hidden messages.
@@ -21,11 +23,11 @@ nonisolated struct DailyQuestionThreadSummary: Codable, Equatable, Sendable {
         return String(localized: lastMessageMediaType == "image" ? .dailyChatPhotoPreview : .dailyChatVoicePreview)
     }
 
-    /// The newest message came from the partner after `readThrough`, the last time
-    /// this user saw the chat on this phone.
+    /// The newest message came from the partner after the user last read the chat:
+    /// `readThrough` on this phone, or `viewerReadThroughAt` on any of their devices.
     func isUnread(by userID: UUID, readThrough: Date?) -> Bool {
         guard let lastMessageAt, let sender = lastMessageSenderUserID, sender != userID else { return false }
-        guard let readThrough else { return true }
+        guard let readThrough = [readThrough, viewerReadThroughAt].compactMap(\.self).max() else { return true }
         return lastMessageAt > readThrough
     }
 }
@@ -214,7 +216,7 @@ nonisolated struct DailyQuestionChatVoicePayload: Codable, Equatable, Sendable {
 }
 
 extension DailyChallengeQuestion {
-    var isChatAvailable: Bool {
+    nonisolated var isChatAvailable: Bool {
         hasOwnAnswer && hasPartnerAnswer && canViewPartnerAnswer
     }
 }

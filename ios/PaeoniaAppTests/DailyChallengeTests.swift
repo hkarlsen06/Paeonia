@@ -393,7 +393,64 @@ struct DailyChallengeMappingTests {
         // One list: the to-do (slot 3) is pinned on top despite being the oldest, then
         // the rest by most recent answer (slot 1 at t3, slot 2 at t2). Pure recency
         // would have been [1, 2, 3].
-        #expect(snapshot.readOverviewQuestions.map(\.slotNumber) == [3, 1, 2])
+        #expect(snapshot.readOverviewQuestions().map(\.slotNumber) == [3, 1, 2])
+
+        // Something new on the oldest finished exchange (slot 2) moves it above the
+        // timeline, but still below the to-do.
+        #expect(
+            snapshot.readOverviewQuestions(isNew: { $0.slotNumber == 2 }).map(\.slotNumber)
+                == [3, 2, 1]
+        )
+    }
+
+    @Test func aPartnerAnswerIsNewUntilYouHaveSeenIt() throws {
+        let t1 = TestDailyChallengeIDs.answerDate
+        let t2 = t1.addingTimeInterval(3_600)
+        let snapshot = makeSnapshot(rows: [
+            // Your question: you answered, then your partner did.
+            questionRow(
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID(),
+                ownAnsweredAt: t1,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: t2,
+                canViewPartnerAnswer: true
+            ),
+            // Their question: you answered second, and the reveal hasn't shown the reply yet.
+            questionRow(
+                slotNumber: 2,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                status: "answered",
+                ownAnswerID: UUID(),
+                ownAnsweredAt: t2,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: t1,
+                canViewPartnerAnswer: true
+            ),
+            // Your question: your partner answered, but you can't see it yet.
+            questionRow(
+                slotNumber: 3,
+                seededForUserID: TestDailyChallengeIDs.currentUser,
+                status: "answered",
+                ownAnswerID: UUID(),
+                ownAnsweredAt: t1,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: t2
+            ),
+        ])
+        let bySlot = Dictionary(uniqueKeysWithValues: snapshot.questions.map { ($0.slotNumber, $0) })
+        let mine = try #require(bySlot[1])
+
+        #expect(mine.hasNewPartnerAnswer(seen: []))
+        #expect(!mine.hasNewPartnerAnswer(seen: [mine.id]))
+        // Seen on another device.
+        var seenElsewhere = mine
+        seenElsewhere.partnerAnswerSeenAt = t2
+        #expect(!seenElsewhere.hasNewPartnerAnswer(seen: []))
+        #expect(bySlot[2]?.hasNewPartnerAnswer(seen: []) == true)
+        #expect(bySlot[3]?.hasNewPartnerAnswer(seen: []) == false)
     }
 
     @Test func carriedForwardQuestionsSortBelowCurrentDayQuestions() {

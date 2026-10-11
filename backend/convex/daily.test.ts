@@ -369,6 +369,39 @@ describe("answers and the reveal rule", () => {
   });
 });
 
+describe("seen answers", () => {
+  test("each side sees when the other first saw their answer", async () => {
+    const { t, a, b } = await readyCouple();
+    const [aFirst] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
+    const seen = (user: TestUser) => user.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: aFirst.id });
+    const row = async (user: TestUser) => (await today(user)).find((item) => item.instance_id === aFirst.id)!;
+
+    await submit(a, aFirst.id, { text: "mine" });
+    // b can't read a's answer before answering, so b can't have seen it.
+    await expect(seen(b)).rejects.toThrow(/23514.*partner answer is not visible yet/);
+
+    vi.setSystemTime(new Date("2026-10-10T11:00:00.000Z"));
+    await submit(b, aFirst.id, { text: "reply" });
+    expect(await row(a)).toMatchObject({ partner_answer_seen_at: null, own_answer_seen_by_partner_at: null });
+
+    vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
+    await seen(a);
+    vi.setSystemTime(new Date("2026-10-10T13:00:00.000Z"));
+    await seen(a);
+    expect(await row(a)).toMatchObject({ partner_answer_seen_at: "2026-10-10T12:00:00.000Z", own_answer_seen_by_partner_at: null });
+    expect(await row(b)).toMatchObject({ partner_answer_seen_at: null, own_answer_seen_by_partner_at: "2026-10-10T12:00:00.000Z" });
+    const history = await b.as.query(api.daily.get_daily_questions_history, {});
+    expect(history.find((item) => item.instance_id === aFirst.id)).toMatchObject({
+      own_answer_seen_by_partner_at: "2026-10-10T12:00:00.000Z",
+    });
+
+    const stranger = await createSignedInUser(t);
+    await expect(
+      stranger.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: aFirst.id }),
+    ).rejects.toThrow(/42501/);
+  });
+});
+
 describe("shuffle", () => {
   test("replaces a slot, skips the old question, and refuses answered or shuffled slots", async () => {
     const { t, a } = await readyCouple({ questions: textQuestions(12) });
@@ -749,10 +782,13 @@ describe("completing the day", () => {
 
 describe("reset_daily_challenge_for_testing", () => {
   test("clears today's answers, skips, and completion, then seeds fresh slots", async () => {
-    const { t, couple, a } = await readyCouple();
+    const { t, couple, a, b } = await readyCouple();
     const before = await liveInstancesFor(t, a.userId);
     await a.as.mutation(api.daily.shuffle_daily_question, { p_slot_number: 1, ...op() });
     await completeDay(t, a);
+    const [answered] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
+    await submit(b, answered.id, { text: "reply" });
+    await a.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: answered.id });
     const reset = await t.mutation(internal.daily.reset_daily_challenge_for_testing, { p_couple_id: couple.coupleId });
     expect(reset).toBe(1);
     const state = await t.run(async (ctx) => ({
@@ -761,8 +797,10 @@ describe("reset_daily_challenge_for_testing", () => {
       shuffles: await ctx.db.query("daily_question_shuffles").collect(),
       instances: await ctx.db.query("daily_question_instances").collect(),
       challenges: await ctx.db.query("daily_challenges").collect(),
+      seen: await ctx.db.query("daily_answer_seen_states").collect(),
     }));
     expect(state.answers).toEqual([]);
+    expect(state.seen).toEqual([]);
     expect(state.texts).toEqual([]);
     expect(state.shuffles).toEqual([]);
     expect(state.instances).toHaveLength(6);

@@ -226,6 +226,12 @@ export async function purgeCoupleContent(
       .collect();
     for (const link of links) await remove(link);
   }
+  for (const state of await ctx.db
+    .query("daily_answer_seen_states")
+    .withIndex("by_couple_id", (q) => q.eq("couple_id", couple.id))
+    .collect()) {
+    await remove(state);
+  }
 
   const threads = await ctx.db
     .query("conversation_threads")

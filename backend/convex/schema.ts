@@ -1222,6 +1222,20 @@ export default defineSchema({
     .index("by_user_id", ["user_id"])
     .index("by_typing_at", ["typing_at"]),
 
+  // New in Convex: when each person first saw the partner's answer to a daily question,
+  // for the "new" mark in the app and the read receipt on the answer. One row per
+  // (instance_id, user_id), never moved forward.
+  // FK: instance_id -> daily_question_instances cascade; couple_id -> couples cascade; user_id -> users cascade.
+  daily_answer_seen_states: defineTable({
+    instance_id: uuid,
+    couple_id: uuid,
+    user_id: uuid,
+    seen_at: ts,
+  })
+    .index("by_instance_id_user_id", ["instance_id", "user_id"])
+    .index("by_couple_id", ["couple_id"])
+    .index("by_user_id", ["user_id"]),
+
   // FK: message_id -> thread_messages cascade; media_asset_id -> media_assets cascade.
   // (message_id, media_asset_id) and (message_id, sort_order) are unique.
   thread_message_media: defineTable({

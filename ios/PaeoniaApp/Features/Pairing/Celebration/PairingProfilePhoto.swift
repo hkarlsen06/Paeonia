@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 import UIKit
 
-/// One person's profile photo for the pairing celebration and the Home header.
+/// One person's profile photo for the pairing celebration.
 ///
 /// It fetches and decodes a photo once per asset, so views never decode image
 /// data in `body`. A photo that is already shown stays on screen while a new one

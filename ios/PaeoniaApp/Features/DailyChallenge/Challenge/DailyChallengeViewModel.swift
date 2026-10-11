@@ -94,6 +94,11 @@ final class DailyChallengeViewModel {
     private(set) var threadSummariesByInstanceID: [UUID: DailyQuestionThreadSummary] = [:]
     /// When the user last saw each chat on this phone, keyed by thread id.
     private(set) var chatReadMarks: [UUID: Date] = [:]
+    /// Questions whose page the user has opened since the partner's answer showed up.
+    private(set) var seenPartnerAnswerIDs: Set<UUID> = []
+    /// Seen answers being sent to the server right now, so a second trigger doesn't
+    /// send the same one twice.
+    @ObservationIgnored private var seenAnswerUploads: Set<UUID> = []
 
     init(
         service: (any DailyChallengeServicing)? = nil,
@@ -266,6 +271,42 @@ final class DailyChallengeViewModel {
         return summary.isUnread(by: currentUserID, readThrough: chatReadMarks[summary.threadID])
     }
 
+    /// The user can read the partner's answer and hasn't seen it yet.
+    func hasNewPartnerAnswer(_ question: DailyChallengeQuestion) -> Bool {
+        question.hasNewPartnerAnswer(seen: seenPartnerAnswerIDs)
+    }
+
+    /// The answer flow showed the partner's answer. Saved on this phone first, which
+    /// sends it to the server through `uploadSeenPartnerAnswers`.
+    func markPartnerAnswerSeen(_ question: DailyChallengeQuestion) {
+        guard let currentUserID, question.isChatAvailable, question.partnerAnswerSeenAt == nil else { return }
+        let chatService = chatService
+        Task { await chatService.markPartnerAnswerSeen(ownerUserID: currentUserID, instanceID: question.id) }
+    }
+
+    /// Sends answers seen on this phone that the server doesn't know about yet. Runs
+    /// whenever the questions or the seen list change, so one that failed offline is
+    /// sent again once a live update arrives. The server keeps the first time it heard.
+    private func uploadSeenPartnerAnswers() {
+        let pending = snapshot.questions.filter {
+            seenPartnerAnswerIDs.contains($0.id) && $0.isChatAvailable && $0.partnerAnswerSeenAt == nil
+                && !seenAnswerUploads.contains($0.id)
+        }
+        for question in pending {
+            seenAnswerUploads.insert(question.id)
+            let chatService = chatService
+            Task { @MainActor [weak self] in
+                await chatService.markPartnerAnswerSeenOnServer(instanceID: question.id)
+                self?.seenAnswerUploads.remove(question.id)
+            }
+        }
+    }
+
+    /// Something from the partner the user hasn't seen yet: a new answer or a chat message.
+    func hasNewFromPartner(_ question: DailyChallengeQuestion) -> Bool {
+        hasNewPartnerAnswer(question) || (question.isChatAvailable && hasUnreadChat(for: question.id))
+    }
+
     /// Chats with a partner message the user has not opened yet, newest first.
     var unreadChats: [DailyQuestionThreadSummary] {
         guard let currentUserID else { return [] }
@@ -342,6 +383,7 @@ final class DailyChallengeViewModel {
         sendingAnswers = [:]
         threadSummariesByInstanceID = [:]
         chatReadMarks = [:]
+        seenPartnerAnswerIDs = []
 
         guard let newUserID else { return }
 
@@ -364,9 +406,12 @@ final class DailyChallengeViewModel {
         }
         let cachedThreads = await chatService.cachedThreadSummaries(ownerUserID: newUserID)
         let readMarks = await chatService.chatReadMarks(ownerUserID: newUserID)
+        let seenAnswers = await chatService.seenPartnerAnswers(ownerUserID: newUserID)
         if self.currentUserID == newUserID {
             applyThreadSummaries(cachedThreads)
             chatReadMarks = readMarks
+            seenPartnerAnswerIDs = seenAnswers
+            uploadSeenPartnerAnswers()
         }
         // Answers still queued from before a relaunch count as answered from the first
         // frame, instead of showing an empty composer until the network load settles.
@@ -463,9 +508,12 @@ final class DailyChallengeViewModel {
                 case .dailyChat:
                     let summaries = await self.chatService.cachedThreadSummaries(ownerUserID: userID)
                     let readMarks = await self.chatService.chatReadMarks(ownerUserID: userID)
+                    let seenAnswers = await self.chatService.seenPartnerAnswers(ownerUserID: userID)
                     guard self.currentUserID == userID else { return }
                     self.applyThreadSummaries(summaries)
                     self.chatReadMarks = readMarks
+                    self.seenPartnerAnswerIDs = seenAnswers
+                    self.uploadSeenPartnerAnswers()
                 case .pendingOperations:
                     self.restoreReturnedDrafts(for: userID)
                     await self.refreshSendingState()
@@ -1129,6 +1177,7 @@ final class DailyChallengeViewModel {
         streak = result.streak
         scheduleDayEnd()
         snapshotWaiters.values.forEach { $0.yield() }
+        uploadSeenPartnerAnswers()
     }
 
     /// Drops the active day from the snapshot once it has ended.

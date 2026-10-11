@@ -4,6 +4,37 @@ import Testing
 
 @MainActor
 struct DailyQuestionChatViewModelTests {
+    @Test func aSeenAnswerThatFailedToSendIsSentAgainUntilTheServerHasIt() async {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        await fixture.gateway.setAnswerSeenFailure(true)
+        await viewModel.load()
+
+        // Coming back to the page tries again after a failure.
+        for _ in 0..<200 where await fixture.gateway.answerSeenCallCount < 2 {
+            viewModel.setScreenActive(false)
+            viewModel.setScreenActive(true)
+            try? await Task.sleep(for: .milliseconds(5))
+        }
+        #expect(await fixture.gateway.answerSeenCallCount >= 2)
+
+        // Once the server has it, the page stops sending.
+        await fixture.gateway.setAnswerSeenFailure(false)
+        let callsBeforeSuccess = await fixture.gateway.answerSeenCallCount
+        for _ in 0..<200 where await fixture.gateway.answerSeenCallCount == callsBeforeSuccess {
+            viewModel.setScreenActive(false)
+            viewModel.setScreenActive(true)
+            try? await Task.sleep(for: .milliseconds(5))
+        }
+        let callsAfterSuccess = await fixture.gateway.answerSeenCallCount
+        for _ in 0..<5 {
+            viewModel.setScreenActive(false)
+            viewModel.setScreenActive(true)
+            try? await Task.sleep(for: .milliseconds(5))
+        }
+        #expect(await fixture.gateway.answerSeenCallCount == callsAfterSuccess)
+    }
+
     @Test func firstSendQueuesLazyThreadCreationAndOptimisticMessage() async throws {
         let fixture = ChatTestFixture()
         let viewModel = fixture.makeViewModel()
@@ -433,6 +464,32 @@ struct DailyQuestionChatReadMarkTests {
 
         // The thread list from the server carries the same milliseconds, so the chat stays read.
         #expect(readThrough == serverTime)
+    }
+
+    @Test func aReadOnAnotherDeviceClearsTheUnreadMark() {
+        var fromPartner = summary(sender: partner)
+        fromPartner.viewerReadThroughAt = sentAt
+
+        #expect(!fromPartner.isUnread(by: me, readThrough: nil))
+        #expect(!fromPartner.isUnread(by: me, readThrough: sentAt - 5))
+    }
+
+    @Test func theFileCacheKeepsSeenPartnerAnswersUntilAPurge() async {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ChatReadMarks-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = FileDailyQuestionChatCache(directoryURL: directory)
+        let instanceID = UUID()
+
+        #expect(await cache.markPartnerAnswerSeen(ownerUserID: me, instanceID: instanceID))
+        let markedAgain = await cache.markPartnerAnswerSeen(ownerUserID: me, instanceID: instanceID)
+        #expect(!markedAgain)
+        let reopened = FileDailyQuestionChatCache(directoryURL: directory)
+        #expect(await reopened.seenPartnerAnswers(ownerUserID: me) == [instanceID])
+        #expect(await cache.seenPartnerAnswers(ownerUserID: partner).isEmpty)
+
+        await cache.clearAll()
+        #expect(await cache.seenPartnerAnswers(ownerUserID: me).isEmpty)
     }
 }
 
@@ -1770,6 +1827,8 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
     private(set) var sendCallCount = 0
     private(set) var lastMediaAssetIDs: [UUID]?
     private(set) var lastReplyToMessageID: UUID?
+    private(set) var answerSeenCallCount = 0
+    private var answerSeenFails = false
 
     init(threadID: UUID, messageID: UUID) {
         self.threadID = threadID
@@ -1786,6 +1845,15 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
 
     func setFailure(_ shouldFail: Bool) {
         self.shouldFail = shouldFail
+    }
+
+    func setAnswerSeenFailure(_ fails: Bool) {
+        answerSeenFails = fails
+    }
+
+    func markAnswerSeen(instanceID _: UUID) async throws {
+        answerSeenCallCount += 1
+        if answerSeenFails { throw DailyQuestionChatServiceError.unavailable }
     }
 
     /// Makes only the send calls fail, with the error a real server would produce.

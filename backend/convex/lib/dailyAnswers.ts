@@ -881,8 +881,15 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
       if (shuffle.couple_day_id === day.id) await ctx.db.delete(shuffle._id);
     }
 
-    // 4. The instances. Replacement links point inside the day, so every row goes together.
+    // 4. The instances and who has seen their answers. Replacement links point inside the
+    // day, so every row goes together.
     for (const instance of instances) {
+      for (const state of await ctx.db
+        .query("daily_answer_seen_states")
+        .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id))
+        .collect()) {
+        await ctx.db.delete(state._id);
+      }
       await ctx.db.delete(instance._id);
     }
 

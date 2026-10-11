@@ -140,16 +140,6 @@ struct PairedHomeView: View {
             // system's Liquid Glass capsule and let it sit flat on the bar.
             .sharedBackgroundVisibility(.hidden)
 
-            ToolbarItem(placement: .principal) {
-                PairedProfilesHeader(
-                    currentName: currentName,
-                    currentProfilePhotoAssetID: currentProfilePhotoAssetID,
-                    partnerName: partnerName,
-                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
-                )
-                .padding(.top, PaeoniaSpacing.space2)
-            }
-
             // The streak lives at the trailing edge of the bar, sized to match the brand
             // mark and carried in the toolbar's standard background. It fades in when
             // the streak count becomes available rather than popping in abruptly.

@@ -138,6 +138,8 @@ struct DailyChatProjection {
         let youName: String
         var partnerIsTyping = false
         var partnerLastReadMessageID: UUID?
+        /// The partner has opened the page since the user's answer showed for them.
+        var ownAnswerSeenByPartner = false
     }
 
     static let questionRowID = "question"
@@ -205,6 +207,13 @@ struct DailyChatProjection {
         )
         append(questionRow, user: user(nil, isCurrentUser: false), redrawKey: input.prompt, text: input.prompt)
 
+        let lastSentOwnMessageID = input.messages.last {
+            $0.senderUserID == input.currentUserID && !$0.isSending && !$0.sendFailed
+        }?.id
+        // Read shows on your answer until you send a message, which then carries it.
+        let answerStatus: DailyChatMessageStatus? =
+            input.ownAnswerSeenByPartner && lastSentOwnMessageID == nil ? .read : nil
+
         for answer in input.answers {
             let row = DailyChatRow(
                 id: answerRowPrefix + answer.answerID.uuidString,
@@ -212,21 +221,18 @@ struct DailyChatProjection {
                 isCurrentUser: answer.isOwnAnswer,
                 createdAt: min(answer.answeredAt, firstMessageAt),
                 groupContext: .standalone(isCurrentUser: answer.isOwnAnswer),
-                status: nil,
+                status: answer.isOwnAnswer ? answerStatus : nil,
                 quotedPreview: nil
             )
             append(
                 row,
                 user: user(answer.answerUserID, isCurrentUser: answer.isOwnAnswer),
-                redrawKey: answer,
+                redrawKey: AnswerRedrawKey(answer: answer, status: row.status),
                 text: answer.textBody ?? ""
             )
         }
 
         let messagesByID = Dictionary(input.messages.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let lastSentOwnMessageID = input.messages.last {
-            $0.senderUserID == input.currentUserID && !$0.isSending && !$0.sendFailed
-        }?.id
         let readReceiptMessageID = readReceiptMessageID(input: input, messagesByID: messagesByID)
         // The dots join the partner's newest message when it is the last one, like Tidex.
         let typingJoinsPrevious = input.partnerIsTyping
@@ -331,6 +337,11 @@ struct DailyChatProjection {
 
     /// Everything a message row draws that ExyteChat's message doesn't carry. ExyteChat
     /// only redraws a row whose message changed, so this goes into `triggerRedraw`.
+    private struct AnswerRedrawKey: Hashable {
+        let answer: DailyQuestionAnswerDetail
+        let status: DailyChatMessageStatus?
+    }
+
     private struct MessageRedrawKey: Hashable {
         let body: String
         let isSending: Bool

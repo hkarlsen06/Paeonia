@@ -45,11 +45,12 @@ struct DailyChallengeScreen: View {
 
                     if !readQuestions.isEmpty {
                         // One list for everything — the partner's questions and the user's
-                        // own. Questions still waiting for you are pinned on top (so the
-                        // actionable cards are never buried); everything else follows by most
-                        // recent answer. A partner question you can still answer opens its
-                        // flow, locked until you finish your own three (answers saved locally
-                        // and still sending count), matching the answer flow's gating. A row
+                        // own. Questions still waiting for you are pinned on top, then cards
+                        // with a partner answer or message you haven't seen (so nothing new
+                        // is buried); everything else follows by most recent answer. A
+                        // partner question you can still answer opens its flow, locked until
+                        // you finish your own three (answers saved locally and still sending
+                        // count), matching the answer flow's gating. A row
                         // you have answered opens the question's page with the answers and
                         // the chat. Answering reveals the reply in the flow itself, so it's
                         // fine that the row then re-sorts down here.
@@ -65,6 +66,7 @@ struct DailyChallengeScreen: View {
                                     onAnswer: { onAnswerPartnerQuestion(question) },
                                     lastMessagePreview: viewModel.threadPreview(for: question.id),
                                     hasUnreadChat: viewModel.hasUnreadChat(for: question.id),
+                                    hasNewPartnerAnswer: viewModel.hasNewPartnerAnswer(question),
                                     onOpen: { openChat(question) }
                                 )
                                 .id(question.id)
@@ -159,10 +161,11 @@ struct DailyChallengeScreen: View {
     }
 
     /// Every read card in one list — the partner's started questions plus the user's
-    /// own answered (or still-sending) questions. The ordering (to-dos pinned on top,
-    /// then by most recent answer) lives in `DailyChallengeSnapshot.readOverviewQuestions`.
+    /// own answered (or still-sending) questions. The ordering (to-dos, then anything
+    /// new from the partner, then by most recent answer) lives in
+    /// `DailyChallengeSnapshot.readOverviewQuestions`.
     private var readQuestions: [DailyChallengeQuestion] {
-        viewModel.snapshot.readOverviewQuestions.filter { question in
+        viewModel.snapshot.readOverviewQuestions(isNew: viewModel.hasNewFromPartner).filter { question in
             question.origin == .partner || question.hasOwnAnswer || viewModel.isSending(question.id)
         }
     }

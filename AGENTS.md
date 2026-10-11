@@ -67,6 +67,7 @@ Keep `AGENTS.md` for durable rules and constraints. Put feature ownership maps, 
 - `docs/phase-3-migration-checklist.md`: historical Supabase migration plan. The backend now runs on Convex.
 - `docs/couple-question-guidelines.md`: required reading before writing, seeding, localizing, or versioning couple questions.
 - `docs/marketing-app-contract.md`: public routes, Universal Links, Cloudflare static files, and marketing app structure.
+- `docs/games-plan.md`: Games tab decisions and build plan. Read it before any games work, and update it in the same change when a games decision or design changes.
 - `backend/AGENTS.md`: backend working rules, local commands, production access, and deploy steps.
 - `backend/questions/README.md`: question catalog source files and sync notes.
 

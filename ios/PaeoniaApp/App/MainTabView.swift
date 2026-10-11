@@ -98,6 +98,9 @@ struct MainTabView: View {
     /// Which card the daily answer flow should zoom out of (the Home prompt card or the
     /// Questions-tab hero card), so the cover grows from the one the user tapped.
     @State var dailyFlowSource: DailyFlowSource = .home
+    /// Set when Home's "See your answers" opens the flow while the partner has
+    /// answers today, so closing it lands on the Questions tab to read them.
+    @State var returnsToQuestionsOnClose = false
     /// Streak-restore offer opened from the streak badge when a lost streak can still
     /// be bought back, outside the answer flow.
     @State var showStreakRestore = false
@@ -110,6 +113,8 @@ struct MainTabView: View {
     /// Question to scroll to and briefly highlight after a notification deep link.
     @State var focusedDailyQuestionID: UUID?
     @State var dailyChatQuestion: DailyChallengeQuestion?
+    /// The signed-in user's photo, cropped to a circle for the You tab icon.
+    @State var youTabIcon: UIImage?
     @Namespace var zoomNamespace
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -157,7 +162,12 @@ struct MainTabView: View {
                         Label {
                             Text(tab.title)
                         } icon: {
-                            Image(systemName: tab.systemImage)
+                            if tab == .you, let youTabIcon {
+                                Image(uiImage: youTabIcon)
+                                    .renderingMode(.original)
+                            } else {
+                                Image(systemName: tab.systemImage)
+                            }
                         }
                         .accessibilityIdentifier("mainTab.\(tab.rawValue)")
                     }
@@ -199,6 +209,9 @@ struct MainTabView: View {
         }
         .task(id: deepLink.wrappedValue) {
             await handleDeepLink(deepLink.wrappedValue)
+        }
+        .task(id: identity.currentProfilePhotoAssetID) {
+            youTabIcon = await Self.youTabIcon(for: identity.currentProfilePhotoAssetID)
         }
     }
 
@@ -245,8 +258,8 @@ struct MainTabView: View {
         NavigationStack {
             pairedHome
                 .navigationBarTitleDisplayMode(.inline)
-                // The brand mark and couple avatars are populated into the navigation
-                // bar from inside PairedHomeView, where the name/photo data lives.
+                // The brand mark and streak are populated into the navigation bar
+                // from inside PairedHomeView.
                 .navigationDestination(isPresented: widgetDrawingPresented) {
                     WidgetDrawingView(
                         ownerUserID: identity.currentUserID,

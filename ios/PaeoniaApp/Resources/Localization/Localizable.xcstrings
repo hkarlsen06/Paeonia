@@ -2450,6 +2450,24 @@
         }
       }
     },
+    "dailyChallenge.row.newPartnerAnswer" : {
+      "comment" : "Status on a question row when both partners answered and you haven't seen your partner's answer yet. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ answered. Tap to see it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har svart. Trykk for å se svaret."
+          }
+        }
+      }
+    },
     "dailyChallenge.row.waiting" : {
       "comment" : "Status on a question row in the Questions tab when you answered and your partner hasn't. %@ is the partner's name.",
       "extractionState" : "manual",

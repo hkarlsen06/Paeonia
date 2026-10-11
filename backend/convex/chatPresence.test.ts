@@ -125,6 +125,28 @@ describe("read receipts", () => {
     expect((await presence(couple.second, instanceId)).partner_last_read_message_id).toBeNull();
   });
 
+  test("the thread list carries how far the caller has read", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const instanceId = await answeredInstance(t, couple);
+    const [message] = await couple.first.as.mutation(api.threads.create_daily_question_thread_with_message, {
+      ...op(),
+      p_instance_id: instanceId,
+      p_body: "hi",
+    });
+    const readThrough = async (user: TestCouple["first"]) =>
+      (await user.as.query(api.threads.get_conversation_threads, {}))[0].viewer_read_through_at;
+
+    expect(await readThrough(couple.second)).toBeNull();
+    tick(5);
+    await couple.second.as.mutation(api.chatPresence.mark_thread_read, {
+      p_thread_id: message.thread_id,
+      p_message_id: message.message_id,
+    });
+    expect(await readThrough(couple.second)).toBe("2026-10-11T12:00:00.000Z");
+    expect(await readThrough(couple.first)).toBeNull();
+  });
+
   test("a message from another thread is refused", async () => {
     const t = newTest();
     const couple = await createCouple(t);

@@ -185,6 +185,23 @@ struct DailyChatReceiptAndTypingRowTests {
         #expect(projection.rowsByID[mine.id.uuidString]?.status == .read)
     }
 
+    @Test func readGoesOnYourAnswerOnlyUntilYouSendAMessage() {
+        let answer = DailyQuestionAnswerDetail(
+            answerUserID: me, answerID: UUID(), answeredAt: Date(timeIntervalSince1970: 0), isOwnAnswer: true,
+            canViewAnswer: true, textBody: "Mine", selectedUserID: nil, mediaAssetIDs: []
+        )
+        let answerRowID = DailyChatProjection.answerRowPrefix + answer.answerID.uuidString
+        func projection(_ messages: [DailyQuestionChatMessage]) -> DailyChatProjection {
+            DailyChatProjection.make(input: DailyChatProjection.Input(
+                prompt: "Q", questionStartsAt: Date(timeIntervalSince1970: 0), answers: [answer], messages: messages,
+                currentUserID: me, partnerName: "Oda", youName: "You", ownAnswerSeenByPartner: true
+            ))
+        }
+
+        #expect(projection([message(partner, at: 10)]).rowsByID[answerRowID]?.status == .read)
+        #expect(projection([message(me, at: 10)]).rowsByID[answerRowID]?.status == nil)
+    }
+
     @Test func theTypingDotsCloseTheListAndJoinThePartnersLastMessage() throws {
         let theirs = message(partner, at: 0)
         let projection = DailyChatProjection.make(input: input([theirs], typing: true))

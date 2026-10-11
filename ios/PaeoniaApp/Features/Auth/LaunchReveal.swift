@@ -77,6 +77,9 @@ private struct LaunchEntranceModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            // Moves the subtree as one, so views inserted mid-drop (like plan prices
+            // arriving from the App Store) drop with it instead of appearing at the end spot.
+            .geometryGroup()
             .opacity(revealed ? 1 : 0)
             .offset(y: revealed || reduceMotion ? 0 : -EntranceCascade.rise)
             .animation(EntranceCascade.entrance(order: order, reduceMotion: reduceMotion), value: revealed)
@@ -98,6 +101,9 @@ private struct ScreenEntranceModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            // Moves the subtree as one, so views inserted mid-drop (like plan prices
+            // arriving from the App Store) drop with it instead of appearing at the end spot.
+            .geometryGroup()
             .opacity(revealed ? 1 : 0)
             .offset(y: revealed || reduceMotion ? 0 : -EntranceCascade.rise)
             .animation(EntranceCascade.entrance(order: order, reduceMotion: reduceMotion), value: revealed)

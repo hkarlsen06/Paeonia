@@ -43,6 +43,10 @@ export type DailyQuestionRow = {
   partner_answered_at: string | null;
   can_view_partner_answer: boolean;
   is_current_day?: boolean;
+  /** When the viewer first saw the partner's answer. */
+  partner_answer_seen_at?: string | null;
+  /** When the partner first saw the viewer's answer. */
+  own_answer_seen_by_partner_at?: string | null;
 };
 
 export function isVisibleAnswer(answer: Doc<"daily_question_answers"> | null | undefined): answer is Doc<"daily_question_answers"> {
@@ -131,6 +135,23 @@ function questionRow(
     partner_answered_at: partnerAnswer?.created_at ?? null,
     can_view_partner_answer: canViewPartnerAnswer,
   };
+}
+
+/** Fills in who has seen whose answer. Only an exchange both people answered can have been seen. */
+async function addSeenStates(ctx: ReaderCtx, currentUserId: string, rows: DailyQuestionRow[]): Promise<void> {
+  for (const row of rows) {
+    row.partner_answer_seen_at = null;
+    row.own_answer_seen_by_partner_at = null;
+    if (row.own_answer_id === null || row.partner_answer_id === null) continue;
+    const states = await ctx.db
+      .query("daily_answer_seen_states")
+      .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", row.instance_id))
+      .collect();
+    for (const state of states) {
+      if (state.user_id === currentUserId) row.partner_answer_seen_at = state.seen_at;
+      else row.own_answer_seen_by_partner_at = state.seen_at;
+    }
+  }
 }
 
 function compareStrings(a: string, b: string): number {
@@ -272,7 +293,9 @@ async function todayQuestionsForFrame(
       a.instance._creationTime - b.instance._creationTime
     );
   });
-  return rows.map((item) => item.row);
+  const result = rows.map((item) => item.row);
+  await addSeenStates(ctx, currentUserId, result);
+  return result;
 }
 
 /** Port of `internal.get_daily_questions_history`: every instance the viewer answered, newest local day first. */
@@ -310,7 +333,9 @@ export async function getDailyQuestionsHistory(
       a.row.slot_number - b.row.slot_number ||
       compareStrings(a.instance.created_at, b.instance.created_at),
   );
-  return rows.map((item) => item.row);
+  const result = rows.map((item) => item.row);
+  await addSeenStates(ctx, currentUserId, result);
+  return result;
 }
 
 // ---- selection and seeding ----

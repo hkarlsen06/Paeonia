@@ -28,6 +28,8 @@ struct DailyChallengeReadCard: View {
     var onAnswer: () -> Void = {}
     var lastMessagePreview: String?
     var hasUnreadChat = false
+    /// The user can read the partner's answer and hasn't seen it yet.
+    var hasNewPartnerAnswer = false
     /// Opens the question's page. Only a question the user has answered has one.
     var onOpen: (() -> Void)?
 
@@ -50,6 +52,11 @@ struct DailyChallengeReadCard: View {
         hasUnreadChat && question.isChatAvailable
     }
 
+    /// Something from the partner to look at: a chat message or their answer.
+    private var isNew: Bool {
+        isUnread || (hasNewPartnerAnswer && question.isChatAvailable)
+    }
+
     var body: some View {
         Group {
             if canOpenAnswerFlow {
@@ -69,7 +76,7 @@ struct DailyChallengeReadCard: View {
             let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
             if isHighlighted {
                 shape.stroke(.paeoniaAccentPrimary, lineWidth: 2)
-            } else if isUnread {
+            } else if isNew {
                 shape.strokeBorder(.paeoniaAccentPrimary, lineWidth: PaeoniaRadius.strokeEmphasis)
             }
         }
@@ -108,8 +115,8 @@ struct DailyChallengeReadCard: View {
 
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                 statusText
-                    .font(isUnread ? PaeoniaTypography.bodyEmphasis : PaeoniaTypography.caption)
-                    .foregroundStyle(isUnread ? Color.paeoniaTextPrimary : Color.paeoniaTextSecondary)
+                    .font(isNew ? PaeoniaTypography.bodyEmphasis : PaeoniaTypography.caption)
+                    .foregroundStyle(isNew ? Color.paeoniaTextPrimary : Color.paeoniaTextSecondary)
                     .lineLimit(3)
 
                 if isUnread, let preview = lastMessagePreview?.trimmedNonEmpty {
@@ -136,6 +143,7 @@ struct DailyChallengeReadCard: View {
         guard question.hasPartnerAnswer else { return Text(.dailyChallengeRowWaiting(participants.partnerName)) }
         guard question.isChatAvailable else { return Text(.dailyChallengePartnerHidden(participants.partnerName)) }
         if isUnread { return Text(.dailyChatCardUnreadTitle(participants.partnerName)) }
+        if isNew { return Text(.dailyChallengeRowNewPartnerAnswer(participants.partnerName)) }
         if let preview = lastMessagePreview?.trimmedNonEmpty { return Text(verbatim: preview) }
         return Text(.dailyChallengeRowBothAnswered)
     }
@@ -143,7 +151,7 @@ struct DailyChallengeReadCard: View {
     @ViewBuilder
     private var accessory: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
-            if isUnread {
+            if isNew {
                 Circle()
                     .fill(.paeoniaAccentPrimary)
                     .frame(width: 10, height: 10)

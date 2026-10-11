@@ -114,23 +114,30 @@ extension MainTabView {
         await dailyChallengeViewModel.reload()
     }
 
+    /// Matches the Home card's label. "See partner's answers" goes straight to the
+    /// Questions tab. "See your answers" opens the user's answers first, then lands
+    /// on the Questions tab when the partner has answers to read there.
     func openDailyChallengeFromHome() {
         let state = dailyChallengeViewModel.homeCardState
-        if state.kind == .complete, state.hasPartnerAnswersForToday {
+        if state.kind == .complete, state.hasAnswerablePartnerQuestions {
             selection.wrappedValue = .questions
             return
         }
 
-        openAnswerFlow(source: .home)
+        openAnswerFlow(
+            source: .home,
+            returnsToQuestions: state.kind == .complete && state.hasPartnerAnswersForToday
+        )
     }
 
     /// Today's questions are created lazily, so opening the flow before the couple
     /// has started kicks off that one-time setup; the flow shows a brief loading
     /// state until the questions arrive.
-    func openAnswerFlow(source: DailyFlowSource) {
+    func openAnswerFlow(source: DailyFlowSource, returnsToQuestions: Bool = false) {
         if dailyChallengeViewModel.homeCardState.kind == .noChallenge {
             Task { await dailyChallengeViewModel.startToday() }
         }
+        returnsToQuestionsOnClose = returnsToQuestions
         withAnimation(zoomPresentationAnimation) {
             dailyFlowSource = source
             isAnswerFlowPresented = true
@@ -143,6 +150,9 @@ extension MainTabView {
     }
 
     private func closeAnswerFlow() {
+        if returnsToQuestionsOnClose {
+            selection.wrappedValue = .questions
+        }
         isAnswerFlowPresented = false
     }
 

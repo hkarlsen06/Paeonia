@@ -4,13 +4,15 @@ import { canAccessCoupleContent } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import type { ReaderCtx } from "./lib/db";
 import { getByUuid, orNull } from "./lib/db";
+import { visibleAnswersOf } from "./lib/dailyQuestions";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
 import { nowIso } from "./lib/time";
 
-// Typing dots and read receipts for daily question chats. New in Convex; there was no
-// SQL version. Both are small rows the app writes while a chat is open and reads
-// through one live query, `get_daily_chat_presence`.
+// Typing dots and read receipts for daily question chats, and the "seen" mark on a
+// partner's answer. New in Convex; there was no SQL version. Typing and chat reads are
+// small rows the app writes while a chat is open and reads through one live query,
+// `get_daily_chat_presence`. Seen answers show up in the daily question rows.
 
 /** Typing rows nobody refreshed for this long are deleted by the cleanup cron. */
 const STALE_TYPING_MS = 10 * 60_000;
@@ -96,6 +98,39 @@ export const mark_thread_read = mutation({
     } else {
       await ctx.db.insert("thread_read_states", { thread_id: threadId, user_id: userId, ...row });
     }
+    return null;
+  },
+});
+
+/**
+ * Records that the caller has seen the partner's answer to a daily question. Only an
+ * answer the caller can read counts: both people must have a visible answer. The first
+ * mark stays, so a later call changes nothing.
+ */
+export const mark_daily_answer_seen = mutation({
+  args: { p_instance_id: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const instanceId = uuidArg(args.p_instance_id);
+    const coupleId = await instanceCoupleId(ctx, instanceId);
+    if (!coupleId || !(await canAccessCoupleContent(ctx, userId, coupleId))) {
+      return fail("42501", "active entitled couple access is required");
+    }
+    const answers = await visibleAnswersOf(ctx, instanceId);
+    if (!answers.some((answer) => answer.user_id === userId) || !answers.some((answer) => answer.user_id !== userId)) {
+      return fail("23514", "partner answer is not visible yet");
+    }
+    const existing = await ctx.db
+      .query("daily_answer_seen_states")
+      .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instanceId).eq("user_id", userId))
+      .unique();
+    if (existing) return null;
+    await ctx.db.insert("daily_answer_seen_states", {
+      instance_id: instanceId,
+      couple_id: coupleId,
+      user_id: userId,
+      seen_at: nowIso(),
+    });
     return null;
   },
 });

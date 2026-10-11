@@ -447,6 +447,11 @@ export const get_conversation_threads = query({
             .first()
         : null;
       const lastMediaAsset = lastMedia ? await getByUuid(ctx, "media_assets", lastMedia.media_asset_id) : null;
+      // How far the caller has read, from any of their devices, so an unread mark clears everywhere.
+      const viewerRead = await ctx.db
+        .query("thread_read_states")
+        .withIndex("by_thread_id_user_id", (q) => q.eq("thread_id", thread.id).eq("user_id", userId))
+        .unique();
       rows.push({
         thread_id: thread.id,
         couple_id: thread.couple_id,
@@ -465,6 +470,7 @@ export const get_conversation_threads = query({
         last_message_moderation_status: orNull(last?.moderation_status),
         last_message_body: visible ? orNull(last.body) : null,
         last_message_media_type: orNull(lastMediaAsset?.media_type),
+        viewer_read_through_at: orNull(viewerRead?.last_read_message_created_at),
       });
     }
     // order by last_message_at desc (Postgres puts nulls first for desc), created_at desc, thread_id

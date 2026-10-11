@@ -129,10 +129,9 @@ struct PairingCelebrationAvatar: View {
 /// flying avatar then lands exactly over it). Everything except the partner avatar
 /// fades in together through `surroundingsOpacity`.
 struct PairingCelebrationProfilesView: View {
-    /// Sizing and behavior that differ between the full-screen celebration and the
-    /// compact copy shown at the top of the Home tab. The celebration preset must
-    /// stay byte-for-byte identical to the original layout so the flying avatar
-    /// still lands exactly over its settled slot.
+    /// Sizing for the settled layout. The celebration preset must stay identical to
+    /// the original layout so the flying avatar still lands exactly over its
+    /// settled slot.
     struct Metrics {
         var avatarDiameter: CGFloat
         var columnWidth: CGFloat
@@ -142,12 +141,6 @@ struct PairingCelebrationProfilesView: View {
         var connectorCircleDiameter: CGFloat
         var heartFontSize: CGFloat
         var connectorLineThickness: CGFloat
-        /// Whether the heart beats. Only the celebration earns the live pulse; the
-        /// Home tab shows a calm, static heart.
-        var animatesHeartbeat: Bool
-        /// Whether each avatar shows its name underneath. The Home tab toolbar
-        /// drops the names so the cluster fits the navigation bar height.
-        var showsNames: Bool
 
         static let celebration = Metrics(
             avatarDiameter: 84,
@@ -157,22 +150,7 @@ struct PairingCelebrationProfilesView: View {
             nameFont: PaeoniaTypography.bodyEmphasis,
             connectorCircleDiameter: 34,
             heartFontSize: 13,
-            connectorLineThickness: 1.5,
-            animatesHeartbeat: true,
-            showsNames: true
-        )
-
-        static let compact = Metrics(
-            avatarDiameter: 48,
-            columnWidth: 72,
-            connectorWidth: 52,
-            avatarNameSpacing: PaeoniaSpacing.space8,
-            nameFont: PaeoniaTypography.caption,
-            connectorCircleDiameter: 22,
-            heartFontSize: 9,
-            connectorLineThickness: 1,
-            animatesHeartbeat: false,
-            showsNames: false
+            connectorLineThickness: 1.5
         )
     }
 
@@ -231,14 +209,12 @@ struct PairingCelebrationProfilesView: View {
         VStack(spacing: metrics.avatarNameSpacing) {
             avatar()
 
-            if metrics.showsNames {
-                Text(name)
-                    .font(metrics.nameFont)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .opacity(nameOpacity)
-            }
+            Text(name)
+                .font(metrics.nameFont)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .opacity(nameOpacity)
         }
         .frame(width: metrics.columnWidth)
     }
@@ -301,7 +277,7 @@ struct PairingCelebrationProfilesView: View {
             .accessibilityHidden(true)
             .scaleEffect(heartbeatScale)
             .task(id: reduceMotion) {
-                guard metrics.animatesHeartbeat, !reduceMotion else {
+                guard !reduceMotion else {
                     heartbeatScale = 1
                     return
                 }

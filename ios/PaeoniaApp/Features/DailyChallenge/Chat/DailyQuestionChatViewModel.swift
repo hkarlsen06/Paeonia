@@ -39,6 +39,10 @@ final class DailyQuestionChatViewModel {
     let presence: DailyChatPresenceModel
     /// True while the chat is on screen and the app is in front, so reading counts.
     private var isScreenActive = false
+    /// The server heard during this visit that the partner's answer was seen, or is
+    /// hearing it now.
+    private var answerSeenUpload: AnswerSeenUpload = .notSent
+    private enum AnswerSeenUpload { case notSent, sending, sent }
     private var newestPartnerMessageID: UUID?
     private var hasQueuedThreadCreation = false
     private var isQueueing = false
@@ -161,12 +165,15 @@ final class DailyQuestionChatViewModel {
             if newestPartnerMessageID != nil || newestPartner != nil { presence.partnerMessageArrived() }
             newestPartnerMessageID = newestPartner
         }
-        // The screen is open, so everything it shows counts as seen.
+        // The screen is open, so everything it shows counts as seen, the partner's
+        // answer included.
+        await service.markPartnerAnswerSeen(ownerUserID: ownerUserID, instanceID: question.id)
         let newestDelivered = messages.filter { !$0.isSending && !$0.sendFailed }.map(\.createdAt).max()
         if let threadID, let newestDelivered {
             await service.markThreadRead(ownerUserID: ownerUserID, threadID: threadID, through: newestDelivered)
         }
         markReadOnServerIfActive()
+        markAnswerSeenOnServerIfActive()
     }
 
     private func raiseNoticeForNewFailures() {
@@ -366,6 +373,7 @@ extension DailyQuestionChatViewModel {
         isScreenActive = isActive
         if isActive {
             markReadOnServerIfActive()
+            markAnswerSeenOnServerIfActive()
         } else {
             Task { await presence.stopTyping() }
         }
@@ -383,6 +391,22 @@ extension DailyQuestionChatViewModel {
               let threadID = newest.threadID
         else { return }
         presence.markRead(threadID: threadID, messageID: newest.id)
+    }
+
+    /// Like the chat's read receipts, the partner's answer counts as seen only while
+    /// the page is on screen. The server keeps the first time, so once a visit is
+    /// enough. A failed send tries again on the next read of the chat or return to the
+    /// page. Questions from today are also sent from the Questions tab.
+    private func markAnswerSeenOnServerIfActive() {
+        guard isScreenActive, answerSeenUpload == .notSent, question.isChatAvailable,
+              question.partnerAnswerSeenAt == nil
+        else { return }
+        answerSeenUpload = .sending
+        let instanceID = question.id
+        Task {
+            let sent = await service.markPartnerAnswerSeenOnServer(instanceID: instanceID)
+            answerSeenUpload = sent ? .sent : .notSent
+        }
     }
 }
 

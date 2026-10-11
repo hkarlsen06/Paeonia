@@ -328,6 +328,10 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     /// unresolved exchanges from older days stay visible in the Questions tab, but
     /// they must not affect today's Home card or own-question progress.
     let isCurrentDay: Bool
+    /// When the user first saw the partner's answer, on any of their devices.
+    var partnerAnswerSeenAt: Date?
+    /// When the partner first saw the user's answer.
+    var ownAnswerSeenByPartnerAt: Date?
 
     /// The single person both partners picked when a partner-choice exchange has the
     /// *same* viewable pick on both sides and nothing else to show. When set, the two
@@ -459,6 +463,14 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
             .compactMap { $0 }
             .max() ?? startsAt
     }
+
+    /// The user can read the partner's answer but hasn't seen it yet, on any device
+    /// (`partnerAnswerSeenAt`) or on this phone (`seen`, which counts before the server
+    /// hears about it). Opening the question's page or the answer flow's reveal marks
+    /// it seen.
+    func hasNewPartnerAnswer(seen: Set<UUID>) -> Bool {
+        isChatAvailable && partnerAnswerSeenAt == nil && !seen.contains(id)
+    }
 }
 
 extension DailyChallengeQuestion {
@@ -521,7 +533,9 @@ extension DailyChallengeQuestion {
                     ownAnswerDetail: row.ownAnswerID.flatMap { detailsByAnswerID[$0] },
                     partnerAnswerDetail: row.partnerAnswerID.flatMap { detailsByAnswerID[$0] },
                     origin: row.seededForUserID == currentUserID ? .own : .partner,
-                    isCurrentDay: row.isCurrentDay ?? true
+                    isCurrentDay: row.isCurrentDay ?? true,
+                    partnerAnswerSeenAt: row.partnerAnswerSeenAt,
+                    ownAnswerSeenByPartnerAt: row.ownAnswerSeenByPartnerAt
                 )
             }
             .filter(\.isVisibleToCurrentUser)
@@ -700,25 +714,37 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
     }
 
     /// The Questions tab's single read list: the partner's started questions and the
-    /// user's own current-day questions in one set. Questions still waiting for the
-    /// user's answer are pinned on top so they're never buried; everything else follows
-    /// by most recent answer. The view applies the "answered or still sending" filter
-    /// (sending is view-model state) before showing the cards.
-    var readOverviewQuestions: [DailyChallengeQuestion] {
-        (partnerStartedQuestions + ownQuestions).sorted(by: Self.questionsTabOrder)
+    /// user's own current-day questions in one set, sorted by `questionsTabOrder`.
+    /// What the user has seen is view-model state, so the caller passes `isNew`. The
+    /// view applies the "answered or still sending" filter (sending is view-model
+    /// state too) before showing the cards.
+    func readOverviewQuestions(
+        isNew: (DailyChallengeQuestion) -> Bool = { _ in false }
+    ) -> [DailyChallengeQuestion] {
+        (partnerStartedQuestions + ownQuestions).sorted {
+            Self.questionsTabOrder($0, $1, isNew: isNew)
+        }
     }
 
-    /// Questions tab order: a partner's question the user can still answer is pinned
-    /// above everything else (so the actionable cards never sink under the recency
-    /// timeline), and within each tier the shared `readOverviewOrder` applies. Answering
-    /// a pinned card drops it into the timeline — fine, because the reveal already
-    /// happened in the answer flow, so the user has seen what they were after.
+    /// Questions tab order: anything with something new to see sits above the recency
+    /// timeline. First a partner's question the user can still answer, then a card with
+    /// something new from the partner (an answer or a chat message the user hasn't
+    /// seen). Within each tier the shared `readOverviewOrder` applies. Once the user
+    /// answers or opens a card it drops into the timeline, so the next new card is on top.
     static func questionsTabOrder(
         _ lhs: DailyChallengeQuestion,
-        _ rhs: DailyChallengeQuestion
+        _ rhs: DailyChallengeQuestion,
+        isNew: (DailyChallengeQuestion) -> Bool = { _ in false }
     ) -> Bool {
-        if lhs.isAwaitingCurrentUserAnswer != rhs.isAwaitingCurrentUserAnswer {
-            return lhs.isAwaitingCurrentUserAnswer
+        func tier(_ question: DailyChallengeQuestion) -> Int {
+            if question.isAwaitingCurrentUserAnswer { return 0 }
+            if isNew(question) { return 1 }
+            return 2
+        }
+        let lhsTier = tier(lhs)
+        let rhsTier = tier(rhs)
+        if lhsTier != rhsTier {
+            return lhsTier < rhsTier
         }
         return readOverviewOrder(lhs, rhs)
     }

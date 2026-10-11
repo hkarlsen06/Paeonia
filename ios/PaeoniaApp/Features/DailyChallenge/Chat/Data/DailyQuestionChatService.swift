@@ -18,6 +18,12 @@ protocol DailyQuestionChatServicing: Actor {
     /// Records that the user has seen the thread up to `date`, and tells the
     /// unread badges to update when that moved the mark forward.
     func markThreadRead(ownerUserID: UUID, threadID: UUID, through date: Date) async
+    /// Questions whose page the user has opened since the partner's answer showed up,
+    /// on this phone.
+    func seenPartnerAnswers(ownerUserID: UUID) async -> Set<UUID>
+    /// Records that the user has seen the partner's answer, and tells the cards to
+    /// update when that is new.
+    func markPartnerAnswerSeen(ownerUserID: UUID, instanceID: UUID) async
     func pendingMessages(ownerUserID: UUID, instanceID: UUID) async -> [DailyQuestionChatMessage]
     func hasPendingThreadCreation(ownerUserID: UUID, instanceID: UUID) async -> Bool
     /// Removes a message that failed to send, so the retry replaces it.
@@ -49,6 +55,11 @@ protocol DailyQuestionChatServicing: Actor {
     func setTyping(instanceID: UUID, isTyping: Bool) async
     /// Tells the server this person has read the thread up to `messageID`, for read receipts.
     func markThreadReadOnServer(threadID: UUID, messageID: UUID) async
+    /// Tells the server this person has seen the partner's answer, so it stops showing
+    /// as new on their other devices and the partner sees it was read. Returns whether
+    /// the server took it.
+    @discardableResult
+    func markPartnerAnswerSeenOnServer(instanceID: UUID) async -> Bool
     /// Follows the partner's typing and read state while the caller iterates.
     nonisolated func livePresence(instanceID: UUID) -> AsyncStream<DailyChatPresence>
 }
@@ -64,6 +75,8 @@ nonisolated struct DailyChatPresence: Equatable, Sendable {
 extension DailyQuestionChatServicing {
     func setTyping(instanceID _: UUID, isTyping _: Bool) async {}
     func markThreadReadOnServer(threadID _: UUID, messageID _: UUID) async {}
+    @discardableResult
+    func markPartnerAnswerSeenOnServer(instanceID _: UUID) async -> Bool { true }
     nonisolated func livePresence(instanceID _: UUID) -> AsyncStream<DailyChatPresence> {
         AsyncStream { $0.finish() }
     }
@@ -81,6 +94,8 @@ extension DailyQuestionChatServicing {
 
     func chatReadMarks(ownerUserID _: UUID) async -> [UUID: Date] { [:] }
     func markThreadRead(ownerUserID _: UUID, threadID _: UUID, through _: Date) async {}
+    func seenPartnerAnswers(ownerUserID _: UUID) async -> Set<UUID> { [] }
+    func markPartnerAnswerSeen(ownerUserID _: UUID, instanceID _: UUID) async {}
 
     /// Services without a live connection (previews, scenarios) have nothing to follow.
     nonisolated func liveMessageUpdates(ownerUserID _: UUID, instanceID _: UUID, threadID _: UUID) -> AsyncStream<Void> {
@@ -107,6 +122,7 @@ protocol DailyQuestionChatGateway: Actor {
     ) async throws -> DailyQuestionThreadMessageResponse
     func setTyping(instanceID: UUID, isTyping: Bool) async throws
     func markThreadRead(threadID: UUID, messageID: UUID) async throws
+    func markAnswerSeen(instanceID: UUID) async throws
     nonisolated func livePresence(instanceID: UUID) -> AsyncStream<DailyChatPresence>
 }
 
@@ -117,6 +133,7 @@ extension DailyQuestionChatGateway {
 
     func setTyping(instanceID _: UUID, isTyping _: Bool) async throws {}
     func markThreadRead(threadID _: UUID, messageID _: UUID) async throws {}
+    func markAnswerSeen(instanceID _: UUID) async throws {}
     nonisolated func livePresence(instanceID _: UUID) -> AsyncStream<DailyChatPresence> {
         AsyncStream { $0.finish() }
     }
@@ -284,12 +301,26 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
         try? await gateway.markThreadRead(threadID: threadID, messageID: messageID)
     }
 
+    @discardableResult
+    func markPartnerAnswerSeenOnServer(instanceID: UUID) async -> Bool {
+        (try? await gateway.markAnswerSeen(instanceID: instanceID)) != nil
+    }
+
     nonisolated func livePresence(instanceID: UUID) -> AsyncStream<DailyChatPresence> {
         gateway.livePresence(instanceID: instanceID)
     }
 
     func markThreadRead(ownerUserID: UUID, threadID: UUID, through date: Date) async {
         guard await cache.markRead(ownerUserID: ownerUserID, threadID: threadID, through: date) else { return }
+        LocalStoreChanges.post(.dailyChat, ownerUserID: ownerUserID)
+    }
+
+    func seenPartnerAnswers(ownerUserID: UUID) async -> Set<UUID> {
+        await cache.seenPartnerAnswers(ownerUserID: ownerUserID)
+    }
+
+    func markPartnerAnswerSeen(ownerUserID: UUID, instanceID: UUID) async {
+        guard await cache.markPartnerAnswerSeen(ownerUserID: ownerUserID, instanceID: instanceID) else { return }
         LocalStoreChanges.post(.dailyChat, ownerUserID: ownerUserID)
     }
 
@@ -522,6 +553,14 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
         )
     }
 
+    func markAnswerSeen(instanceID: UUID) async throws {
+        try await PaeoniaSignedIn.require(isSignedIn)
+        try await client.mutation(
+            "chatPresence:mark_daily_answer_seen",
+            args: MarkAnswerSeenRequest(instanceID: instanceID)
+        )
+    }
+
     nonisolated func livePresence(instanceID: UUID) -> AsyncStream<DailyChatPresence> {
         AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
             let task = Task { @MainActor in
@@ -666,6 +705,8 @@ nonisolated struct ConversationThreadRow: Decodable {
     let lastMessageModerationStatus: String?
     let lastMessageBody: String?
     let lastMessageMediaType: String?
+    /// How far this user has read the chat, from any of their devices.
+    let viewerReadThroughAt: Date?
 
     var dailyQuestionSummary: DailyQuestionThreadSummary? {
         guard kind == "daily_question", deletedAt == nil, moderationStatus == "visible",
@@ -682,7 +723,8 @@ nonisolated struct ConversationThreadRow: Decodable {
             lastMessageAt: previewIsVisible ? lastMessageAt : nil,
             lastMessageSenderUserID: previewIsVisible ? lastMessageSenderUserID : nil,
             lastMessageBody: previewIsVisible ? lastMessageBody : nil,
-            lastMessageMediaType: previewIsVisible ? lastMessageMediaType : nil
+            lastMessageMediaType: previewIsVisible ? lastMessageMediaType : nil,
+            viewerReadThroughAt: viewerReadThroughAt
         )
     }
 
@@ -702,6 +744,7 @@ nonisolated struct ConversationThreadRow: Decodable {
         case lastMessageModerationStatus = "last_message_moderation_status"
         case lastMessageBody = "last_message_body"
         case lastMessageMediaType = "last_message_media_type"
+        case viewerReadThroughAt = "viewer_read_through_at"
     }
 }
 
@@ -790,6 +833,13 @@ nonisolated private struct MarkThreadReadRequest: Encodable {
     enum CodingKeys: String, CodingKey {
         case threadID = "p_thread_id"
         case messageID = "p_message_id"
+    }
+}
+
+nonisolated private struct MarkAnswerSeenRequest: Encodable {
+    let instanceID: UUID
+    enum CodingKeys: String, CodingKey {
+        case instanceID = "p_instance_id"
     }
 }
 

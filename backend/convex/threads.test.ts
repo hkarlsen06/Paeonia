@@ -459,6 +459,7 @@ describe("reads", () => {
       last_message_moderation_status: "visible",
       last_message_body: "latest",
       last_message_media_type: null,
+      viewer_read_through_at: null,
     });
     expect(rows[2]).toMatchObject({ kind: "daily_question", daily_question_instance_id: instanceId, memory_id: null, last_message_body: "daily hello" });
     expect(rows[0]).toMatchObject({ last_message_id: null, last_message_at: null, last_message_body: null });

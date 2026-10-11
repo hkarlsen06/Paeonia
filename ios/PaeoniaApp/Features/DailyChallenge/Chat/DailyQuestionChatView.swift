@@ -101,7 +101,8 @@ struct DailyQuestionChatView: View {
             partnerName: viewModel.participants.partnerName,
             youName: String(localized: .dailyChallengeChoiceYou),
             partnerIsTyping: viewModel.presence.partnerIsTyping,
-            partnerLastReadMessageID: viewModel.presence.partnerLastReadMessageID
+            partnerLastReadMessageID: viewModel.presence.partnerLastReadMessageID,
+            ownAnswerSeenByPartner: viewModel.question.ownAnswerSeenByPartnerAt != nil
         )
     }
 

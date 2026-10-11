@@ -52,6 +52,11 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
     /// unresolved exchanges. Older backend responses omit it; those rows are
     /// treated as current-day rows for compatibility.
     let isCurrentDay: Bool?
+    /// When this user first saw the partner's answer, on any device. Older backend
+    /// responses omit it.
+    var partnerAnswerSeenAt: Date?
+    /// When the partner first saw this user's answer, for the read receipt on it.
+    var ownAnswerSeenByPartnerAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case coupleDayID = "couple_day_id"
@@ -78,6 +83,8 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
         case partnerAnsweredAt = "partner_answered_at"
         case canViewPartnerAnswer = "can_view_partner_answer"
         case isCurrentDay = "is_current_day"
+        case partnerAnswerSeenAt = "partner_answer_seen_at"
+        case ownAnswerSeenByPartnerAt = "own_answer_seen_by_partner_at"
     }
 
     func prompt(for locale: Locale) -> String {
