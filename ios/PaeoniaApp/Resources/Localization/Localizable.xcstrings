@@ -3612,6 +3612,24 @@
         }
       }
     },
+    "home.map.age.justNow" : {
+      "comment" : "Short label in the corner of the couple map when the partner's location was updated less than a minute ago. Older updates show a short time such as 3 min.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akkurat nå"
+          }
+        }
+      }
+    },
     "home.map.currentMissing.button" : {
       "comment" : "Map card button that tries to find the user's location again.",
       "extractionState" : "manual",
@@ -9282,6 +9300,78 @@
         }
       }
     },
+    "settings.location.whileClosed.needsAlways.message" : {
+      "comment" : "Location settings note when the person chose to share while the app is closed, but iOS location access for Paeonia is not set to Always. Location and Always are the names iOS uses in the Settings app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To share while Paeonia is closed, open Settings, tap Location and choose Always."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For å dele når Paeonia er lukket, åpne Innstillinger, trykk på Posisjon og velg Alltid."
+          }
+        }
+      }
+    },
+    "settings.location.whileClosed.needsAlways.title" : {
+      "comment" : "Location settings note title when sharing while the app is closed needs Always location access.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Always in Settings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg Alltid i Innstillinger"
+          }
+        }
+      }
+    },
+    "settings.location.whileClosed.subtitle" : {
+      "comment" : "Location settings switch subtitle for sharing while the app is closed. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sees your location update when you move a good distance, even when the app is closed."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser posisjonen din oppdateres når du flytter deg et godt stykke, også når appen er lukket."
+          }
+        }
+      }
+    },
+    "settings.location.whileClosed.title" : {
+      "comment" : "Location settings switch that keeps sharing location after the app is closed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share while Paeonia is closed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del når Paeonia er lukket"
+          }
+        }
+      }
+    },
     "settings.notifications.dailyChallenge.subtitle" : {
       "comment" : "Explains daily challenge completion notifications. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -12141,6 +12231,168 @@
         }
       },
       "comment" : "Code entry sheet opened from the paywall. Reassures that joining a partner costs nothing."
+    },
+    "widgetDrawing.live.together" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is drawing with you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tegner sammen med deg"
+          }
+        }
+      },
+      "comment" : "Short line above the drawing canvas while the partner has the same canvas open and both can see each other draw. %@ is the partner's name."
+    },
+    "widgetDrawing.live.watching" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is watching"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser på"
+          }
+        }
+      },
+      "comment" : "Short line above the drawing canvas while the partner is looking at the shared drawing on their home screen in the app, without drawing. %@ is the partner's name."
+    },
+    "home.widget.partnerDrawing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tegner"
+          }
+        }
+      },
+      "comment" : "Label under the drawing preview on the home screen while the partner is drawing on the shared canvas right now. %@ is the partner's name."
+    },
+    "widgetDrawing.setAside.restore" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring back your drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hent tilbake tegningen din"
+          }
+        }
+      },
+      "comment" : "Button over the drawing canvas. A new drawing replaced the user's unsent drawing on the canvas, and this puts the user's drawing back."
+    },
+    "widgetDrawing.setAside.discard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete saved drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett lagret tegning"
+          }
+        }
+      },
+      "comment" : "Accessibility label of the small x button next to 'Bring back your drawing'. It deletes the user's unsent drawing that was put aside."
+    },
+    "widgetDrawing.setAside.discardMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It was saved when a new drawing came in. You can't undo this."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den ble lagret da en ny tegning kom inn. Du kan ikke angre dette."
+          }
+        }
+      },
+      "comment" : "Message in the confirmation before deleting the user's unsent drawing that was put aside when a new drawing came in."
+    },
+    "widgetDrawing.setAside.discardAction" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett"
+          }
+        }
+      },
+      "comment" : "Destructive button in the confirmation that deletes the user's put-aside drawing."
+    },
+    "widgetDrawing.setAside.keep" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behold"
+          }
+        }
+      },
+      "comment" : "Cancel button in the confirmation. Keeps the user's put-aside drawing."
+    },
+    "widgetDrawing.setAside.discardTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete your saved drawing?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vil du slette den lagrede tegningen din?"
+          }
+        }
+      },
+      "comment" : "Title of the confirmation before deleting the user's unsent drawing that was put aside when a new drawing came in."
     }
   },
   "version" : "1.0"

@@ -35,9 +35,10 @@ struct WidgetDrawingSendFlowTests {
         #expect(viewModel.hasUnsavedEdits)
     }
 
-    /// A partner's drawing arriving while the canvas has unsent changes keeps
-    /// the changes and says the partner sent something.
-    @Test func partnerDrawingDuringUnsentChangesKeepsThemAndSaysSo() async {
+    /// A partner's drawing arriving while the canvas has unsent changes takes
+    /// the canvas, and the changes are kept aside to bring back. Showing both
+    /// at once piled one drawing on the other.
+    @Test func partnerDrawingDuringUnsentChangesSetsThemAside() async {
         let service = GatedLoadCanvasService()
         await service.setSnapshot(WidgetCanvasSnapshot(
             drawingData: flowDrawing(at: 40).dataRepresentation(),
@@ -56,9 +57,15 @@ struct WidgetDrawingSendFlowTests {
         ))
         await viewModel.reloadSavedDrawingFromSyncIfSafe()
 
-        #expect(viewModel.drawing.paeoniaContentSignature == edit.paeoniaContentSignature)
+        #expect(viewModel.drawing.paeoniaContentSignature == flowDrawing(at: 90).paeoniaContentSignature)
+        #expect(viewModel.setAsideDrawing?.paeoniaContentSignature == edit.paeoniaContentSignature)
         #expect(viewModel.partnerSentWhileEditing)
         #expect(viewModel.savedDrawingAuthorName == "Robin")
+        #expect(!viewModel.canSave)
+
+        viewModel.restoreSetAsideDrawing()
+        #expect(viewModel.drawing.paeoniaContentSignature == edit.paeoniaContentSignature)
+        #expect(viewModel.setAsideDrawing == nil)
         #expect(viewModel.canSave)
     }
 
@@ -85,7 +92,8 @@ struct WidgetDrawingSendFlowTests {
         // makes the outcome observable without waiting on that task.
         await viewModel.reloadSavedDrawingFromSyncIfSafe()
 
-        #expect(viewModel.drawing.paeoniaContentSignature == stroke.paeoniaContentSignature)
+        #expect(viewModel.drawing.paeoniaContentSignature == flowDrawing(at: 90).paeoniaContentSignature)
+        #expect(viewModel.setAsideDrawing?.paeoniaContentSignature == stroke.paeoniaContentSignature)
         #expect(viewModel.partnerSentWhileEditing)
     }
 
@@ -322,7 +330,9 @@ private func flowDrawing(at origin: CGFloat) -> PKDrawing {
             altitude: 0
         )
     }
-    let path = PKStrokePath(controlPoints: points, creationDate: Date())
+    // A distinct creation time per origin keeps stroke keys apart.
+    let createdAt = Date(timeIntervalSinceReferenceDate: 800_000_000 + origin)
+    let path = PKStrokePath(controlPoints: points, creationDate: createdAt)
     return PKDrawing(strokes: [PKStroke(ink: PKInk(.pen, color: .black), path: path)])
 }
 

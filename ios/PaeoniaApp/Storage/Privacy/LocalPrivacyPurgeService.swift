@@ -249,6 +249,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         }
 
         await MainActor.run {
+            // Location updates while closed belong to this account and couple.
+            LocationUpdateController.shared.resetUpdatesWhileClosed()
             if shouldPurgeOwnedContent {
                 UserDefaultsDailyChallengeDraftStore.shared.clearDrafts(for: ownerUserID)
                 LocalMemoryDraftStore.shared.clearDraft(for: ownerUserID)

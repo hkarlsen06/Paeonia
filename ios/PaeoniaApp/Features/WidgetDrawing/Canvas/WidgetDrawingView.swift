@@ -28,7 +28,8 @@ struct WidgetDrawingView: View {
             initialValue: viewModel ?? WidgetDrawingViewModel(
                 ownerUserID: ownerUserID,
                 coupleID: coupleID,
-                authorName: authorName
+                authorName: authorName,
+                live: coupleID.map { WidgetLiveDrawing(coupleID: $0) }
             )
         )
         self.historyViewModel = historyViewModel
@@ -100,18 +101,27 @@ struct WidgetDrawingView: View {
         }
         // Catch a sync that landed while we were backgrounded.
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
+            switch phase {
+            case .active:
+                viewModel.startLive()
                 Task {
                     await viewModel.reloadSavedDrawingFromSyncIfSafe()
                     await viewModel.refreshDelivery()
                 }
-            } else {
+            case .background:
+                viewModel.stopLive()
+                viewModel.persistDraftIfNeeded()
+            default:
+                // Control Center or the app switcher. Stay connected, so the
+                // partner's changes keep arriving.
                 viewModel.persistDraftIfNeeded()
             }
         }
         .onDisappear {
+            viewModel.stopLive()
             viewModel.persistDraftIfNeeded()
         }
+        .modifier(WidgetDrawingPencilDoubleTap(viewModel: viewModel))
         .onChange(of: viewModel.delivery) { _, delivery in
             switch delivery {
             case .sent:
@@ -184,13 +194,17 @@ struct WidgetDrawingView: View {
                 toolConfigurationRevision: viewModel.toolConfigurationRevision,
                 onCanvasReady: viewModel.bindCanvasView,
                 onDrawingChange: viewModel.updateDrawing,
-                onStrokeInProgressChange: viewModel.setDrawingStrokeInProgress
+                onStrokeInProgressChange: viewModel.setDrawingStrokeInProgress,
+                onDrawingApplied: viewModel.canvasDidApplyDrawing,
+                onFinishRendering: viewModel.refreshDrawingFromCanvas
             )
             // PencilKit coordinates, the rasterizer source rect, previews, and
             // widget rendering all use this exact square. Constraining the UIKit
             // view itself avoids recording a wider coordinate space on devices
             // where the remaining vertical space is shorter than screen width.
             .frame(width: side, height: side)
+            .overlay { liveOverlay }
+            .overlay(alignment: .bottom) { WidgetDrawingSetAsideBar(viewModel: viewModel) }
             .background(.paeoniaBackgroundPrimary)
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
             .overlay {
@@ -203,6 +217,7 @@ struct WidgetDrawingView: View {
             .task {
                 viewModel.canvasDidLayout(side: side)
                 await viewModel.loadSavedDrawingIfNeeded()
+                viewModel.startLive()
             }
             .onChange(of: side) { _, newSide in
                 viewModel.canvasDidLayout(side: newSide)
@@ -271,6 +286,18 @@ struct WidgetDrawingView: View {
             case .idle:
                 Text(.widgetDrawingSaveButton)
             }
+        }
+    }
+}
+
+private extension WidgetDrawingView {
+    /// The partner's strokes while they draw them.
+    @ViewBuilder
+    var liveOverlay: some View {
+        if let live = viewModel.live {
+            WidgetLiveOverlayView(live: live)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
         }
     }
 }

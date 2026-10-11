@@ -32,7 +32,7 @@ export const memberStatus = literals(
   "ended_notice_seen",
 );
 export const relationshipStatus = literals("active", "ended", "deleted");
-export const locationSource = literals("foreground_open", "manual_refresh", "settings_toggle");
+export const locationSource = literals("foreground_open", "manual_refresh", "settings_toggle", "background");
 export const activityKind = literals(
   "daily_challenge_completed",
   "widget_drawing_saved",

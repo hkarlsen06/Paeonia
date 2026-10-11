@@ -122,10 +122,17 @@ struct LatestPartnerLocationPendingOperationHandler: PendingSyncOperationHandlin
     /// The server also answers `42501` for a sign-in it can't see yet and for
     /// access that may come back, so only the "sharing is off" refusal stops it.
     private static func isPermanentRejection(_ error: any Error) -> Bool {
+        guard case let .server(code, _) = error as? PaeoniaConvexError else {
+            return false
+        }
+        return code == "23514" || isSharingOffRejection(error)
+    }
+
+    /// The server refused because sharing is off for this person.
+    static func isSharingOffRejection(_ error: any Error) -> Bool {
         guard case let .server(code, message) = error as? PaeoniaConvexError else {
             return false
         }
-        return code == "23514"
-            || (code == "42501" && message.contains("location sharing must be enabled"))
+        return code == "42501" && message.contains("location sharing must be enabled")
     }
 }

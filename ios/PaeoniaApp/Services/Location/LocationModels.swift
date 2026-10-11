@@ -4,6 +4,8 @@ nonisolated enum LocationSharingSource: String, Codable, CaseIterable, Sendable 
     case foregroundOpen = "foreground_open"
     case manualRefresh = "manual_refresh"
     case settingsToggle = "settings_toggle"
+    /// Sent while Paeonia was closed, after the phone moved a good distance.
+    case background = "background"
 }
 
 nonisolated enum PartnerLocationVisibilityState: Codable, Equatable, Sendable {

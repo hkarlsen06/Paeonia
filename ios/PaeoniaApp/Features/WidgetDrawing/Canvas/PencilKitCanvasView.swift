@@ -11,6 +11,11 @@ struct PencilKitCanvasView: UIViewRepresentable {
     let onCanvasReady: (PKCanvasView) -> Void
     let onDrawingChange: (PKDrawing, UndoManager?) -> Void
     let onStrokeInProgressChange: (Bool) -> Void
+    /// The canvas now shows the drawing of this `drawingRevision`.
+    var onDrawingApplied: (Int) -> Void = { _ in }
+    /// The canvas finished rendering. The pixel eraser can change the drawing
+    /// without `canvasViewDrawingDidChange`, so this is a moment to read it again.
+    var onFinishRendering: () -> Void = {}
 
     func makeUIView(context: Context) -> PKCanvasView {
         let canvasView = PKCanvasView()
@@ -20,6 +25,7 @@ struct PencilKitCanvasView: UIViewRepresentable {
         // `canvasViewDrawingDidChange` while SwiftUI is still building the view.
         canvasView.drawing = drawing
         context.coordinator.appliedDrawingRevision = drawingRevision
+        onDrawingApplied(drawingRevision)
         canvasView.delegate = context.coordinator
         context.coordinator.applyToolIfNeeded(
             tool,
@@ -44,6 +50,7 @@ struct PencilKitCanvasView: UIViewRepresentable {
         if context.coordinator.appliedDrawingRevision != drawingRevision {
             context.coordinator.appliedDrawingRevision = drawingRevision
             context.coordinator.applyDrawing(drawing, to: canvasView)
+            onDrawingApplied(drawingRevision)
         }
     }
 
@@ -115,6 +122,10 @@ extension PencilKitCanvasView {
             }
             parent.drawing = canvasView.drawing
             parent.onDrawingChange(canvasView.drawing, canvasView.undoManager)
+        }
+
+        func canvasViewDidFinishRendering(_: PKCanvasView) {
+            parent.onFinishRendering()
         }
 
         func canvasViewDidBeginUsingTool(_: PKCanvasView) {

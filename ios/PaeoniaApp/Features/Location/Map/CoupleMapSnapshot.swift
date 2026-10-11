@@ -28,7 +28,8 @@ private struct SnapshotRequest: Hashable {
 }
 
 /// Renders the dark map snapshot, overlays each partner's avatar at its mapped
-/// point, and floats the distance over a scrim at the bottom.
+/// point, and floats the partner's location age over a scrim at the top and the
+/// distance over one at the bottom.
 struct CoupleMapSnapshot: View {
     let currentName: String
     let currentProfilePhotoAssetID: UUID?
@@ -42,6 +43,9 @@ struct CoupleMapSnapshot: View {
     let onLongPress: () -> Void
 
     private static let scrimHeight: CGFloat = 52
+    /// Closest the two avatar centers may sit on screen: one avatar plus room for the
+    /// together heart between them.
+    private static let minimumPinSpacing = MapAvatarPin.avatarDiameter + 20
     /// Hard cap on simultaneous tap-spawned hearts, so rapid tapping can make a
     /// little chaos without growing unbounded work or memory.
     private static let maxConcurrentTapKisses = 16
@@ -173,8 +177,8 @@ struct CoupleMapSnapshot: View {
         }
     }
 
-    /// The full revealed unit: the duotone map with both avatar pins and the distance
-    /// pill placed on it. The reveal masks this as a whole, so the avatars and the
+    /// The full revealed unit: the duotone map with both avatar pins, the partner's
+    /// location age, and the distance pill placed on it. The reveal masks this as a whole, so the avatars and the
     /// distance are all uncovered together as the flame passes. None of them pop in.
     @ViewBuilder
     private func mapContent(_ snap: SnapshotResult, size: CGSize) -> some View {
@@ -199,14 +203,30 @@ struct CoupleMapSnapshot: View {
             )
             .position(snap.partnerPoint)
 
+            if isTogether {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.paeoniaAccentSecondary)
+                    .symbolEffect(.breathe)
+                    .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+                    .position(
+                        x: (snap.currentPoint.x + snap.partnerPoint.x) / 2,
+                        y: (snap.currentPoint.y + snap.partnerPoint.y) / 2
+                    )
+                    .accessibilityHidden(true)
+            }
+
             // The distance pill (scrim + number + icon) lives inside the revealed unit
             // too, so the sweep uncovers it along with the map and avatars instead of it
             // sitting on top from the first frame.
             VStack(spacing: 0) {
+                partnerAgeLabel
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .background(scrim(edge: .top))
                 Spacer(minLength: 0)
                 distanceLabel
                     .frame(maxWidth: .infinity, alignment: .trailing)
-                    .background(scrim)
+                    .background(scrim(edge: .bottom))
             }
         }
     }
@@ -284,15 +304,53 @@ struct CoupleMapSnapshot: View {
         .padding(.bottom, PaeoniaSpacing.tileCaptionBottomInset)
     }
 
-    private var scrim: some View {
+    /// How long ago the partner's location was recorded ("3 min"), styled like the
+    /// distance. The card gives VoiceOver the full sentence instead.
+    private var partnerAgeLabel: some View {
+        TimelineView(.periodic(from: .now, by: 30)) { context in
+            HStack(spacing: PaeoniaSpacing.space4) {
+                Image(systemName: "clock.fill")
+                    .font(.system(size: 13, weight: .semibold))
+
+                Text(verbatim: PartnerLocationRecordedStatus.shortAge(
+                    capturedAt: partnerCapturedAt,
+                    now: context.date
+                ))
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .lineLimit(1)
+            }
+        }
+        .foregroundStyle(.paeoniaAccentPrimary)
+        .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
+        .padding(.trailing, PaeoniaSpacing.space12)
+        .padding(.top, PaeoniaSpacing.tileCaptionBottomInset)
+        .accessibilityHidden(true)
+    }
+
+    /// A gradient darkening the map toward `edge`, so a label there stays readable.
+    private func scrim(edge: VerticalEdge) -> some View {
         LinearGradient(
             colors: [.clear, .black.opacity(0.65)],
-            startPoint: .top,
-            endPoint: .bottom
+            startPoint: edge == .top ? .bottom : .top,
+            endPoint: edge == .top ? .top : .bottom
         )
         .frame(height: Self.scrimHeight)
-        .frame(maxHeight: .infinity, alignment: .bottom)
+        .frame(maxHeight: .infinity, alignment: edge == .top ? .top : .bottom)
         .allowsHitTesting(false)
+    }
+
+    private var isTogether: Bool {
+        CoupleMapFraming.areTogether(
+            current: currentCoordinate,
+            currentCapturedAt: currentCapturedAt,
+            partner: partnerCoordinate,
+            partnerCapturedAt: partnerCapturedAt,
+            partnerIsStale: LocationDisplayRecency.resolve(
+                capturedAt: partnerCapturedAt,
+                now: .now,
+                wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh
+            ) == .stale
+        )
     }
 
     private var distanceText: String {
@@ -394,10 +452,17 @@ extension CoupleMapSnapshot {
                 return nil
             }
             if let result {
+                // Partners closer than the map's tightest zoom can show would stack on one
+                // spot, so spread the pins apart on screen until both faces show.
+                let (currentPoint, partnerPoint) = CoupleMapFraming.separated(
+                    result.point(for: currentCoordinate),
+                    result.point(for: partnerCoordinate),
+                    minimumDistance: Self.minimumPinSpacing
+                )
                 return SnapshotResult(
                     image: result.image,
-                    currentPoint: result.point(for: currentCoordinate),
-                    partnerPoint: result.point(for: partnerCoordinate)
+                    currentPoint: currentPoint,
+                    partnerPoint: partnerPoint
                 )
             }
         }

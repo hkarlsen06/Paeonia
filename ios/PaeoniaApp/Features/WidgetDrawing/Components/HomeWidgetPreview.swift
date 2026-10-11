@@ -1,3 +1,4 @@
+import PencilKit
 import SwiftUI
 import UIKit
 
@@ -106,12 +107,21 @@ final class HomeWidgetPreviewModel {
 /// A compact, tappable rendering of the couple's Home Screen widget shown on the
 /// app's home screen. Tapping it opens the full drawing screen.
 struct HomeWidgetCard: View {
+    let partnerName: String?
     let onOpen: () -> Void
 
     @State private var model = HomeWidgetPreviewModel()
+    /// Shows the partner's canvas while they draw on it. Nil without a couple.
+    @State private var live: WidgetLiveDrawing?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    init(coupleID: UUID? = nil, partnerName: String? = nil, onOpen: @escaping () -> Void) {
+        self.partnerName = partnerName
+        self.onOpen = onOpen
+        _live = State(initialValue: coupleID.map { WidgetLiveDrawing(coupleID: $0, role: .watching) })
+    }
 
     var body: some View {
         Button(action: onOpen) {
@@ -124,6 +134,10 @@ struct HomeWidgetCard: View {
         .accessibilityAddTraits(.isButton)
         .task {
             model.reload()
+            live?.start()
+        }
+        .onDisappear {
+            live?.stop()
         }
         // Refresh the preview the moment a sync writes a new payload, instead of
         // waiting for this card to reappear (e.g. after visiting the drawing
@@ -132,8 +146,14 @@ struct HomeWidgetCard: View {
             model.reload()
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
+            switch phase {
+            case .active:
                 model.reload()
+                live?.start()
+            case .background:
+                live?.stop()
+            default:
+                break
             }
         }
     }
@@ -147,6 +167,7 @@ struct HomeWidgetCard: View {
         }
         .padding(PaeoniaSpacing.space12)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: model.content.image == nil)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: live?.isShowingPartnerCanvas)
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
         .background(.paeoniaBackgroundPrimary)
@@ -197,7 +218,9 @@ struct HomeWidgetCard: View {
 
     @ViewBuilder
     private var footerTitle: some View {
-        if let authorName = model.content.authorName {
+        if live?.partnerActivity == .drawing, let partnerName {
+            Text(.homeWidgetPartnerDrawing(partnerName))
+        } else if let authorName = model.content.authorName {
             Text(verbatim: authorName)
         } else {
             Text(.widgetDrawingTitle)
@@ -214,7 +237,12 @@ struct HomeWidgetCard: View {
     @ViewBuilder
     private var drawingSurface: some View {
         Group {
-            if let image = model.content.image {
+            if let live, live.isShowingPartnerCanvas {
+                WidgetLiveOverlayView(live: live)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                    .transition(.opacity)
+            } else if let image = model.content.image {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFit()

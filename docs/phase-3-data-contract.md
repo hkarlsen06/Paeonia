@@ -2189,7 +2189,7 @@ The map should show the two partners and distance between them.
 
 Do not store location history in MVP.
 
-MVP location is foreground-only. Do not request background location access, significant-change monitoring, geofencing, or always-on location permissions.
+While the app is open, location updates come from a live feed that only reports moves of 250 m or more. Updates while the app is closed are a separate opt-in on each device. They use the significant-change service and require Always permission, and turning sharing off ends them. Do not add the `location` background mode, continuous background updates, or geofencing.
 
 Recommended tables:
 

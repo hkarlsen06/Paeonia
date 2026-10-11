@@ -141,7 +141,7 @@ struct DailyChallengeAnswerFlow: View {
         // Let the plum bleed under the keyboard's safe-area region too. Keyboard
         // avoidance otherwise shrinks this surface above the keyboard, so the window's
         // black showed through the keyboard's rounded top corners.
-        .background { Color.paeoniaBackgroundPrimary.ignoresSafeArea() }
+        .background { PaeoniaGlowBackground() }
         .animation(celebrateAnimation, value: didCelebrate)
         .onAppear { setInitialIndexIfNeeded() }
         .onChange(of: questions.count) { _, newCount in

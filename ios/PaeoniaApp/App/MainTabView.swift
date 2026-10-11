@@ -250,6 +250,7 @@ struct MainTabView: View {
     private var pairedHome: some View {
         PairedHomeView(
             currentUserID: identity.currentUserID,
+            coupleID: identity.coupleID,
             currentDisplayName: identity.currentDisplayName,
             currentProfilePhotoAssetID: identity.currentProfilePhotoAssetID,
             partnerDisplayName: identity.partnerDisplayName,

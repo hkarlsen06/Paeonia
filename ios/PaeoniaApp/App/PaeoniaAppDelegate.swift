@@ -26,6 +26,10 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         // Required so a tapped widget alert (and foreground presentation) reaches
         // the delegate methods below.
         UNUserNotificationCenter.current().delegate = self
+        // iOS relaunches a closed app in the background after a significant
+        // move. The location manager must be ready before this returns so the
+        // position reaches it.
+        LocationUpdateController.shared.resumeAfterLaunch()
         return true
     }
 

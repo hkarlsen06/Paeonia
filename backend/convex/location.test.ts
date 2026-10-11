@@ -175,6 +175,18 @@ describe("update_latest_partner_location", () => {
     ).rejects.toThrow(/23505.*client operation replay hash mismatch/);
   });
 
+  test("accepts a location sent while the app was closed", async () => {
+    const { t, couple } = await setup();
+    await couple.first.as.mutation(api.location.update_latest_partner_location, {
+      p_couple_id: couple.coupleId,
+      ...update({ p_source: "background" }),
+      ...operation(2),
+    });
+    const stored = await t.run((ctx) => ctx.db.query("latest_partner_locations").collect());
+    expect(stored).toHaveLength(1);
+    expect(stored[0].source).toBe("background");
+  });
+
   test("validates the request", async () => {
     const { t, couple } = await setup();
     const call = (overrides: Record<string, unknown>, user = couple.first) =>
@@ -184,7 +196,7 @@ describe("update_latest_partner_location", () => {
         ...operation(9),
         ...overrides,
       });
-    await expect(call({ p_source: "background" })).rejects.toThrow(/23514.*location source is not supported/);
+    await expect(call({ p_source: "geofence" })).rejects.toThrow(/23514.*location source is not supported/);
     await expect(call({ p_latitude: 91 })).rejects.toThrow(/23514.*location payload is out of range/);
     await expect(call({ p_longitude: -181 })).rejects.toThrow(/location payload is out of range/);
     await expect(call({ p_accuracy_m: 100001 })).rejects.toThrow(/location payload is out of range/);

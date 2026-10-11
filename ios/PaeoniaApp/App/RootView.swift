@@ -139,6 +139,9 @@ struct RootView: View {
             .onChange(of: viewModel.state) { _, state in
                 stateChanged(to: state)
             }
+            .onChange(of: locationUpdateInputs, initial: true) { _, inputs in
+                locationUpdateInputsChanged(to: inputs)
+            }
             .onChange(of: pendingJoinInviteCode) { _, code in
                 pendingJoinInviteCodeChanged(to: code)
             }

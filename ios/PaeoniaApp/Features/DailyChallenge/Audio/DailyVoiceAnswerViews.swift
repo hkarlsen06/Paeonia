@@ -299,32 +299,24 @@ struct DailyVoiceRecorderView: View {
     let onRecorded: (URL, Int) -> Void
 
     @Environment(\.openURL) private var openURL
-    @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 40
+    @ScaledMetric(relativeTo: .largeTitle) private var buttonSize: CGFloat = 84
     @State private var recorder = DailyVoiceRecorder()
     /// The last take handed to `onRecorded`, so the phase change and the disappear
     /// path can never deliver the same take twice.
     @State private var deliveredURL: URL?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(.dailyChallengeVoiceLabel)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextSecondary)
-
+        VStack(spacing: PaeoniaSpacing.space12) {
             recordButton
 
+            caption
+
             if recorder.isTakeTooShort {
-                Text(.dailyChallengeVoiceTooShort)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                message(.dailyChallengeVoiceTooShort)
             }
 
             if recorder.permissionDenied {
-                Text(.dailyChallengeVoicePermissionDenied)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                message(.dailyChallengeVoicePermissionDenied)
 
                 Button(action: openSettings) {
                     Text(.commonOpenSettings)
@@ -332,6 +324,8 @@ struct DailyVoiceRecorderView: View {
                 .buttonStyle(PaeoniaSecondaryButtonStyle())
             }
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, PaeoniaSpacing.space8)
         .onChange(of: recorder.phase) { _, phase in
             if phase == .recorded {
                 deliverTake()
@@ -358,37 +352,54 @@ struct DailyVoiceRecorderView: View {
         "\(voiceClock(recorder.elapsed)) / \(voiceClock(recorder.maxDuration))"
     }
 
-    /// Tap to start, tap again to stop. Shows a running clock while recording.
+    private var tint: Color {
+        isRecording ? .paeoniaError : .paeoniaAccentPrimary
+    }
+
+    /// A large round button: tap to start, tap again to stop. It breathes while the
+    /// microphone is on.
     private var recordButton: some View {
         Button(action: toggle) {
-            HStack(spacing: PaeoniaSpacing.space12) {
-                Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                    .font(.system(size: iconSize))
-                    .foregroundStyle(isRecording ? Color.paeoniaError : Color.paeoniaAccentPrimary)
-                    .accessibilityHidden(true)
-
-                if isRecording {
-                    RecordingDot()
-                    Text(recordingClock)
-                        .font(PaeoniaTypography.body.monospacedDigit())
-                        .foregroundStyle(.paeoniaTextPrimary)
-                } else {
-                    Text(.dailyChallengeVoiceRecord)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .padding(PaeoniaSpacing.space12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.paeoniaSurfaceSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+            Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                .font(.system(size: min(buttonSize, 120)))
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(Color.paeoniaTextInverse, tint)
+                .contentTransition(.symbolEffect(.replace))
+                .symbolEffect(.breathe, isActive: isRecording)
+                .shadow(color: tint.opacity(0.45), radius: 20)
         }
         .buttonStyle(.plain)
         .disabled(recorder.phase == .starting)
         .accessibilityLabel(Text(isRecording ? .dailyChallengeVoiceStopRecording : .dailyChallengeVoiceRecord))
         .accessibilityValue(isRecording ? voiceClock(recorder.elapsed) : "")
+    }
+
+    /// "Tap to record", or the running clock while recording. The button already
+    /// speaks both, so VoiceOver skips this line.
+    private var caption: some View {
+        Group {
+            if isRecording {
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    RecordingDot()
+                    Text(recordingClock)
+                        .monospacedDigit()
+                        .foregroundStyle(.paeoniaTextPrimary)
+                }
+            } else {
+                Text(.dailyChallengeVoiceRecord)
+                    .foregroundStyle(.paeoniaTextSecondary)
+            }
+        }
+        .font(PaeoniaTypography.body)
+        .accessibilityHidden(true)
+    }
+
+    private func message(_ text: LocalizedStringResource) -> some View {
+        Text(text)
+            .font(PaeoniaTypography.caption)
+            .foregroundStyle(.paeoniaTextSecondary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func toggle() {

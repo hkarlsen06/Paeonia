@@ -3,8 +3,17 @@ import Foundation
 /// One unfinished drawing per person and relationship. Keying by couple means a
 /// draft that holds an ex-partner's strokes is never shown to a new couple.
 nonisolated struct WidgetDrawingDraftKey: Hashable, Sendable {
+    enum Slot: Hashable, Sendable {
+        /// What is on the canvas and not sent yet.
+        case canvas
+        /// Unsent work that a new drawing from the partner replaced on the
+        /// canvas. Kept until the person brings it back or deletes it.
+        case setAside
+    }
+
     let ownerUserID: UUID
     let coupleID: UUID
+    var slot: Slot = .canvas
 }
 
 /// Local storage for an unfinished PencilKit drawing. The bytes remain the
@@ -21,6 +30,15 @@ protocol WidgetDrawingDraftStoring: AnyObject {
     /// Goes up each time `clearDraft(for:)` runs for this person. A drawing
     /// screen that was open before a purge compares it and stops saving drafts.
     func purgeGeneration(for ownerUserID: UUID) -> Int
+    /// Names the drawing that was on the widgets when the draft was made
+    /// (`PKDrawing.paeoniaStrokeFingerprint`). Nil for drafts from older builds.
+    func draftBase(for key: WidgetDrawingDraftKey) -> String?
+    func setDraftBase(_ fingerprint: String, for key: WidgetDrawingDraftKey)
+}
+
+extension WidgetDrawingDraftStoring {
+    func draftBase(for _: WidgetDrawingDraftKey) -> String? { nil }
+    func setDraftBase(_: String, for _: WidgetDrawingDraftKey) {}
 }
 
 @MainActor
@@ -38,7 +56,7 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
         if let data = try? Data(contentsOf: fileURL(for: key)) {
             return data
         }
-        return moveLegacyDraft(to: key)
+        return key.slot == .canvas ? moveLegacyDraft(to: key) : nil
     }
 
     /// Builds before drafts were kept per relationship stored one file per
@@ -74,6 +92,19 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
 
     func removeDraft(for key: WidgetDrawingDraftKey) {
         try? FileManager.default.removeItem(at: fileURL(for: key))
+        try? FileManager.default.removeItem(at: baseFileURL(for: key))
+    }
+
+    func draftBase(for key: WidgetDrawingDraftKey) -> String? {
+        (try? Data(contentsOf: baseFileURL(for: key))).flatMap { String(data: $0, encoding: .utf8) }
+    }
+
+    func setDraftBase(_ fingerprint: String, for key: WidgetDrawingDraftKey) {
+        try? Data(fingerprint.utf8).write(to: baseFileURL(for: key), options: .atomic)
+    }
+
+    private func baseFileURL(for key: WidgetDrawingDraftKey) -> URL {
+        fileURL(for: key).deletingPathExtension().appendingPathExtension("base")
     }
 
     func clearDraft(for ownerUserID: UUID) {
@@ -95,8 +126,9 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
     }
 
     private func fileURL(for key: WidgetDrawingDraftKey) -> URL {
-        ownerDirectoryURL(for: key.ownerUserID).appendingPathComponent(
-            "\(key.coupleID.uuidString.lowercased()).drawing",
+        let suffix = key.slot == .setAside ? "-set-aside" : ""
+        return ownerDirectoryURL(for: key.ownerUserID).appendingPathComponent(
+            "\(key.coupleID.uuidString.lowercased())\(suffix).drawing",
             isDirectory: false
         )
     }

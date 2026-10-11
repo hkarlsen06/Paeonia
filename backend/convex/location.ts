@@ -16,7 +16,7 @@ const nullable = <T extends ReturnType<typeof v.string> | ReturnType<typeof v.nu
   validator: T,
 ) => v.optional(v.union(v.null(), validator));
 
-const LOCATION_SOURCES = ["foreground_open", "manual_refresh", "settings_toggle"] as const;
+const LOCATION_SOURCES = ["foreground_open", "manual_refresh", "settings_toggle", "background"] as const;
 type LocationSource = (typeof LOCATION_SOURCES)[number];
 
 /** `lower(btrim(coalesce(p_source, default)))`, validated against the check constraint list. */

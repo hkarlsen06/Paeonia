@@ -314,6 +314,31 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         }
     }
 
+    /// A position from the live feed while the app is open. It follows the
+    /// same rule as a refresh on app open, so standing still sends nothing.
+    func submitObservedLocation(_ location: LocationPoint) async {
+        refreshAuthorizationState()
+        guard sharingEnabled,
+              authorizationState == .authorized,
+              let currentUserID = identity.currentUserID,
+              let coupleID = identity.coupleID,
+              let operationID = beginOperation(.refresh)
+        else {
+            return
+        }
+
+        let operationIdentity = identity
+        defer { finishOperation(operationID) }
+        // A position that fails to save is fine to miss. The next move sends again.
+        try? await queueOwnLocationIfDue(
+            location,
+            source: .foregroundOpen,
+            ownerUserID: currentUserID,
+            coupleID: coupleID,
+            ensureCurrent: { [self] in try requireCurrent(operationID, identity: operationIdentity) }
+        )
+    }
+
     private func captureAndQueueOwnLocation(
         source: LocationSharingSource,
         ownerUserID: UUID,
@@ -322,6 +347,22 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     ) async throws {
         let location = try await captureCurrentLocation()
         try ensureCurrent()
+        try await queueOwnLocationIfDue(
+            location,
+            source: source,
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            ensureCurrent: ensureCurrent
+        )
+    }
+
+    private func queueOwnLocationIfDue(
+        _ location: LocationPoint,
+        source: LocationSharingSource,
+        ownerUserID: UUID,
+        coupleID: UUID,
+        ensureCurrent: () throws -> Void
+    ) async throws {
         guard try await shouldSendLocation(
             location,
             source: source,

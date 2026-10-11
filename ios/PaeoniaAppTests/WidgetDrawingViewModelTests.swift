@@ -250,6 +250,27 @@ struct WidgetDrawingViewModelTests {
         #expect(restoredDraft.strokes.map(\.renderBounds) == newerEdit.strokes.map(\.renderBounds))
     }
 
+    /// On iPad the canvas fills the height that is left, so it can change size
+    /// while a save runs. The sent drawing used to read as "not sent yet".
+    @Test func canvasResizedDuringSaveStillCountsAsSent() async {
+        let service = SuspendedWidgetCanvasService()
+        await service.suspendNextSave()
+        let viewModel = WidgetDrawingViewModel(service: service, uploader: NoOpWidgetCanvasUpload())
+        viewModel.canvasDidLayout(side: 600)
+        viewModel.updateDrawing(makeNonEmptyDrawing(seed: 40), undoManager: nil)
+
+        let saveTask = Task { @MainActor in
+            await viewModel.save()
+        }
+        await service.waitForSuspendedSaveToStart()
+        viewModel.canvasDidLayout(side: 640)
+        await service.releaseSuspendedSave()
+        await saveTask.value
+
+        #expect(!viewModel.hasUnsavedEdits)
+        #expect(!viewModel.canSave)
+    }
+
     @Test func saveEnqueuesUploadWithDrawingMetadata() async throws {
         let uploadSpy = WidgetCanvasUploadSpy()
         let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy(), uploader: uploadSpy)
@@ -518,7 +539,7 @@ struct WidgetDrawingViewModelTests {
         #expect(viewModel.hasUnsavedEdits == false)
     }
 
-    @Test func reloadFromSyncSkipsWhenUnsavedEdits() async {
+    @Test func reloadFromSyncKeepsUnsavedEditsAside() async {
         let spy = WidgetCanvasServiceSpy()
         spy.savedDrawingData = makeNonEmptyDrawing(seed: 12).dataRepresentation()
         let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
@@ -529,11 +550,12 @@ struct WidgetDrawingViewModelTests {
         #expect(viewModel.hasUnsavedEdits)
         let editedStrokeBounds = viewModel.drawing.strokes.map(\.renderBounds)
 
-        // A partner's drawing syncs in; it must not clobber the in-progress work.
+        // A partner's drawing syncs in. It takes the canvas, and the
+        // in-progress work is kept aside to bring back, never lost.
         spy.savedDrawingData = makeNonEmptyDrawing(seed: 99).dataRepresentation()
         await viewModel.reloadSavedDrawingFromSyncIfSafe()
 
-        #expect(viewModel.drawing.strokes.map(\.renderBounds) == editedStrokeBounds)
+        #expect(viewModel.setAsideDrawing?.strokes.map(\.renderBounds) == editedStrokeBounds)
     }
 
 }
@@ -908,6 +930,16 @@ final class InMemoryWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
 
     func purgeGeneration(for ownerUserID: UUID) -> Int {
         purgeGenerations[ownerUserID, default: 0]
+    }
+
+    private var bases: [WidgetDrawingDraftKey: String] = [:]
+
+    func draftBase(for key: WidgetDrawingDraftKey) -> String? {
+        drafts[key] == nil ? nil : bases[key]
+    }
+
+    func setDraftBase(_ fingerprint: String, for key: WidgetDrawingDraftKey) {
+        bases[key] = fingerprint
     }
 }
 

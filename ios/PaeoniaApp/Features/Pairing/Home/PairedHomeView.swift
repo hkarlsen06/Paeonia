@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PairedHomeView: View {
     let currentUserID: UUID?
+    let coupleID: UUID?
     let currentDisplayName: String?
     let currentProfilePhotoAssetID: UUID?
     let partnerDisplayName: String?
@@ -26,6 +27,7 @@ struct PairedHomeView: View {
 
     init(
         currentUserID: UUID? = nil,
+        coupleID: UUID? = nil,
         currentDisplayName: String?,
         currentProfilePhotoAssetID: UUID? = nil,
         partnerDisplayName: String?,
@@ -48,6 +50,7 @@ struct PairedHomeView: View {
         onRefresh: @escaping () async -> Void = {}
     ) {
         self.currentUserID = currentUserID
+        self.coupleID = coupleID
         self.currentDisplayName = currentDisplayName
         self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
         self.partnerDisplayName = partnerDisplayName
@@ -71,8 +74,6 @@ struct PairedHomeView: View {
             // Matches the horizontal gap inside the milestone/drawing tile row so
             // the card grid reads as one consistent grid.
             VStack(spacing: PaeoniaSpacing.space16) {
-                dailyPromptCard
-                milestoneAndWidget
                 CoupleMapCard(
                     currentName: currentName,
                     currentProfilePhotoAssetID: currentProfilePhotoAssetID,
@@ -81,6 +82,8 @@ struct PairedHomeView: View {
                     state: locationMapState,
                     onPromptCurrentLocation: onPromptCurrentLocation
                 )
+                dailyPromptCard
+                milestoneAndWidget
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -167,7 +170,11 @@ struct PairedHomeView: View {
             : AnyLayout(HStackLayout(alignment: .top, spacing: PaeoniaSpacing.space16))
         return layout {
             milestoneCard
-            HomeWidgetCard(onOpen: onOpenWidgetDrawing)
+            HomeWidgetCard(
+                coupleID: coupleID,
+                partnerName: partnerDisplayName?.trimmedNonEmpty,
+                onOpen: onOpenWidgetDrawing
+            )
         }
     }
 

@@ -1,3 +1,4 @@
+import CryptoKit
 import PencilKit
 import UIKit
 
@@ -48,6 +49,14 @@ extension PKDrawing {
         return hasher.finalize()
     }
 
+    /// Names this set of strokes in a way that survives encoding, scaling, and
+    /// app restarts, unlike `paeoniaContentSignature`, whose hash is seeded per
+    /// launch.
+    var paeoniaStrokeFingerprint: String {
+        let keys = strokes.map(WidgetLiveStrokeSync.key(for:)).sorted().joined(separator: ",")
+        return SHA256.hash(data: Data(keys.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+
     var paeoniaPointCount: Int {
         strokes.reduce(0) { $0 + $1.path.count }
     }
@@ -56,7 +65,7 @@ extension PKDrawing {
     /// the coordinates of the square canvas they were drawn on, and that square
     /// differs between phones, so a drawing from a bigger screen would otherwise
     /// be cut off at the right and bottom edges.
-    func scaled(fromSide oldSide: CGFloat, toSide newSide: CGFloat) -> PKDrawing {
+    nonisolated func scaled(fromSide oldSide: CGFloat, toSide newSide: CGFloat) -> PKDrawing {
         guard oldSide > 0, newSide > 0, abs(oldSide - newSide) >= 0.5 else {
             return self
         }

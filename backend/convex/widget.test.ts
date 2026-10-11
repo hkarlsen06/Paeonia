@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
+import { hmacSha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op, setMediaEnv, uploadAsset } from "./media.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
@@ -501,6 +502,46 @@ describe("reads", () => {
       code: "42501",
       message: "active entitled couple access is required",
     });
+  });
+});
+
+describe("create_widget_live_ticket", () => {
+  afterEach(() => {
+    delete process.env.PAEONIA_LIVE_RELAY_URL;
+    delete process.env.PAEONIA_LIVE_RELAY_SECRET;
+  });
+
+  test("is null until the relay is configured", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    expect(await couple.first.as.mutation(api.widget.create_widget_live_ticket, {})).toBeNull();
+  });
+
+  test("signs the couple and user into a one-minute ticket", async () => {
+    process.env.PAEONIA_LIVE_RELAY_URL = "wss://relay.example.test/canvas";
+    process.env.PAEONIA_LIVE_RELAY_SECRET = "test-relay-secret";
+    const t = newTest();
+    const couple = await createCouple(t);
+    const result = await couple.second.as.mutation(api.widget.create_widget_live_ticket, { p_couple_id: couple.coupleId.toUpperCase() });
+    expect(result).toEqual({ url: "wss://relay.example.test/canvas", ticket: expect.any(String), expires_at: "2026-10-10T12:01:00.000Z" });
+    const [payload, signature] = result!.ticket.split(".");
+    expect(signature).toBe(await hmacSha256Hex("test-relay-secret", payload));
+    const claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    expect(claims).toEqual({ c: couple.coupleId, u: couple.second.userId, e: Date.parse("2026-10-10T12:01:00.000Z") });
+  });
+
+  test("refuses strangers, former partners, and unentitled couples", async () => {
+    process.env.PAEONIA_LIVE_RELAY_URL = "wss://relay.example.test/canvas";
+    process.env.PAEONIA_LIVE_RELAY_SECRET = "test-relay-secret";
+    const t = newTest();
+    const couple = await createCouple(t);
+    const stranger = await createSignedInUser(t);
+    const unentitled = await createCouple(t, { entitled: false });
+    const denied = { code: "42501", message: "active entitled couple access is required" };
+    expect(await failure(stranger.as.mutation(api.widget.create_widget_live_ticket, { p_couple_id: couple.coupleId }))).toEqual(denied);
+    expect(await failure(unentitled.first.as.mutation(api.widget.create_widget_live_ticket, {}))).toEqual(denied);
+    await endCouple(t, couple.coupleId, couple.first.userId);
+    expect(await failure(couple.second.as.mutation(api.widget.create_widget_live_ticket, { p_couple_id: couple.coupleId }))).toEqual(denied);
   });
 });
 

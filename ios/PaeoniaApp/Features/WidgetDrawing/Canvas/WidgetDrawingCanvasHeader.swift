@@ -35,6 +35,14 @@ struct WidgetDrawingCanvasHeader: View {
             }
             .font(PaeoniaTypography.caption.weight(.semibold))
             .foregroundStyle(.paeoniaAccentPrimary)
+        } else if let presence = livePresenceText {
+            Label {
+                Text(verbatim: presence)
+            } icon: {
+                Image(systemName: viewModel.live?.partnerActivity == .drawing ? "hand.draw" : "eye")
+            }
+            .font(PaeoniaTypography.caption.weight(.semibold))
+            .foregroundStyle(.paeoniaAccentPrimary)
         } else {
             Text(verbatim: viewModel.isShowingSavedAttribution ? (viewModel.savedDrawingAuthorName ?? " ") : " ")
                 .font(PaeoniaTypography.widgetPrimary)
@@ -42,9 +50,11 @@ struct WidgetDrawingCanvasHeader: View {
         }
     }
 
-    @ViewBuilder
+    /// The pill is always laid out, only hidden, so the row keeps its height.
+    /// On iPad the canvas fills the height that is left, and a row that grows
+    /// and shrinks would resize the canvas each time the status changes.
     private var headerTrailing: some View {
-        if isNotSentYet {
+        ZStack(alignment: .trailing) {
             Text(.widgetDrawingNotSent)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextPrimary)
@@ -52,11 +62,26 @@ struct WidgetDrawingCanvasHeader: View {
                 .padding(.horizontal, PaeoniaSpacing.space8)
                 .padding(.vertical, PaeoniaSpacing.space4)
                 .background(.paeoniaSurfacePrimary, in: Capsule(style: .continuous))
-        } else if viewModel.isShowingSavedAttribution, let createdAt = viewModel.savedDrawingCreatedAt {
-            Text(verbatim: Self.attributionTimestamp(createdAt))
-                .font(PaeoniaTypography.widgetSecondary)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .lineLimit(1)
+                .opacity(isNotSentYet ? 1 : 0)
+
+            if !isNotSentYet, viewModel.isShowingSavedAttribution, let createdAt = viewModel.savedDrawingCreatedAt {
+                Text(verbatim: Self.attributionTimestamp(createdAt))
+                    .font(PaeoniaTypography.widgetSecondary)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .lineLimit(1)
+            }
+        }
+    }
+
+    /// Whether the partner draws along or watches from their Home tab.
+    private var livePresenceText: String? {
+        switch viewModel.live?.partnerActivity {
+        case .drawing:
+            String(localized: .widgetDrawingLiveTogether(partnerName))
+        case .watching:
+            String(localized: .widgetDrawingLiveWatching(partnerName))
+        case .away, nil:
+            nil
         }
     }
 
@@ -72,6 +97,8 @@ struct WidgetDrawingCanvasHeader: View {
         var parts: [String] = []
         if viewModel.partnerSentWhileEditing {
             parts.append(String(localized: .widgetDrawingPartnerSentMessage(partnerName)))
+        } else if let presence = livePresenceText {
+            parts.append(presence)
         } else if viewModel.isShowingSavedAttribution,
                   let author = viewModel.savedDrawingAuthorName,
                   let createdAt = viewModel.savedDrawingCreatedAt {

@@ -7,7 +7,7 @@ export const legalNo = {
       description: 'Slik samler Paeonia inn, bruker, deler og beskytter personopplysninger.',
     },
     title: 'Personvern',
-    updated: 'Sist oppdatert 16. august 2026',
+    updated: 'Sist oppdatert 11. oktober 2026',
     sections: [
       {
         heading: 'Hvem personvernteksten gjelder for',
@@ -50,7 +50,8 @@ export const legalNo = {
       {
         heading: 'Posisjonsdeling',
         paragraphs: [
-          'Posisjonsdeling er valgfritt og virker bare når begge partnere slår den på. Paeonia oppdaterer den nyeste posisjonen mens appen er åpen, eller når du ber om en oppdatering. Partneren ser posisjonen og når den ble registrert, også når den kan være gammel.',
+          'Posisjonsdeling er valgfritt og virker bare når begge partnere slår den på. Paeonia oppdaterer den nyeste posisjonen når du åpner appen, hver gang du flytter deg omtrent 250 meter eller mer mens den er åpen, og når du ber om en oppdatering. Partneren ser posisjonen og når den ble registrert, også når den kan være gammel.',
+          'Du kan også velge å dele mens Paeonia er lukket. Dette er en egen innstilling på hver telefon, den er av som standard, og den krever at posisjonstilgangen er satt til Alltid. Når den er på, vekker iOS Paeonia etter at du har flyttet deg et godt stykke, vanligvis 500 meter eller mer, og Paeonia sender den ene nyeste posisjonen. Den sporer ikke ruten din og lagrer ingen historikk. Den stopper hvis du slår av posisjonsdeling eller endrer posisjonstilgangen fra Alltid.',
           'Når du slår av posisjonsdeling, slettes den nyeste delte posisjonen din. De nyeste posisjonene fjernes også når forholdet avsluttes eller kontosletting starter.',
         ],
       },

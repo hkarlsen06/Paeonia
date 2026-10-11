@@ -48,7 +48,7 @@ struct DailyPartnerAnswerFlow: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Let the plum bleed under the keyboard's safe-area region too, so the window's
         // black doesn't show through the keyboard's rounded top corners.
-        .background { Color.paeoniaBackgroundPrimary.ignoresSafeArea() }
+        .background { PaeoniaGlowBackground() }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
         .onChange(of: wasAnswerReturned) { _, returned in
             if returned {
@@ -108,15 +108,16 @@ struct DailyPartnerAnswerFlow: View {
     /// surface.
     private var committedAnswer: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            Text(question.prompt)
-                .font(PaeoniaTypography.title)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            // Keep the answer pinned to the bottom where the live field sat, so nothing
-            // jumps as the editable field becomes this read-only one.
-            Spacer(minLength: PaeoniaSpacing.space24)
+            // The same card the composer showed, with the same waiting hint, so
+            // nothing jumps as the editable field becomes this read-only one.
+            DailyQuestionCard(prompt: question.prompt) {
+                DailyAnswerKindBadges(kinds: question.composableAnswerKinds)
+            } footer: {
+                if question.partnerAnswer != nil, !question.canViewPartnerAnswer {
+                    DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
+                }
+            }
+            .frame(maxHeight: .infinity)
 
             committedAnswerField
         }
@@ -287,14 +288,9 @@ struct DailyPartnerAnswerRevealView: View {
         VStack(spacing: PaeoniaSpacing.space16) {
             ScrollView {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                    PaeoniaCardEyebrow(.dailyChallengePartnerRevealEyebrow)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Text(question.prompt)
-                        .font(PaeoniaTypography.title)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    DailyQuestionCard(prompt: question.prompt) {
+                        PaeoniaCardEyebrow(.dailyChallengePartnerRevealEyebrow)
+                    }
 
                     if let shownQuestion {
                         DailyQuestionStatusView(question: shownQuestion, participants: participants)

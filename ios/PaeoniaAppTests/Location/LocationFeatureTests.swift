@@ -1497,3 +1497,30 @@ private func syncContext(ownerUserID: UUID, coupleID: UUID) -> SyncContext {
         pendingOperationStore: InMemoryPendingSyncOperationRepository()
     )
 }
+
+struct PartnerLocationShortAgeTests {
+    private let now = Date(timeIntervalSince1970: 1_000_000)
+
+    private func age(_ seconds: TimeInterval) -> String {
+        PartnerLocationRecordedStatus.shortAge(capturedAt: now.addingTimeInterval(-seconds), now: now)
+    }
+
+    @Test
+    func showsOneLargestUnitWithoutWords() {
+        #expect(age(3 * 60) == Duration.seconds(180).formatted(
+            .units(allowed: [.minutes], width: .abbreviated)
+        ))
+        #expect(!age(3 * 60).contains("ago"))
+        #expect(age(2 * 60 * 60) == Duration.seconds(7_200).formatted(
+            .units(allowed: [.hours], width: .abbreviated)
+        ))
+    }
+
+    @Test
+    func freshOrFutureCapturesReadJustNow() {
+        let justNow = String(localized: .homeMapAgeJustNow)
+        #expect(age(5) == justNow)
+        #expect(age(-30) == justNow)
+        #expect(age(60) != justNow)
+    }
+}

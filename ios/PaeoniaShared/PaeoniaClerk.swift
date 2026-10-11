@@ -71,4 +71,20 @@ nonisolated enum PaeoniaClerk {
         }
         return Clerk.shared.user?.id
     }
+
+    /// The Clerk user id once Clerk has read its saved session, waiting up to
+    /// `timeout`. Work started by a launch in the background can run before
+    /// Clerk has loaded.
+    @MainActor
+    static func loadedAccountID(timeout: Duration = .seconds(3)) async -> String? {
+        guard isConfigured else {
+            return nil
+        }
+        let deadline = ContinuousClock.now + timeout
+        // Clerk has no load callback to await here, so check every 100 ms.
+        while !Clerk.shared.isLoaded, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+        return currentAccountID()
+    }
 }

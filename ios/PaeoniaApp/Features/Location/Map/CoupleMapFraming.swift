@@ -47,4 +47,56 @@ enum CoupleMapFraming {
         )
         return MKCoordinateRegion(rect.intersection(.world))
     }
+
+    /// Partners within this many meters count as together. Indoor location fixes are
+    /// often 30 to 65 m off, so a tighter limit would miss couples in the same room.
+    static let togetherDistanceMeters: CLLocationDistance = 100
+    /// Both fixes must be at most this far apart in time, so an old fix from a place
+    /// the other partner is at now doesn't read as being together.
+    static let togetherMaximumFixGap: TimeInterval = 60 * 60
+
+    /// True when both partners were recently in the same place.
+    static func areTogether(
+        current: CLLocationCoordinate2D,
+        currentCapturedAt: Date,
+        partner: CLLocationCoordinate2D,
+        partnerCapturedAt: Date,
+        partnerIsStale: Bool
+    ) -> Bool {
+        guard !partnerIsStale,
+              abs(currentCapturedAt.timeIntervalSince(partnerCapturedAt)) <= togetherMaximumFixGap
+        else {
+            return false
+        }
+        let distance = CLLocation(latitude: current.latitude, longitude: current.longitude)
+            .distance(from: CLLocation(latitude: partner.latitude, longitude: partner.longitude))
+        return distance <= togetherDistanceMeters
+    }
+
+    /// Pushes two on-screen pins apart around their midpoint until they are at least
+    /// `minimumDistance` apart, so both avatars stay visible when the partners are
+    /// closer than the map can show. Pins already far enough apart are returned as-is.
+    /// Pins on the exact same spot are spread sideways, with `first` on the left.
+    static func separated(
+        _ first: CGPoint,
+        _ second: CGPoint,
+        minimumDistance: CGFloat
+    ) -> (CGPoint, CGPoint) {
+        var dx = second.x - first.x
+        var dy = second.y - first.y
+        var distance = hypot(dx, dy)
+        guard distance < minimumDistance else {
+            return (first, second)
+        }
+        if distance < 0.5 {
+            (dx, dy, distance) = (1, 0, 1)
+        }
+        let mid = CGPoint(x: (first.x + second.x) / 2, y: (first.y + second.y) / 2)
+        let offsetX = dx / distance * minimumDistance / 2
+        let offsetY = dy / distance * minimumDistance / 2
+        return (
+            CGPoint(x: mid.x - offsetX, y: mid.y - offsetY),
+            CGPoint(x: mid.x + offsetX, y: mid.y + offsetY)
+        )
+    }
 }

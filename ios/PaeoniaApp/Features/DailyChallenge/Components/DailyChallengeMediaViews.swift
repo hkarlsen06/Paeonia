@@ -39,7 +39,8 @@ struct DailyAnswerKindPicker: View {
             .padding(.horizontal, PaeoniaSpacing.space12)
             .padding(.vertical, PaeoniaSpacing.space8)
             .foregroundStyle(isSelected ? Color.paeoniaTextInverse : Color.paeoniaTextSecondary)
-            .background(isSelected ? Color.paeoniaAccentPrimary : Color.paeoniaSurfaceSecondary)
+            // Unselected pills are darker than the question card they sit on.
+            .background(isSelected ? Color.paeoniaAccentPrimary : Color.paeoniaBackgroundSecondary.opacity(0.6))
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)

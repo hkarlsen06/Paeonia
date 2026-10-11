@@ -43,6 +43,24 @@
         }
       }
     },
+    "NSLocationAlwaysAndWhenInUseUsageDescription" : {
+      "comment" : "iOS prompt shown when the user turns on sharing while the app is closed and iOS asks to allow location access Always.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When you turn on \"Share while Paeonia is closed\", Paeonia sends your location to your partner each time you move a good distance, even when you're not using the app."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når du slår på \"Del når Paeonia er lukket\", sender Paeonia posisjonen din til partneren din hver gang du flytter deg et godt stykke, også når du ikke bruker appen."
+          }
+        }
+      }
+    },
     "NSLocationWhenInUseUsageDescription" : {
       "comment" : "iOS location permission prompt shown when the user turns on location sharing.",
       "extractionState" : "manual",

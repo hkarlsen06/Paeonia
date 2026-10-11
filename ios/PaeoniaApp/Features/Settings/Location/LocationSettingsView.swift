@@ -8,6 +8,7 @@ struct LocationSettingsView: View {
     let viewModel: LocationMapViewModel
     /// Names the partner in the copy instead of saying "your partner".
     let partnerName: String
+    var updates: LocationUpdateController = .shared
 
     @Environment(\.openURL) private var openURL
 
@@ -24,25 +25,54 @@ struct LocationSettingsView: View {
                         isEnabled: viewModel.isSharingLoaded && !viewModel.isUpdatingSharing
                     )
 
+                    if viewModel.sharingEnabled, viewModel.authorizationState != .denied {
+                        whileClosedSection
+                    }
+
                     if viewModel.authorizationState == .denied {
-                        accessOffNote
+                        settingsNote(
+                            title: .homeMapAccessOffTitle,
+                            message: .settingsLocationAccessOffMessage(partnerName)
+                        )
                     }
                 }
             }
         }
     }
 
-    /// The switch alone cannot share anything while iOS has location off for
-    /// Paeonia, so say that plainly and offer the way to fix it.
-    private var accessOffNote: some View {
+    /// Off by default, and only offered while sharing is on. It needs iOS
+    /// location access set to Always, so the note says how to get there.
+    @ViewBuilder
+    private var whileClosedSection: some View {
+        Divider()
+            .overlay(.paeoniaSurfacePressed)
+
+        SettingsToggleRow(
+            title: .settingsLocationWhileClosedTitle,
+            subtitle: .settingsLocationWhileClosedSubtitle(partnerName),
+            isOn: whileClosedBinding,
+            isEnabled: !viewModel.isUpdatingSharing
+        )
+
+        if updates.prefersUpdatesWhileClosed, !updates.updatesWhileClosedActive {
+            settingsNote(
+                title: .settingsLocationWhileClosedNeedsAlwaysTitle,
+                message: .settingsLocationWhileClosedNeedsAlwaysMessage
+            )
+        }
+    }
+
+    /// A switch cannot share anything while iOS holds back the access it
+    /// needs, so say that plainly and offer the way to fix it.
+    private func settingsNote(title: LocalizedStringResource, message: LocalizedStringResource) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             Divider()
                 .overlay(.paeoniaSurfacePressed)
 
-            Text(.homeMapAccessOffTitle)
+            Text(title)
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)
-            Text(.settingsLocationAccessOffMessage(partnerName))
+            Text(message)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -56,6 +86,13 @@ struct LocationSettingsView: View {
             }
             .buttonStyle(PaeoniaSecondaryButtonStyle())
         }
+    }
+
+    private var whileClosedBinding: Binding<Bool> {
+        Binding(
+            get: { updates.prefersUpdatesWhileClosed },
+            set: { updates.setUpdatesWhileClosed($0) }
+        )
     }
 
     private var sharingBinding: Binding<Bool> {

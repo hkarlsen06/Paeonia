@@ -98,38 +98,39 @@ struct CoupleMapCard: View {
             to: partner.coordinate
         )
 
-        return VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            // Tap blows heart between avatars; long press opens Maps.
-            mapTile {
-                CoupleMapSnapshot(
-                    currentName: currentName,
-                    currentProfilePhotoAssetID: currentProfilePhotoAssetID,
-                    currentCoordinate: current.coordinate,
-                    currentCapturedAt: current.capturedAt,
-                    partnerName: partnerName,
-                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                    partnerCoordinate: partner.coordinate,
-                    partnerCapturedAt: partner.capturedAt,
-                    partnerWasStaleAtLastRefresh: partnerWasStaleAtLastRefresh,
-                    onLongPress: {
-                        openInAppleMaps(current: current, partner: partner)
-                    }
-                )
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(.homeMapAccessibilityLabel(partnerName)))
-            .accessibilityValue(Text(.homeMapDistanceAccessibility(distanceText)))
-            .accessibilityHint(Text(.homeMapOpenHint))
-            .accessibilityAddTraits(.isButton)
-            .accessibilityAction {
-                openInAppleMaps(current: current, partner: partner)
-            }
+        let recordedText = PartnerLocationRecordedStatus.accessibilityText(
+            partnerName: partnerName,
+            capturedAt: partner.capturedAt,
+            wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh
+        )
 
-            PartnerLocationRecordedStatus(
+        // Tap blows heart between avatars; long press opens Maps.
+        return mapTile {
+            CoupleMapSnapshot(
+                currentName: currentName,
+                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                currentCoordinate: current.coordinate,
+                currentCapturedAt: current.capturedAt,
                 partnerName: partnerName,
-                capturedAt: partner.capturedAt,
-                wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh
+                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                partnerCoordinate: partner.coordinate,
+                partnerCapturedAt: partner.capturedAt,
+                partnerWasStaleAtLastRefresh: partnerWasStaleAtLastRefresh,
+                onLongPress: {
+                    openInAppleMaps(current: current, partner: partner)
+                }
             )
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(.homeMapAccessibilityLabel(partnerName)))
+        .accessibilityValue(Text(verbatim: [
+            String(localized: .homeMapDistanceAccessibility(distanceText)),
+            String(localized: recordedText),
+        ].joined(separator: ", ")))
+        .accessibilityHint(Text(.homeMapOpenHint))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction {
+            openInAppleMaps(current: current, partner: partner)
         }
     }
 

@@ -199,4 +199,33 @@ extension RootView {
         viewModel.currentPartnerDisplayName?.trimmedNonEmpty
             ?? String(localized: .pairingCelebrationPartnerName)
     }
+
+    /// What the automatic location feeds depend on. See `LocationUpdateController`.
+    struct LocationUpdateInputs: Equatable {
+        let identity: LocationIdentity
+        /// `nil` until the sharing choice has loaded.
+        let sharingEnabled: Bool?
+        let isAppActive: Bool
+    }
+
+    var locationUpdateInputs: LocationUpdateInputs {
+        LocationUpdateInputs(
+            identity: locationIdentity,
+            sharingEnabled: locationViewModel.hasResolvedSharingPreference ? locationViewModel.sharingEnabled : nil,
+            isAppActive: scenePhase == .active
+        )
+    }
+
+    func locationUpdateInputsChanged(to inputs: LocationUpdateInputs) {
+        guard allowsSystemIntegrations else { return }
+        let controller = LocationUpdateController.shared
+        controller.onLocationWhileOpen = { [locationViewModel] location in
+            await locationViewModel.submitObservedLocation(location)
+        }
+        controller.update(
+            identity: inputs.identity,
+            sharingEnabled: inputs.sharingEnabled,
+            isAppActive: inputs.isAppActive
+        )
+    }
 }

@@ -48,6 +48,10 @@ final class WidgetDrawingViewModel {
     var selectedTool: WidgetDrawingTool = .pen
     var selectedColor: Color = .paeoniaWidgetDrawing
     private(set) var selectedCGColor: CGColor = UIColor.paeoniaWidgetDrawing.cgColor
+    /// The tool before the current one, for Apple Pencil's "last used" double tap.
+    @ObservationIgnored private var previousTool: WidgetDrawingTool?
+    /// The pen or pencil to go back to after the eraser.
+    @ObservationIgnored private var lastDrawingTool: WidgetDrawingTool = .pen
     private var selectedUIColor: UIColor = .paeoniaWidgetDrawing
     private(set) var canUndoDrawing = false
     private(set) var canRedoDrawing = false
@@ -71,6 +75,9 @@ final class WidgetDrawingViewModel {
     /// The partner sent a drawing while this canvas had changes that were not
     /// sent. The canvas keeps the changes; the screen says what sending does.
     private(set) var partnerSentWhileEditing = false
+    /// Unsent work that a newer drawing on the widgets replaced on the canvas.
+    /// The person can bring it back or delete it.
+    private(set) var setAsideDrawing: PKDrawing?
     /// Who made the drawing that is on the widgets now, and when. Both nil
     /// until something has been saved or loaded.
     private(set) var savedDrawingAuthorName: String?
@@ -92,6 +99,8 @@ final class WidgetDrawingViewModel {
     /// stays open (for example an unpair) must not get its draft written back.
     @ObservationIgnored private let draftPurgeGeneration: Int
     @ObservationIgnored private let authorName: String?
+    /// Drawing together while the partner has the canvas open. Nil without a couple.
+    let live: WidgetLiveDrawing?
     @ObservationIgnored private var hasLoadedSavedDrawing = false
     @ObservationIgnored private var sentConfirmationTask: Task<Void, Never>?
     @ObservationIgnored private var draftPersistenceTask: Task<Void, Never>?
@@ -104,6 +113,10 @@ final class WidgetDrawingViewModel {
     /// The side of the square the canvas has on screen right now.
     @ObservationIgnored private var laidOutCanvasSide: CGFloat?
     @ObservationIgnored private var isDrawingStroke = false
+    /// The `drawingRevision` the canvas view shows. Until it catches up with a
+    /// replace, the canvas holds an older drawing than `drawing`.
+    @ObservationIgnored private var canvasDrawingRevision: Int?
+    @ObservationIgnored private var canvasRefreshTask: Task<Void, Never>?
     @ObservationIgnored private var reloadAfterStroke = false
 
     init(
@@ -112,7 +125,8 @@ final class WidgetDrawingViewModel {
         authorName: String? = nil,
         service: any WidgetCanvasManaging = WidgetCanvasService.shared,
         uploader: any WidgetCanvasUploading = WidgetCanvasUploadServiceFactory.makeDefault(),
-        draftStore: (any WidgetDrawingDraftStoring)? = nil
+        draftStore: (any WidgetDrawingDraftStoring)? = nil,
+        live: WidgetLiveDrawing? = nil
     ) {
         let draftStore = draftStore ?? FileWidgetDrawingDraftStore.shared
         if let ownerUserID, let coupleID {
@@ -125,6 +139,19 @@ final class WidgetDrawingViewModel {
         self.service = service
         self.uploader = uploader
         self.draftStore = draftStore
+        self.live = live
+        live?.applyRemoteDrawing = { [weak self] drawing in
+            self?.applyPartnerLiveDrawing(drawing)
+        }
+        live?.currentDrawing = { [weak self] in
+            self?.latestDrawing() ?? PKDrawing()
+        }
+        live?.setAsideDrawing = { [weak self] drawing in
+            self?.setAside(drawing)
+        }
+        live?.savedStrokeKeys = { [weak self] in
+            Set(self?.savedBaseline?.strokes.map(WidgetLiveStrokeSync.key(for:)) ?? [])
+        }
     }
 
     var isColorSelectionEnabled: Bool {
@@ -167,10 +194,28 @@ final class WidgetDrawingViewModel {
             return
         }
 
+        previousTool = selectedTool
+        if !selectedTool.isEraser {
+            lastDrawingTool = selectedTool
+        }
         // The width re-derives from the same fraction against the new tool's
         // range, so the slider keeps its relative position across tools.
         selectedTool = tool
         toolConfigurationRevision += 1
+    }
+
+    /// Apple Pencil double tap, following the choice in Settings > Apple
+    /// Pencil. The canvas has no palette to open, so the other choices switch
+    /// between the drawing tool and the eraser, which is the default.
+    func handlePencilDoubleTap(_ action: PencilPreferredAction) {
+        if action == .ignore {
+            return
+        }
+        if action == .switchPrevious, let previousTool {
+            selectTool(previousTool)
+            return
+        }
+        selectTool(selectedTool.isEraser ? lastDrawingTool : .eraser)
     }
 
     func selectColorChoice(_ choice: WidgetDrawingColorChoice) {
@@ -214,6 +259,7 @@ final class WidgetDrawingViewModel {
 
     func bindCanvasView(_ canvasView: PKCanvasView) {
         self.canvasView = canvasView
+        live?.attach(to: canvasView)
         // This is called from the canvas representable's `makeUIView`, which runs
         // inside SwiftUI's view update. Defer the observed undo/redo refresh to
         // the next main-actor turn so we don't mutate published state mid-update.
@@ -224,6 +270,7 @@ final class WidgetDrawingViewModel {
 
     func updateDrawing(_ drawing: PKDrawing, undoManager: UndoManager?) {
         self.drawing = drawing
+        live?.localDrawingDidChange(drawing, side: currentCanvasSide())
         scheduleDraftPersistence()
         refreshUndoRedoAvailability(using: undoManager)
 
@@ -236,11 +283,53 @@ final class WidgetDrawingViewModel {
     /// partner's drawing never replaces the canvas in the middle of a stroke.
     func setDrawingStrokeInProgress(_ inProgress: Bool) {
         isDrawingStroke = inProgress
+        if !inProgress {
+            scheduleCanvasRefreshes()
+        }
         guard !inProgress, reloadAfterStroke else {
             return
         }
         reloadAfterStroke = false
         Task { await reloadSavedDrawingFromSyncIfSafe() }
+    }
+
+    func canvasDidApplyDrawing(revision: Int) {
+        canvasDrawingRevision = revision
+    }
+
+    /// The pixel eraser can finish changing the drawing after the last
+    /// `canvasViewDrawingDidChange`. Without this, the draft, Send, and the
+    /// partner would get the erase only with the next change.
+    func refreshDrawingFromCanvas() {
+        guard let canvasView, !isDrawingStroke, canvasDrawingRevision == drawingRevision else {
+            return
+        }
+        let canvasDrawing = canvasView.drawing
+        guard canvasDrawing != drawing else {
+            return
+        }
+        updateDrawing(canvasDrawing, undoManager: canvasView.undoManager)
+    }
+
+    /// The drawing as it is right now, including a late eraser change.
+    func latestDrawing() -> PKDrawing {
+        refreshDrawingFromCanvas()
+        return drawing
+    }
+
+    /// Rendering callbacks usually catch the late eraser change. These reads
+    /// make sure of it.
+    private func scheduleCanvasRefreshes() {
+        canvasRefreshTask?.cancel()
+        canvasRefreshTask = Task { @MainActor [weak self] in
+            for delay in [Duration.milliseconds(100), .milliseconds(500)] {
+                try? await Task.sleep(for: delay)
+                guard !Task.isCancelled else {
+                    return
+                }
+                self?.refreshDrawingFromCanvas()
+            }
+        }
     }
 
     /// The on-screen side of the square canvas. A drawing made on a screen of a
@@ -262,6 +351,9 @@ final class WidgetDrawingViewModel {
             return
         }
         hasLoadedSavedDrawing = true
+        setAsideDrawing = setAsideKey
+            .flatMap { draftStore.draft(for: $0) }
+            .flatMap { try? PKDrawing(data: $0) }
 
         guard drawing.strokes.isEmpty else {
             return
@@ -307,6 +399,16 @@ final class WidgetDrawingViewModel {
             replaceDrawing(with: savedBaseline ?? PKDrawing())
             return
         }
+        // The draft was made on a drawing that is no longer on the widgets, for
+        // example the partner sent a new one since. Showing both at once would
+        // pile one drawing on the other, so the new one goes on the canvas and
+        // the draft is kept aside.
+        if widgetsChanged(since: draftKey, draft: draftDrawing) {
+            setAside(draftDrawing)
+            draftStore.removeDraft(for: draftKey)
+            replaceDrawing(with: savedBaseline ?? PKDrawing())
+            return
+        }
         // A draft is from this phone, so it is already in the canvas's size.
         replaceDrawing(with: draftDrawing)
         if draftDrawing.paeoniaContentSignature == lastSavedDrawingSignature {
@@ -347,23 +449,61 @@ final class WidgetDrawingViewModel {
             return
         }
 
+        // A finger went down while the drawing loaded. Try again once it lifts,
+        // before anything changes.
+        guard !isDrawingStroke else {
+            reloadAfterStroke = true
+            return
+        }
+
         // A different drawing must never inherit the previous one's attribution.
         setBaseline(savedDrawing, authorName: snapshot.authorName?.trimmedNonEmpty, createdAt: snapshot.createdAt)
         hasLoadedSavedDrawing = true
 
-        // Strokes drawn while the drawing loaded count as unsent changes too.
-        let editedMeanwhile = drawing.paeoniaContentSignature != signatureBeforeLoad
-        if hadUnsavedEdits || editedMeanwhile || isDrawingStroke {
-            partnerSentWhileEditing = true
+        guard !canvasAlreadyShows(savedDrawing) else {
             return
         }
 
+        // Strokes drawn while the drawing loaded count as unsent changes too.
+        let editedMeanwhile = drawing.paeoniaContentSignature != signatureBeforeLoad
+        guard setAsideUnsentWork(if: hadUnsavedEdits || editedMeanwhile) else {
+            return
+        }
+        showSavedDrawing(savedDrawing, side: targetSide)
+    }
+
+    private func showSavedDrawing(_ savedDrawing: PKDrawing, side: CGFloat?) {
         replaceDrawing(with: savedDrawing)
-        drawingCanvasSide = targetSide
+        drawingCanvasSide = side
         if let draftKey = usableDraftKey {
             draftStore.removeDraft(for: draftKey)
         }
         refreshUndoRedoAvailability()
+    }
+
+    /// Makes room for the partner's new drawing. Returns false when the canvas
+    /// must stay as it is because the partner draws along on it.
+    private func setAsideUnsentWork(if hasUnsentWork: Bool) -> Bool {
+        guard hasUnsentWork else {
+            return true
+        }
+        partnerSentWhileEditing = true
+        if live?.partnerActivity == .drawing {
+            return false
+        }
+        setAside(drawing)
+        return true
+    }
+
+    /// Drawing together, the partner usually sends exactly what this canvas
+    /// shows. That is not news, and nothing here is left unsent.
+    private func canvasAlreadyShows(_ savedDrawing: PKDrawing) -> Bool {
+        guard drawing.paeoniaContentSignature == savedDrawing.paeoniaContentSignature else {
+            return false
+        }
+        partnerSentWhileEditing = false
+        clearDraft()
+        return true
     }
 
     /// The same strokes may have been saved again by either partner. Refresh
@@ -424,7 +564,10 @@ final class WidgetDrawingViewModel {
         }
 
         isPublishing = false
-        adoptPublishedDrawing(sentDrawing, savedAt: savedAt)
+        // The canvas can change size while saving: on iPad the rows around it
+        // change height. The baseline must be in the canvas's current size, or
+        // the sent drawing reads as "not sent yet".
+        adoptPublishedDrawing(sentDrawing.scaled(fromSide: canvasSide, toSide: currentCanvasSide()), savedAt: savedAt)
 
         let outcome = await uploader.send(uploadPayload)
         // A newer send owns the status now.
@@ -508,6 +651,7 @@ final class WidgetDrawingViewModel {
     /// Empties the canvas as a local editing action. The widgets keep the last
     /// sent drawing until the next send.
     func clearCanvas() {
+        live?.localDrawingDidChange(PKDrawing(), side: currentCanvasSide())
         replaceDrawing(with: PKDrawing())
         partnerSentWhileEditing = false
         persistDraftIfNeeded()
@@ -563,6 +707,7 @@ final class WidgetDrawingViewModel {
 
         if hasUnsavedEdits && (!drawing.strokes.isEmpty || lastSavedDrawingSignature != nil) {
             draftStore.setDraft(drawing.dataRepresentation(), for: draftKey)
+            draftStore.setDraftBase((savedBaseline ?? PKDrawing()).paeoniaStrokeFingerprint, for: draftKey)
         } else {
             draftStore.removeDraft(for: draftKey)
         }
@@ -575,6 +720,69 @@ final class WidgetDrawingViewModel {
             return
         }
         draftStore.removeDraft(for: draftKey)
+    }
+
+    // MARK: - Set-aside drawing
+
+    private var setAsideKey: WidgetDrawingDraftKey? {
+        usableDraftKey.map {
+            WidgetDrawingDraftKey(ownerUserID: $0.ownerUserID, coupleID: $0.coupleID, slot: .setAside)
+        }
+    }
+
+    /// The widgets show a different drawing than when the draft was made.
+    private func widgetsChanged(since draftKey: WidgetDrawingDraftKey, draft: PKDrawing) -> Bool {
+        let current = savedBaseline ?? PKDrawing()
+        if let base = draftStore.draftBase(for: draftKey) {
+            return base != current.paeoniaStrokeFingerprint
+        }
+        // Drafts from older builds have no record. One that continues the
+        // drawing on the widgets still holds all of its strokes.
+        let draftKeys = Set(draft.strokes.map(WidgetLiveStrokeSync.key(for:)))
+        return !current.strokes.allSatisfy { draftKeys.contains(WidgetLiveStrokeSync.key(for: $0)) }
+    }
+
+    /// Keeps `drawing` for later. An earlier set-aside drawing is kept too, so
+    /// nothing is lost when this happens twice.
+    private func setAside(_ drawing: PKDrawing) {
+        guard !drawing.strokes.isEmpty else {
+            return
+        }
+        let combined = setAsideDrawing.map {
+            WidgetLiveStrokeSync.apply(upserts: drawing.strokes, removals: [], to: $0)
+        } ?? drawing
+        setAsideDrawing = combined
+        if let setAsideKey {
+            draftStore.setDraft(combined.dataRepresentation(), for: setAsideKey)
+        }
+    }
+
+    /// Puts the set-aside drawing back on an empty canvas, alone, because two
+    /// drawings on top of each other are a mess. Unsent work on the canvas
+    /// takes its place as the set-aside drawing, so the two can be swapped
+    /// back and nothing is lost.
+    func restoreSetAsideDrawing() {
+        guard let aside = setAsideDrawing else {
+            return
+        }
+        let current = drawing
+        let currentHasUnsentWork = hasUnsavedEdits && !current.strokes.isEmpty
+        discardSetAsideDrawing()
+        if currentHasUnsentWork {
+            setAside(current)
+        }
+        live?.localDrawingDidChange(aside, side: currentCanvasSide())
+        replaceDrawing(with: aside)
+        partnerSentWhileEditing = false
+        persistDraftIfNeeded()
+        refreshUndoRedoAvailability()
+    }
+
+    func discardSetAsideDrawing() {
+        setAsideDrawing = nil
+        if let setAsideKey {
+            draftStore.removeDraft(for: setAsideKey)
+        }
     }
 
     // MARK: - Canvas size
@@ -635,6 +843,32 @@ final class WidgetDrawingViewModel {
     private func replaceDrawing(with newDrawing: PKDrawing) {
         drawing = newDrawing
         drawingRevision += 1
+        live?.drawingReplacedFromCode(newDrawing)
+    }
+
+    // MARK: - Drawing together
+
+    /// Connects once the saved drawing or draft is on the canvas, so the
+    /// partner's strokes never land on a canvas that is still loading.
+    func startLive() {
+        guard hasLoadedSavedDrawing else {
+            return
+        }
+        live?.start(drawing: drawing)
+    }
+
+    func stopLive() {
+        live?.stop()
+    }
+
+    /// The partner's strokes arrived. They become part of this canvas, like
+    /// strokes drawn here, so the draft keeps them and Send sends them.
+    private func applyPartnerLiveDrawing(_ merged: PKDrawing) {
+        replaceDrawing(with: merged)
+        scheduleDraftPersistence()
+        Task { @MainActor in
+            self.refreshUndoRedoAvailability()
+        }
     }
 
     // MARK: - Undo
@@ -650,6 +884,7 @@ final class WidgetDrawingViewModel {
 
         undoManager.undo()
         drawing = canvasView.drawing
+        live?.localDrawingDidChange(drawing, side: currentCanvasSide())
         refreshUndoRedoAvailability(using: undoManager)
     }
 
@@ -664,6 +899,7 @@ final class WidgetDrawingViewModel {
 
         undoManager.redo()
         drawing = canvasView.drawing
+        live?.localDrawingDidChange(drawing, side: currentCanvasSide())
         refreshUndoRedoAvailability(using: undoManager)
     }
 

@@ -35,6 +35,7 @@ paeonia/
 │   ├── PaeoniaAppUITests/# UI tests
 │   └── Scripts/          # Build/localization/release scripts
 ├── backend/              # Self-hosted Convex backend
+├── relay/                # Cloudflare Worker that relays live drawing strokes
 ├── docs/                 # Architecture and product documentation
 ├── AGENTS.md
 └── README.md
@@ -46,6 +47,7 @@ The backend is a self-hosted Convex deployment on the `one-s` server, with Clerk
 - `https://api.paeonia.no` is the Convex client API origin. Use it for all production client configuration.
 - `https://actions.paeonia.no` is the Convex HTTP actions origin. It serves signed media URLs (`GET /media`) and Apple App Store server notifications (`POST /apple/server-notifications`).
 - `https://convex.paeonia.no` is the Convex dashboard. It is reachable on the tailnet only.
+- `wss://relay.paeonia.no/canvas` is the live drawing relay (`relay/`), a Cloudflare Worker with one Durable Object per couple.
 
 Production deploy and access details are in [backend/AGENTS.md](backend/AGENTS.md).
 

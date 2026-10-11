@@ -42,30 +42,20 @@ struct DailyChallengeAnswerStep: View {
     @State private var showsSecondaryComposer = true
 
     var body: some View {
-        // The question always sits at the top. The answer-method picker is pinned
-        // right under it, so its position never shifts with the composer. The actual
-        // composer (text field, photo, voice, choice) drops to the bottom within
-        // thumb reach; a keyboard just shrinks the gap, keeping the question on top.
-        // The waiting hint reads as question context, so it stays up top too. Review
-        // states have no bottom composer and sit under the question.
+        // The question card takes all the height the composer leaves, so there is no
+        // empty gap on the screen. The composer (text field, photo, voice, choice)
+        // sits under it within thumb reach; a keyboard just shrinks the card. The
+        // answer-method picker and the waiting hint live inside the card, at its top
+        // and bottom edges. Review states show the answers under the card instead.
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            promptView
-
-            if showsKindPicker {
-                DailyAnswerKindPicker(
-                    kinds: question.composableAnswerKinds,
-                    selection: composeKind,
-                    onSelect: setComposeKind
-                )
+            DailyQuestionCard(prompt: question.prompt) {
+                cardHeader
+            } footer: {
+                if showsPartnerWaitingNote {
+                    DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
+                }
             }
-
-            if showsPartnerWaitingNote {
-                DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
-            }
-
-            if hasBottomComposer {
-                Spacer(minLength: PaeoniaSpacing.space24)
-            }
+            .frame(maxHeight: .infinity)
 
             answerSection
         }
@@ -82,34 +72,24 @@ struct DailyChallengeAnswerStep: View {
         }
     }
 
-    /// The question text, sitting at the top of the step.
-    private var promptView: some View {
-        Text(question.prompt)
-            .font(PaeoniaTypography.title)
-            .foregroundStyle(.paeoniaTextPrimary)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// The kind of composer currently on screen, or nil when the step is showing a
-    /// review/sending state rather than an editable composer.
-    private var activeComposerKind: DailyChallengeAnswerKind? {
-        if showsSendingState { return nil }
-        if let editKind = question.editableAnswerKind { return editKind }
-        if question.hasOwnAnswer { return nil }
-        if question.canSubmitAnswer { return composeKind }
-        return nil
-    }
-
-    /// Whether an input composer is on screen (compose or edit), so it should drop to
-    /// the bottom for thumb reach. Review/sending states have none and sit up top.
-    private var hasBottomComposer: Bool {
-        activeComposerKind != nil
+    /// The card's top row: the answer-method picker when the user can choose, and
+    /// otherwise small icons for how this question is answered.
+    @ViewBuilder
+    private var cardHeader: some View {
+        if showsKindPicker {
+            DailyAnswerKindPicker(
+                kinds: question.composableAnswerKinds,
+                selection: composeKind,
+                onSelect: setComposeKind
+            )
+        } else {
+            DailyAnswerKindBadges(kinds: question.composableAnswerKinds)
+        }
     }
 
     /// The answer-method picker shows only while composing a fresh answer that accepts
-    /// more than one kind. It's pinned under the question so its position is stable
-    /// regardless of which composer is selected.
+    /// more than one kind. It sits at the top of the question card, so its position is
+    /// stable regardless of which composer is selected.
     private var showsKindPicker: Bool {
         !showsSendingState
             && question.editableAnswerKind == nil
@@ -121,7 +101,7 @@ struct DailyChallengeAnswerStep: View {
     }
 
     /// Whether the partner's reply is waiting behind a fresh answer, so the "answer
-    /// to see their reply" hint should show under the question.
+    /// to see their reply" hint should show at the bottom of the question card.
     private var showsPartnerWaitingNote: Bool {
         !showsSendingState
             && question.editableAnswerKind == nil
@@ -148,8 +128,8 @@ struct DailyChallengeAnswerStep: View {
             DailyAnswerDetailsView(question: question, participants: viewModel.participants)
         } else if question.canSubmitAnswer {
             // Just the input here. The kind picker and the "answer to see their
-            // reply" hint are pinned under the question in `body`, so only the
-            // composer itself drops to the bottom for thumb reach.
+            // reply" hint live in the question card, so only the composer itself
+            // sits under it for thumb reach.
             if question.usesCombinedCompose {
                 combinedComposer
             } else {
@@ -386,7 +366,7 @@ struct DailyChallengeAnswerStep: View {
     }
 }
 
-private struct DailyPartnerWaitingNote: View {
+struct DailyPartnerWaitingNote: View {
     let partnerName: String
 
     var body: some View {
@@ -402,7 +382,8 @@ private struct DailyPartnerWaitingNote: View {
         }
         .padding(PaeoniaSpacing.space12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.paeoniaSurfaceSecondary)
+        // Darker than the question card it sits in, so it reads as its own note.
+        .background(.paeoniaBackgroundSecondary.opacity(0.6))
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
     }
 }

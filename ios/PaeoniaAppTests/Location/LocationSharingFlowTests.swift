@@ -380,3 +380,55 @@ private func flowUUID(_ rawValue: String) -> UUID {
     }
     return uuid
 }
+
+extension LocationSharingFlowTests {
+    // MARK: - Live feed while open
+
+    @Test func liveFeedSendsAMoveButNotTheSameSpotAgain() async throws {
+        let visibilityStore = InMemoryLocationVisibilitySnapshotRepository()
+        let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
+        try await visibilityStore.setViewerSharingEnabled(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            isEnabled: true,
+            updatedAt: Date(timeIntervalSince1970: 100)
+        )
+        let viewModel = makeViewModel(
+            visibilityStore: visibilityStore,
+            ownLocationStore: ownLocationStore,
+            capture: ControlledLocationCapture(authorizationState: .authorized)
+        )
+        await viewModel.configure(identity: identity)
+        let start = Date()
+        let stored = { try await ownLocationStore.load(ownerUserID: self.ownerUserID, coupleID: self.coupleID) }
+
+        await viewModel.submitObservedLocation(LocationPoint(latitude: 59.91, longitude: 10.75, capturedAt: start))
+        #expect(try await stored()?.location.latitude == 59.91)
+
+        // About 10 m away a few seconds later: nothing new to send.
+        await viewModel.submitObservedLocation(
+            LocationPoint(latitude: 59.9101, longitude: 10.75, capturedAt: start.addingTimeInterval(5))
+        )
+        #expect(try await stored()?.location.latitude == 59.91)
+
+        // About 4 km away: sent right away.
+        await viewModel.submitObservedLocation(
+            LocationPoint(latitude: 59.95, longitude: 10.75, capturedAt: start.addingTimeInterval(10))
+        )
+        #expect(try await stored()?.location.latitude == 59.95)
+        #expect(try await stored()?.pendingOperationID != nil)
+    }
+
+    @Test func liveFeedSendsNothingWhileNotSharing() async throws {
+        let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
+        let viewModel = makeViewModel(
+            ownLocationStore: ownLocationStore,
+            capture: ControlledLocationCapture(authorizationState: .authorized)
+        )
+        await viewModel.configure(identity: identity)
+
+        await viewModel.submitObservedLocation(sampleLocation)
+
+        #expect(try await ownLocationStore.load(ownerUserID: ownerUserID, coupleID: coupleID) == nil)
+    }
+}
