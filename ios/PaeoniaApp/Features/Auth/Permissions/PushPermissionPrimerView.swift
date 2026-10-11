@@ -30,11 +30,12 @@ struct PushPermissionPrimerView: View {
                 actions
             }
             .frame(maxWidth: .infinity)
-            .frame(minHeight: minHeight)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.vertical, PaeoniaSpacing.space24)
+            .frame(minHeight: minHeight)
         }
         .scrollIndicators(.hidden)
+        .scrollBounceBehavior(.basedOnSize)
     }
 
     private var primerMessage: some View {

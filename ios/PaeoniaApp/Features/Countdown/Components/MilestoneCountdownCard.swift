@@ -130,18 +130,10 @@ struct MilestoneCountdownCard: View {
                     .foregroundStyle(.paeoniaAccentPrimary)
                     .accessibilityHidden(true)
 
-                VStack(alignment: .center, spacing: PaeoniaSpacing.space4) {
-                    Text(.homeMilestoneSetupTitle)
-                        .font(PaeoniaTypography.sectionTitle)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .multilineTextAlignment(.center)
-
-                    Text(.homeMilestoneSetupMessage)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
-                }
+                Text(.homeMilestoneSetupTitle)
+                    .font(PaeoniaTypography.sectionTitle)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .multilineTextAlignment(.center)
             }
             .milestoneTileChrome()
         }

@@ -69,6 +69,7 @@ struct ReportAndLeaveView: View {
             .padding(.bottom, PaeoniaSpacing.space40)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .scrollBounceBehavior(.basedOnSize)
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle(Text(.reportAndLeaveTitle))
         .navigationBarTitleDisplayMode(.inline)

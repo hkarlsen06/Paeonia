@@ -4224,24 +4224,6 @@
         }
       }
     },
-    "home.milestone.setup.message" : {
-      "comment" : "Short explanation on the Us-tab milestone setup tile",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We'll use it to count down to your next milestone."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi bruker den til å telle ned til deres neste milepæl."
-          }
-        }
-      }
-    },
     "home.milestone.setup.title" : {
       "comment" : "Title on the Us-tab milestone setup tile when the couple has not chosen their relationship start date",
       "extractionState" : "manual",
@@ -4249,13 +4231,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Set the day you got together"
+            "value" : "When did you get together?"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sett datoen dere ble sammen"
+            "value" : "Når ble dere sammen?"
           }
         }
       }

@@ -28,6 +28,7 @@ struct PrivacyCorrectionRequestView: View {
         ScrollView {
             formContent
         }
+        .scrollBounceBehavior(.basedOnSize)
         .background(.paeoniaBackgroundPrimary)
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {

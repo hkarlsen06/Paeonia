@@ -131,6 +131,7 @@ struct MemoryEditorView: View {
             .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space24)
         }
+        .scrollBounceBehavior(.basedOnSize)
     }
 
     // MARK: - Fields

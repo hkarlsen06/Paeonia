@@ -20,11 +20,12 @@ struct LocationSharingPrimerView: View {
                     actions
                 }
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: proxy.size.height)
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.vertical, PaeoniaSpacing.space24)
+                .frame(minHeight: proxy.size.height)
             }
             .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
         }
         .background(.paeoniaBackgroundPrimary)
         .preferredColorScheme(.dark)

@@ -153,6 +153,7 @@ struct WidgetDrawingHistoryView: View {
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.vertical, PaeoniaSpacing.space20)
         }
+        .scrollBounceBehavior(.basedOnSize)
     }
 
     /// Shown below the last row when an older page failed to load. The last row's
