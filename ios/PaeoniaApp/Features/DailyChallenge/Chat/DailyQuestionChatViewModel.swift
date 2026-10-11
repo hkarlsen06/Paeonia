@@ -106,6 +106,11 @@ final class DailyQuestionChatViewModel {
         hasQueuedThreadCreation = isCreatingThread
         messages = DailyQuestionChatMessage.visibleOrdered(remote: cached, optimistic: pending)
         raiseNoticeForNewFailures()
+        // The screen is open, so everything it shows counts as seen.
+        let newestDelivered = messages.filter { !$0.isSending && !$0.sendFailed }.map(\.createdAt).max()
+        if let threadID, let newestDelivered {
+            await service.markThreadRead(ownerUserID: ownerUserID, threadID: threadID, through: newestDelivered)
+        }
     }
 
     private func raiseNoticeForNewFailures() {

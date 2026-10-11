@@ -13,6 +13,11 @@ protocol DailyQuestionChatServicing: Actor {
     /// merged into the chat cache before the stream yields, so the caller re-reads
     /// the cache. The stream ends when the caller's task is cancelled.
     nonisolated func liveMessageUpdates(ownerUserID: UUID, instanceID: UUID, threadID: UUID) -> AsyncStream<Void>
+    /// When the user last saw each thread on this phone, keyed by thread id.
+    func chatReadMarks(ownerUserID: UUID) async -> [UUID: Date]
+    /// Records that the user has seen the thread up to `date`, and tells the
+    /// unread badges to update when that moved the mark forward.
+    func markThreadRead(ownerUserID: UUID, threadID: UUID, through date: Date) async
     func pendingMessages(ownerUserID: UUID, instanceID: UUID) async -> [DailyQuestionChatMessage]
     func hasPendingThreadCreation(ownerUserID: UUID, instanceID: UUID) async -> Bool
     /// Removes a message that failed to send, so the retry replaces it.
@@ -29,6 +34,9 @@ protocol DailyQuestionChatServicing: Actor {
 }
 
 extension DailyQuestionChatServicing {
+    func chatReadMarks(ownerUserID _: UUID) async -> [UUID: Date] { [:] }
+    func markThreadRead(ownerUserID _: UUID, threadID _: UUID, through _: Date) async {}
+
     /// Services without a live connection (previews, scenarios) have nothing to follow.
     nonisolated func liveMessageUpdates(ownerUserID _: UUID, instanceID _: UUID, threadID _: UUID) -> AsyncStream<Void> {
         AsyncStream { $0.finish() }
@@ -203,6 +211,15 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
 
     func discardFailedMessage(ownerUserID: UUID, clientOperationID: UUID) async {
         await cache.discardFailed(ownerUserID: ownerUserID, clientOperationID: clientOperationID)
+    }
+
+    func chatReadMarks(ownerUserID: UUID) async -> [UUID: Date] {
+        await cache.readMarks(ownerUserID: ownerUserID)
+    }
+
+    func markThreadRead(ownerUserID: UUID, threadID: UUID, through date: Date) async {
+        guard await cache.markRead(ownerUserID: ownerUserID, threadID: threadID, through: date) else { return }
+        LocalStoreChanges.post(.dailyChat, ownerUserID: ownerUserID)
     }
 
     func queueMessage(

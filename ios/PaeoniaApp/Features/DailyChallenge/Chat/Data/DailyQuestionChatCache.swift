@@ -56,6 +56,18 @@ protocol DailyQuestionChatCaching: Actor {
         ownerUserID: UUID,
         unlessPurgedSince generation: Int
     ) -> Bool
+    /// When this user last saw each thread, keyed by thread id. Only kept on this phone.
+    func readMarks(ownerUserID: UUID) -> [UUID: Date]
+    /// Records that the user has seen the thread up to `date`. An older date changes
+    /// nothing. Returns whether it wrote.
+    @discardableResult
+    func markRead(ownerUserID: UUID, threadID: UUID, through date: Date) -> Bool
+}
+
+extension DailyQuestionChatCaching {
+    func readMarks(ownerUserID _: UUID) -> [UUID: Date] { [:] }
+    @discardableResult
+    func markRead(ownerUserID _: UUID, threadID _: UUID, through _: Date) -> Bool { false }
 }
 
 actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
@@ -273,6 +285,25 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         return true
     }
 
+    func readMarks(ownerUserID: UUID) -> [UUID: Date] {
+        Dictionary(
+            document(ownerUserID: ownerUserID).readThroughByThreadID.compactMap { key, date in
+                UUID(uuidString: key).map { ($0, date) }
+            },
+            uniquingKeysWith: max
+        )
+    }
+
+    @discardableResult
+    func markRead(ownerUserID: UUID, threadID: UUID, through date: Date) -> Bool {
+        var document = document(ownerUserID: ownerUserID)
+        let key = threadID.uuidString
+        if let current = document.readThroughByThreadID[key], current >= date { return false }
+        document.readThroughByThreadID[key] = date
+        save(document, ownerUserID: ownerUserID)
+        return true
+    }
+
     func clearAll() {
         generation += 1
         guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }
@@ -332,4 +363,21 @@ nonisolated private struct CacheEnvelope: Codable {
 nonisolated private struct CacheDocument: Codable {
     var summaries: [DailyQuestionThreadSummary] = []
     var messagesByInstanceID: [String: [DailyQuestionChatMessage]] = [:]
+    var readThroughByThreadID: [String: Date] = [:]
+
+    init() {}
+
+    // Files written before read marks existed lack the key and keep their messages.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        summaries = try container.decode([DailyQuestionThreadSummary].self, forKey: .summaries)
+        messagesByInstanceID = try container.decode(
+            [String: [DailyQuestionChatMessage]].self,
+            forKey: .messagesByInstanceID
+        )
+        readThroughByThreadID = try container.decodeIfPresent(
+            [String: Date].self,
+            forKey: .readThroughByThreadID
+        ) ?? [:]
+    }
 }

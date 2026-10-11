@@ -226,6 +226,7 @@ struct DailyChallengeHistoryView: View {
                                 participants: viewModel.participants,
                                 onReportPartnerAnswer: { reportedPartnerAnswerID = $0 },
                                 lastMessagePreview: viewModel.threadPreview(for: question.id),
+                                hasUnreadChat: dailyChallengeViewModel.hasUnreadChat(for: question.id),
                                 onOpenChat: question.isChatAvailable
                                     ? { chattingQuestion = question }
                                     : nil

@@ -140,6 +140,7 @@ struct MainTabView: View {
             ForEach(tabs) { tab in
                 content(for: tab)
                     .tag(tab)
+                    .badge(tab == .questions ? dailyChallengeViewModel.unreadChats.count : 0)
                     .tabItem {
                         Label {
                             Text(tab.title)
@@ -266,6 +267,16 @@ struct MainTabView: View {
             locationMapState: locationMapState,
             onPromptCurrentLocation: {
                 Task { await locationViewModel.promptForCurrentLocation() }
+            },
+            unreadChats: dailyChallengeViewModel.unreadChats.map { summary in
+                UnreadChatRow(
+                    id: summary.instanceID,
+                    prompt: dailyChallengeViewModel.questionPrompt(for: summary.instanceID),
+                    preview: summary.lastMessageBody
+                )
+            },
+            onOpenChat: { instanceID in
+                Task { await openDailyChat(instanceID: instanceID) }
             },
             onTapStreak: openStreakDetails,
             onOpenDailyChallenge: openDailyChallengeFromHome,

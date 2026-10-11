@@ -375,6 +375,53 @@ struct DailyQuestionChatMergeTests {
     }
 }
 
+struct DailyQuestionChatReadMarkTests {
+    private let me = UUID()
+    private let partner = UUID()
+    private let sentAt = Date(timeIntervalSince1970: 1_000)
+
+    private func summary(threadID: UUID = UUID(), sender: UUID?) -> DailyQuestionThreadSummary {
+        DailyQuestionThreadSummary(
+            threadID: threadID,
+            coupleID: UUID(),
+            instanceID: UUID(),
+            createdAt: sentAt,
+            updatedAt: sentAt,
+            lastMessageID: sender == nil ? nil : UUID(),
+            lastMessageAt: sender == nil ? nil : sentAt,
+            lastMessageSenderUserID: sender,
+            lastMessageBody: sender == nil ? nil : "Hi"
+        )
+    }
+
+    @Test func onlyAPartnerMessageNewerThanTheReadMarkIsUnread() {
+        let fromPartner = summary(sender: partner)
+
+        #expect(fromPartner.isUnread(by: me, readThrough: nil))
+        #expect(fromPartner.isUnread(by: me, readThrough: sentAt.addingTimeInterval(-1)))
+        #expect(!fromPartner.isUnread(by: me, readThrough: sentAt))
+        #expect(!summary(sender: me).isUnread(by: me, readThrough: nil))
+        #expect(!summary(sender: nil).isUnread(by: me, readThrough: nil))
+    }
+
+    @Test func theFileCacheKeepsTheNewestReadMarkUntilAPurge() async {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ChatReadMarks-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = FileDailyQuestionChatCache(directoryURL: directory)
+        let threadID = UUID()
+
+        #expect(await cache.markRead(ownerUserID: me, threadID: threadID, through: sentAt))
+        let movedBack = await cache.markRead(ownerUserID: me, threadID: threadID, through: sentAt - 5)
+        #expect(!movedBack)
+        #expect(await FileDailyQuestionChatCache(directoryURL: directory).readMarks(ownerUserID: me) == [threadID: sentAt])
+        #expect(await cache.readMarks(ownerUserID: partner).isEmpty)
+
+        await cache.clearAll()
+        #expect(await cache.readMarks(ownerUserID: me).isEmpty)
+    }
+}
+
 @MainActor
 struct DailyQuestionChatPendingOperationHandlerTests {
     @Test func createHandlerConfirmsMessageByClientOperationID() async throws {

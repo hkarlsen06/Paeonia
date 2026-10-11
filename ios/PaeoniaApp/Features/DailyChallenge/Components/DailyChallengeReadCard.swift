@@ -31,6 +31,7 @@ struct DailyChallengeReadCard: View {
     var onAnswer: () -> Void = {}
     var onReportPartnerAnswer: ((UUID) -> Void)?
     var lastMessagePreview: String? = nil
+    var hasUnreadChat = false
     var onOpenChat: (() -> Void)? = nil
 
     /// A partner question the user can still answer to reveal the reply. When sending,
@@ -93,6 +94,10 @@ struct DailyChallengeReadCard: View {
     private var card: some View {
         PaeoniaCard {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+                if showsChat, hasUnreadChat {
+                    newMessageBadge
+                }
+
                 Text(question.prompt)
                     .font(PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
@@ -118,7 +123,7 @@ struct DailyChallengeReadCard: View {
                     } else {
                         DailyAnswerDetailsView(question: question, participants: participants)
 
-                        if question.isChatAvailable, onOpenChat != nil {
+                        if showsChat {
                             chatAffordance
                         }
                     }
@@ -127,34 +132,80 @@ struct DailyChallengeReadCard: View {
         }
     }
 
+    private var showsChat: Bool {
+        question.isChatAvailable && onOpenChat != nil
+    }
+
+    /// Sits above the question so a tall card still shows the new message without scrolling.
+    private var newMessageBadge: some View {
+        Label {
+            Text(.dailyChatCardNewBadge)
+        } icon: {
+            Image(systemName: "bubble.left.fill")
+        }
+        .font(PaeoniaTypography.caption.weight(.semibold))
+        .foregroundStyle(.paeoniaTextInverse)
+        .padding(.horizontal, PaeoniaSpacing.space8)
+        .padding(.vertical, PaeoniaSpacing.space4)
+        .background(.paeoniaAccentPrimary, in: Capsule())
+        .accessibilityHidden(true)
+    }
+
     private var chatAffordance: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            Image(systemName: "bubble.left")
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
+        return HStack(spacing: PaeoniaSpacing.space12) {
+            Image(systemName: hasUnreadChat ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right")
+                .font(PaeoniaTypography.bodyEmphasis)
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .frame(width: 40, height: 40)
+                .background(.paeoniaAccentPrimary.opacity(0.16), in: Circle())
                 .accessibilityHidden(true)
 
-            if let lastMessagePreview, !lastMessagePreview.isEmpty {
-                Text(verbatim: lastMessagePreview)
-                    .lineLimit(1)
-            } else {
-                Text(.dailyChatCardOpen)
-            }
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
+                Text(hasUnreadChat ? .dailyChatCardUnreadTitle(participants.partnerName) : .dailyChatCardOpen)
+                    .font(PaeoniaTypography.bodyEmphasis)
+                    .foregroundStyle(.paeoniaTextPrimary)
 
-            Spacer(minLength: 0)
+                if let lastMessagePreview, !lastMessagePreview.isEmpty {
+                    Text(verbatim: lastMessagePreview)
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(hasUnreadChat ? Color.paeoniaTextPrimary : Color.paeoniaTextSecondary)
+                        .lineLimit(2)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if hasUnreadChat {
+                Circle()
+                    .fill(.paeoniaAccentPrimary)
+                    .frame(width: 10, height: 10)
+                    .accessibilityHidden(true)
+            }
             Image(systemName: "chevron.right")
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextTertiary)
                 .accessibilityHidden(true)
         }
-        .font(PaeoniaTypography.caption)
-        .foregroundStyle(.paeoniaTextSecondary)
+        .padding(PaeoniaSpacing.space12)
+        .background(.paeoniaSurfaceSecondary, in: shape)
+        .overlay {
+            shape.strokeBorder(
+                hasUnreadChat ? Color.paeoniaAccentPrimary : Color.paeoniaSurfacePressed,
+                lineWidth: hasUnreadChat ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeHairline
+            )
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(chatAccessibilityLabel)
     }
 
     private var chatAccessibilityLabel: Text {
+        let title = hasUnreadChat
+            ? Text(.dailyChatCardUnreadTitle(participants.partnerName))
+            : Text(.dailyChatCardPreview)
         if let lastMessagePreview, !lastMessagePreview.isEmpty {
-            Text("\(Text(.dailyChatCardPreview)): \(Text(verbatim: lastMessagePreview))")
-        } else {
-            Text(.dailyChatCardOpen)
+            return Text("\(title): \(Text(verbatim: lastMessagePreview))")
         }
+        return hasUnreadChat ? title : Text(.dailyChatCardOpen)
     }
 
     /// Only a revealed partner answer gets the contextual action. Passing its id into

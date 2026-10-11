@@ -10,6 +10,14 @@ nonisolated struct DailyQuestionThreadSummary: Codable, Equatable, Sendable {
     let lastMessageAt: Date?
     let lastMessageSenderUserID: UUID?
     let lastMessageBody: String?
+
+    /// The newest message came from the partner after `readThrough`, the last time
+    /// this user saw the chat on this phone.
+    func isUnread(by userID: UUID, readThrough: Date?) -> Bool {
+        guard let lastMessageAt, let sender = lastMessageSenderUserID, sender != userID else { return false }
+        guard let readThrough else { return true }
+        return lastMessageAt > readThrough
+    }
 }
 
 nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, Sendable {

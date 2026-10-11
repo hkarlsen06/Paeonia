@@ -202,8 +202,8 @@ extension MainTabView {
         case .dailyReveal(let instanceID, _):
             focusedDailyQuestionID = instanceID
         case .dailyChat(let instanceID):
-            await openDailyChat(instanceID: instanceID, for: deepLink)
-            return
+            await openDailyChat(instanceID: instanceID)
+            guard isCurrent(deepLink) else { return }
         case .dailyToday:
             if dailyChallengeViewModel.homeCardState.kind != .complete {
                 openAnswerFlow(source: .questions)
@@ -214,9 +214,12 @@ extension MainTabView {
         self.deepLink.wrappedValue = nil
     }
 
-    private func openDailyChat(instanceID: UUID, for deepLink: PaeoniaDeepLink) async {
+    /// Opens a question's chat on the Questions tab, from a notification or the
+    /// Home unread chats card.
+    func openDailyChat(instanceID: UUID) async {
+        selection.wrappedValue = .questions
         let question = await dailyChallengeViewModel.questionForChat(instanceID: instanceID)
-        guard isCurrent(deepLink) else { return }
+        guard !Task.isCancelled else { return }
 
         dailyChatQuestion = question
         if question == nil {
@@ -227,7 +230,6 @@ extension MainTabView {
                 )
             )
         }
-        self.deepLink.wrappedValue = nil
     }
 
     private func refreshStillCurrent(for deepLink: PaeoniaDeepLink) async -> Bool {

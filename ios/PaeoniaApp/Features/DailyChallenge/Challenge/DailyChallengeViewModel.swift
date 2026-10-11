@@ -92,6 +92,8 @@ final class DailyChallengeViewModel {
     /// demand and kept across failures so a transient error never blanks it.
     private(set) var streak = CoupleStreak.none
     private(set) var threadSummariesByInstanceID: [UUID: DailyQuestionThreadSummary] = [:]
+    /// When the user last saw each chat on this phone, keyed by thread id.
+    private(set) var chatReadMarks: [UUID: Date] = [:]
 
     init(
         service: (any DailyChallengeServicing)? = nil,
@@ -241,6 +243,24 @@ final class DailyChallengeViewModel {
         threadSummariesByInstanceID[instanceID]?.lastMessageBody
     }
 
+    func hasUnreadChat(for instanceID: UUID) -> Bool {
+        guard let summary = threadSummariesByInstanceID[instanceID], let currentUserID else { return false }
+        return summary.isUnread(by: currentUserID, readThrough: chatReadMarks[summary.threadID])
+    }
+
+    /// Chats with a partner message the user has not opened yet, newest first.
+    var unreadChats: [DailyQuestionThreadSummary] {
+        guard let currentUserID else { return [] }
+        return threadSummariesByInstanceID.values
+            .filter { $0.isUnread(by: currentUserID, readThrough: chatReadMarks[$0.threadID]) }
+            .sorted { ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast) }
+    }
+
+    /// The question text for a chat, when today's questions include it.
+    func questionPrompt(for instanceID: UUID) -> String? {
+        snapshot.questions.first(where: { $0.id == instanceID })?.prompt
+    }
+
     func refreshThreadSummaries() async {
         guard let currentUserID else { return }
         applyThreadSummaries(await chatService.cachedThreadSummaries(ownerUserID: currentUserID))
@@ -297,6 +317,7 @@ final class DailyChallengeViewModel {
         snapshot = .empty(currentUserID: newUserID)
         sendingAnswers = [:]
         threadSummariesByInstanceID = [:]
+        chatReadMarks = [:]
 
         guard let newUserID else { return }
 
@@ -318,8 +339,10 @@ final class DailyChallengeViewModel {
             apply(cached.loadResult(currentUserID: newUserID, locale: .current))
         }
         let cachedThreads = await chatService.cachedThreadSummaries(ownerUserID: newUserID)
+        let readMarks = await chatService.chatReadMarks(ownerUserID: newUserID)
         if self.currentUserID == newUserID {
             applyThreadSummaries(cachedThreads)
+            chatReadMarks = readMarks
         }
         // Answers still queued from before a relaunch count as answered from the first
         // frame, instead of showing an empty composer until the network load settles.
@@ -414,7 +437,11 @@ final class DailyChallengeViewModel {
                 case .dailyChallenge:
                     await self.applyCachedSnapshot(for: userID)
                 case .dailyChat:
-                    self.applyThreadSummaries(await self.chatService.cachedThreadSummaries(ownerUserID: userID))
+                    let summaries = await self.chatService.cachedThreadSummaries(ownerUserID: userID)
+                    let readMarks = await self.chatService.chatReadMarks(ownerUserID: userID)
+                    guard self.currentUserID == userID else { return }
+                    self.applyThreadSummaries(summaries)
+                    self.chatReadMarks = readMarks
                 case .pendingOperations:
                     self.restoreReturnedDrafts(for: userID)
                     await self.refreshSendingState()

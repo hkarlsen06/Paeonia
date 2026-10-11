@@ -60,6 +60,7 @@ struct DailyChallengeScreen: View {
                                     onAnswer: { onAnswerPartnerQuestion(question) },
                                     onReportPartnerAnswer: { reportedPartnerAnswerID = $0 },
                                     lastMessagePreview: viewModel.threadPreview(for: question.id),
+                                    hasUnreadChat: viewModel.hasUnreadChat(for: question.id),
                                     onOpenChat: question.isChatAvailable
                                         ? { chatQuestion.wrappedValue = question }
                                         : nil

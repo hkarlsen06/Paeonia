@@ -12393,6 +12393,78 @@
         }
       },
       "comment" : "Title of the confirmation before deleting the user's unsent drawing that was put aside when a new drawing came in."
+    },
+    "dailyChat.card.newBadge" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny melding"
+          }
+        }
+      },
+      "comment" : "Small badge on a question card when the partner sent a chat message the user has not read yet"
+    },
+    "dailyChat.card.unreadTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New message from %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny melding fra %@"
+          }
+        }
+      },
+      "comment" : "Title of the chat button on a question card when there is an unread message. %@ is the partner's name."
+    },
+    "home.unreadChats.eyebrow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New messages"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nye meldinger"
+          }
+        }
+      },
+      "comment" : "Heading of the Home card that lists chats with unread messages from the partner"
+    },
+    "home.unreadChats.hiddenPreview" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the chat to read it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne praten for å lese den."
+          }
+        }
+      },
+      "comment" : "Shown in the Home unread chats card when the newest message has no text to preview"
     }
   },
   "version" : "1.0"

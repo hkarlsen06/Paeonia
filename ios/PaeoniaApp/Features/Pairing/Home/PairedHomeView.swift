@@ -16,6 +16,8 @@ struct PairedHomeView: View {
     let zoomNamespace: Namespace.ID?
     let locationMapState: CoupleMapState
     let onPromptCurrentLocation: () -> Void
+    var unreadChats: [UnreadChatRow] = []
+    var onOpenChat: (UUID) -> Void = { _ in }
     var onTapStreak: (() -> Void)?
     var onOpenDailyChallenge: () -> Void = {}
     var onOpenWidgetDrawing: () -> Void = {}
@@ -44,6 +46,8 @@ struct PairedHomeView: View {
         zoomNamespace: Namespace.ID? = nil,
         locationMapState: CoupleMapState,
         onPromptCurrentLocation: @escaping () -> Void = {},
+        unreadChats: [UnreadChatRow] = [],
+        onOpenChat: @escaping (UUID) -> Void = { _ in },
         onTapStreak: (() -> Void)? = nil,
         onOpenDailyChallenge: @escaping () -> Void = {},
         onOpenWidgetDrawing: @escaping () -> Void = {},
@@ -63,6 +67,8 @@ struct PairedHomeView: View {
         self.zoomNamespace = zoomNamespace
         self.locationMapState = locationMapState
         self.onPromptCurrentLocation = onPromptCurrentLocation
+        self.unreadChats = unreadChats
+        self.onOpenChat = onOpenChat
         self.onTapStreak = onTapStreak
         self.onOpenDailyChallenge = onOpenDailyChallenge
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
@@ -74,6 +80,15 @@ struct PairedHomeView: View {
             // Matches the horizontal gap inside the milestone/drawing tile row so
             // the card grid reads as one consistent grid.
             VStack(spacing: PaeoniaSpacing.space16) {
+                if !unreadChats.isEmpty {
+                    HomeUnreadChatsCard(
+                        chats: unreadChats,
+                        partnerName: partnerName,
+                        partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                        onOpenChat: onOpenChat
+                    )
+                    .transition(.opacity)
+                }
                 CoupleMapCard(
                     currentName: currentName,
                     currentProfilePhotoAssetID: currentProfilePhotoAssetID,
@@ -89,6 +104,7 @@ struct PairedHomeView: View {
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space16)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
         }
         .scrollIndicators(.hidden)
         .refreshable {
