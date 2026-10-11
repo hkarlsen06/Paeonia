@@ -69,7 +69,7 @@ struct CoupleMapSnapshot: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.launchIntroComplete) private var launchIntroComplete
+    @Environment(\.launchSidesUncovered) private var launchSidesUncovered
 
     /// The current map + avatars after the latest completed reveal.
     @State private var snapshot: SnapshotResult?
@@ -128,8 +128,8 @@ struct CoupleMapSnapshot: View {
                 .task(id: snapshotRequest(size: size)) {
                     await loadSnapshot(size: size)
                 }
-                .onChange(of: launchIntroComplete) { _, complete in
-                    guard complete, let token = pendingLaunchReveal else { return }
+                .onChange(of: launchSidesUncovered) { _, uncovered in
+                    guard uncovered, let token = pendingLaunchReveal else { return }
                     pendingLaunchReveal = nil
                     startSweep(token: token)
                 }
@@ -528,10 +528,10 @@ extension CoupleMapSnapshot {
             isRevealing = true
         }
 
-        // Hold the sweep until the cold-launch intro has finished uncovering the app,
-        // so it plays where the user can see it rather than behind the overlay. Once
-        // the intro completes, `onChange(launchIntroComplete)` runs this token.
-        guard launchIntroComplete else {
+        // Hold the sweep until the cold-launch intro's opening hole reaches the screen's
+        // sides, so it plays where the user can see it rather than behind the overlay.
+        // Then `onChange(launchSidesUncovered)` runs this token.
+        guard launchSidesUncovered else {
             pendingLaunchReveal = token
             return
         }

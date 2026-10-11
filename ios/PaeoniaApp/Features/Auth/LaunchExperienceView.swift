@@ -15,6 +15,8 @@ struct LaunchExperienceView: View {
     /// Called as the reveal begins, cueing the surface underneath to bring its
     /// content in.
     let onRevealContent: () -> Void
+    /// Called when the opening hole reaches the screen's left and right edges.
+    let onSidesUncovered: () -> Void
     /// Called once the reveal has fully played out and the overlay can be removed.
     let onFinished: () -> Void
 
@@ -46,6 +48,9 @@ struct LaunchExperienceView: View {
     /// The hole starts slowly and speeds up, catching the petals about 120 ms in and
     /// cutting them away over the next 80 ms. It clears the corners around 500 ms.
     private static let holeAnimation = Animation.timingCurve(0.4, 0, 0.3, 1, duration: revealDuration)
+    /// When the hole's edge reaches the left and right screen edges on a phone
+    /// (about 0.42 of `holeProgress`). On iPad it arrives about 50 ms later.
+    private static let sidesUncoveredDelay: TimeInterval = 0.21
 
     var body: some View {
         GeometryReader { proxy in
@@ -111,6 +116,7 @@ struct LaunchExperienceView: View {
             withAnimation(.easeOut(duration: Self.reducedMotionExitDuration)) {
                 overlayOpacity = 0
             }
+            onSidesUncovered()
             finish(after: Self.reducedMotionExitDuration)
             return
         }
@@ -120,6 +126,10 @@ struct LaunchExperienceView: View {
         }
         withAnimation(Self.holeAnimation) {
             holeProgress = 1
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(Self.sidesUncoveredDelay))
+            onSidesUncovered()
         }
         finish(after: Self.revealDuration)
     }
@@ -134,7 +144,7 @@ struct LaunchExperienceView: View {
 
 #if DEBUG
 #Preview {
-    LaunchExperienceView(contentReady: true, onRevealContent: {}, onFinished: {})
+    LaunchExperienceView(contentReady: true, onRevealContent: {}, onSidesUncovered: {}, onFinished: {})
         .preferredColorScheme(.dark)
 }
 #endif

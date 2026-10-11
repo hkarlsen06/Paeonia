@@ -9,6 +9,10 @@ private struct LaunchContentRevealedKey: EnvironmentKey {
     static let defaultValue = true
 }
 
+private struct LaunchSidesUncoveredKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
 private struct LaunchIntroCompleteKey: EnvironmentKey {
     static let defaultValue = true
 }
@@ -22,8 +26,16 @@ extension EnvironmentValues {
         set { self[LaunchContentRevealedKey.self] = newValue }
     }
 
-    /// True once the cold-launch intro has fully finished. Launch-adjacent reveals that
-    /// shouldn't compete with the intro (e.g. the Home map's flame sweep) can wait on
+    /// Flips true when the intro's opening hole reaches the screen's left and right
+    /// edges. The Home map's flame sweep starts here, so it plays as the screen opens
+    /// rather than behind the overlay. Defaults to true outside the cold launch.
+    var launchSidesUncovered: Bool {
+        get { self[LaunchSidesUncoveredKey.self] }
+        set { self[LaunchSidesUncoveredKey.self] = newValue }
+    }
+
+    /// True once the cold-launch intro has fully finished. Launch-adjacent moments
+    /// that shouldn't compete with the intro (e.g. streak celebrations) can wait on
     /// this. Defaults to true so anything outside the cold launch behaves normally.
     var launchIntroComplete: Bool {
         get { self[LaunchIntroCompleteKey.self] }

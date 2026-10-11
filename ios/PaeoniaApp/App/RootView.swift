@@ -14,6 +14,7 @@ struct RootView: View {
     @State var bannerCenter = PaeoniaBannerCenter()
     @State var isLaunchExperienceActive = true
     @State var launchContentRevealed = false
+    @State var launchSidesUncovered = false
     @State var permissionPrimerCoordinator: RootPairingPermissionPrimerCoordinator
     @State var hasFinishedPostLaunchWork = false
     /// The running foreground pass. A second activation while it runs is
@@ -225,9 +226,10 @@ struct RootView: View {
         ZStack {
             routedRootContent
                 // The intro cues the surface to cascade its content in as it exits, and
-                // the Home map's flame sweep waits until the intro is fully done so it
-                // doesn't play hidden behind the overlay.
+                // the Home map's flame sweep waits until the opening hole reaches the
+                // screen's sides so it doesn't play hidden behind the overlay.
                 .environment(\.launchContentRevealed, launchContentRevealed)
+                .environment(\.launchSidesUncovered, launchSidesUncovered)
                 .environment(\.launchIntroComplete, !isLaunchExperienceActive)
                 .zIndex(0)
 
@@ -238,6 +240,7 @@ struct RootView: View {
                 LaunchExperienceView(
                     contentReady: viewModel.state != .launching,
                     onRevealContent: { launchContentRevealed = true },
+                    onSidesUncovered: { launchSidesUncovered = true },
                     onFinished: {
                         isLaunchExperienceActive = false
                     }

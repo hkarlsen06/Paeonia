@@ -106,20 +106,24 @@ struct DailyStreakToolbarLabel: View {
     }
 
     private func label(for state: StreakPillState) -> some View {
-        HStack(spacing: PaeoniaSpacing.space4) {
+        // On a milestone day the gold dot belongs to the number, so it sits right
+        // against it and the flame moves a little further away.
+        HStack(spacing: state.isMilestone ? PaeoniaSpacing.space8 : PaeoniaSpacing.space4) {
             FlameShape()
                 .fill(flameStyle(for: state))
                 .frame(width: flameHeight * 0.84, height: flameHeight)
 
-            if state.isMilestone {
-                Circle()
-                    .fill(Color.paeoniaInkGold)
-                    .frame(width: 6, height: 6)
-                    .shadow(color: .paeoniaInkGold, radius: 3)
-            }
+            HStack(spacing: PaeoniaSpacing.space2) {
+                if state.isMilestone {
+                    Circle()
+                        .fill(Color.paeoniaInkGold)
+                        .frame(width: 6, height: 6)
+                        .shadow(color: .paeoniaInkGold, radius: 3)
+                }
 
-            Text(state.displayCount, format: .number)
-                .monospacedDigit()
+                Text(state.displayCount, format: .number)
+                    .monospacedDigit()
+            }
         }
         .font(.system(.subheadline, design: .rounded).weight(.bold))
         // A slipped streak is dimmed, not crossed out. It is a streak waiting to be

@@ -27,6 +27,8 @@ struct DailyPromptCard: View {
                         answeredCount: state.answeredCount,
                         totalCount: state.totalCount
                     )
+                    .redacted(reason: isLoading ? .placeholder : [])
+                    .accessibilityHidden(isLoading)
                 }
 
                 DailyChallengeStepBar(
@@ -84,26 +86,31 @@ struct DailyPromptCard: View {
         prefersPartnerAnswersWhenComplete && state.hasAnswerablePartnerQuestions
     }
 
+    private var isLoading: Bool {
+        if case .loading = state.kind { true } else { false }
+    }
+
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(title)
-                .font(PaeoniaTypography.title)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-                .contentTransition(.opacity)
+            // While loading, the title and message render as skeleton bars sized like
+            // the active card, so a fast load doesn't flash "Loading…" text first.
+            Group {
+                Text(title)
+                    .font(PaeoniaTypography.title)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .contentTransition(.opacity)
+                    .accessibilityLabel(isLoading ? Text(.dailyChallengeHomeLoadingTitle) : Text(title))
 
-            // Reserve the message line's height in every state so the card never
-            // changes height when content transitions from loading to active.
-            // In the loading state we render an invisible placeholder occupying
-            // the same vertical space as a single caption line rather than
-            // conditionally showing/hiding the line.
-            Text(message ?? " ")
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                // Keep the placeholder invisible; use opacity so layout is
-                // identical whether or not the real string is present.
-                .opacity(message == nil ? 0 : 1)
+                // The stand-in is never readable (redacted), so it isn't localized.
+                Text(message ?? "A small moment from today")
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .contentTransition(.opacity)
+                    .accessibilityHidden(isLoading)
+            }
+            .redacted(reason: isLoading ? .placeholder : [])
 
             if let partnerNote {
                 Label {
@@ -130,12 +137,10 @@ struct DailyPromptCard: View {
 
     private var title: LocalizedStringResource {
         switch state.kind {
-        case .loading:
-            .dailyChallengeHomeLoadingTitle
+        case .loading, .active:
+            .dailyChallengeHomeActiveTitle
         case .noChallenge:
             .dailyChallengeHomeNoChallengeTitle
-        case .active:
-            .dailyChallengeHomeActiveTitle
         case .complete:
             .dailyChallengeHomeCompleteTitle
         }
@@ -203,6 +208,16 @@ private struct DailyPromptProgressPill: View {
 }
 
 #if DEBUG
+#Preview("Loading") {
+    DailyPromptCard(
+        state: DailyChallengeCardState(kind: .loading, answeredCount: 0, totalCount: 3),
+        partnerName: "Oda"
+    )
+    .padding(PaeoniaSpacing.screenHorizontalPadding)
+    .background(.paeoniaBackgroundPrimary)
+    .preferredColorScheme(.dark)
+}
+
 #Preview("Active") {
     DailyPromptCard(
         state: DailyChallengeCardState(
