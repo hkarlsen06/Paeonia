@@ -45,7 +45,7 @@ struct MainTabActions {
 
 /// The tabs' long-lived view models. `MainTabView` keeps one in `@State`, and
 /// the models are built on first use. A SwiftUI view initializer runs on every
-/// parent update, so building them there would make and throw away three view
+/// parent update, so building them there would make and throw away four view
 /// models each time.
 @MainActor
 final class MainTabModels {
@@ -61,6 +61,18 @@ final class MainTabModels {
         dependencies.milestoneViewModel ?? RelationshipMilestoneViewModel()
     lazy var memories: MemoriesViewModel =
         dependencies.memoriesViewModel ?? MemoriesViewModel()
+    private var settingsModel: SettingsViewModel?
+
+    /// Built for the first signed-in user it is asked for, like the
+    /// `SettingsView` state that held it before.
+    func settings(userID: UUID?) -> SettingsViewModel {
+        if let settingsModel {
+            return settingsModel
+        }
+        let model = dependencies.settingsViewModel ?? SettingsViewModel(userID: userID?.uuidString)
+        settingsModel = model
+        return model
+    }
 }
 
 /// The native tab bar shown once a couple is paired.
@@ -311,7 +323,7 @@ struct MainTabView: View {
     private var youTab: some View {
         NavigationStack {
             SettingsView(
-                viewModel: dependencies.settingsViewModel,
+                viewModel: models.settings(userID: identity.currentUserID),
                 currentUserID: identity.currentUserID,
                 currentDisplayName: identity.currentDisplayName,
                 currentCustomProfilePhotoAssetID: identity.currentCustomProfilePhotoAssetID,

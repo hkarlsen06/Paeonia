@@ -80,6 +80,14 @@ struct PairedHomeView: View {
             // Matches the horizontal gap inside the milestone/drawing tile row so
             // the card grid reads as one consistent grid.
             VStack(spacing: PaeoniaSpacing.space16) {
+                CoupleMapCard(
+                    currentName: currentName,
+                    currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                    partnerName: partnerName,
+                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                    state: locationMapState,
+                    onPromptCurrentLocation: onPromptCurrentLocation
+                )
                 if !unreadChats.isEmpty {
                     HomeUnreadChatsCard(
                         chats: unreadChats,
@@ -89,14 +97,6 @@ struct PairedHomeView: View {
                     )
                     .transition(.opacity)
                 }
-                CoupleMapCard(
-                    currentName: currentName,
-                    currentProfilePhotoAssetID: currentProfilePhotoAssetID,
-                    partnerName: partnerName,
-                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                    state: locationMapState,
-                    onPromptCurrentLocation: onPromptCurrentLocation
-                )
                 dailyPromptCard
                 milestoneAndWidget
             }

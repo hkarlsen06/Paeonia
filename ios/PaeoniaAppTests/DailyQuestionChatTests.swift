@@ -420,6 +420,20 @@ struct DailyQuestionChatReadMarkTests {
         await cache.clearAll()
         #expect(await cache.readMarks(ownerUserID: me).isEmpty)
     }
+
+    @Test func aSavedReadMarkKeepsTheServerMilliseconds() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ChatReadMarks-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let threadID = UUID()
+        let serverTime = try PaeoniaConvexClient.decoder.decode(Date.self, from: Data(#""2026-10-11T12:00:00.456Z""#.utf8))
+
+        await FileDailyQuestionChatCache(directoryURL: directory).markRead(ownerUserID: me, threadID: threadID, through: serverTime)
+        let readThrough = await FileDailyQuestionChatCache(directoryURL: directory).readMarks(ownerUserID: me)[threadID]
+
+        // The thread list from the server carries the same milliseconds, so the chat stays read.
+        #expect(readThrough == serverTime)
+    }
 }
 
 @MainActor

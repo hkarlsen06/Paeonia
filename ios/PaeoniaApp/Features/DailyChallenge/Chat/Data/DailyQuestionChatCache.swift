@@ -349,17 +349,11 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         directoryURL.appendingPathComponent(ownerUserID.uuidString.lowercased() + ".json")
     }
 
-    private func encoder() -> JSONEncoder {
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        return encoder
-    }
+    // Keeps milliseconds. Plain `.iso8601` drops them, which left read marks just
+    // before the server's message times, so read chats came back as unread.
+    private func encoder() -> JSONEncoder { PaeoniaConvexClient.encoder }
 
-    private func decoder() -> JSONDecoder {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
-    }
+    private func decoder() -> JSONDecoder { PaeoniaConvexClient.decoder }
 }
 
 nonisolated private struct CacheEnvelope: Codable {

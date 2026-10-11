@@ -107,20 +107,22 @@ final class HomeWidgetPreviewModel {
 /// A compact, tappable rendering of the couple's Home Screen widget shown on the
 /// app's home screen. Tapping it opens the full drawing screen.
 struct HomeWidgetCard: View {
+    let coupleID: UUID?
     let partnerName: String?
     let onOpen: () -> Void
 
     @State private var model = HomeWidgetPreviewModel()
     /// Shows the partner's canvas while they draw on it. Nil without a couple.
+    /// Built when the card first appears, since `init` runs on every Home update.
     @State private var live: WidgetLiveDrawing?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(coupleID: UUID? = nil, partnerName: String? = nil, onOpen: @escaping () -> Void) {
+        self.coupleID = coupleID
         self.partnerName = partnerName
         self.onOpen = onOpen
-        _live = State(initialValue: coupleID.map { WidgetLiveDrawing(coupleID: $0, role: .watching) })
     }
 
     var body: some View {
@@ -134,6 +136,9 @@ struct HomeWidgetCard: View {
         .accessibilityAddTraits(.isButton)
         .task {
             model.reload()
+            if live == nil, let coupleID {
+                live = WidgetLiveDrawing(coupleID: coupleID, role: .watching)
+            }
             live?.start()
         }
         .onDisappear {
@@ -163,7 +168,6 @@ struct HomeWidgetCard: View {
             header
             drawingSurface
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            footer
         }
         .padding(PaeoniaSpacing.space12)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: model.content.image == nil)
@@ -180,26 +184,12 @@ struct HomeWidgetCard: View {
     }
 
     private var header: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            PaeoniaWordmark(size: 14)
-                .layoutPriority(1)
-            Spacer(minLength: PaeoniaSpacing.space4)
-            Image(systemName: "arrow.clockwise")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .accessibilityHidden(true)
-        }
-    }
-
-    private var footer: some View {
         HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
-            footerTitle
+            headerTitle
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextPrimary)
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
-
-            Spacer(minLength: PaeoniaSpacing.space4)
 
             if let savedAt = model.content.savedAt {
                 Text(Self.timestampText(savedAt))
@@ -213,11 +203,18 @@ struct HomeWidgetCard: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
+
+            Spacer(minLength: PaeoniaSpacing.space4)
+
+            Image(systemName: "arrow.clockwise")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .accessibilityHidden(true)
         }
     }
 
     @ViewBuilder
-    private var footerTitle: some View {
+    private var headerTitle: some View {
         if live?.partnerActivity == .drawing, let partnerName {
             Text(.homeWidgetPartnerDrawing(partnerName))
         } else if let authorName = model.content.authorName {

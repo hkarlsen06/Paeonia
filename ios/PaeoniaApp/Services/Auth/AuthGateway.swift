@@ -98,9 +98,9 @@ actor LiveAuthGateway: AuthGateway {
     }
 
     func loadProfile() async throws -> RemoteProfile {
-        // Creates the user row and profile on the first signed-in call.
-        try await client.mutation("identity:ensure_current_user")
-        let profile: FirstRow<RemoteProfile> = try await client.query("identity:get_own_profile")
+        // Creates the user row and profile on the first signed-in call, and
+        // returns the profile, so no second request is needed.
+        let profile: FirstRow<RemoteProfile> = try await client.mutation("identity:ensure_current_user")
         guard let row = profile.row else {
             throw AuthServiceError.noActiveSession
         }

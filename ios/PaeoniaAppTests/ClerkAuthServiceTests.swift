@@ -189,12 +189,16 @@ struct ClerkAuthServiceTests {
         let service = ClerkAuthService(
             gateway: gateway,
             sessionCache: FakeAuthSessionCache(session: cachedSession, accountID: "clerk-user"),
-            restoreTimeout: .milliseconds(200)
+            restoreTimeout: .seconds(30),
+            cachedRestoreTimeout: .milliseconds(200)
         )
+        let started = ContinuousClock.now
 
         let restoredSession = try await service.restoreSession()
 
         #expect(restoredSession == cachedSession)
+        // The saved profile shortens the wait instead of holding the launch screen.
+        #expect(ContinuousClock.now - started < .seconds(10))
     }
 
     @Test func restoreSessionDoesNotBringBackASessionSignedOutWhileTheProfileLoaded() async throws {

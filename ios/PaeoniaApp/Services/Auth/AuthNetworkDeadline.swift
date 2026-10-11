@@ -11,8 +11,12 @@ import Foundation
 nonisolated enum AuthNetworkDeadline {
     /// Clerk sign-in plus the first profile load.
     static let signIn: Duration = .seconds(30)
-    /// The profile load at launch. A timeout opens the app with the cached profile.
+    /// The profile load at launch when this phone has no saved profile, so
+    /// there is nothing to show until it loads.
     static let restore: Duration = .seconds(15)
+    /// The profile load at launch when a saved profile exists. A timeout opens
+    /// the app with it instead of holding the launch screen on a slow network.
+    static let cachedRestore: Duration = .seconds(2)
     /// Signing out a half-finished attempt. A leftover session is signed out
     /// again before the next attempt, so this never needs to wait long.
     static let cleanup: Duration = .seconds(5)

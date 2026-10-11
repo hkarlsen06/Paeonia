@@ -13,6 +13,7 @@ actor ClerkAuthService: AuthServicing {
     private let sessionCache: any AuthSessionCaching
     private let signInTimeout: Duration
     private let restoreTimeout: Duration
+    private let cachedRestoreTimeout: Duration
     #if DEBUG
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
@@ -27,11 +28,13 @@ actor ClerkAuthService: AuthServicing {
         providerAvatarLoader: (any ProviderAvatarImageLoading)? = nil,
         sessionCache: (any AuthSessionCaching)? = nil,
         signInTimeout: Duration = AuthNetworkDeadline.signIn,
-        restoreTimeout: Duration = AuthNetworkDeadline.restore
+        restoreTimeout: Duration = AuthNetworkDeadline.restore,
+        cachedRestoreTimeout: Duration = AuthNetworkDeadline.cachedRestore
     ) {
         self.gateway = gateway
         self.signInTimeout = signInTimeout
         self.restoreTimeout = restoreTimeout
+        self.cachedRestoreTimeout = cachedRestoreTimeout
         self.profilePhotoCache = profilePhotoCache ?? FileProfilePhotoImageCache.live()
         self.profilePhotoInvalidator = profilePhotoInvalidator
             ?? ProfilePhotoImageProviderFactory.cacheInvalidator
@@ -58,9 +61,13 @@ actor ClerkAuthService: AuthServicing {
         }
 
         do {
-            // A stalled load times out and opens the app with the cached profile below.
+            // A stalled load times out and opens the app with the cached profile
+            // below. With a cached profile to show, the launch waits much less.
+            let hasCachedSession = await sessionCache.load(accountID: remoteSession.accountID) != nil
             let gateway = gateway
-            let profile = try await AuthNetworkDeadline.run(within: restoreTimeout) {
+            let profile = try await AuthNetworkDeadline.run(
+                within: hasCachedSession ? cachedRestoreTimeout : restoreTimeout
+            ) {
                 try await gateway.loadProfile()
             }
             // A sign-out can finish while the profile loads. Saving the profile
