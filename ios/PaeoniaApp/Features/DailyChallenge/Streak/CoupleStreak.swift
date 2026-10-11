@@ -27,6 +27,13 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
     /// that case may the app predict that the user's just-finished challenge will
     /// advance the shared streak before the server refresh lands.
     var partnerContributedToday = false
+    /// True when a free freeze would cover a missed day of this streak. The server
+    /// gives each couple one every 30 days, for streaks of three days or more.
+    var freezeAvailable = false
+    /// When the next free freeze is ready, or `nil` when one is ready now.
+    var freezeReadyAt: Date?
+    /// True when the couple missed a day and a freeze is keeping the streak alive.
+    var freezeSavedStreak = false
 
     /// True while a broken streak can still be bought back. Recomputed from the
     /// deadline (not just the server flag) so the offer disappears the moment it
@@ -36,11 +43,14 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
     }
 
     /// The single surface a streak entry point should open. Broken streaks go
-    /// straight to the purchase offer; healthy or expired streaks remain
-    /// informative. Keeping this decision shared prevents a notification or
-    /// toolbar entry from inserting a duplicate detail screen before purchase.
+    /// straight to the purchase offer, a streak sitting on a milestone replays
+    /// its celebration, and other streaks open the informative sheet. Keeping this
+    /// decision shared prevents a notification or toolbar entry from inserting a
+    /// duplicate detail screen before purchase.
     var entryDestination: StreakEntryDestination {
-        isRestorable ? .restore : .detail
+        if isRestorable { return .restore }
+        if StreakMilestones.isMilestone(currentCount) { return .milestone(currentCount) }
+        return .detail
     }
 
     static let none = CoupleStreak(
@@ -53,9 +63,31 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
     )
 }
 
+/// The freeze line on the streak sheet.
+nonisolated enum StreakFreezeNote: Equatable, Sendable {
+    /// A freeze kept the streak alive after a missed day.
+    case savedStreak
+    /// A freeze is ready to cover the next missed day.
+    case ready
+    /// The last freeze was used. The next one is ready on this date.
+    case readyOn(Date)
+}
+
+extension CoupleStreak {
+    /// What the streak sheet says about the free freeze, or `nil` when there is
+    /// no live streak or no freeze to mention.
+    func freezeNote(now: Date = .now) -> StreakFreezeNote? {
+        guard currentCount > 0 else { return nil }
+        if freezeSavedStreak { return .savedStreak }
+        if let freezeReadyAt, freezeReadyAt > now { return .readyOn(freezeReadyAt) }
+        return freezeAvailable ? .ready : nil
+    }
+}
+
 nonisolated enum StreakEntryDestination: Equatable, Sendable {
     case detail
     case restore
+    case milestone(Int)
 }
 
 /// Pure logic for the number shown on the completion celebration.

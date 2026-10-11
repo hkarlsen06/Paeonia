@@ -13,6 +13,8 @@ struct MemoriesScreen: View {
 
     @State private var viewModel: MemoriesViewModel
     @State private var isCreating = false
+    /// iPad landscape: memories sit in a grid of cards instead of one column.
+    @State private var isWideLayout = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -98,20 +100,27 @@ struct MemoriesScreen: View {
     }
 
     /// Newest first, in month sections whose header stays pinned while you scroll, so a
-    /// long timeline always shows which month you're in.
+    /// long timeline always shows which month you're in. A wide iPad shows one grid of
+    /// cards instead.
     private var timeline: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: PaeoniaSpacing.space16, pinnedViews: [.sectionHeaders]) {
-                ForEach(months) { month in
-                    Section {
-                        ForEach(month.memories, id: \.snapshot.memoryID) { record in
-                            NavigationLink(value: record.snapshot.memoryID) {
-                                MemoryCardView(record: record)
-                            }
-                            .buttonStyle(.plain)
+            LazyVGrid(
+                columns: timelineColumns,
+                alignment: .leading,
+                spacing: PaeoniaSpacing.space16,
+                pinnedViews: [.sectionHeaders]
+            ) {
+                if isWideLayout {
+                    // Most months hold only a memory or two, so month sections would
+                    // leave most of each grid row empty. Every card shows its own date.
+                    memoryLinks(months.flatMap(\.memories))
+                } else {
+                    ForEach(months) { month in
+                        Section {
+                            memoryLinks(month.memories)
+                        } header: {
+                            monthHeader(month)
                         }
-                    } header: {
-                        monthHeader(month)
                     }
                 }
             }
@@ -119,10 +128,32 @@ struct MemoriesScreen: View {
             // rather than reflowing the feed in a single frame.
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: memoryIDs)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            // The month headers carry their own top padding, and the wide grid has none.
+            .padding(.top, isWideLayout ? PaeoniaSpacing.space16 : 0)
             .padding(.bottom, PaeoniaSpacing.space32)
-            .paeoniaReadableWidth()
+            .paeoniaReadableWidth(
+                isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
+            )
         }
+        .paeoniaWideLayout($isWideLayout)
         .refreshable { await viewModel.refresh() }
+    }
+
+    private func memoryLinks(_ records: [MemoryRecord]) -> some View {
+        ForEach(records, id: \.snapshot.memoryID) { record in
+            NavigationLink(value: record.snapshot.memoryID) {
+                MemoryCardView(record: record)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var timelineColumns: [GridItem] {
+        if isWideLayout {
+            [GridItem(.adaptive(minimum: 340), spacing: PaeoniaSpacing.space16, alignment: .top)]
+        } else {
+            [GridItem(.flexible())]
+        }
     }
 
     private func monthHeader(_ month: MemoryTimelineMonth) -> some View {

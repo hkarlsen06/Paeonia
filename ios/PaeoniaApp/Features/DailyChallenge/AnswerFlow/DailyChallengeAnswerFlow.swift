@@ -20,12 +20,16 @@ struct DailyChallengeAnswerFlow: View {
     /// Opens the Questions tab so the user can pick up optional partner
     /// answers after their required streak questions are finished.
     var onOpenPartnerQuestions: () -> Void = {}
+    /// Claims the streak milestone the finished day reaches, if this phone has not
+    /// celebrated it yet. See `StreakMilestoneStore.claim`.
+    var claimStreakMilestone: @MainActor (Int) -> Int? = { _ in nil }
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var index = 0
     @State private var didSetInitialIndex = false
     @State private var didCelebrate = false
+    @State private var celebratedMilestone: Int?
     /// The in-place streak-restore purchase driver, created only when a slipped
     /// streak's completion appears. Drives the completion screen's buy button and the
     /// revive-and-refill celebration once a purchase lands.
@@ -126,6 +130,7 @@ struct DailyChallengeAnswerFlow: View {
                         restoreViewModel: restoreViewModel,
                         hasPartnerQuestionsToAnswer: hasPartnerQuestionsToAnswer,
                         onOpenPartnerQuestions: onOpenPartnerQuestions,
+                        milestone: celebratedMilestone,
                         onDone: dismiss
                     )
                     .transition(completionTransition)
@@ -646,6 +651,9 @@ struct DailyChallengeAnswerFlow: View {
         // build the purchase driver before the completion screen renders.
         if restoreViewModel == nil, viewModel.streak.isRestorable {
             restoreViewModel = makeStreakRestoreViewModel()
+        }
+        if !viewModel.streak.isRestorable {
+            celebratedMilestone = claimStreakMilestone(currentStreak)
         }
         withAnimation(celebrateAnimation) { didCelebrate = true }
     }

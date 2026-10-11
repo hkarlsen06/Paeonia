@@ -2078,8 +2078,11 @@ Rules:
 - Calculate it as the later-occurring protective midnight across both partners: for each partner's current timezone, take midnight after the next complete local calendar day following the latest qualifying activity, then use the later absolute instant.
 - Recalculate a live streak deadline from the immutable activity timestamp whenever either partner's timezone changes and before streak reads or reminders. Prefer the timezone on that partner's most recently seen active device, with the profile timezone as fallback. Travel changes the deadline; the streak is not frozen to the timezone that was active when the action happened.
 - Send a streak reminder only to an active partner who has not yet contributed during the current couple day. If neither has contributed, each may receive their own reminder; never remind someone whose part is already complete.
+- Each partner gets at most two reminders per streak day: one at 19:00 in their own timezone on the last day before the deadline (the latest 19:00 at least two hours before it), and one in the last hour before the deadline.
 - Use local calendar-date arithmetic before converting the midnight back to `timestamptz`. Do not add a fixed 24-hour interval to a midnight across daylight-saving transitions.
-- A paid streak restore stays available for 24 hours after the break point.
+- A streak shorter than 3 days restarts when it breaks. It gets no freeze and no restore offer.
+- Each couple gets one free streak freeze every 30 days. When the deadline passes on a streak of 3 days or more and a freeze is ready, the freeze moves the deadline one local day later. The frozen day does not add to the count. A freeze covers one missed day only. `streak_states.freeze_used_at` stores the deadline it covered. If an offline phone later shows the day made it in time, the freeze is given back.
+- A paid streak restore stays available for 24 hours after the break point, and only when no freeze covered it.
 - Include a graceful restore button.
 - Do not add manipulative purchase-to-restore behavior in MVP.
 - `couple_activity_events` should be append-only enough to audit streak behavior.

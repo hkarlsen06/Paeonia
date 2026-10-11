@@ -13031,6 +13031,546 @@
         }
       },
       "comment" : "VoiceOver label for the save button once the photo has been saved."
+    },
+    "streakDetail.freeze.ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have a free streak freeze. If a day goes by without both of you, it keeps the flame going."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere har en gratis frysedag. Hvis en dag går uten at dere begge har vært med, holder den flammen i live."
+          }
+        }
+      },
+      "comment" : "Streak sheet note: the couple has a free streak freeze that covers one missed day"
+    },
+    "streakDetail.freeze.saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You missed a day, so your free streak freeze kept the flame going. Do one small thing together today."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere gikk glipp av en dag, så frysedagen holdt flammen i live. Gjør én liten ting sammen i dag."
+          }
+        }
+      },
+      "comment" : "Streak sheet note: the couple missed a day and their free streak freeze kept the streak alive"
+    },
+    "streakDetail.freeze.readyOn" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your next free streak freeze is ready on %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste gratis frysedag er klar %@."
+          }
+        }
+      },
+      "comment" : "Streak sheet note: the free streak freeze was used. %@ is the date the next one is ready, such as 10 November."
+    },
+    "streakMilestone.eyebrow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New milestone"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny milepæl"
+          }
+        }
+      },
+      "comment" : "Small label above the title on the streak milestone celebration"
+    },
+    "streakMilestone.keepGoingButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep it going"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett sånn"
+          }
+        }
+      },
+      "comment" : "Button that closes the streak milestone celebration"
+    },
+    "streakMilestone.message.threeDays" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've both shown up every day. That's how it begins."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere har begge vært med hver dag. Det er sånn det begynner."
+          }
+        }
+      },
+      "comment" : "Streak milestone celebration message at 3 days in a row, under the title. Do not repeat the number of days, which the flame shows."
+    },
+    "streakMilestone.message.oneWeek" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've been there for each other every single day."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere har vært der for hverandre hver eneste dag."
+          }
+        }
+      },
+      "comment" : "Streak milestone celebration message at 7 days in a row, under the title. Do not repeat the number of days, which the flame shows."
+    },
+    "streakMilestone.message.twoWeeks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One small thing at a time, and it adds up."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Én liten ting om gangen, og det blir mye."
+          }
+        }
+      },
+      "comment" : "Streak milestone celebration message at 14 days in a row, under the title. Do not repeat the number of days, which the flame shows."
+    },
+    "streakMilestone.message.oneMonth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day after day. This is a habit now."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dag etter dag. Nå er det en vane."
+          }
+        }
+      },
+      "comment" : "Streak milestone celebration message at 30 days in a row, under the title. Do not repeat the number of days, which the flame shows."
+    },
+    "streakMilestone.message.fiftyDays" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Look how far you've come together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se hvor langt dere har kommet sammen."
+          }
+        }
+      },
+      "comment" : "Streak milestone celebration message at 50 days in a row, under the title. Do not repeat the number of days, which the flame shows."
+    },
+    "streakMilestone.message.hundredDays" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All those small things add up."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle de små tingene blir mye til sammen."
+          }
+        }
+      },
+      "comment" : "Streak milestone celebration message at 100 days in a row, under the title. Do not repeat the number of days, which the flame shows."
+    },
+    "streakMilestone.message.twoHundredDays" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You keep choosing each other."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere fortsetter å velge hverandre."
+          }
+        }
+      },
+      "comment" : "Streak milestone celebration message at 200 days in a row, under the title. Do not repeat the number of days, which the flame shows."
+    },
+    "streakMilestone.message.oneYear" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every single day. That's worth celebrating."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hver eneste dag. Det er verdt å feire."
+          }
+        }
+      },
+      "comment" : "Streak milestone celebration message at 365 days in a row, under the title. Do not repeat the number of days, which the flame shows."
+    },
+    "streakMilestone.message.fiveHundredDays" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That's a lot of small moments, all shared."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det er mange små øyeblikk, og dere har delt alle."
+          }
+        }
+      },
+      "comment" : "Streak milestone celebration message at 500 days in a row, under the title. Do not repeat the number of days, which the flame shows."
+    },
+    "streakMilestone.message.anotherYear" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another whole year of showing up for each other."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enda et helt år der dere har vært der for hverandre."
+          }
+        }
+      },
+      "comment" : "Streak milestone celebration message at each full year after the first, such as 730 days in a row, under the title. Do not repeat the number of days, which the flame shows."
+    },
+    "streakMilestone.pillAccessibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, new milestone"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, ny milepæl"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the streak pill on a milestone day. %@ is the streak, such as '7 day streak'."
+    },
+    "streakDetail.nextMilestone.label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next milestone"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste milepæl"
+          }
+        }
+      },
+      "comment" : "Label on the streak sheet before the next milestone"
+    },
+    "streakDetail.nextMilestone.days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld days"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dager"
+          }
+        }
+      },
+      "comment" : "The next streak milestone on the streak sheet. %lld is its number of days, such as 14."
+    },
+    "streakDetail.milestone.reachedAccessibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld days, reached"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dager, nådd"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for a reached milestone badge on the streak sheet. %lld is its number of days."
+    },
+    "streakDetail.milestone.notReachedAccessibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld days, not reached yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dager, ikke nådd ennå"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for a milestone badge not reached yet on the streak sheet. %lld is its number of days."
+    },
+    "streakMilestone.title.threeDays" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A good start"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En god start"
+          }
+        }
+      },
+      "comment" : "Title of the streak milestone celebration at 3 days in a row. The flame above it already shows the number of days, so this names the milestone in words."
+    },
+    "streakMilestone.title.oneWeek" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A whole week"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En hel uke"
+          }
+        }
+      },
+      "comment" : "Title of the streak milestone celebration at 7 days in a row. The flame above it already shows the number of days, so this names the milestone in words."
+    },
+    "streakMilestone.title.twoWeeks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two weeks together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To uker sammen"
+          }
+        }
+      },
+      "comment" : "Title of the streak milestone celebration at 14 days in a row. The flame above it already shows the number of days, so this names the milestone in words."
+    },
+    "streakMilestone.title.oneMonth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A whole month"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En hel måned"
+          }
+        }
+      },
+      "comment" : "Title of the streak milestone celebration at 30 days in a row. The flame above it already shows the number of days, so this names the milestone in words."
+    },
+    "streakMilestone.title.fiftyDays" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Halfway to 100"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Halvveis til 100"
+          }
+        }
+      },
+      "comment" : "Title of the streak milestone celebration at 50 days in a row. The flame above it already shows the number of days, so this names the milestone in words."
+    },
+    "streakMilestone.title.hundredDays" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Triple digits"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tre sifre"
+          }
+        }
+      },
+      "comment" : "Title of the streak milestone celebration at 100 days in a row. The flame above it already shows the number of days, so this names the milestone in words."
+    },
+    "streakMilestone.title.twoHundredDays" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Still going strong"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsatt like sterke"
+          }
+        }
+      },
+      "comment" : "Title of the streak milestone celebration at 200 days in a row. The flame above it already shows the number of days, so this names the milestone in words."
+    },
+    "streakMilestone.title.oneYear" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A whole year"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et helt år"
+          }
+        }
+      },
+      "comment" : "Title of the streak milestone celebration at 365 days in a row. The flame above it already shows the number of days, so this names the milestone in words."
+    },
+    "streakMilestone.title.fiveHundredDays" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "So many days together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Så mange dager sammen"
+          }
+        }
+      },
+      "comment" : "Title of the streak milestone celebration at 500 days in a row. The flame above it already shows the number of days, so this names the milestone in words."
+    },
+    "streakMilestone.title.anotherYear" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another year"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enda et år"
+          }
+        }
+      },
+      "comment" : "Title of the streak milestone celebration at each full year after the first, such as 730 days in a row. The flame above it already shows the number of days, so this names the milestone in words."
     }
   },
   "version" : "1.0"

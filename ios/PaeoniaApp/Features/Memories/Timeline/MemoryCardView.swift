@@ -39,6 +39,8 @@ struct MemoryCardView: View {
                     savedHint
                 }
             }
+            // In the iPad grid, cards in one row grow to the tallest card's height.
+            .frame(maxHeight: .infinity, alignment: .top)
         }
         .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
         .accessibilityElement(children: .combine)

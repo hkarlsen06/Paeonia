@@ -27,6 +27,11 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    /// Tapping the button that leaves a celebration, such as a streak milestone.
+    static func celebrationContinued() {
+        impact(.medium, intensity: 0.85)
+    }
+
     static func pairingCelebrationDismissed() {
         impact(.medium, intensity: 0.85)
         notify(.success)

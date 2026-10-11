@@ -15,6 +15,7 @@ import {
   resolveStreakDeadlineAt,
 } from "./streaks";
 import { getOrCreateCoupleDayAt } from "./coupleDays";
+import { eveningReminderAt } from "./streakDeadlines";
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -222,7 +223,16 @@ describe("mutual participation", () => {
     });
   });
 
-  test("a gap longer than the deadline restarts at one and offers a restore", async () => {
+  /** Qualifies 2026-10-09 and makes it a three-day streak. The deadline is 2026-10-11T00:00Z. */
+  async function threeDayStreak(ctx: Awaited<ReturnType<typeof setup>>, freezeUsedAt?: string) {
+    const { t, couple, yesterday, activity } = ctx;
+    await activity(couple.first.userId, yesterday, "memory_created", "2026-10-09T10:00:00.000Z", "a1");
+    await activity(couple.second.userId, yesterday, "memory_created", "2026-10-09T11:00:00.000Z", "b1");
+    const state = await streakState(t, couple.coupleId);
+    await t.run((db) => db.db.patch(state!._id, { current_count: 3, longest_count: 3, freeze_used_at: freezeUsedAt }));
+  }
+
+  test("a gap longer than the deadline restarts a short streak at one without a restore offer", async () => {
     const { t, couple, yesterday, activity } = await setup();
     await activity(couple.first.userId, yesterday, "memory_created", "2026-10-09T10:00:00.000Z", "a1");
     await activity(couple.second.userId, yesterday, "memory_created", "2026-10-09T11:00:00.000Z", "b1");
@@ -230,13 +240,66 @@ describe("mutual participation", () => {
     const late = await insertDay(t, couple.coupleId, "2026-10-12", "2026-10-12T00:00:00.000Z", "2026-10-13T00:00:00.000Z");
     await activity(couple.first.userId, late, "memory_created", "2026-10-12T09:00:00.000Z", "a3");
     await activity(couple.second.userId, late, "memory_created", "2026-10-12T10:00:00.000Z", "b3");
+    const state = await streakState(t, couple.coupleId);
+    expect(state).toMatchObject({ current_count: 1, longest_count: 1, restorable_count: 0, restore_available: false });
+    expect(state!.restore_deadline).toBeUndefined();
+  });
+
+  test("a three-day streak without a freeze restarts at one and offers a restore", async () => {
+    const ctx = await setup();
+    const { t, couple, activity } = ctx;
+    await threeDayStreak(ctx, "2026-10-01T00:00:00.000Z");
+    const late = await insertDay(t, couple.coupleId, "2026-10-11", "2026-10-11T00:00:00.000Z", "2026-10-12T00:00:00.000Z");
+    await activity(couple.first.userId, late, "memory_created", "2026-10-11T09:00:00.000Z", "a3");
+    await activity(couple.second.userId, late, "memory_created", "2026-10-11T10:00:00.000Z", "b3");
     expect(await streakState(t, couple.coupleId)).toMatchObject({
       current_count: 1,
-      longest_count: 1,
-      restorable_count: 1,
+      longest_count: 3,
+      restorable_count: 3,
       restorable_through_date: "2026-10-09",
       restore_deadline: "2026-10-12T00:00:00.000Z",
+      freeze_used_at: "2026-10-01T00:00:00.000Z",
     });
+  });
+
+  test("a ready freeze carries the streak over one missed day, then cools down", async () => {
+    const ctx = await setup();
+    const { t, couple, activity } = ctx;
+    await threeDayStreak(ctx);
+    // 2026-10-10 is missed. 2026-10-11 qualifies before the frozen deadline 2026-10-12T00:00Z.
+    const afterGap = await insertDay(t, couple.coupleId, "2026-10-11", "2026-10-11T00:00:00.000Z", "2026-10-12T00:00:00.000Z");
+    await activity(couple.first.userId, afterGap, "memory_created", "2026-10-11T09:00:00.000Z", "a3");
+    await activity(couple.second.userId, afterGap, "memory_created", "2026-10-11T10:00:00.000Z", "b3");
+    expect(await streakState(t, couple.coupleId)).toMatchObject({
+      current_count: 4,
+      restorable_count: 0,
+      freeze_used_at: "2026-10-11T00:00:00.000Z",
+      next_activity_deadline_at: "2026-10-13T00:00:00.000Z",
+    });
+
+    // Two missed days later the freeze is still cooling down, so the streak breaks.
+    const late = await insertDay(t, couple.coupleId, "2026-10-14", "2026-10-14T00:00:00.000Z", "2026-10-15T00:00:00.000Z");
+    await activity(couple.first.userId, late, "memory_created", "2026-10-14T09:00:00.000Z", "a4");
+    await activity(couple.second.userId, late, "memory_created", "2026-10-14T10:00:00.000Z", "b4");
+    expect(await streakState(t, couple.coupleId)).toMatchObject({ current_count: 1, restorable_count: 4 });
+  });
+
+  test("a day that arrives late from an offline phone gives the freeze back", async () => {
+    const ctx = await setup();
+    const { t, couple, today, activity } = ctx;
+    await threeDayStreak(ctx);
+    vi.setSystemTime(new Date("2026-10-11T01:00:00.000Z"));
+    await t.run((db) => detectStreakBreak(db, couple.coupleId));
+    expect(await streakState(t, couple.coupleId)).toMatchObject({
+      freeze_used_at: "2026-10-11T00:00:00.000Z",
+      next_activity_deadline_at: "2026-10-12T00:00:00.000Z",
+    });
+    // Both partners did something on 2026-10-10 in time. Those events only sync now.
+    await activity(couple.first.userId, today, "memory_created", "2026-10-10T09:00:00.000Z", "a2");
+    await activity(couple.second.userId, today, "memory_created", "2026-10-10T10:00:00.000Z", "b2");
+    const state = await streakState(t, couple.coupleId);
+    expect(state).toMatchObject({ current_count: 4, next_activity_deadline_at: "2026-10-12T00:00:00.000Z" });
+    expect(state!.freeze_used_at).toBeUndefined();
   });
 
   test("dedupe keys make repeats a no-op that returns the first event id", async () => {
@@ -453,10 +516,46 @@ describe("streak read model", () => {
       const event = await ctx.db.query("couple_activity_events").first();
       // Deadline = 2026-10-10T00:00Z (event on 2026-10-08, +2 local days), restore until 2026-10-11T00:00Z.
       await ctx.db.patch(event!._id, { occurred_at: "2026-10-08T11:00:00.000Z" });
+      const row = await ctx.db.query("streak_states").first();
+      await ctx.db.patch(row!._id, { freeze_used_at: "2026-10-01T00:00:00.000Z" });
     });
     const broken = await t.run((ctx) => getCoupleStreakForCouple(ctx, couple.coupleId));
     expect(broken).toMatchObject({ current_count: 0, restorable_count: 5, restore_available: true });
     expect(broken.restore_deadline).toBe("2026-10-11T00:00:00.000Z");
+  });
+
+  test("a ready freeze keeps a recently missed streak alive and is stored once", async () => {
+    const { t, couple } = await setup();
+    await t.run(async (ctx) => {
+      const event = await ctx.db.query("couple_activity_events").first();
+      await ctx.db.patch(event!._id, { occurred_at: "2026-10-08T11:00:00.000Z" });
+    });
+    const streak = await t.run((ctx) => getCoupleStreakForCouple(ctx, couple.coupleId));
+    expect(streak).toMatchObject({
+      current_count: 5,
+      restorable_count: 0,
+      restore_available: false,
+      freeze_available: false,
+      freeze_ready_at: "2026-11-09T00:00:00.000Z",
+      freeze_saved_streak: true,
+    });
+    expect(await streakState(t, couple.coupleId)).toMatchObject({
+      freeze_used_at: "2026-10-10T00:00:00.000Z",
+      next_activity_deadline_at: "2026-10-11T00:00:00.000Z",
+    });
+  });
+
+  test("a short streak that misses its deadline reads and stores zero", async () => {
+    const { t, couple } = await setup();
+    await t.run(async (ctx) => {
+      const event = await ctx.db.query("couple_activity_events").first();
+      await ctx.db.patch(event!._id, { occurred_at: "2026-10-08T11:00:00.000Z" });
+      const row = await ctx.db.query("streak_states").first();
+      await ctx.db.patch(row!._id, { current_count: 2 });
+    });
+    const streak = await t.run((ctx) => getCoupleStreakForCouple(ctx, couple.coupleId));
+    expect(streak).toMatchObject({ current_count: 0, restorable_count: 0, restore_available: false, freeze_saved_streak: false });
+    expect(await streakState(t, couple.coupleId)).toMatchObject({ current_count: 0, longest_count: 8 });
   });
 
   test("new activity after a break exposes the restarted streak despite an old restore snapshot", async () => {
@@ -487,5 +586,18 @@ describe("streak read model", () => {
     const { t, couple } = await setup();
     await t.run((ctx) => detectStreakBreak(ctx, couple.coupleId));
     expect(await streakState(t, couple.coupleId)).toMatchObject({ restorable_count: 0, current_count: 5 });
+  });
+});
+
+describe("evening streak reminder time", () => {
+  test.each([
+    ["the same zone as the deadline", "2026-10-11T22:00:00.000Z", "Europe/Oslo", "2026-10-11T17:00:00.000Z"],
+    // New York midnight is 06:00 in Oslo, so the Oslo partner hears about it the evening before.
+    ["a partner whose morning holds the deadline", "2026-10-12T04:00:00.000Z", "Europe/Oslo", "2026-10-11T17:00:00.000Z"],
+    ["the partner whose midnight is the deadline", "2026-10-12T04:00:00.000Z", "America/New_York", "2026-10-11T23:00:00.000Z"],
+    // A 20:30 deadline leaves less than two hours after 19:00, so the reminder moves to the evening before.
+    ["a deadline less than two hours after 19:00", "2026-10-11T18:30:00.000Z", "Europe/Oslo", "2026-10-10T17:00:00.000Z"],
+  ])("%s", (_name, deadline, timeZone, expected) => {
+    expect(eveningReminderAt(deadline, timeZone)).toBe(expected);
   });
 });

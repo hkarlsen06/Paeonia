@@ -26,6 +26,8 @@ crons.interval("cleanup-report-snapshots", { hours: 1 }, internal.moderation.cle
 // internal.enqueue_due_streak_reminders. pg_cron ran it inside the 30 second push job; reminders are
 // queued up to one hour before a streak deadline and deduped per streak day, so five minutes is enough.
 crons.interval("enqueue-due-streak-reminders", { minutes: 5 }, internal.streaks.enqueue_due_streak_reminders, {});
+// Evening reminders go out within the hour after 19:00 in each partner's zone, deduped per streak day.
+crons.interval("enqueue-evening-streak-reminders", { minutes: 5 }, internal.streaks.enqueue_evening_streak_reminders, {});
 
 // pg_cron 'queue-subscription-trial-reminders' (internal.queue_subscription_trial_reminders), minute 15 of every hour.
 crons.cron("queue-subscription-trial-reminders", "15 * * * *", internal.storekit.queue_subscription_trial_reminders, {});

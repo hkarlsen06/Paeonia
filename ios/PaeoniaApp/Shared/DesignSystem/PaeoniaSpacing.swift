@@ -33,6 +33,12 @@ enum PaeoniaSpacing {
     /// Narrower column for the welcome, sign-in, onboarding, paywall, and pairing
     /// screens, where a short stack of copy and buttons should stay phone-sized.
     static let focusedContentWidth: CGFloat = 430
+    /// Narrowest screen that gets the wide iPad layout. Every iPad is at least this
+    /// wide in landscape and narrower in portrait, so portrait and split-screen
+    /// iPads keep the single column.
+    static let wideLayoutMinWidth: CGFloat = 1_100
+    /// Widest the content grows in the wide iPad layout, padding included.
+    static let wideContentWidth: CGFloat = 1_240
 }
 
 extension View {
@@ -45,5 +51,17 @@ extension View {
     ) -> some View {
         frame(maxWidth: maxWidth, alignment: alignment)
             .frame(maxWidth: .infinity)
+    }
+
+    /// Sets `isWide` while this view is on an iPad and at least
+    /// `PaeoniaSpacing.wideLayoutMinWidth` wide, which in practice means landscape.
+    /// Put it on a view that fills the screen width, such as the scroll view.
+    func paeoniaWideLayout(_ isWide: Binding<Bool>) -> some View {
+        let isPad = UIDevice.current.userInterfaceIdiom == .pad
+        return onGeometryChange(for: Bool.self) { proxy in
+            isPad && proxy.size.width >= PaeoniaSpacing.wideLayoutMinWidth
+        } action: { newValue in
+            isWide.wrappedValue = newValue
+        }
     }
 }

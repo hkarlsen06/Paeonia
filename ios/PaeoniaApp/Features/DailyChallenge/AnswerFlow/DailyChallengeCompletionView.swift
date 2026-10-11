@@ -20,6 +20,9 @@ struct DailyChallengeCompletionView: View {
     var restoreViewModel: StreakRestoreViewModel?
     var hasPartnerQuestionsToAnswer = false
     var onOpenPartnerQuestions: () -> Void = {}
+    /// The streak milestone this finish reaches, when this phone has not celebrated
+    /// it yet. The screen then shows the milestone moment instead of the usual copy.
+    var milestone: Int?
     let onDone: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -62,7 +65,15 @@ struct DailyChallengeCompletionView: View {
                 .transition(.opacity)
 
             VStack(spacing: PaeoniaSpacing.space8) {
-                Text(titleText)
+                if showsMilestone(now: now) {
+                    Text(.streakMilestoneEyebrow)
+                        .font(PaeoniaTypography.caption.weight(.bold))
+                        .textCase(.uppercase)
+                        .tracking(1.4)
+                        .foregroundStyle(Color.paeoniaInkGold)
+                }
+
+                Text(titleText(now: now))
                     .font(PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
 
@@ -102,13 +113,22 @@ struct DailyChallengeCompletionView: View {
         }
     }
 
-    private var titleText: LocalizedStringResource {
-        isRestored ? .streakRestoreSuccessTitle : .dailyChallengeFlowAllDoneTitle
+    /// A restore, or a restore still on offer, has its own copy, so the milestone
+    /// moment shows only on an ordinary finish.
+    private func showsMilestone(now: Date) -> Bool {
+        milestone != nil && !isRestored && !isRestorable(now: now)
+    }
+
+    private func titleText(now: Date) -> LocalizedStringResource {
+        if isRestored { return .streakRestoreSuccessTitle }
+        if let milestone, showsMilestone(now: now) { return StreakMilestoneCopy.title(days: milestone) }
+        return .dailyChallengeFlowAllDoneTitle
     }
 
     private func messageText(now: Date) -> LocalizedStringResource {
         if isRestored { return .streakRestoreSuccessMessage }
         if isRestorable(now: now) { return .streakRestoreMessage }
+        if let milestone, showsMilestone(now: now) { return StreakMilestoneCopy.message(days: milestone) }
         return .dailyChallengeFlowAllDoneMessage(partnerName)
     }
 
@@ -271,6 +291,13 @@ private struct StreakDetailReveal: ViewModifier {
 #if DEBUG
 #Preview("Completion") {
     DailyChallengeCompletionView(streak: 7, partnerName: "Oda", restorableCount: nil, onDone: {})
+        .background(.paeoniaBackgroundPrimary)
+        .environment(PaeoniaBannerCenter())
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Completion · milestone") {
+    DailyChallengeCompletionView(streak: 7, partnerName: "Oda", restorableCount: nil, milestone: 7, onDone: {})
         .background(.paeoniaBackgroundPrimary)
         .environment(PaeoniaBannerCenter())
         .preferredColorScheme(.dark)

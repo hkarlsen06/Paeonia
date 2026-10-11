@@ -138,6 +138,9 @@ describe("start_daily_challenge", () => {
       restore_available: false,
       restorable_count: 0,
       restore_deadline: null,
+      freeze_available: false,
+      freeze_ready_at: null,
+      freeze_saved_streak: false,
       current_user_contributed_today: false,
       partner_contributed_today: false,
     });
@@ -759,6 +762,9 @@ describe("completing the day", () => {
       restore_available: false,
       restorable_count: 0,
       restore_deadline: null,
+      freeze_available: false,
+      freeze_ready_at: null,
+      freeze_saved_streak: false,
       current_user_contributed_today: true,
       partner_contributed_today: true,
     });

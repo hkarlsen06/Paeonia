@@ -1,6 +1,39 @@
+import type { Doc } from "../_generated/dataModel";
 import type { ReaderCtx } from "./db";
 import { fail } from "./errors";
-import { isValidTimeZone, localMidnightAfter } from "./time";
+import {
+  addDaysToDate,
+  addDaysToInstant,
+  addHours,
+  isValidTimeZone,
+  localDateOf,
+  localMidnightAfter,
+  zonedLocalToUtcMs,
+} from "./time";
+
+/** Streaks shorter than this restart when they break: no freeze and no restore offer. */
+export const MIN_PROTECTED_STREAK = 3;
+/** Days between the couple's free streak freezes. */
+export const FREEZE_COOLDOWN_DAYS = 30;
+/** Local hour of the evening streak reminder, in the partner's own zone. */
+const EVENING_REMINDER_HOUR = 19;
+/** The evening reminder comes at least this long before the deadline, ahead of the last-hour reminder. */
+export const EVENING_REMINDER_LEAD_HOURS = 2;
+
+/**
+ * When to send one partner the evening streak reminder: the latest 19:00 in their
+ * zone that is at least two hours before the deadline. When the deadline falls in
+ * the partner's early morning, that is the evening before, not the next evening.
+ */
+export function eveningReminderAt(deadline: string, timeZone: string): string {
+  const latest = addHours(deadline, -EVENING_REMINDER_LEAD_HOURS);
+  const date = localDateOf(latest, timeZone);
+  const sameDay = new Date(zonedLocalToUtcMs(date, timeZone, EVENING_REMINDER_HOUR)).toISOString();
+  if (sameDay <= latest) {
+    return sameDay;
+  }
+  return new Date(zonedLocalToUtcMs(addDaysToDate(date, -1), timeZone, EVENING_REMINDER_HOUR)).toISOString();
+}
 
 /**
  * The zone that protects one member's streak: the newest active device with a
@@ -61,6 +94,30 @@ export async function resolveStreakDeadlineAt(
     }
   }
   return deadline as string;
+}
+
+/** When the couple's next free freeze is ready, or null when one is ready now. */
+export function freezeReadyAt(state: Pick<Doc<"streak_states">, "freeze_used_at">): string | null {
+  return state.freeze_used_at === undefined ? null : addDaysToInstant(state.freeze_used_at, FREEZE_COOLDOWN_DAYS);
+}
+
+/** True when a free freeze is ready at `at`. */
+export function freezeReadyBy(state: Pick<Doc<"streak_states">, "freeze_used_at">, at: string): boolean {
+  const readyAt = freezeReadyAt(state);
+  return readyAt === null || readyAt <= at;
+}
+
+/**
+ * True when the stored freeze covers the missed day after the streak last qualified at `qualifiedAt`.
+ * A freeze is stamped with the deadline it covered, which is always after the qualifying moment.
+ */
+export function freezeCoversGap(state: Pick<Doc<"streak_states">, "freeze_used_at">, qualifiedAt: string): boolean {
+  return state.freeze_used_at !== undefined && state.freeze_used_at > qualifiedAt;
+}
+
+/** The deadline after a freeze adds one day: the next local midnight in each partner's zone. */
+export function frozenDeadlineAt(ctx: ReaderCtx, coupleId: string, deadline: string): Promise<string> {
+  return resolveStreakDeadlineAt(ctx, coupleId, deadline, 1);
 }
 
 /** Port of `internal.resolve_next_activity_deadline_at`. */

@@ -26,6 +26,13 @@ struct PairedHomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    /// iPad landscape: the map and question cards on the left, the milestone and
+    /// drawing tiles stacked in a column on the right.
+    @State private var isWideLayout = false
+
+    /// Width of the right-hand tile column in the wide layout. At this width the two
+    /// stacked square tiles end close to where the left column's cards end.
+    private static let wideTileColumnWidth: CGFloat = 300
 
     init(
         currentUserID: UUID? = nil,
@@ -77,36 +84,25 @@ struct PairedHomeView: View {
 
     var body: some View {
         ScrollView {
-            // Matches the horizontal gap inside the milestone/drawing tile row so
-            // the card grid reads as one consistent grid.
-            VStack(spacing: PaeoniaSpacing.space16) {
-                CoupleMapCard(
-                    currentName: currentName,
-                    currentProfilePhotoAssetID: currentProfilePhotoAssetID,
-                    partnerName: partnerName,
-                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                    state: locationMapState,
-                    onPromptCurrentLocation: onPromptCurrentLocation
-                )
-                if !unreadChats.isEmpty {
-                    HomeUnreadChatsCard(
-                        chats: unreadChats,
-                        partnerName: partnerName,
-                        partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                        onOpenChat: onOpenChat
-                    )
-                    .transition(.opacity)
-                }
-                dailyPromptCard
+            // One layout for phone and wide iPad keeps the cards' identity, so turning
+            // the iPad doesn't reset them or close the milestone sheet. The spacing
+            // matches the gap inside the milestone/drawing tile row so the cards read
+            // as one grid.
+            cardsLayout {
+                mainColumn
                 milestoneAndWidget
+                    .frame(width: isWideLayout ? Self.wideTileColumnWidth : nil)
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space16)
-            .paeoniaReadableWidth()
+            .paeoniaReadableWidth(
+                isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
+            )
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
         }
+        .paeoniaWideLayout($isWideLayout)
         .scrollIndicators(.hidden)
         .refreshable {
             await onRefresh()
@@ -159,6 +155,29 @@ struct PairedHomeView: View {
         }
     }
 
+    private var mainColumn: some View {
+        VStack(spacing: PaeoniaSpacing.space16) {
+            CoupleMapCard(
+                currentName: currentName,
+                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                partnerName: partnerName,
+                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                state: locationMapState,
+                onPromptCurrentLocation: onPromptCurrentLocation
+            )
+            if !unreadChats.isEmpty {
+                HomeUnreadChatsCard(
+                    chats: unreadChats,
+                    partnerName: partnerName,
+                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                    onOpenChat: onOpenChat
+                )
+                .transition(.opacity)
+            }
+            dailyPromptCard
+        }
+    }
+
     private var dailyPromptCard: some View {
         DailyPromptCard(
             state: dailyChallengeCardState,
@@ -169,10 +188,16 @@ struct PairedHomeView: View {
         .zoomSource(DailyFlowZoom.home, in: zoomNamespace)
     }
 
+    private var cardsLayout: AnyLayout {
+        isWideLayout
+            ? AnyLayout(HStackLayout(alignment: .top, spacing: PaeoniaSpacing.space16))
+            : AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
+    }
+
     private var milestoneAndWidget: some View {
         // One layout keeps the cards' identity, so a text size change doesn't
         // reset them or close the milestone sheet.
-        let layout = dynamicTypeSize.isAccessibilitySize
+        let layout = dynamicTypeSize.isAccessibilitySize || isWideLayout
             ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
             : AnyLayout(HStackLayout(alignment: .top, spacing: PaeoniaSpacing.space16))
         return layout {

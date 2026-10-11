@@ -1175,6 +1175,8 @@ export default defineSchema({
     restore_deadline: optTs,
     restored_at: optTs,
     last_restore_transaction_id: optString,
+    // The deadline the couple's last free freeze covered. A new freeze is ready FREEZE_COOLDOWN_DAYS later.
+    freeze_used_at: optTs,
   })
     .index("by_couple_id", ["couple_id"])
     .index("by_last_qualified_couple_day_id", ["last_qualified_couple_day_id"])

@@ -106,6 +106,25 @@ struct CoupleStreakTests {
 
         #expect(!row.currentUserContributedToday)
         #expect(!row.partnerContributedToday)
+        #expect(!row.freezeAvailable)
+        #expect(row.freezeReadyAt == nil)
+        #expect(!row.freezeSavedStreak)
+    }
+
+    @Test func decodesStreakFreezeFields() throws {
+        let data = Data(
+            """
+            {"current_count":6,"longest_count":8,"last_qualified_date":"2026-10-10",
+            "restore_available":false,"restorable_count":0,"restore_deadline":null,
+            "freeze_available":false,"freeze_ready_at":"2026-11-10T22:00:00.000Z","freeze_saved_streak":true}
+            """.utf8
+        )
+
+        let streak = try PaeoniaConvexClient.decoder.decode(CoupleStreakRow.self, from: data).streak
+
+        #expect(!streak.freezeAvailable)
+        #expect(streak.freezeReadyAt == Date(timeIntervalSince1970: 1_794_348_000))
+        #expect(streak.freezeSavedStreak)
     }
 
     // MARK: - Restore eligibility
@@ -269,5 +288,56 @@ struct CoupleStreakTests {
             restorableCount: restorableCount,
             restoreDeadline: deadline
         )
+    }
+}
+
+/// Covers which freeze line the streak sheet shows.
+struct StreakFreezeNoteTests {
+    private func freezeStreak(
+        currentCount: Int = 6,
+        freezeAvailable: Bool = false,
+        freezeReadyAt: Date? = nil,
+        freezeSavedStreak: Bool = false
+    ) -> CoupleStreak {
+        CoupleStreak(
+            currentCount: currentCount,
+            longestCount: 8,
+            lastQualifiedDate: "2026-10-10",
+            restoreAvailable: false,
+            restorableCount: 0,
+            restoreDeadline: nil,
+            freezeAvailable: freezeAvailable,
+            freezeReadyAt: freezeReadyAt,
+            freezeSavedStreak: freezeSavedStreak
+        )
+    }
+
+    @Test func freezeNoteSaysWhenAFreezeSavedTheStreak() {
+        let readyAt = Date.now.addingTimeInterval(30 * 86_400)
+        let streak = freezeStreak(freezeReadyAt: readyAt, freezeSavedStreak: true)
+
+        #expect(streak.freezeNote() == .savedStreak)
+    }
+
+    @Test func freezeNoteShowsAReadyFreeze() {
+        #expect(freezeStreak(freezeAvailable: true).freezeNote() == .ready)
+    }
+
+    @Test func freezeNoteShowsWhenTheNextFreezeIsReady() {
+        let readyAt = Date.now.addingTimeInterval(86_400)
+
+        #expect(freezeStreak(freezeReadyAt: readyAt).freezeNote() == .readyOn(readyAt))
+    }
+
+    @Test func freezeNoteTreatsAPassedReadyDateAsNothingToSay() {
+        // The server says whether the freeze protects this streak. A stale date alone is not a promise.
+        let streak = freezeStreak(freezeReadyAt: .now.addingTimeInterval(-60))
+
+        #expect(streak.freezeNote() == nil)
+    }
+
+    @Test func freezeNoteIsHiddenWithoutALiveStreak() {
+        #expect(freezeStreak(currentCount: 0, freezeAvailable: true).freezeNote() == nil)
+        #expect(freezeStreak(currentCount: 2).freezeNote() == nil)
     }
 }

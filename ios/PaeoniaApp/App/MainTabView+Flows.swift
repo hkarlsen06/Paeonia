@@ -22,13 +22,14 @@ extension MainTabView {
     /// second, near-identical restore screen over the cover. Each cover mounts the
     /// shared top banner, because the root's banner would sit behind it.
     func presentingDailyFlows(on content: some View) -> some View {
-        content
+        presentingStreakMilestones(on: content)
             .fullScreenCover(isPresented: $isAnswerFlowPresented) {
                 DailyChallengeAnswerFlow(
                     viewModel: dailyChallengeViewModel,
                     onClose: closeAnswerFlow,
                     makeStreakRestoreViewModel: makeStreakRestoreViewModel,
-                    onOpenPartnerQuestions: openQuestionsTabFromAnswerFlow
+                    onOpenPartnerQuestions: openQuestionsTabFromAnswerFlow,
+                    claimStreakMilestone: claimStreakMilestone
                 )
                 .zoomTransition(dailyFlowSource.zoomSourceID, in: zoomNamespace, enabled: !reduceMotion)
                 .environment(bannerCenter)
@@ -66,6 +67,54 @@ extension MainTabView {
             }
     }
 
+    /// The milestone moment sheet, and the check that opens it.
+    private func presentingStreakMilestones(on content: some View) -> some View {
+        content
+            .sheet(item: $streakMilestone) { moment in
+                StreakMilestoneView(days: moment.days, onClose: { streakMilestone = nil })
+                    .presentationDetents([.large])
+                    .presentationBackground(.paeoniaSurfacePrimary)
+            }
+            // Checks again whenever the count changes and whenever the screen is free,
+            // so a milestone reached while another sheet was open still shows after it.
+            .onChange(of: streakMilestoneCheck, initial: true) {
+                celebrateStreakMilestoneIfDue()
+            }
+    }
+
+    private var streakMilestoneStore: StreakMilestoneStore { StreakMilestoneStore() }
+
+    private var streakMilestoneCheck: StreakMilestoneCheck {
+        StreakMilestoneCheck(
+            count: dailyChallengeViewModel.streak.currentCount,
+            userID: identity.currentUserID,
+            isScreenBusy: scenePhase != .active
+                || !launchIntroComplete
+                || isAnswerFlowPresented
+                || partnerAnswerQuestion != nil
+                || showStreakRestore
+                || showStreakDetail
+                || streakMilestone != nil
+        )
+    }
+
+    /// Shows the milestone moment when the streak reaches a milestone this phone has
+    /// not celebrated. Waits while the app is in the background, the launch intro is
+    /// playing, or another flow or sheet is open. The answer flow claims the milestone
+    /// itself on its completion screen.
+    private func celebrateStreakMilestoneIfDue() {
+        let check = streakMilestoneCheck
+        guard !check.isScreenBusy, !dailyChallengeViewModel.streak.isRestorable,
+              let days = claimStreakMilestone(check.count)
+        else { return }
+        streakMilestone = StreakMilestoneMoment(days: days)
+    }
+
+    private func claimStreakMilestone(_ count: Int) -> Int? {
+        guard let userID = identity.currentUserID else { return nil }
+        return streakMilestoneStore.claim(count: count, userID: userID)
+    }
+
     /// Keep full-screen cover insertion in the same transaction as the native zoom.
     /// Without an explicit transaction, SwiftUI can briefly draw the destination at its
     /// final full-screen size before the zoom animator takes over.
@@ -81,6 +130,8 @@ extension MainTabView {
             showStreakRestore = true
         case .detail:
             showStreakDetail = true
+        case .milestone(let days):
+            streakMilestone = StreakMilestoneMoment(days: days)
         }
     }
 
@@ -92,7 +143,11 @@ extension MainTabView {
         return StreakRestoreViewModel(
             streak: dailyChallengeViewModel.streak,
             userID: identity.currentUserID?.uuidString,
-            onRestored: { count in
+            onRestored: { [identity] count in
+                // A streak bought back has its own celebration, so skip the milestones it passes.
+                if let userID = identity.currentUserID {
+                    StreakMilestoneStore().markRestored(upTo: count, userID: userID)
+                }
                 dailyChallengeViewModel.applyRestoredStreak(count)
                 await dailyChallengeViewModel.refreshStreak()
             },

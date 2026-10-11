@@ -60,6 +60,10 @@ struct StreakPillState: Equatable {
     /// Zero is a cooled-down streak, while a restorable streak is broken. Both use
     /// the same muted flame treatment.
     var usesMutedFlame: Bool { displayCount == 0 || isRestorable }
+
+    /// The live count sits on a milestone, which lasts until the couple's next day
+    /// counts. The pill shows a small gold dot, and tapping it replays the moment.
+    var isMilestone: Bool { !isRestorable && StreakMilestones.isMilestone(count) }
 }
 
 /// The couple's streak as a navigation-bar element: the brand flame and the day
@@ -107,6 +111,13 @@ struct DailyStreakToolbarLabel: View {
                 .fill(flameStyle(for: state))
                 .frame(width: flameHeight * 0.84, height: flameHeight)
 
+            if state.isMilestone {
+                Circle()
+                    .fill(Color.paeoniaInkGold)
+                    .frame(width: 6, height: 6)
+                    .shadow(color: .paeoniaInkGold, radius: 3)
+            }
+
             Text(state.displayCount, format: .number)
                 .monospacedDigit()
         }
@@ -144,6 +155,7 @@ struct DailyStreakToolbarLabel: View {
     /// is paused and how long it was.
     private func accessibilityLabel(for state: StreakPillState) -> String {
         let streakText = "\(state.displayCount) \(String(localized: .homeStreakLabel))"
+        if state.isMilestone { return String(localized: .streakMilestonePillAccessibility(streakText)) }
         guard state.isRestorable else { return streakText }
         return String(localized: .streakRestorePillAccessibilityLabel(streakText))
     }
@@ -162,6 +174,13 @@ struct DailyStreakToolbarLabel: View {
 
 #Preview("Healthy") {
     DailyStreakToolbarLabel(state: StreakPillState(count: 12, isRestorable: false, restorableCount: 0))
+        .padding()
+        .background(.paeoniaBackgroundPrimary)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Milestone day") {
+    DailyStreakToolbarLabel(state: StreakPillState(count: 30, isRestorable: false, restorableCount: 0), onTap: {})
         .padding()
         .background(.paeoniaBackgroundPrimary)
         .preferredColorScheme(.dark)

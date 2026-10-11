@@ -110,6 +110,9 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
     let restoreDeadline: Date?
     let currentUserContributedToday: Bool
     let partnerContributedToday: Bool
+    let freezeAvailable: Bool
+    let freezeReadyAt: Date?
+    let freezeSavedStreak: Bool
 
     init(
         currentCount: Int,
@@ -119,7 +122,10 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
         restorableCount: Int,
         restoreDeadline: Date?,
         currentUserContributedToday: Bool = false,
-        partnerContributedToday: Bool = false
+        partnerContributedToday: Bool = false,
+        freezeAvailable: Bool = false,
+        freezeReadyAt: Date? = nil,
+        freezeSavedStreak: Bool = false
     ) {
         self.currentCount = currentCount
         self.longestCount = longestCount
@@ -129,6 +135,9 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
         self.restoreDeadline = restoreDeadline
         self.currentUserContributedToday = currentUserContributedToday
         self.partnerContributedToday = partnerContributedToday
+        self.freezeAvailable = freezeAvailable
+        self.freezeReadyAt = freezeReadyAt
+        self.freezeSavedStreak = freezeSavedStreak
     }
 
     enum CodingKeys: String, CodingKey {
@@ -140,6 +149,9 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
         case restoreDeadline = "restore_deadline"
         case currentUserContributedToday = "current_user_contributed_today"
         case partnerContributedToday = "partner_contributed_today"
+        case freezeAvailable = "freeze_available"
+        case freezeReadyAt = "freeze_ready_at"
+        case freezeSavedStreak = "freeze_saved_streak"
     }
 
     init(from decoder: any Decoder) throws {
@@ -158,6 +170,10 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
             Bool.self,
             forKey: .partnerContributedToday
         ) ?? false
+        // Rows cached before streak freezes existed have no freeze keys.
+        freezeAvailable = try container.decodeIfPresent(Bool.self, forKey: .freezeAvailable) ?? false
+        freezeReadyAt = try container.decodeIfPresent(Date.self, forKey: .freezeReadyAt)
+        freezeSavedStreak = try container.decodeIfPresent(Bool.self, forKey: .freezeSavedStreak) ?? false
     }
 
     var streak: CoupleStreak {
@@ -169,7 +185,10 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
             restorableCount: restorableCount,
             restoreDeadline: restoreDeadline,
             currentUserContributedToday: currentUserContributedToday,
-            partnerContributedToday: partnerContributedToday
+            partnerContributedToday: partnerContributedToday,
+            freezeAvailable: freezeAvailable,
+            freezeReadyAt: freezeReadyAt,
+            freezeSavedStreak: freezeSavedStreak
         )
     }
 }

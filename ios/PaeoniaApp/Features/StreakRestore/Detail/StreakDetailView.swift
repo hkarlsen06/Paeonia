@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// A calm, read-only look at the couple's connection streak: the live flame and
-/// day count, their longest run so far, and a short, forgiving note on how it works.
+/// day count, their longest run so far, a short, forgiving note on how it works,
+/// the next milestone, and whether their free streak freeze is ready.
 ///
 /// Opened by tapping the streak badge while the streak is healthy. A broken streak
 /// opens `StreakRestoreView` (the paid buy-it-back offer) instead, so this sheet stays
@@ -33,6 +34,19 @@ struct StreakDetailView: View {
         return hasNotStarted ? .streakDetailEmptyMessage : .streakDetailMessage
     }
 
+    /// Custom copy, such as the restore celebration, replaces the whole note, freeze line included.
+    private var freezeNoteText: LocalizedStringResource? {
+        guard message == nil, let note = streak.freezeNote() else { return nil }
+        switch note {
+        case .savedStreak:
+            return .streakDetailFreezeSaved
+        case .ready:
+            return .streakDetailFreezeReady
+        case .readyOn(let date):
+            return .streakDetailFreezeReadyOn(date.formatted(.dateTime.day().month(.wide)))
+        }
+    }
+
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space24) {
             Spacer()
@@ -47,18 +61,11 @@ struct StreakDetailView: View {
             .saturation(hasNotStarted ? 0.15 : 1)
             .opacity(hasNotStarted ? 0.8 : 1)
 
-            VStack(spacing: PaeoniaSpacing.space8) {
-                Text(title)
-                    .font(PaeoniaTypography.heroTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
+            heading
+                .modifier(StreakDetailReveal(shown: shouldShowDetails))
 
-                Text(messageText)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .multilineTextAlignment(.center)
-            .modifier(StreakDetailReveal(shown: shouldShowDetails))
+            notes
+                .modifier(StreakDetailReveal(shown: shouldShowDetails))
 
             // Their record, shown only when it beats the current run so it adds
             // something the hero flame doesn't already say.
@@ -83,6 +90,20 @@ struct StreakDetailView: View {
         .onAppear(perform: revealCelebrationDetails)
     }
 
+    private var heading: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            Text(title)
+                .font(PaeoniaTypography.heroTitle)
+                .foregroundStyle(.paeoniaTextPrimary)
+
+            Text(messageText)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .multilineTextAlignment(.center)
+    }
+
     private var longestStat: some View {
         VStack(spacing: PaeoniaSpacing.space4) {
             Text(streak.longestCount, format: .number)
@@ -97,6 +118,34 @@ struct StreakDetailView: View {
                 .foregroundStyle(.paeoniaTextSecondary)
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// The next milestone and the freeze line. Custom copy, such as the restore
+    /// celebration, leaves both out.
+    @ViewBuilder
+    private var notes: some View {
+        if message == nil {
+            VStack(spacing: PaeoniaSpacing.space16) {
+                StreakMilestoneProgressView(currentCount: streak.currentCount, longestCount: streak.longestCount)
+                if let freezeNoteText {
+                    freezeNote(freezeNoteText)
+                }
+            }
+        }
+    }
+
+    private func freezeNote(_ text: LocalizedStringResource) -> some View {
+        Label {
+            Text(text)
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            Image(systemName: "snowflake")
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .accessibilityHidden(true)
+        }
+        .font(PaeoniaTypography.caption)
+        .foregroundStyle(.paeoniaTextSecondary)
+        .multilineTextAlignment(.leading)
     }
 
     private func revealCelebrationDetails() {
@@ -133,6 +182,37 @@ private struct StreakDetailReveal: ViewModifier {
             restoreAvailable: false,
             restorableCount: 0,
             restoreDeadline: nil
+        )
+    )
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Freeze ready") {
+    StreakDetailView(
+        streak: CoupleStreak(
+            currentCount: 6,
+            longestCount: 21,
+            lastQualifiedDate: "2026-06-28",
+            restoreAvailable: false,
+            restorableCount: 0,
+            restoreDeadline: nil,
+            freezeAvailable: true
+        )
+    )
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Saved by a freeze") {
+    StreakDetailView(
+        streak: CoupleStreak(
+            currentCount: 6,
+            longestCount: 21,
+            lastQualifiedDate: "2026-06-27",
+            restoreAvailable: false,
+            restorableCount: 0,
+            restoreDeadline: nil,
+            freezeReadyAt: .now.addingTimeInterval(30 * 86_400),
+            freezeSavedStreak: true
         )
     )
     .preferredColorScheme(.dark)

@@ -107,6 +107,9 @@ struct MainTabView: View {
     /// Read-only streak detail sheet, opened by tapping the streak badge while the
     /// streak is healthy (nothing to restore).
     @State var showStreakDetail = false
+    /// The streak milestone moment, shown once per milestone on this phone, or again
+    /// from the streak badge for the rest of that streak day.
+    @State var streakMilestone: StreakMilestoneMoment?
     /// The Questions-tab single-question partner-answer flow. The tapped question drives
     /// presentation and is the card the cover zooms out of.
     @State var partnerAnswerQuestion: DailyChallengeQuestion?
@@ -118,7 +121,10 @@ struct MainTabView: View {
     @Namespace var zoomNamespace
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
     @Environment(\.accessibilityReduceMotion) var reduceMotion
-    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.scenePhase) var scenePhase
+    /// False while the cold-launch intro still covers the app. The streak milestone
+    /// moment waits for it.
+    @Environment(\.launchIntroComplete) var launchIntroComplete
 
     init(
         tabs: [MainTab] = MainTab.allCases,

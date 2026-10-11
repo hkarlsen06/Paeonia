@@ -171,6 +171,8 @@ Production deploys need `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_K
 
 Production Convex is self-hosted on the `one-s` server (`ssh one-s`). The stack lives in `/srv/paeonia/convex` and runs with docker compose: the Convex backend and the dashboard. Data is SQLite in `./data`. Both containers bind to localhost, and Caddy terminates TLS.
 
+Agents have docker access on `one-s` through passwordless `sudo`. The `administrator` user is not in the `docker` group, so plain `docker` fails with "permission denied". Use `sudo -n docker ...`. The containers are `convex-backend-1` and `convex-dashboard-1`. To read backend logs, for example to find the cause of a `Server Error` with a request id, run `ssh one-s 'sudo -n docker logs --since 30m convex-backend-1'`.
+
 | Origin | Purpose |
 |---|---|
 | `https://api.paeonia.no` | Client API. Use it for the iOS app, `npx convex deploy`, and `npx convex run`. |
@@ -190,6 +192,8 @@ npx convex deploy
 `backend/.env.local` sets `CONVEX_DEPLOYMENT` for local development. The CLI refuses to run when that variable is set next to `CONVEX_SELF_HOSTED_URL`, so add `CONVEX_DEPLOYMENT=` (empty) to the command when the file exists.
 
 Operator functions (`internalMutation`/`internalQuery`/`internalAction`) run with the same two variables and `npx convex run <module>:<function> '<json args>'`. The App Review scripts `ios/Scripts/mint-review-codes.mjs` and `revoke-review-codes.mjs` use this path.
+
+To hand-edit production rows for testing, export the table with `npx convex data <table> --format jsonLines`, keep that file as a backup, edit the rows, and load them back with `npx convex import --table <table> --replace -y <file>.jsonl`. The import keeps `_id` and `_creationTime`. `--replace` swaps out the whole table, so the file must hold every row. `npx convex run _system/frontend/patchDocumentsFields` fails with a server error on this deployment.
 
 Use Node 20, 22, or 24 for `convex dev` and `convex deploy`, because Convex Node actions fail on Node 26. On macOS, Homebrew's `node@22` is at `/opt/homebrew/opt/node@22/bin`. The `mdr` server no longer hosts Paeonia, so ignore older notes that mention `mdr`, `api.paeonia.no/auth/v1/callback`, or Supabase publishable keys.
 
