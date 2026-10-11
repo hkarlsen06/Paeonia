@@ -16,6 +16,9 @@ final class PrivacySafetyViewModel {
 
     private(set) var requests = [PrivacyRequest]()
     private(set) var isLoading = false
+    /// True once the first load or live update has finished, whether or not it
+    /// worked. Until then the screen cannot tell "no requests" from "not loaded".
+    private(set) var hasLoaded = false
     private(set) var submittingRequestKinds = Set<PrivacyRequestKind>()
     private(set) var notice: Notice?
 
@@ -29,6 +32,7 @@ final class PrivacySafetyViewModel {
         }
         guard let service else {
             notice = .loadFailed
+            hasLoaded = true
             return
         }
 
@@ -37,10 +41,15 @@ final class PrivacySafetyViewModel {
 
         do {
             requests = try await service.loadPrivacyRequests()
-        } catch is CancellationError {
-            return
+            hasLoaded = true
         } catch {
+            // A cancelled `.task` or refresh is not a failure. URLSession reports it
+            // as `URLError.cancelled`, not `CancellationError`.
+            guard !Task.isCancelled, !isCancellation(error) else {
+                return
+            }
             notice = .loadFailed
+            hasLoaded = true
         }
     }
 
@@ -52,17 +61,15 @@ final class PrivacySafetyViewModel {
         }
         for await latest in service.privacyRequestUpdates() {
             requests = latest
+            hasLoaded = true
         }
     }
 
     @discardableResult
     func submitRequest(kind: PrivacyRequestKind, requesterNote: String? = nil) async -> Bool {
-        if kind == .correction {
-            let details = requesterNote?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            guard !details.isEmpty else {
-                notice = .correctionDetailsRequired
-                return false
-            }
+        if kind == .correction, !Self.hasText(requesterNote) {
+            notice = .correctionDetailsRequired
+            return false
         }
 
         guard !submittingRequestKinds.contains(kind), let service else {
@@ -107,8 +114,22 @@ final class PrivacySafetyViewModel {
         submittingRequestKinds.contains(kind)
     }
 
+    func canSubmitCorrection(details: String) -> Bool {
+        !isSubmitting(.correction) && Self.hasText(details)
+    }
+
     func dismissNotice() {
         notice = nil
+    }
+
+    private static func hasText(_ text: String?) -> Bool {
+        text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+
+    private nonisolated func isCancellation(_ error: any Error) -> Bool {
+        if error is CancellationError { return true }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
+        return false
     }
 
     private func upsert(_ request: PrivacyRequest) {

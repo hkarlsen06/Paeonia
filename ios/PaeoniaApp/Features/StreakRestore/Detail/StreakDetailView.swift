@@ -10,7 +10,9 @@ import SwiftUI
 struct StreakDetailView: View {
     let streak: CoupleStreak
     var title: LocalizedStringResource = .streakDetailTitle
-    var message: LocalizedStringResource = .streakDetailMessage
+    /// Overrides the default copy. Without it, a streak at zero invites the couple to
+    /// start one and any other streak explains how the flame stays lit.
+    var message: LocalizedStringResource?
     var playsCelebration = false
     var ambientMotion = true
     var onClose: () -> Void = {}
@@ -22,6 +24,15 @@ struct StreakDetailView: View {
         !playsCelebration || showCelebrationDetails
     }
 
+    private var hasNotStarted: Bool {
+        streak.currentCount == 0
+    }
+
+    private var messageText: LocalizedStringResource {
+        if let message { return message }
+        return hasNotStarted ? .streakDetailEmptyMessage : .streakDetailMessage
+    }
+
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space24) {
             Spacer()
@@ -31,13 +42,17 @@ struct StreakDetailView: View {
                 playsCelebration: playsCelebration,
                 ambientMotion: ambientMotion && !playsCelebration
             )
+            // The flame has no empty level of its own, so a streak that has not started
+            // is dimmed here instead of showing a fully lit "0".
+            .saturation(hasNotStarted ? 0.15 : 1)
+            .opacity(hasNotStarted ? 0.8 : 1)
 
             VStack(spacing: PaeoniaSpacing.space8) {
                 Text(title)
                     .font(PaeoniaTypography.heroTitle)
                     .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(message)
+                Text(messageText)
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -115,6 +130,20 @@ private struct StreakDetailReveal: ViewModifier {
             currentCount: 6,
             longestCount: 21,
             lastQualifiedDate: "2026-06-28",
+            restoreAvailable: false,
+            restorableCount: 0,
+            restoreDeadline: nil
+        )
+    )
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Not started") {
+    StreakDetailView(
+        streak: CoupleStreak(
+            currentCount: 0,
+            longestCount: 0,
+            lastQualifiedDate: nil,
             restoreAvailable: false,
             restorableCount: 0,
             restoreDeadline: nil

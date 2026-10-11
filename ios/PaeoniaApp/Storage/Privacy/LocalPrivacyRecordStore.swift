@@ -49,17 +49,23 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
             context.delete(value)
         }
         try deleteLocationRecords(ownerUserID: ownerUserID, in: context)
+        PendingSharingChoiceLedger.shared.removeChoices(ownerUserID: ownerUserID)
         try deleteMemoryRecords(ownerUserID: ownerUserID, in: context)
 
         try context.save()
+        Self.postChanges(Self.purgedDomains, ownerUserID: ownerUserID)
     }
 
+    /// Keeps the person's unconfirmed sharing choices. Their queued sharing
+    /// change survives this scope, and without the choice a server value that
+    /// has not seen it yet would show sharing as on again.
     func hideRelationshipAccess(ownerUserID: UUID) async throws {
         let context = ModelContext(container)
         try deleteRelationshipSyncState(ownerUserID: ownerUserID, in: context)
         try deleteLocationRecords(ownerUserID: ownerUserID, in: context)
 
         try context.save()
+        Self.postChanges([.locationVisibility, .ownLocation], ownerUserID: ownerUserID)
     }
 
     func purgeRelationshipContent(
@@ -76,6 +82,7 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
             context.delete(value)
         }
         try deleteLocationRecords(ownerUserID: ownerUserID, in: context)
+        PendingSharingChoiceLedger.shared.removeChoices(ownerUserID: ownerUserID)
         try deleteMemoryRecords(ownerUserID: ownerUserID, in: context)
         try deleteRelationshipEvents(ownerUserID: ownerUserID, in: context)
         if clearAccessSnapshot {
@@ -83,6 +90,24 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
         }
 
         try context.save()
+        Self.postChanges(Self.purgedDomains, ownerUserID: ownerUserID)
+    }
+
+    /// Open screens re-read and drop what the purge removed. `.access` is left
+    /// out on purpose. Root starts the purge from its access routing, so a post
+    /// here would run that routing again.
+    private static let purgedDomains: [LocalStoreDomain] = [
+        .pendingOperations,
+        .relationshipEvents,
+        .locationVisibility,
+        .ownLocation,
+        .memories,
+    ]
+
+    private static func postChanges(_ domains: [LocalStoreDomain], ownerUserID: UUID) {
+        for domain in domains {
+            LocalStoreChanges.post(domain, ownerUserID: ownerUserID)
+        }
     }
 
     private func deleteRelationshipSyncState(

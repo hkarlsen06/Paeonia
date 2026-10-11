@@ -32,7 +32,13 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
     }
 
     nonisolated static func live() throws -> DailyAnswerMediaImageService {
-        DailyAnswerMediaImageService(client: try PaeoniaConvexClientProvider.shared.client())
+        let service = DailyAnswerMediaImageService(client: try PaeoniaConvexClientProvider.shared.client())
+        // Earlier builds kept these files in Application Support, which iCloud backs
+        // up. Remove that copy; the cache now lives in Caches.
+        Task.detached(priority: .utility) {
+            try? FileManager.default.removeItem(at: legacyDirectoryURL())
+        }
+        return service
     }
 
     func imageData(for mediaAssetID: UUID?) async -> Data? {
@@ -51,7 +57,10 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
         let download = Task { await fetchAndCache(mediaAssetID: mediaAssetID) }
         inFlightDownloads[mediaAssetID] = download
         let data = await download.value
-        inFlightDownloads[mediaAssetID] = nil
+        // A privacy purge may have cleared the map and a newer download started since.
+        if inFlightDownloads[mediaAssetID] == download {
+            inFlightDownloads[mediaAssetID] = nil
+        }
         return data
     }
 
@@ -59,10 +68,8 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
         inFlightDownloads.values.forEach { $0.cancel() }
         inFlightDownloads.removeAll()
 
-        guard FileManager.default.fileExists(atPath: directoryURL.path) else {
-            return
-        }
         try? FileManager.default.removeItem(at: directoryURL)
+        try? FileManager.default.removeItem(at: Self.legacyDirectoryURL())
     }
 
     private func fetchAndCache(mediaAssetID: UUID) async -> Data? {
@@ -101,7 +108,15 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
         directoryURL.appendingPathComponent(mediaAssetID.uuidString.lowercased(), isDirectory: false)
     }
 
+    /// In Caches, so the private files are not backed up and the system can reclaim
+    /// the space. Anything removed is downloaded again when it's next shown.
     nonisolated static func defaultDirectoryURL() -> URL {
+        FileManager.default
+            .urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("DailyAnswerMedia", isDirectory: true)
+    }
+
+    nonisolated static func legacyDirectoryURL() -> URL {
         FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("DailyAnswerMedia", isDirectory: true)

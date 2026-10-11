@@ -3,9 +3,9 @@ import SwiftUI
 /// The "Me" tab: the couple member's personal corner, and a menu rather than a
 /// control panel.
 ///
-/// Every switch and destructive action lives one push away on its own screen, so
-/// this stays short enough to scan and nothing important is reachable by accident
-/// while scrolling past it.
+/// Every switch lives one push away on its own screen, so this stays short enough
+/// to scan. The account actions sit last, and each one only opens a centered
+/// confirmation, so nothing important happens on a stray tap.
 struct SettingsView: View {
     @State private var viewModel: SettingsViewModel
     let currentUserID: UUID?
@@ -30,6 +30,8 @@ struct SettingsView: View {
     /// Routed through RootView so paired deletion shares the normal auth/session
     /// teardown and local privacy cleanup path.
     let onDeleteAccount: () -> Void
+    /// True while the root signs out, so the log-out row shows progress.
+    let isLoggingOut: Bool
     let onUpdateProfile: @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool
     let onPurchasesRestored: @MainActor @Sendable () async -> Void
     private let privacySafetyService: (any PrivacySafetyServicing)?
@@ -38,6 +40,9 @@ struct SettingsView: View {
 
     @State private var selectedRelationshipDate = Date()
     @State private var isEditingRelationshipDate = false
+    /// Lives here rather than on the profile screen, so a save keeps its state
+    /// and still reports back after the user leaves that screen.
+    @State private var profileEditor = ProfileEditorViewModel()
 
     @MainActor
     init(
@@ -56,6 +61,7 @@ struct SettingsView: View {
         onLeftRelationship: @escaping () -> Void = {},
         onLogout: @escaping () -> Void = {},
         onDeleteAccount: @escaping () -> Void = {},
+        isLoggingOut: Bool = false,
         onUpdateProfile: @escaping @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool =
             { _, _ in false },
         onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {},
@@ -76,6 +82,7 @@ struct SettingsView: View {
         self.onLeftRelationship = onLeftRelationship
         self.onLogout = onLogout
         self.onDeleteAccount = onDeleteAccount
+        self.isLoggingOut = isLoggingOut
         self.onUpdateProfile = onUpdateProfile
         self.onPurchasesRestored = onPurchasesRestored
         self.privacySafetyService = privacySafetyService
@@ -91,7 +98,19 @@ struct SettingsView: View {
                 profileRow
                 relationshipSection
                 appSection
+                privacySafetySection
                 SettingsDestinationLinksView()
+                SettingsAccountSection(
+                    viewModel: viewModel,
+                    authProvider: currentAuthProvider,
+                    partnerName: partnerName,
+                    onLeftRelationship: onLeftRelationship,
+                    onLogout: onLogout,
+                    onDeleteAccount: onDeleteAccount,
+                    isLoggingOut: isLoggingOut
+                )
+                PaeoniaLegalLinksView()
+                    .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
@@ -101,12 +120,6 @@ struct SettingsView: View {
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle(Text(.mainTabYou))
         .navigationBarTitleDisplayMode(.large)
-        .task {
-            await viewModel.load()
-        }
-        .task {
-            await viewModel.observe()
-        }
         // The notices come from screens pushed on top of this one, but this view
         // owns the view model and stays alive underneath them, so the banner keeps
         // working from here.
@@ -117,6 +130,14 @@ struct SettingsView: View {
             showBanner(for: notice)
             viewModel.dismissNotice()
         }
+        .onChange(of: profileEditor.event) { _, event in
+            guard let event else {
+                return
+            }
+            showBanner(for: event)
+            profileEditor.consumeEvent()
+        }
+        .sensoryFeedback(.success, trigger: profileEditor.completedSaveCount)
         .sheet(isPresented: $isEditingRelationshipDate) {
             RelationshipDateEditorView(
                 selectedDate: $selectedRelationshipDate,
@@ -137,18 +158,13 @@ extension SettingsView {
         PaeoniaCard(padding: 0) {
             NavigationLink {
                 ProfileSettingsView(
-                    viewModel: viewModel,
+                    editor: profileEditor,
                     savedDisplayName: currentDisplayName,
                     customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
                     providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID,
-                    authProvider: currentAuthProvider,
-                    partnerName: partnerName,
                     onSave: { [onUpdateProfile] displayName, photoUpdate in
                         await onUpdateProfile(displayName, photoUpdate)
-                    },
-                    onLeftRelationship: onLeftRelationship,
-                    onLogout: onLogout,
-                    onDeleteAccount: onDeleteAccount
+                    }
                 )
             } label: {
                 SettingsProfileRow(
@@ -198,16 +214,13 @@ extension SettingsView {
                 )
             }
             .buttonStyle(.plain)
-
-            privacySafetyRows
         }
     }
 
-    @ViewBuilder
-    private var privacySafetyRows: some View {
-        if let partnerUserID {
-            SettingsMenuDivider()
-
+    /// Data requests and reporting get their own group so a safety action is
+    /// easy to find without hunting through relationship settings.
+    private var privacySafetySection: some View {
+        SettingsMenuSection(title: .privacySafetyTitle) {
             NavigationLink {
                 PrivacySafetyView(
                     partnerUserID: partnerUserID,
@@ -218,13 +231,20 @@ extension SettingsView {
                 )
             } label: {
                 PaeoniaDisclosureRow(
-                    title: .privacySafetyTitle,
+                    title: .privacySafetyRequestsSectionTitle,
                     message: .settingsPrivacySafetyMessage,
                     systemImage: "checkmark.shield.fill"
                 )
             }
             .buttonStyle(.plain)
 
+            reportRow
+        }
+    }
+
+    @ViewBuilder
+    private var reportRow: some View {
+        if let partnerUserID {
             SettingsMenuDivider()
 
             // Reporting is a safety action, so keep it directly reachable from the
@@ -291,6 +311,32 @@ extension SettingsView {
 // MARK: - Notices
 
 extension SettingsView {
+    private func showBanner(for event: ProfileEditorViewModel.Event) {
+        switch event {
+        case .saved:
+            bannerCenter.show(
+                .info(
+                    title: String(localized: .settingsProfileSavedTitle),
+                    message: String(localized: .settingsProfileSavedMessage(partnerName))
+                )
+            )
+        case .saveFailed:
+            bannerCenter.show(
+                .error(
+                    title: String(localized: .settingsProfileSaveFailedTitle),
+                    message: String(localized: .settingsProfileSaveFailedMessage)
+                )
+            )
+        case .photoLoadFailed:
+            bannerCenter.show(
+                .error(
+                    title: String(localized: .settingsProfilePhotoLoadFailedTitle),
+                    message: String(localized: .settingsProfilePhotoLoadFailedMessage)
+                )
+            )
+        }
+    }
+
     private func showBanner(for notice: SettingsViewModel.Notice) {
         switch notice {
         case .saveFailed:
@@ -321,6 +367,13 @@ extension SettingsView {
                 .error(
                     title: String(localized: .settingsPurchasesFailedTitle),
                     message: String(localized: .settingsPurchasesFailedMessage)
+                )
+            )
+        case .purchaseLinkedToAnotherAccount:
+            bannerCenter.show(
+                .error(
+                    title: String(localized: .settingsPurchasesLinkedElsewhereTitle),
+                    message: String(localized: .settingsPurchasesLinkedElsewhereMessage)
                 )
             )
         }

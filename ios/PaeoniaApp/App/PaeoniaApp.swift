@@ -1,3 +1,4 @@
+import ClerkKit
 import SwiftUI
 
 @main
@@ -6,6 +7,10 @@ struct PaeoniaApp: App {
     @State private var deepLink: PaeoniaDeepLink?
     @State private var pendingJoinInviteCode = UserDefaultsPairingJoinInviteStore.shared.loadInviteCode()
     @State private var notificationRouter = PaeoniaNotificationRouter.shared
+    /// Built once here. `RootView`'s initializer runs on every update of this
+    /// body, so defaults built there would be made and thrown away each time.
+    @State private var rootViewModel: RootViewModel
+    @State private var locationViewModel: LocationMapViewModel
     #if DEBUG
     @State private var developerDestination = DeveloperScenarioLaunch.destination()
     #endif
@@ -13,7 +18,14 @@ struct PaeoniaApp: App {
     init() {
         // Clerk must be configured before anything reads `Clerk.shared`. An empty
         // publishable key leaves it unconfigured and auth reports itself unavailable.
-        PaeoniaClerk.configureIfPossible()
+        // The view models below read it, so they are created after this call.
+        let usesClerk = PaeoniaClerk.configureIfPossible()
+        _rootViewModel = State(
+            initialValue: RootViewModel(
+                authProviderSessionIsActive: usesClerk ? Self.clerkSessionIsActive : nil
+            )
+        )
+        _locationViewModel = State(initialValue: LocationMapViewModel())
     }
 
     var body: some Scene {
@@ -69,10 +81,23 @@ struct PaeoniaApp: App {
         #endif
     }
 
+    /// Whether Clerk still holds an active session, read from its observable
+    /// state without a network call. `nil` until Clerk has loaded, so a cold
+    /// launch is never mistaken for a sign-out.
+    @MainActor
+    private static func clerkSessionIsActive() -> Bool? {
+        guard Clerk.shared.isLoaded else {
+            return nil
+        }
+        return PaeoniaClerk.currentAccountID() != nil
+    }
+
     private var productionRoot: some View {
         RootView(
             deepLink: $deepLink,
-            pendingJoinInviteCode: $pendingJoinInviteCode
+            pendingJoinInviteCode: $pendingJoinInviteCode,
+            viewModel: rootViewModel,
+            locationViewModel: locationViewModel
         )
     }
 }

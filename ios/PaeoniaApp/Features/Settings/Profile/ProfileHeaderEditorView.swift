@@ -1,62 +1,57 @@
 import PhotosUI
 import SwiftUI
-import UIKit
 
-/// The profile editor at the top of the Me tab. Editing a name or photo is a
-/// two-control job, so it lives inline instead of behind its own screen: the avatar
-/// is the anchor, two small round buttons on its bottom corners change or remove the
-/// photo, and the name is edited in a centered field right below it.
+/// The name and photo editor on the profile screen. The avatar is the anchor, two
+/// small round buttons on its bottom corners change or remove the photo, and the
+/// name is edited in a centered field right below it.
 ///
-/// Nothing leaves the device until the user taps Save, which only appears once
-/// something has actually changed.
+/// Nothing leaves the device until the user taps Save. `ProfileEditorViewModel`
+/// owns the edits and the async work; this view only draws them.
 struct ProfileHeaderEditorView: View {
-    /// The saved name from the session. `nil` while it is still loading.
-    let savedDisplayName: String?
-    let customProfilePhotoAssetID: UUID?
-    let providerProfilePhotoAssetID: UUID?
-    let authProvider: AuthProvider?
-    let onSave: @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool
+    let editor: ProfileEditorViewModel
 
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @ScaledMetric(relativeTo: .title) private var avatarSize: CGFloat = 104
     @ScaledMetric(relativeTo: .caption) private var photoActionSize: CGFloat = 34
     /// Keeps the centered field visually tied to the avatar instead of stretching
     /// the full screen width.
     @ScaledMetric(relativeTo: .body) private var nameFieldWidth: CGFloat = 260
 
-    @State private var typedName: String?
-    @State private var stagedPhotoData: Data?
-    @State private var stagedImage: UIImage?
-    @State private var removesExistingPhoto = false
     @State private var selectedItem: PhotosPickerItem?
-    @State private var cropDraft: ProfilePhotoCropDraft?
-    @State private var isSaving = false
-    @FocusState private var isNameFocused: Bool
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             avatar
             nameField
             supportingCopy
-
-            if draft.hasChanges {
-                pendingChangeActions
-            }
         }
         .frame(maxWidth: .infinity)
-        // The Save button fades in when the first edit lands instead of snapping
-        // the rest of the tab downwards.
-        .animation(PaeoniaMotion.stateChange, value: draft.hasChanges)
         .onChange(of: selectedItem) { _, item in
-            loadPhoto(from: item)
+            guard let item else {
+                return
+            }
+            // Clear the selection right away, so picking the same photo again
+            // after a cancelled crop still counts as a new pick.
+            selectedItem = nil
+            PaeoniaKeyboard.dismiss()
+            editor.pickPhoto {
+                try await item.loadTransferable(type: Data.self)
+            }
         }
-        .sheet(item: $cropDraft) { draft in
+        .sheet(
+            item: Binding(
+                get: { editor.cropRequest },
+                set: { if $0 == nil { editor.cancelCrop() } }
+            )
+        ) { request in
             PaeoniaProfileImageCropSheet(
-                image: draft.image,
-                onCrop: applyCroppedPhoto,
-                onCancel: cancelCrop
+                image: request.image,
+                onCrop: { image in
+                    Task { await editor.applyCroppedPhoto(image) }
+                },
+                onCancel: editor.cancelCrop
             )
             .ignoresSafeArea()
+            .interactiveDismissDisabled()
         }
     }
 }
@@ -66,6 +61,15 @@ struct ProfileHeaderEditorView: View {
 extension ProfileHeaderEditorView {
     private var avatar: some View {
         profilePreview
+            .overlay {
+                if editor.isLoadingPhoto {
+                    Circle()
+                        .fill(.black.opacity(0.35))
+                    ProgressView()
+                        .tint(.paeoniaTextInverse)
+                        .accessibilityLabel(Text(.settingsProfilePhotoLoading))
+                }
+            }
             .overlay(alignment: .bottomLeading) {
                 changePhotoButton
             }
@@ -76,7 +80,7 @@ extension ProfileHeaderEditorView {
 
     @ViewBuilder
     private var profilePreview: some View {
-        if let stagedImage {
+        if let stagedImage = editor.stagedImage {
             Image(uiImage: stagedImage)
                 .resizable()
                 .scaledToFill()
@@ -112,7 +116,7 @@ extension ProfileHeaderEditorView {
             )
         }
         .buttonStyle(.plain)
-        .disabled(isSaving)
+        .disabled(editor.isSaving)
         .offset(x: -PaeoniaSpacing.space8, y: PaeoniaSpacing.space8)
         .accessibilityLabel(
             Text(draft.hasVisiblePhoto ? .settingsProfilePhotoChange : .settingsProfilePhotoAdd)
@@ -122,7 +126,7 @@ extension ProfileHeaderEditorView {
     @ViewBuilder
     private var removePhotoButton: some View {
         if draft.hasRemovablePhoto {
-            Button(action: removePhoto) {
+            Button(action: editor.removePhoto) {
                 photoActionBadge(
                     systemName: "trash.fill",
                     foreground: .paeoniaError,
@@ -130,7 +134,7 @@ extension ProfileHeaderEditorView {
                 )
             }
             .buttonStyle(.plain)
-            .disabled(isSaving)
+            .disabled(editor.isSaving || editor.isLoadingPhoto)
             .offset(x: PaeoniaSpacing.space8, y: PaeoniaSpacing.space8)
             .accessibilityLabel(Text(.settingsProfilePhotoRemove))
         }
@@ -164,7 +168,7 @@ extension ProfileHeaderEditorView {
             .accessibilityHidden(true)
     }
 
-    /// Let the identity anchor grow with text without letting it take over the tab.
+    /// Let the identity anchor grow with text without letting it take over the screen.
     private var resolvedAvatarSize: CGFloat {
         min(avatarSize, 132)
     }
@@ -183,9 +187,13 @@ extension ProfileHeaderEditorView {
 // MARK: - Name and supporting copy
 
 extension ProfileHeaderEditorView {
+    private var draft: ProfileEditorDraft {
+        editor.draft
+    }
+
     private var nameField: some View {
         TextField(
-            text: nameBinding,
+            text: Binding(get: { draft.name }, set: editor.setName),
             prompt: Text(.authOnboardingDisplayNamePlaceholder)
         ) {
             Text(.settingsProfileNameLabel)
@@ -193,18 +201,17 @@ extension ProfileHeaderEditorView {
         .font(PaeoniaTypography.bodyEmphasis)
         .foregroundStyle(.paeoniaTextPrimary)
         .multilineTextAlignment(.center)
-        .textContentType(.name)
+        // Only a first name is allowed, so do not offer to fill in a full name.
+        .textContentType(.givenName)
         .textInputAutocapitalization(.words)
-        .autocorrectionDisabled(false)
         .submitLabel(.done)
-        .focused($isNameFocused)
-        .onSubmit(save)
+        .onSubmit { PaeoniaKeyboard.dismiss() }
         .padding(.horizontal, PaeoniaSpacing.space16)
         .padding(.vertical, PaeoniaSpacing.space12)
         .background(.paeoniaSurfaceSecondary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12))
         .frame(maxWidth: nameFieldWidth)
-        .disabled(isSaving)
+        .disabled(editor.isSaving)
         .accessibilityIdentifier("settings.profile.displayName")
     }
 
@@ -217,204 +224,19 @@ extension ProfileHeaderEditorView {
 
             Text(.settingsProfilePhotoMessage)
                 .foregroundStyle(.paeoniaTextSecondary)
-
-            if let authProviderName {
-                Text(.settingsProfileSignedInWith(authProviderName))
-                    .foregroundStyle(.paeoniaTextTertiary)
-            }
         }
         .font(PaeoniaTypography.caption)
         .multilineTextAlignment(.center)
         .fixedSize(horizontal: false, vertical: true)
     }
-
-    /// Both ways out of an unsaved edit, side by side: keep it or drop it. The
-    /// quiet discard action keeps a full button-sized hit target and normal button
-    /// spacing so it is easy to hit without competing with Save.
-    private var pendingChangeActions: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            saveButton
-            discardButton
-        }
-        .transition(.opacity)
-    }
-
-    private var saveButton: some View {
-        Button(action: save) {
-            HStack(spacing: PaeoniaSpacing.space8) {
-                if isSaving {
-                    ProgressView()
-                        .tint(.paeoniaTextInverse)
-                        .accessibilityHidden(true)
-                }
-
-                Text(isSaving ? .settingsProfileSaving : .settingsProfileSave)
-            }
-        }
-        .buttonStyle(PaeoniaPrimaryButtonStyle())
-        .disabled(isSaving || !draft.canSave)
-        // The spinner and "Saving" label fade in instead of snapping while the save
-        // settles in the background.
-        .animation(PaeoniaMotion.stateChange, value: isSaving)
-    }
-
-    /// Puts the name and photo back to what is saved on the account. Only the
-    /// unsaved edits go away, so nothing the user has already saved is at risk.
-    private var discardButton: some View {
-        Button {
-            isNameFocused = false
-            clearEdits()
-        } label: {
-            Text(.settingsProfileDiscard)
-        }
-        .buttonStyle(PaeoniaQuietButtonStyle())
-        .disabled(isSaving)
-    }
-
-    /// Brand names stay unlocalized; only the sentence around them is translated.
-    /// Development/unknown sessions show no line rather than leaking internals.
-    private var authProviderName: String? {
-        switch authProvider {
-        case .apple: "Apple"
-        case .google: "Google"
-        case .development, .unknown, nil: nil
-        }
-    }
-}
-
-// MARK: - State
-
-extension ProfileHeaderEditorView {
-    private var draft: ProfileEditorDraft {
-        ProfileEditorDraft(
-            savedName: savedDisplayName?.trimmedNonEmpty ?? "",
-            customPhotoAssetID: customProfilePhotoAssetID,
-            providerPhotoAssetID: providerProfilePhotoAssetID,
-            typedName: typedName,
-            stagedPhotoData: stagedPhotoData,
-            removesExistingPhoto: removesExistingPhoto
-        )
-    }
-
-    private var nameBinding: Binding<String> {
-        Binding(
-            get: { draft.name },
-            set: { typedName = $0 }
-        )
-    }
-
-    private func loadPhoto(from item: PhotosPickerItem?) {
-        guard let item else {
-            return
-        }
-
-        Task { @MainActor in
-            do {
-                guard let data = try await item.loadTransferable(type: Data.self),
-                      let image = UIImage(data: data) else {
-                    throw AuthServiceError.invalidProfilePhoto
-                }
-                cropDraft = ProfilePhotoCropDraft(image: image)
-            } catch {
-                bannerCenter.show(
-                    .error(
-                        title: String(localized: .settingsProfilePhotoLoadFailedTitle),
-                        message: String(localized: .settingsProfilePhotoLoadFailedMessage)
-                    )
-                )
-                selectedItem = nil
-            }
-        }
-    }
-
-    private func applyCroppedPhoto(_ image: UIImage) {
-        guard let data = image.jpegData(compressionQuality: 0.95) else {
-            cropDraft = nil
-            return
-        }
-
-        stagedImage = image
-        stagedPhotoData = data
-        removesExistingPhoto = false
-        cropDraft = nil
-        selectedItem = nil
-    }
-
-    private func cancelCrop() {
-        cropDraft = nil
-        selectedItem = nil
-    }
-
-    private func removePhoto() {
-        stagedImage = nil
-        stagedPhotoData = nil
-        removesExistingPhoto = customProfilePhotoAssetID != nil
-        selectedItem = nil
-    }
-
-    /// Drops the pending edits so the header follows the saved profile again. Only
-    /// called after a successful save, never on failure — a failed save keeps the
-    /// user's work in place so they can retry it.
-    private func clearEdits() {
-        typedName = nil
-        stagedImage = nil
-        stagedPhotoData = nil
-        removesExistingPhoto = false
-        selectedItem = nil
-    }
-
-    private func save() {
-        let draft = draft
-        guard !isSaving, draft.canSave, let validatedName = draft.validatedName else {
-            return
-        }
-
-        isNameFocused = false
-        isSaving = true
-        Task { @MainActor in
-            let succeeded = await onSave(validatedName, draft.photoUpdate)
-            isSaving = false
-
-            if succeeded {
-                clearEdits()
-                bannerCenter.show(
-                    .info(
-                        title: String(localized: .settingsProfileSavedTitle),
-                        message: String(localized: .settingsProfileSavedMessage)
-                    )
-                )
-            } else {
-                bannerCenter.show(
-                    .error(
-                        title: String(localized: .settingsProfileSaveFailedTitle),
-                        message: String(localized: .settingsProfileSaveFailedMessage)
-                    )
-                )
-            }
-        }
-    }
-}
-
-/// Identifies the image currently being cropped so the crop sheet presents per
-/// picked photo rather than per boolean flag.
-private struct ProfilePhotoCropDraft: Identifiable {
-    let id = UUID()
-    let image: UIImage
 }
 
 #Preview {
     ScrollView {
-        ProfileHeaderEditorView(
-            savedDisplayName: "Hjalmar",
-            customProfilePhotoAssetID: nil,
-            providerProfilePhotoAssetID: nil,
-            authProvider: .apple,
-            onSave: { _, _ in true }
-        )
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.top, PaeoniaSpacing.screenTopSpacing)
+        ProfileHeaderEditorView(editor: ProfileEditorViewModel())
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.screenTopSpacing)
     }
     .background(.paeoniaBackgroundPrimary)
-    .environment(PaeoniaBannerCenter())
     .preferredColorScheme(.dark)
 }

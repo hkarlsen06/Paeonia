@@ -355,6 +355,46 @@ describe("mutual participation", () => {
   });
 });
 
+describe("restore around daylight saving", () => {
+  // In Oslo 2026-03-29 has 23 hours and 2026-10-25 has 25 hours.
+  test.each([
+    ["the first hour after the spring change", "2026-03-29T22:30:00.000Z", "2026-03-29", "2026-03-30T22:00:00.000Z"],
+    ["the last hour of the autumn change", "2026-10-25T22:30:00.000Z", "2026-10-24", "2026-10-25T23:00:00.000Z"],
+  ])("a restore in %s counts yesterday by the calendar", async (_name, now, yesterday, deadline) => {
+    vi.setSystemTime(new Date(now));
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    await t.run((ctx) =>
+      ctx.db.insert("streak_states", {
+        couple_id: couple.coupleId,
+        current_count: 0,
+        longest_count: 6,
+        restore_available: true,
+        restorable_count: 6,
+        restorable_through_date: "2026-01-01",
+        restore_deadline: new Date(Date.parse(now) + 3_600_000).toISOString(),
+        updated_at: now,
+      }),
+    );
+    const result = await t.run((ctx) =>
+      applyStreakRestore(ctx, {
+        couple_id: couple.coupleId,
+        purchaser_user_id: couple.first.userId,
+        product_id: newUuid(),
+        environment: "sandbox",
+        transaction_id: `restore-${now}`,
+      }),
+    );
+    expect(result).toEqual({ ok: true, restoredCount: 6, replayed: false });
+    // The couple keeps all of today to check in.
+    expect(await streakState(t, couple.coupleId)).toMatchObject({
+      current_count: 6,
+      last_qualified_date: yesterday,
+      next_activity_deadline_at: deadline,
+    });
+  });
+});
+
 describe("streak read model", () => {
   async function setup() {
     const t = newTest();

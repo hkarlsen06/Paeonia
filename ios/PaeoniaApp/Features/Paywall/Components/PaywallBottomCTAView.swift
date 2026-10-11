@@ -2,7 +2,9 @@ import SwiftUI
 
 struct PaywallBottomCTAView: View {
     let title: LocalizedStringResource
-    let caption: LocalizedStringResource?
+    /// Billing terms (price, period, trial, auto-renewal) shown right under the
+    /// button that buys.
+    let caption: String?
     let isEnabled: Bool
     let isBusy: Bool
     let action: () -> Void
@@ -44,7 +46,11 @@ struct PaywallBottomCTAView: View {
         .animation(PaeoniaMotion.stateChange, value: isBusy)
         .accessibilityLabel(Text(title))
         .accessibilityIdentifier("paywall.primaryAction")
-        .sensoryFeedback(.impact(flexibility: .soft), trigger: isBusy)
+        // A soft tap when the App Store work starts. Success has its own haptic
+        // on the paywall, and a cancel should not feel like anything happened.
+        .sensoryFeedback(.impact(flexibility: .soft), trigger: isBusy) { _, isNowBusy in
+            isNowBusy
+        }
     }
 
     private var captionLine: some View {
@@ -52,7 +58,9 @@ struct PaywallBottomCTAView: View {
             if let caption {
                 Text(caption)
                     .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextTertiary)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .center)
             }
         }

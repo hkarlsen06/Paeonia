@@ -60,7 +60,7 @@ actor ConvexPushRegistrationService: PushRegistering {
         }
 
         do {
-            let _: UUID = try await client.mutation(
+            let deviceID: UUID = try await client.mutation(
                 "identity:register_user_device",
                 args: RegisterDeviceRequest(
                     pushToken: pushToken,
@@ -70,7 +70,9 @@ actor ConvexPushRegistrationService: PushRegistering {
                     appVersion: Self.appVersion
                 )
             )
-            fingerprintStore.recordSent(PushRegistrationRecord(fingerprint: fingerprint, sentAt: now))
+            fingerprintStore.recordSent(
+                PushRegistrationRecord(fingerprint: fingerprint, sentAt: now, deviceID: deviceID)
+            )
         } catch {
             // Best effort: a failed registration just means no silent push yet;
             // on-open sync still delivers the partner's drawing.
@@ -97,6 +99,39 @@ actor ConvexPushRegistrationService: PushRegistering {
     nonisolated static var appVersion: String? {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
     }
+
+    /// Stops the signed-in account's alerts on this phone. The backend keeps a
+    /// device until another account registers the same token, so without this
+    /// the partner's alerts keep arriving after sign-out.
+    ///
+    /// Call it before signing out of Clerk, while requests still carry the
+    /// account's token. It waits at most `timeout` and never fails sign-out.
+    /// The stored registration is cleared either way, so the next sign-in
+    /// registers the phone again.
+    nonisolated static func disableRegisteredDevice(
+        client: PaeoniaConvexClient,
+        fingerprintStore: PushRegistrationFingerprintStore = PushRegistrationFingerprintStore(channel: .device),
+        timeout: Duration = .seconds(3)
+    ) async {
+        defer { fingerprintStore.reset() }
+        guard let deviceID = fingerprintStore.lastSent()?.deviceID else {
+            return
+        }
+
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+                let _: Bool? = try? await client.mutation(
+                    "identity:disable_user_device",
+                    args: DisableDeviceRequest(deviceID: deviceID)
+                )
+            }
+            group.addTask {
+                try? await Task.sleep(for: timeout)
+            }
+            await group.next()
+            group.cancelAll()
+        }
+    }
 }
 
 /// Used when no Convex client is configured.
@@ -110,6 +145,14 @@ nonisolated enum PushRegistrationServiceFactory {
             return NoOpPushRegistration()
         }
         return ConvexPushRegistrationService(client: client)
+    }
+}
+
+nonisolated private struct DisableDeviceRequest: Encodable {
+    let deviceID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case deviceID = "p_device_id"
     }
 }
 

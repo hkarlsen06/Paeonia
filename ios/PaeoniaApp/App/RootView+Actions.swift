@@ -1,0 +1,166 @@
+import SwiftUI
+
+/// User actions the routed screens forward to the root, and the root's
+/// reactions to session, state, and invite-code changes.
+extension RootView {
+    func signInWithApple() {
+        Task {
+            await viewModel.signInWithApple(using: appleSignInProvider)
+        }
+    }
+
+    func signInWithGoogle() {
+        Task {
+            await viewModel.signInWithGoogle()
+        }
+    }
+
+    /// Stashes an invite code a joining partner entered before signing in. After
+    /// sign-in the paywall or the pairing screen reads it, so they join their
+    /// partner. The binding owner persists production changes, so this view stays
+    /// safe to host with an in-memory binding in local flows and previews.
+    func captureInviteCode(_ code: String) {
+        pendingJoinInviteCode = code
+    }
+
+    func completeOnboarding(displayName: String, profilePhotoData: Data?) {
+        Task {
+            await viewModel.completeOnboarding(
+                displayName: displayName,
+                timeZoneID: TimeZone.current.identifier,
+                profilePhotoData: profilePhotoData
+            )
+        }
+    }
+
+    func signOut() {
+        Task {
+            await viewModel.signOut()
+        }
+    }
+
+    func deleteAccount() {
+        Task {
+            await viewModel.deleteAccount(reauthenticatingWith: appleSignInProvider)
+        }
+    }
+
+    func subscriptionChanged() {
+        Task {
+            await viewModel.refreshAfterSubscriptionChange()
+        }
+    }
+
+    func inviteAccepted() {
+        Task {
+            await viewModel.refreshAfterInviteAccepted()
+            pendingJoinInviteCode = nil
+        }
+    }
+
+    func refreshPairing() {
+        Task {
+            await viewModel.refreshAfterPairingChange()
+        }
+    }
+
+    func acknowledgeRelationshipEnded() {
+        Task {
+            await viewModel.acknowledgeRelationshipEnded()
+        }
+    }
+
+    func dismissPairingCelebration() {
+        withAnimation(pairedScreenAnimation) {
+            viewModel.dismissPairingCelebration()
+        }
+    }
+
+    func sessionChanged(from previousUserID: String?, to userID: String?) {
+        // An invite code belongs to the person who was signed in. Clear it once
+        // their session goes away or someone else's starts, whether they signed
+        // out, deleted the account, or the session ended on its own. A code saved
+        // while signed out stays for whoever signs in next.
+        if !Self.keepsJoinInviteCode(from: previousUserID, to: userID) {
+            pendingJoinInviteCode = nil
+        }
+
+        guard allowsSystemIntegrations else {
+            return
+        }
+
+        if let userID {
+            PaeoniaStoreKitService.shared.configure(userID: userID)
+        } else {
+            PaeoniaStoreKitService.shared.stopTransactionListener()
+        }
+
+        // Once signed in, get an APNs token so the backend can send the silent
+        // push that wakes us to sync a partner's drawing. The cold launch does
+        // this after the intro instead.
+        if !isLaunchExperienceActive {
+            registerForRemoteNotificationsIfSignedIn(userID)
+        }
+    }
+
+    func stateChanged(to state: AppState) {
+        if state != .paired {
+            permissionPrimerCoordinator.dismiss()
+        }
+        // A paired couple cannot join anyone. Drop a code left over from an
+        // invite accepted just before the app closed, or saved on an old link.
+        // A link that opened the app is still explained.
+        if Self.blocksJoining(state) {
+            let explains = joinLinkOpenedDuringLaunch && pendingJoinInviteCode != nil
+            joinLinkOpenedDuringLaunch = false
+            pendingJoinInviteCode = nil
+            if explains {
+                showAlreadyPairedNotice()
+            }
+        } else if state != .launching {
+            joinLinkOpenedDuringLaunch = false
+        }
+        if !isLaunchExperienceActive {
+            syncWidgetIfPaired(state)
+        }
+    }
+
+    /// A partner's invite link opened while this person is already paired would
+    /// otherwise do nothing visible, then resurface much later after an unpair.
+    func pendingJoinInviteCodeChanged(to code: String?) {
+        guard code != nil else {
+            return
+        }
+
+        if viewModel.state == .launching {
+            joinLinkOpenedDuringLaunch = true
+            return
+        }
+
+        guard Self.blocksJoining(viewModel.state) else {
+            return
+        }
+
+        pendingJoinInviteCode = nil
+        showAlreadyPairedNotice()
+    }
+
+    private func showAlreadyPairedNotice() {
+        bannerCenter.show(
+            .info(
+                title: String(localized: .rootJoinLinkAlreadyPairedTitle),
+                message: String(localized: .rootJoinLinkAlreadyPairedMessage),
+                systemImage: "heart.fill"
+            )
+        )
+    }
+
+    static func keepsJoinInviteCode(from previousUserID: String?, to userID: String?) -> Bool {
+        guard let previousUserID else { return true }
+        return userID.map { AuthUserIdentity.matches(previousUserID, $0) } ?? false
+    }
+
+    private static func blocksJoining(_ state: AppState) -> Bool {
+        state == .paired || state == .pairedPaywalled
+    }
+}

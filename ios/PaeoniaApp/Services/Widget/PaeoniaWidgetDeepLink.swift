@@ -2,19 +2,13 @@ import Foundation
 
 nonisolated enum PaeoniaWidgetDeepLink: Equatable {
     case drawing
-    case refresh
 
     static let scheme = "paeonia"
     static let host = "widget"
     static let drawingPathComponent = "drawing"
-    static let refreshPathComponent = "refresh"
 
     static var drawingURL: URL {
         url(pathComponent: drawingPathComponent)
-    }
-
-    static var refreshURL: URL {
-        url(pathComponent: refreshPathComponent)
     }
 
     private static func url(pathComponent: String) -> URL {
@@ -41,8 +35,6 @@ nonisolated enum PaeoniaWidgetDeepLink: Equatable {
         switch pathComponents {
         case [Self.drawingPathComponent]:
             self = .drawing
-        case [Self.refreshPathComponent]:
-            self = .refresh
         default:
             return nil
         }

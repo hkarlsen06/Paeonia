@@ -111,14 +111,21 @@ struct LatestPartnerLocationPendingOperationHandler: PendingSyncOperationHandlin
                 )
             }
             return .succeeded
-        } catch where Self.isStaleLocationError(error) {
-            return .terminalFailure("Stale location update rejected")
+        } catch where Self.isPermanentRejection(error) {
+            // Retrying cannot help: sharing is off on the server, or the location
+            // is out of range. Retrying forever would also keep a location queued
+            // after the user stopped sharing.
+            return .terminalFailure("Location update rejected: \(error)")
         }
     }
 
-    private static func isStaleLocationError(_ error: any Error) -> Bool {
-        let description = String(describing: error).lowercased()
-        return description.contains("stale location update")
-            && description.contains("rejected")
+    /// The server also answers `42501` for a sign-in it can't see yet and for
+    /// access that may come back, so only the "sharing is off" refusal stops it.
+    private static func isPermanentRejection(_ error: any Error) -> Bool {
+        guard case let .server(code, message) = error as? PaeoniaConvexError else {
+            return false
+        }
+        return code == "23514"
+            || (code == "42501" && message.contains("location sharing must be enabled"))
     }
 }

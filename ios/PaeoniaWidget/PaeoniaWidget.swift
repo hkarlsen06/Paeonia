@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import WidgetKit
 
 struct PaeoniaWidget: Widget {
@@ -8,24 +9,27 @@ struct PaeoniaWidget: Widget {
         StaticConfiguration(kind: kind, provider: PaeoniaWidgetTimelineProvider()) { entry in
             PaeoniaWidgetEntryView(entry: entry)
                 .containerBackground(.paeoniaWidgetBackground, for: .widget)
-            }
-            .configurationDisplayName(String(localized: .widgetTitle))
-            .description(String(localized: .widgetDescription))
-            .pushHandler(PaeoniaWidgetPushHandler.self)
-            // MVP intentionally supports Home Screen families only. No Lock
-            // Screen accessory family can render the couple's drawing.
-            .supportedFamilies([.systemSmall, .systemLarge])
-            .contentMarginsDisabled()
+        }
+        .configurationDisplayName(String(localized: .widgetTitle))
+        .description(String(localized: .widgetDescription))
+        .pushHandler(PaeoniaWidgetPushHandler.self)
+        // MVP intentionally supports Home Screen families only. No Lock
+        // Screen accessory family can render the couple's drawing.
+        .supportedFamilies([.systemSmall, .systemLarge])
+        .contentMarginsDisabled()
     }
 }
 
 private extension PaeoniaWidgetEntry {
     static var previewDrawing: PaeoniaWidgetEntry {
-        PaeoniaWidgetEntry(
+        let image = UIImage(systemName: "scribble")?
+            .withTintColor(.white, renderingMode: .alwaysOriginal) ?? UIImage()
+
+        return PaeoniaWidgetEntry(
             date: .now,
             content: .drawing(
                 PaeoniaWidgetDrawingContent(
-                    previewURL: URL(fileURLWithPath: "/dev/null"),
+                    image: image,
                     authorName: "Hjalmar",
                     savedAt: .now
                 )

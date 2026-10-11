@@ -32,6 +32,9 @@ struct MilestoneCountdownCard: View {
     /// The milestone date last celebrated automatically, so re-renders on the
     /// milestone day don't replay the burst.
     @State private var celebratedMilestoneDate: Date?
+    /// The instant the countdown is measured from. Refreshed when the calendar day
+    /// changes so the card moves to "Today" without needing a reopen.
+    @State private var now = Date()
 
     init(
         startedOn: String?,
@@ -45,9 +48,8 @@ struct MilestoneCountdownCard: View {
 
     private var milestone: RelationshipMilestone? {
         guard let startedOn else { return nil }
-        // Built per read so it reflects the current calendar/time zone, and so the
-        // day count refreshes whenever the card re-renders.
-        return RelationshipMilestoneCalculator().nextMilestone(startedOn: startedOn)
+        // Built per read so it reflects the current calendar/time zone.
+        return RelationshipMilestoneCalculator().nextMilestone(startedOn: startedOn, now: now)
     }
 
     var body: some View {
@@ -58,6 +60,7 @@ struct MilestoneCountdownCard: View {
                 setupCard
             }
         }
+        .onCalendarDayChange { now = Date() }
         .sheet(isPresented: $isEditorPresented) {
             RelationshipDateEditorView(
                 selectedDate: $selectedDate,

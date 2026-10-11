@@ -1,333 +1,60 @@
 import SwiftUI
-import UIKit
 
+/// The screen an entitled but unpaired user sees. It shows their invite code and lets
+/// them join a partner's code instead.
+///
+/// The default view model is built once after the view appears. Building it in `init`
+/// would repeat its setup (service creation, reading saved data) on every parent redraw.
 struct PairingInviteView: View {
-    @State private var viewModel: PairingInviteViewModel
-    @State private var didCopyCode = false
-    @State private var isCheckingPairing = false
+    @State private var viewModel: PairingInviteViewModel?
 
-    let onRefreshAccess: () -> Void
+    private let userID: String?
+    private let pendingJoinCode: String?
+    private let onClearPendingJoinCode: () -> Void
+    private let onInviteAccepted: () -> Void
+    private let onRefreshAccess: () -> Void
 
+    /// - Parameters:
+    ///   - pendingJoinCode: A normalized partner code from a link or the welcome screen.
+    ///     The screen asks the user to confirm joining it once their own code is showing.
+    ///   - onClearPendingJoinCode: Called when the pending code is done with, so the root
+    ///     can forget it.
+    ///   - onInviteAccepted: Called after the user joined their partner.
+    ///   - onRefreshAccess: Called when access should be checked again.
     init(
         session: AuthSession?,
         viewModel: PairingInviteViewModel? = nil,
+        pendingJoinCode: String?,
+        onClearPendingJoinCode: @escaping () -> Void,
+        onInviteAccepted: @escaping () -> Void,
         onRefreshAccess: @escaping () -> Void
     ) {
-        _viewModel = State(
-            initialValue: viewModel ?? PairingInviteViewModel(userID: session?.id)
-        )
+        userID = session?.id
+        _viewModel = State(initialValue: viewModel)
+        self.pendingJoinCode = pendingJoinCode
+        self.onClearPendingJoinCode = onClearPendingJoinCode
+        self.onInviteAccepted = onInviteAccepted
         self.onRefreshAccess = onRefreshAccess
     }
 
     var body: some View {
-        content
-        .task {
-            await viewModel.loadInviteIfNeeded()
-        }
-    }
-
-    private var content: some View {
         ZStack {
-            if !viewModel.isPresentationReady {
-                // The quiet petal surface fades out on top while the invite content
-                // (and its code tiles' own entrance) starts underneath, so loading
-                // dissolves into the invite instead of blinking away — the same
-                // hand-off the paywall uses. A fade only, so Reduce Motion needs
-                // no branch.
-                AuthLaunchingView()
-                    .transition(.opacity)
-                    .zIndex(1)
-            } else if let invite = viewModel.invite {
-                readyContent(invite)
-                    .transition(.opacity)
+            if let viewModel {
+                PairingInviteContent(
+                    viewModel: viewModel,
+                    pendingJoinCode: pendingJoinCode,
+                    onClearPendingJoinCode: onClearPendingJoinCode,
+                    onInviteAccepted: onInviteAccepted,
+                    onRefreshAccess: onRefreshAccess
+                )
             } else {
-                errorContent
-                    .transition(.opacity)
+                AuthLaunchingView()
             }
         }
-        .animation(PaeoniaMotion.meaningfulMoment, value: contentPhase)
-    }
-
-    /// Which of the three surfaces (loading, invite, error) is showing, so the
-    /// crossfade keys on the surface swap itself rather than on payload details.
-    private var contentPhase: Int {
-        if !viewModel.isPresentationReady {
-            0
-        } else if viewModel.invite != nil {
-            1
-        } else {
-            2
-        }
-    }
-
-    private func readyContent(_ invite: PairingInvite) -> some View {
-        VStack(spacing: PaeoniaSpacing.space32) {
-            Spacer(minLength: PaeoniaSpacing.space16)
-
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space32) {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                    Text(.pairingInviteTitle)
-                        .font(PaeoniaTypography.title)
-                        .foregroundStyle(.paeoniaTextPrimary)
-
-                    Text(.pairingInviteMessage)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                inviteCodeBlock(invite)
+        .task {
+            if viewModel == nil {
+                viewModel = PairingInviteViewModel(userID: userID)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Spacer(minLength: PaeoniaSpacing.space24)
-            actionStack(invite)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .animation(PaeoniaMotion.stateChange, value: invite.id)
-    }
-
-    private var errorContent: some View {
-        PaeoniaCard {
-            PaeoniaEmptyStateView(
-                title: .pairingInviteErrorTitle,
-                message: viewModel.error?.message ?? .pairingInviteErrorMessage,
-                systemImage: "exclamationmark.icloud.fill"
-            ) {
-                Button {
-                    Task {
-                        await viewModel.createInvite()
-                    }
-                } label: {
-                    Label {
-                        Text(.pairingInviteRetryButton)
-                    } icon: {
-                        Image(systemName: "arrow.clockwise")
-                            .accessibilityHidden(true)
-                    }
-                }
-                .buttonStyle(PaeoniaPrimaryButtonStyle())
-                .disabled(viewModel.isLoading)
-            }
-        }
-    }
-
-    private func inviteCodeBlock(_ invite: PairingInvite) -> some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            Text(.pairingInviteCodeLabel)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextTertiary)
-
-            HStack(spacing: PaeoniaSpacing.space8) {
-                ForEach(Array(invite.code.enumerated()), id: \.offset) { index, character in
-                    PairingInviteCodeCharacterTile(
-                        character: character,
-                        inviteID: invite.id,
-                        index: index
-                    )
-                    .id("\(invite.id)-\(index)")
-                }
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(.pairingInviteCodeLabel))
-            .accessibilityValue(Text(invite.code))
-
-            HStack(spacing: PaeoniaSpacing.space4) {
-                Text(.pairingInviteExpiresLabel)
-                Text(invite.expiresAt, format: .dateTime.month().day().hour().minute())
-            }
-            .font(PaeoniaTypography.caption)
-            .foregroundStyle(.paeoniaTextTertiary)
-        }
-    }
-
-    private func actionStack(_ invite: PairingInvite) -> some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
-            shareButton(for: invite)
-            refreshButton
-            secondaryActions(for: invite)
-        }
-    }
-
-    private func shareButton(for invite: PairingInvite) -> some View {
-        ShareLink(
-            item: invite.joinURL,
-            subject: Text(.pairingInviteShareSubject),
-            message: Text(.pairingInviteShareMessage)
-        ) {
-            Label {
-                Text(.pairingInviteShareButton)
-            } icon: {
-                Image(systemName: "square.and.arrow.up")
-                    .accessibilityHidden(true)
-            }
-        }
-        .buttonStyle(PaeoniaPrimaryButtonStyle())
-        .disabled(viewModel.isLoading || viewModel.isRevoking)
-    }
-
-    private var refreshButton: some View {
-        Button {
-            checkPairing()
-        } label: {
-            HStack(spacing: PaeoniaSpacing.space8) {
-                if isCheckingPairing {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(.paeoniaTextSecondary)
-                        .accessibilityHidden(true)
-                }
-
-                Text(isCheckingPairing ? .pairingInviteCheckingButton : .pairingInviteRefreshButton)
-            }
-        }
-        .buttonStyle(PaeoniaSecondaryButtonStyle())
-        .disabled(isCheckingPairing || viewModel.isLoading || viewModel.isRevoking)
-        .accessibilityIdentifier("pairing.checkAccess")
-    }
-
-    private func secondaryActions(for invite: PairingInvite) -> some View {
-        HStack(spacing: 0) {
-            copyActionButton(for: invite)
-            footerDivider
-            newCodeActionButton
-        }
-        .padding(.top, PaeoniaSpacing.space4)
-    }
-
-    private func copyActionButton(for invite: PairingInvite) -> some View {
-        footerActionButton(
-            title: didCopyCode ? .pairingInviteCopiedButton : .pairingInviteCopyButton,
-            systemImage: didCopyCode ? "checkmark.circle.fill" : "doc.on.doc.fill",
-            isDisabled: viewModel.isLoading || viewModel.isRevoking
-        ) {
-            copyInviteCode(invite.code)
-        }
-    }
-
-    private var footerDivider: some View {
-        Rectangle()
-            .fill(.paeoniaSurfacePressed)
-            .frame(width: PaeoniaRadius.strokeHairline, height: 22)
-            .accessibilityHidden(true)
-    }
-
-    private var newCodeActionButton: some View {
-        footerActionButton(
-            title: .pairingInviteNewCodeButton,
-            systemImage: "arrow.clockwise",
-            isDisabled: viewModel.isLoading || viewModel.isRevoking
-        ) {
-            replaceInviteCode()
-        }
-    }
-
-    private func replaceInviteCode() {
-        Task {
-            let createdNewInvite = await viewModel.revokeAndCreateNewInvite()
-            if !createdNewInvite {
-                checkPairing()
-            }
-        }
-    }
-
-    private func footerActionButton(
-        title: LocalizedStringResource,
-        systemImage: String,
-        isDisabled: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Label {
-                Text(title)
-                    .multilineTextAlignment(.center)
-            } icon: {
-                Image(systemName: systemImage)
-                    .accessibilityHidden(true)
-            }
-            .font(PaeoniaTypography.button)
-            .foregroundStyle(isDisabled ? .paeoniaTextTertiary : .paeoniaTextSecondary)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(isDisabled)
-    }
-
-    private func copyInviteCode(_ code: String) {
-        UIPasteboard.general.string = code
-        didCopyCode = true
-
-        Task {
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
-            await MainActor.run {
-                didCopyCode = false
-            }
-        }
-    }
-
-    private func checkPairing() {
-        guard !isCheckingPairing else {
-            return
-        }
-
-        withAnimation(PaeoniaMotion.stateChange) {
-            isCheckingPairing = true
-        }
-        onRefreshAccess()
-
-        Task {
-            try? await Task.sleep(nanoseconds: 700_000_000)
-            await MainActor.run {
-                withAnimation(PaeoniaMotion.stateChange) {
-                    isCheckingPairing = false
-                }
-            }
-        }
-    }
-}
-
-private struct PairingInviteCodeCharacterTile: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @ScaledMetric(relativeTo: .title2) private var inviteCodeTileHeight: CGFloat = 58
-    @State private var isSettled = false
-
-    let character: Character
-    let inviteID: UUID
-    let index: Int
-
-    var body: some View {
-        Text(String(character))
-            .font(.system(.title2, design: .rounded).weight(.bold))
-            .monospacedDigit()
-            .foregroundStyle(.paeoniaTextPrimary)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: inviteCodeTileHeight)
-            .background(.paeoniaBackgroundElevated)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-            .scaleEffect(isSettled ? 1 : 0.72)
-            .offset(y: isSettled ? 0 : 12)
-            .opacity(isSettled ? 1 : 0)
-            .onAppear(perform: bounceIntoPlace)
-            .onChange(of: inviteID) { _, _ in
-                isSettled = false
-                bounceIntoPlace()
-            }
-    }
-
-    private func bounceIntoPlace() {
-        guard !reduceMotion else {
-            isSettled = true
-            return
-        }
-
-        withAnimation(
-            .spring(response: 0.42, dampingFraction: 0.58)
-            .delay(Double(index) * 0.035)
-        ) {
-            isSettled = true
         }
     }
 }
@@ -342,8 +69,12 @@ private struct PairingInviteCodeCharacterTile: View {
             profilePhotoAssetID: nil,
             profileStatus: .complete
         ),
+        pendingJoinCode: nil,
+        onClearPendingJoinCode: {},
+        onInviteAccepted: {},
         onRefreshAccess: {}
     )
+    .environment(PaeoniaBannerCenter())
     .padding()
     .background(.paeoniaBackgroundPrimary)
     .preferredColorScheme(.dark)

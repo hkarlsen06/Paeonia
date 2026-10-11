@@ -14,6 +14,7 @@ struct MemoriesScreen: View {
     @State private var viewModel: MemoriesViewModel
     @State private var isCreating = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         currentUserID: UUID?,
@@ -53,7 +54,11 @@ struct MemoriesScreen: View {
                 // The view model keeps the draft and saves it on the device, so a swipe-down
                 // or a route change never throws away a half-written memory. A successful
                 // save or a deliberate Cancel clears it.
-                MemoryEditorView(draft: draftBinding, allowsPhotos: viewModel.canAttachPhotos) { title, date, note, photos, _ in
+                MemoryEditorView(
+                    draft: draftBinding,
+                    allowsPhotos: viewModel.canAttachPhotos,
+                    uploadProgress: viewModel.photoUploadProgress
+                ) { title, date, note, photos, _ in
                     await viewModel.createMemory(title: title, date: date, note: note, photos: photos)
                 }
             }
@@ -78,7 +83,7 @@ struct MemoriesScreen: View {
                 // Blank surface for the split second before the local cache resolves, so the
                 // empty state never flashes before we know whether there are memories.
                 Color.paeoniaBackgroundPrimary
-            } else if memories.isEmpty {
+            } else if viewModel.timeline.isEmpty {
                 emptyState
             } else {
                 timeline
@@ -89,27 +94,45 @@ struct MemoriesScreen: View {
         // two instead of swapping in one frame. Fades only, so Reduce Motion needs
         // no branch.
         .animation(PaeoniaMotion.stateChange, value: viewModel.hasLoadedOnce)
-        .animation(PaeoniaMotion.stateChange, value: memories.isEmpty)
+        .animation(PaeoniaMotion.stateChange, value: viewModel.timeline.isEmpty)
     }
 
+    /// Newest first, in month sections whose header stays pinned while you scroll, so a
+    /// long timeline always shows which month you're in.
     private var timeline: some View {
         ScrollView {
-            LazyVStack(spacing: PaeoniaSpacing.space16) {
-                ForEach(memories, id: \.snapshot.memoryID) { record in
-                    NavigationLink(value: record.snapshot.memoryID) {
-                        MemoryCardView(record: record)
+            LazyVStack(alignment: .leading, spacing: PaeoniaSpacing.space16, pinnedViews: [.sectionHeaders]) {
+                ForEach(months) { month in
+                    Section {
+                        ForEach(month.memories, id: \.snapshot.memoryID) { record in
+                            NavigationLink(value: record.snapshot.memoryID) {
+                                MemoryCardView(record: record)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    } header: {
+                        monthHeader(month)
                     }
-                    .buttonStyle(.plain)
                 }
             }
             // A newly saved memory glides into place (and a deleted one closes up)
             // rather than reflowing the feed in a single frame.
-            .animation(PaeoniaMotion.stateChange, value: memories.map(\.snapshot.memoryID))
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: memoryIDs)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space32)
         }
         .refreshable { await viewModel.refresh() }
+    }
+
+    private func monthHeader(_ month: MemoryTimelineMonth) -> some View {
+        Text(month.monthStartUTC, format: MemoryDateStyle.month)
+            .font(PaeoniaTypography.caption.weight(.semibold))
+            .foregroundStyle(.paeoniaTextSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, PaeoniaSpacing.space16)
+            .padding(.bottom, PaeoniaSpacing.space4)
+            .background(.paeoniaBackgroundPrimary)
+            .accessibilityAddTraits(.isHeader)
     }
 
     private var emptyState: some View {
@@ -135,11 +158,14 @@ struct MemoriesScreen: View {
         .refreshable { await viewModel.refresh() }
     }
 
-    /// The timeline flattened into a single newest-first feed. The day/within-day order
-    /// comes from `MemoryTimeline.grouped`; each card carries its own date, so the feed
-    /// stays clean without per-day dividers.
-    private var memories: [MemoryRecord] {
-        viewModel.timeline.flatMap(\.memories)
+    /// The day and within-day order comes from `MemoryTimeline.grouped`; each card
+    /// carries its own date, so sections are per month rather than per day.
+    private var months: [MemoryTimelineMonth] {
+        MemoryTimeline.months(viewModel.timeline)
+    }
+
+    private var memoryIDs: [UUID] {
+        viewModel.timeline.flatMap { $0.memories.map(\.snapshot.memoryID) }
     }
 
     /// Opens the new-memory form. A fresh (empty) draft defaults its date to today;
@@ -157,14 +183,9 @@ struct MemoriesScreen: View {
         Binding(get: { viewModel.draft }, set: { viewModel.updateDraft($0) })
     }
 
-    private func showBanner(for notice: MemoriesViewModel.Notice?) {
+    private func showBanner(for notice: MemoriesNotice?) {
         guard let notice else { return }
-        bannerCenter.show(
-            .error(
-                title: String(localized: notice.title),
-                message: String(localized: notice.message)
-            )
-        )
+        bannerCenter.show(notice.banner)
         viewModel.dismissNotice()
     }
 }

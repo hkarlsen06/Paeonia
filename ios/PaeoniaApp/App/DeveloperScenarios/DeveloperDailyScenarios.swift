@@ -203,7 +203,11 @@
         partnerDisplayName: "Robin"
       )
       self.service = service
-      _dailyViewModel = State(initialValue: DailyChallengeViewModel(service: service))
+      // The fixtures are dated around `DeveloperScenarioFixture.now`, so the view
+      // model uses that clock too. Otherwise their day would already have ended.
+      _dailyViewModel = State(
+        initialValue: DailyChallengeViewModel(service: service, now: { DeveloperScenarioFixture.now })
+      )
       _historyViewModel = State(
         initialValue: DailyChallengeHistoryViewModel(
           service: service,

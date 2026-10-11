@@ -12,6 +12,7 @@ import {
   notificationLocaleLanguage,
   notificationPayloadIsSafe,
 } from "./notifications";
+import { notificationAlertTitle } from "./notificationCopy";
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -57,6 +58,15 @@ describe("notification copy", () => {
       "2 days left. Review your subscription in the App Store.",
     );
     expect(notificationAlertBody("location_updated", {}, "en")).toBeNull();
+  });
+
+  test("the streak reminder title is calm, without a countdown", async () => {
+    const t = newTest();
+    const titles = await t.run(async (ctx) => [
+      await notificationAlertTitle(ctx, "streak_reminder", {}, "en"),
+      await notificationAlertTitle(ctx, "streak_reminder", {}, "nb"),
+    ]);
+    expect(titles).toEqual(["Time for a quick check-in", "Tid for å sjekke inn"]);
   });
 
   test("payload safety rejects sensitive keys, non-objects, and oversize payloads", () => {

@@ -1,14 +1,15 @@
 import Foundation
+import UIKit
 import WidgetKit
 
-enum PaeoniaWidgetContent {
+enum PaeoniaWidgetContent: Sendable {
     case placeholder
     case drawing(PaeoniaWidgetDrawingContent)
     case redacted
 }
 
-struct PaeoniaWidgetDrawingContent {
-    let previewURL: URL
+struct PaeoniaWidgetDrawingContent: Sendable {
+    let image: UIImage
     let authorName: String?
     let savedAt: Date?
 }
@@ -19,7 +20,8 @@ enum PaeoniaWidgetStore {
     private static let currentPayloadPath = "Widget/current.json"
 
     /// Shipped MVP privacy policy: only an explicitly normal, current-version
-    /// payload with a safe existing preview path may show the saved drawing.
+    /// payload with a safe preview path that decodes as an image may show the
+    /// saved drawing.
     /// Missing, malformed, future-version, redacted, or incomplete state always
     /// degrades to a neutral placeholder; it never falls back to older content.
     static func loadContent(for family: WidgetFamily) -> PaeoniaWidgetContent {
@@ -52,14 +54,16 @@ enum PaeoniaWidgetStore {
             return .placeholder
         }
 
+        // A missing or corrupt image must not fall back to the doodle while the
+        // real author and time stay visible, so decode it before choosing content.
         let previewURL = containerURL.appendingPathComponent(previewPath)
-        guard FileManager.default.fileExists(atPath: previewURL.path) else {
+        guard let image = UIImage(contentsOfFile: previewURL.path) else {
             return .placeholder
         }
 
         return .drawing(
             PaeoniaWidgetDrawingContent(
-                previewURL: previewURL,
+                image: image,
                 authorName: payload.authorName,
                 savedAt: payload.createdAt
             )

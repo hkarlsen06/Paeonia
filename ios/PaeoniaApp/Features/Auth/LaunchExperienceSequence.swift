@@ -10,7 +10,7 @@ import Foundation
 /// behind the overlay is ready. That way the intro always plays in full, but we never
 /// flash raw, half-loaded content just because the animation got there first (or hold
 /// on a blank screen because content got there first).
-struct LaunchExperienceSequence: Equatable {
+nonisolated struct LaunchExperienceSequence: Equatable {
     enum Phase: Equatable {
         /// Petal mark composed and centered — exactly matching the system launch screen.
         case mark

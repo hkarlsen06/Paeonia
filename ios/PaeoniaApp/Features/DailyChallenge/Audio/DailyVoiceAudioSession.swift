@@ -10,6 +10,9 @@ nonisolated enum DailyVoiceAudioSession {
         try await Task.detached(priority: .userInitiated) {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
+            // Lets the start and stop haptics play while the microphone is on. A failure
+            // here only costs the haptics, so it must not block the recording.
+            try? session.setAllowHapticsAndSystemSoundsDuringRecording(true)
         }.value
 
         try await activate(priority: .userInitiated)
@@ -27,6 +30,8 @@ nonisolated enum DailyVoiceAudioSession {
         }
     }
 
+    /// Releases the session and tells apps we interrupted (music, podcasts) that they can
+    /// resume. Used after both recording and playback.
     static func deactivate() {
         #if compiler(>=6.4)
         if #available(iOS 27.0, *) {
@@ -38,7 +43,7 @@ nonisolated enum DailyVoiceAudioSession {
         #endif
 
         Task.detached(priority: .utility) {
-            try? AVAudioSession.sharedInstance().setActive(false)
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
 
@@ -76,7 +81,7 @@ nonisolated enum DailyVoiceAudioSession {
     private static func deactivateAsync() async {
         let session = AVAudioSession.sharedInstance()
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            session.deactivate(options: []) { _, _ in
+            session.deactivate(options: [.notifyOthersOnDeactivation]) { _, _ in
                 continuation.resume()
             }
         }

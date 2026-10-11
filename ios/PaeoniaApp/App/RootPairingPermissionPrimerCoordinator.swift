@@ -44,7 +44,6 @@ final class RootPairingPermissionPrimerCoordinator {
 
         guard let ownerUserID = identity.currentUserID,
               let coupleID = identity.coupleID,
-              sharingStateIsKnown,
               presentedPrimer == nil
         else {
             return
@@ -53,12 +52,16 @@ final class RootPairingPermissionPrimerCoordinator {
         evaluationGeneration &+= 1
         let activeEvaluationGeneration = evaluationGeneration
 
+        // The notification primer needs nothing from the server, so it can show
+        // right after pairing. Only the location primer waits for the saved
+        // sharing preference.
         let didPresentPushPrimer = await presentPushPrimerIfNeeded(
             identity: identity,
             evaluationGeneration: activeEvaluationGeneration,
             pushAuthorization: pushAuthorization
         )
         guard !didPresentPushPrimer,
+              sharingStateIsKnown,
               !Task.isCancelled,
               activeEvaluationGeneration == evaluationGeneration,
               presentedPrimer == nil,

@@ -137,7 +137,7 @@ struct WidgetDrawingViewModelTests {
     }
 
     @Test func emptyCanvasCannotBeSavedOrCleared() {
-        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy())
+        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy(), uploader: WidgetCanvasUploadSpy())
 
         #expect(viewModel.canSave == false)
         #expect(!viewModel.canClear)
@@ -145,7 +145,7 @@ struct WidgetDrawingViewModelTests {
 
     @Test func saveIsIgnoredWhenCanvasIsEmpty() async {
         let spy = WidgetCanvasServiceSpy()
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
 
         await viewModel.save()
 
@@ -226,6 +226,7 @@ struct WidgetDrawingViewModelTests {
         await service.suspendNextSave()
         let viewModel = WidgetDrawingViewModel(
             ownerUserID: ownerUserID,
+            coupleID: draftTestCoupleID,
             service: service,
             uploader: NoOpWidgetCanvasUpload(),
             draftStore: draftStore
@@ -244,7 +245,7 @@ struct WidgetDrawingViewModelTests {
         await saveTask.value
 
         #expect(viewModel.hasUnsavedEdits)
-        let draftData = try #require(draftStore.draft(for: ownerUserID))
+        let draftData = try #require(draftStore.draft(for: draftKey(ownerUserID)))
         let restoredDraft = try PKDrawing(data: draftData)
         #expect(restoredDraft.strokes.map(\.renderBounds) == newerEdit.strokes.map(\.renderBounds))
     }
@@ -296,7 +297,7 @@ struct WidgetDrawingViewModelTests {
     @Test func cannotSaveAFreshlyLoadedDrawing() async {
         let spy = WidgetCanvasServiceSpy()
         spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
 
         await viewModel.loadSavedDrawingIfNeeded()
 
@@ -307,7 +308,7 @@ struct WidgetDrawingViewModelTests {
     @Test func saveSurfacesFailureWithoutConfirmation() async {
         let spy = WidgetCanvasServiceSpy()
         spy.saveError = WidgetDrawingTestError.failed
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
         viewModel.drawing = makeNonEmptyDrawing()
 
         await viewModel.save()
@@ -318,7 +319,7 @@ struct WidgetDrawingViewModelTests {
     }
 
     @Test func clearCanvasEmptiesDrawing() {
-        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy())
+        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy(), uploader: WidgetCanvasUploadSpy())
         viewModel.drawing = makeNonEmptyDrawing()
 
         #expect(viewModel.canClear)
@@ -333,7 +334,7 @@ struct WidgetDrawingViewModelTests {
     @Test func loadSavedDrawingLoadsPersistedDataOnce() async {
         let spy = WidgetCanvasServiceSpy()
         spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
 
         await viewModel.loadSavedDrawingIfNeeded()
 
@@ -348,7 +349,7 @@ struct WidgetDrawingViewModelTests {
     @Test func loadSavedDrawingDoesNotClobberInProgressWork() async {
         let spy = WidgetCanvasServiceSpy()
         spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
         let inProgress = makeNonEmptyDrawing()
         viewModel.drawing = inProgress
 
@@ -363,7 +364,9 @@ struct WidgetDrawingViewModelTests {
         let inProgress = makeNonEmptyDrawing(seed: 72)
         let firstViewModel = WidgetDrawingViewModel(
             ownerUserID: ownerUserID,
+            coupleID: draftTestCoupleID,
             service: WidgetCanvasServiceSpy(),
+            uploader: WidgetCanvasUploadSpy(),
             draftStore: draftStore
         )
 
@@ -372,7 +375,9 @@ struct WidgetDrawingViewModelTests {
 
         let reopenedViewModel = WidgetDrawingViewModel(
             ownerUserID: ownerUserID,
+            coupleID: draftTestCoupleID,
             service: WidgetCanvasServiceSpy(),
+            uploader: WidgetCanvasUploadSpy(),
             draftStore: draftStore
         )
         await reopenedViewModel.loadSavedDrawingIfNeeded()
@@ -387,7 +392,9 @@ struct WidgetDrawingViewModelTests {
         let draftStore = InMemoryWidgetDrawingDraftStore()
         let firstViewModel = WidgetDrawingViewModel(
             ownerUserID: firstOwnerUserID,
+            coupleID: draftTestCoupleID,
             service: WidgetCanvasServiceSpy(),
+            uploader: WidgetCanvasUploadSpy(),
             draftStore: draftStore
         )
         firstViewModel.updateDrawing(makeNonEmptyDrawing(), undoManager: nil)
@@ -395,14 +402,16 @@ struct WidgetDrawingViewModelTests {
 
         let secondViewModel = WidgetDrawingViewModel(
             ownerUserID: secondOwnerUserID,
+            coupleID: draftTestCoupleID,
             service: WidgetCanvasServiceSpy(),
+            uploader: WidgetCanvasUploadSpy(),
             draftStore: draftStore
         )
         await secondViewModel.loadSavedDrawingIfNeeded()
 
         #expect(secondViewModel.drawing.strokes.isEmpty)
-        #expect(draftStore.draft(for: firstOwnerUserID) != nil)
-        #expect(draftStore.draft(for: secondOwnerUserID) == nil)
+        #expect(draftStore.draft(for: draftKey(firstOwnerUserID)) != nil)
+        #expect(draftStore.draft(for: draftKey(secondOwnerUserID)) == nil)
     }
 
     @Test func successfulSaveClearsTheOwnersDraft() async {
@@ -410,17 +419,18 @@ struct WidgetDrawingViewModelTests {
         let draftStore = InMemoryWidgetDrawingDraftStore()
         let viewModel = WidgetDrawingViewModel(
             ownerUserID: ownerUserID,
+            coupleID: draftTestCoupleID,
             service: WidgetCanvasServiceSpy(),
             uploader: NoOpWidgetCanvasUpload(),
             draftStore: draftStore
         )
         viewModel.updateDrawing(makeNonEmptyDrawing(), undoManager: nil)
         viewModel.persistDraftIfNeeded()
-        #expect(draftStore.draft(for: ownerUserID) != nil)
+        #expect(draftStore.draft(for: draftKey(ownerUserID)) != nil)
 
         await viewModel.save()
 
-        #expect(draftStore.draft(for: ownerUserID) == nil)
+        #expect(draftStore.draft(for: draftKey(ownerUserID)) == nil)
     }
 
     @Test func drawingUpdatesWaitForTheDebouncedDraftWriteUntilFlushed() {
@@ -428,15 +438,17 @@ struct WidgetDrawingViewModelTests {
         let draftStore = InMemoryWidgetDrawingDraftStore()
         let viewModel = WidgetDrawingViewModel(
             ownerUserID: ownerUserID,
+            coupleID: draftTestCoupleID,
             service: WidgetCanvasServiceSpy(),
+            uploader: WidgetCanvasUploadSpy(),
             draftStore: draftStore
         )
 
         viewModel.updateDrawing(makeNonEmptyDrawing(), undoManager: nil)
 
-        #expect(draftStore.draft(for: ownerUserID) == nil)
+        #expect(draftStore.draft(for: draftKey(ownerUserID)) == nil)
         viewModel.persistDraftIfNeeded()
-        #expect(draftStore.draft(for: ownerUserID) != nil)
+        #expect(draftStore.draft(for: draftKey(ownerUserID)) != nil)
     }
 
     @Test func fileDraftStoreScopesAndClearsDraftsByOwner() {
@@ -449,12 +461,12 @@ struct WidgetDrawingViewModelTests {
         let secondOwnerUserID = UUID()
         let draft = Data([0x01, 0x02, 0x03])
 
-        store.setDraft(draft, for: firstOwnerUserID)
+        store.setDraft(draft, for: draftKey(firstOwnerUserID))
 
-        #expect(store.draft(for: firstOwnerUserID) == draft)
-        #expect(store.draft(for: secondOwnerUserID) == nil)
+        #expect(store.draft(for: draftKey(firstOwnerUserID)) == draft)
+        #expect(store.draft(for: draftKey(secondOwnerUserID)) == nil)
         store.clearDraft(for: firstOwnerUserID)
-        #expect(store.draft(for: firstOwnerUserID) == nil)
+        #expect(store.draft(for: draftKey(firstOwnerUserID)) == nil)
     }
 
     @Test func clearingSavedDrawingRestoresAsAnEmptyUnsavedDraft() async {
@@ -464,7 +476,9 @@ struct WidgetDrawingViewModelTests {
         service.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
         let firstViewModel = WidgetDrawingViewModel(
             ownerUserID: ownerUserID,
+            coupleID: draftTestCoupleID,
             service: service,
+            uploader: WidgetCanvasUploadSpy(),
             draftStore: draftStore
         )
         await firstViewModel.loadSavedDrawingIfNeeded()
@@ -473,7 +487,9 @@ struct WidgetDrawingViewModelTests {
 
         let reopenedViewModel = WidgetDrawingViewModel(
             ownerUserID: ownerUserID,
+            coupleID: draftTestCoupleID,
             service: service,
+            uploader: WidgetCanvasUploadSpy(),
             draftStore: draftStore
         )
         await reopenedViewModel.loadSavedDrawingIfNeeded()
@@ -485,7 +501,7 @@ struct WidgetDrawingViewModelTests {
     @Test func reloadFromSyncAppliesNewerDrawingWhenNoEdits() async {
         let spy = WidgetCanvasServiceSpy()
         spy.savedDrawingData = makeNonEmptyDrawing(seed: 12).dataRepresentation()
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
         await viewModel.loadSavedDrawingIfNeeded()
         #expect(viewModel.hasUnsavedEdits == false)
         let originalSignature = PKDrawing(strokes: viewModel.drawing.strokes).dataRepresentation()
@@ -505,7 +521,7 @@ struct WidgetDrawingViewModelTests {
     @Test func reloadFromSyncSkipsWhenUnsavedEdits() async {
         let spy = WidgetCanvasServiceSpy()
         spy.savedDrawingData = makeNonEmptyDrawing(seed: 12).dataRepresentation()
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
         await viewModel.loadSavedDrawingIfNeeded()
 
         // The user has started drawing on top of the loaded drawing.
@@ -569,7 +585,7 @@ struct WidgetDrawingAttributionTests {
         spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
         spy.savedAuthorName = "Partner"
         spy.savedCreatedAt = savedAt
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
         await viewModel.loadSavedDrawingIfNeeded()
 
         viewModel.clearCanvas()
@@ -587,7 +603,7 @@ struct WidgetDrawingAttributionTests {
         spy.savedDrawingData = drawingData
         spy.savedAuthorName = "Me"
         spy.savedCreatedAt = Date(timeIntervalSinceReferenceDate: 1_000)
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
         await viewModel.loadSavedDrawingIfNeeded()
 
         let partnerSavedAt = Date(timeIntervalSinceReferenceDate: 2_000)
@@ -606,7 +622,7 @@ struct WidgetDrawingAttributionTests {
         spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
         spy.savedAuthorName = "Partner"
         spy.savedCreatedAt = Date(timeIntervalSinceReferenceDate: 1_000)
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
         await viewModel.loadSavedDrawingIfNeeded()
 
         spy.savedAuthorName = nil
@@ -623,7 +639,7 @@ struct WidgetDrawingAttributionTests {
         spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
         spy.savedAuthorName = "Me"
         spy.savedCreatedAt = Date(timeIntervalSinceReferenceDate: 1_000)
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
         await viewModel.loadSavedDrawingIfNeeded()
 
         let latestSavedAt = Date(timeIntervalSinceReferenceDate: 2_000)
@@ -637,7 +653,7 @@ struct WidgetDrawingAttributionTests {
     }
 
     @Test func firstUnsavedDrawingHasNoAttribution() {
-        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy())
+        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy(), uploader: WidgetCanvasUploadSpy())
 
         viewModel.drawing = makeNonEmptyDrawing()
 
@@ -698,7 +714,7 @@ struct WidgetDrawingAttributionTests {
         spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
         spy.savedAuthorName = "Partner"
         spy.savedCreatedAt = Date(timeIntervalSinceReferenceDate: 1_000)
-        let viewModel = WidgetDrawingViewModel(service: spy)
+        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
 
         await viewModel.loadSavedDrawingIfNeeded()
 
@@ -778,9 +794,23 @@ private final class WidgetCanvasServiceSpy: WidgetCanvasManaging, @unchecked Sen
 
 private final class WidgetCanvasUploadSpy: WidgetCanvasUploading, @unchecked Sendable {
     private(set) var enqueued: [WidgetDrawingUploadPayload] = []
+    private(set) var events: [String] = []
+    var outcome: WidgetDrawingDelivery = .delivered
+    var pendingUpload = false
 
-    func enqueueUpload(_ payload: WidgetDrawingUploadPayload) {
+    var hasPendingUpload: Bool {
+        pendingUpload
+    }
+
+    func markPending(_: WidgetDrawingUploadPayload) -> WidgetPendingUploadSnapshot? {
+        events.append("markPending")
+        return nil
+    }
+
+    func send(_ payload: WidgetDrawingUploadPayload) -> WidgetDrawingDelivery {
+        events.append("send")
         enqueued.append(payload)
+        return outcome
     }
 
     func uploadPending(_ payload: WidgetDrawingUploadPayload) async throws {
@@ -847,20 +877,37 @@ private actor SuspendedWidgetCanvasService: WidgetCanvasManaging {
 
 private final class WidgetDrawingUndoTestTarget {}
 
-@MainActor
-private final class InMemoryWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
-    private var drafts: [UUID: Data] = [:]
+/// The couple every draft test runs in, unless a test says otherwise.
+private let draftTestCoupleID = UUID()
 
-    func draft(for ownerUserID: UUID) -> Data? {
-        drafts[ownerUserID]
+private func draftKey(_ ownerUserID: UUID, coupleID: UUID = draftTestCoupleID) -> WidgetDrawingDraftKey {
+    WidgetDrawingDraftKey(ownerUserID: ownerUserID, coupleID: coupleID)
+}
+
+@MainActor
+final class InMemoryWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
+    private var drafts: [WidgetDrawingDraftKey: Data] = [:]
+    private var purgeGenerations: [UUID: Int] = [:]
+
+    func draft(for key: WidgetDrawingDraftKey) -> Data? {
+        drafts[key]
     }
 
-    func setDraft(_ data: Data, for ownerUserID: UUID) {
-        drafts[ownerUserID] = data
+    func setDraft(_ data: Data, for key: WidgetDrawingDraftKey) {
+        drafts[key] = data
+    }
+
+    func removeDraft(for key: WidgetDrawingDraftKey) {
+        drafts[key] = nil
     }
 
     func clearDraft(for ownerUserID: UUID) {
-        drafts[ownerUserID] = nil
+        purgeGenerations[ownerUserID, default: 0] += 1
+        drafts = drafts.filter { $0.key.ownerUserID != ownerUserID }
+    }
+
+    func purgeGeneration(for ownerUserID: UUID) -> Int {
+        purgeGenerations[ownerUserID, default: 0]
     }
 }
 

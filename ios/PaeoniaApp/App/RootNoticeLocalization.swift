@@ -8,6 +8,8 @@ extension RootNotice {
         switch self {
         case .sessionLoadFailed:
             .authNoticeSessionLoadFailedTitle
+        case .sessionEnded:
+            .authNoticeSessionEndedTitle
         case .signInFailed:
             .authNoticeSignInFailedTitle
         case .onboardingFailed:
@@ -25,6 +27,8 @@ extension RootNotice {
         switch self {
         case .sessionLoadFailed:
             .authNoticeSessionLoadFailedMessage
+        case .sessionEnded:
+            .authNoticeSessionEndedMessage
         case .signInFailed:
             .authNoticeSignInFailedMessage
         case .onboardingFailed:

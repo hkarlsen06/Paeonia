@@ -23,6 +23,39 @@ struct LocalPrivacyPurgeTests {
         )
     }
 
+    @Test(.timeLimit(.minutes(1))) func relationshipPurgeTellsOpenScreensTheirRowsAreGone() async throws {
+        let store = try PaeoniaLocalStore(inMemory: true)
+        let ownerUserID = UUID()
+        try seedAllRecords(ownerUserID: ownerUserID, in: ModelContext(store.container))
+        let changes = LocalStoreChanges.changes(in: .memories, .locationVisibility)
+
+        try await SwiftDataLocalPrivacyRecordStore(container: store.container)
+            .purgeRelationshipContent(ownerUserID: ownerUserID, clearAccessSnapshot: false)
+
+        var iterator = changes.filter { $0.ownerUserID == ownerUserID }.makeAsyncIterator()
+        let first = await iterator.next()?.domain
+        let second = await iterator.next()?.domain
+        #expect(Set([first, second]) == [.memories, .locationVisibility])
+    }
+
+    /// The hide keeps a queued sharing change, so it must keep the unconfirmed
+    /// choice too. Dropping it let the server's older value show sharing as on.
+    @Test func temporaryHideKeepsAnUnconfirmedSharingChoiceButPermanentLossDropsIt() async throws {
+        let store = try PaeoniaLocalStore(inMemory: true)
+        let ownerUserID = UUID()
+        let key = LocalLocationVisibilitySnapshot.storageKey(ownerUserID: ownerUserID, coupleID: UUID())
+        let ledger = PendingSharingChoiceLedger.shared
+        ledger.withChoices { $0[key] = false }
+        defer { ledger.removeChoices(ownerUserID: ownerUserID) }
+        let purger = SwiftDataLocalPrivacyRecordStore(container: store.container)
+
+        try await purger.hideRelationshipAccess(ownerUserID: ownerUserID)
+        #expect(ledger.withChoices { $0[key] } == false)
+
+        try await purger.purgeRelationshipContent(ownerUserID: ownerUserID, clearAccessSnapshot: false)
+        #expect(ledger.withChoices { $0[key] } == nil)
+    }
+
     @Test func temporaryHidePreservesOwnedContentButPermanentLossPurgesIt() async throws {
         let store = try PaeoniaLocalStore(inMemory: true)
         let ownerUserID = UUID()

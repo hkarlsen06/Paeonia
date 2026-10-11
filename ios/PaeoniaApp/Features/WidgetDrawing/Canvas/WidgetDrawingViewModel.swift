@@ -3,161 +3,48 @@ import PencilKit
 import SwiftUI
 import UIKit
 
-struct WidgetDrawingColorChoice: Identifiable, Equatable {
-    let id: String
-    let color: Color
-    let uiColor: UIColor
-    let accessibilityLabel: LocalizedStringResource
-
-    static func == (lhs: WidgetDrawingColorChoice, rhs: WidgetDrawingColorChoice) -> Bool {
-        lhs.id == rhs.id
-    }
-}
-
-extension WidgetDrawingColorChoice {
-    /// The fixed ink palette offered by the drawing tools.
-    static let palette: [WidgetDrawingColorChoice] = [
-        WidgetDrawingColorChoice(
-            id: "blush",
-            color: .paeoniaWidgetDrawing,
-            uiColor: .paeoniaWidgetDrawing,
-            accessibilityLabel: .widgetDrawingColorBlush
-        ),
-        WidgetDrawingColorChoice(
-            id: "petal",
-            color: .paeoniaAccentPrimary,
-            uiColor: .paeoniaAccentPrimary,
-            accessibilityLabel: .widgetDrawingColorPetal
-        ),
-        WidgetDrawingColorChoice(
-            id: "pink",
-            color: .paeoniaAccentSecondary,
-            uiColor: .paeoniaAccentSecondary,
-            accessibilityLabel: .widgetDrawingColorPink
-        ),
-        WidgetDrawingColorChoice(
-            id: "warm",
-            color: .paeoniaPartnerTwo,
-            uiColor: .paeoniaPartnerTwo,
-            accessibilityLabel: .widgetDrawingColorWarm
-        ),
-        WidgetDrawingColorChoice(
-            id: "green",
-            color: .paeoniaSuccess,
-            uiColor: .paeoniaSuccess,
-            accessibilityLabel: .widgetDrawingColorGreen
-        ),
-        WidgetDrawingColorChoice(
-            id: "gold",
-            color: .paeoniaInkGold,
-            uiColor: .paeoniaInkGold,
-            accessibilityLabel: .widgetDrawingColorGold
-        ),
-        WidgetDrawingColorChoice(
-            id: "blue",
-            color: .paeoniaInkBlue,
-            uiColor: .paeoniaInkBlue,
-            accessibilityLabel: .widgetDrawingColorBlue
-        ),
-        WidgetDrawingColorChoice(
-            id: "lavender",
-            color: .paeoniaInkLavender,
-            uiColor: .paeoniaInkLavender,
-            accessibilityLabel: .widgetDrawingColorLavender
-        ),
-    ]
-}
-
-enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
-    case pen
-    case pencil
-    case eraser
-
-    var id: Self { self }
-
-    var isEraser: Bool {
-        self == .eraser
-    }
-
-    var systemImageName: String {
-        switch self {
-        case .pen:
-            "pencil.tip"
-        case .pencil:
-            "pencil"
-        case .eraser:
-            "eraser.fill"
-        }
-    }
-
-    var accessibilityLabel: LocalizedStringResource {
-        switch self {
-        case .pen:
-            .widgetDrawingToolPen
-        case .pencil:
-            .widgetDrawingToolPencil
-        case .eraser:
-            .widgetDrawingToolEraser
-        }
-    }
-
-    func pencilKitTool(color: UIColor, width: CGFloat) -> any PKTool {
-        let clampedWidth = clampedWidth(width)
-
-        return switch self {
-        case .pen:
-            PKInkingTool(.pen, color: color, width: clampedWidth)
-        case .pencil:
-            PKInkingTool(.pencil, color: color, width: clampedWidth)
-        case .eraser:
-            PKEraserTool(.fixedWidthBitmap, width: clampedWidth)
-        }
-    }
-
-    func clampedWidth(_ width: CGFloat) -> CGFloat {
-        min(max(validWidthRange.lowerBound, width), validWidthRange.upperBound)
-    }
-
-    /// Maps a `0...1` slider position onto this tool's own valid width range, so
-    /// the full slider travel always spans the tool's smallest-to-largest width.
-    func width(forFraction fraction: CGFloat) -> CGFloat {
-        let clampedFraction = min(max(0, fraction), 1)
-        let range = validWidthRange
-        return range.lowerBound + (range.upperBound - range.lowerBound) * clampedFraction
-    }
-
-    /// Each tool reports its own valid width range; the eraser's differs from the
-    /// inking tools, which is why a single fixed slider range cannot be shared.
-    var validWidthRange: ClosedRange<CGFloat> {
-        switch self {
-        case .pen:
-            PKInkingTool.InkType.pen.validWidthRange
-        case .pencil:
-            PKInkingTool.InkType.pencil.validWidthRange
-        case .eraser:
-            PKEraserTool.EraserType.fixedWidthBitmap.validWidthRange
-        }
-    }
-}
-
-/// Identifies a save failure so the view can route it to the shared banner. A
-/// fresh value each time guarantees `onChange` fires on repeated failures.
+/// A send that did not go through, so the view can pick the banner copy. A
+/// fresh id each time makes `onChange` fire on repeated failures.
 struct WidgetDrawingSaveFailure: Equatable, Identifiable {
+    enum Reason: Equatable {
+        /// Saving on this phone failed. The drawing stays on the canvas.
+        case couldNotSave
+        /// The drawing has more lines than the server accepts.
+        case tooBig
+    }
+
     let id = UUID()
+    var reason: Reason = .couldNotSave
 }
 
 @MainActor
 @Observable
 final class WidgetDrawingViewModel {
-    /// Used to render previews when the canvas has not laid out yet (for
-    /// example, during tests). Production saves read the live canvas bounds.
+    /// Where the latest send stands, as the person sees it.
+    enum Delivery: Equatable {
+        case idle
+        /// Saving here and sending to the partner.
+        case sending
+        /// The partner has it. Shown briefly, then back to idle.
+        case sent
+        /// Saved on this phone. It goes out when the phone is online again.
+        case waiting
+    }
+
+    /// Used when the canvas has not laid out yet (for example, during tests).
     nonisolated static let fallbackCanvasSide: CGFloat = 320
-    private static let savedConfirmationDuration: Duration = .seconds(1.8)
+    private static let sentConfirmationDuration: Duration = .seconds(1.8)
     private static let draftPersistenceDelay: Duration = .milliseconds(250)
 
     let colorChoices = WidgetDrawingColorChoice.palette
 
+    /// The drawing on the canvas. The canvas binding writes every stroke here.
     var drawing = PKDrawing()
+    /// Bumped whenever the view model replaces the drawing itself (load, a
+    /// partner's drawing, clear, resize). The canvas view pushes the drawing
+    /// into PencilKit only when this changes, instead of comparing serialized
+    /// bytes on every SwiftUI update.
+    private(set) var drawingRevision = 0
     var selectedTool: WidgetDrawingTool = .pen
     var selectedColor: Color = .paeoniaWidgetDrawing
     private(set) var selectedCGColor: CGColor = UIColor.paeoniaWidgetDrawing.cgColor
@@ -176,105 +63,94 @@ final class WidgetDrawingViewModel {
         selectedTool.width(forFraction: toolWidthFraction)
     }
 
-    private(set) var isSaving = false
-    private(set) var recentlySaved = false
+    private(set) var delivery: Delivery = .idle
+    /// True while the drawing is being saved on this phone. Sending another
+    /// drawing waits for this, but not for the upload to the partner.
+    private(set) var isPublishing = false
     private(set) var saveFailure: WidgetDrawingSaveFailure?
-    /// Attribution of the drawing currently on the canvas (the last saved or
-    /// loaded one). Both nil until something has been saved or loaded.
+    /// The partner sent a drawing while this canvas had changes that were not
+    /// sent. The canvas keeps the changes; the screen says what sending does.
+    private(set) var partnerSentWhileEditing = false
+    /// Who made the drawing that is on the widgets now, and when. Both nil
+    /// until something has been saved or loaded.
     private(set) var savedDrawingAuthorName: String?
     private(set) var savedDrawingCreatedAt: Date?
+    /// Signature of the drawing on the widgets, in the canvas's coordinates.
+    /// Keeps Send disabled until the canvas really differs from it.
+    private var lastSavedDrawingSignature: Int?
+
+    var isSaving: Bool { delivery == .sending }
+    var recentlySaved: Bool { delivery == .sent }
+
     @ObservationIgnored private let service: any WidgetCanvasManaging
     @ObservationIgnored private let uploader: any WidgetCanvasUploading
-    @ObservationIgnored private let ownerUserID: UUID?
+    /// Drafts are kept per person and relationship. Without both IDs the screen
+    /// keeps no draft at all, so a draft can never reach another couple.
+    @ObservationIgnored private let draftKey: WidgetDrawingDraftKey?
     @ObservationIgnored private let draftStore: any WidgetDrawingDraftStoring
+    /// The store's purge count when this screen opened. A purge while the screen
+    /// stays open (for example an unpair) must not get its draft written back.
+    @ObservationIgnored private let draftPurgeGeneration: Int
     @ObservationIgnored private let authorName: String?
     @ObservationIgnored private var hasLoadedSavedDrawing = false
-    @ObservationIgnored private var savedConfirmationTask: Task<Void, Never>?
+    @ObservationIgnored private var sentConfirmationTask: Task<Void, Never>?
     @ObservationIgnored private var draftPersistenceTask: Task<Void, Never>?
-    /// Content signature of the drawing as it was last saved (or loaded). Used
-    /// to keep Save disabled, and the attribution un-struck, until the canvas
-    /// actually differs from what's stored. Derived from the strokes' geometry
-    /// and ink rather than `PKDrawing.dataRepresentation()`, because the byte
-    /// representation also encodes session state and is re-encoded by PencilKit
-    /// after every commit, so identical content would otherwise stop comparing
-    /// equal right after a save (re-enabling Save and striking the attribution
-    /// with no real edit).
-    @ObservationIgnored private var lastSavedDrawingSignature: Int?
+    @ObservationIgnored private var sendGeneration = 0
+    /// The drawing on the widgets, kept in the canvas's coordinates so its
+    /// signature can be recomputed after a resize.
+    @ObservationIgnored private var savedBaseline: PKDrawing?
+    /// The side of the square that `drawing` and `savedBaseline` are in.
+    @ObservationIgnored private var drawingCanvasSide: CGFloat?
+    /// The side of the square the canvas has on screen right now.
+    @ObservationIgnored private var laidOutCanvasSide: CGFloat?
+    @ObservationIgnored private var isDrawingStroke = false
+    @ObservationIgnored private var reloadAfterStroke = false
 
     init(
         ownerUserID: UUID? = nil,
+        coupleID: UUID? = nil,
         authorName: String? = nil,
         service: any WidgetCanvasManaging = WidgetCanvasService.shared,
         uploader: any WidgetCanvasUploading = WidgetCanvasUploadServiceFactory.makeDefault(),
         draftStore: (any WidgetDrawingDraftStoring)? = nil
     ) {
-        self.ownerUserID = ownerUserID
+        let draftStore = draftStore ?? FileWidgetDrawingDraftStore.shared
+        if let ownerUserID, let coupleID {
+            draftKey = WidgetDrawingDraftKey(ownerUserID: ownerUserID, coupleID: coupleID)
+        } else {
+            draftKey = nil
+        }
+        draftPurgeGeneration = ownerUserID.map { draftStore.purgeGeneration(for: $0) } ?? 0
         self.authorName = authorName
         self.service = service
         self.uploader = uploader
-        self.draftStore = draftStore ?? FileWidgetDrawingDraftStore.shared
+        self.draftStore = draftStore
     }
 
     var isColorSelectionEnabled: Bool {
         !selectedTool.isEraser
     }
 
-    /// True when the canvas differs from what's saved. Drives both the Save
-    /// button and the struck-out attribution shown until the next save.
-    /// Returns false again once edits are undone back to the saved state.
+    /// True when the canvas differs from the drawing on the widgets. Returns
+    /// false again once edits are undone back to that drawing.
     var hasUnsavedEdits: Bool {
-        Self.drawingSignature(for: drawing) != lastSavedDrawingSignature
+        drawing.paeoniaContentSignature != lastSavedDrawingSignature
     }
 
-    /// A stable signature of just the visible strokes, so add-then-undo returns
-    /// to the same value and a re-encode after saving does not. Built from each
-    /// stroke's geometry and ink instead of the serialized bytes, which are not
-    /// stable for identical content. See `lastSavedDrawingSignature`.
-    private static func drawingSignature(for drawing: PKDrawing) -> Int {
-        var hasher = Hasher()
-        hasher.combine(drawing.strokes.count)
-        for stroke in drawing.strokes {
-            hasher.combine(stroke.path.count)
-            hasher.combine(stroke.ink.inkType)
-
-            // Round to whole points so sub-pixel re-rendering noise after a
-            // commit never reads as a change.
-            let bounds = stroke.renderBounds
-            hasher.combine(Int(bounds.minX.rounded()))
-            hasher.combine(Int(bounds.minY.rounded()))
-            hasher.combine(Int(bounds.width.rounded()))
-            hasher.combine(Int(bounds.height.rounded()))
-
-            var red: CGFloat = 0
-            var green: CGFloat = 0
-            var blue: CGFloat = 0
-            var alpha: CGFloat = 0
-            stroke.ink.color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-            hasher.combine(Int((red * 255).rounded()))
-            hasher.combine(Int((green * 255).rounded()))
-            hasher.combine(Int((blue * 255).rounded()))
-            hasher.combine(Int((alpha * 255).rounded()))
-        }
-        return hasher.finalize()
-    }
-
-    /// True when there is drawn content that differs from what's already saved.
     var canSave: Bool {
-        !isSaving && !drawing.strokes.isEmpty && hasUnsavedEdits
+        !isPublishing && !drawing.strokes.isEmpty && hasUnsavedEdits
     }
 
-    /// True once a saved drawing has attribution that can be shown. This is
-    /// deliberately independent of the editable canvas being empty: clearing
-    /// is only an unsaved edit, so the row must continue to describe the last
-    /// drawing that is still on the widget.
+    /// True once there is a drawing on the widgets to describe. Independent of
+    /// the canvas being empty: clearing is only an unsent edit, so the row keeps
+    /// describing what the widgets still show.
     var isShowingSavedAttribution: Bool {
         lastSavedDrawingSignature != nil
             && (savedDrawingAuthorName != nil || savedDrawingCreatedAt != nil)
     }
 
-    /// True when there is drawn content the user can clear from the canvas.
     var canClear: Bool {
-        !isSaving && !drawing.strokes.isEmpty
+        !isPublishing && !drawing.strokes.isEmpty
     }
 
     var pencilKitTool: any PKTool {
@@ -283,6 +159,8 @@ final class WidgetDrawingViewModel {
             width: toolWidth
         )
     }
+
+    // MARK: - Tools
 
     func selectTool(_ tool: WidgetDrawingTool) {
         guard selectedTool != tool else {
@@ -332,6 +210,8 @@ final class WidgetDrawingViewModel {
         toolConfigurationRevision += 1
     }
 
+    // MARK: - Canvas
+
     func bindCanvasView(_ canvasView: PKCanvasView) {
         self.canvasView = canvasView
         // This is called from the canvas representable's `makeUIView`, which runs
@@ -352,8 +232,31 @@ final class WidgetDrawingViewModel {
         }
     }
 
-    /// Loads the last saved drawing into the canvas once, so the user continues
-    /// from where they left off. Never clobbers in-progress work.
+    /// The canvas reports when a finger or pencil touches down and lifts, so a
+    /// partner's drawing never replaces the canvas in the middle of a stroke.
+    func setDrawingStrokeInProgress(_ inProgress: Bool) {
+        isDrawingStroke = inProgress
+        guard !inProgress, reloadAfterStroke else {
+            return
+        }
+        reloadAfterStroke = false
+        Task { await reloadSavedDrawingFromSyncIfSafe() }
+    }
+
+    /// The on-screen side of the square canvas. A drawing made on a screen of a
+    /// different size is scaled to fit, so nothing is cut off.
+    func canvasDidLayout(side: CGFloat) {
+        guard side > 0 else {
+            return
+        }
+        laidOutCanvasSide = side
+        fitDrawingToCanvas()
+    }
+
+    // MARK: - Loading
+
+    /// Loads the drawing on the widgets into the canvas once, or an unsent draft
+    /// if there is one. Never replaces strokes drawn while it loads.
     func loadSavedDrawingIfNeeded() async {
         guard !hasLoadedSavedDrawing else {
             return
@@ -363,136 +266,255 @@ final class WidgetDrawingViewModel {
         guard drawing.strokes.isEmpty else {
             return
         }
+        let signatureBeforeLoad = drawing.paeoniaContentSignature
 
         let snapshot = await service.loadSavedSnapshot()
+        let hasPendingUpload = await uploader.hasPendingUpload
+        if hasPendingUpload, delivery == .idle {
+            delivery = .waiting
+        }
         let savedDrawing = snapshot.flatMap { try? PKDrawing(data: $0.drawingData) }
+        let targetSide = laidOutCanvasSide ?? snapshot?.canvasSide ?? drawingCanvasSide
         if let savedDrawing {
-            lastSavedDrawingSignature = Self.drawingSignature(for: savedDrawing)
-            savedDrawingAuthorName = snapshot?.authorName?.trimmedNonEmpty
-            savedDrawingCreatedAt = snapshot?.createdAt
+            setBaseline(
+                savedDrawing.scaled(fromSide: snapshot?.canvasSide ?? targetSide ?? 0, toSide: targetSide ?? 0),
+                authorName: snapshot?.authorName?.trimmedNonEmpty,
+                createdAt: snapshot?.createdAt
+            )
         }
 
-        if let ownerUserID,
-           let draftData = draftStore.draft(for: ownerUserID) {
-            if let draftDrawing = try? PKDrawing(data: draftData) {
-                drawing = draftDrawing
-                if Self.drawingSignature(for: draftDrawing) == lastSavedDrawingSignature {
-                    draftStore.clearDraft(for: ownerUserID)
-                }
-            } else {
-                draftStore.clearDraft(for: ownerUserID)
-                drawing = savedDrawing ?? PKDrawing()
-            }
-        } else {
-            drawing = savedDrawing ?? PKDrawing()
-        }
-        refreshUndoRedoAvailability()
-    }
-
-    /// Re-loads the saved drawing when a partner's update has synced in (the
-    /// screen was already open). Skips when the user has unsaved edits, so
-    /// in-progress work is never clobbered, and no-ops when nothing changed.
-    func reloadSavedDrawingFromSyncIfSafe() async {
-        guard drawing.strokes.isEmpty || !hasUnsavedEdits else {
+        // The person may have started drawing while the saved drawing loaded.
+        // Their strokes win; the loaded drawing is still the baseline above.
+        guard drawing.paeoniaContentSignature == signatureBeforeLoad else {
+            refreshUndoRedoAvailability()
             return
         }
 
+        restoreDraftOrBaseline()
+        drawingCanvasSide = targetSide
+        fitDrawingToCanvas()
+        refreshUndoRedoAvailability()
+    }
+
+    /// Puts an unsent draft on the canvas, or the drawing on the widgets.
+    private func restoreDraftOrBaseline() {
+        guard let draftKey = usableDraftKey, let draftData = draftStore.draft(for: draftKey) else {
+            replaceDrawing(with: savedBaseline ?? PKDrawing())
+            return
+        }
+        guard let draftDrawing = try? PKDrawing(data: draftData) else {
+            draftStore.removeDraft(for: draftKey)
+            replaceDrawing(with: savedBaseline ?? PKDrawing())
+            return
+        }
+        // A draft is from this phone, so it is already in the canvas's size.
+        replaceDrawing(with: draftDrawing)
+        if draftDrawing.paeoniaContentSignature == lastSavedDrawingSignature {
+            draftStore.removeDraft(for: draftKey)
+        }
+    }
+
+    /// Picks up a drawing that synced in while this screen is open. With no
+    /// unsent changes the canvas shows it. With unsent changes the canvas keeps
+    /// them, and the screen says the partner sent something new.
+    func reloadSavedDrawingFromSyncIfSafe() async {
+        // Our own save posts the same update. While it publishes, nothing else
+        // can land (it is marked as not sent yet), and it sets the baseline itself.
+        guard !isPublishing else {
+            return
+        }
+        guard !isDrawingStroke else {
+            reloadAfterStroke = true
+            return
+        }
+        let signatureBeforeLoad = drawing.paeoniaContentSignature
+        let hadUnsavedEdits = hasUnsavedEdits && !drawing.strokes.isEmpty
+
         guard let snapshot = await service.loadSavedSnapshot(),
-              let savedDrawing = try? PKDrawing(data: snapshot.drawingData)
+              let loadedDrawing = try? PKDrawing(data: snapshot.drawingData),
+              !isPublishing
         else {
             return
         }
 
-        let signature = Self.drawingSignature(for: savedDrawing)
-        let normalizedAuthorName = snapshot.authorName?.trimmedNonEmpty
-
-        guard signature != lastSavedDrawingSignature else {
-            // The same visible strokes may have been saved again by either
-            // partner. Refresh any metadata that arrived with that save so the
-            // row identifies the actual latest author and time. A timestamp
-            // means this is complete metadata for a save, so an unavailable
-            // author must clear the old name instead of misattributing it. If a
-            // transient local payload has no metadata at all, preserve the last
-            // known values until complete metadata returns.
-            if let createdAt = snapshot.createdAt {
-                savedDrawingAuthorName = normalizedAuthorName
-                savedDrawingCreatedAt = createdAt
-            } else if let normalizedAuthorName {
-                savedDrawingAuthorName = normalizedAuthorName
-            }
+        let targetSide = drawingCanvasSide ?? laidOutCanvasSide ?? snapshot.canvasSide
+        let savedDrawing = loadedDrawing.scaled(
+            fromSide: snapshot.canvasSide ?? targetSide ?? 0,
+            toSide: targetSide ?? 0
+        )
+        guard savedDrawing.paeoniaContentSignature != lastSavedDrawingSignature else {
+            refreshAttribution(from: snapshot)
             return
         }
 
-        drawing = savedDrawing
-        lastSavedDrawingSignature = signature
-        // A different revision must never inherit the previous revision's
-        // attribution when its metadata is unavailable.
-        savedDrawingAuthorName = normalizedAuthorName
-        savedDrawingCreatedAt = snapshot.createdAt
+        // A different drawing must never inherit the previous one's attribution.
+        setBaseline(savedDrawing, authorName: snapshot.authorName?.trimmedNonEmpty, createdAt: snapshot.createdAt)
         hasLoadedSavedDrawing = true
+
+        // Strokes drawn while the drawing loaded count as unsent changes too.
+        let editedMeanwhile = drawing.paeoniaContentSignature != signatureBeforeLoad
+        if hadUnsavedEdits || editedMeanwhile || isDrawingStroke {
+            partnerSentWhileEditing = true
+            return
+        }
+
+        replaceDrawing(with: savedDrawing)
+        drawingCanvasSide = targetSide
+        if let draftKey = usableDraftKey {
+            draftStore.removeDraft(for: draftKey)
+        }
         refreshUndoRedoAvailability()
     }
 
-    /// Persists the current drawing and publishes it to the widget.
+    /// The same strokes may have been saved again by either partner. Refresh
+    /// any metadata that arrived with that save so the row names the actual
+    /// latest author and time. A timestamp means this is complete metadata, so
+    /// a missing author clears the old name instead of misattributing it.
+    /// Without any metadata, keep the last values.
+    private func refreshAttribution(from snapshot: WidgetCanvasSnapshot) {
+        let normalizedAuthorName = snapshot.authorName?.trimmedNonEmpty
+        if let createdAt = snapshot.createdAt {
+            savedDrawingAuthorName = normalizedAuthorName
+            savedDrawingCreatedAt = createdAt
+        } else if let normalizedAuthorName {
+            savedDrawingAuthorName = normalizedAuthorName
+        }
+    }
+
+    // MARK: - Sending
+
+    /// Saves the drawing on this phone, shows it on both widgets, and sends it
+    /// to the partner.
     func save() async {
         guard canSave else {
             return
         }
 
-        isSaving = true
-        recentlySaved = false
-        saveFailure = nil
-        let drawingData = drawing.dataRepresentation()
-        let savedDrawingSignature = Self.drawingSignature(for: drawing)
-        let savedAt = Date()
-        let canvasSize = currentCanvasSize()
-        // Snapshot the PencilKit-derived metadata now (on the main actor) so the
-        // upload uses values consistent with the bytes we're saving.
-        let uploadPayload = WidgetDrawingUploadPayload(
-            drawingData: drawingData,
-            canvasSide: canvasSize.width,
-            strokeCount: drawing.strokes.count,
-            pointCount: drawing.strokes.reduce(0) { $0 + $1.path.count },
-            bounds: drawing.bounds
-        )
+        let sentDrawing = drawing
+        guard let uploadPayload = makeUploadPayload(for: sentDrawing) else {
+            saveFailure = WidgetDrawingSaveFailure(reason: .tooBig)
+            return
+        }
 
+        sendGeneration += 1
+        let generation = sendGeneration
+        sentConfirmationTask?.cancel()
+        isPublishing = true
+        delivery = .sending
+        saveFailure = nil
+        let savedAt = Date()
+        let canvasSide = uploadPayload.canvasSide
+
+        // Marked before the drawing is shown locally, so a sync running right now
+        // cannot pull an older drawing over this one.
+        let previousPending = await uploader.markPending(uploadPayload)
         do {
             try await service.saveDrawing(
-                drawingData,
-                canvasSize: canvasSize,
+                uploadPayload.drawingData,
+                canvasSize: CGSize(width: canvasSide, height: canvasSide),
                 authorName: authorName,
                 createdAt: savedAt
             )
-            // The canvas remains interactive while rendering and disk writes
-            // suspend. Establish the clean baseline from the exact snapshot we
-            // published, not from strokes the user may have added meanwhile.
-            lastSavedDrawingSignature = savedDrawingSignature
-            savedDrawingAuthorName = authorName?.trimmedNonEmpty
-            savedDrawingCreatedAt = savedAt
-            if Self.drawingSignature(for: drawing) == savedDrawingSignature {
-                clearDraft()
-            } else {
-                persistDraftIfNeeded()
-            }
-            isSaving = false
-            showSavedConfirmation()
-            // Local widget already updated; send to the partner in the background.
-            await uploader.enqueueUpload(uploadPayload)
         } catch {
-            isSaving = false
+            await uploader.restorePending(previousPending, replacing: uploadPayload)
+            isPublishing = false
+            delivery = .idle
             saveFailure = WidgetDrawingSaveFailure()
+            return
+        }
+
+        isPublishing = false
+        adoptPublishedDrawing(sentDrawing, savedAt: savedAt)
+
+        let outcome = await uploader.send(uploadPayload)
+        // A newer send owns the status now.
+        if generation == sendGeneration {
+            applyDelivery(outcome)
         }
     }
 
-    /// Empties the canvas as a local editing action. The widget keeps showing
-    /// the last saved drawing until the user saves again.
+    private func applyDelivery(_ outcome: WidgetDrawingDelivery) {
+        switch outcome {
+        case .delivered:
+            showSentConfirmation()
+        case .waiting:
+            delivery = .waiting
+        case .replaced:
+            delivery = .idle
+        }
+    }
+
+    /// The upload payload for `drawing`, or nil when the drawing is past the
+    /// server's limits. PencilKit-derived metadata is read here, on the main
+    /// actor, so the upload uses values that match the bytes being saved.
+    private func makeUploadPayload(for drawing: PKDrawing) -> WidgetDrawingUploadPayload? {
+        let drawingData = drawing.dataRepresentation()
+        let strokeCount = drawing.strokes.count
+        let pointCount = drawing.paeoniaPointCount
+        guard WidgetDrawingLimits.allows(
+            byteCount: drawingData.count,
+            strokeCount: strokeCount,
+            pointCount: pointCount
+        ) else {
+            return nil
+        }
+        return WidgetDrawingUploadPayload(
+            drawingData: drawingData,
+            canvasSide: currentCanvasSide(),
+            strokeCount: strokeCount,
+            pointCount: pointCount,
+            bounds: drawing.bounds
+        )
+    }
+
+    /// The canvas stays usable while the save runs. The baseline is the exact
+    /// drawing that was published, not strokes added meanwhile.
+    private func adoptPublishedDrawing(_ sentDrawing: PKDrawing, savedAt: Date) {
+        let sentSignature = sentDrawing.paeoniaContentSignature
+        savedBaseline = sentDrawing
+        lastSavedDrawingSignature = sentSignature
+        savedDrawingAuthorName = authorName?.trimmedNonEmpty
+        savedDrawingCreatedAt = savedAt
+        partnerSentWhileEditing = false
+        if drawing.paeoniaContentSignature == sentSignature {
+            clearDraft()
+        } else {
+            persistDraftIfNeeded()
+        }
+    }
+
+    /// A send that was waiting for the network went out in the background.
+    func refreshDelivery() async {
+        guard delivery == .waiting else {
+            return
+        }
+        if await !uploader.hasPendingUpload, delivery == .waiting {
+            showSentConfirmation()
+        }
+    }
+
+    private func showSentConfirmation() {
+        delivery = .sent
+        sentConfirmationTask?.cancel()
+        sentConfirmationTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: Self.sentConfirmationDuration)
+            guard !Task.isCancelled, let self, self.delivery == .sent else {
+                return
+            }
+            self.delivery = .idle
+        }
+    }
+
+    /// Empties the canvas as a local editing action. The widgets keep the last
+    /// sent drawing until the next send.
     func clearCanvas() {
-        drawing = PKDrawing()
-        canvasView?.drawing = PKDrawing()
-        canvasView?.undoManager?.removeAllActions()
+        replaceDrawing(with: PKDrawing())
+        partnerSentWhileEditing = false
         persistDraftIfNeeded()
         refreshUndoRedoAvailability()
     }
+
+    // MARK: - Drafts
 
     /// Persists the current edit synchronously so an interactive swipe-dismiss,
     /// background transition, or process suspension cannot drop the latest
@@ -503,8 +525,19 @@ final class WidgetDrawingViewModel {
         persistDraftImmediatelyIfNeeded()
     }
 
+    /// The draft key while it is still safe to use: nil without a couple, and
+    /// nil after a privacy purge ran while this screen stayed open.
+    private var usableDraftKey: WidgetDrawingDraftKey? {
+        guard let draftKey,
+              draftStore.purgeGeneration(for: draftKey.ownerUserID) == draftPurgeGeneration
+        else {
+            return nil
+        }
+        return draftKey
+    }
+
     private func scheduleDraftPersistence() {
-        guard ownerUserID != nil else {
+        guard usableDraftKey != nil else {
             return
         }
 
@@ -524,30 +557,33 @@ final class WidgetDrawingViewModel {
     }
 
     private func persistDraftImmediatelyIfNeeded() {
-        guard let ownerUserID else {
+        guard let draftKey = usableDraftKey else {
             return
         }
 
         if hasUnsavedEdits && (!drawing.strokes.isEmpty || lastSavedDrawingSignature != nil) {
-            draftStore.setDraft(drawing.dataRepresentation(), for: ownerUserID)
+            draftStore.setDraft(drawing.dataRepresentation(), for: draftKey)
         } else {
-            draftStore.clearDraft(for: ownerUserID)
+            draftStore.removeDraft(for: draftKey)
         }
     }
 
     private func clearDraft() {
         draftPersistenceTask?.cancel()
         draftPersistenceTask = nil
-        guard let ownerUserID else {
+        guard let draftKey = usableDraftKey else {
             return
         }
-        draftStore.clearDraft(for: ownerUserID)
+        draftStore.removeDraft(for: draftKey)
     }
 
-    private func currentCanvasSize() -> CGSize {
-        let bounds = canvasView?.bounds.size ?? .zero
-        let side = Self.canvasSide(for: bounds)
-        return CGSize(width: side, height: side)
+    // MARK: - Canvas size
+
+    private func currentCanvasSide() -> CGFloat {
+        if let drawingCanvasSide {
+            return drawingCanvasSide
+        }
+        return Self.canvasSide(for: canvasView?.bounds.size ?? .zero)
     }
 
     /// PencilKit, upload metadata, and raster rendering share one square source
@@ -560,17 +596,48 @@ final class WidgetDrawingViewModel {
         return min(size.width, size.height)
     }
 
-    private func showSavedConfirmation() {
-        recentlySaved = true
-        savedConfirmationTask?.cancel()
-        savedConfirmationTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: Self.savedConfirmationDuration)
-            guard !Task.isCancelled else {
-                return
-            }
-            self?.recentlySaved = false
+    /// Scales the canvas and its baseline together, so a resize is never
+    /// mistaken for an edit.
+    private func fitDrawingToCanvas() {
+        guard let laidOutCanvasSide else {
+            return
+        }
+        guard let drawingCanvasSide else {
+            drawingCanvasSide = laidOutCanvasSide
+            return
+        }
+        guard abs(drawingCanvasSide - laidOutCanvasSide) >= 0.5 else {
+            return
+        }
+        let hadUnsavedEdits = hasUnsavedEdits
+        if let savedBaseline {
+            let scaledBaseline = savedBaseline.scaled(fromSide: drawingCanvasSide, toSide: laidOutCanvasSide)
+            self.savedBaseline = scaledBaseline
+            lastSavedDrawingSignature = scaledBaseline.paeoniaContentSignature
+        }
+        let scaledDrawing = drawing.scaled(fromSide: drawingCanvasSide, toSide: laidOutCanvasSide)
+        self.drawingCanvasSide = laidOutCanvasSide
+        if !hadUnsavedEdits, let savedBaseline {
+            replaceDrawing(with: savedBaseline)
+        } else {
+            replaceDrawing(with: scaledDrawing)
         }
     }
+
+    private func setBaseline(_ baseline: PKDrawing, authorName: String?, createdAt: Date?) {
+        savedBaseline = baseline
+        lastSavedDrawingSignature = baseline.paeoniaContentSignature
+        savedDrawingAuthorName = authorName
+        savedDrawingCreatedAt = createdAt
+    }
+
+    /// Replaces the canvas content from code (not from a stroke).
+    private func replaceDrawing(with newDrawing: PKDrawing) {
+        drawing = newDrawing
+        drawingRevision += 1
+    }
+
+    // MARK: - Undo
 
     func undoDrawing() {
         guard let canvasView,
@@ -607,25 +674,5 @@ final class WidgetDrawingViewModel {
     private func refreshUndoRedoAvailability(using undoManager: UndoManager?) {
         canUndoDrawing = undoManager?.canUndo ?? false
         canRedoDrawing = undoManager?.canRedo ?? false
-    }
-}
-
-private extension UIColor {
-    static func paeoniaDrawingColor(from cgColor: CGColor) -> UIColor {
-        let resolvedColor = UIColor(cgColor: cgColor).resolvedColor(
-            with: UITraitCollection(userInterfaceStyle: .light)
-        )
-
-        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
-              let convertedColor = resolvedColor.cgColor.converted(
-                  to: colorSpace,
-                  intent: .defaultIntent,
-                  options: nil
-              )
-        else {
-            return resolvedColor
-        }
-
-        return UIColor(cgColor: convertedColor)
     }
 }

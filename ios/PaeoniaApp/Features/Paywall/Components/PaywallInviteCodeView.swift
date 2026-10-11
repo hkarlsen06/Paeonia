@@ -148,8 +148,7 @@ struct PaywallInviteCodeView: View {
     }
 
     static func sanitize(_ value: String) -> String {
-        let allowed = value.uppercased().filter { $0.isLetter || $0.isNumber }
-        return String(allowed.prefix(codeLength))
+        PairingInviteCode.entryText(value)
     }
 
     private func handleSubmit() {

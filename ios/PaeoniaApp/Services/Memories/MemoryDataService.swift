@@ -1,5 +1,7 @@
 import Foundation
 
+// The write methods mirror the backend functions' arguments one to one.
+// swiftlint:disable function_parameter_count
 nonisolated protocol MemoryDataServicing: Actor {
     func loadCachedMemories(
         ownerUserID: UUID,
@@ -60,12 +62,19 @@ nonisolated protocol MemoryDataServicing: Actor {
         operation: SyncClientOperation
     ) async throws
 }
+// swiftlint:enable function_parameter_count
 
 nonisolated enum MemoryDataServiceError: Error, Equatable, Sendable {
     case missingMemory
+    /// The memory changed on this device since the caller read it (usually the
+    /// partner's edit arriving). Read it again and recompute the edit.
+    case staleRevision
     case missingCreateContent
     case emptyTitle
     case emptyNote
+    /// Longer than the server accepts. See `MemoryDataService.titleCharacterLimit`.
+    case titleTooLong
+    case noteTooLong
     case emptyThreadMessage
     case emptyMediaAttachment
 }
@@ -97,11 +106,17 @@ actor MemoryDataService: MemoryDataServicing {
         try await memoryStore.load(ownerUserID: ownerUserID, memoryID: memoryID)
     }
 
+    /// The memory to change. A memory that is deleted (by either partner, even if the
+    /// delete hasn't synced yet) or hidden counts as missing, so nothing new is queued
+    /// for it. The server would refuse those writes anyway.
     func requireMemory(
         ownerUserID: UUID,
         memoryID: UUID
     ) async throws -> MemoryRecord {
-        guard let existing = try await memoryStore.load(ownerUserID: ownerUserID, memoryID: memoryID) else {
+        guard let existing = try await memoryStore.load(ownerUserID: ownerUserID, memoryID: memoryID),
+              existing.snapshot.isVisible,
+              existing.syncStatus != .pendingDelete
+        else {
             throw MemoryDataServiceError.missingMemory
         }
         return existing
@@ -167,6 +182,26 @@ actor MemoryDataService: MemoryDataServicing {
             conflictReason: nil,
             localUpdatedAt: operation.localCreatedAt
         )
+    }
+
+    /// The server's limits. It counts Unicode code points of the trimmed text, so
+    /// an emoji made of several code points counts as several.
+    static let titleCharacterLimit = 160
+    static let noteCharacterLimit = 4_000
+
+    static func isOverLimit(_ text: String, _ limit: Int) -> Bool {
+        text.unicodeScalars.count > limit
+    }
+
+    /// The longest start of `text` that fits in `limit` code points, without
+    /// cutting a character in half.
+    static func prefix(_ text: String, fittingCodePoints limit: Int) -> String {
+        var count = 0
+        let end = text.firstIndex { character in
+            count += character.unicodeScalars.count
+            return count > limit
+        } ?? text.endIndex
+        return String(text[..<end])
     }
 
     static func normalizedRequired(_ value: String) -> String {

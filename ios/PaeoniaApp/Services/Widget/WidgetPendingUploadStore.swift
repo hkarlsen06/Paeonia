@@ -12,6 +12,9 @@ nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
     let boundsY: Double
     let boundsWidth: Double
     let boundsHeight: Double
+    /// Where the upload got to, so a retry reuses its IDs. Nil until the
+    /// first attempt starts, and for markers saved by older builds.
+    var progress: WidgetUploadProgress?
 
     init(
         contentHash: String,
@@ -63,7 +66,8 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
 
     init(
         defaults: UserDefaults? = nil,
-        retryDelay: TimeInterval = 60
+        // Short enough that a reconnect soon after a failed send retries it.
+        retryDelay: TimeInterval = 20
     ) {
         let resolvedDefaults = defaults
             ?? UserDefaults(suiteName: PaeoniaAppGroup.identifier)
@@ -136,12 +140,37 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
         }
     }
 
+    /// Saves (or, with nil, forgets) the upload progress, but only while the
+    /// marker still belongs to this drawing.
+    func saveProgress(_ progress: WidgetUploadProgress?, contentHash: String) {
+        guard var snapshot = pendingSnapshot, snapshot.contentHash == contentHash else {
+            return
+        }
+        snapshot.progress = progress
+        if let data = try? JSONEncoder().encode(snapshot) {
+            defaults.set(data, forKey: key)
+        }
+    }
+
     func clearPending(_ contentHash: String) {
         if pendingSnapshot?.contentHash == contentHash {
             defaults.removeObject(forKey: key)
         }
         if defaults.string(forKey: legacyHashKey) == contentHash {
             defaults.removeObject(forKey: legacyHashKey)
+        }
+    }
+
+    /// Puts back `previous` (or clears the marker when there was none), but only
+    /// while the marker still belongs to the drawing that replaced it.
+    func restore(_ previous: WidgetPendingUploadSnapshot?, replacingContentHash contentHash: String) {
+        guard pendingSnapshot?.contentHash == contentHash else {
+            return
+        }
+        if let previous, let data = try? JSONEncoder().encode(previous) {
+            defaults.set(data, forKey: key)
+        } else {
+            defaults.removeObject(forKey: key)
         }
     }
 

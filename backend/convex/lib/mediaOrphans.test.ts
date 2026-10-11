@@ -161,6 +161,9 @@ describe("media orphan queueing", () => {
     await insertMemoryWithMedia(t, couple, linked);
     const orphanA = await insertAsset(t, couple.first.userId, couple.coupleId, { updated_at: "2026-10-10T10:00:00.000Z" });
     const orphanB = await insertAsset(t, couple.first.userId, couple.coupleId, { updated_at: "2026-10-10T10:30:00.000Z" });
+    // Fresh uploads may still be waiting for an offline write to attach them.
+    expect(await t.run((ctx) => queueOrphanedMediaAssetsForDelete(ctx))).toBe(0);
+    vi.setSystemTime(new Date("2026-10-17T12:00:01.000Z"));
     expect(await t.run((ctx) => queueOrphanedMediaAssetsForDelete(ctx, 1))).toBe(1);
     expect((await asset(t, orphanA))?.storage_delete_status).toBe("pending");
     expect((await asset(t, orphanB))?.storage_delete_status).toBe("none");

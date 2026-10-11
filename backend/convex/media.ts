@@ -4,6 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import { httpAction, internalMutation, internalQuery, mutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import { canAccessCoupleContent } from "./lib/access";
+import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
@@ -183,15 +184,44 @@ export const create_pending_media_upload = mutation({
       .query("media_assets")
       .withIndex("by_uuid", (q) => q.eq("id", stored.media_asset_id))
       .unique();
-    if (!asset || asset.owner_user_id !== userId || asset.deleted_at !== undefined) {
+    if (!asset || asset.owner_user_id !== userId) {
       return fail("42501", "media upload reservation is not available");
     }
-    if (asset.upload_status !== "pending") fail("23514", "media asset is not pending upload");
-    if (asset.upload_expires_at <= nowIso()) fail("22023", "media upload reservation is expired");
     if (asset.couple_id !== undefined && !(await canAccessCoupleContent(ctx, userId, asset.couple_id))) {
       fail("42501", "active entitled couple access is required");
     }
-    return [{ ...stored, upload_url: await ctx.storage.generateUploadUrl() }];
+    // A queued daily answer retries reserve, upload, and finalize with the same operations
+    // until it is sent, so a replay must not fail for good. A finalized asset replays as is.
+    // Finalize then replays too and ignores the new bytes, which the orphan blob sweep
+    // removes. A reservation that ran out before any upload is renewed.
+    const now = nowIso();
+    const live = asset.deleted_at === undefined && (asset.upload_status === "finalized" || asset.upload_status === "pending");
+    const ranOut =
+      asset.storage_id === undefined &&
+      (asset.upload_status === "expired" || (asset.upload_status === "pending" && asset.deleted_at === undefined)) &&
+      asset.upload_expires_at <= now;
+    if (ranOut) {
+      await assertNoPendingAccountDeletion(ctx, userId);
+      await ctx.db.patch(
+        asset._id,
+        withUpdatedAt({
+          upload_status: "pending" as const,
+          upload_expires_at: expiresAt,
+          deleted_at: undefined,
+          storage_delete_status: "none" as const,
+          storage_deleted_at: undefined,
+        }),
+      );
+    } else if (!live) {
+      return fail("42501", "media upload reservation is not available");
+    }
+    return [
+      {
+        ...stored,
+        upload_expires_at: ranOut ? expiresAt : asset.upload_expires_at,
+        upload_url: await ctx.storage.generateUploadUrl(),
+      },
+    ];
   },
 });
 

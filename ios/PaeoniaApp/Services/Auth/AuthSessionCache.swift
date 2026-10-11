@@ -31,7 +31,13 @@ nonisolated enum AuthSessionFallbackPolicy {
     /// Only transport failures may use the last server-verified profile. A
     /// backend authorization, missing-row, or decoding error must fail closed
     /// instead of reviving cached access after the backend rejected the profile.
+    /// A server that is restarting or overloaded (5xx, 408, 429) did not reject
+    /// anything, so it counts as a transport failure. Without this, a deploy
+    /// during a cold launch signs the person out.
     static func allowsCachedSession(for error: any Error) -> Bool {
+        if case let PaeoniaConvexError.http(status, _) = error {
+            return status >= 500 || status == 408 || status == 429
+        }
         guard let urlError = error as? URLError else {
             return false
         }
@@ -44,7 +50,9 @@ nonisolated enum AuthSessionFallbackPolicy {
              .cannotConnectToHost,
              .dnsLookupFailed,
              .internationalRoamingOff,
-             .dataNotAllowed:
+             .dataNotAllowed,
+             .secureConnectionFailed,
+             .cannotLoadFromNetwork:
             true
         default:
             false

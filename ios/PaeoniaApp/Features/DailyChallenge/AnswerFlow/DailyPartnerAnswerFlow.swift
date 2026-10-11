@@ -8,7 +8,9 @@ import SwiftUI
 /// composer, but without the multi-question chrome (no eyebrow, step bar, or skip).
 /// Sending your answer unlocks your partner's reply, which is then revealed right here
 /// — the payoff for answering — so the moment doesn't depend on finding the card again
-/// in the list afterward. Done closes the flow.
+/// in the list afterward. When the send is slow or offline, the reveal screen waits
+/// with the user's answer on it and fills in the reply once it arrives. Done closes
+/// the flow at any point.
 struct DailyPartnerAnswerFlow: View {
     let question: DailyChallengeQuestion
     let viewModel: DailyChallengeViewModel
@@ -48,6 +50,21 @@ struct DailyPartnerAnswerFlow: View {
         // black doesn't show through the keyboard's rounded top corners.
         .background { Color.paeoniaBackgroundPrimary.ignoresSafeArea() }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
+        .onChange(of: wasAnswerReturned) { _, returned in
+            if returned {
+                withAnimation(PaeoniaMotion.stateChange) { phase = .composing }
+            }
+        }
+    }
+
+    /// The server refused the answer for good and it is back in the composer, so
+    /// nothing will unlock. The screen goes back to the question with the answer
+    /// still filled in.
+    private var wasAnswerReturned: Bool {
+        phase == .revealed
+            && !viewModel.isSending(question.id)
+            && revealedQuestion?.hasOwnAnswer != true
+            && viewModel.hasDraftContent(for: question.id)
     }
 
     // MARK: - Composing
@@ -160,6 +177,7 @@ struct DailyPartnerAnswerFlow: View {
             question: question,
             revealedQuestion: revealedQuestion,
             participants: viewModel.participants,
+            sending: viewModel.sendingPreview(for: liveQuestion),
             onDone: dismiss
         )
     }
@@ -201,20 +219,17 @@ struct DailyPartnerAnswerFlow: View {
 
         isComposerFocused = false
 
-        // Hold on the compose screen (Send still busy) just long enough for the partner's
-        // now-unlocked reply to load. Capped, so a slow connection never holds it open.
+        // Hold on the compose screen (Send still busy) for a moment, so a quick reply
+        // turns over in one step. Capped, so a slow connection never holds it here.
         phase = .sending
         let didReveal = await viewModel.awaitAnswerReveal(for: question.id)
-
         if didReveal, revealedQuestion?.canViewPartnerAnswer == true {
-            // The reply is viewable — turn the screen straight over to it.
             PaeoniaHaptics.answerRevealed()
-            withAnimation(PaeoniaMotion.meaningfulMoment) { phase = .revealed }
-        } else {
-            // Offline or still sending: nothing to reveal yet. Close; the card shows
-            // both answers once the send syncs and the reply unlocks.
-            onClose()
         }
+        // Slow or offline: the reveal screen still opens, shows the answer as saved,
+        // and fills in their reply when it arrives. Closing here used to send the
+        // user off to find the card again.
+        withAnimation(PaeoniaMotion.meaningfulMoment) { phase = .revealed }
     }
 
     private func dismiss() {
@@ -238,11 +253,35 @@ struct DailyPartnerAnswerFlow: View {
 /// challenge flow. It receives the originally presented question separately from the
 /// live snapshot so reloads may reorder the question list without changing the prompt
 /// or invalidating the presentation that is already on screen.
+///
+/// Until the partner's answer can be shown (the user's answer is still sending, or
+/// the reply hasn't loaded), it shows a waiting block for the partner and the user's
+/// saved answer. The reply fades in on its own when the live snapshot unlocks it.
 struct DailyPartnerAnswerRevealView: View {
     let question: DailyChallengeQuestion
     let revealedQuestion: DailyChallengeQuestion?
     let participants: DailyChallengeParticipants
+    /// The user's answer while it's still sending, shown before the server has it.
+    var sending: DailySendingPreview?
     let onDone: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The exchange as last seen unlocked. After the couple's day ends, today's
+    /// snapshot can drop a finished exchange, and an open reveal must not lose it.
+    @State private var lastRevealed: DailyChallengeQuestion?
+
+    private static func isUnlocked(_ question: DailyChallengeQuestion?) -> Bool {
+        question?.canViewPartnerAnswer == true && question?.partnerAnswerDetail?.canViewAnswer == true
+    }
+
+    /// The live question when it's unlocked, otherwise the last unlocked copy.
+    private var shownQuestion: DailyChallengeQuestion? {
+        Self.isUnlocked(revealedQuestion) ? revealedQuestion : lastRevealed
+    }
+
+    private var isRevealed: Bool {
+        shownQuestion != nil
+    }
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
@@ -257,9 +296,12 @@ struct DailyPartnerAnswerRevealView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    if let revealedQuestion {
-                        DailyQuestionStatusView(question: revealedQuestion, participants: participants)
-                        DailyAnswerDetailsView(question: revealedQuestion, participants: participants)
+                    if let shownQuestion {
+                        DailyQuestionStatusView(question: shownQuestion, participants: participants)
+                        DailyAnswerDetailsView(question: shownQuestion, participants: participants)
+                            .transition(.opacity)
+                    } else {
+                        waitingContent
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -274,6 +316,60 @@ struct DailyPartnerAnswerRevealView: View {
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.bottom, PaeoniaSpacing.space8)
+        }
+        .animation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment, value: isRevealed)
+        .onChange(of: revealedQuestion, initial: true) { _, question in
+            if Self.isUnlocked(question) { lastRevealed = question }
+        }
+        .onChange(of: isRevealed) { _, revealed in
+            if revealed { PaeoniaHaptics.answerRevealed() }
+        }
+    }
+
+    /// The partner's reply is on its way: a calm waiting block for them, then the
+    /// user's own answer as it was saved.
+    @ViewBuilder
+    private var waitingContent: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            Text(verbatim: participants.partnerName)
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextSecondary)
+
+            HStack(spacing: PaeoniaSpacing.space12) {
+                ProgressView()
+                    .tint(.paeoniaAccentPrimary)
+                Text(.dailyChallengePartnerRevealWaiting(participants.partnerName))
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(PaeoniaSpacing.space12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.paeoniaSurfaceSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+        .accessibilityElement(children: .combine)
+
+        if let sending {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                Text(.dailyChallengeChoiceYou)
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextSecondary)
+
+                DailySendingAnswerView(
+                    mediaKind: sending.mediaKind,
+                    mediaData: sending.mediaData,
+                    voiceDurationMs: sending.voiceDurationMs,
+                    partnerChoiceName: sending.partnerChoiceName,
+                    text: sending.text
+                )
+            }
+            .padding(PaeoniaSpacing.space12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.paeoniaSurfaceSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+        } else if let revealedQuestion, revealedQuestion.ownAnswerDetail != nil {
+            DailyAnswerDetailsView(question: revealedQuestion, participants: participants)
         }
     }
 }

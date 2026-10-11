@@ -46,6 +46,22 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
         }
     }
 
+    /// One-shot reads of a thread can be older than live results that landed while
+    /// the request was in flight. The cache holds those newer messages, so a save of
+    /// the read keeps every confirmed cached message that the read lacks and that
+    /// is newer than the read's newest message. Older ones stay dropped, so a message
+    /// the server removed disappears.
+    static func keepingNewerCached(
+        _ snapshot: [DailyQuestionChatMessage],
+        cached: [DailyQuestionChatMessage]
+    ) -> [DailyQuestionChatMessage] {
+        let newest = snapshot.map(\.createdAt).max() ?? .distantPast
+        let snapshotIDs = Set(snapshot.map(\.id))
+        return snapshot + cached.filter {
+            !$0.isSending && !$0.sendFailed && !snapshotIDs.contains($0.id) && $0.createdAt > newest
+        }
+    }
+
     /// Links live server copies of this device's still-sending messages to their
     /// operations. The live query can deliver a message before the send's own
     /// response confirms it, and the server copy carries no client operation id,

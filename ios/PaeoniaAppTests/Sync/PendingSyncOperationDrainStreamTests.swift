@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import PaeoniaApp
 
@@ -206,6 +207,151 @@ struct PendingSyncOperationDrainStreamTests {
     }
 }
 
+/// A run sends every waiting write once, and one write never holds up the others.
+struct PendingSyncOperationDrainRunTests {
+    @Test func drainStreamStillSendsWritesQueuedBehindAnOperationWithoutAHandler() async throws {
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let unsupported = try await enqueue(
+            1,
+            kind: .shuffleDailyQuestion,
+            owner: ownerUserID,
+            in: pendingStore
+        )
+        let supported = try await enqueue(2, kind: .submitDailyAnswer, owner: ownerUserID, in: pendingStore)
+        let handler = RecordingPendingOperationHandler(operationKind: .submitDailyAnswer)
+        let stream = PendingSyncOperationDrainStream(handlers: [handler])
+
+        await #expect(throws: PendingSyncOperationDrainError.unsupportedOperationKind("shuffle_daily_question")) {
+            try await stream.push(context: Self.context(owner: ownerUserID, store: pendingStore))
+        }
+
+        #expect(await handler.sentOperationIDs == [supported.id])
+        let stillWaiting = try await pendingStore.readyOperations(ownerUserID: ownerUserID, limit: 10, now: Date())
+        #expect(stillWaiting.map(\.operation.id) == [unsupported.id])
+    }
+
+    @Test func drainStreamSendsEveryWaitingWriteNotJustTheFirstBatch() async throws {
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        var queued: [UUID] = []
+        for sequence in 1...5 {
+            let operation = try await enqueue(sequence, kind: .submitDailyAnswer, owner: ownerUserID, in: pendingStore)
+            queued.append(operation.id)
+        }
+        let handler = RecordingPendingOperationHandler(operationKind: .submitDailyAnswer)
+        let stream = PendingSyncOperationDrainStream(handlers: [handler], batchSize: 2)
+
+        try await stream.push(context: Self.context(owner: ownerUserID, store: pendingStore))
+
+        #expect(await handler.sentOperationIDs == queued)
+    }
+
+    @Test func drainStreamSendsAWriteThatIsWaitingOutItsRetryDelay() async throws {
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let operation = try await enqueue(1, kind: .submitDailyAnswer, owner: ownerUserID, in: pendingStore)
+        // An earlier offline attempt pushed the next try an hour out.
+        try await pendingStore.markSending(clientOperationID: operation.id, at: Date())
+        try await pendingStore.markRetryableFailure(
+            clientOperationID: operation.id,
+            errorDescription: "offline",
+            nextRetryAt: Date().addingTimeInterval(3_600),
+            at: Date()
+        )
+        let handler = RecordingPendingOperationHandler(operationKind: .submitDailyAnswer)
+        let stream = PendingSyncOperationDrainStream(handlers: [handler])
+
+        try await stream.push(context: Self.context(owner: ownerUserID, store: pendingStore, reason: .foreground))
+
+        #expect(await handler.sentOperationIDs == [operation.id])
+    }
+
+    @Test func drainStreamTriesAFailingWriteOnlyOncePerRun() async throws {
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        _ = try await enqueue(1, kind: .submitDailyAnswer, owner: ownerUserID, in: pendingStore)
+        let stream = PendingSyncOperationDrainStream(
+            handlers: [ThrowingPendingOperationHandler(operationKind: .submitDailyAnswer)],
+            retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0)
+        )
+
+        try await stream.push(context: Self.context(owner: ownerUserID, store: pendingStore))
+
+        let operations = try await pendingStore.inFlightOperations(ownerUserID: ownerUserID, kind: .submitDailyAnswer)
+        #expect(operations.first?.attemptCount == 1)
+    }
+
+    @Test func drainStreamRemovesWritesTheServerAlreadyAccepted() async throws {
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let localStore = try PaeoniaLocalStore(inMemory: true)
+        let pendingStore = SwiftDataPendingSyncOperationRepository(container: localStore.container)
+        _ = try await enqueue(1, kind: .submitDailyAnswer, owner: ownerUserID, in: pendingStore)
+        let stream = PendingSyncOperationDrainStream(
+            handlers: [RecordingPendingOperationHandler(operationKind: .submitDailyAnswer)]
+        )
+        let context = Self.context(owner: ownerUserID, store: pendingStore)
+
+        try await stream.push(context: context)
+        try await stream.push(context: context)
+
+        let rows = try ModelContext(localStore.container).fetchCount(FetchDescriptor<LocalPendingSyncOperation>())
+        #expect(rows == 0)
+    }
+
+    @Test func drainStreamDoesNotSendAWritePurgedAfterTheBatchWasRead() async throws {
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let localStore = try PaeoniaLocalStore(inMemory: true)
+        let pendingStore = SwiftDataPendingSyncOperationRepository(container: localStore.container)
+        let first = try await enqueue(1, kind: .submitDailyAnswer, owner: ownerUserID, in: pendingStore)
+        _ = try await enqueue(2, kind: .submitDailyAnswer, owner: ownerUserID, in: pendingStore)
+        // Sending the first write ends the relationship, which purges every queued write.
+        let handler = PurgingPendingOperationHandler(
+            purger: SwiftDataLocalPrivacyRecordStore(container: localStore.container)
+        )
+        let stream = PendingSyncOperationDrainStream(handlers: [handler])
+
+        try await stream.push(context: Self.context(owner: ownerUserID, store: pendingStore))
+
+        #expect(await handler.sentOperationIDs == [first.id])
+    }
+
+    private static func context(
+        owner: UUID,
+        store: any PendingSyncOperationPersisting,
+        reason: SyncRequestReason = .localChange
+    ) -> SyncContext {
+        SyncContext(
+            session: SyncSession(userID: owner),
+            reason: reason,
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: store
+        )
+    }
+
+    private func enqueue(
+        _ sequence: Int,
+        kind: SyncPendingOperationKind,
+        owner: UUID,
+        in store: any PendingSyncOperationPersisting
+    ) async throws -> SyncClientOperation {
+        let operation = SyncClientOperation(
+            clientID: testUUID("33333333-3333-3333-3333-333333333333"),
+            clientSequence: Int64(sequence),
+            localCreatedAt: Date(timeIntervalSince1970: TimeInterval(100 + sequence))
+        )
+        try await store.enqueue(
+            PendingSyncOperationRequest(
+                ownerUserID: owner,
+                operation: operation,
+                operationKind: kind,
+                idempotencyScope: "test:\(operation.id)"
+            )
+        )
+        return operation
+    }
+}
+
 private actor RecordingPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind
     private var sentIDs: [UUID] = []
@@ -260,6 +406,25 @@ private actor CancellingPendingOperationHandler: PendingSyncOperationHandling {
     func send(_ operation: PendingSyncOperationSnapshot, context _: SyncContext) async throws -> PendingSyncOperationSendResult {
         sentOperationIDs.append(operation.operation.id)
         try await store.markTerminalFailure(clientOperationID: cancelledID, errorDescription: "cancelled", at: Date())
+        return .succeeded
+    }
+}
+
+private actor PurgingPendingOperationHandler: PendingSyncOperationHandling {
+    nonisolated let operationKind: SyncPendingOperationKind = .submitDailyAnswer
+    private let purger: SwiftDataLocalPrivacyRecordStore
+    private(set) var sentOperationIDs: [UUID] = []
+
+    init(purger: SwiftDataLocalPrivacyRecordStore) {
+        self.purger = purger
+    }
+
+    func send(
+        _ operation: PendingSyncOperationSnapshot,
+        context _: SyncContext
+    ) async throws -> PendingSyncOperationSendResult {
+        sentOperationIDs.append(operation.operation.id)
+        try await purger.purgeRelationshipContent(ownerUserID: operation.ownerUserID, clearAccessSnapshot: false)
         return .succeeded
     }
 }

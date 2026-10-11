@@ -146,12 +146,9 @@ final class PaeoniaAppUITests: XCTestCase {
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-fresh"
         app.launch()
 
-        let skipWelcomeButton = app.buttons["auth.welcome.skip"]
-        XCTAssertTrue(skipWelcomeButton.waitForExistence(timeout: 8))
-        skipWelcomeButton.tap()
-
+        // Welcome and sign-in are one screen.
         let appleSignInButton = app.buttons["auth.signIn.apple"]
-        XCTAssertTrue(appleSignInButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(appleSignInButton.waitForExistence(timeout: 8))
         appleSignInButton.tap()
 
         let nameField = app.textFields["auth.onboarding.displayName"]
@@ -164,7 +161,7 @@ final class PaeoniaAppUITests: XCTestCase {
         XCTAssertTrue(purchaseButton.waitForExistence(timeout: 5))
         purchaseButton.tap()
 
-        XCTAssertTrue(app.buttons["pairing.checkAccess"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["pairing.share"].waitForExistence(timeout: 5))
     }
 
     @MainActor

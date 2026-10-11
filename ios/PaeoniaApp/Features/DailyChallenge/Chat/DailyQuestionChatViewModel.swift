@@ -6,7 +6,10 @@ import Observation
 final class DailyQuestionChatViewModel {
     enum Notice: Equatable {
         case loadFailed
+        /// The message could not be saved on this phone. It stays in the message field.
         case sendFailed
+        /// The message was saved but the server turned it down. It stays in the list, marked as failed.
+        case deliveryFailed
         case messageTooLong
         case unavailable
     }
@@ -20,9 +23,16 @@ final class DailyQuestionChatViewModel {
     private(set) var participants: DailyChallengeParticipants
     private(set) var messages: [DailyQuestionChatMessage] = []
     private(set) var threadID: UUID?
-    private(set) var isLoading = false
+    private(set) var isLoading = true
     private(set) var notice: Notice?
     private var hasQueuedThreadCreation = false
+    private var isQueueing = false
+    /// Counts reads of the store. A read that finishes after a newer one started
+    /// holds older data, so it must not replace what the newer read showed.
+    private var readGeneration = 0
+    /// Failed messages the screen has already shown. `nil` until the first read, so
+    /// a failure from an earlier visit shows its red icon but raises no banner.
+    private var seenFailedOperationIDs: Set<UUID>?
 
     init(
         question: DailyChallengeQuestion,
@@ -51,44 +61,29 @@ final class DailyQuestionChatViewModel {
     }
 
     func load() async {
-        guard let ownerUserID = participants.currentUserID else {
-            notice = .unavailable
-            return
-        }
-        guard question.isChatAvailable else {
-            notice = .unavailable
-            return
-        }
-
-        isLoading = messages.isEmpty
         defer { isLoading = false }
+        guard let ownerUserID = participants.currentUserID, question.isChatAvailable else {
+            notice = .unavailable
+            return
+        }
 
         await readStore(ownerUserID: ownerUserID)
-        if messages.contains(where: \.sendFailed) {
-            notice = .sendFailed
-        }
 
         do {
             let summaries = try await service.refreshThreadSummaries(ownerUserID: ownerUserID)
             threadID = summaries.first(where: { $0.instanceID == question.id })?.threadID ?? threadID
             if let threadID {
-                let remote = try await service.refreshMessages(
+                _ = try await service.refreshMessages(
                     ownerUserID: ownerUserID,
                     instanceID: question.id,
                     threadID: threadID
                 )
-                let stillPending = await service.pendingMessages(
-                    ownerUserID: ownerUserID,
-                    instanceID: question.id
-                )
-                messages = DailyQuestionChatMessage.visibleOrdered(remote: remote, optimistic: stillPending)
-                hasQueuedThreadCreation = await service.hasPendingThreadCreation(
-                    ownerUserID: ownerUserID,
-                    instanceID: question.id
-                )
+                await readStore(ownerUserID: ownerUserID)
             }
         } catch {
-            if !isCancellation(error), messages.isEmpty {
+            // Without a thread there is nothing missing, and the composer still works.
+            // Only a thread that exists but cannot be read is a load error.
+            if !isCancellation(error), threadID != nil, messages.isEmpty {
                 notice = .loadFailed
             }
         }
@@ -96,15 +91,29 @@ final class DailyQuestionChatViewModel {
 
     /// Re-reads the thread, the cached messages, and the messages still sending.
     private func readStore(ownerUserID: UUID) async {
+        readGeneration += 1
+        let generation = readGeneration
         let cachedSummaries = await service.cachedThreadSummaries(ownerUserID: ownerUserID)
+        // The thread never goes back to nil, so a late read may still set it.
         threadID = cachedSummaries.first(where: { $0.instanceID == question.id })?.threadID ?? threadID
         let cached = await service.cachedMessages(ownerUserID: ownerUserID, instanceID: question.id)
         let pending = await service.pendingMessages(ownerUserID: ownerUserID, instanceID: question.id)
-        hasQueuedThreadCreation = await service.hasPendingThreadCreation(
+        let isCreatingThread = await service.hasPendingThreadCreation(
             ownerUserID: ownerUserID,
             instanceID: question.id
         )
+        guard generation == readGeneration else { return }
+        hasQueuedThreadCreation = isCreatingThread
         messages = DailyQuestionChatMessage.visibleOrdered(remote: cached, optimistic: pending)
+        raiseNoticeForNewFailures()
+    }
+
+    private func raiseNoticeForNewFailures() {
+        let failed = Set(messages.filter(\.sendFailed).compactMap(\.clientOperationID))
+        if let seen = seenFailedOperationIDs, !failed.isSubset(of: seen) {
+            notice = .deliveryFailed
+        }
+        seenFailedOperationIDs = (seenFailedOperationIDs ?? []).union(failed)
     }
 
     /// Keeps the chat current while the screen is open, until the calling task is
@@ -151,21 +160,28 @@ final class DailyQuestionChatViewModel {
         }
     }
 
-    func send(_ text: String) async -> Bool {
+    /// Queues a message. `failedOperationID` is the operation of a failed message the
+    /// person tapped to send again. The new message replaces it.
+    func send(_ text: String, replacingFailed failedOperationID: UUID? = nil) async -> Bool {
         guard let ownerUserID = participants.currentUserID, question.isChatAvailable else {
             notice = .unavailable
             return false
         }
         let body = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !body.isEmpty else { return false }
-        guard body.count <= Self.maximumMessageLength else {
+        // The server counts code points, so one emoji made of several counts as several.
+        guard body.unicodeScalars.count <= Self.maximumMessageLength else {
             notice = .messageTooLong
             return false
         }
+        // A second tap while the first message is still being saved would send it twice.
+        guard !isQueueing else { return false }
+        isQueueing = true
+        defer { isQueueing = false }
 
         let createThread = threadID == nil && !hasQueuedThreadCreation
         do {
-            let message = try await service.queueMessage(
+            _ = try await service.queueMessage(
                 ownerUserID: ownerUserID,
                 coupleID: question.coupleID,
                 instanceID: question.id,
@@ -175,7 +191,12 @@ final class DailyQuestionChatViewModel {
                 operation: operationProvider.makeOperation()
             )
             if createThread { hasQueuedThreadCreation = true }
-            messages = DailyQuestionChatMessage.visibleOrdered(remote: messages, optimistic: [message])
+            // Remove the failed copy only after the retry is saved, so a failed save loses nothing.
+            if let failedOperationID {
+                await service.discardFailedMessage(ownerUserID: ownerUserID, clientOperationID: failedOperationID)
+            }
+            PaeoniaHaptics.selection()
+            await readStore(ownerUserID: ownerUserID)
             syncInBackground()
             return true
         } catch {
@@ -211,6 +232,7 @@ extension DailyQuestionChatViewModel.Notice {
         switch self {
         case .loadFailed: .dailyChatErrorLoadTitle
         case .sendFailed: .dailyChatErrorSendTitle
+        case .deliveryFailed: .dailyChatErrorDeliveryTitle
         case .messageTooLong: .dailyChatErrorTooLongTitle
         case .unavailable: .dailyChatErrorUnavailableTitle
         }
@@ -220,6 +242,7 @@ extension DailyQuestionChatViewModel.Notice {
         switch self {
         case .loadFailed: .dailyChatErrorLoadMessage
         case .sendFailed: .dailyChatErrorSendMessage
+        case .deliveryFailed: .dailyChatErrorDeliveryMessage
         case .messageTooLong: .dailyChatErrorTooLongMessage
         case .unavailable: .dailyChatErrorUnavailableMessage
         }

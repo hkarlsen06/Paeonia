@@ -111,7 +111,7 @@ export async function notificationAlertTitle(
       }
       return "Paeonia";
     case "streak_reminder":
-      return nb ? "Sjekk inn før tiden går ut" : "Check in before time runs out";
+      return nb ? "Tid for å sjekke inn" : "Time for a quick check-in";
     case "subscription_trial_reminder":
       return nb ? "Prøveperioden avsluttes snart" : "Your free trial ends soon";
     default:

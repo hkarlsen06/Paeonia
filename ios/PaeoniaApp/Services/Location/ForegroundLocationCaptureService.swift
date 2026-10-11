@@ -4,7 +4,6 @@ import Foundation
 nonisolated enum ForegroundLocationCaptureError: Error, Equatable {
     case authorizationDenied
     case unavailable
-    case alreadyRequesting
 }
 
 nonisolated enum ForegroundLocationAuthorizationState: Equatable, Sendable {
@@ -28,7 +27,11 @@ extension ForegroundLocationCapturing {
 @MainActor
 final class ForegroundLocationCaptureService: NSObject, ForegroundLocationCapturing {
     private let manager = CLLocationManager()
-    private var continuation: CheckedContinuation<LocationPoint, Error>?
+    /// Everyone waiting for the request in flight. A second caller (a foreground
+    /// refresh racing a tap, or turning sharing back on while an older fix is
+    /// still coming) joins it instead of failing, and every waiter gets the
+    /// same answer exactly once.
+    private var waiters: [CheckedContinuation<LocationPoint, Error>] = []
 
     override init() {
         super.init()
@@ -50,15 +53,9 @@ final class ForegroundLocationCaptureService: NSObject, ForegroundLocationCaptur
     }
 
     func captureCurrentLocation() async throws -> LocationPoint {
-        guard continuation == nil else {
-            throw ForegroundLocationCaptureError.alreadyRequesting
-        }
-
         let authorizationStatus = manager.authorizationStatus
         switch authorizationStatus {
-        case .notDetermined:
-            break
-        case .authorizedAlways, .authorizedWhenInUse:
+        case .notDetermined, .authorizedAlways, .authorizedWhenInUse:
             break
         case .denied, .restricted:
             throw ForegroundLocationCaptureError.authorizationDenied
@@ -67,7 +64,9 @@ final class ForegroundLocationCaptureService: NSObject, ForegroundLocationCaptur
         }
 
         return try await withCheckedThrowingContinuation { continuation in
-            self.continuation = continuation
+            let isFirstWaiter = waiters.isEmpty
+            waiters.append(continuation)
+            guard isFirstWaiter else { return }
             if authorizationStatus == .notDetermined {
                 manager.requestWhenInUseAuthorization()
             } else {
@@ -77,22 +76,22 @@ final class ForegroundLocationCaptureService: NSObject, ForegroundLocationCaptur
     }
 
     private func finish(_ result: Result<LocationPoint, Error>) {
-        guard let continuation else {
-            return
+        let resumed = waiters
+        waiters = []
+        for waiter in resumed {
+            waiter.resume(with: result)
         }
-        self.continuation = nil
-        continuation.resume(with: result)
     }
 }
 
 extension ForegroundLocationCaptureService: CLLocationManagerDelegate {
     nonisolated func locationManagerDidChangeAuthorization(_: CLLocationManager) {
         Task { @MainActor in
+            guard !waiters.isEmpty else {
+                return
+            }
             switch self.manager.authorizationStatus {
             case .authorizedAlways, .authorizedWhenInUse:
-                guard continuation != nil else {
-                    return
-                }
                 self.manager.requestLocation()
             case .denied, .restricted:
                 finish(.failure(ForegroundLocationCaptureError.authorizationDenied))
@@ -127,9 +126,14 @@ extension ForegroundLocationCaptureService: CLLocationManagerDelegate {
         }
     }
 
-    nonisolated func locationManager(_: CLLocationManager, didFailWithError _: any Error) {
+    nonisolated func locationManager(_: CLLocationManager, didFailWithError error: any Error) {
+        let isDenied = (error as? CLError)?.code == .denied
         Task { @MainActor in
-            finish(.failure(ForegroundLocationCaptureError.unavailable))
+            finish(.failure(
+                isDenied
+                    ? ForegroundLocationCaptureError.authorizationDenied
+                    : ForegroundLocationCaptureError.unavailable
+            ))
         }
     }
 }

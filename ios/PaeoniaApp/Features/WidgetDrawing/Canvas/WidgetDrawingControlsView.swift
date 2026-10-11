@@ -1,33 +1,26 @@
 import SwiftUI
 
-/// Color, size, tool, and undo/redo controls for the widget drawing canvas.
-/// Split out of `WidgetDrawingView` so the screen keeps a clear split between
-/// the canvas surface, the drawing tools, and the bottom action cluster.
-struct WidgetDrawingControlsView: View {
-    let viewModel: WidgetDrawingViewModel
-
-    var body: some View {
-        VStack(spacing: PaeoniaSpacing.space16) {
-            WidgetDrawingToolControlsView(viewModel: viewModel)
-            WidgetDrawingSizeControlsView(viewModel: viewModel)
-            WidgetDrawingColorControlsView(viewModel: viewModel)
-        }
-    }
-}
-
+/// Color swatches and the custom color well. Every swatch keeps a 44 point
+/// tap target even though the visible dot is smaller.
 struct WidgetDrawingColorControlsView: View {
     let viewModel: WidgetDrawingViewModel
 
+    private static let swatchSize: CGFloat = 30
+    private static let hitTarget: CGFloat = 44
+
     var body: some View {
-        HStack(spacing: PaeoniaSpacing.space4) {
+        HStack(spacing: 0) {
             ForEach(viewModel.colorChoices) { choice in
                 Button {
+                    guard viewModel.selectedColorChoiceID != choice.id else { return }
                     viewModel.selectColorChoice(choice)
+                    PaeoniaHaptics.selection()
                 } label: {
                     colorSwatch(choice)
+                        .frame(maxWidth: .infinity, minHeight: Self.hitTarget)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .frame(maxWidth: .infinity)
                 .disabled(!viewModel.isColorSelectionEnabled)
                 .accessibilityLabel(Text(choice.accessibilityLabel))
                 .accessibilityAddTraits(
@@ -36,10 +29,9 @@ struct WidgetDrawingColorControlsView: View {
             }
 
             customColorPicker
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, minHeight: Self.hitTarget)
         }
-        .padding(.horizontal, PaeoniaSpacing.space12)
-        .padding(.vertical, PaeoniaSpacing.space8)
+        .padding(.horizontal, PaeoniaSpacing.space8)
         .background(.paeoniaSurfaceSecondary)
         .clipShape(Capsule(style: .continuous))
         .opacity(viewModel.isColorSelectionEnabled ? 1 : 0.52)
@@ -64,7 +56,7 @@ struct WidgetDrawingColorControlsView: View {
     private func colorSwatch(_ choice: WidgetDrawingColorChoice) -> some View {
         Circle()
             .fill(choice.color)
-            .frame(width: 30, height: 30)
+            .frame(width: Self.swatchSize, height: Self.swatchSize)
             .overlay {
                 Circle()
                     .stroke(.paeoniaTextPrimary, lineWidth: selectedStrokeWidth(for: choice))
@@ -108,18 +100,23 @@ struct WidgetDrawingSizeControlsView: View {
     }
 }
 
+/// Pen, pencil, and eraser, then undo and redo. All buttons are 44 points.
 struct WidgetDrawingToolControlsView: View {
     let viewModel: WidgetDrawingViewModel
 
+    private static let buttonSize: CGFloat = 44
+
     var body: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
+        HStack(spacing: PaeoniaSpacing.space4) {
             ForEach(WidgetDrawingTool.allCases) { tool in
                 Button {
+                    guard viewModel.selectedTool != tool else { return }
                     viewModel.selectTool(tool)
+                    PaeoniaHaptics.selection()
                 } label: {
                     Image(systemName: tool.systemImageName)
                         .font(.system(size: 18, weight: .semibold))
-                        .frame(width: 44, height: 44)
+                        .frame(width: Self.buttonSize, height: Self.buttonSize)
                         .foregroundStyle(toolForeground(for: tool))
                         .background(toolBackground(for: tool))
                         .clipShape(Capsule(style: .continuous))
@@ -145,7 +142,7 @@ struct WidgetDrawingToolControlsView: View {
                 action: viewModel.redoDrawing
             )
         }
-        .padding(PaeoniaSpacing.space8)
+        .padding(PaeoniaSpacing.space4)
         .background(.paeoniaSurfaceSecondary)
         .clipShape(Capsule(style: .continuous))
     }
@@ -154,6 +151,8 @@ struct WidgetDrawingToolControlsView: View {
         Rectangle()
             .fill(.paeoniaSurfacePressed)
             .frame(width: PaeoniaRadius.strokeDefault, height: 28)
+            .padding(.horizontal, PaeoniaSpacing.space4)
+            .accessibilityHidden(true)
     }
 
     private func undoRedoButton(
@@ -166,7 +165,7 @@ struct WidgetDrawingToolControlsView: View {
             Image(systemName: systemImageName)
                 .font(.system(size: 16, weight: .semibold))
                 .accessibilityHidden(true)
-                .frame(width: 40, height: 40)
+                .frame(width: Self.buttonSize, height: Self.buttonSize)
                 .foregroundStyle(isEnabled ? .paeoniaTextPrimary : .paeoniaTextTertiary)
                 .background(isEnabled ? Color.paeoniaSurfacePrimary : Color.clear)
                 .clipShape(Circle())

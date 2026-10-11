@@ -59,6 +59,17 @@ nonisolated enum PrivacyReportReason: String, CaseIterable, Codable, Hashable, S
     case selfHarm = "self_harm"
     case spam
     case other
+
+    /// Reasons where the person writing may be in danger right now, so the form
+    /// points them to emergency help before they send anything.
+    var suggestsEmergencyHelp: Bool {
+        switch self {
+        case .threat, .selfHarm:
+            true
+        case .harassment, .abuse, .sexualContent, .hate, .privacy, .impersonation, .spam, .other:
+            false
+        }
+    }
 }
 
 /// The existing reporting RPC accepts several kinds of relationship content. Keep
@@ -110,5 +121,27 @@ nonisolated struct PrivacyRequestRemoteRow: Decodable, Equatable, Sendable {
         case status
         case requestedAt = "requested_at"
         case visibleStatusMessage = "visible_status_message"
+    }
+}
+
+/// The list `get_privacy_requests` returns. The server can add request kinds or
+/// statuses before every installed app knows them (for example account deletion),
+/// so a row this version cannot read is skipped instead of failing the whole list.
+nonisolated struct PrivacyRequestRemoteRows: Decodable, Sendable {
+    let rows: [PrivacyRequestRemoteRow]
+
+    init(from decoder: any Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var rows = [PrivacyRequestRemoteRow]()
+        while !container.isAtEnd {
+            if let row = try? container.decode(PrivacyRequestRemoteRow.self) {
+                rows.append(row)
+            } else {
+                // A failed decode does not move the container forward. Decoding a
+                // type that accepts anything consumes the unreadable element.
+                _ = try container.decode(PaeoniaConvexIgnoredResult.self)
+            }
+        }
+        self.rows = rows
     }
 }

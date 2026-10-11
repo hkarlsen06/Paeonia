@@ -369,7 +369,7 @@ struct LocationPendingOperationHandlerTests {
     }
 
     @Test
-    func staleLocationRetryIsTerminalAndDoesNotOverwriteLocalLocation() async throws {
+    func rejectedLocationIsTerminalAndDoesNotOverwriteLocalLocation() async throws {
         let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
         let operation = try operation(id: "33333333-3333-3333-3333-333333333333")
@@ -389,7 +389,11 @@ struct LocationPendingOperationHandlerTests {
         try await ownLocationStore.save(newerLocal)
         let handler = LatestPartnerLocationPendingOperationHandler(
             gateway: RecordingLocationGateway(
-                locationError: StaleLocationError(description: "stale location update was rejected")
+                // What the server answers once sharing was turned off.
+                locationError: PaeoniaConvexError.server(
+                    code: "42501",
+                    message: "location sharing must be enabled before updating location"
+                )
             ),
             ownLocationStore: ownLocationStore
         )
@@ -413,9 +417,41 @@ struct LocationPendingOperationHandlerTests {
             context: syncContext(ownerUserID: ownerUserID, coupleID: coupleID)
         )
 
-        #expect(result == .terminalFailure("Stale location update rejected"))
+        guard case .terminalFailure = result else {
+            Issue.record("Expected a terminal failure, got \(result)")
+            return
+        }
         let stored = try await ownLocationStore.load(ownerUserID: ownerUserID, coupleID: coupleID)
         #expect(stored == newerLocal)
+    }
+
+    /// The server also answers `42501` before it can see the sign-in. That used to
+    /// drop the location for good.
+    @Test func locationRefusedForAMissingSignInIsRetried() async throws {
+        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let handler = LatestPartnerLocationPendingOperationHandler(
+            gateway: RecordingLocationGateway(
+                locationError: PaeoniaConvexError.server(code: "42501", message: "authenticated user required")
+            ),
+            ownLocationStore: InMemoryOwnLocationSnapshotRepository()
+        )
+        let payload = LatestPartnerLocationOperationPayload(
+            coupleID: coupleID,
+            location: LocationPoint(latitude: 59, longitude: 10, capturedAt: Date(timeIntervalSince1970: 200)),
+            source: .foregroundOpen
+        )
+
+        let snapshot = try pendingOperation(
+            ownerUserID: ownerUserID,
+            operation: operation(id: "33333333-3333-3333-3333-333333333333"),
+            kind: .updateLatestPartnerLocation,
+            payload: payload
+        )
+
+        await #expect(throws: PaeoniaConvexError.self) {
+            try await handler.send(snapshot, context: syncContext(ownerUserID: ownerUserID, coupleID: coupleID))
+        }
     }
 
     @Test func staleLocationSuccessDoesNotOverwriteNewerLocalLocation() async throws {
@@ -664,7 +700,7 @@ struct LocationMapViewModelTests {
             partner: partnerLocation,
             partnerWasStaleAtLastRefresh: false
         ))
-        #expect(LocationMapViewModel.resolveMapState(visibility: visible, ownLocation: nil) == .currentUnknown)
+        #expect(LocationMapViewModel.resolveMapState(visibility: visible, ownLocation: nil) == .currentLocationMissing)
     }
 
     @Test
@@ -734,7 +770,7 @@ struct LocationMapViewModelTests {
         await visibilityStore.finishSuspendedLoad()
         await firstConfiguration.value
 
-        #expect(viewModel.mapState == .partnerUnknown(.unknown("missing_visibility")))
+        #expect(viewModel.mapState == .currentUnknown)
     }
 
     @MainActor
@@ -785,7 +821,8 @@ struct LocationMapViewModelTests {
         await viewModel.setSharingEnabled(true)
 
         #expect(viewModel.sharingEnabled == false)
-        #expect(viewModel.notice == .permissionDenied)
+        // Declining the system prompt is a choice, not an error banner.
+        #expect(viewModel.notice == nil)
         let readyOperations = try await pendingStore.readyOperations(
             ownerUserID: ownerUserID,
             limit: 10,
@@ -951,15 +988,19 @@ struct LocationMapViewModelTests {
 
         // Enabling sharing captures and enqueues the first fix.
         await viewModel.setSharingEnabled(true)
-        #expect(try await locationWriteCount(pendingStore, ownerUserID: ownerUserID) == 1)
+        let firstWrite = try await queuedLocationWriteIDs(pendingStore, ownerUserID: ownerUserID)
+        #expect(firstWrite.count == 1)
 
         // A foreground-open refresh moments later, from the same position, is throttled away.
         await viewModel.refreshOwnLocationIfSharingEnabled(source: .foregroundOpen)
-        #expect(try await locationWriteCount(pendingStore, ownerUserID: ownerUserID) == 1)
+        #expect(try await queuedLocationWriteIDs(pendingStore, ownerUserID: ownerUserID) == firstWrite)
 
-        // A manual pull-to-refresh always writes, even without moving.
+        // A manual pull-to-refresh always writes, even without moving. Only the
+        // latest position matters, so the new write replaces the queued one.
         await viewModel.refreshOwnLocationIfSharingEnabled(source: .manualRefresh)
-        #expect(try await locationWriteCount(pendingStore, ownerUserID: ownerUserID) == 2)
+        let secondWrite = try await queuedLocationWriteIDs(pendingStore, ownerUserID: ownerUserID)
+        #expect(secondWrite.count == 1)
+        #expect(secondWrite != firstWrite)
     }
 }
 
@@ -1124,10 +1165,6 @@ private actor IdentitySwitchVisibilityStore: LocationVisibilitySnapshotPersistin
     }
 }
 
-private struct StaleLocationError: Error, CustomStringConvertible {
-    let description: String
-}
-
 @MainActor
 private final class LocalChangeSyncRecorder {
     private(set) var callCount = 0
@@ -1167,6 +1204,15 @@ private final class UniqueOperationProvider: SyncClientOperationProviding {
             localCreatedAt: Date(timeIntervalSince1970: TimeInterval(sequence))
         )
     }
+}
+
+private func queuedLocationWriteIDs(
+    _ store: InMemoryPendingSyncOperationRepository,
+    ownerUserID: UUID
+) async throws -> [UUID] {
+    try await store.readyOperations(ownerUserID: ownerUserID, limit: 100, now: Date())
+        .filter { $0.operationKind == .updateLatestPartnerLocation }
+        .map(\.operation.id)
 }
 
 private func locationWriteCount(

@@ -103,7 +103,8 @@
         draftStore: DeveloperLocalFlowDailyDraftStore(),
         mediaDraftStore: DeveloperLocalFlowMediaDraftStore(),
         pendingOperationStore: pendingOperationStore,
-        snapshotCache: DeveloperLocalFlowSnapshotCache()
+        snapshotCache: DeveloperLocalFlowSnapshotCache(),
+        now: { DeveloperScenarioFixture.now }
       )
       let milestoneViewModel = RelationshipMilestoneViewModel(
         dataService: RelationshipStartedOnDataService(
@@ -168,7 +169,9 @@
             product: nil,
             freeTrial: trial,
             isPurchasing: false,
-            isLoading: false
+            isLoading: false,
+            displayPrice: (billingPeriod == .monthly ? 49 : 399)
+              .formatted(.currency(code: "NOK").precision(.fractionLength(0)))
           )
         },
         priceLine: { billingPeriod in

@@ -52,11 +52,18 @@ struct DailyAnswerKindPicker: View {
 /// in the flow's bottom bar, like the other composers.
 struct DailyPhotoAnswerComposer: View {
     let imageData: Data?
+    /// The view model is still preparing a picked photo (compressing it).
+    var isPreparing = false
     let onPick: (Data) -> Void
+    /// The picker couldn't hand over the chosen photo.
+    var onPickFailed: () -> Void = {}
     let onRemove: () -> Void
 
     @State private var selection: PhotosPickerItem?
     @State private var isLoading = false
+
+    /// Busy from the moment a photo is picked until it's ready to send.
+    private var isBusy: Bool { isLoading || isPreparing }
     @State private var isCameraPresented = false
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
 
@@ -101,6 +108,7 @@ struct DailyPhotoAnswerComposer: View {
                     }
                     .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
                     .accessibilityAddTraits(.isButton)
+                    .overlay { preparingOverlay }
 
                 Button(role: .destructive, action: onRemove) {
                     Image(systemName: "xmark.circle.fill")
@@ -128,6 +136,19 @@ struct DailyPhotoAnswerComposer: View {
         }
     }
 
+    /// Covers the current photo while a replacement is still being prepared.
+    @ViewBuilder
+    private var preparingOverlay: some View {
+        if isBusy {
+            ProgressView()
+                .controlSize(.large)
+                .tint(.paeoniaTextInverse)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.black.opacity(0.35))
+                .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+        }
+    }
+
     @ViewBuilder
     private var cameraButton: some View {
         if DailyCameraPicker.isAvailable {
@@ -149,7 +170,7 @@ struct DailyPhotoAnswerComposer: View {
         VStack(spacing: PaeoniaSpacing.space8) {
             PhotosPicker(selection: $selection, matching: .images) {
                 VStack(spacing: PaeoniaSpacing.space8) {
-                    if isLoading {
+                    if isBusy {
                         ProgressView()
                     } else {
                         Image(systemName: "photo.badge.plus")
@@ -171,6 +192,7 @@ struct DailyPhotoAnswerComposer: View {
                 }
             }
             .buttonStyle(.plain)
+            .disabled(isBusy)
 
             cameraButton
         }
@@ -180,8 +202,12 @@ struct DailyPhotoAnswerComposer: View {
         guard let item else { return }
         isLoading = true
         Task {
+            // A photo that only lives in iCloud can fail to download. Say so instead
+            // of quietly dropping the pick.
             if let data = try? await item.loadTransferable(type: Data.self) {
                 onPick(data)
+            } else {
+                onPickFailed()
             }
             isLoading = false
             selection = nil
@@ -281,7 +307,8 @@ private struct DailySendingStatusLine: View {
 }
 
 /// Loads and shows a revealed photo answer. Fetches a signed download once, caches
-/// it, and shows a quiet placeholder while loading or if it can't be fetched.
+/// it, and shows a quiet placeholder while loading. If the download fails, tapping
+/// the placeholder tries again.
 struct DailyAnswerImageView: View {
     let mediaAssetID: UUID?
     var provider: (any DailyAnswerMediaImageProviding)? = DailyAnswerMediaImageProviderFactory.shared
@@ -290,7 +317,14 @@ struct DailyAnswerImageView: View {
 
     @State private var image: UIImage?
     @State private var didFail = false
+    /// Bumped by a tap on the failed placeholder to run the load again.
+    @State private var attempt = 0
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
+
+    private struct LoadKey: Hashable {
+        let mediaAssetID: UUID?
+        let attempt: Int
+    }
 
     var body: some View {
         // The surface rectangle owns the size (full available width × fixed height), so
@@ -307,12 +341,22 @@ struct DailyAnswerImageView: View {
             // placeholder instead of snapping into the frame when the download lands.
             .animation(PaeoniaMotion.stateChange, value: image != nil)
             .animation(PaeoniaMotion.stateChange, value: didFail)
-            .task(id: mediaAssetID) { await load() }
+            .task(id: LoadKey(mediaAssetID: mediaAssetID, attempt: attempt)) { await load() }
             .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-            .onTapGesture { presentImageViewer() }
-            .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
-            .accessibilityAddTraits(image != nil && allowsViewing ? .isButton : [])
+            .onTapGesture {
+                if didFail {
+                    attempt += 1
+                } else {
+                    presentImageViewer()
+                }
+            }
+            .accessibilityLabel(Text(accessibilityLabel))
+            .accessibilityAddTraits((image != nil && allowsViewing) || didFail ? .isButton : [])
             .paeoniaImageViewer(selection: $imageViewerSelection)
+    }
+
+    private var accessibilityLabel: LocalizedStringResource {
+        didFail ? .dailyChallengePhotoLoadFailed : .dailyChallengePhotoAnswerAccessibility
     }
 
     @ViewBuilder
@@ -322,10 +366,17 @@ struct DailyAnswerImageView: View {
                 .resizable()
                 .scaledToFill()
         } else if didFail {
-            Image(systemName: "photo")
-                .font(.largeTitle)
-                .foregroundStyle(.paeoniaTextTertiary)
-                .accessibilityHidden(true)
+            VStack(spacing: PaeoniaSpacing.space8) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.title2)
+                    .foregroundStyle(.paeoniaTextTertiary)
+                Text(.dailyChallengePhotoLoadFailed)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(PaeoniaSpacing.space12)
+            .accessibilityHidden(true)
         } else {
             ProgressView()
         }

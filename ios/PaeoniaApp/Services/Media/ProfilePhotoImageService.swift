@@ -1,4 +1,5 @@
 import Foundation
+import ImageIO
 
 nonisolated protocol ProfilePhotoImageCaching: Sendable {
     func profilePhotoData(for mediaAssetID: UUID) async -> Data?
@@ -43,19 +44,23 @@ nonisolated enum ProfilePhotoImageProviderFactory {
     static let cacheInvalidator: (any ProfilePhotoImageInvalidating)? = ProfilePhotoImageService.shared
 }
 
-final class FileProfilePhotoImageCache: @unchecked Sendable, ProfilePhotoImageCaching {
+/// Nonisolated so the file reads and writes run on the caller's actor instead
+/// of the main actor. It only holds an immutable directory URL.
+nonisolated final class FileProfilePhotoImageCache: ProfilePhotoImageCaching {
     private let directoryURL: URL
 
-    nonisolated init(
+    init(
         directoryURL: URL = FileProfilePhotoImageCache.defaultDirectoryURL()
     ) {
         self.directoryURL = directoryURL
     }
 
-    nonisolated static func live() -> FileProfilePhotoImageCache {
+    static func live() -> FileProfilePhotoImageCache {
         FileProfilePhotoImageCache()
     }
 
+    // The protocol is async so other caches can suspend; file access does not.
+    // swiftlint:disable async_without_await
     func profilePhotoData(for mediaAssetID: UUID) async -> Data? {
         try? Data(contentsOf: fileURL(for: mediaAssetID))
     }
@@ -84,6 +89,7 @@ final class FileProfilePhotoImageCache: @unchecked Sendable, ProfilePhotoImageCa
 
         try FileManager.default.removeItem(at: directoryURL)
     }
+    // swiftlint:enable async_without_await
 
     private func fileURL(for mediaAssetID: UUID) -> URL {
         directoryURL
@@ -91,7 +97,7 @@ final class FileProfilePhotoImageCache: @unchecked Sendable, ProfilePhotoImageCa
             .appendingPathExtension("jpg")
     }
 
-    nonisolated private static func defaultDirectoryURL() -> URL {
+    private static func defaultDirectoryURL() -> URL {
         let baseURL = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -136,7 +142,12 @@ actor ProfilePhotoImageService:
         }
 
         if let cachedData = await cache.profilePhotoData(for: mediaAssetID) {
-            return cachedData
+            if Self.isDecodableImage(cachedData) {
+                return cachedData
+            }
+            // A file that is not an image (for example a captive-portal page)
+            // would otherwise stay cached under this asset ID for good.
+            try? await cache.removeProfilePhotoData(for: mediaAssetID)
         }
 
         if let inFlightDownload = inFlightDownloads[mediaAssetID] {
@@ -176,6 +187,15 @@ actor ProfilePhotoImageService:
         try? await cache.removeProfilePhotoData(for: mediaAssetID)
     }
 
+    /// Reads only the image header, so it does not decode pixels.
+    nonisolated static func isDecodableImage(_ data: Data) -> Bool {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return false
+        }
+
+        return CGImageSourceGetType(source) != nil && CGImageSourceGetCount(source) > 0
+    }
+
     private func fetchAndCache(
         mediaAssetID: UUID,
         privacyGeneration requestedPrivacyGeneration: UInt64
@@ -195,6 +215,10 @@ actor ProfilePhotoImageService:
 
             if let statusCode = download.statusCode,
                !(200..<300).contains(statusCode) {
+                return nil
+            }
+
+            guard Self.isDecodableImage(download.data) else {
                 return nil
             }
 

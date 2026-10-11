@@ -1,37 +1,14 @@
-import PhotosUI
 import SwiftUI
 import UIKit
 
-/// The in-progress contents of the new-memory form. Held by the memories view model and
-/// saved on the device, not by the sheet, so dismissing the sheet (including an
-/// accidental swipe-down while reaching for the keyboard) keeps the work. Reopening
-/// restores it; a successful save (or a deliberate Cancel) resets it.
-struct MemoryDraft: Equatable {
-    var title: String = ""
-    var date: Date = Date()
-    var note: String = ""
-    var photos: [Data] = []
-
-    var isEmpty: Bool {
-        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && photos.isEmpty
-    }
-
-    /// The written parts, for copying out when the memory can no longer be saved.
-    var copyableText: String {
-        [title, note]
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n\n")
-    }
-}
-
-/// The focused form for creating a new memory. Title and date are required, plus at
-/// least a note or one photo, so a saved memory always carries something to remember.
-/// Photos are uploaded only when the memory is saved; the form just stages picked
-/// images until then. The editable contents live in a `MemoryDraft` binding owned by the
-/// presenting screen so the form survives an accidental dismissal.
+/// The memory form, for a new memory or an edit. Title and date are required. A new
+/// memory also needs a note or at least one photo, so it always carries something to
+/// remember. Photos are uploaded only when the memory is saved; the form just stages
+/// picked images until then.
+///
+/// A new memory's contents live in a `MemoryDraft` owned by the view model, so the
+/// form survives an accidental swipe-down. An edit can't be swiped away while it has
+/// changes; Cancel asks before throwing them away.
 struct MemoryEditorView: View {
     enum Mode: Equatable {
         case create
@@ -51,6 +28,9 @@ struct MemoryEditorView: View {
     var mode: Mode = .create
     var existingMedia: [MemoryMediaSnapshot] = []
     var currentUserID: UUID?
+    /// Whether the person already has a note on this memory. Notes can be changed but
+    /// not removed, so the form explains that instead of quietly keeping the old note.
+    var hasExistingNote = false
     /// True when the memory being edited no longer exists (the partner deleted it). The
     /// form stays open so the typed text isn't lost, explains why it can't be saved,
     /// and offers to copy the text.
@@ -59,6 +39,8 @@ struct MemoryEditorView: View {
     /// uploader, or before the active couple is known). When false the photo controls
     /// are hidden and a note is required.
     let allowsPhotos: Bool
+    /// Which photo is being sent while the memory saves, shown on the save button.
+    var uploadProgress: MemoryPhotoUploadProgress?
     /// Saves the memory. Returns whether it succeeded so the form can dismiss on success
     /// and stay put (with a banner already shown) on failure.
     let onSave: (
@@ -70,13 +52,14 @@ struct MemoryEditorView: View {
     ) async -> Bool
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
-    @State private var pickerItems: [PhotosPickerItem] = []
-    @State private var isCameraPresented = false
+    @State private var loadingPhotoCount = 0
     @State private var isSaving = false
-    @State private var didCopyText = false
-    @State private var imageViewerSelection: PaeoniaImageViewerSelection?
+    @State private var isConfirmingDiscard = false
     @State private var removedExistingMediaIDs: Set<UUID> = []
+    /// The edit form as it opened, to tell whether anything changed.
+    @State private var initialDraft: MemoryDraft?
     @FocusState private var focusedField: Field?
 
     private enum Field {
@@ -84,83 +67,73 @@ struct MemoryEditorView: View {
         case note
     }
 
-    private let maxPhotos = 5
-
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                    if isMemoryRemoved {
-                        removedNotice
-                    }
-                    titleField
-                    dateField
-                    noteField
-
-                    if allowsPhotos || !existingMedia.isEmpty {
-                        photosSection
+            form
+                .background(.paeoniaBackgroundPrimary)
+                .scrollDismissesKeyboard(.interactively)
+                .keyboardDismissable()
+                .safeAreaInset(edge: .bottom) { saveBar }
+                .navigationTitle(Text(mode.title))
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(role: .cancel) { cancel() } label: {
+                            Text(.commonCancel)
+                        }
+                        .disabled(isSaving)
                     }
                 }
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.space16)
-                .padding(.bottom, PaeoniaSpacing.space24)
-            }
-            .background(.paeoniaBackgroundPrimary)
-            .scrollDismissesKeyboard(.interactively)
-            .keyboardDismissable()
-            .safeAreaInset(edge: .bottom) { saveBar }
-            .navigationTitle(Text(mode.title))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(role: .cancel) { cancel() } label: {
-                        Text(.commonCancel)
-                    }
-                    .disabled(isSaving)
+                .alert(Text(.memoriesEditorDiscardTitle), isPresented: $isConfirmingDiscard) {
+                    Button(role: .cancel) {} label: { Text(.memoriesEditorDiscardKeepEditing) }
+                    Button(role: .destructive) { dismiss() } label: { Text(.memoriesEditorDiscardAction) }
+                } message: {
+                    Text(.memoriesEditorDiscardMessage)
                 }
-            }
-            .onChange(of: pickerItems) { _, items in
-                loadPickedPhotos(items)
-            }
-            .fullScreenCover(isPresented: $isCameraPresented) {
-                DailyCameraPicker(onCapture: appendPhoto)
-                    .ignoresSafeArea()
-            }
-            .paeoniaImageViewer(selection: $imageViewerSelection)
         }
+        // The sheet covers the app's top banner, so show it here too. Otherwise a
+        // failed save would look like nothing happened.
+        .paeoniaTopBanner(bannerCenter)
         .presentationBackground(.paeoniaBackgroundPrimary)
+        // A new memory's draft is kept on the device, so swiping it away is safe. An
+        // edit isn't kept, and nothing may close the form while it saves.
+        .interactiveDismissDisabled(isSaving || hasUnsavedEdits)
+        .onAppear {
+            if mode == .edit, initialDraft == nil {
+                initialDraft = draft
+            }
+        }
+    }
+
+    private var form: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
+                if isMemoryRemoved {
+                    MemoryRemovedNotice(copyableText: draft.copyableText)
+                }
+                titleField
+                dateField
+                noteField
+
+                if allowsPhotos || !existingMedia.isEmpty {
+                    MemoryEditorPhotosField(
+                        photos: $draft.photos,
+                        removedExistingMediaIDs: $removedExistingMediaIDs,
+                        loadingPhotoCount: $loadingPhotoCount,
+                        existingMedia: existingMedia,
+                        currentUserID: currentUserID,
+                        allowsPhotos: allowsPhotos,
+                        isSaving: isSaving
+                    )
+                }
+            }
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.space16)
+            .padding(.bottom, PaeoniaSpacing.space24)
+        }
     }
 
     // MARK: - Fields
-
-    private var removedNotice: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            Text(.memoriesEditorRemovedTitle)
-                .font(PaeoniaTypography.body.weight(.semibold))
-                .foregroundStyle(.paeoniaTextPrimary)
-            Text(.memoriesEditorRemovedMessage)
-                .font(PaeoniaTypography.body)
-                .foregroundStyle(.paeoniaTextSecondary)
-            if !draft.copyableText.isEmpty {
-                Button {
-                    UIPasteboard.general.string = draft.copyableText
-                    didCopyText = true
-                } label: {
-                    Label {
-                        Text(didCopyText ? .memoriesEditorRemovedCopied : .memoriesEditorRemovedCopy)
-                    } icon: {
-                        Image(systemName: didCopyText ? "checkmark" : "doc.on.doc").accessibilityHidden(true)
-                    }
-                }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-            }
-        }
-        .padding(PaeoniaSpacing.space12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.paeoniaBackgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-        .accessibilityElement(children: .contain)
-    }
 
     private var titleField: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
@@ -171,7 +144,8 @@ struct MemoryEditorView: View {
                 placeholder: .memoriesEditorTitlePlaceholder,
                 isFocused: $focusedField,
                 field: .title,
-                lineLimit: 1...2
+                lineLimit: 1...2,
+                characterLimit: MemoryDataService.titleCharacterLimit
             )
         }
     }
@@ -180,8 +154,12 @@ struct MemoryEditorView: View {
         HStack {
             fieldLabel(.memoriesEditorDateLabel)
             Spacer(minLength: PaeoniaSpacing.space16)
+            // A memory is something that already happened, so the latest choice is today.
+            // The bound is the end of today: an edit's date sits at noon, which can still
+            // be ahead of the clock in the morning.
             DatePicker(
                 selection: $draft.date,
+                in: ...endOfToday,
                 displayedComponents: [.date]
             ) {
                 Text(.memoriesEditorDateLabel)
@@ -200,123 +178,18 @@ struct MemoryEditorView: View {
                 placeholder: .memoriesEditorNotePlaceholder,
                 isFocused: $focusedField,
                 field: .note,
-                lineLimit: 3...8
+                lineLimit: 3...8,
+                characterLimit: MemoryDataService.noteCharacterLimit
             )
-        }
-    }
 
-    private var photosSection: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            fieldLabel(.memoriesEditorPhotosLabel)
-
-            if !visibleExistingMedia.isEmpty || !draft.photos.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: PaeoniaSpacing.space8) {
-                        ForEach(visibleExistingMedia, id: \.memoryMediaID) { media in
-                            existingThumbnail(media)
-                        }
-                        ForEach(Array(draft.photos.enumerated()), id: \.offset) { index, data in
-                            stagedThumbnail(data, index: index)
-                        }
-                    }
-                }
-            }
-
-            if canAddPhotos {
-                photoPickerControls
+            if isClearingExistingNote {
+                Text(.memoriesEditorNoteRequired)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-    }
-
-    private func existingThumbnail(_ media: MemoryMediaSnapshot) -> some View {
-        ZStack(alignment: .topTrailing) {
-            MemoryMediaImageView(
-                mediaAssetID: media.mediaAssetID,
-                height: 104,
-                cornerRadius: PaeoniaRadius.radius12
-            )
-            .frame(width: 104)
-
-            if media.ownerUserID == currentUserID {
-                Button(role: .destructive) {
-                    removedExistingMediaIDs.insert(media.memoryMediaID)
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, .black.opacity(0.45))
-                        .accessibilityHidden(true)
-                }
-                .padding(PaeoniaSpacing.space4)
-                .accessibilityLabel(Text(.memoriesPhotoRemove))
-            }
-        }
-    }
-
-    private func stagedThumbnail(_ data: Data, index: Int) -> some View {
-        ZStack(alignment: .topTrailing) {
-            Group {
-                if let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    Color.paeoniaSurfaceSecondary
-                }
-            }
-            .frame(width: 104, height: 104)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-            .onTapGesture {
-                presentStagedImage(data)
-            }
-            .accessibilityLabel(Text(.memoriesPhotoAccessibility))
-            .accessibilityAddTraits(.isButton)
-
-            Button(role: .destructive) {
-                draft.photos.remove(at: index)
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(.white, .black.opacity(0.45))
-                    .accessibilityHidden(true)
-            }
-            .padding(PaeoniaSpacing.space4)
-            .accessibilityLabel(Text(.memoriesPhotoRemove))
-        }
-    }
-
-    private var photoPickerControls: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            PhotosPicker(
-                selection: $pickerItems,
-                maxSelectionCount: maxPhotos - ownVisiblePhotoCount - draft.photos.count,
-                matching: .images
-            ) {
-                Label {
-                    Text(.memoriesEditorAddPhoto)
-                } icon: {
-                    Image(systemName: "photo.on.rectangle").accessibilityHidden(true)
-                }
-            }
-            .buttonStyle(PaeoniaQuietButtonStyle())
-            .frame(maxWidth: .infinity)
-
-            if DailyCameraPicker.isAvailable {
-                Button {
-                    isCameraPresented = true
-                } label: {
-                    Label {
-                        Text(.memoriesEditorTakePhoto)
-                    } icon: {
-                        Image(systemName: "camera").accessibilityHidden(true)
-                    }
-                }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-                .frame(maxWidth: .infinity)
-            }
-        }
+        .animation(PaeoniaMotion.stateChange, value: isClearingExistingNote)
     }
 
     private var saveBar: some View {
@@ -324,7 +197,15 @@ struct MemoryEditorView: View {
             Task { await save() }
         } label: {
             if isSaving {
-                ProgressView().tint(.paeoniaTextInverse)
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    ProgressView().tint(.paeoniaTextInverse)
+                    if let uploadProgress {
+                        Text(.memoriesEditorUploadingPhoto(
+                            uploadProgress.current.formatted(),
+                            uploadProgress.total.formatted()
+                        ))
+                    }
+                }
             } else {
                 Text(.memoriesEditorSave)
             }
@@ -334,6 +215,7 @@ struct MemoryEditorView: View {
         // The spinner fades in over the save label instead of snapping while
         // the save (including any photo upload) settles.
         .animation(PaeoniaMotion.stateChange, value: isSaving)
+        .animation(PaeoniaMotion.stateChange, value: uploadProgress)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space12)
         .background(.paeoniaBackgroundPrimary)
@@ -345,131 +227,111 @@ struct MemoryEditorView: View {
             .foregroundStyle(.paeoniaTextSecondary)
     }
 
-    // MARK: - Actions
+    // MARK: - State
 
-    private var hasContent: Bool {
-        !draft.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || !draft.photos.isEmpty
-            || !visibleExistingMedia.isEmpty
+    /// The person emptied a note they already have. The server can't remove a note, so
+    /// saving would quietly keep the old one.
+    private var isClearingExistingNote: Bool {
+        mode == .edit && hasExistingNote && draft.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var canSave: Bool {
-        guard !isMemoryRemoved else { return false }
+        guard !isMemoryRemoved, loadingPhotoCount == 0 else { return false }
         guard !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return false
         }
 
         switch mode {
         case .create:
-            return hasContent
+            return !draft.note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !draft.photos.isEmpty
         case .edit:
-            return true
+            return !isClearingExistingNote
         }
     }
 
-    private var visibleExistingMedia: [MemoryMediaSnapshot] {
-        existingMedia.filter { !removedExistingMediaIDs.contains($0.memoryMediaID) }
+    private var hasUnsavedEdits: Bool {
+        guard mode == .edit, !isMemoryRemoved, let initialDraft else { return false }
+        return draft.title != initialDraft.title
+            || draft.note != initialDraft.note
+            || !draft.photos.isEmpty
+            || !removedExistingMediaIDs.isEmpty
+            || MemoryTimeline.localDateString(for: draft.date) != MemoryTimeline.localDateString(for: initialDraft.date)
     }
 
-    private var removedExistingMedia: [MemoryMediaSnapshot] {
-        existingMedia.filter { removedExistingMediaIDs.contains($0.memoryMediaID) }
+    private var endOfToday: Date {
+        Calendar.current.date(bySettingHour: 23, minute: 59, second: 59, of: Date()) ?? Date()
     }
 
-    private var ownVisiblePhotoCount: Int {
-        visibleExistingMedia.filter { $0.ownerUserID == currentUserID }.count
-    }
+    // MARK: - Actions
 
-    private var canAddPhotos: Bool {
-        allowsPhotos && ownVisiblePhotoCount + draft.photos.count < maxPhotos
-    }
-
-    /// Deliberate abandon for new memories clears the draft so reopening starts fresh.
-    /// Edit mode leaves the caller-owned draft alone; it gets reset when the sheet opens.
+    /// Cancel on a new memory is a deliberate discard, so it clears the draft. Cancel on
+    /// an edit with changes asks first.
     private func cancel() {
-        if mode == .create {
+        switch mode {
+        case .create:
             draft = MemoryDraft()
+            dismiss()
+        case .edit:
+            if hasUnsavedEdits {
+                isConfirmingDiscard = true
+            } else {
+                dismiss()
+            }
         }
-        dismiss()
     }
 
     private func save() async {
         guard canSave, !isSaving else { return }
+        focusedField = nil
         isSaving = true
         defer { isSaving = false }
 
-        let saved = await onSave(draft.title, dateString, draft.note, draft.photos, removedExistingMedia)
+        let saved = await onSave(
+            draft.title,
+            MemoryTimeline.localDateString(for: draft.date),
+            draft.note,
+            draft.photos,
+            existingMedia.filter { removedExistingMediaIDs.contains($0.memoryMediaID) }
+        )
         if saved {
             dismiss()
         }
     }
-
-    /// The chosen date as a `yyyy-MM-dd` string in the device's local calendar, matching
-    /// how the day is displayed in the picker.
-    private var dateString: String {
-        MemoryTimeline.currentLocalDateString(now: draft.date)
-    }
-
-    private func loadPickedPhotos(_ items: [PhotosPickerItem]) {
-        guard !items.isEmpty else { return }
-        Task {
-            var loaded: [Data] = []
-            for item in items {
-                if let data = try? await item.loadTransferable(type: Data.self) {
-                    loaded.append(data)
-                }
-            }
-            let room = max(0, maxPhotos - ownVisiblePhotoCount - draft.photos.count)
-            draft.photos.append(contentsOf: loaded.prefix(room))
-            pickerItems = []
-        }
-    }
-
-    private func appendPhoto(_ data: Data) {
-        guard canAddPhotos else { return }
-        draft.photos.append(data)
-    }
-
-    private func presentStagedImage(_ data: Data) {
-        guard let uiImage = UIImage(data: data) else { return }
-        imageViewerSelection = PaeoniaImageViewerSelection(image: uiImage)
-    }
 }
 
-/// A styled multiline text field matching the daily composer: surface background, a
-/// hairline border that brightens on focus, and Dynamic Type-friendly body text.
-struct MemoryTextField<Field: Hashable>: View {
-    @Binding var text: String
-    let placeholder: LocalizedStringResource
-    var isFocused: FocusState<Field?>.Binding
-    let field: Field
-    var lineLimit: ClosedRange<Int> = 1...4
+/// Shown in the edit form when the partner deleted the memory. Explains why it can't be
+/// saved and offers to copy the typed text first.
+private struct MemoryRemovedNotice: View {
+    let copyableText: String
 
-    private var isActive: Bool {
-        isFocused.wrappedValue == field
-    }
+    @State private var didCopyText = false
 
     var body: some View {
-        TextField(
-            text: $text,
-            prompt: Text(placeholder),
-            axis: .vertical
-        ) {
-            Text(placeholder)
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            Text(.memoriesEditorRemovedTitle)
+                .font(PaeoniaTypography.body.weight(.semibold))
+                .foregroundStyle(.paeoniaTextPrimary)
+            Text(.memoriesEditorRemovedMessage)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+            if !copyableText.isEmpty {
+                Button {
+                    UIPasteboard.general.string = copyableText
+                    didCopyText = true
+                } label: {
+                    Label {
+                        Text(didCopyText ? .memoriesEditorRemovedCopied : .memoriesEditorRemovedCopy)
+                    } icon: {
+                        Image(systemName: didCopyText ? "checkmark" : "doc.on.doc").accessibilityHidden(true)
+                    }
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+            }
         }
-        .lineLimit(lineLimit)
-        .font(PaeoniaTypography.body)
-        .foregroundStyle(.paeoniaTextPrimary)
         .padding(PaeoniaSpacing.space12)
-        .focused(isFocused, equals: field)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(.paeoniaBackgroundSecondary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                .stroke(
-                    isActive ? Color.paeoniaAccentPrimary : Color.paeoniaSurfacePressed,
-                    lineWidth: isActive ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
-                )
-        }
-        .animation(PaeoniaMotion.stateChange, value: isActive)
+        .accessibilityElement(children: .contain)
     }
 }

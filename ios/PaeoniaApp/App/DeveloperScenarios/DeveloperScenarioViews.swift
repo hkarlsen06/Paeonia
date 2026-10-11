@@ -13,17 +13,7 @@
                 NavigationLink {
                   DeveloperScenarioNavigationDestination(scenario: scenario)
                 } label: {
-                  VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                    Text(scenario.title)
-                      .foregroundStyle(.paeoniaTextPrimary)
-                    Text(scenario.detail)
-                      .font(PaeoniaTypography.caption)
-                      .foregroundStyle(.paeoniaTextSecondary)
-                    Text(scenario.rawValue)
-                      .font(.caption2.monospaced())
-                      .foregroundStyle(.paeoniaTextTertiary)
-                  }
-                  .padding(.vertical, PaeoniaSpacing.space4)
+                  scenarioLabel(scenario)
                 }
                 .accessibilityIdentifier("developer.scenario.\(scenario.rawValue)")
               }
@@ -43,6 +33,20 @@
       }
       .preferredColorScheme(.dark)
       .accessibilityIdentifier("developer.scenario.menu")
+    }
+
+    private func scenarioLabel(_ scenario: DeveloperScenario) -> some View {
+      VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+        Text(scenario.title)
+          .foregroundStyle(.paeoniaTextPrimary)
+        Text(scenario.detail)
+          .font(PaeoniaTypography.caption)
+          .foregroundStyle(.paeoniaTextSecondary)
+        Text(scenario.rawValue)
+          .font(.caption2.monospaced())
+          .foregroundStyle(.paeoniaTextTertiary)
+      }
+      .padding(.vertical, PaeoniaSpacing.space4)
     }
 
     private func scenarios(in category: DeveloperScenario.Category) -> [DeveloperScenario] {
@@ -75,7 +79,7 @@
         .preferredColorScheme(.dark)
         // No host-level accessibilityIdentifier here: a container identifier
         // cascades onto every descendant element, replacing the production
-        // identifiers (auth.welcome.skip, legal.privacy, …) UI tests query.
+        // identifiers (auth.signIn.apple, legal.privacy, …) UI tests query.
         .overlay(alignment: .topTrailing) {
           HStack(spacing: PaeoniaSpacing.space8) {
             Button {
@@ -107,30 +111,11 @@
       switch scenario {
       case .launchLoading:
         AuthLaunchingView()
-      case .welcome:
-        WelcomeView(
-          isWorking: false,
-          pendingInviteCode: nil,
-          onAppleSignIn: {},
-          onGoogleSignIn: {},
-          onSubmitInviteCode: { _ in }
-        )
-      case .signIn:
-        SignInView(
-          isWorking: false,
-          pendingInviteCode: nil,
-          onAppleSignIn: {},
-          onGoogleSignIn: {},
-          onHaveInviteCode: nil
-        )
+      case .welcome, .signIn:
+        // Welcome and sign-in are one screen.
+        welcome(pendingInviteCode: nil)
       case .signInInvite:
-        SignInView(
-          isWorking: false,
-          pendingInviteCode: "LOVE26",
-          onAppleSignIn: {},
-          onGoogleSignIn: {},
-          onHaveInviteCode: {}
-        )
+        welcome(pendingInviteCode: "LOVE26")
       case .onboardingEmpty, .onboardingPrefilled:
         DeveloperOnboardingScenarioView(prefilled: scenario == .onboardingPrefilled)
       case .localFlowFresh:
@@ -179,6 +164,17 @@
       case .deepLinkSubscription:
         DeveloperSettingsScenarioView(scenario: .settings)
       }
+    }
+
+    private func welcome(pendingInviteCode: String?) -> some View {
+      WelcomeView(
+        isWorking: false,
+        signingInWith: nil,
+        pendingInviteCode: pendingInviteCode,
+        onAppleSignIn: {},
+        onGoogleSignIn: {},
+        onSubmitInviteCode: { _ in }
+      )
     }
   }
 #endif

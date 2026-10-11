@@ -293,9 +293,15 @@ struct DailyAnswerTextField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(.dailyChallengeTextAnswerLabel)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextSecondary)
+            HStack(alignment: .firstTextBaseline) {
+                Text(.dailyChallengeTextAnswerLabel)
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextSecondary)
+
+                Spacer(minLength: PaeoniaSpacing.space8)
+
+                characterCount
+            }
 
             TextField(
                 text: $text,
@@ -321,6 +327,23 @@ struct DailyAnswerTextField: View {
             syncStroke(focused: focused, animated: true)
         }
     }
+
+    /// Shows how close the answer is to the length limit, only once it's near. It sits
+    /// in the label row so it never changes the field's height or position.
+    @ViewBuilder
+    private var characterCount: some View {
+        let length = DailyAnswerDraft.measuredLength(of: text)
+        let limit = DailyAnswerDraft.maxTextLength
+        if length > limit - Self.counterThreshold {
+            Text(verbatim: "\(length.formatted()) / \(limit.formatted())")
+                .font(PaeoniaTypography.caption.monospacedDigit())
+                .foregroundStyle(length > limit ? Color.paeoniaError : Color.paeoniaTextTertiary)
+                .accessibilityLabel(Text(.dailyChallengeTextAnswerCharacterCount(length, limit)))
+        }
+    }
+
+    /// How many characters before the limit the counter appears.
+    private static let counterThreshold = 200
 
     private func syncStroke(focused: Bool, animated: Bool) {
         let apply = {

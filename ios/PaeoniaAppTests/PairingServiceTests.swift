@@ -76,6 +76,54 @@ struct PairingInviteCodeTests {
         #expect(PairingJoinURL.inviteCode(from: extraAppPath) == nil)
     }
 
+    @Test func entryTextExtractsTheCodeFromAPastedLink() {
+        #expect(PairingInviteCode.entryText("https://paeonia.no/join/01abcd") == canonicalCode)
+        #expect(PairingInviteCode.entryText("paeonia://join/01-ab-cd") == canonicalCode)
+        #expect(
+            PairingInviteCode.entryText("Join me: https://paeonia.no/join/01ABCD.\nSee you!") == canonicalCode
+        )
+    }
+
+    @Test func entryTextCleansTypedText() {
+        #expect(PairingInviteCode.entryText("o1-abcd") == "01ABCD")
+        #expect(PairingInviteCode.entryText("lIoU u!") == "110")
+        #expect(PairingInviteCode.entryText("0123456789") == "012345")
+        #expect(PairingInviteCode.entryText("  ").isEmpty)
+        #expect(PairingInviteCode.entryText(PairingInviteCode.entryText("zz zz zz zz")) == "ZZZZZZ")
+    }
+
+    @Test func pendingJoinInviteStoreDropsCodesOlderThanSevenDays() throws {
+        let suiteName = "PaeoniaAppTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let savedAt = Date(timeIntervalSince1970: 1_000_000)
+        var currentDate = savedAt
+        let store = UserDefaultsPairingJoinInviteStore(defaults: defaults, now: { currentDate })
+        store.saveInviteCode(canonicalCode)
+
+        currentDate = savedAt.addingTimeInterval(UserDefaultsPairingJoinInviteStore.maximumAge)
+        #expect(store.loadInviteCode() == canonicalCode)
+
+        currentDate = savedAt.addingTimeInterval(UserDefaultsPairingJoinInviteStore.maximumAge + 1)
+        #expect(store.loadInviteCode() == nil)
+        #expect(defaults.string(forKey: "paeonia.pairing.pendingJoinInviteCode") == nil)
+    }
+
+    @Test func pendingJoinInviteStoreStartsTheClockForCodesSavedWithoutADate() throws {
+        let suiteName = "PaeoniaAppTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(canonicalCode, forKey: "paeonia.pairing.pendingJoinInviteCode")
+        let firstLoad = Date(timeIntervalSince1970: 1_000_000)
+        var currentDate = firstLoad
+        let store = UserDefaultsPairingJoinInviteStore(defaults: defaults, now: { currentDate })
+
+        #expect(store.loadInviteCode() == canonicalCode)
+
+        currentDate = firstLoad.addingTimeInterval(UserDefaultsPairingJoinInviteStore.maximumAge + 1)
+        #expect(store.loadInviteCode() == nil)
+    }
+
     @Test func pendingJoinInviteStorePersistsNormalizedCode() throws {
         let suiteName = "PaeoniaAppTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
@@ -755,7 +803,7 @@ struct PairingInviteViewModelTests {
 
         #expect(!createdNewInvite)
         #expect(viewModel.invite == currentInvite)
-        #expect(viewModel.error == nil)
+        #expect(viewModel.error == .replaceFailed)
         #expect(!inviteStore.didClearInvite)
     }
 }

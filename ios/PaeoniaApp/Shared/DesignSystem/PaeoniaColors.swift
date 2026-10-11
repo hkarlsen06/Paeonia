@@ -31,6 +31,9 @@ private enum PaeoniaPaletteHex {
     static let inkLavender: UInt32 = 0xB9_9C_F2
 
     static let error: UInt32 = 0xE5_48_4D
+    // Lighter error tone for text; `error` is only 4.2:1 on the plum background.
+    static let errorText: UInt32 = 0xFF_80_84
+    static let errorPressed: UInt32 = 0xD6_42_47
     static let warning: UInt32 = 0xE8_91_5D
     static let success: UInt32 = 0x5B_B9_8B
 }
@@ -59,6 +62,8 @@ private enum PaeoniaPalette {
 
     // State colors, kept calm and never generic red unless the state is real.
     static let error = Color(paeoniaHex: PaeoniaPaletteHex.error)
+    static let errorText = Color(paeoniaHex: PaeoniaPaletteHex.errorText)
+    static let errorPressed = Color(paeoniaHex: PaeoniaPaletteHex.errorPressed)
     static let warning = Color(paeoniaHex: PaeoniaPaletteHex.warning)
     static let success = Color(paeoniaHex: PaeoniaPaletteHex.success)
 }
@@ -83,6 +88,8 @@ extension Color {
     static let paeoniaSuccess = PaeoniaPalette.success
     static let paeoniaWarning = PaeoniaPalette.warning
     static let paeoniaError = PaeoniaPalette.error
+    static let paeoniaErrorText = PaeoniaPalette.errorText
+    static let paeoniaErrorPressed = PaeoniaPalette.errorPressed
     static let paeoniaSyncPending = PaeoniaPalette.warning
     static let paeoniaSyncError = PaeoniaPalette.error
 
@@ -124,6 +131,8 @@ extension ShapeStyle where Self == Color {
     static var paeoniaSuccess: Color { Color.paeoniaSuccess }
     static var paeoniaWarning: Color { Color.paeoniaWarning }
     static var paeoniaError: Color { Color.paeoniaError }
+    static var paeoniaErrorText: Color { Color.paeoniaErrorText }
+    static var paeoniaErrorPressed: Color { Color.paeoniaErrorPressed }
     static var paeoniaSyncPending: Color { Color.paeoniaSyncPending }
     static var paeoniaSyncError: Color { Color.paeoniaSyncError }
     static var paeoniaPartnerOne: Color { Color.paeoniaPartnerOne }

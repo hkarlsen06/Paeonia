@@ -7,7 +7,6 @@ final class ReportAndLeaveViewModel {
     enum Notice: Equatable {
         case reasonRequired
         case submitFailed
-        case submitted
     }
 
     private let service: (any PrivacySafetyServicing)?
@@ -21,7 +20,18 @@ final class ReportAndLeaveViewModel {
     var blockPartner = false
 
     private(set) var isSubmitting = false
+    /// True once the report went through. The relationship has ended by then, so
+    /// the form stays locked and a second report cannot be filed.
+    private(set) var didSubmit = false
     private(set) var notice: Notice?
+
+    var isFormLocked: Bool {
+        isSubmitting || didSubmit
+    }
+
+    var canSubmit: Bool {
+        selectedReason != nil && !isFormLocked
+    }
 
     init(
         service: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
@@ -32,6 +42,9 @@ final class ReportAndLeaveViewModel {
     }
 
     func prepareConfirmation() -> Bool {
+        guard !isFormLocked else {
+            return false
+        }
         guard selectedReason != nil else {
             notice = .reasonRequired
             return false
@@ -41,10 +54,11 @@ final class ReportAndLeaveViewModel {
 
     @discardableResult
     func submit(target: PrivacyReportTarget) async -> Bool {
-        guard !isSubmitting, let service else {
-            if service == nil {
-                notice = .submitFailed
-            }
+        guard !isFormLocked else {
+            return false
+        }
+        guard let service else {
+            notice = .submitFailed
             return false
         }
         guard let selectedReason else {
@@ -69,7 +83,7 @@ final class ReportAndLeaveViewModel {
                 operation: submission.operation
             )
             pendingSubmission = nil
-            notice = .submitted
+            didSubmit = true
             return true
         } catch is CancellationError {
             return false

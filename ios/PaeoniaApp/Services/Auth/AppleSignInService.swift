@@ -5,7 +5,6 @@ import Security
 import UIKit
 
 enum AppleSignInError: Error, Equatable {
-    case alreadyInProgress
     case missingIdentityToken
     case invalidIdentityToken
     case missingPresentationAnchor
@@ -20,29 +19,61 @@ protocol AppleSignInProviding: AnyObject {
 final class AppleSignInService: NSObject, AppleSignInProviding {
     private var pendingContinuation: CheckedContinuation<AppleSignInCredential, Error>?
     private var pendingNonce: String?
+    /// The sheet of the attempt in progress. Delegate calls from any other
+    /// controller belong to an attempt that has already ended.
     private var currentController: ASAuthorizationController?
+    private let performRequests: @MainActor (ASAuthorizationController) -> Void
 
+    /// Tests pass a `performRequests` that shows nothing and drive the delegate.
+    init(performRequests: @escaping @MainActor (ASAuthorizationController) -> Void = { $0.performRequests() }) {
+        self.performRequests = performRequests
+        super.init()
+    }
+
+    /// Shows the Apple sheet and returns its credential.
+    ///
+    /// An earlier attempt that never reported back, for example because its sheet
+    /// vanished when the app went to the background, ends as cancelled first, so
+    /// a new attempt always starts. Cancelling the calling task ends the attempt
+    /// the same way. Each attempt resumes exactly once.
     func signIn() async throws -> AppleSignInCredential {
-        guard pendingContinuation == nil else {
-            throw AppleSignInError.alreadyInProgress
-        }
+        endAttempt()
 
         let nonce = Self.randomNonceString()
-        pendingNonce = nonce
+        let request = ASAuthorizationAppleIDProvider().createRequest()
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = Self.sha256(nonce)
 
-        return try await withCheckedThrowingContinuation { continuation in
-            pendingContinuation = continuation
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = self
+        controller.presentationContextProvider = self
+        let attempt = ObjectIdentifier(controller)
 
-            let request = ASAuthorizationAppleIDProvider().createRequest()
-            request.requestedScopes = [.fullName, .email]
-            request.nonce = Self.sha256(nonce)
-
-            let controller = ASAuthorizationController(authorizationRequests: [request])
-            controller.delegate = self
-            controller.presentationContextProvider = self
-            currentController = controller
-            controller.performRequests()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                pendingContinuation = continuation
+                pendingNonce = nonce
+                currentController = controller
+                performRequests(controller)
+            }
+        } onCancel: {
+            Task { @MainActor [weak self] in
+                self?.endAttempt(attempt)
+            }
         }
+    }
+
+    /// Ends the attempt in progress as cancelled and closes its sheet. With
+    /// `attempt`, only that attempt ends, so a late cancel cannot end a newer one.
+    private func endAttempt(_ attempt: ObjectIdentifier? = nil) {
+        guard let controller = currentController,
+              attempt == nil || attempt == ObjectIdentifier(controller)
+        else {
+            return
+        }
+        // Root treats this error as the person closing the sheet, so no banner shows.
+        finish(with: .failure(ASAuthorizationError(.canceled)))
+        controller.cancel()
     }
 
     private func finish(with result: Result<AppleSignInCredential, Error>) {
@@ -96,6 +127,9 @@ extension AppleSignInService: ASAuthorizationControllerDelegate {
         controller: ASAuthorizationController,
         didCompleteWithAuthorization authorization: ASAuthorization
     ) {
+        guard controller === currentController else {
+            return
+        }
         guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
             finish(with: .failure(AppleSignInError.invalidIdentityToken))
             return
@@ -130,6 +164,9 @@ extension AppleSignInService: ASAuthorizationControllerDelegate {
         controller: ASAuthorizationController,
         didCompleteWithError error: Error
     ) {
+        guard controller === currentController else {
+            return
+        }
         finish(with: .failure(error))
     }
 

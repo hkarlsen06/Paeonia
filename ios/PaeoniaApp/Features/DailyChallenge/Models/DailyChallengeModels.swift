@@ -119,6 +119,16 @@ nonisolated struct DailyAnswerDraft: Codable, Equatable, Sendable {
     var hasContent: Bool {
         !text.isEmpty || partnerChoiceUserID != nil || media != nil
     }
+
+    /// The backend rejects answer text longer than this, counted in code points after
+    /// trimming (`submit_daily_answer` / `update_daily_answer_text`). A rejected
+    /// queued answer would retry forever, so the composer stops it before sending.
+    static let maxTextLength = 2_000
+
+    /// The length the backend measures: code points of the trimmed text.
+    static func measuredLength(of text: String) -> Int {
+        text.trimmingCharacters(in: .whitespacesAndNewlines).unicodeScalars.count
+    }
 }
 
 /// Metadata for a picked-but-not-yet-sent media answer. Kept in the draft so the
@@ -751,6 +761,32 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
 
     var hasAnyCurrentDayQuestions: Bool {
         !currentDayVisibleQuestions.isEmpty
+    }
+
+    /// The couple-local date (`yyyy-MM-dd`) of the active day. Carried-over rows from
+    /// earlier days can sit anywhere in `questions`, so this reads the active day's
+    /// own questions only. Nil before today's questions exist.
+    var currentDayLocalDate: String? {
+        currentDayQuestions.first?.localDate
+    }
+
+    /// When the active couple day ends. Nil when no day is active.
+    var currentDayEndsAt: Date? {
+        currentDayQuestions.map(\.endsAt).min()
+    }
+
+    /// This snapshot with the active day dropped once its end has passed, so a day
+    /// from the cache, or one still on screen when the couple's day ends offline,
+    /// never shows as today. Questions from the partner stay, since those can be
+    /// answered on a later day.
+    func endingCurrentDay(ifEndedBy now: Date) -> DailyChallengeSnapshot {
+        guard let endsAt = currentDayEndsAt, endsAt <= now else { return self }
+        return DailyChallengeSnapshot(
+            currentUserID: currentUserID,
+            coupleDayID: nil,
+            questions: questions,
+            refreshedAt: refreshedAt
+        )
     }
 
     var homeCardState: DailyChallengeCardState {

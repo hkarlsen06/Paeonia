@@ -42,9 +42,12 @@ private struct PaywallTimelineRow: View {
                 }
 
                 if !isLast {
+                    // Stretches with the row, so long text at large Dynamic Type
+                    // sizes does not leave a gap between the steps.
                     Rectangle()
                         .fill(item.isActive ? Color.paeoniaAccentPrimary.opacity(0.72) : Color.paeoniaSurfaceSecondary)
-                        .frame(width: 3, height: 38)
+                        .frame(width: 3)
+                        .frame(minHeight: 38, maxHeight: .infinity)
                 }
             }
             .frame(width: 46)
@@ -64,5 +67,7 @@ private struct PaywallTimelineRow: View {
 
             Spacer(minLength: 0)
         }
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .combine)
     }
 }

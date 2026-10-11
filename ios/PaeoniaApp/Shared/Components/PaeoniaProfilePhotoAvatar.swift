@@ -8,7 +8,13 @@ struct PaeoniaProfilePhotoAvatar: View {
     let size: CGFloat
     private let profilePhotoProvider: any ProfilePhotoImageProviding
 
-    @State private var imageData: Data?
+    @State private var profileImage: UIImage?
+    /// The asset `profileImage` was loaded for. A new asset id clears the old photo
+    /// so it never shows under someone else's name; reloading the same id keeps it.
+    @State private var loadedAssetID: UUID?
+
+    /// Photos bigger than this decode off the main actor so lists keep scrolling.
+    private static let backgroundDecodeThreshold = 200_000
 
     init(
         mediaAssetID: UUID?,
@@ -48,11 +54,9 @@ struct PaeoniaProfilePhotoAvatar: View {
         // The fetched photo fades in over the initials instead of snapping the
         // moment its download lands (cache hits resolve before the first frame,
         // so the common case still shows the photo immediately).
-        .animation(PaeoniaMotion.stateChange, value: imageData != nil)
+        .animation(PaeoniaMotion.stateChange, value: profileImage != nil)
         .accessibilityLabel(Text(name))
-        .task(id: mediaAssetID) {
-            imageData = await profilePhotoProvider.profilePhotoData(for: mediaAssetID)
-        }
+        .task(id: mediaAssetID) { await loadProfileImage() }
     }
 
     private var initials: some View {
@@ -63,12 +67,33 @@ struct PaeoniaProfilePhotoAvatar: View {
             .minimumScaleFactor(0.6)
     }
 
-    private var profileImage: UIImage? {
-        guard let imageData else {
+    private func loadProfileImage() async {
+        if loadedAssetID != mediaAssetID {
+            profileImage = nil
+            loadedAssetID = nil
+        }
+
+        guard let data = await profilePhotoProvider.profilePhotoData(for: mediaAssetID),
+              let image = await Self.decode(data),
+              !Task.isCancelled
+        else {
+            return
+        }
+
+        profileImage = image
+        loadedAssetID = mediaAssetID
+    }
+
+    private static func decode(_ data: Data) async -> UIImage? {
+        guard let image = UIImage(data: data) else {
             return nil
         }
 
-        return UIImage(data: imageData)
+        guard data.count > backgroundDecodeThreshold else {
+            return image
+        }
+
+        return await image.byPreparingForDisplay() ?? image
     }
 
     static func initials(for name: String) -> String {

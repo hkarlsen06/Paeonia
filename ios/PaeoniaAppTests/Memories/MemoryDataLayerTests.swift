@@ -265,6 +265,105 @@ struct MemoryDataLayerTests {
         #expect(notePayloads.map(\.expectedRevision) == [1, 2])
     }
 
+    /// The server counts Unicode code points, not characters. "👍🏽" is one character
+    /// and two code points, so 80 of them fill the title exactly.
+    @Test func updateMemoryRefusesATitleOverTheServersLimitAndQueuesNothing() async throws {
+        let seeded = try await seededMemory()
+        let fullTitle = String(repeating: "👍🏽", count: 80)
+        #expect(fullTitle.unicodeScalars.count == MemoryDataService.titleCharacterLimit)
+
+        await #expect(throws: MemoryDataServiceError.titleTooLong) {
+            try await seeded.service.updateMemory(
+                ownerUserID: seeded.ownerUserID,
+                memoryID: seeded.memoryID,
+                expectedRevision: seeded.revision,
+                title: fullTitle + "a",
+                memoryDate: "2026-06-30",
+                operation: operation(id: "55555555-5555-5555-5555-555555555555", sequence: 2)
+            )
+        }
+        #expect(try await seeded.queued(.updateMemory).isEmpty)
+
+        let accepted = try await seeded.service.updateMemory(
+            ownerUserID: seeded.ownerUserID,
+            memoryID: seeded.memoryID,
+            expectedRevision: seeded.revision,
+            title: fullTitle,
+            memoryDate: "2026-06-30",
+            operation: operation(id: "66666666-6666-6666-6666-666666666666", sequence: 3)
+        )
+        #expect(accepted.snapshot.title == fullTitle)
+        #expect(try await seeded.queued(.updateMemory).count == 1)
+    }
+
+    @Test func upsertMemoryNoteRefusesABodyOverTheServersLimitAndQueuesNothing() async throws {
+        let seeded = try await seededMemory()
+
+        await #expect(throws: MemoryDataServiceError.noteTooLong) {
+            try await seeded.service.upsertMemoryNote(
+                ownerUserID: seeded.ownerUserID,
+                memoryID: seeded.memoryID,
+                expectedRevision: nil,
+                body: String(repeating: "a", count: MemoryDataService.noteCharacterLimit + 1),
+                operation: operation(id: "55555555-5555-5555-5555-555555555555", sequence: 2)
+            )
+        }
+        #expect(try await seeded.queued(.upsertMemoryNote).isEmpty)
+
+        _ = try await seeded.service.upsertMemoryNote(
+            ownerUserID: seeded.ownerUserID,
+            memoryID: seeded.memoryID,
+            expectedRevision: nil,
+            body: String(repeating: "a", count: MemoryDataService.noteCharacterLimit),
+            operation: operation(id: "66666666-6666-6666-6666-666666666666", sequence: 3)
+        )
+        #expect(try await seeded.queued(.upsertMemoryNote).count == 1)
+    }
+
+    @Test func shorteningTextNeverCutsACharacterInHalf() {
+        #expect(MemoryDataService.prefix("ab👍🏽", fittingCodePoints: 3) == "ab")
+        #expect(MemoryDataService.prefix("ab👍🏽", fittingCodePoints: 4) == "ab👍🏽")
+        #expect(MemoryDataService.prefix("abc", fittingCodePoints: 5) == "abc")
+    }
+
+    private struct SeededMemory {
+        let service: MemoryDataService
+        let pendingStore: InMemoryPendingSyncOperationRepository
+        let ownerUserID: UUID
+        let memoryID: UUID
+        let revision: Int
+
+        func queued(_ kind: SyncPendingOperationKind) async throws -> [PendingSyncOperationSnapshot] {
+            try await pendingStore.inFlightOperations(ownerUserID: ownerUserID, kind: kind)
+        }
+    }
+
+    private func seededMemory() async throws -> SeededMemory {
+        let ownerUserID = try fixedUUID("11111111-1111-1111-1111-111111111111")
+        let memoryID = try fixedUUID("33333333-3333-3333-3333-333333333333")
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let service = MemoryDataService(
+            memoryStore: InMemoryMemoryRecordRepository(),
+            pendingOperationStore: pendingStore
+        )
+        let created = try await service.createMemory(
+            ownerUserID: ownerUserID,
+            coupleID: try fixedUUID("22222222-2222-2222-2222-222222222222"),
+            memoryID: memoryID,
+            title: "Original",
+            memoryDate: "2026-06-30",
+            noteBody: "First note",
+            operation: operation(id: "44444444-4444-4444-4444-444444444444", sequence: 1)
+        )
+        return SeededMemory(
+            service: service,
+            pendingStore: pendingStore,
+            ownerUserID: ownerUserID,
+            memoryID: memoryID,
+            revision: created.snapshot.revision
+        )
+    }
+
     private func record(
         from existing: MemoryRecord,
         title: String,

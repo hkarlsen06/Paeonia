@@ -72,6 +72,46 @@ nonisolated enum PairingInviteCode {
         return normalized
     }
 
+    /// Turns whatever the user typed or pasted into the characters a code field should
+    /// show. A Paeonia join link (alone or inside a shared message) gives its code.
+    /// Anything else is uppercased, mapped like `normalized` (I and L become 1, O
+    /// becomes 0), stripped of characters outside the code alphabet, and cut to `length`.
+    static func entryText(_ raw: String) -> String {
+        if let code = joinLinkCode(in: raw) {
+            return code
+        }
+
+        var text = ""
+        for character in raw.uppercased() {
+            let mapped = canonicalCharacter(character)
+            if allowedCharacters.contains(mapped) {
+                text.append(mapped)
+            }
+            if text.count == length {
+                break
+            }
+        }
+        return text
+    }
+
+    private static func joinLinkCode(in text: String) -> String? {
+        for token in text.split(whereSeparator: \.isWhitespace) {
+            let trimmed = token.trimmingCharacters(in: .punctuationCharacters)
+            if let url = URL(string: trimmed), let code = PairingJoinURL.inviteCode(from: url) {
+                return code
+            }
+        }
+        return nil
+    }
+
+    private static func canonicalCharacter(_ character: Character) -> Character {
+        switch character {
+        case "I", "L": "1"
+        case "O": "0"
+        default: character
+        }
+    }
+
     private static func inviteCodeCandidate(from rawValue: String) throws -> String {
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {

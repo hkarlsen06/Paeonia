@@ -104,7 +104,28 @@ struct DailyPromptCard: View {
                 // Keep the placeholder invisible; use opacity so layout is
                 // identical whether or not the real string is present.
                 .opacity(message == nil ? 0 : 1)
+
+            if let partnerNote {
+                Label {
+                    Text(partnerNote)
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: "heart.circle.fill")
+                        .foregroundStyle(.paeoniaAccentPrimary)
+                        .accessibilityHidden(true)
+                }
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .transition(.opacity)
+            }
         }
+    }
+
+    /// While the user is still answering, a gentle note that the partner has already
+    /// answered, so the card says there's something waiting without any pressure.
+    private var partnerNote: LocalizedStringResource? {
+        guard case .active = state.kind, state.hasAnswerablePartnerQuestions else { return nil }
+        return .dailyChallengeHomePartnerAnsweredNote(partnerName)
     }
 
     private var title: LocalizedStringResource {
@@ -129,7 +150,14 @@ struct DailyPromptCard: View {
         case let .active(prompt):
             prompt
         case .complete:
-            String(localized: .dailyChallengeHomeCompleteMessage)
+            if state.hasAnswerablePartnerQuestions {
+                String(localized: .dailyChallengeHomeCompletePartnerAnsweredMessage(partnerName))
+            } else if !state.hasPartnerAnswersForToday {
+                // Their part is still to come; say what happens next.
+                String(localized: .dailyChallengeHomeCompleteWaitingMessage(partnerName))
+            } else {
+                String(localized: .dailyChallengeHomeCompleteMessage)
+            }
         }
     }
 
@@ -168,6 +196,9 @@ private struct DailyPromptProgressPill: View {
         .padding(.vertical, PaeoniaSpacing.space4)
         .background(.paeoniaAccentPrimary)
         .clipShape(Capsule())
+        // One element for VoiceOver ("1 of 3 answered"), not three fragments.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(.dailyChallengeProgressPillAccessibility(answeredCount, totalCount)))
     }
 }
 
@@ -178,6 +209,22 @@ private struct DailyPromptProgressPill: View {
             kind: .active(prompt: "A small moment today"),
             answeredCount: 1,
             totalCount: 3
+        ),
+        partnerName: "Oda"
+    )
+    .padding(PaeoniaSpacing.screenHorizontalPadding)
+    .background(.paeoniaBackgroundPrimary)
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Active · partner answered") {
+    DailyPromptCard(
+        state: DailyChallengeCardState(
+            kind: .active(prompt: "A small moment today"),
+            answeredCount: 1,
+            totalCount: 3,
+            hasPartnerAnswersForToday: true,
+            hasAnswerablePartnerQuestions: true
         ),
         partnerName: "Oda"
     )

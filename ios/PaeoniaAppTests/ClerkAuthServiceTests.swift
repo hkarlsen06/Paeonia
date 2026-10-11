@@ -119,6 +119,99 @@ struct ClerkAuthServiceTests {
         #expect(await sessionCache.currentSession == nil)
     }
 
+    @Test(arguments: [502, 503, 429])
+    func restoreSessionUsesCachedProfileWhileTheServerIsRestarting(status: Int) async throws {
+        let cachedSession = AuthSession.test(profileStatus: .complete)
+        let sessionCache = FakeAuthSessionCache(session: cachedSession, accountID: "clerk-user")
+        let gateway = FakeAuthGateway(
+            remoteSession: .test(provider: .apple, accountID: "clerk-user"),
+            profile: .test(onboardingCompletedAt: Date()),
+            loadProfileError: PaeoniaConvexError.http(status: status, body: "Bad gateway")
+        )
+        let service = ClerkAuthService(gateway: gateway, sessionCache: sessionCache)
+
+        let restoredSession = try await service.restoreSession()
+
+        #expect(restoredSession == cachedSession)
+        #expect(await sessionCache.currentSession == cachedSession)
+    }
+
+    @Test func restoreSessionDoesNotUseCacheWhenTheServerRejectsTheRequest() async {
+        let sessionCache = FakeAuthSessionCache(session: .test(profileStatus: .complete), accountID: "clerk-user")
+        let gateway = FakeAuthGateway(
+            remoteSession: .test(provider: .apple, accountID: "clerk-user"),
+            profile: .test(onboardingCompletedAt: Date()),
+            loadProfileError: PaeoniaConvexError.http(status: 403, body: "Forbidden")
+        )
+        let service = ClerkAuthService(gateway: gateway, sessionCache: sessionCache)
+
+        await #expect(throws: PaeoniaConvexError.self) {
+            try await service.restoreSession()
+        }
+        #expect(await sessionCache.currentSession == nil)
+    }
+
+    @Test func appleSignInGivesUpWhenTheConnectionStalls() async throws {
+        let gateway = FakeAuthGateway(
+            remoteSession: .test(provider: .apple, accountID: "clerk-user"),
+            profile: .test(onboardingCompletedAt: Date()),
+            loadProfileDelay: .seconds(60)
+        )
+        let service = ClerkAuthService(
+            gateway: gateway,
+            sessionCache: FakeAuthSessionCache(),
+            signInTimeout: .milliseconds(200)
+        )
+        let started = ContinuousClock.now
+
+        do {
+            _ = try await service.signInWithApple(
+                AppleSignInCredential(idToken: "id-token", nonce: "nonce", fullName: nil)
+            )
+            Issue.record("Expected the stalled sign-in to time out")
+        } catch let error as URLError {
+            #expect(error.code == .timedOut)
+        }
+
+        // Root shows "We could not sign you in. Try again." for this error.
+        #expect(ContinuousClock.now - started < .seconds(10))
+        // The half-finished Clerk session is signed out so the retry starts clean.
+        #expect(await gateway.signOutCallCount == 1)
+    }
+
+    @Test func restoreSessionOpensWithTheCachedProfileWhenTheLoadStalls() async throws {
+        let cachedSession = AuthSession.test(profileStatus: .complete)
+        let gateway = FakeAuthGateway(
+            remoteSession: .test(provider: .apple, accountID: "clerk-user"),
+            profile: .test(onboardingCompletedAt: Date()),
+            loadProfileDelay: .seconds(60)
+        )
+        let service = ClerkAuthService(
+            gateway: gateway,
+            sessionCache: FakeAuthSessionCache(session: cachedSession, accountID: "clerk-user"),
+            restoreTimeout: .milliseconds(200)
+        )
+
+        let restoredSession = try await service.restoreSession()
+
+        #expect(restoredSession == cachedSession)
+    }
+
+    @Test func restoreSessionDoesNotBringBackASessionSignedOutWhileTheProfileLoaded() async throws {
+        let sessionCache = FakeAuthSessionCache()
+        let gateway = FakeAuthGateway(
+            remoteSession: .test(provider: .apple, accountID: "clerk-user"),
+            profile: .test(onboardingCompletedAt: Date())
+        )
+        await gateway.endSessionDuringProfileLoad()
+        let service = ClerkAuthService(gateway: gateway, sessionCache: sessionCache)
+
+        let restoredSession = try await service.restoreSession()
+
+        #expect(restoredSession == nil)
+        #expect(await sessionCache.currentSession == nil)
+    }
+
     @Test func restoreSessionDoesNotUseCacheWhenBackendRejectsProfile() async {
         let cachedSession = AuthSession.test(profileStatus: .complete)
         let sessionCache = FakeAuthSessionCache(session: cachedSession, accountID: "clerk-user")
@@ -681,7 +774,9 @@ struct ClerkAuthServiceTests {
 
 // swiftlint:disable async_without_await
 private actor FakeAuthGateway: AuthGateway {
-    private let remoteSession: RemoteAuthSession?
+    private var remoteSession: RemoteAuthSession?
+    /// Ends the Clerk session while `loadProfile` is in flight, like a sign-out tapped meanwhile.
+    private var endsSessionDuringProfileLoad = false
     private var profile: RemoteProfile
     private let profilePhotoAssetID: UUID
     private(set) var appleIDToken: String?
@@ -700,6 +795,8 @@ private actor FakeAuthGateway: AuthGateway {
     private(set) var signOutCallCount = 0
     private let uploadShouldFail: Bool
     private let loadProfileError: (any Error)?
+    /// Makes `loadProfile` hang like a stalled connection, until cancelled.
+    private let loadProfileDelay: Duration?
     private let completeProfileShouldFail: Bool
     private let updateProfileShouldFail: Bool
     private let profileUpdateFailsAfterCommit: Bool
@@ -712,6 +809,7 @@ private actor FakeAuthGateway: AuthGateway {
         profilePhotoAssetID: UUID? = nil,
         uploadShouldFail: Bool = false,
         loadProfileError: (any Error)? = nil,
+        loadProfileDelay: Duration? = nil,
         completeProfileShouldFail: Bool = false,
         updateProfileShouldFail: Bool = false,
         profileUpdateFailsAfterCommit: Bool = false,
@@ -725,6 +823,7 @@ private actor FakeAuthGateway: AuthGateway {
             ?? UUID()
         self.uploadShouldFail = uploadShouldFail
         self.loadProfileError = loadProfileError
+        self.loadProfileDelay = loadProfileDelay
         self.completeProfileShouldFail = completeProfileShouldFail
         self.updateProfileShouldFail = updateProfileShouldFail
         self.profileUpdateFailsAfterCommit = profileUpdateFailsAfterCommit
@@ -747,10 +846,20 @@ private actor FakeAuthGateway: AuthGateway {
     }
 
     func loadProfile() async throws -> RemoteProfile {
+        if let loadProfileDelay {
+            try await Task.sleep(for: loadProfileDelay)
+        }
         if let loadProfileError {
             throw loadProfileError
         }
+        if endsSessionDuringProfileLoad {
+            remoteSession = nil
+        }
         return profile
+    }
+
+    func endSessionDuringProfileLoad() {
+        endsSessionDuringProfileLoad = true
     }
 
     func uploadProfilePhoto(

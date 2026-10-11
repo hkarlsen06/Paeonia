@@ -72,18 +72,19 @@ struct PairingCelebrationAvatar: View {
 
     let name: String
     let tint: Color
-    let imageData: Data?
+    /// The decoded photo. Callers decode once, never in a view body.
+    let image: UIImage?
     let diameter: CGFloat
 
     init(
         name: String,
         tint: Color,
-        imageData: Data? = nil,
+        image: UIImage? = nil,
         diameter: CGFloat = PairingCelebrationAvatar.diameter
     ) {
         self.name = name
         self.tint = tint
-        self.imageData = imageData
+        self.image = image
         self.diameter = diameter
     }
 
@@ -92,8 +93,8 @@ struct PairingCelebrationAvatar: View {
             Circle()
                 .fill(tint.opacity(0.18))
 
-            if let profileImage {
-                Image(uiImage: profileImage)
+            if let image {
+                Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
                     .frame(width: diameter, height: diameter)
@@ -106,7 +107,8 @@ struct PairingCelebrationAvatar: View {
                 .strokeBorder(tint.opacity(0.82), lineWidth: 1.5)
         }
         .frame(width: diameter, height: diameter)
-        .accessibilityLabel(Text(name))
+        // Every screen that shows this avatar describes both people as one element.
+        .accessibilityHidden(true)
     }
 
     private var initials: some View {
@@ -115,14 +117,6 @@ struct PairingCelebrationAvatar: View {
             .foregroundStyle(.paeoniaTextPrimary)
             .lineLimit(1)
             .minimumScaleFactor(0.6)
-    }
-
-    private var profileImage: UIImage? {
-        guard let imageData else {
-            return nil
-        }
-
-        return UIImage(data: imageData)
     }
 }
 
@@ -183,9 +177,9 @@ struct PairingCelebrationProfilesView: View {
     }
 
     let currentName: String
-    let currentPhotoData: Data?
+    let currentPhoto: UIImage?
     let partnerName: String
-    let partnerPhotoData: Data?
+    let partnerPhoto: UIImage?
     /// When true the partner slot is an invisible placeholder and the partner
     /// avatar is drawn as a flying overlay above this view; when false the avatar
     /// is drawn in place (used when the intro is skipped).
@@ -210,7 +204,7 @@ struct PairingCelebrationProfilesView: View {
                 PairingCelebrationAvatar(
                     name: currentName,
                     tint: .paeoniaPartnerOne,
-                    imageData: currentPhotoData,
+                    image: currentPhoto,
                     diameter: metrics.avatarDiameter
                 )
                     .alignmentGuide(.avatarCenter) { _ in metrics.avatarDiameter / 2 }
@@ -268,7 +262,7 @@ struct PairingCelebrationProfilesView: View {
             PairingCelebrationAvatar(
                 name: partnerName,
                 tint: .paeoniaPartnerTwo,
-                imageData: partnerPhotoData,
+                image: partnerPhoto,
                 diameter: metrics.avatarDiameter
             )
         }

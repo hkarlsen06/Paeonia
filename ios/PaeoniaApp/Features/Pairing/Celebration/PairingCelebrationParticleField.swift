@@ -117,9 +117,9 @@ struct PairingCelebrationParticleField: View { // swiftlint:disable:this type_bo
     }
 
     /// Draws one particle as a curved, tapered trail of segments following its
-    /// sampled path — fainter and thinner at the tail, brightest at the head, with
-    /// a solid head dot. The trail reads as motion blur and makes the swirl and the
-    /// outward burst obvious.
+    /// sampled path. The trail is fainter and thinner at the tail and brightest at
+    /// the head, which has a solid dot. It reads as motion blur and makes the swirl
+    /// and the outward burst obvious.
     private func drawTrail(
         in context: inout GraphicsContext,
         points: [CGPoint],

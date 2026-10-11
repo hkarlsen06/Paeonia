@@ -39,7 +39,7 @@ actor LiveSyncCoordinator: LiveSyncCoordinating {
     /// Finishes when every task cancelled so far has finished. Every caller of
     /// `cancelFeeds` awaits it, so none returns while an old feed can still write.
     private var draining: Task<Void, Never>?
-    /// Bumped by `stop` and `pause`. A `start` that suspended before a bump must not launch feeds.
+    /// Bumped by `start`, `stop`, and `pause`. A `start` that suspended before a bump must not launch feeds.
     private var generation = 0
     private var pauseDepth = 0
 
@@ -74,6 +74,9 @@ actor LiveSyncCoordinator: LiveSyncCoordinating {
             return
         }
 
+        // Claim a generation so an older start that is still waiting for the
+        // old feeds to finish gives way to this one.
+        generation += 1
         let startGeneration = generation
         await cancelFeeds()
         // `cancelFeeds` suspends. A stop, a pause, or a newer start may have won.

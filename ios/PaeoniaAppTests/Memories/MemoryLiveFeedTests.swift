@@ -8,15 +8,18 @@ extension MemoryRemoteRow {
         memoryID: UUID,
         coupleID: UUID,
         title: String,
+        memoryDate: String = "2026-06-30",
         revision: Int = 1,
         deletedAt: Date? = nil,
+        ownNoteRevision: Int? = nil,
+        memoryMediaIDs: [UUID] = [],
         syncUpdatedAt: Date
     ) -> MemoryRemoteRow {
         MemoryRemoteRow(
             memoryID: memoryID,
             coupleID: coupleID,
             title: title,
-            memoryDate: "2026-06-30",
+            memoryDate: memoryDate,
             createdByUserID: ownerUserID,
             lastEditedByUserID: ownerUserID,
             revision: revision,
@@ -27,7 +30,7 @@ extension MemoryRemoteRow {
             syncUpdatedAt: syncUpdatedAt,
             ownNoteID: nil,
             ownNoteBody: nil,
-            ownNoteRevision: nil,
+            ownNoteRevision: ownNoteRevision,
             ownNoteUpdatedAt: nil,
             ownNoteDeletedAt: nil,
             ownNoteModerationStatus: nil,
@@ -38,8 +41,8 @@ extension MemoryRemoteRow {
             partnerNoteUpdatedAt: nil,
             partnerNoteDeletedAt: nil,
             partnerNoteModerationStatus: nil,
-            memoryMediaIDs: [],
-            mediaAssetIDs: [],
+            memoryMediaIDs: memoryMediaIDs,
+            mediaAssetIDs: memoryMediaIDs,
             memoryMediaStates: [],
             threadID: nil
         )
@@ -47,33 +50,51 @@ extension MemoryRemoteRow {
 }
 
 struct MemoryLiveFeedTests {
-    /// Keeps every subscription open so the test decides what each one yields.
+    /// Keeps every subscription open so the test decides what each one yields. Each
+    /// subscription is recorded in one step with its continuation, and the accessors
+    /// wait for a subscription to open (or throw), so a slow machine fails a test
+    /// instead of crashing the test host on an out-of-range index.
     private final class PushTransport: LiveQueryTransport, @unchecked Sendable {
-        private let opened = LockedBox<[(path: String, args: [String: String])]>([])
-        private let continuations = LockedBox<[AsyncThrowingStream<Data, any Error>.Continuation]>([])
+        struct Subscription {
+            let path: String
+            let args: [String: String]
+            let continuation: AsyncThrowingStream<Data, any Error>.Continuation
+        }
+
+        struct SubscriptionNeverOpened: Error {
+            let index: Int
+        }
+
+        private let subscriptions = LockedBox<[Subscription]>([])
 
         var openCount: Int {
-            opened.value.count
+            subscriptions.value.count
         }
 
-        func args(ofSubscription index: Int) -> [String: String] {
-            opened.value[index].args
+        func subscription(_ index: Int) async throws -> Subscription {
+            _ = await waitUntil(timeout: .seconds(10)) { self.subscriptions.value.count > index }
+            let opened = subscriptions.value
+            guard opened.indices.contains(index) else { throw SubscriptionNeverOpened(index: index) }
+            return opened[index]
         }
 
-        func path(ofSubscription index: Int) -> String {
-            opened.value[index].path
+        func args(ofSubscription index: Int) async throws -> [String: String] {
+            try await subscription(index).args
+        }
+
+        func path(ofSubscription index: Int) async throws -> String {
+            try await subscription(index).path
         }
 
         func updates(path: String, args: [String: String]) -> AsyncThrowingStream<Data, any Error> {
             AsyncThrowingStream { continuation in
-                opened.mutate { $0.append((path, args)) }
-                continuations.mutate { $0.append(continuation) }
+                subscriptions.mutate { $0.append(Subscription(path: path, args: args, continuation: continuation)) }
             }
         }
 
-        func send(_ rows: [MemoryRemoteRow], toSubscription index: Int) throws {
+        func send(_ rows: [MemoryRemoteRow], toSubscription index: Int) async throws {
             let data = try PaeoniaConvexClient.encoder.encode(rows)
-            continuations.value[index].yield(data)
+            try await subscription(index).continuation.yield(data)
         }
     }
 
@@ -142,9 +163,9 @@ struct MemoryLiveFeedTests {
         let task = Task { await env.feed.run(session: env.session, live: env.live) }
 
         #expect(await waitUntil { env.transport.openCount == 1 })
-        #expect(env.transport.path(ofSubscription: 0) == "memories:get_memories")
-        #expect(env.transport.args(ofSubscription: 0).isEmpty)
-        try env.transport.send(
+        #expect(try await env.transport.path(ofSubscription: 0) == "memories:get_memories")
+        #expect(try await env.transport.args(ofSubscription: 0).isEmpty)
+        try await env.transport.send(
             [Self.row(Self.firstID, title: "First", at: 100), Self.row(Self.secondID, title: "Second", at: 200)],
             toSubscription: 0
         )
@@ -160,12 +181,12 @@ struct MemoryLiveFeedTests {
         let task = Task { await env.feed.run(session: env.session, live: env.live) }
         #expect(await waitUntil { env.transport.openCount == 1 })
 
-        try env.transport.send([Self.row(Self.firstID, title: "First", at: 100)], toSubscription: 0)
+        try await env.transport.send([Self.row(Self.firstID, title: "First", at: 100)], toSubscription: 0)
         #expect(await waitUntil { env.transport.openCount == 2 })
-        try env.transport.send([Self.row(Self.secondID, title: "Second", at: 200)], toSubscription: 1)
+        try await env.transport.send([Self.row(Self.secondID, title: "Second", at: 200)], toSubscription: 1)
         #expect(await waitUntil { env.transport.openCount == 3 })
 
-        let args = env.transport.args(ofSubscription: 2)
+        let args = try await env.transport.args(ofSubscription: 2)
         #expect(args["p_updated_after"] == "\"1970-01-01T00:03:20.000Z\"")
         #expect(args["p_cursor_memory_id"] == "\"\(Self.secondID.uuidString)\"")
         #expect(await Self.storedCursor(env) == SyncCursor(
@@ -187,7 +208,7 @@ struct MemoryLiveFeedTests {
         let task = Task { await env.feed.run(session: env.session, live: env.live) }
 
         #expect(await waitUntil { env.transport.openCount == 1 })
-        let args = env.transport.args(ofSubscription: 0)
+        let args = try await env.transport.args(ofSubscription: 0)
         #expect(args["p_updated_after"] == "\"1970-01-01T00:16:40.123Z\"")
         #expect(args["p_cursor_memory_id"] == "\"\(Self.firstID.uuidString)\"")
         await Self.stop(task)
@@ -197,16 +218,24 @@ struct MemoryLiveFeedTests {
         let env = Self.makeEnvironment()
         let task = Task { await env.feed.run(session: env.session, live: env.live) }
         #expect(await waitUntil { env.transport.openCount == 1 })
-        try env.transport.send([Self.row(Self.firstID, title: "First", at: 100)], toSubscription: 0)
+        try await env.transport.send([Self.row(Self.firstID, title: "First", at: 100)], toSubscription: 0)
         #expect(await waitUntil { env.transport.openCount == 2 })
 
-        try env.transport.send([Self.row(Self.thirdID, title: "Partner's", at: 300)], toSubscription: 1)
+        try await env.transport.send([Self.row(Self.thirdID, title: "Partner's", at: 300)], toSubscription: 1)
         #expect(await waitUntil {
             ((try? await env.memoryStore.load(ownerUserID: Self.userID, includeHidden: false)) ?? []).count == 2
         })
 
-        try env.transport.send(
-            [Self.row(Self.thirdID, title: "Partner's", at: 400, revision: 2, deletedAt: Date(timeIntervalSince1970: 400))],
+        try await env.transport.send(
+            [
+                Self.row(
+                    Self.thirdID,
+                    title: "Partner's",
+                    at: 400,
+                    revision: 2,
+                    deletedAt: Date(timeIntervalSince1970: 400)
+                )
+            ],
             toSubscription: 2
         )
         #expect(await waitUntil {
@@ -228,8 +257,11 @@ struct MemoryLiveFeedTests {
         let task = Task { await env.feed.run(session: env.session, live: env.live) }
         #expect(await waitUntil { env.transport.openCount == 1 })
 
-        try env.transport.send(
-            [Self.row(Self.firstID, title: "Server", at: 100, revision: 2), Self.row(Self.secondID, title: "Other", at: 200)],
+        try await env.transport.send(
+            [
+                Self.row(Self.firstID, title: "Server", at: 100, revision: 2),
+                Self.row(Self.secondID, title: "Other", at: 200)
+            ],
             toSubscription: 0
         )
         #expect(await waitUntil { env.transport.openCount == 2 })
@@ -248,7 +280,7 @@ struct MemoryLiveFeedTests {
         #expect(await waitUntil { env.transport.openCount == 1 })
 
         await Self.stop(task)
-        try env.transport.send([Self.row(Self.firstID, title: "Late", at: 100)], toSubscription: 0)
+        try await env.transport.send([Self.row(Self.firstID, title: "Late", at: 100)], toSubscription: 0)
         try? await Task.sleep(for: .milliseconds(50))
 
         #expect(try await env.memoryStore.load(ownerUserID: Self.userID, includeHidden: true).isEmpty)

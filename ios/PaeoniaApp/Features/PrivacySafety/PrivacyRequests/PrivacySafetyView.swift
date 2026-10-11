@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct PrivacySafetyView: View {
-    let partnerUserID: UUID
+    /// Nil when the user has no partner. Data requests still work, and the
+    /// report section is hidden.
+    let partnerUserID: UUID?
     let partnerName: String
     let onReportedAndLeft: () -> Void
 
@@ -13,7 +15,7 @@ struct PrivacySafetyView: View {
 
     @MainActor
     init(
-        partnerUserID: UUID,
+        partnerUserID: UUID?,
         partnerName: String,
         service: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
         operationProvider: (any SyncClientOperationProviding)? = nil,
@@ -30,13 +32,16 @@ struct PrivacySafetyView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                Text(.privacySafetyIntroduction)
+                Text(introduction)
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 privacyRequestsSection
-                safetySection
+
+                if let partnerUserID {
+                    safetySection(partnerUserID: partnerUserID)
+                }
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
@@ -67,6 +72,10 @@ struct PrivacySafetyView: View {
         }
     }
 
+    private var introduction: LocalizedStringResource {
+        partnerUserID == nil ? .privacySafetyIntroductionDataOnly : .privacySafetyIntroduction
+    }
+
     private var privacyRequestsSection: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             sectionHeader(.privacySafetyRequestsSectionTitle)
@@ -74,11 +83,18 @@ struct PrivacySafetyView: View {
             PaeoniaCard(padding: 0) {
                 VStack(spacing: 0) {
                     ForEach(PrivacyRequestKind.allCases, id: \.self) { kind in
-                        requestRow(kind)
-
-                        if kind != .correction {
+                        if kind != PrivacyRequestKind.allCases.first {
                             Divider()
                                 .overlay(.paeoniaSurfacePressed)
+                        }
+
+                        PrivacyRequestRow(
+                            kind: kind,
+                            latestRequest: viewModel.latestRequest(for: kind),
+                            isLoading: !viewModel.hasLoaded,
+                            isSubmitting: viewModel.isSubmitting(kind)
+                        ) {
+                            request(kind)
                         }
                     }
                 }
@@ -86,13 +102,19 @@ struct PrivacySafetyView: View {
         }
     }
 
-    private var safetySection: some View {
+    private func safetySection(partnerUserID: UUID) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             sectionHeader(.privacySafetySafetySectionTitle)
 
             PaeoniaCard(padding: 0) {
                 NavigationLink {
-                    reportDestination
+                    ReportAndLeaveView(
+                        partnerUserID: partnerUserID,
+                        partnerName: partnerName,
+                        service: service,
+                        operationProvider: operationProvider,
+                        onReportedAndLeft: onReportedAndLeft
+                    )
                 } label: {
                     PaeoniaDisclosureRow(
                         title: .privacySafetyReportTitle(partnerName),
@@ -106,107 +128,13 @@ struct PrivacySafetyView: View {
         }
     }
 
-    private var reportDestination: some View {
-        ReportAndLeaveView(
-            partnerUserID: partnerUserID,
-            partnerName: partnerName,
-            service: service,
-            operationProvider: operationProvider,
-            onReportedAndLeft: onReportedAndLeft
-        )
-    }
-
-    private func requestRow(_ kind: PrivacyRequestKind) -> some View {
-        let latestRequest = viewModel.latestRequest(for: kind)
-        let isSubmitting = viewModel.isSubmitting(kind)
-        let isActive = latestRequest?.isActive == true
-
-        return VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                Text(kind.title)
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .foregroundStyle(.paeoniaTextPrimary)
-
-                Text(kind.description)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+    private func request(_ kind: PrivacyRequestKind) {
+        if kind == .correction {
+            isShowingCorrectionRequest = true
+        } else {
+            Task {
+                await viewModel.submitRequest(kind: kind)
             }
-
-            if let latestRequest {
-                requestStatus(latestRequest)
-            }
-
-            Button {
-                if kind == .correction {
-                    isShowingCorrectionRequest = true
-                } else {
-                    Task {
-                        await viewModel.submitRequest(kind: kind)
-                    }
-                }
-            } label: {
-                Text(requestButtonTitle(kind: kind, isSubmitting: isSubmitting, isActive: isActive))
-            }
-            .buttonStyle(PaeoniaQuietButtonStyle())
-            .disabled(isSubmitting || isActive)
-        }
-        .padding(PaeoniaSpacing.space16)
-    }
-
-    private func requestStatus(_ request: PrivacyRequest) -> some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            Label {
-                Text(request.status.title)
-            } icon: {
-                Image(systemName: requestStatusIcon(request.status))
-                    .accessibilityHidden(true)
-            }
-            .font(PaeoniaTypography.caption)
-            .foregroundStyle(requestStatusColor(request.status))
-
-            if let message = request.visibleStatusMessage?.nilIfBlank {
-                Text(verbatim: message)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-
-    private func requestButtonTitle(
-        kind: PrivacyRequestKind,
-        isSubmitting: Bool,
-        isActive: Bool
-    ) -> LocalizedStringResource {
-        if isSubmitting {
-            return .privacySafetyRequestSending
-        }
-        if isActive {
-            return .privacySafetyRequestActive
-        }
-        return kind.actionTitle
-    }
-
-    private func requestStatusIcon(_ status: PrivacyRequestStatus) -> String {
-        switch status {
-        case .submitted, .verifying, .processing:
-            "clock"
-        case .completed:
-            "checkmark.circle"
-        case .rejected, .cancelled:
-            "xmark.circle"
-        }
-    }
-
-    private func requestStatusColor(_ status: PrivacyRequestStatus) -> Color {
-        switch status {
-        case .submitted, .verifying, .processing:
-            .paeoniaAccentPrimary
-        case .completed:
-            .paeoniaSuccess
-        case .rejected, .cancelled:
-            .paeoniaTextTertiary
         }
     }
 
@@ -254,13 +182,6 @@ struct PrivacySafetyView: View {
                 )
             )
         }
-    }
-}
-
-private extension String {
-    var nilIfBlank: String? {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
     }
 }
 

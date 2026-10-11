@@ -1,217 +1,119 @@
 import SafariServices
 import SwiftUI
 
-/// The pre-auth sign-in screen. A private, plum-led entry point that shows the
-/// Paeonia brand and offers the supported ways to get in: Apple and Google.
+/// The sign-in controls at the bottom of the welcome screen: Apple and Google,
+/// the partner invite code row, and the privacy, terms, and support links.
 struct SignInView: View {
     let isWorking: Bool
-    var pendingInviteCode: String?
+    /// The provider whose sign-in is running. Only that button shows a spinner.
+    let signingInWith: AuthProvider?
+    let pendingInviteCode: String?
     let onAppleSignIn: () -> Void
     let onGoogleSignIn: () -> Void
-    /// Optional path for entering or replacing a partner invite. A captured code
-    /// gets an explicit saved state so the user knows it will survive sign-in.
-    var onHaveInviteCode: (() -> Void)?
-
-    private let contentMaxWidth: CGFloat = 430
-    @ScaledMetric(relativeTo: .largeTitle) private var brandMarkHeight: CGFloat = 52
-    @ScaledMetric(relativeTo: .largeTitle) private var brandWordmarkSize: CGFloat = 28
+    /// Enters or replaces a partner invite code. A saved code gets an explicit
+    /// state so the user knows it will be used after sign-in.
+    let onHaveInviteCode: () -> Void
 
     /// The legal page currently shown in the in-app browser, if any.
     @State private var activeLegalLink: LegalLink?
 
-    /// Which provider the user tapped, so its button can show a spinner while the
-    /// sign-in finishes. After the provider's own consent sheet dismisses there is
-    /// still a token exchange to complete; without this the screen looks frozen.
-    @State private var pendingProvider: AuthSignInProvider?
-
     var body: some View {
-        GeometryReader { proxy in
-            ScrollView {
-                VStack(spacing: 0) {
-                    brandLockup
-                        .padding(.top, PaeoniaSpacing.space40)
-
-                    Spacer(minLength: PaeoniaSpacing.space24)
-
-                    promise
-
-                    Spacer(minLength: PaeoniaSpacing.space24)
-
-                    VStack(spacing: PaeoniaSpacing.space24) {
-                        VStack(spacing: PaeoniaSpacing.space16) {
-                            actions
-
-                            if let onHaveInviteCode {
-                                inviteCodeContent(onHaveInviteCode)
-                            }
-                        }
-
-                        footer
-                    }
-                }
-                .frame(maxWidth: contentMaxWidth)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.bottom, PaeoniaSpacing.space16)
-                .frame(minHeight: proxy.size.height)
-            }
-            .scrollBounceBehavior(.basedOnSize)
+        VStack(spacing: PaeoniaSpacing.space12) {
+            appleButton
+            googleButton
+            inviteCodeRow
+            footer
         }
-        .background(background)
-        .preferredColorScheme(.dark)
         .sheet(item: $activeLegalLink) { link in
             SafariView(url: link.url)
                 .ignoresSafeArea()
         }
-        // Once the flow settles (success leaves this screen; failure or cancel
-        // returns control here), drop the spinner so the buttons are tappable
-        // again for a retry.
-        .onChange(of: isWorking) { _, isWorking in
-            if !isWorking {
-                pendingProvider = nil
-            }
-        }
     }
 
-    // MARK: - Background
-
-    private var background: some View {
-        ZStack {
-            Color.paeoniaBackgroundPrimary
-
-            // A soft petal glow as ambient light. Static, so it is comfortable
-            // with Reduce Motion and never competes with the content.
-            RadialGradient(
-                colors: [.paeoniaAccentPrimary.opacity(0.16), .clear],
-                center: .top,
-                startRadius: 0,
-                endRadius: 380
-            )
-        }
-        .ignoresSafeArea()
-        .accessibilityHidden(true)
-    }
-
-    // MARK: - Brand
-
-    private var brandLockup: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            Image(.paeoniaMark)
-                .resizable()
-                .scaledToFit()
-                .frame(height: brandMarkHeight)
-                .accessibilityHidden(true)
-
-            Text(.appTitle)
-                .font(PaeoniaTypography.wordmark(size: brandWordmarkSize))
-                .foregroundStyle(.paeoniaTextPrimary)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private var promise: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            Text(.appTagline)
-                .font(PaeoniaTypography.heroTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
-
-            PaeoniaHeartDivider()
-
-            Text(.authStartMessage)
-                .font(PaeoniaTypography.body)
-                .foregroundStyle(.paeoniaTextSecondary)
-        }
-        .multilineTextAlignment(.center)
-        .frame(maxWidth: .infinity)
-    }
-
-    // MARK: - Actions
-
-    private var actions: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            appleButton
-            googleButton
-        }
-    }
+    // MARK: - Providers
 
     private var appleButton: some View {
-        Button {
-            pendingProvider = .apple
-            onAppleSignIn()
-        } label: {
+        Button(action: onAppleSignIn) {
             Label {
                 Text(.authSignInAppleButton)
             } icon: {
-                if pendingProvider == .apple {
-                    ProgressView()
-                        .tint(.paeoniaTextInverse)
-                } else {
-                    Image(systemName: "apple.logo")
-                        .accessibilityHidden(true)
-                }
+                Image(systemName: "apple.logo")
+                    .accessibilityHidden(true)
             }
         }
-        .buttonStyle(PaeoniaPrimaryButtonStyle())
+        // Apple's sign-in button rules allow a custom button in black or white
+        // with the Apple logo. White reads best on the plum background.
+        .buttonStyle(AppleSignInButtonStyle(isLoading: signingInWith == .apple))
+        .disabled(isWorking && signingInWith != .apple)
         .accessibilityIdentifier("auth.signIn.apple")
-        .disabled(isWorking)
     }
 
     private var googleButton: some View {
-        Button {
-            pendingProvider = .google
-            onGoogleSignIn()
-        } label: {
+        Button(action: onGoogleSignIn) {
             Label {
                 Text(.authSignInGoogleButton)
             } icon: {
-                if pendingProvider == .google {
-                    ProgressView()
-                        .tint(.paeoniaTextPrimary)
-                } else {
-                    Image(.googleG)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 18, height: 18)
-                        .accessibilityHidden(true)
-                }
+                Image(.googleG)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
+                    .accessibilityHidden(true)
             }
         }
-        .buttonStyle(PaeoniaSecondaryButtonStyle())
+        .buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: signingInWith == .google))
+        .disabled(isWorking && signingInWith != .google)
         .accessibilityIdentifier("auth.signIn.google")
-        .disabled(isWorking)
     }
 
-    @ViewBuilder
-    private func inviteCodeContent(_ action: @escaping () -> Void) -> some View {
-        if pendingInviteCode != nil {
-            VStack(spacing: PaeoniaSpacing.space8) {
-                Label {
-                    Text(.welcomeInviteCodeSavedTitle)
-                } icon: {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.paeoniaAccentPrimary)
-                        .accessibilityHidden(true)
-                }
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
+    // MARK: - Invite code
 
-                Button(action: action) {
-                    Text(.welcomeInviteCodeChange)
-                        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-                        .contentShape(Rectangle())
+    @ViewBuilder
+    private var inviteCodeRow: some View {
+        if pendingInviteCode != nil {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: PaeoniaSpacing.space4) {
+                    inviteSavedLabel
+                    changeInviteCodeButton
                 }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-                .disabled(isWorking)
+
+                VStack(spacing: 0) {
+                    inviteSavedLabel
+                    changeInviteCodeButton
+                }
             }
+            .frame(maxWidth: .infinity)
         } else {
-            Button(action: action) {
+            Button(action: onHaveInviteCode) {
                 Text(.welcomeHaveInviteCode)
                     .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
                     .contentShape(Rectangle())
             }
             .buttonStyle(PaeoniaQuietButtonStyle())
             .disabled(isWorking)
+            .accessibilityIdentifier("auth.welcome.inviteCode")
         }
+    }
+
+    private var inviteSavedLabel: some View {
+        Label {
+            Text(.welcomeInviteCodeSavedTitle)
+        } icon: {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .accessibilityHidden(true)
+        }
+        .font(PaeoniaTypography.bodyEmphasis)
+        .foregroundStyle(.paeoniaTextPrimary)
+    }
+
+    private var changeInviteCodeButton: some View {
+        Button(action: onHaveInviteCode) {
+            Text(.welcomeInviteCodeChange)
+                .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PaeoniaQuietButtonStyle())
+        .disabled(isWorking)
     }
 
     // MARK: - Footer
@@ -226,7 +128,7 @@ struct SignInView: View {
                 legalLink(.authSignInSupport, link: .support)
             }
 
-            VStack(spacing: PaeoniaSpacing.space4) {
+            VStack(spacing: 0) {
                 legalLink(.authSignInLegalPrivacy, link: .privacy)
                 legalLink(.authSignInLegalTerms, link: .terms)
                 legalLink(.authSignInSupport, link: .support)
@@ -243,9 +145,11 @@ struct SignInView: View {
             activeLegalLink = link
         } label: {
             Text(title)
-                .frame(minHeight: 44)
+                .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                .contentShape(Rectangle())
         }
         .foregroundStyle(.paeoniaTextSecondary)
+        .accessibilityAddTraits(.isLink)
     }
 
     private var separator: some View {
@@ -255,11 +159,39 @@ struct SignInView: View {
     }
 }
 
-/// The sign-in provider whose button is currently mid-flight, used only to show
-/// a per-button spinner.
-private enum AuthSignInProvider {
-    case apple
-    case google
+/// White "Continue with Apple" button with a black label, matching Apple's
+/// rules for custom Sign in with Apple buttons. While loading it keeps its
+/// size, shows a spinner, and ignores taps.
+private struct AppleSignInButtonStyle: ButtonStyle {
+    let isLoading: Bool
+
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
+
+        return configuration.label
+            .font(PaeoniaTypography.button)
+            .multilineTextAlignment(.center)
+            .foregroundStyle(.black)
+            .opacity(isLoading ? 0 : 1)
+            .overlay {
+                if isLoading {
+                    ProgressView()
+                        .tint(.black)
+                        .accessibilityHidden(true)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
+            .padding(.horizontal, PaeoniaSpacing.space16)
+            .background(.white.opacity(configuration.isPressed ? 0.85 : 1), in: shape)
+            .opacity(isEnabled || isLoading ? 1 : 0.5)
+            .contentShape(shape)
+            .scaleEffect(configuration.isPressed && !isLoading ? 0.98 : 1)
+            .animation(PaeoniaMotion.buttonPress, value: configuration.isPressed)
+            .allowsHitTesting(!isLoading)
+            .accessibilityValue(isLoading ? Text(.commonLoading) : Text(verbatim: ""))
+    }
 }
 
 /// A legal page Paeonia can show in its in-app browser. `Identifiable` so it can
@@ -293,15 +225,3 @@ private struct SafariView: UIViewControllerRepresentable {
 
     func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
 }
-
-#if DEBUG
-#Preview("Sign in") {
-    SignInView(
-        isWorking: false,
-        pendingInviteCode: nil,
-        onAppleSignIn: {},
-        onGoogleSignIn: {}
-    )
-}
-
-#endif

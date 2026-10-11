@@ -6,7 +6,7 @@ import Testing
 @MainActor
 struct SettingsViewModelTests {
     @Test func loadReadsWidgetAlertsAndDeniedStatus() async {
-        let preferences = FakeNotificationPreferences(preferences: NotificationPreferences(
+        let preferences = SettingsFakeNotificationPreferences(preferences: NotificationPreferences(
             streakRemindersEnabled: false,
             dailyChallengeEnabled: true,
             partnerAnsweredEnabled: false,
@@ -16,104 +16,104 @@ struct SettingsViewModelTests {
         ))
         let viewModel = SettingsViewModel(
             preferences: preferences,
-            authorization: FakePushAuthorization(denied: true)
+            authorization: SettingsFakePushAuthorization(denied: true)
         )
 
-        await viewModel.load()
+        await viewModel.loadNotificationSettings()
 
-        #expect(viewModel.isLoaded)
-        #expect(viewModel.streakRemindersEnabled == false)
-        #expect(viewModel.dailyChallengeEnabled)
-        #expect(viewModel.partnerAnsweredEnabled == false)
-        #expect(viewModel.messagesEnabled == false)
-        #expect(viewModel.widgetAlertsEnabled == false)
-        #expect(viewModel.memoriesEnabled == false)
-        #expect(viewModel.systemNotificationsDenied)
+        #expect(viewModel.isNotificationSettingsLoaded)
+        #expect(viewModel.isEnabled(.streakReminders) == false)
+        #expect(viewModel.isEnabled(.dailyChallenge))
+        #expect(viewModel.isEnabled(.partnerAnswered) == false)
+        #expect(viewModel.isEnabled(.messages) == false)
+        #expect(viewModel.isEnabled(.widgetUpdates) == false)
+        #expect(viewModel.isEnabled(.memories) == false)
+        #expect(viewModel.systemNotificationPermission == .denied)
     }
 
     @Test func togglePersistsThroughService() async {
-        let preferences = FakeNotificationPreferences()
+        let preferences = SettingsFakeNotificationPreferences()
         let viewModel = SettingsViewModel(
             preferences: preferences,
-            authorization: FakePushAuthorization()
+            authorization: SettingsFakePushAuthorization()
         )
-        await viewModel.load()
+        await viewModel.loadNotificationSettings()
 
         await viewModel.setNotificationPreference(.widgetUpdates, enabled: false)
 
-        #expect(viewModel.widgetAlertsEnabled == false)
+        #expect(viewModel.isEnabled(.widgetUpdates) == false)
         #expect(await preferences.lastSetKind == .widgetUpdates)
         #expect(await preferences.lastSetValue == false)
         #expect(viewModel.notice == nil)
     }
 
     @Test func togglePersistsPartnerAnswerPreference() async {
-        let preferences = FakeNotificationPreferences()
+        let preferences = SettingsFakeNotificationPreferences()
         let viewModel = SettingsViewModel(
             preferences: preferences,
-            authorization: FakePushAuthorization()
+            authorization: SettingsFakePushAuthorization()
         )
-        await viewModel.load()
+        await viewModel.loadNotificationSettings()
 
         await viewModel.setNotificationPreference(.partnerAnswered, enabled: false)
 
-        #expect(viewModel.partnerAnsweredEnabled == false)
+        #expect(viewModel.isEnabled(.partnerAnswered) == false)
         #expect(await preferences.lastSetKind == .partnerAnswered)
         #expect(await preferences.lastSetValue == false)
     }
 
     @Test func togglePersistsMemoryPreference() async {
-        let preferences = FakeNotificationPreferences()
+        let preferences = SettingsFakeNotificationPreferences()
         let viewModel = SettingsViewModel(
             preferences: preferences,
-            authorization: FakePushAuthorization()
+            authorization: SettingsFakePushAuthorization()
         )
-        await viewModel.load()
+        await viewModel.loadNotificationSettings()
 
         await viewModel.setNotificationPreference(.memories, enabled: false)
 
-        #expect(viewModel.memoriesEnabled == false)
+        #expect(viewModel.isEnabled(.memories) == false)
         #expect(await preferences.lastSetKind == .memories)
         #expect(await preferences.lastSetValue == false)
     }
 
     @Test func togglePersistsMessagePreference() async {
-        let preferences = FakeNotificationPreferences()
+        let preferences = SettingsFakeNotificationPreferences()
         let viewModel = SettingsViewModel(
             preferences: preferences,
-            authorization: FakePushAuthorization()
+            authorization: SettingsFakePushAuthorization()
         )
-        await viewModel.load()
+        await viewModel.loadNotificationSettings()
 
         await viewModel.setNotificationPreference(.messages, enabled: false)
 
-        #expect(viewModel.messagesEnabled == false)
+        #expect(viewModel.isEnabled(.messages) == false)
         #expect(await preferences.lastSetKind == .messages)
         #expect(await preferences.lastSetValue == false)
     }
 
     @Test func failedSaveRevertsAndShowsNotice() async {
-        let preferences = FakeNotificationPreferences(failOnSet: true)
+        let preferences = SettingsFakeNotificationPreferences(failOnSet: true)
         let viewModel = SettingsViewModel(
             preferences: preferences,
-            authorization: FakePushAuthorization()
+            authorization: SettingsFakePushAuthorization()
         )
-        await viewModel.load()
+        await viewModel.loadNotificationSettings()
 
         await viewModel.setNotificationPreference(.streakReminders, enabled: false)
 
         // The optimistic flip is rolled back and the failure surfaces.
-        #expect(viewModel.streakRemindersEnabled == true)
+        #expect(viewModel.isEnabled(.streakReminders) == true)
         #expect(viewModel.notice == .saveFailed)
     }
 
     @Test func unchangedValueDoesNotWrite() async {
-        let preferences = FakeNotificationPreferences()
+        let preferences = SettingsFakeNotificationPreferences()
         let viewModel = SettingsViewModel(
             preferences: preferences,
-            authorization: FakePushAuthorization()
+            authorization: SettingsFakePushAuthorization()
         )
-        await viewModel.load()
+        await viewModel.loadNotificationSettings()
 
         await viewModel.setNotificationPreference(.dailyChallenge, enabled: true)
 
@@ -121,12 +121,12 @@ struct SettingsViewModelTests {
     }
 
     @Test func leaveRelationshipSucceeds() async {
-        let pairing = FakePairingService(leaveResult: .success(true))
+        let pairing = SettingsFakePairingService(leaveResult: .success(true))
         let viewModel = SettingsViewModel(
-            preferences: FakeNotificationPreferences(),
-            authorization: FakePushAuthorization(),
+            preferences: SettingsFakeNotificationPreferences(),
+            authorization: SettingsFakePushAuthorization(),
             pairingService: pairing,
-            operationProvider: FakeOperationProvider()
+            operationProvider: SettingsFakeOperationProvider()
         )
 
         let didLeave = await viewModel.leaveRelationship()
@@ -138,12 +138,12 @@ struct SettingsViewModelTests {
     }
 
     @Test func leaveRelationshipFailureSurfacesNotice() async {
-        let pairing = FakePairingService(leaveResult: .failure(FakePreferencesError.failed))
+        let pairing = SettingsFakePairingService(leaveResult: .failure(SettingsFakePreferencesError.failed))
         let viewModel = SettingsViewModel(
-            preferences: FakeNotificationPreferences(),
-            authorization: FakePushAuthorization(),
+            preferences: SettingsFakeNotificationPreferences(),
+            authorization: SettingsFakePushAuthorization(),
             pairingService: pairing,
-            operationProvider: FakeOperationProvider()
+            operationProvider: SettingsFakeOperationProvider()
         )
 
         let didLeave = await viewModel.leaveRelationship()
@@ -154,10 +154,10 @@ struct SettingsViewModelTests {
     }
 
     @Test func restorePurchasesConfiguresUserAndSurfacesSuccess() async {
-        let storeKit = FakeSettingsStoreKit(restoreResult: .success(true))
+        let storeKit = SettingsFakeStoreKit(restoreResult: .success(true))
         let viewModel = SettingsViewModel(
             preferences: nil,
-            authorization: FakePushAuthorization(),
+            authorization: SettingsFakePushAuthorization(),
             userID: "user-123",
             storeKitService: storeKit
         )
@@ -172,10 +172,10 @@ struct SettingsViewModelTests {
     }
 
     @Test func restorePurchasesSurfacesNothingFound() async {
-        let storeKit = FakeSettingsStoreKit(restoreResult: .success(false))
+        let storeKit = SettingsFakeStoreKit(restoreResult: .success(false))
         let viewModel = SettingsViewModel(
             preferences: nil,
-            authorization: FakePushAuthorization(),
+            authorization: SettingsFakePushAuthorization(),
             userID: "user-123",
             storeKitService: storeKit
         )
@@ -187,12 +187,12 @@ struct SettingsViewModelTests {
     }
 
     @Test func restorePurchasesSurfacesFailure() async {
-        let storeKit = FakeSettingsStoreKit(
+        let storeKit = SettingsFakeStoreKit(
             restoreResult: .failure(PaeoniaPurchaseError.restoreFailed)
         )
         let viewModel = SettingsViewModel(
             preferences: nil,
-            authorization: FakePushAuthorization(),
+            authorization: SettingsFakePushAuthorization(),
             userID: "user-123",
             storeKitService: storeKit
         )
@@ -207,41 +207,235 @@ struct SettingsViewModelTests {
 
 extension SettingsViewModelTests {
     @Test func liveValuesUpdateToggles() async {
-        let preferences = FakeNotificationPreferences()
-        let viewModel = SettingsViewModel(preferences: preferences, authorization: FakePushAuthorization())
-        let observing = Task { await viewModel.observe() }
+        let preferences = SettingsFakeNotificationPreferences()
+        let viewModel = SettingsViewModel(preferences: preferences, authorization: SettingsFakePushAuthorization())
+        let observing = Task { await viewModel.observeNotificationSettings() }
 
         await preferences.emit(NotificationPreferences(messagesEnabled: false))
-        await waitUntil { viewModel.messagesEnabled == false }
+        await waitUntil { viewModel.isEnabled(.messages) == false }
 
-        #expect(viewModel.messagesEnabled == false)
-        #expect(viewModel.memoriesEnabled)
+        #expect(viewModel.isEnabled(.messages) == false)
+        #expect(viewModel.isEnabled(.memories))
         observing.cancel()
     }
 
     @Test func staleLiveValueDoesNotRevertToggleWithSaveInFlight() async {
-        let preferences = FakeNotificationPreferences(holdSets: true)
-        let viewModel = SettingsViewModel(preferences: preferences, authorization: FakePushAuthorization())
-        let observing = Task { await viewModel.observe() }
+        let preferences = SettingsFakeNotificationPreferences(holdSets: true)
+        let viewModel = SettingsViewModel(preferences: preferences, authorization: SettingsFakePushAuthorization())
+        let observing = Task { await viewModel.observeNotificationSettings() }
 
         let saving = Task { await viewModel.setNotificationPreference(.messages, enabled: false) }
         await waitUntil { await preferences.heldSetCount == 1 }
 
         // The server still reports the old messages value and a new memories value.
         await preferences.emit(NotificationPreferences(memoriesEnabled: false))
-        await waitUntil { viewModel.memoriesEnabled == false }
+        await waitUntil { viewModel.isEnabled(.memories) == false }
 
-        #expect(viewModel.messagesEnabled == false)
-        #expect(viewModel.memoriesEnabled == false)
+        #expect(viewModel.isEnabled(.messages) == false)
+        #expect(viewModel.isEnabled(.memories) == false)
 
         await preferences.releaseSets()
         await saving.value
 
         // Later live values apply again once the save finished.
         await preferences.emit(NotificationPreferences(messagesEnabled: true, memoriesEnabled: false))
-        await waitUntil { viewModel.messagesEnabled }
-        #expect(viewModel.messagesEnabled)
+        await waitUntil { viewModel.isEnabled(.messages) }
+        #expect(viewModel.isEnabled(.messages))
         observing.cancel()
+    }
+}
+
+// MARK: - Rapid toggles and failures
+
+extension SettingsViewModelTests {
+    /// Three quick taps used to start three overlapping requests that could
+    /// reach the server in any order. Now one request runs per switch and the
+    /// newest value follows it, so the server always ends on the last tap.
+    @Test func rapidTogglesSendOneRequestAtATimeAndEndOnLastTap() async {
+        let preferences = SettingsFakeNotificationPreferences(holdSets: true)
+        let viewModel = SettingsViewModel(preferences: preferences, authorization: SettingsFakePushAuthorization())
+        await viewModel.loadNotificationSettings()
+
+        let firstTap = Task { await viewModel.setNotificationPreference(.messages, enabled: false) }
+        await waitUntil { await preferences.heldSetCount == 1 }
+
+        await viewModel.setNotificationPreference(.messages, enabled: true)
+        await viewModel.setNotificationPreference(.messages, enabled: false)
+        await viewModel.setNotificationPreference(.messages, enabled: true)
+
+        // Still only the first request is in flight.
+        #expect(await preferences.setCallCount == 1)
+        #expect(viewModel.isEnabled(.messages))
+
+        await preferences.releaseNextSet()
+        await waitUntil { await preferences.setCallCount == 2 }
+        await waitUntil { await preferences.heldSetCount == 1 }
+        await preferences.releaseNextSet()
+        await firstTap.value
+
+        #expect(await preferences.sentValues == [false, true])
+        #expect(viewModel.isEnabled(.messages))
+        #expect(viewModel.notice == nil)
+    }
+
+    @Test func tapsThatEndOnTheSavedValueSendNothingMore() async {
+        let preferences = SettingsFakeNotificationPreferences(holdSets: true)
+        let viewModel = SettingsViewModel(preferences: preferences, authorization: SettingsFakePushAuthorization())
+        await viewModel.loadNotificationSettings()
+
+        let firstTap = Task { await viewModel.setNotificationPreference(.memories, enabled: false) }
+        await waitUntil { await preferences.heldSetCount == 1 }
+        await viewModel.setNotificationPreference(.memories, enabled: true)
+        await viewModel.setNotificationPreference(.memories, enabled: false)
+
+        await preferences.releaseNextSet()
+        await firstTap.value
+
+        #expect(await preferences.sentValues == [false])
+        #expect(viewModel.isEnabled(.memories) == false)
+    }
+
+    /// A failed save goes back to what the server last said, not to whatever the
+    /// switch showed before the tap.
+    @Test func failedSaveFallsBackToLatestServerValue() async {
+        let preferences = SettingsFakeNotificationPreferences(holdSets: true)
+        let viewModel = SettingsViewModel(preferences: preferences, authorization: SettingsFakePushAuthorization())
+        let observing = Task { await viewModel.observeNotificationSettings() }
+        await viewModel.loadNotificationSettings()
+
+        let tap = Task { await viewModel.setNotificationPreference(.dailyChallenge, enabled: false) }
+        await waitUntil { await preferences.heldSetCount == 1 }
+
+        // Another device turned it off meanwhile; this save then fails.
+        await preferences.emit(NotificationPreferences(dailyChallengeEnabled: false))
+        await preferences.setFailing(true)
+        await viewModel.setNotificationPreference(.dailyChallenge, enabled: true)
+        await waitUntil { await preferences.heldSetCount == 1 }
+        await preferences.releaseNextSet()
+        await tap.value
+
+        #expect(viewModel.isEnabled(.dailyChallenge) == false)
+        #expect(viewModel.notice == .saveFailed)
+        observing.cancel()
+    }
+
+    /// After "Not now" on the app's primer, iOS has never asked. The switches
+    /// cannot help then, so the screen offers the real iOS prompt.
+    @Test func notAskedPermissionCanBeRequestedFromSettings() async {
+        let permission = SettingsFakeSystemPermission(status: .notAsked, answer: .allowed)
+        let viewModel = SettingsViewModel(preferences: nil, authorization: permission)
+
+        await viewModel.loadNotificationSettings()
+        #expect(viewModel.systemNotificationPermission == .notAsked)
+
+        await viewModel.requestSystemNotificationPermission()
+
+        #expect(await permission.requestCount == 1)
+        #expect(viewModel.systemNotificationPermission == .allowed)
+        #expect(!viewModel.isRequestingSystemPermission)
+    }
+
+    @Test func sayingNoToThePromptLeadsToTheSettingsPath() async {
+        let permission = SettingsFakeSystemPermission(status: .notAsked, answer: .denied)
+        let viewModel = SettingsViewModel(preferences: nil, authorization: permission)
+        await viewModel.loadNotificationSettings()
+
+        await viewModel.requestSystemNotificationPermission()
+
+        #expect(viewModel.systemNotificationPermission == .denied)
+    }
+
+    @Test func deniedPermissionIsNotRequestedAgain() async {
+        let permission = SettingsFakeSystemPermission(status: .denied, answer: .allowed)
+        let viewModel = SettingsViewModel(preferences: nil, authorization: permission)
+        await viewModel.loadNotificationSettings()
+
+        await viewModel.requestSystemNotificationPermission()
+
+        #expect(await permission.requestCount == 0)
+        #expect(viewModel.systemNotificationPermission == .denied)
+    }
+
+    /// Reopening the screen starts a fresh read. If a save finishes while that
+    /// read is slow, the read's older value must not put the switch back.
+    @Test func slowReadDoesNotUndoASaveThatFinishedFirst() async {
+        let preferences = SettingsFakeNotificationPreferences()
+        let viewModel = SettingsViewModel(preferences: preferences, authorization: SettingsFakePushAuthorization())
+        await viewModel.loadNotificationSettings()
+
+        await preferences.setLoadHolding(true)
+        let reopening = Task { await viewModel.loadNotificationSettings() }
+        await waitUntil { await preferences.heldLoadCount == 1 }
+
+        await viewModel.setNotificationPreference(.messages, enabled: false)
+        await preferences.releaseLoads()
+        await reopening.value
+
+        #expect(viewModel.isEnabled(.messages) == false)
+    }
+
+    @Test func failedLoadKeepsSwitchesDisabledUntilLiveValuesArrive() async {
+        let preferences = SettingsFakeNotificationPreferences(failOnLoad: true)
+        let viewModel = SettingsViewModel(preferences: preferences, authorization: SettingsFakePushAuthorization())
+
+        await viewModel.loadNotificationSettings()
+
+        #expect(viewModel.notificationLoadState == .failed)
+        #expect(!viewModel.isNotificationSettingsLoaded)
+
+        let observing = Task { await viewModel.observeNotificationSettings() }
+        await preferences.emit(NotificationPreferences(streakRemindersEnabled: false))
+        await waitUntil { viewModel.isNotificationSettingsLoaded }
+
+        #expect(viewModel.notificationLoadState == .loaded)
+        #expect(viewModel.isEnabled(.streakReminders) == false)
+        observing.cancel()
+    }
+
+    @Test func failedRefreshKeepsLoadedValues() async {
+        let preferences = SettingsFakeNotificationPreferences(
+            preferences: NotificationPreferences(memoriesEnabled: false)
+        )
+        let viewModel = SettingsViewModel(preferences: preferences, authorization: SettingsFakePushAuthorization())
+        await viewModel.loadNotificationSettings()
+
+        await preferences.setLoadFailing(true)
+        await viewModel.loadNotificationSettings()
+
+        #expect(viewModel.notificationLoadState == .loaded)
+        #expect(viewModel.isEnabled(.memories) == false)
+    }
+
+    @Test func restoreCancelledByUserShowsNothing() async {
+        let storeKit = SettingsFakeStoreKit(restoreResult: .failure(PaeoniaPurchaseError.cancelled))
+        let viewModel = SettingsViewModel(
+            preferences: nil,
+            authorization: SettingsFakePushAuthorization(),
+            userID: "user-123",
+            storeKitService: storeKit
+        )
+
+        let restored = await viewModel.restorePurchases()
+
+        #expect(!restored)
+        #expect(viewModel.notice == nil)
+        #expect(!viewModel.isRestoringPurchases)
+    }
+
+    @Test func restoreOfAnotherAccountsSubscriptionSaysSo() async {
+        let storeKit = SettingsFakeStoreKit(
+            restoreResult: .failure(PaeoniaPurchaseError.purchaseLinkedToAnotherAccount)
+        )
+        let viewModel = SettingsViewModel(
+            preferences: nil,
+            authorization: SettingsFakePushAuthorization(),
+            userID: "user-123",
+            storeKitService: storeKit
+        )
+
+        _ = await viewModel.restorePurchases()
+
+        #expect(viewModel.notice == .purchaseLinkedToAnotherAccount)
     }
 }
 
@@ -249,186 +443,5 @@ extension SettingsViewModelTests {
 private func waitUntil(_ condition: () async -> Bool) async {
     for _ in 0..<200 where !(await condition()) {
         try? await Task.sleep(for: .milliseconds(10))
-    }
-}
-
-private enum FakePreferencesError: Error {
-    case failed
-}
-
-// An actor supplies the async-ness, so the sync bodies need no `async`/`await`.
-private actor FakeNotificationPreferences: NotificationPreferencesProviding {
-    private var preferences: NotificationPreferences
-    private let failOnSet: Bool
-    private let holdSets: Bool
-    private var heldSets = [CheckedContinuation<Void, Never>]()
-    private let updates = AsyncStream<NotificationPreferences>.makeStream()
-    private(set) var setCallCount = 0
-    private(set) var lastSetKind: NotificationPreferenceKind?
-    private(set) var lastSetValue: Bool?
-
-    init(
-        preferences: NotificationPreferences = NotificationPreferences(),
-        failOnSet: Bool = false,
-        holdSets: Bool = false
-    ) {
-        self.preferences = preferences
-        self.failOnSet = failOnSet
-        self.holdSets = holdSets
-    }
-
-    nonisolated func notificationPreferenceUpdates() -> AsyncStream<NotificationPreferences> {
-        updates.stream
-    }
-
-    func emit(_ value: NotificationPreferences) {
-        updates.continuation.yield(value)
-    }
-
-    var heldSetCount: Int {
-        heldSets.count
-    }
-
-    func releaseSets() {
-        heldSets.forEach { $0.resume() }
-        heldSets = []
-    }
-
-    func loadNotificationPreferences() -> NotificationPreferences {
-        preferences
-    }
-
-    func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled value: Bool) async throws {
-        setCallCount += 1
-        if holdSets {
-            await withCheckedContinuation { heldSets.append($0) }
-        }
-        if failOnSet {
-            throw FakePreferencesError.failed
-        }
-        lastSetKind = kind
-        lastSetValue = value
-        switch kind {
-        case .streakReminders:
-            preferences.streakRemindersEnabled = value
-        case .dailyChallenge:
-            preferences.dailyChallengeEnabled = value
-        case .partnerAnswered:
-            preferences.partnerAnsweredEnabled = value
-        case .messages:
-            preferences.messagesEnabled = value
-        case .widgetUpdates:
-            preferences.widgetUpdatesEnabled = value
-        case .memories:
-            preferences.memoriesEnabled = value
-        }
-    }
-}
-
-private struct FakePushAuthorization: PushAuthorizationProviding {
-    var denied = false
-
-    func requestAuthorizationIfNeeded() -> Bool { true }
-
-    func isDenied() -> Bool {
-        denied
-    }
-}
-
-/// A pairing service whose only exercised method is `leaveRelationship`; the rest
-/// of the protocol is unused by the You-tab flow.
-private actor FakePairingService: PairingServicing {
-    private let leaveResult: Result<Bool, Error>
-    private(set) var leaveCallCount = 0
-
-    init(leaveResult: Result<Bool, Error>) {
-        self.leaveResult = leaveResult
-    }
-
-    func createInvite(operation: PairingClientOperation, expiresAt: Date) async throws -> PairingInvite {
-        fatalError("unused")
-    }
-
-    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
-        fatalError("unused")
-    }
-
-    func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
-        fatalError("unused")
-    }
-
-    func rotateInvite(
-        currentInvite: PairingInvite,
-        operation: PairingClientOperation,
-        expiresAt: Date
-    ) async throws -> PairingInvite {
-        fatalError("unused")
-    }
-
-    func acceptInvite(
-        codeInput: String,
-        operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
-        fatalError("unused")
-    }
-
-    func revokeInvite(id: UUID) async throws -> Bool {
-        fatalError("unused")
-    }
-
-    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
-        leaveCallCount += 1
-        return try leaveResult.get()
-    }
-}
-
-@MainActor
-private final class FakeOperationProvider: PairingClientOperationProviding {
-    func makeOperation() -> PairingClientOperation {
-        SyncClientOperation(clientID: UUID(), clientSequence: 1)
-    }
-}
-
-@MainActor
-private final class FakeSettingsStoreKit: PaeoniaStoreKitServicing {
-    let products: [Product] = []
-    private let restoreResult: Result<Bool, Error>
-    private(set) var configuredUserID: String?
-    private(set) var restoreCallCount = 0
-
-    init(restoreResult: Result<Bool, Error>) {
-        self.restoreResult = restoreResult
-    }
-
-    func configure(userID: String) {
-        configuredUserID = userID
-    }
-
-    func loadProducts() async throws {}
-
-    func product(for productID: PaeoniaSubscriptionProductID) -> Product? {
-        nil
-    }
-
-    func product(for productID: PaeoniaConsumableProductID) -> Product? {
-        nil
-    }
-
-    func purchase(_ product: Product) async throws -> Bool {
-        false
-    }
-
-    func restorePurchases() async throws -> Bool {
-        restoreCallCount += 1
-        return try restoreResult.get()
-    }
-
-    func redeemStreakRestore() async throws -> Int? {
-        nil
-    }
-
-    func recoverPendingStreakRestores() async -> Int? {
-        nil
     }
 }

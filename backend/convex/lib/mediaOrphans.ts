@@ -1,7 +1,7 @@
 import type { WriterCtx, ReaderCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
 import { fail } from "./errors";
-import { nowIso } from "./time";
+import { addMs, nowIso } from "./time";
 import type { Doc } from "../_generated/dataModel";
 
 /**
@@ -104,14 +104,21 @@ export async function queueOrphanedMediaAssetForDelete(
   return true;
 }
 
+// A client uploads media first and attaches it in a later write, which can wait
+// in the device's offline queue for days. The sweep leaves recent uploads alone
+// so that write still finds its media.
+const UNATTACHED_UPLOAD_GRACE_MS = 7 * 24 * 3_600_000;
+
 /**
  * Port of `internal.queue_orphaned_media_assets_for_delete`: the sweep for
- * orphans that no write path caught. Visits the oldest assets first.
+ * orphans that no write path caught. Visits the oldest assets first. Skips
+ * assets finalized within `UNATTACHED_UPLOAD_GRACE_MS`.
  */
 export async function queueOrphanedMediaAssetsForDelete(ctx: WriterCtx, limit = 500): Promise<number> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 10000) {
     return fail("23514", "orphaned media queue limit is out of range");
   }
+  const finalizedBefore = addMs(nowIso(), -UNATTACHED_UPLOAD_GRACE_MS);
   let queued = 0;
   for (const status of ["none", "failed"] as const) {
     const assets = ctx.db
@@ -119,6 +126,7 @@ export async function queueOrphanedMediaAssetsForDelete(ctx: WriterCtx, limit = 
       .withIndex("by_storage_delete_status_updated_at", (q) => q.eq("storage_delete_status", status));
     for await (const asset of assets) {
       if (queued >= limit) break;
+      if (asset.upload_finalized_at !== undefined && asset.upload_finalized_at > finalizedBefore) continue;
       if (isQueueable(asset) && !(await mediaAssetHasLiveReference(ctx, asset.id))) {
         await queueForDelete(ctx, asset);
         queued += 1;

@@ -22,6 +22,10 @@ struct DailyChallengeHistoryView: View {
     @State private var answeringQuestion: DailyChallengeQuestion?
     @State private var reportedPartnerAnswerID: UUID?
     @State private var chattingQuestion: DailyChallengeQuestion?
+    /// Bumped to ask for a fresh history load (retry, or the partner answer flow closing).
+    /// The load runs as a `.task(id:)`, so it lives and dies with this screen: closing the
+    /// cover cancels it instead of leaving a load running for a screen nobody sees.
+    @State private var reloadToken = 0
     /// Source namespace for the answer flow's zoom-out transition; the tapped card marks
     /// itself in it so the flow appears to grow from the card the user tapped.
     @Namespace private var zoomNamespace
@@ -112,9 +116,18 @@ struct DailyChallengeHistoryView: View {
             edgeSwipeCatcher
         }
         .preferredColorScheme(.dark)
-        .task { await viewModel.load() }
+        .task(id: reloadToken) { await viewModel.load() }
         .task { await viewModel.observeThreadSummaries() }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
+        // The partner can answer another question while this screen is open. Re-read the
+        // waiting section when the daily challenge changes, without fetching the history
+        // again. While the answer flow is open the update is skipped: the question
+        // disappearing under the flow would break its zoom back into the card, and
+        // closing the flow reloads everything anyway.
+        .onChange(of: dailyChallengeViewModel.snapshot.answerablePartnerQuestions) {
+            guard answeringQuestion == nil else { return }
+            viewModel.refreshPendingPartnerQuestions()
+        }
         .onChange(of: chattingQuestion) { oldValue, newValue in
             guard oldValue != nil, newValue == nil else { return }
             Task { await viewModel.refreshThreadSummaries() }
@@ -130,6 +143,7 @@ struct DailyChallengeHistoryView: View {
             )
             .zoomTransition(question.id, in: zoomNamespace, enabled: !reduceMotion)
             .environment(bannerCenter)
+            .paeoniaTopBanner(bannerCenter)
         }
     }
 
@@ -142,7 +156,16 @@ struct DailyChallengeHistoryView: View {
             .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
             .gesture(exitSwipe)
+            // A pushed chat or report screen owns the leading-edge swipe (the system
+            // back-swipe). Leaving this strip active there would close the whole history
+            // and drop the chat draft.
+            .allowsHitTesting(!isDetailPushed)
             .accessibilityHidden(true)
+    }
+
+    /// Whether the chat or report screen is pushed on the cover's navigation stack.
+    private var isDetailPushed: Bool {
+        chattingQuestion != nil || reportedPartnerAnswerID != nil
     }
 
     /// A rightward drag started from the leading edge: the cover follows the finger, and
@@ -227,6 +250,7 @@ struct DailyChallengeHistoryView: View {
                 .font(PaeoniaTypography.sectionTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityAddTraits(.isHeader)
 
             ForEach(questions) { question in
                 DailyChallengeReadCard(
@@ -256,7 +280,7 @@ struct DailyChallengeHistoryView: View {
             systemImage: "exclamationmark.triangle"
         ) {
             Button {
-                Task { await viewModel.load() }
+                reloadToken += 1
             } label: {
                 Text(.dailyChallengeHistoryRetryButton)
             }
@@ -269,7 +293,7 @@ struct DailyChallengeHistoryView: View {
     /// question leaves the "waiting for you" section and joins the completed timeline.
     private func closeAnswerFlow() {
         answeringQuestion = nil
-        Task { await viewModel.load() }
+        reloadToken += 1
     }
 
     private func openAnswerFlow(for question: DailyChallengeQuestion) {
@@ -304,11 +328,16 @@ struct DailyChallengeHistoryDateDivider: View {
             Text(date, format: dateFormat)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
-                .fixedSize()
+                .multilineTextAlignment(.center)
+                // Long dates wrap at accessibility text sizes. The priority gives the
+                // text the row's width first; the rules take what is left.
+                .lineLimit(2)
+                .layoutPriority(1)
 
             rule
         }
         .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
     }
 
     private var rule: some View {

@@ -6,6 +6,10 @@ nonisolated enum MemoryDateStyle {
     private static let utc = TimeZone(identifier: "UTC") ?? .gmt
     static let short = Date.FormatStyle(date: .abbreviated, time: .omitted, timeZone: utc)
     static let long = Date.FormatStyle(date: .long, time: .omitted, timeZone: utc)
+    /// "October 2026", for the timeline's month headers.
+    static let month = Date.FormatStyle(timeZone: utc, capitalizationContext: .beginningOfSentence)
+        .month(.wide)
+        .year()
 }
 
 /// A single memory in the timeline. One contained, private surface per moment: the
@@ -75,6 +79,13 @@ struct MemoryCardView: View {
                 .frame(maxWidth: .infinity)
             }
         }
+        // VoiceOver hears "3 photos" once instead of "Memory photo" per thumbnail.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            photoAssetIDs.count == 1
+                ? Text(.memoriesCardPhotoCountOne)
+                : Text(.memoriesCardPhotoCount(photoAssetIDs.count.formatted()))
+        )
     }
 
     private var savedHint: some View {

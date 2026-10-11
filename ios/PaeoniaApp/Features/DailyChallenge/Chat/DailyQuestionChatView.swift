@@ -5,6 +5,7 @@ struct DailyQuestionChatView: View {
     @State private var viewModel: DailyQuestionChatViewModel
     let participants: DailyChallengeParticipants
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @State private var showsSendingReassurance = false
 
     init(
         viewModel: DailyQuestionChatViewModel,
@@ -19,7 +20,9 @@ struct DailyQuestionChatView: View {
             messages: exyteMessages,
             chatType: .conversation,
             didSendMessage: { draft async -> Bool in
-                await viewModel.send(draft.text)
+                // Tapping a failed message's red icon sends its draft back with the id
+                // of the message that failed, so the retry replaces it.
+                await viewModel.send(draft.text, replacingFailed: draft.id.flatMap(UUID.init(uuidString:)))
             }
         )
         .mainHeaderBuilder { questionContext }
@@ -32,8 +35,17 @@ struct DailyQuestionChatView: View {
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle(Text(.dailyChatNavigationTitle))
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: viewModel.question.id) { await viewModel.load() }
-        .task(id: viewModel.question.id) { await viewModel.observeLiveUpdates() }
+        .task(id: viewModel.question.id) {
+            await viewModel.load()
+            await viewModel.observeLiveUpdates()
+        }
+        .task(id: viewModel.hasSendingMessages) {
+            // A send that finishes quickly never shows the strip, so the list does not jump.
+            showsSendingReassurance = false
+            guard viewModel.hasSendingMessages else { return }
+            try? await Task.sleep(for: .seconds(2))
+            showsSendingReassurance = !Task.isCancelled
+        }
         .onChange(of: participants) { _, participants in
             viewModel.refreshParticipants(participants)
         }
@@ -47,7 +59,8 @@ struct DailyQuestionChatView: View {
                 ? String(localized: .dailyChallengeChoiceYou)
                 : viewModel.participants.partnerName
             return ExyteChat.Message(
-                id: message.id.uuidString,
+                // A message keeps its row when the server confirms it.
+                id: (message.clientOperationID ?? message.id).uuidString,
                 user: ExyteChat.User(
                     id: message.senderUserID.uuidString,
                     name: name,
@@ -109,7 +122,7 @@ struct DailyQuestionChatView: View {
 
     @ViewBuilder
     private var sendingReassurance: some View {
-        if viewModel.hasSendingMessages {
+        if viewModel.hasSendingMessages, showsSendingReassurance {
             Text(.dailyChatSendingReassurance)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)

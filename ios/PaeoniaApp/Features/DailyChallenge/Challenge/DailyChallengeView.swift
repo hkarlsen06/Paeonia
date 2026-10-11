@@ -53,7 +53,7 @@ struct DailyChallengeScreen: View {
                                 DailyChallengeReadCard(
                                     question: question,
                                     participants: viewModel.participants,
-                                    sending: sendingPreview(for: question),
+                                    sending: viewModel.sendingPreview(for: question),
                                     isOwnChallengeComplete: viewModel.hasCompletedRequiredDailyQuestions,
                                     zoomNamespace: zoomNamespace,
                                     isHighlighted: highlightedQuestionID == question.id,
@@ -112,8 +112,8 @@ struct DailyChallengeScreen: View {
                 .accessibilityLabel(Text(.dailyChallengeHistoryButton))
             }
         }
-        // The history cover carries its own loading and error state; it routes
-        // recoverable errors into the same shared top banner.
+        // The history cover carries its own loading and error state. It routes
+        // recoverable errors into the shared top banner, which the cover draws on top.
         .fullScreenCover(item: $historyViewModel) { historyViewModel in
             DailyChallengeHistoryView(
                 viewModel: historyViewModel,
@@ -122,7 +122,8 @@ struct DailyChallengeScreen: View {
                 privacyOperationProvider: privacyOperationProvider,
                 onReportedAndLeft: onReportedAndLeft
             )
-                .environment(bannerCenter)
+            .environment(bannerCenter)
+            .paeoniaTopBanner(bannerCenter)
         }
         .navigationDestination(item: $reportedPartnerAnswerID) { answerID in
             if let partnerUserID = viewModel.participants.partnerUserID {
@@ -155,20 +156,6 @@ struct DailyChallengeScreen: View {
         viewModel.snapshot.readOverviewQuestions.filter { question in
             question.origin == .partner || question.hasOwnAnswer || viewModel.isSending(question.id)
         }
-    }
-
-    /// Resolves the "saved, sending" preview for a question, or nil when it has
-    /// already landed and reads from its revealed answer instead. Carries every part
-    /// the answer holds, so a combined photo-plus-caption shows both while it sends.
-    private func sendingPreview(for question: DailyChallengeQuestion) -> DailySendingPreview? {
-        guard viewModel.isSending(question.id) else { return nil }
-        return DailySendingPreview(
-            mediaKind: question.mediaAnswerKind,
-            mediaData: viewModel.sendingMediaData(for: question.id),
-            voiceDurationMs: viewModel.sendingVoiceDurationMs(for: question.id),
-            partnerChoiceName: viewModel.sendingPartnerChoiceName(for: question.id),
-            text: viewModel.sendingText(for: question.id)
-        )
     }
 
     /// The couple's streak for the toolbar badge — derived from the live server streak.

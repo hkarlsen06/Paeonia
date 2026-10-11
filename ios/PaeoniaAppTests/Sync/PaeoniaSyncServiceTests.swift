@@ -722,3 +722,95 @@ private extension UUID {
         return id
     }()
 }
+
+/// Sign-out sends what it can before the purge and never waits long for it.
+struct PaeoniaSyncServiceSignOutFlushTests {
+    @Test func flushSendsAWaitingWrite() async throws {
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        try await pendingStore.enqueue(Self.request())
+        let handler = HangingPendingOperationHandler(hangs: false)
+        let service = Self.makeService(handler: handler, store: pendingStore)
+        await service.configure(session: .test())
+
+        await service.flushPendingWrites(timeout: .seconds(5))
+
+        #expect(await handler.sendCount == 1)
+        let waiting = try await pendingStore.readyOperations(
+            ownerUserID: .testUserID,
+            limit: 10,
+            now: .distantFuture
+        )
+        #expect(waiting.isEmpty)
+    }
+
+    @Test func flushStopsWaitingAtItsTimeoutAndSignOutStillFinishes() async throws {
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        try await pendingStore.enqueue(Self.request())
+        let handler = HangingPendingOperationHandler(hangs: true)
+        let service = Self.makeService(handler: handler, store: pendingStore)
+        await service.configure(session: .test())
+
+        let started = ContinuousClock.now
+        await service.flushPendingWrites(timeout: .milliseconds(200))
+
+        // The stuck send waits 60 s, so returning well before that proves the cap
+        // worked. The margin leaves room for a busy test machine.
+        #expect(ContinuousClock.now - started < .seconds(30))
+        #expect(await waitUntil { await handler.sendCount == 1 })
+        // The purge step cancels the stuck send instead of waiting for it.
+        await service.resetForUserChange()
+    }
+
+    @Test func flushWithoutASessionSendsNothing() async throws {
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        try await pendingStore.enqueue(Self.request())
+        let handler = HangingPendingOperationHandler(hangs: false)
+        let service = Self.makeService(handler: handler, store: pendingStore)
+
+        await service.flushPendingWrites(timeout: .seconds(1))
+
+        #expect(await handler.sendCount == 0)
+    }
+
+    private static func makeService(
+        handler: HangingPendingOperationHandler,
+        store: InMemoryPendingSyncOperationRepository
+    ) -> PaeoniaSyncService {
+        PaeoniaSyncService(
+            streams: [PendingSyncOperationDrainStream(handlers: [handler])],
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: store
+        )
+    }
+
+    private static func request() -> PendingSyncOperationRequest {
+        PendingSyncOperationRequest(
+            ownerUserID: .testUserID,
+            operation: SyncClientOperation(clientID: UUID(), clientSequence: 1),
+            operationKind: .submitDailyAnswer,
+            idempotencyScope: "flush-test"
+        )
+    }
+}
+
+/// Records each send. When `hangs` is true, a send waits until it is cancelled.
+private actor HangingPendingOperationHandler: PendingSyncOperationHandling {
+    nonisolated let operationKind: SyncPendingOperationKind = .submitDailyAnswer
+    private let hangs: Bool
+    private(set) var sendCount = 0
+
+    init(hangs: Bool) {
+        self.hangs = hangs
+    }
+
+    func send(
+        _ operation: PendingSyncOperationSnapshot,
+        context _: SyncContext
+    ) async throws -> PendingSyncOperationSendResult {
+        sendCount += 1
+        if hangs {
+            try await Task.sleep(for: .seconds(60))
+        }
+        return .succeeded
+    }
+}

@@ -44,6 +44,7 @@ struct LocationSharingPrimerView: View {
                 Text(.locationPermissionPrimerTitle)
                     .font(PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
+                    .accessibilityAddTraits(.isHeader)
 
                 Text(.locationPermissionPrimerMessage(partnerName))
                     .font(PaeoniaTypography.body)

@@ -8,7 +8,6 @@ struct StreakRestoreView: View {
     @State private var viewModel: StreakRestoreViewModel
     var onClose: () -> Void = {}
 
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var restoreDeadline: Date? {
@@ -35,8 +34,11 @@ struct StreakRestoreView: View {
         // transaction lands. A fade only, so Reduce Motion needs no branch.
         .animation(PaeoniaMotion.meaningfulMoment, value: viewModel.restoredCount == nil)
         .task { await viewModel.load() }
+        // The shared top banner sits under this sheet, so errors show inline (see
+        // `errorCaption`). VoiceOver does not see new text on its own, so say it.
         .onChange(of: viewModel.error) { _, error in
-            showBanner(for: error)
+            guard let error else { return }
+            AccessibilityNotification.Announcement(error.message).post()
         }
     }
 
@@ -47,8 +49,15 @@ struct StreakRestoreView: View {
     }
 
     private func restoreOfferContent(now: Date) -> some View {
-        VStack(spacing: PaeoniaSpacing.space24) {
-            deadlineCountdown(now: now)
+        // Once the deadline passes there is nothing left to buy, so the countdown and
+        // the buy button give way to a calm note. The flame stays in the same place in
+        // the stack so it does not replay its drain.
+        let hasEnded = StreakRestoreDeadlineState.resolve(deadline: restoreDeadline, now: now).blocksPurchase
+
+        return VStack(spacing: PaeoniaSpacing.space24) {
+            if !hasEnded {
+                deadlineCountdown(now: now)
+            }
 
             Spacer()
 
@@ -59,11 +68,11 @@ struct StreakRestoreView: View {
             )
 
             VStack(spacing: PaeoniaSpacing.space8) {
-                Text(.streakRestoreTitle)
+                Text(title(hasEnded: hasEnded))
                     .font(PaeoniaTypography.heroTitle)
                     .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(.streakRestoreMessage)
+                Text(message(hasEnded: hasEnded))
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -72,7 +81,7 @@ struct StreakRestoreView: View {
 
             Spacer()
 
-            actions(now: now)
+            actions(hasEnded: hasEnded)
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space32)
@@ -102,9 +111,18 @@ struct StreakRestoreView: View {
         )
     }
 
+    private func title(hasEnded: Bool) -> LocalizedStringResource {
+        hasEnded ? .streakRestoreExpiredTitle : .streakRestoreTitle
+    }
+
+    private func message(hasEnded: Bool) -> LocalizedStringResource {
+        hasEnded ? .streakRestoreExpiredMessage : .streakRestoreMessage
+    }
+
     @ViewBuilder
     private func deadlineCountdown(now: Date) -> some View {
-        if let text = StreakRestoreCountdownText.format(deadline: restoreDeadline, now: now) {
+        if let deadline = restoreDeadline,
+           let text = StreakRestoreCountdownText.format(deadline: deadline, now: now) {
             Text(verbatim: text)
                 .font(.system(.title3, design: .rounded).weight(.semibold))
                 .monospacedDigit()
@@ -112,37 +130,82 @@ struct StreakRestoreView: View {
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 .multilineTextAlignment(.center)
                 .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.85)
-                .accessibilityLabel(Text(verbatim: text))
+                .accessibilityLabel(Text(verbatim: spokenTimeLeft(until: deadline, now: now)))
+                .accessibilityAddTraits(.updatesFrequently)
         }
     }
 
-    private func actions(now: Date) -> some View {
+    /// "23 hours, 41 minutes left", rounded up to the minute so VoiceOver does not
+    /// read a changing number of seconds.
+    private func spokenTimeLeft(until deadline: Date, now: Date) -> String {
+        let minutesLeft = Int(ceil(max(0, deadline.timeIntervalSince(now)) / 60))
+        let duration = Duration.seconds(minutesLeft * 60)
+        let text = duration.formatted(.units(allowed: [.hours, .minutes], width: .wide))
+        return String(localized: .streakRestoreCountdownAccessibilityLabel(text))
+    }
+
+    private func actions(hasEnded: Bool) -> some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            Button(action: restore) {
-                if viewModel.isPurchasing {
-                    ProgressView().tint(.paeoniaTextInverse)
-                } else {
-                    Text(verbatim: buyTitle)
+            errorCaption
+
+            if hasEnded {
+                Button(action: onClose) {
+                    Text(.commonDone)
                 }
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
-            .disabled(
-                viewModel.isPurchasing
-                    || StreakRestoreDeadlineState.resolve(deadline: restoreDeadline, now: now).blocksPurchase
-            )
-            // The spinner fades in over the price label instead of snapping while
-            // the App Store purchase settles.
-            .animation(PaeoniaMotion.stateChange, value: viewModel.isPurchasing)
+                .buttonStyle(PaeoniaPrimaryButtonStyle())
+                .disabled(viewModel.isPurchasing)
+            } else {
+                buyButton
 
-            Button(action: onClose) {
-                Text(.streakRestoreNotNow)
-            }
-            .buttonStyle(PaeoniaQuietButtonStyle())
-            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-            .disabled(viewModel.isPurchasing)
+                Button(action: onClose) {
+                    Text(.streakRestoreNotNow)
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                .disabled(viewModel.isPurchasing)
 
-            PaeoniaLegalLinksView()
+                PaeoniaLegalLinksView()
+            }
         }
+    }
+
+    /// The reason the last attempt failed, right above the buttons. It stays until
+    /// the next attempt so it is still there when the person looks back at the screen.
+    @ViewBuilder
+    private var errorCaption: some View {
+        if let error = viewModel.error {
+            Text(verbatim: error.message)
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var buyButton: some View {
+        Button(action: buy) {
+            if viewModel.isPurchasing || viewModel.isLoading {
+                ProgressView().tint(.paeoniaTextInverse)
+            } else if viewModel.isAwaitingConfirmation {
+                Text(.streakRestoreCheckAgainButton)
+            } else if viewModel.needsPriceRetry {
+                Text(.paywallProductsRetry)
+            } else {
+                Text(verbatim: buyTitle)
+            }
+        }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
+        // Not buyable until the price has loaded, and never again once the streak
+        // is back, the time is up, or a payment already went through.
+        .disabled(
+            viewModel.isPurchasing
+                || viewModel.isLoading
+                || !viewModel.hasFinishedLoadingProducts
+                || viewModel.blockingError != nil
+        )
+        // The spinner fades in over the price label instead of snapping while
+        // the App Store purchase settles.
+        .animation(PaeoniaMotion.stateChange, value: viewModel.isPurchasing)
     }
 
     private var buyTitle: String {
@@ -151,14 +214,14 @@ struct StreakRestoreView: View {
         return "\(base) · \(price)"
     }
 
-    private func restore() {
-        Task { _ = await viewModel.purchase() }
-    }
-
-    private func showBanner(for error: StreakRestoreError?) {
-        guard let error else { return }
-        bannerCenter.show(.error(message: error.message))
-        viewModel.clearError()
+    private func buy() {
+        Task {
+            if viewModel.needsPriceRetry {
+                await viewModel.load()
+            } else {
+                _ = await viewModel.purchase()
+            }
+        }
     }
 }
 
@@ -191,7 +254,7 @@ nonisolated enum StreakRestoreCountdownText {
 }
 
 #if DEBUG
-#Preview {
+#Preview("Offer") {
     StreakRestoreView(
         viewModel: StreakRestoreViewModel(
             streak: CoupleStreak(
@@ -205,7 +268,23 @@ nonisolated enum StreakRestoreCountdownText {
             userID: nil
         )
     )
-    .environment(PaeoniaBannerCenter())
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Time is up") {
+    StreakRestoreView(
+        viewModel: StreakRestoreViewModel(
+            streak: CoupleStreak(
+                currentCount: 0,
+                longestCount: 30,
+                lastQualifiedDate: "2026-06-26",
+                restoreAvailable: true,
+                restorableCount: 30,
+                restoreDeadline: .now.addingTimeInterval(-60)
+            ),
+            userID: nil
+        )
+    )
     .preferredColorScheme(.dark)
 }
 #endif

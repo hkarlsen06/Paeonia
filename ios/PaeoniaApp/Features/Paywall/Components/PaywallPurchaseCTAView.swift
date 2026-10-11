@@ -13,7 +13,7 @@ struct PaywallPurchaseCTAView: View {
         if hasProduct {
             PaywallBottomCTAView(
                 title: presentation.primaryButtonTitle,
-                caption: .paywallCancelAnytime,
+                caption: presentation.billingDisclosure,
                 isEnabled: presentation.primaryButtonIsEnabled,
                 isBusy: presentation.isPurchasing,
                 action: onPurchase

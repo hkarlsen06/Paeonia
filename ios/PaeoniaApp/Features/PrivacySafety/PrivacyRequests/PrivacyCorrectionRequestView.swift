@@ -1,16 +1,27 @@
 import SwiftUI
 
+/// The sheet covers the app's root banner, so it mounts the shared banner itself.
+/// `PrivacySafetyView` still turns the view model's notices into banners. A failed
+/// send keeps the typed text and leaves the sheet open.
 struct PrivacyCorrectionRequestView: View {
     let viewModel: PrivacySafetyViewModel
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @State private var details = ""
+
+    private var isSubmitting: Bool {
+        viewModel.isSubmitting(.correction)
+    }
 
     var body: some View {
         NavigationStack {
             correctionContent
         }
-        .presentationDetents([.medium, .large])
+        .paeoniaTopBanner(bannerCenter)
+        .presentationDetents([.large])
+        .presentationBackground(.paeoniaBackgroundPrimary)
+        .interactiveDismissDisabled(isSubmitting)
     }
 
     private var correctionContent: some View {
@@ -18,6 +29,10 @@ struct PrivacyCorrectionRequestView: View {
             formContent
         }
         .background(.paeoniaBackgroundPrimary)
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom) {
+            submitButton
+        }
         .navigationTitle(Text(.privacySafetyCorrectionFormTitle))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -27,6 +42,7 @@ struct PrivacyCorrectionRequestView: View {
                 } label: {
                     Text(.commonCancel)
                 }
+                .disabled(isSubmitting)
             }
         }
     }
@@ -39,11 +55,10 @@ struct PrivacyCorrectionRequestView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             detailsField
-            submitButton
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.screenTopSpacing)
-        .padding(.bottom, PaeoniaSpacing.space40)
+        .padding(.bottom, PaeoniaSpacing.space24)
     }
 
     private var detailsField: some View {
@@ -51,17 +66,14 @@ struct PrivacyCorrectionRequestView: View {
             Text(.privacySafetyCorrectionDetailsLabel)
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)
+                .accessibilityHidden(true)
 
             PrivacySafetyMultilineField(
                 text: $details,
+                label: .privacySafetyCorrectionDetailsLabel,
                 placeholder: .privacySafetyCorrectionDetailsPlaceholder,
                 lineLimit: 4...9
             )
-            .onChange(of: details) { _, newValue in
-                if newValue.count > 4_000 {
-                    details = String(newValue.prefix(4_000))
-                }
-            }
         }
     }
 
@@ -79,12 +91,13 @@ struct PrivacyCorrectionRequestView: View {
             Text(submitButtonTitle)
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
-        .disabled(viewModel.isSubmitting(.correction))
+        .disabled(!viewModel.canSubmitCorrection(details: details))
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.vertical, PaeoniaSpacing.space12)
+        .background(.paeoniaBackgroundPrimary)
     }
 
     private var submitButtonTitle: LocalizedStringResource {
-        viewModel.isSubmitting(.correction)
-            ? .privacySafetyRequestSending
-            : .privacySafetyCorrectionSubmit
+        isSubmitting ? .privacySafetyRequestSending : .privacySafetyCorrectionSubmit
     }
 }

@@ -87,6 +87,8 @@ final class FileDailyChallengeSnapshotCache: @unchecked Sendable, DailyChallenge
     }
 
     func clearAll() {
+        // First, so a request still in flight can't write the row back afterwards.
+        DailyChallengeLiveWriteClock.shared.notePurge()
         guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }
         try? FileManager.default.removeItem(at: directoryURL)
     }

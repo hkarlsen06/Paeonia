@@ -132,7 +132,7 @@
   }
 
   private actor DeveloperWidgetCanvasUploader: WidgetCanvasUploading {
-    func enqueueUpload(_: WidgetDrawingUploadPayload) async {}
+    func send(_: WidgetDrawingUploadPayload) async -> WidgetDrawingDelivery { .delivered }
     func uploadPending(_: WidgetDrawingUploadPayload) async throws {}
   }
 #endif

@@ -4,8 +4,12 @@ import UIKit
 /// Utility for compressing images before upload.
 /// This follows Tidex's JPEG path: downscale large images, then reduce quality
 /// only as much as needed to stay within a predictable byte budget.
-enum ImageCompressor {
-    struct CompressedImage: Equatable, Sendable {
+///
+/// Compression decodes the full image and encodes several JPEGs, which takes long
+/// enough to freeze the UI. The type is `nonisolated` so it can run anywhere. Call
+/// the `compressAsync` variants from UI code so the work leaves the main thread.
+nonisolated enum ImageCompressor {
+    nonisolated struct CompressedImage: Equatable, Sendable {
         let data: Data
         let mediaType: String
         let fileExtension: String
@@ -13,19 +17,19 @@ enum ImageCompressor {
         let height: Int
     }
 
-    private struct JPEGCompressionResult {
+    private nonisolated struct JPEGCompressionResult {
         let data: Data
         let pixelSize: PixelSize
     }
 
-    private struct PixelSize {
+    private nonisolated struct PixelSize {
         let width: Int
         let height: Int
     }
 
-    private static let maxDimension: CGFloat = 1_568
+    static let maxDimension: CGFloat = 1_568
+    static let maxUploadBytes = 1_500_000
     private static let defaultQuality: CGFloat = 0.8
-    private static let maxUploadBytes = 1_500_000
     private static let minimumQuality: CGFloat = 0.45
     private static let iterativeDownscaleFactor: CGFloat = 0.85
     private static let minimumDimension: CGFloat = 512
@@ -50,6 +54,18 @@ enum ImageCompressor {
             width: result.pixelSize.width,
             height: result.pixelSize.height
         )
+    }
+
+    /// Same as `compress(_:quality:)`, run off the main actor.
+    @concurrent
+    static func compressAsync(_ imageData: Data, quality: CGFloat = defaultQuality) async -> CompressedImage? {
+        compress(imageData, quality: quality)
+    }
+
+    /// Same as `compress(_:quality:)`, run off the main actor.
+    @concurrent
+    static func compressAsync(_ image: UIImage, quality: CGFloat = defaultQuality) async -> CompressedImage? {
+        compress(image, quality: quality)
     }
 
     private static func compressedJPEGData(
@@ -138,9 +154,20 @@ enum ImageCompressor {
         }
     }
 
+    /// The size in pixels as the image displays. A `CGImage` reports its raw buffer, so
+    /// a photo rotated by orientation alone (left or right) has width and height
+    /// swapped. `UIImage.size` already accounts for orientation.
     private static func pixelSize(for image: UIImage) -> PixelSize {
         if let cgImage = image.cgImage {
-            return PixelSize(width: cgImage.width, height: cgImage.height)
+            let isSideways = switch image.imageOrientation {
+            case .left, .right, .leftMirrored, .rightMirrored: true
+            default: false
+            }
+
+            return PixelSize(
+                width: isSideways ? cgImage.height : cgImage.width,
+                height: isSideways ? cgImage.width : cgImage.height
+            )
         }
 
         return PixelSize(

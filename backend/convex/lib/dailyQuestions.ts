@@ -282,7 +282,6 @@ export async function getDailyQuestionsHistory(
   coupleId: string,
 ): Promise<DailyQuestionRow[]> {
   // The caller passes the viewer's entitled couple, so can_access_couple_content holds for every row.
-  const anchor = await resolveCoupleDayAnchor(ctx, coupleId);
   const ownAnswers = await ctx.db
     .query("daily_question_answers")
     .withIndex("by_user_id_created_at", (q) => q.eq("user_id", currentUserId))
@@ -300,7 +299,9 @@ export async function getDailyQuestionsHistory(
     const partnerAnswer = (await visibleAnswersOf(ctx, instance.id)).find((answer) => answer.user_id !== currentUserId) ?? null;
     const latest = partnerAnswer && partnerAnswer.created_at > ownAnswer.created_at ? partnerAnswer.created_at : ownAnswer.created_at;
     const row = questionRow(day, instance, content, ownAnswer, partnerAnswer, partnerAnswer !== null);
-    row.effective_local_date = localDateOf(latest, anchor.anchor_time_zone_id);
+    // Use the zone that anchored the question's day. The couple's current anchor moves when a
+    // partner changes time zone, and would move old exchanges to another day in the history.
+    row.effective_local_date = localDateOf(latest, day.anchor_time_zone_id);
     rows.push({ row, instance });
   }
   rows.sort(

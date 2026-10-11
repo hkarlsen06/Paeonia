@@ -14,7 +14,9 @@ private enum CacheTestIDs {
     static let coupleID = fixedUUID("cccc0000-0000-0000-0000-000000000000")
     static let coupleDay = fixedUUID("dddd0000-0000-0000-0000-000000000000")
     static let startsAt = Date(timeIntervalSince1970: 1_782_432_000)
-    static let endsAt = Date(timeIntervalSince1970: 1_782_518_400)
+    /// Far in the future, so the view model (which drops a day once its end passes)
+    /// never treats the cached fixture day as ended.
+    static let endsAt = Date(timeIntervalSince1970: 4_102_444_800)
     static let generatedAt = Date(timeIntervalSince1970: 1_782_450_000)
     static let answerDate = Date(timeIntervalSince1970: 1_782_455_000)
 }

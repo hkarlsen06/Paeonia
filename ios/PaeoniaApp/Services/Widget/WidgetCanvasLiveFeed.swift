@@ -14,15 +14,18 @@ nonisolated struct WidgetCanvasLiveFeed: LiveFeed {
     private let syncer: any WidgetCanvasSyncing
     private let lastSyncedRevisionID: @Sendable () -> String?
     private let storedIdentity: @Sendable () -> WidgetSyncIdentity
+    private let hasPendingUpload: @Sendable () -> Bool
 
     init(
         syncer: any WidgetCanvasSyncing,
         lastSyncedRevisionID: @escaping @Sendable () -> String? = { WidgetCanvasSyncService.lastSyncedRevisionID() },
-        storedIdentity: @escaping @Sendable () -> WidgetSyncIdentity = { WidgetSyncIdentityStore.shared.load() }
+        storedIdentity: @escaping @Sendable () -> WidgetSyncIdentity = { WidgetSyncIdentityStore.shared.load() },
+        hasPendingUpload: @escaping @Sendable () -> Bool = { WidgetPendingUploadStore.shared.hasPending }
     ) {
         self.syncer = syncer
         self.lastSyncedRevisionID = lastSyncedRevisionID
         self.storedIdentity = storedIdentity
+        self.hasPendingUpload = hasPendingUpload
     }
 
     func run(session: SyncSession, live: LiveQueryService) async {
@@ -39,10 +42,15 @@ nonisolated struct WidgetCanvasLiveFeed: LiveFeed {
             guard !Task.isCancelled else {
                 return
             }
-            guard case let .value(rows) = update,
-                  let revisionID = rows.first?.activeRevisionID,
-                  revisionID.uuidString != lastSyncedRevisionID()
-            else {
+            guard case let .value(rows) = update else {
+                continue
+            }
+            // A new result also arrives when the connection comes back. That is
+            // the moment to retry a drawing that is still waiting to be sent,
+            // even when the canvas itself did not change.
+            let revisionID = rows.first?.activeRevisionID
+            let isNewRevision = revisionID.map { $0.uuidString != lastSyncedRevisionID() } ?? false
+            guard isNewRevision || hasPendingUpload() else {
                 continue
             }
 

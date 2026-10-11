@@ -11,6 +11,8 @@ actor ClerkAuthService: AuthServicing {
     private let profilePhotoInvalidator: (any ProfilePhotoImageInvalidating)?
     private let providerAvatarLoader: any ProviderAvatarImageLoading
     private let sessionCache: any AuthSessionCaching
+    private let signInTimeout: Duration
+    private let restoreTimeout: Duration
     #if DEBUG
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
@@ -23,9 +25,13 @@ actor ClerkAuthService: AuthServicing {
         profilePhotoCache: (any ProfilePhotoImageCaching)? = nil,
         profilePhotoInvalidator: (any ProfilePhotoImageInvalidating)? = nil,
         providerAvatarLoader: (any ProviderAvatarImageLoading)? = nil,
-        sessionCache: (any AuthSessionCaching)? = nil
+        sessionCache: (any AuthSessionCaching)? = nil,
+        signInTimeout: Duration = AuthNetworkDeadline.signIn,
+        restoreTimeout: Duration = AuthNetworkDeadline.restore
     ) {
         self.gateway = gateway
+        self.signInTimeout = signInTimeout
+        self.restoreTimeout = restoreTimeout
         self.profilePhotoCache = profilePhotoCache ?? FileProfilePhotoImageCache.live()
         self.profilePhotoInvalidator = profilePhotoInvalidator
             ?? ProfilePhotoImageProviderFactory.cacheInvalidator
@@ -52,7 +58,17 @@ actor ClerkAuthService: AuthServicing {
         }
 
         do {
-            let profile = try await gateway.loadProfile()
+            // A stalled load times out and opens the app with the cached profile below.
+            let gateway = gateway
+            let profile = try await AuthNetworkDeadline.run(within: restoreTimeout) {
+                try await gateway.loadProfile()
+            }
+            // A sign-out can finish while the profile loads. Saving the profile
+            // now would put the person back on a signed-in screen with no session.
+            guard try await gateway.restoreSession()?.accountID == remoteSession.accountID else {
+                await sessionCache.clear()
+                return nil
+            }
             return await makeSession(remoteSession: remoteSession, profile: profile)
         } catch {
             if AuthSessionFallbackPolicy.isCancellation(error) {
@@ -68,7 +84,12 @@ actor ClerkAuthService: AuthServicing {
     }
 
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession {
-        let remoteSession = try await gateway.signInWithApple(idToken: credential.idToken)
+        // The Apple sheet has closed, so everything from here is network.
+        let deadline = ContinuousClock.now + signInTimeout
+        let gateway = gateway
+        let remoteSession = try await AuthNetworkDeadline.run(until: deadline) {
+            try await gateway.signInWithApple(idToken: credential.idToken)
+        }
         let appleName = credential.fullName.flatMap(AuthDisplayNamePolicy.normalizedFirstName)
         return try await finishSignIn(
             remoteSession: RemoteAuthSession(
@@ -77,11 +98,13 @@ actor ClerkAuthService: AuthServicing {
                 displayName: remoteSession.displayName.flatMap(AuthDisplayNamePolicy.normalizedFirstName)
                     ?? appleName
             ),
-            fallbackDisplayName: appleName
+            fallbackDisplayName: appleName,
+            deadline: deadline
         )
     }
 
     func signInWithGoogle() async throws -> AuthSession {
+        // The Google sheet waits for the person, so the deadline starts after it.
         let remoteSession = try await gateway.signInWithGoogle()
         return try await finishSignIn(
             remoteSession: RemoteAuthSession(
@@ -90,7 +113,8 @@ actor ClerkAuthService: AuthServicing {
                 displayName: remoteSession.displayName.flatMap(AuthDisplayNamePolicy.normalizedFirstName),
                 providerAvatarURL: remoteSession.providerAvatarURL
             ),
-            fallbackDisplayName: nil
+            fallbackDisplayName: nil,
+            deadline: .now + signInTimeout
         )
     }
 
@@ -99,17 +123,21 @@ actor ClerkAuthService: AuthServicing {
     /// failing with "already signed in".
     private func finishSignIn(
         remoteSession: RemoteAuthSession,
-        fallbackDisplayName: String?
+        fallbackDisplayName: String?,
+        deadline: ContinuousClock.Instant
     ) async throws -> AuthSession {
+        let gateway = gateway
         do {
-            var profile = try await gateway.loadProfile()
+            var profile = try await AuthNetworkDeadline.run(until: deadline) {
+                try await gateway.loadProfile()
+            }
             if profile.displayName?.trimmedNonEmpty == nil, let fallbackDisplayName {
                 // Apple shares the name only on the first sign-in. Saving it on
                 // the profile pre-fills onboarding; a failure only loses that.
-                profile = (try? await gateway.updateProfile(
-                    displayName: fallbackDisplayName,
-                    profilePhotoAssetID: profile.profilePhotoAssetID
-                )) ?? profile
+                let photoAssetID = profile.profilePhotoAssetID
+                profile = (try? await AuthNetworkDeadline.run(until: deadline) {
+                    try await gateway.updateProfile(displayName: fallbackDisplayName, profilePhotoAssetID: photoAssetID)
+                }) ?? profile
             }
             if remoteSession.provider == .google {
                 profile = await importGoogleAvatarIfAvailable(
@@ -120,7 +148,11 @@ actor ClerkAuthService: AuthServicing {
             }
             return await makeSession(remoteSession: remoteSession, profile: profile)
         } catch {
-            try? await gateway.signOut()
+            // Bounded so a stalled connection still ends in the failure banner.
+            // A session left behind is signed out before the next attempt.
+            _ = try? await AuthNetworkDeadline.run(within: AuthNetworkDeadline.cleanup) {
+                try await gateway.signOut()
+            }
             throw error
         }
     }
@@ -284,9 +316,8 @@ actor ClerkAuthService: AuthServicing {
             return nil
         }
 
-        let compressedImage = await MainActor.run {
-            ImageCompressor.compress(data)
-        }
+        // Runs on this actor, off the main thread, so resizing never stalls the UI.
+        let compressedImage = ImageCompressor.compress(data)
         guard let compressedImage else {
             logProfilePhotoIssue("could not be processed")
             return nil
@@ -308,9 +339,8 @@ actor ClerkAuthService: AuthServicing {
     /// Paired edits are explicit saves, so an invalid or failed replacement must
     /// surface as an error instead of silently keeping the old image.
     private func uploadProfilePhoto(userID: String, data: Data) async throws -> UUID {
-        let compressedImage = await MainActor.run {
-            ImageCompressor.compress(data)
-        }
+        // Runs on this actor, off the main thread, so resizing never stalls the UI.
+        let compressedImage = ImageCompressor.compress(data)
         guard let compressedImage else {
             throw AuthServiceError.invalidProfilePhoto
         }

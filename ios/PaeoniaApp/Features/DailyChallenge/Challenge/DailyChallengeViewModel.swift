@@ -30,6 +30,9 @@ final class DailyChallengeViewModel {
         case shuffleFailed
         case editLocked
         case editFailed
+        case photoFailed
+        case voiceFailed
+        case dayEnded
     }
 
     private let service: any DailyChallengeServicing
@@ -39,6 +42,7 @@ final class DailyChallengeViewModel {
     private let pendingOperationStore: any PendingSyncOperationPersisting
     private let snapshotCache: any DailyChallengeSnapshotCaching
     private let chatService: any DailyQuestionChatServicing
+    private let now: @Sendable () -> Date
     private let encoder = JSONEncoder()
     #if DEBUG
     private let logger = Logger(
@@ -62,6 +66,12 @@ final class DailyChallengeViewModel {
     /// Callers of `awaitAnswerReveal`, signalled each time a snapshot is applied.
     private var snapshotWaiters: [UUID: AsyncStream<Void>.Continuation] = [:]
     private var liveUpdatesTask: Task<Void, Never>?
+    /// Wakes when the active couple day ends, so it stops showing as today even when
+    /// no live update or reload arrives (for example offline at midnight).
+    private var dayEndTask: Task<Void, Never>?
+    /// One token per photo being prepared. A newer pick, a removal, or a skip replaces
+    /// or clears it, so a slow earlier pick can't land on top of a later choice.
+    private var photoStagingTokens: [UUID: UUID] = [:]
 
     private(set) var participants = DailyChallengeParticipants()
     private(set) var snapshot = DailyChallengeSnapshot.empty(currentUserID: nil)
@@ -70,6 +80,9 @@ final class DailyChallengeViewModel {
     /// the text, the picked person, or a photo/voice note (and a voice note's length)
     /// without the editable draft.
     private var sendingAnswers: [UUID: SendingAnswer] = [:]
+    /// Bumped on every local send, so a store read that started before the send
+    /// can't overwrite `sendingAnswers` with a list that misses it.
+    private var sendingGeneration = 0
     private(set) var isLoading = false
     private(set) var isStarting = false
     private(set) var submittingQuestionID: UUID?
@@ -87,8 +100,10 @@ final class DailyChallengeViewModel {
         mediaDraftStore: (any DailyAnswerMediaDraftStoring)? = nil,
         pendingOperationStore: (any PendingSyncOperationPersisting)? = nil,
         snapshotCache: (any DailyChallengeSnapshotCaching)? = nil,
-        chatService: (any DailyQuestionChatServicing)? = nil
+        chatService: (any DailyQuestionChatServicing)? = nil,
+        now: @escaping @Sendable () -> Date = { Date() }
     ) {
+        self.now = now
         self.service = service ?? DailyChallengeServiceFactory.makeDefault()
         self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.draftStore = draftStore ?? UserDefaultsDailyChallengeDraftStore.shared
@@ -214,10 +229,10 @@ final class DailyChallengeViewModel {
             participants: participants,
             service: chatService,
             operationProvider: operationProvider,
+            // The thread summaries live feed keeps previews current. A one-shot
+            // summaries read here could replace them with an older list.
             syncAfterLocalChange: { [weak self] in
-                guard let self else { return }
-                await self.localChangeSyncHandler?()
-                await self.refreshThreadSummaries()
+                await self?.localChangeSyncHandler?()
             }
         )
     }
@@ -269,6 +284,9 @@ final class DailyChallengeViewModel {
         reloadTaskUserID = nil
         liveUpdatesTask?.cancel()
         liveUpdatesTask = nil
+        dayEndTask?.cancel()
+        dayEndTask = nil
+        photoStagingTokens = [:]
         isLoading = false
         // A new user hasn't resolved today's state yet, so the card returns to its
         // loading state until this user's first load settles.
@@ -277,6 +295,7 @@ final class DailyChallengeViewModel {
         // the app — keeps their half-written answers.
         answerDrafts = newUserID.map { draftStore.drafts(for: $0) } ?? [:]
         snapshot = .empty(currentUserID: newUserID)
+        sendingAnswers = [:]
         threadSummariesByInstanceID = [:]
 
         guard let newUserID else { return }
@@ -302,6 +321,9 @@ final class DailyChallengeViewModel {
         if self.currentUserID == newUserID {
             applyThreadSummaries(cachedThreads)
         }
+        // Answers still queued from before a relaunch count as answered from the first
+        // frame, instead of showing an empty composer until the network load settles.
+        await refreshSendingState()
 
         await reload()
     }
@@ -380,10 +402,12 @@ final class DailyChallengeViewModel {
 
     /// Re-reads the local store when the live feeds write to it, so a partner's
     /// answer, shuffle, or new day and a new message preview appear without a reload.
+    /// Outbox changes refresh the "saved, sending" state: an answer that finished
+    /// sending, or one the server refused for good and put back in the drafts.
     /// The task ends when the signed-in user changes.
     private func observeLiveUpdates(for userID: UUID) {
         liveUpdatesTask = Task { @MainActor [weak self] in
-            for await change in LocalStoreChanges.changes(in: .dailyChallenge, .dailyChat) {
+            for await change in LocalStoreChanges.changes(in: .dailyChallenge, .dailyChat, .pendingOperations) {
                 guard change.ownerUserID == userID else { continue }
                 guard let self, self.currentUserID == userID else { return }
                 switch change.domain {
@@ -391,6 +415,9 @@ final class DailyChallengeViewModel {
                     await self.applyCachedSnapshot(for: userID)
                 case .dailyChat:
                     self.applyThreadSummaries(await self.chatService.cachedThreadSummaries(ownerUserID: userID))
+                case .pendingOperations:
+                    self.restoreReturnedDrafts(for: userID)
+                    await self.refreshSendingState()
                 default:
                     break
                 }
@@ -407,6 +434,9 @@ final class DailyChallengeViewModel {
         // The feed wrote this from a server result, so today's state is known.
         hasResolvedTodayState = true
         apply(cached.loadResult(currentUserID: userID, locale: .current))
+        // A live result often follows a queued answer finishing its send, so the
+        // "saved, sending" list is re-read here too, not only on full reloads.
+        await refreshSendingState()
     }
 
     private func applyThreadSummaries(_ summaries: [DailyQuestionThreadSummary]) {
@@ -430,6 +460,16 @@ final class DailyChallengeViewModel {
         }
     }
 
+    /// Shows a just-restored streak at once, before the server refresh confirms it, so
+    /// a failed refresh can't leave the restore offer up after the user paid.
+    func applyRestoredStreak(_ count: Int) {
+        streak.currentCount = max(streak.currentCount, count)
+        streak.longestCount = max(streak.longestCount, count)
+        streak.restoreAvailable = false
+        streak.restorableCount = 0
+        streak.restoreDeadline = nil
+    }
+
     func startToday() async {
         guard let currentUserID, !isStarting else { return }
 
@@ -441,6 +481,8 @@ final class DailyChallengeViewModel {
                 operation: operationProvider.makeOperation()
             )
             apply(result)
+            // This replaced any load it cancelled, so today's state is now known.
+            hasResolvedTodayState = true
         } catch {
             if !isCancellation(error) {
                 logFailure("Starting today's challenge failed", error)
@@ -456,6 +498,17 @@ final class DailyChallengeViewModel {
     /// partner pick *alongside* text send whatever the user filled in, together.
     func submitAnswer(for question: DailyChallengeQuestion) async {
         guard submittingQuestionID == nil, let currentUserID else { return }
+        // The composer's counter already shows this; the backend would reject it.
+        guard !isDraftTextTooLong(for: question.id) else { return }
+        // The couple's day ended while this was open (offline, or before the live
+        // update arrived). The server only takes your own answers made during their
+        // day, so a queued one would never send.
+        if question.origin == .own, question.endsAt <= now() {
+            endCurrentDayIfNeeded()
+            notice = .dayEnded
+            Task { await reload() }
+            return
+        }
 
         guard let outgoing = resolveOutgoingAnswer(for: question) else {
             notice = .emptyAnswer
@@ -576,9 +629,23 @@ final class DailyChallengeViewModel {
         // Shown as sending right away; the queued operation now carries the answer, so
         // the editable draft can go (staged media stays on disk for the upload).
         sendingAnswers[question.id] = outgoing.sending
+        sendingGeneration += 1
         clearDraft(for: question.id)
         submittingQuestionID = nil
         syncQueuedAnswerInBackground()
+    }
+
+    /// Whether anything is typed, picked, or staged for a question, whether or not it
+    /// can be sent yet. Skipping throws the draft away, so Skip stays off while this
+    /// is true, even when the text is too long to send.
+    func hasDraftContent(for questionID: UUID) -> Bool {
+        answerDrafts[questionID]?.hasContent == true || isPreparingPhoto(for: questionID)
+    }
+
+    /// Whether the draft text is past the length the backend accepts. The composer
+    /// shows a counter and keeps Send off until it's shortened.
+    func isDraftTextTooLong(for questionID: UUID) -> Bool {
+        DailyAnswerDraft.measuredLength(of: draftText(for: questionID)) > DailyAnswerDraft.maxTextLength
     }
 
     /// The trimmed draft text for a question, or nil when it's empty.
@@ -591,6 +658,15 @@ final class DailyChallengeViewModel {
     /// primary button and keeps Skip out of reach once an answer is in progress. A
     /// combined question needs only one of its parts filled in.
     func hasDraftToSubmit(for question: DailyChallengeQuestion) -> Bool {
+        // While a picked photo is still being prepared, sending would leave it out.
+        !isDraftTextTooLong(for: question.id)
+            && !isPreparingPhoto(for: question.id)
+            && draftHasRequiredParts(for: question)
+    }
+
+    /// Whether the draft holds what the question needs, ignoring length and photo
+    /// preparation (see `hasDraftToSubmit`).
+    private func draftHasRequiredParts(for question: DailyChallengeQuestion) -> Bool {
         let hasText = nonEmptyDraftText(for: question.id) != nil
         let hasMedia = answerDrafts[question.id]?.media != nil
         let hasChoice = partnerChoiceSelection(for: question.id) != nil
@@ -632,7 +708,12 @@ final class DailyChallengeViewModel {
     /// answer is still private; the backend rejects it once the partner has
     /// answered, which surfaces as a clear, non-retryable notice.
     func editTextAnswer(for question: DailyChallengeQuestion) async {
-        guard question.editableAnswerKind == .text, submittingQuestionID == nil, shufflingSlotNumber == nil else { return }
+        guard
+            question.editableAnswerKind == .text,
+            submittingQuestionID == nil,
+            shufflingSlotNumber == nil,
+            !isDraftTextTooLong(for: question.id)
+        else { return }
 
         let answerText = draftText(for: question.id).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !answerText.isEmpty else {
@@ -704,6 +785,7 @@ final class DailyChallengeViewModel {
         guard
             question.origin == .own,
             !question.hasOwnAnswer,
+            !isSending(question.id),
             submittingQuestionID == nil,
             shufflingSlotNumber == nil,
             let currentUserID
@@ -718,6 +800,11 @@ final class DailyChallengeViewModel {
                 operation: operationProvider.makeOperation()
             )
             apply(result)
+            hasResolvedTodayState = true
+            // The skipped question is gone for good, so its private photo or voice
+            // note shouldn't stay on the phone either.
+            photoStagingTokens[question.id] = nil
+            mediaDraftStore.removeStagedMedia(instanceID: question.id)
             clearDraft(for: question.id)
         } catch is DailyChallengeShuffleLimitError {
             notice = .shuffleLimitReached
@@ -768,14 +855,31 @@ final class DailyChallengeViewModel {
         answerDrafts[questionID]?.media?.durationMs
     }
 
+    /// Whether a picked photo is still being prepared for this question.
+    func isPreparingPhoto(for questionID: UUID) -> Bool {
+        photoStagingTokens[questionID] != nil
+    }
+
     /// Compresses and stages a picked photo so it persists across reopen and is ready
-    /// to upload. Selecting a photo also makes photo the chosen kind.
-    func stagePhoto(_ imageData: Data, for questionID: UUID) {
-        guard let compressed = ImageCompressor.compress(imageData) else {
+    /// to upload. Selecting a photo also makes photo the chosen kind. Compressing a
+    /// large photo takes a moment, so it runs off the main thread while the composer
+    /// shows a spinner.
+    func stagePhoto(_ imageData: Data, for questionID: UUID) async {
+        let token = UUID()
+        photoStagingTokens[questionID] = token
+        let compressed = await Task.detached(priority: .userInitiated) {
+            ImageCompressor.compress(imageData)
+        }.value
+        // A newer pick, a removal, a skip, or a different signed-in user replaced this
+        // one while it was compressing.
+        guard photoStagingTokens[questionID] == token else { return }
+        photoStagingTokens[questionID] = nil
+
+        guard let compressed else {
             #if DEBUG
             logger.error("Compressing the picked photo returned nil; cannot stage it")
             #endif
-            notice = .submitFailed
+            notice = .photoFailed
             return
         }
 
@@ -783,7 +887,7 @@ final class DailyChallengeViewModel {
             try mediaDraftStore.writeStagedMedia(compressed.data, instanceID: questionID)
         } catch {
             logFailure("Staging a photo on the device failed", error)
-            notice = .submitFailed
+            notice = .photoFailed
             return
         }
 
@@ -801,6 +905,12 @@ final class DailyChallengeViewModel {
         persist(draft, for: questionID)
     }
 
+    /// The photo picker couldn't hand over the chosen photo (for example an iCloud
+    /// photo that failed to download).
+    func photoPickFailed() {
+        notice = .photoFailed
+    }
+
     /// Stages a recorded voice note so it persists across reopen and is ready to
     /// upload. Reads the recording's bytes off the temporary file.
     func stageVoice(url: URL, durationMs: Int, for questionID: UUID) {
@@ -809,7 +919,7 @@ final class DailyChallengeViewModel {
             data = try Data(contentsOf: url)
         } catch {
             logFailure("Reading the recorded voice note off disk failed", error)
-            notice = .submitFailed
+            notice = .voiceFailed
             return
         }
 
@@ -817,7 +927,7 @@ final class DailyChallengeViewModel {
             try mediaDraftStore.writeStagedMedia(data, instanceID: questionID)
         } catch {
             logFailure("Staging a voice note on the device failed", error)
-            notice = .submitFailed
+            notice = .voiceFailed
             return
         }
         try? FileManager.default.removeItem(at: url)
@@ -839,6 +949,7 @@ final class DailyChallengeViewModel {
     /// Discards a staged photo or voice note (the bytes and the draft reference),
     /// keeping the chosen kind so the composer stays on that kind.
     func removeStagedMedia(for questionID: UUID) {
+        photoStagingTokens[questionID] = nil
         mediaDraftStore.removeStagedMedia(instanceID: questionID)
         var draft = answerDrafts[questionID] ?? DailyAnswerDraft()
         draft.media = nil
@@ -859,9 +970,12 @@ final class DailyChallengeViewModel {
     }
 
     /// Whether a question's answer is saved on the device and waiting to finish
-    /// sending in the background.
+    /// sending in the background. Once the snapshot carries the sent answer it reads
+    /// from that instead, so a live update that lands the answer replaces the "saved,
+    /// sending" preview right away rather than at the next full reload.
     func isSending(_ instanceID: UUID) -> Bool {
-        sendingAnswers[instanceID] != nil
+        guard sendingAnswers[instanceID] != nil else { return false }
+        return snapshot.questions.first(where: { $0.id == instanceID })?.hasOwnAnswer != true
     }
 
     /// The text of a still-sending answer (a standalone text answer or the caption on
@@ -885,6 +999,19 @@ final class DailyChallengeViewModel {
         return mediaDraftStore.stagedMediaData(instanceID: instanceID) ?? media.stagedData
     }
 
+    /// Everything a still-sending answer carries, for its "saved, sending" preview.
+    /// Nil once it has landed and reads from the revealed answer instead.
+    func sendingPreview(for question: DailyChallengeQuestion) -> DailySendingPreview? {
+        guard isSending(question.id) else { return nil }
+        return DailySendingPreview(
+            mediaKind: question.mediaAnswerKind,
+            mediaData: sendingMediaData(for: question.id),
+            voiceDurationMs: sendingVoiceDurationMs(for: question.id),
+            partnerChoiceName: sendingPartnerChoiceName(for: question.id),
+            text: sendingText(for: question.id)
+        )
+    }
+
     /// The recorded length of a still-sending voice note, so its playback scrubber
     /// shows a duration before the local file finishes loading. Nil for photos.
     func sendingVoiceDurationMs(for instanceID: UUID) -> Int? {
@@ -901,10 +1028,16 @@ final class DailyChallengeViewModel {
             return
         }
 
-        let operations = (try? await pendingOperationStore.inFlightOperations(
+        let generation = sendingGeneration
+        // A failed read keeps what we have. Treating it as "nothing is sending" would
+        // make a queued answer look lost, with its composer empty.
+        guard let operations = try? await pendingOperationStore.inFlightOperations(
             ownerUserID: currentUserID,
             kind: .submitDailyAnswer
-        )) ?? []
+        ) else { return }
+        // A send queued while this read was in flight may be missing from it. Keep the
+        // local entry; the reload that follows that send refreshes this again.
+        guard generation == sendingGeneration, self.currentUserID == currentUserID else { return }
 
         sendingAnswers = Dictionary(
             operations.compactMap { operation -> (UUID, SendingAnswer)? in
@@ -939,9 +1072,50 @@ final class DailyChallengeViewModel {
     }
 
     private func apply(_ result: DailyChallengeLoadResult) {
-        snapshot = result.snapshot
+        // A cached day, or a response from just before the couple's day ended, must
+        // not show as today.
+        snapshot = result.snapshot.endingCurrentDay(ifEndedBy: now())
         streak = result.streak
+        scheduleDayEnd()
         snapshotWaiters.values.forEach { $0.yield() }
+    }
+
+    /// Drops the active day from the snapshot once it has ended.
+    private func endCurrentDayIfNeeded() {
+        let ended = snapshot.endingCurrentDay(ifEndedBy: now())
+        if ended != snapshot {
+            snapshot = ended
+        }
+    }
+
+    /// Sleeps until the active day ends, then drops it and reloads. Online, the live
+    /// feed usually brings the new day first; offline this is what stops yesterday's
+    /// questions from staying open to answers the server would never accept.
+    private func scheduleDayEnd() {
+        dayEndTask?.cancel()
+        dayEndTask = nil
+        guard let endsAt = snapshot.currentDayEndsAt, let userID = currentUserID else { return }
+        let now = self.now
+        dayEndTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(max(0, endsAt.timeIntervalSince(now()))))
+            guard !Task.isCancelled, let self, self.currentUserID == userID else { return }
+            self.endCurrentDayIfNeeded()
+            await self.reload()
+        }
+    }
+
+    /// The outbox puts an answer back into the drafts when the server refuses it for
+    /// good, so nothing the user wrote is lost. Picks those up without touching drafts
+    /// the user is editing now, and says the answer didn't go through.
+    private func restoreReturnedDrafts(for userID: UUID) {
+        var returnedAny = false
+        for (instanceID, draft) in draftStore.drafts(for: userID) where answerDrafts[instanceID] == nil {
+            answerDrafts[instanceID] = draft
+            returnedAny = true
+        }
+        if returnedAny {
+            notice = .submitFailed
+        }
     }
 
     /// A refresh can fail after the screen already has a usable, previously-loaded

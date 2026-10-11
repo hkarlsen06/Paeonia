@@ -43,6 +43,11 @@ final class LiveConvexConnection {
     private(set) var isAuthenticated = false
 
     @ObservationIgnored private var client: ConvexClientWithAuth<String>?
+    /// The Clerk user the client last logged in as. The auth provider's logout
+    /// signs out of Clerk a second time and skips clearing the socket's token
+    /// when that call fails, so the client can stay logged in as the previous
+    /// person after an account switch.
+    @ObservationIgnored private var authenticatedAccountID: String?
     @ObservationIgnored private var observers: [Task<Void, Never>] = []
     @ObservationIgnored private var isLoggingIn = false
     // Shared by every waiting feed, so seven subscriptions make one login attempt per delay.
@@ -62,13 +67,19 @@ final class LiveConvexConnection {
         }
 
         while !Task.isCancelled {
-            if isAuthenticated {
+            let accountID = PaeoniaClerk.currentAccountID()
+            if Self.isLoggedIn(
+                as: accountID,
+                isAuthenticated: isAuthenticated,
+                authenticatedAccountID: authenticatedAccountID
+            ) {
                 return client
             }
             // The provider logs in on Clerk session changes. This covers a cold
-            // launch where a stored session exists and no change event follows.
+            // launch where a stored session exists and no change event follows,
+            // and a socket still logged in as the previous account.
             let loginAllowed = nextLoginAttemptAt.map { ContinuousClock.now >= $0 } ?? true
-            if !isLoggingIn, loginAllowed, PaeoniaClerk.currentAccountID() != nil, Clerk.shared.isLoaded {
+            if !isLoggingIn, loginAllowed, accountID != nil, Clerk.shared.isLoaded {
                 isLoggingIn = true
                 let result = await client.loginFromCache()
                 isLoggingIn = false
@@ -78,12 +89,39 @@ final class LiveConvexConnection {
                 } else {
                     loginBackoff.reset()
                     nextLoginAttemptAt = nil
+                    authenticatedAccountID = accountID
+                    isAuthenticated = true
                 }
                 continue
             }
-            try? await Task.sleep(for: .milliseconds(500))
+            try? await Task.sleep(for: Self.wait(untilNextLoginAt: nextLoginAttemptAt, now: .now))
         }
         return nil
+    }
+
+    /// How long a waiting feed sleeps before it checks again. During a failed-login
+    /// backoff (offline, up to 30 seconds) nothing can change before the next
+    /// attempt, so every feed sleeps until then instead of waking twice a second.
+    nonisolated static func wait(
+        untilNextLoginAt nextLoginAttemptAt: ContinuousClock.Instant?,
+        now: ContinuousClock.Instant
+    ) -> Duration {
+        let poll = Duration.milliseconds(500)
+        guard let nextLoginAttemptAt else {
+            return poll
+        }
+        return max(nextLoginAttemptAt - now, poll)
+    }
+
+    /// Subscriptions may only use the socket when it is logged in as the person
+    /// signed in to Clerk right now. Otherwise results for one account would be
+    /// stored under another.
+    nonisolated static func isLoggedIn(
+        as accountID: String?,
+        isAuthenticated: Bool,
+        authenticatedAccountID: String?
+    ) -> Bool {
+        isAuthenticated && accountID != nil && authenticatedAccountID == accountID
     }
 
     private func makeClientIfNeeded() -> ConvexClientWithAuth<String>? {
@@ -111,8 +149,10 @@ final class LiveConvexConnection {
             Task { [weak self] in
                 for await state in client.authState.values {
                     if case .authenticated = state {
+                        self?.authenticatedAccountID = PaeoniaClerk.currentAccountID()
                         self?.isAuthenticated = true
                     } else {
+                        self?.authenticatedAccountID = nil
                         self?.isAuthenticated = false
                     }
                 }

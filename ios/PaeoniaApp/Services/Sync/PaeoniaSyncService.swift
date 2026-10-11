@@ -235,6 +235,28 @@ actor PaeoniaSyncService: PaeoniaSyncing {
         await localPrivacyPurger.retryPendingPurges()
     }
 
+    /// Sign-out calls this before it leaves Clerk, while requests still carry
+    /// the account's token, so writes that can still go out are not purged.
+    /// Returns once the run finishes or `timeout` passes, whichever is first.
+    /// A run still going then keeps sending until `resetForUserChange` stops it.
+    func flushPendingWrites(timeout: Duration) async {
+        guard session != nil else {
+            return
+        }
+
+        let (done, signal) = AsyncStream<Void>.makeStream()
+        Task {
+            _ = await runOnce(reason: .localChange)
+            signal.finish()
+        }
+        let deadline = Task {
+            try? await Task.sleep(for: timeout)
+            signal.finish()
+        }
+        for await _ in done {}
+        deadline.cancel()
+    }
+
     func runOnce(reason: SyncRequestReason) async -> SyncRunResult {
         guard !isSyncing else {
             if reason == .localChange {

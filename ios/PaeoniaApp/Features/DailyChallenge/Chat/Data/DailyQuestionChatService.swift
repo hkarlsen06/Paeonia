@@ -15,6 +15,8 @@ protocol DailyQuestionChatServicing: Actor {
     nonisolated func liveMessageUpdates(ownerUserID: UUID, instanceID: UUID, threadID: UUID) -> AsyncStream<Void>
     func pendingMessages(ownerUserID: UUID, instanceID: UUID) async -> [DailyQuestionChatMessage]
     func hasPendingThreadCreation(ownerUserID: UUID, instanceID: UUID) async -> Bool
+    /// Removes a message that failed to send, so the retry replaces it.
+    func discardFailedMessage(ownerUserID: UUID, clientOperationID: UUID) async
     func queueMessage(
         ownerUserID: UUID,
         coupleID: UUID,
@@ -76,8 +78,15 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
     }
 
     func refreshThreadSummaries(ownerUserID: UUID) async throws -> [DailyQuestionThreadSummary] {
+        // Read before the request, so a purge that runs while it is in flight
+        // makes the save a no-op.
+        let generation = await cache.purgeGeneration()
         let summaries = try await gateway.loadThreadSummaries()
-        await cache.saveSummaries(summaries, ownerUserID: ownerUserID)
+        guard await cache.saveSummaries(
+            summaries,
+            ownerUserID: ownerUserID,
+            unlessPurgedSince: generation
+        ) else { return [] }
         return summaries
     }
 
@@ -90,8 +99,18 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
         instanceID: UUID,
         threadID: UUID
     ) async throws -> [DailyQuestionChatMessage] {
+        let generation = await cache.purgeGeneration()
         let messages = try await gateway.loadMessages(threadID: threadID, instanceID: instanceID)
-        await cache.saveMessages(messages, ownerUserID: ownerUserID, instanceID: instanceID)
+        let cached = await cache.messages(ownerUserID: ownerUserID, instanceID: instanceID)
+        let pending = await pendingMessages(ownerUserID: ownerUserID, instanceID: instanceID)
+        // Live results can land while the request is in flight. The cache merge keeps
+        // the ones this read is too old to contain.
+        await cache.mergeMessages(
+            DailyQuestionChatMessage.claimingPending(remote: messages, cached: cached, pending: pending),
+            ownerUserID: ownerUserID,
+            instanceID: instanceID,
+            unlessPurgedSince: generation
+        )
         return await cache.messages(ownerUserID: ownerUserID, instanceID: instanceID)
     }
 
@@ -166,14 +185,24 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
             ownerUserID: ownerUserID,
             kind: .createDailyQuestionThreadWithMessage
         )) ?? []
+        guard !operations.isEmpty else { return false }
+        // The handler marks a rejected message failed before the drain records the
+        // operation as finished. That operation is no longer creating the thread.
+        let cached = await cache.messages(ownerUserID: ownerUserID, instanceID: instanceID)
+        let failedOperationIDs = Set(cached.filter(\.sendFailed).compactMap(\.clientOperationID))
         return operations.contains { operation in
-            guard let data = operation.requestData,
+            guard !failedOperationIDs.contains(operation.operation.id),
+                  let data = operation.requestData,
                   let payload = try? JSONDecoder().decode(
                     CreateDailyQuestionThreadMessageOperationPayload.self,
                     from: data
                   ) else { return false }
             return payload.instanceID == instanceID
         }
+    }
+
+    func discardFailedMessage(ownerUserID: UUID, clientOperationID: UUID) async {
+        await cache.discardFailed(ownerUserID: ownerUserID, clientOperationID: clientOperationID)
     }
 
     func queueMessage(
@@ -389,6 +418,7 @@ actor EmptyDailyQuestionChatService: DailyQuestionChatServicing {
     ) async throws -> [DailyQuestionChatMessage] { [] }
     func pendingMessages(ownerUserID _: UUID, instanceID _: UUID) async -> [DailyQuestionChatMessage] { [] }
     func hasPendingThreadCreation(ownerUserID _: UUID, instanceID _: UUID) async -> Bool { false }
+    func discardFailedMessage(ownerUserID _: UUID, clientOperationID _: UUID) async {}
     func queueMessage(
         ownerUserID _: UUID,
         coupleID _: UUID,

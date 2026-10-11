@@ -154,6 +154,34 @@ struct LiveSyncCoordinatorTests {
         #expect(await !coordinator.isRunning)
     }
 
+    @Test func theNewestOfTwoOverlappingStartsWins() async {
+        let feed = RecordingFeed(name: "feed")
+        let coordinator = Self.makeCoordinator(feeds: [feed])
+        let first = Self.session(couple: Self.coupleA)
+        let older = Self.session(couple: Self.coupleB)
+        let newest = Self.session(couple: nil)
+        await coordinator.start(session: first)
+        #expect(await waitUntil { feed.started.value.count == 1 })
+
+        // Both starts wait while the first feed finishes its last write. The
+        // older caller runs at a higher priority, so it resumes first.
+        feed.holdsFinish.mutate { $0 = true }
+        let olderStart = Task(priority: .high) { await coordinator.start(session: older) }
+        #expect(await waitUntil { feed.cancelled.value == 1 })
+        let newestStart = Task(priority: .low) { await coordinator.start(session: newest) }
+        try? await Task.sleep(for: .milliseconds(100))
+        feed.holdsFinish.mutate { $0 = false }
+        await olderStart.value
+        await newestStart.value
+
+        // The route moved on to `newest`, so it must be the session left running.
+        // Before the fix, `older` launched and `newest` was dropped.
+        #expect(await waitUntil { feed.started.value.last == newest })
+        try? await Task.sleep(for: .milliseconds(30))
+        #expect(feed.started.value.last == newest)
+        await coordinator.stop()
+    }
+
     @Test func pauseStopsFeedsAndIgnoresStartsUntilResumed() async {
         let feed = RecordingFeed(name: "feed")
         let coordinator = Self.makeCoordinator(feeds: [feed])

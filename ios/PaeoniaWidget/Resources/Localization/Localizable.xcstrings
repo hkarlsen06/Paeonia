@@ -73,24 +73,6 @@
         }
       }
     },
-    "widget.placeholder.subtitle" : {
-      "comment" : "Short placeholder couple label shown inside the widget before a real drawing exists.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You + them"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du + dem"
-          }
-        }
-      }
-    },
     "widget.placeholder.title" : {
       "comment" : "Primary placeholder invitation shown inside the widget before a real drawing exists.",
       "extractionState" : "manual",
@@ -177,6 +159,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Paeonia"
+          }
+        }
+      }
+    },
+    "widget.drawing.accessibility" : {
+      "comment" : "VoiceOver label for the drawing in the widget. %@ is the name of who drew it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing from %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegning fra %@"
           }
         }
       }

@@ -355,16 +355,18 @@ export const create_privacy_request = mutation({
       .withIndex("by_uuid", (q) => q.eq("id", id))
       .unique();
     if (duplicate) uniqueViolation("privacy_requests_pkey");
-    if (kind === "deletion") {
-      for (const status of ["submitted", "verifying", "processing"] as const) {
-        const active = await ctx.db
-          .query("privacy_requests")
-          .withIndex("by_user_id_request_kind_status", (q) =>
-            q.eq("user_id", userId).eq("request_kind", "deletion").eq("status", status),
-          )
-          .first();
-        if (active) uniqueViolation("privacy_requests_active_deletion_user_idx");
-      }
+    // Two devices can file the same request at once. The app already shows an open request of
+    // the same kind instead of filing another, so return it. Deletion keeps the SQL unique index error.
+    for (const status of ["submitted", "verifying", "processing"] as const) {
+      const open = await ctx.db
+        .query("privacy_requests")
+        .withIndex("by_user_id_request_kind_status", (q) =>
+          q.eq("user_id", userId).eq("request_kind", kind).eq("status", status),
+        )
+        .first();
+      if (!open) continue;
+      if (kind === "deletion") uniqueViolation("privacy_requests_active_deletion_user_idx");
+      return privacyRequestRow(open);
     }
 
     const now = nowIso();

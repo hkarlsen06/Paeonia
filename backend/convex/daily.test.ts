@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { liveInstancesFor, insertAnswerAsset, seedCatalog, textQuestions } from "./daily.setup";
 import { newUuid } from "./lib/ids";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, setTimeZone, type TestConvex, type TestUser } from "./test.setup";
 
 const OSLO: [string, string] = ["Europe/Oslo", "Europe/Oslo"];
 const CLIENT_ID = newUuid();
@@ -516,6 +516,20 @@ describe("history", () => {
     ]);
     const details = await a.as.query(api.daily.get_daily_answer_history_details, {});
     expect(details.map((row) => row.text_body)).toEqual(["one", "reply", "two"]);
+  });
+
+  test("an exchange stays on the day it finished after a partner changes time zone", async () => {
+    const { t, a, b } = await readyCouple();
+    const [aFirst] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
+    await submit(a, aFirst.id, { text: "one" });
+    // 07:00 on 2026-10-11 in Oslo, still 22:00 on 2026-10-10 in Los Angeles.
+    vi.setSystemTime(new Date("2026-10-11T05:00:00.000Z"));
+    await submit(b, aFirst.id, { text: "reply" });
+    const history = async () =>
+      (await a.as.query(api.daily.get_daily_questions_history, {})).map((row) => row.effective_local_date);
+    expect(await history()).toEqual(["2026-10-11"]);
+    await setTimeZone(t, b.userId, "America/Los_Angeles");
+    expect(await history()).toEqual(["2026-10-11"]);
   });
 
   test("question answer history lists resurfaceable questions only", async () => {

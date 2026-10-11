@@ -124,7 +124,7 @@ struct PaeoniaAppTests {
         #expect(viewModel.state == .pairedPaywalled)
         #expect(await syncService.startCallCount == 1)
         let configuredSessions = await syncService.configuredSessions
-        let latestSession = configuredSessions.last ?? nil
+        let latestSession = configuredSessions.last.flatMap { $0 }
         #expect(latestSession?.activeCoupleID == nil)
         #expect(latestSession?.relationshipCoupleID == viewModel.currentActiveCoupleID)
         #expect(await syncService.relationshipAccessPurgePermanence == [false])
@@ -648,6 +648,24 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
+    @Test func signOutSendsWaitingWritesWhileStillSignedInThenPurges() async throws {
+        let authService = AuthServiceSpy(session: .test(profileStatus: .complete))
+        let syncService = TestPaeoniaSyncService(isSignedIn: {
+            (try? await authService.restoreSession()) != nil
+        })
+        let viewModel = RootViewModel(
+            syncService: syncService,
+            authService: authService,
+            accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
+        )
+
+        await viewModel.start()
+        await viewModel.signOut()
+
+        #expect(await syncService.signOutSteps == ["flush while signed in", "purge"])
+    }
+
+    @MainActor
     @Test func deleteAccountShowsDeletingStateBeforeClearingSession() async throws {
         let authService = BlockingDeleteAuthService()
         let syncService = TestPaeoniaSyncService()
@@ -699,7 +717,8 @@ struct PaeoniaAppTests {
             viewModel.currentSession?.profilePhotoAssetID
                 == UUID(uuidString: "99999999-9999-9999-9999-999999999999")
         )
-        #expect(await syncService.runOnceReasons == [.localChange])
+        // The save reports success first; the sync pass follows on its own.
+        #expect(await waitUntil { await syncService.runOnceReasons == [.localChange] })
     }
 
     @MainActor
@@ -936,7 +955,9 @@ struct RootLiveAccessTests {
         #expect(viewModel.isPairingCelebrationPresented)
         // Sync restarts for the new couple without a refresh.
         let syncService = fixture.syncService
-        #expect(await waitUntil { (await syncService.configuredSessions.last ?? nil)?.activeCoupleID == coupleID })
+        #expect(await waitUntil {
+            (await syncService.configuredSessions.last.flatMap { $0 })?.activeCoupleID == coupleID
+        })
     }
 
     @MainActor
@@ -1036,7 +1057,7 @@ struct RootLiveAccessTests {
     }
 }
 
-private actor TestPaeoniaSyncService: PaeoniaSyncing {
+actor TestPaeoniaSyncService: PaeoniaSyncing {
     private(set) var startCallCount = 0
     private(set) var requestedReasons: [SyncRequestReason] = []
     private(set) var runOnceReasons: [SyncRequestReason] = []
@@ -1044,10 +1065,22 @@ private actor TestPaeoniaSyncService: PaeoniaSyncing {
     private(set) var resetCallCount = 0
     private(set) var relationshipAccessPurgeOwnerUserIDs: [UUID] = []
     private(set) var relationshipAccessPurgePermanence: [Bool] = []
+    /// Sign-out steps in order: `flush` (with whether the account was still signed in) and `purge`.
+    private(set) var signOutSteps: [String] = []
     private var privacyRetryResults: [LocalPrivacyPurgeRetryResult]
+    private let isSignedIn: (@Sendable () async -> Bool)?
 
-    init(privacyRetryResults: [LocalPrivacyPurgeRetryResult] = []) {
+    init(
+        privacyRetryResults: [LocalPrivacyPurgeRetryResult] = [],
+        isSignedIn: (@Sendable () async -> Bool)? = nil
+    ) {
         self.privacyRetryResults = privacyRetryResults
+        self.isSignedIn = isSignedIn
+    }
+
+    func flushPendingWrites(timeout _: Duration) async {
+        let signedIn = await isSignedIn?() ?? true
+        signOutSteps.append(signedIn ? "flush while signed in" : "flush after sign-out")
     }
 
     func configure(session: SyncSession?) {
@@ -1077,6 +1110,7 @@ private actor TestPaeoniaSyncService: PaeoniaSyncing {
 
     func resetForUserChange() async {
         resetCallCount += 1
+        signOutSteps.append("purge")
     }
 
     func retryPendingPrivacyPurges() async -> LocalPrivacyPurgeRetryResult {
@@ -1096,7 +1130,7 @@ private actor TestPaeoniaSyncService: PaeoniaSyncing {
     }
 }
 
-private actor StaticAccessRouteService: AccessRouteServicing {
+actor StaticAccessRouteService: AccessRouteServicing {
     private let resolution: AccessRouteResolution
     private(set) var resolveCallCount = 0
     private(set) var receivedHasPendingInvite: [Bool] = []
@@ -1239,7 +1273,7 @@ private actor RelationshipEndedAccessRouteService: AccessRouteServicing {
     }
 }
 
-private extension AccessSyncSnapshot {
+extension AccessSyncSnapshot {
     static func testPaired(
         ownerUserID: UUID,
         coupleID: UUID = UUID(),
@@ -1258,7 +1292,7 @@ private extension AccessSyncSnapshot {
     }
 }
 
-private extension AccessSyncSnapshot {
+extension AccessSyncSnapshot {
     static func testEnded(ownerUserID: UUID, coupleID: UUID = UUID()) -> AccessSyncSnapshot {
         AccessSyncSnapshot(
             ownerUserID: ownerUserID,
@@ -1404,7 +1438,7 @@ private extension RemoteRelationshipState {
 }
 
 @MainActor
-private final class TestPairingCelebrationStore: PairingCelebrationStoring {
+final class TestPairingCelebrationStore: PairingCelebrationStoring {
     private var seenPairIDs: Set<UUID>
 
     init(seenPairIDs: Set<UUID> = []) {
@@ -1421,7 +1455,7 @@ private final class TestPairingCelebrationStore: PairingCelebrationStoring {
 }
 
 @MainActor
-private final class TestPairingInviteStore: PairingInviteStoring {
+final class TestPairingInviteStore: PairingInviteStoring {
     private var invitesByUserID: [String: PairingInvite]
 
     init(

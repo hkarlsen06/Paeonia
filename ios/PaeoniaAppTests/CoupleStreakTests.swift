@@ -208,4 +208,66 @@ struct CoupleStreakTests {
     @Test func explicitlyUnavailableStreakStateRemainsHidden() {
         #expect(!StreakPillState.hidden.isVisible)
     }
+
+    // MARK: - Toolbar restore state
+
+    @Test func pillOfARestorableStreakAdvertisesTheLostCount() {
+        let deadline = Date.now.addingTimeInterval(3_600)
+        let state = StreakPillState(Self.streak(restorableCount: 30, deadline: deadline))
+
+        #expect(state.isRestorable)
+        #expect(state.displayCount == 30)
+        #expect(state.usesMutedFlame)
+        #expect(state.restoreDeadline == deadline)
+    }
+
+    @Test func pillOfAHealthyStreakShowsTheLiveCount() {
+        let state = StreakPillState(Self.streak(currentCount: 5, restorableCount: 0, deadline: nil))
+
+        #expect(!state.isRestorable)
+        #expect(state.displayCount == 5)
+        #expect(!state.usesMutedFlame)
+        #expect(state.restoreDeadline == nil)
+    }
+
+    @Test func pillOfAnExpiredOfferShowsTheLiveCount() {
+        let state = StreakPillState(
+            Self.streak(restorableCount: 30, deadline: Date.now.addingTimeInterval(-60))
+        )
+
+        #expect(!state.isRestorable)
+        #expect(state.displayCount == 1)
+    }
+
+    @Test func pillStopsOfferingARestoreExactlyAtTheDeadline() {
+        let deadline = Date.now.addingTimeInterval(3_600)
+        let state = StreakPillState(Self.streak(restorableCount: 30, deadline: deadline))
+
+        #expect(state.resolved(at: deadline.addingTimeInterval(-1)).isRestorable)
+        #expect(!state.resolved(at: deadline).isRestorable)
+        #expect(!state.resolved(at: deadline.addingTimeInterval(1)).isRestorable)
+        // Back to the live count, not the lost one.
+        #expect(state.resolved(at: deadline).displayCount == 1)
+    }
+
+    @Test func pillWithoutADeadlineNeverLapses() {
+        let state = StreakPillState(count: 1, isRestorable: true, restorableCount: 30)
+
+        #expect(state.resolved(at: .distantFuture).isRestorable)
+    }
+
+    private static func streak(
+        currentCount: Int = 1,
+        restorableCount: Int,
+        deadline: Date?
+    ) -> CoupleStreak {
+        CoupleStreak(
+            currentCount: currentCount,
+            longestCount: 30,
+            lastQualifiedDate: "2026-06-26",
+            restoreAvailable: restorableCount > 0,
+            restorableCount: restorableCount,
+            restoreDeadline: deadline
+        )
+    }
 }

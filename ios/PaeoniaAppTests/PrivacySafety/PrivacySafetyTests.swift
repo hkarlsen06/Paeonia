@@ -38,9 +38,48 @@ struct PrivacySafetyServiceTests {
         #expect(UUID(uuidString: encodedTargetID) == answerID)
     }
 
+    @Test func requestListSkipsRowsThisVersionCannotRead() throws {
+        let json = """
+        [
+          {"id": "\(UUID().uuidString)", "request_kind": "access", "status": "submitted",
+           "requested_at": "2026-03-01T10:00:00.000Z", "visible_status_message": null},
+          {"id": "\(UUID().uuidString)", "request_kind": "deletion", "status": "submitted",
+           "requested_at": "2026-03-02T10:00:00.000Z", "visible_status_message": null},
+          {"id": "\(UUID().uuidString)", "request_kind": "export", "status": "archived",
+           "requested_at": "2026-03-03T10:00:00.000Z", "visible_status_message": null},
+          {"id": "\(UUID().uuidString)", "request_kind": "correction", "status": "completed",
+           "requested_at": "2026-03-04T10:00:00.000Z", "visible_status_message": "Done"}
+        ]
+        """
+
+        let list = try PaeoniaConvexClient.decoder.decode(
+            PrivacyRequestRemoteRows.self,
+            from: Data(json.utf8)
+        )
+
+        #expect(list.rows.map(\.requestKind) == [.access, .correction])
+        #expect(list.rows.map(\.status) == [.submitted, .completed])
+        #expect(list.rows.last?.visibleStatusMessage == "Done")
+    }
+
+    @Test func requestListThatIsNotAnArrayStillFails() {
+        #expect(throws: DecodingError.self) {
+            try PaeoniaConvexClient.decoder.decode(
+                PrivacyRequestRemoteRows.self,
+                from: Data(#"{"id": "x"}"#.utf8)
+            )
+        }
+    }
+
+    @Test func onlySelfHarmAndThreatsPointToEmergencyHelp() {
+        let reasons = PrivacyReportReason.allCases.filter(\.suggestsEmergencyHelp)
+
+        #expect(Set(reasons) == [.selfHarm, .threat])
+    }
+
     @Test func activeRequestIsReusedInsteadOfCreatingDuplicate() async throws {
-        let activeRow = makeRemoteRequest(kind: .export, status: .processing)
-        let gateway = FakePrivacySafetyGateway(rows: [activeRow])
+        let activeRow = makePrivacyRemoteRequest(kind: .export, status: .processing)
+        let gateway = PrivacyFakeGateway(rows: [activeRow])
         let service = PrivacySafetyService(gateway: gateway)
 
         let outcome = try await service.submitPrivacyRequest(kind: .export, requesterNote: nil)
@@ -50,13 +89,13 @@ struct PrivacySafetyServiceTests {
     }
 
     @Test func terminalRequestAllowsNewRequest() async throws {
-        let oldRow = makeRemoteRequest(kind: .access, status: .completed)
-        let createdRow = makeRemoteRequest(
+        let oldRow = makePrivacyRemoteRequest(kind: .access, status: .completed)
+        let createdRow = makePrivacyRemoteRequest(
             kind: .access,
             status: .submitted,
             requestedAt: Date(timeIntervalSince1970: 20)
         )
-        let gateway = FakePrivacySafetyGateway(rows: [oldRow], createdRow: createdRow)
+        let gateway = PrivacyFakeGateway(rows: [oldRow], createdRow: createdRow)
         let service = PrivacySafetyService(gateway: gateway)
 
         let outcome = try await service.submitPrivacyRequest(kind: .access, requesterNote: nil)
@@ -66,7 +105,7 @@ struct PrivacySafetyServiceTests {
     }
 
     @Test func reportSubmissionTrimsNoteAndForwardsExplicitBlockChoice() async throws {
-        let gateway = FakePrivacySafetyGateway()
+        let gateway = PrivacyFakeGateway()
         let service = PrivacySafetyService(gateway: gateway)
         let partnerID = UUID()
         let operation = SyncClientOperation(
@@ -96,8 +135,8 @@ struct PrivacySafetyServiceTests {
 @MainActor
 struct PrivacySafetyViewModelTests {
     @Test func successfulRequestUpdatesVisibleStateAndNotice() async {
-        let request = makeRequest(kind: .access, status: .submitted)
-        let service = FakePrivacySafetyService(requestOutcome: .created(request))
+        let request = makePrivacyRequest(kind: .access, status: .submitted)
+        let service = PrivacyFakeService(requestOutcome: .created(request))
         let viewModel = PrivacySafetyViewModel(service: service)
 
         let didSubmit = await viewModel.submitRequest(kind: .access)
@@ -108,8 +147,8 @@ struct PrivacySafetyViewModelTests {
     }
 
     @Test func alreadyActiveRequestProducesUnderstandableNotice() async {
-        let request = makeRequest(kind: .export, status: .verifying)
-        let service = FakePrivacySafetyService(requestOutcome: .alreadyActive(request))
+        let request = makePrivacyRequest(kind: .export, status: .verifying)
+        let service = PrivacyFakeService(requestOutcome: .alreadyActive(request))
         let viewModel = PrivacySafetyViewModel(service: service)
 
         let didSubmit = await viewModel.submitRequest(kind: .export)
@@ -119,7 +158,7 @@ struct PrivacySafetyViewModelTests {
     }
 
     @Test func correctionRequiresUsefulDetailsBeforeCallingService() async {
-        let service = FakePrivacySafetyService()
+        let service = PrivacyFakeService()
         let viewModel = PrivacySafetyViewModel(service: service)
 
         let didSubmit = await viewModel.submitRequest(kind: .correction, requesterNote: "   ")
@@ -130,7 +169,7 @@ struct PrivacySafetyViewModelTests {
     }
 
     @Test func requestFailureLeavesNoFalseSuccessState() async {
-        let service = FakePrivacySafetyService(failPrivacyRequest: true)
+        let service = PrivacyFakeService(failPrivacyRequest: true)
         let viewModel = PrivacySafetyViewModel(service: service)
 
         let didSubmit = await viewModel.submitRequest(kind: .access)
@@ -142,14 +181,56 @@ struct PrivacySafetyViewModelTests {
 }
 
 extension PrivacySafetyViewModelTests {
+    @Test func cancelledLoadDoesNotShowFailureNotice() async {
+        let service = PrivacyFakeService(loadError: URLError(.cancelled))
+        let viewModel = PrivacySafetyViewModel(service: service)
+
+        await viewModel.load()
+
+        #expect(viewModel.notice == nil)
+        #expect(viewModel.hasLoaded == false)
+        #expect(viewModel.isLoading == false)
+    }
+
+    @Test func failedLoadShowsNoticeAndEndsTheLoadingState() async {
+        let service = PrivacyFakeService(loadError: PrivacyFakeError.failed)
+        let viewModel = PrivacySafetyViewModel(service: service)
+
+        await viewModel.load()
+
+        #expect(viewModel.notice == .loadFailed)
+        #expect(viewModel.hasLoaded)
+    }
+
+    @Test func loadShowsRequestsAndMarksTheFirstLoadAsDone() async {
+        let request = makePrivacyRequest(kind: .export, status: .completed)
+        let service = PrivacyFakeService(requests: [request])
+        let viewModel = PrivacySafetyViewModel(service: service)
+        #expect(viewModel.hasLoaded == false)
+
+        await viewModel.load()
+
+        #expect(viewModel.hasLoaded)
+        #expect(viewModel.latestRequest(for: .export) == request)
+        #expect(viewModel.notice == nil)
+    }
+
+    @Test func correctionCanOnlyBeSentWithDetails() {
+        let viewModel = PrivacySafetyViewModel(service: PrivacyFakeService())
+
+        #expect(viewModel.canSubmitCorrection(details: "") == false)
+        #expect(viewModel.canSubmitCorrection(details: "  \n ") == false)
+        #expect(viewModel.canSubmitCorrection(details: "My name is spelled Oda"))
+    }
+
     @Test func liveUpdatesShowStatusChanges() async {
-        let service = FakePrivacySafetyService()
+        let service = PrivacyFakeService()
         let viewModel = PrivacySafetyViewModel(service: service)
         let observing = Task { await viewModel.observe() }
 
-        await service.emit([makeRequest(kind: .export, status: .submitted)])
+        await service.emit([makePrivacyRequest(kind: .export, status: .submitted)])
         await waitForRequest(in: viewModel, status: .submitted)
-        await service.emit([makeRequest(kind: .export, status: .completed)])
+        await service.emit([makePrivacyRequest(kind: .export, status: .completed)])
         await waitForRequest(in: viewModel, status: .completed)
 
         #expect(viewModel.latestRequest(for: .export)?.status == .completed)
@@ -167,8 +248,8 @@ extension PrivacySafetyViewModelTests {
 struct ReportAndLeaveViewModelTests {
     @Test func blockingIsOffByDefaultAndReasonIsRequired() {
         let viewModel = ReportAndLeaveViewModel(
-            service: FakePrivacySafetyService(),
-            operationProvider: FixedOperationProvider()
+            service: PrivacyFakeService(),
+            operationProvider: PrivacyFixedOperationProvider()
         )
 
         #expect(viewModel.blockPartner == false)
@@ -177,8 +258,8 @@ struct ReportAndLeaveViewModelTests {
     }
 
     @Test func successfulReportUsesCurrentPartnerAndDoesNotSurpriseBlock() async {
-        let service = FakePrivacySafetyService()
-        let operationProvider = FixedOperationProvider()
+        let service = PrivacyFakeService()
+        let operationProvider = PrivacyFixedOperationProvider()
         let viewModel = ReportAndLeaveViewModel(
             service: service,
             operationProvider: operationProvider
@@ -190,7 +271,8 @@ struct ReportAndLeaveViewModelTests {
         let didSubmit = await viewModel.submit(target: .conduct(userID: partnerID))
 
         #expect(didSubmit)
-        #expect(viewModel.notice == .submitted)
+        #expect(viewModel.didSubmit)
+        #expect(viewModel.notice == nil)
         #expect(viewModel.isSubmitting == false)
         let submission = await service.lastReportSubmission
         #expect(submission?.target == .conduct(userID: partnerID))
@@ -198,11 +280,64 @@ struct ReportAndLeaveViewModelTests {
         #expect(submission?.operation == operationProvider.operation)
     }
 
-    @Test func explicitBlockChoiceIsForwarded() async {
-        let service = FakePrivacySafetyService()
+    @Test func secondReportIsBlockedAfterASuccessfulOne() async {
+        let service = PrivacyFakeService()
         let viewModel = ReportAndLeaveViewModel(
             service: service,
-            operationProvider: FixedOperationProvider()
+            operationProvider: PrivacyIncrementingOperationProvider()
+        )
+        let target = PrivacyReportTarget.conduct(userID: UUID())
+        viewModel.selectedReason = .harassment
+
+        #expect(await viewModel.submit(target: target))
+        #expect(viewModel.didSubmit)
+        #expect(viewModel.canSubmit == false)
+        #expect(viewModel.prepareConfirmation() == false)
+
+        #expect(await viewModel.submit(target: target) == false)
+        #expect(await service.reportOperations.count == 1)
+    }
+
+    @Test func reportCannotBeSentUntilAReasonIsChosen() {
+        let viewModel = ReportAndLeaveViewModel(
+            service: PrivacyFakeService(),
+            operationProvider: PrivacyFixedOperationProvider()
+        )
+        #expect(viewModel.canSubmit == false)
+
+        viewModel.selectedReason = .spam
+
+        #expect(viewModel.canSubmit)
+    }
+
+    @Test func secondReportIsBlockedWhileTheFirstIsStillSending() async {
+        let service = PrivacyGatedReportService()
+        let viewModel = ReportAndLeaveViewModel(
+            service: service,
+            operationProvider: PrivacyIncrementingOperationProvider()
+        )
+        let target = PrivacyReportTarget.conduct(userID: UUID())
+        viewModel.selectedReason = .abuse
+
+        let firstSubmission = Task { await viewModel.submit(target: target) }
+        while !viewModel.isSubmitting {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(viewModel.canSubmit == false)
+        #expect(await viewModel.submit(target: target) == false)
+
+        await service.release()
+        #expect(await firstSubmission.value)
+        #expect(await service.reportCallCount == 1)
+        #expect(viewModel.didSubmit)
+    }
+
+    @Test func explicitBlockChoiceIsForwarded() async {
+        let service = PrivacyFakeService()
+        let viewModel = ReportAndLeaveViewModel(
+            service: service,
+            operationProvider: PrivacyFixedOperationProvider()
         )
         viewModel.selectedReason = .threat
         viewModel.blockPartner = true
@@ -214,10 +349,10 @@ struct ReportAndLeaveViewModelTests {
     }
 
     @Test func failedReportKeepsRelationshipRefreshCallbackFromFalseSuccess() async {
-        let service = FakePrivacySafetyService(failReport: true)
+        let service = PrivacyFakeService(failReport: true)
         let viewModel = ReportAndLeaveViewModel(
             service: service,
-            operationProvider: FixedOperationProvider()
+            operationProvider: PrivacyFixedOperationProvider()
         )
         viewModel.selectedReason = .other
 
@@ -229,10 +364,10 @@ struct ReportAndLeaveViewModelTests {
     }
 
     @Test func retryAfterLostResponseReusesIdempotencyOperation() async {
-        let service = FakePrivacySafetyService(failFirstReport: true)
+        let service = PrivacyFakeService(failFirstReport: true)
         let viewModel = ReportAndLeaveViewModel(
             service: service,
-            operationProvider: IncrementingOperationProvider()
+            operationProvider: PrivacyIncrementingOperationProvider()
         )
         let partnerID = UUID()
         viewModel.selectedReason = .privacy
@@ -247,10 +382,10 @@ struct ReportAndLeaveViewModelTests {
     }
 
     @Test func changedReportDraftUsesANewIdempotencyOperation() async {
-        let service = FakePrivacySafetyService(failFirstReport: true)
+        let service = PrivacyFakeService(failFirstReport: true)
         let viewModel = ReportAndLeaveViewModel(
             service: service,
-            operationProvider: IncrementingOperationProvider()
+            operationProvider: PrivacyIncrementingOperationProvider()
         )
         let partnerID = UUID()
         viewModel.selectedReason = .other
@@ -264,201 +399,4 @@ struct ReportAndLeaveViewModelTests {
         #expect(operations.count == 2)
         #expect(operations.first != operations.last)
     }
-}
-
-nonisolated private enum FakePrivacySafetyError: Error {
-    case failed
-}
-
-nonisolated private struct CapturedReportSubmission: Equatable, Sendable {
-    let target: PrivacyReportTarget
-    let reason: PrivacyReportReason
-    let note: String?
-    let blockPartner: Bool
-    let operation: SyncClientOperation
-}
-
-private actor FakePrivacySafetyGateway: PrivacySafetyGateway {
-    private let rows: [PrivacyRequestRemoteRow]
-    private let createdRow: PrivacyRequestRemoteRow?
-    private(set) var createCallCount = 0
-    private(set) var lastReportSubmission: CapturedReportSubmission?
-
-    init(
-        rows: [PrivacyRequestRemoteRow] = [],
-        createdRow: PrivacyRequestRemoteRow? = nil
-    ) {
-        self.rows = rows
-        self.createdRow = createdRow
-    }
-
-    func loadPrivacyRequests() -> [PrivacyRequestRemoteRow] {
-        rows
-    }
-
-    func createPrivacyRequest(
-        id: UUID,
-        kind: PrivacyRequestKind,
-        requesterNote: String?
-    ) throws -> PrivacyRequestRemoteRow {
-        createCallCount += 1
-        guard let createdRow else {
-            throw FakePrivacySafetyError.failed
-        }
-        return createdRow
-    }
-
-    func submitReportAndLeave(
-        target: PrivacyReportTarget,
-        reason: PrivacyReportReason,
-        note: String?,
-        blockPartner: Bool,
-        operation: SyncClientOperation
-    ) -> UUID {
-        lastReportSubmission = CapturedReportSubmission(
-            target: target,
-            reason: reason,
-            note: note,
-            blockPartner: blockPartner,
-            operation: operation
-        )
-        return UUID()
-    }
-}
-
-private actor FakePrivacySafetyService: PrivacySafetyServicing {
-    private let requests: [PrivacyRequest]
-    private let requestOutcome: PrivacyRequestSubmissionOutcome?
-    private let failPrivacyRequest: Bool
-    private let failReport: Bool
-    private let failFirstReport: Bool
-    private var didFailFirstReport = false
-    private let updates = AsyncStream<[PrivacyRequest]>.makeStream()
-    private(set) var privacyRequestCallCount = 0
-    private(set) var lastReportSubmission: CapturedReportSubmission?
-    private(set) var reportOperations = [SyncClientOperation]()
-
-    init(
-        requests: [PrivacyRequest] = [],
-        requestOutcome: PrivacyRequestSubmissionOutcome? = nil,
-        failPrivacyRequest: Bool = false,
-        failReport: Bool = false,
-        failFirstReport: Bool = false
-    ) {
-        self.requests = requests
-        self.requestOutcome = requestOutcome
-        self.failPrivacyRequest = failPrivacyRequest
-        self.failReport = failReport
-        self.failFirstReport = failFirstReport
-    }
-
-    func loadPrivacyRequests() -> [PrivacyRequest] {
-        requests
-    }
-
-    nonisolated func privacyRequestUpdates() -> AsyncStream<[PrivacyRequest]> {
-        updates.stream
-    }
-
-    func emit(_ requests: [PrivacyRequest]) {
-        updates.continuation.yield(requests)
-    }
-
-    func submitPrivacyRequest(
-        kind: PrivacyRequestKind,
-        requesterNote: String?
-    ) throws -> PrivacyRequestSubmissionOutcome {
-        privacyRequestCallCount += 1
-        if failPrivacyRequest {
-            throw FakePrivacySafetyError.failed
-        }
-        guard let requestOutcome else {
-            throw FakePrivacySafetyError.failed
-        }
-        return requestOutcome
-    }
-
-    func submitReportAndLeave(
-        target: PrivacyReportTarget,
-        reason: PrivacyReportReason,
-        note: String?,
-        blockPartner: Bool,
-        operation: SyncClientOperation
-    ) throws -> UUID {
-        reportOperations.append(operation)
-        if failReport || (failFirstReport && !didFailFirstReport) {
-            didFailFirstReport = true
-            throw FakePrivacySafetyError.failed
-        }
-        lastReportSubmission = CapturedReportSubmission(
-            target: target,
-            reason: reason,
-            note: note,
-            blockPartner: blockPartner,
-            operation: operation
-        )
-        return UUID()
-    }
-}
-
-@MainActor
-private final class FixedOperationProvider: SyncClientOperationProviding {
-    let operation: SyncClientOperation
-
-    init() {
-        operation = SyncClientOperation(
-            id: UUID(),
-            clientID: UUID(),
-            clientSequence: 3,
-            localCreatedAt: Date(timeIntervalSince1970: 40)
-        )
-    }
-
-    func makeOperation() -> SyncClientOperation {
-        operation
-    }
-}
-
-@MainActor
-private final class IncrementingOperationProvider: SyncClientOperationProviding {
-    private let clientID = UUID()
-    private var nextSequence: Int64 = 1
-
-    func makeOperation() -> SyncClientOperation {
-        defer { nextSequence += 1 }
-        return SyncClientOperation(
-            id: UUID(),
-            clientID: clientID,
-            clientSequence: nextSequence,
-            localCreatedAt: Date(timeIntervalSince1970: TimeInterval(nextSequence))
-        )
-    }
-}
-
-nonisolated private func makeRequest(
-    kind: PrivacyRequestKind,
-    status: PrivacyRequestStatus,
-    requestedAt: Date = Date(timeIntervalSince1970: 10)
-) -> PrivacyRequest {
-    PrivacyRequest(
-        id: UUID(),
-        kind: kind,
-        status: status,
-        requestedAt: requestedAt,
-        visibleStatusMessage: nil
-    )
-}
-
-nonisolated private func makeRemoteRequest(
-    kind: PrivacyRequestKind,
-    status: PrivacyRequestStatus,
-    requestedAt: Date = Date(timeIntervalSince1970: 10)
-) -> PrivacyRequestRemoteRow {
-    PrivacyRequestRemoteRow(
-        id: UUID(),
-        requestKind: kind,
-        status: status,
-        requestedAt: requestedAt,
-        visibleStatusMessage: nil
-    )
 }

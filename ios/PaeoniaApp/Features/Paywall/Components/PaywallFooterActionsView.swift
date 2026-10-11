@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct PaywallFooterActionsView: View {
-    let isPurchasing: Bool
-    let isLoading: Bool
+    /// A purchase or restore is talking to the App Store. Account actions wait,
+    /// so nobody signs out or deletes the account in the middle of a payment.
+    let isBusyWithStore: Bool
+    let isRestoring: Bool
     let showsUnpair: Bool
     let isLeavingRelationship: Bool
     let onRestorePurchases: () -> Void
@@ -25,14 +27,21 @@ struct PaywallFooterActionsView: View {
 
     private var restoreButton: some View {
         Button(action: onRestorePurchases) {
-            Text(.paywallRestorePurchases)
-                .font(PaeoniaTypography.bodyEmphasis)
-                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
-                .contentShape(Rectangle())
+            HStack(spacing: PaeoniaSpacing.space8) {
+                if isRestoring {
+                    ProgressView()
+                        .tint(.paeoniaAccentPrimary)
+                        .accessibilityHidden(true)
+                }
+                Text(isRestoring ? .settingsPurchasesRestoring : .paywallRestorePurchases)
+                    .font(PaeoniaTypography.bodyEmphasis)
+            }
+            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .foregroundStyle(.paeoniaAccentPrimary)
-        .disabled(isPurchasing || isLoading)
+        .disabled(isBusyWithStore)
     }
 
     private var accountActions: some View {
@@ -57,6 +66,7 @@ struct PaywallFooterActionsView: View {
         }
         .font(PaeoniaTypography.caption)
         .foregroundStyle(.paeoniaTextTertiary)
+        .disabled(isBusyWithStore)
     }
 
     private var signOutButton: some View {

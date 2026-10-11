@@ -20,7 +20,11 @@ protocol PaeoniaStoreKitServicing: AnyObject {
     func eligibleFreeTrial(for productID: PaeoniaSubscriptionProductID) async -> PaeoniaFreeTrial?
     func product(for productID: PaeoniaSubscriptionProductID) -> Product?
     func product(for productID: PaeoniaConsumableProductID) -> Product?
+    /// `true` once the server confirmed the purchase, `false` when the user
+    /// cancelled. Throws `PaeoniaPurchaseError.pendingApproval` for Ask to Buy.
     func purchase(_ product: Product) async throws -> Bool
+    /// `true` when a subscription for this account was confirmed. Throws
+    /// `PaeoniaPurchaseError.cancelled` when the user closes the App Store sheet.
     func restorePurchases() async throws -> Bool
     /// Buys the streak-restore consumable and asks the server to bring the streak
     /// back. Returns the restored streak length, or `nil` if the user cancelled.
@@ -111,12 +115,19 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         products.first { $0.id == productID.rawValue }
     }
 
+    /// Returns `true` once the server has confirmed the purchase and `false` when
+    /// the user closed the App Store sheet. Throws `.pendingApproval` when the
+    /// purchase waits for approval (Ask to Buy); the transaction listener confirms
+    /// it later. A purchase that went through but could not be confirmed stays
+    /// unfinished and throws `.serverConfirmationFailed`, so Restore can retry it.
     func purchase(_ product: Product) async throws -> Bool {
         let token = try await configuredAppAccountToken()
         let purchaseResult: Product.PurchaseResult
 
         do {
             purchaseResult = try await product.purchase(options: [.appAccountToken(token)])
+        } catch StoreKitError.userCancelled {
+            return false
         } catch {
             throw PaeoniaPurchaseError.purchaseFailed
         }
@@ -127,7 +138,7 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
                 throw PaeoniaPurchaseError.verificationFailed
             }
 
-            try await confirm(
+            try await confirmPaidPurchase(
                 transaction: transaction,
                 jwsRepresentation: verification.jwsRepresentation,
                 priceDisplay: product.displayPrice
@@ -136,29 +147,45 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
             await transaction.finish()
 
             return true
-        case .pending, .userCancelled:
+        case .pending:
+            throw PaeoniaPurchaseError.pendingApproval
+        case .userCancelled:
             return false
         @unknown default:
             return false
         }
     }
 
+    /// Asks the App Store for this Apple ID's subscriptions and confirms the ones
+    /// bought with this account. Returns `false` when there is nothing to restore.
+    /// Throws `.purchaseLinkedToAnotherAccount` when the only subscription belongs
+    /// to a different Paeonia account, and `.cancelled` when the user closes the
+    /// App Store sign-in sheet.
     func restorePurchases() async throws -> Bool {
         let token = try await configuredAppAccountToken()
-        try await AppStore.sync()
+
+        do {
+            try await AppStore.sync()
+        } catch StoreKitError.userCancelled {
+            throw PaeoniaPurchaseError.cancelled
+        } catch {
+            throw PaeoniaPurchaseError.restoreFailed
+        }
 
         var didConfirmPurchase = false
+        var foundAnotherAccountsPurchase = false
 
         for await result in Transaction.currentEntitlements {
-            guard case let .verified(transaction) = result else {
-                continue
-            }
-
-            guard PaeoniaSubscriptionProductID(rawValue: transaction.productID) != nil else {
+            guard case let .verified(transaction) = result,
+                  PaeoniaSubscriptionProductID(rawValue: transaction.productID) != nil
+            else {
                 continue
             }
 
             guard transaction.appAccountToken == token else {
+                if transaction.appAccountToken != nil {
+                    foundAnotherAccountsPurchase = true
+                }
                 continue
             }
 
@@ -168,7 +195,14 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
                 jwsRepresentation: result.jwsRepresentation,
                 priceDisplay: displayPrice
             )
+            // A purchase that was paid for but never confirmed is still
+            // unfinished. Now that the server has it, finish it.
+            await transaction.finish()
             didConfirmPurchase = true
+        }
+
+        if !didConfirmPurchase && foundAnotherAccountsPurchase {
+            throw PaeoniaPurchaseError.purchaseLinkedToAnotherAccount
         }
 
         return didConfirmPurchase
@@ -184,6 +218,8 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
 
         do {
             purchaseResult = try await product.purchase(options: [.appAccountToken(token)])
+        } catch StoreKitError.userCancelled {
+            return nil
         } catch {
             throw PaeoniaPurchaseError.purchaseFailed
         }
@@ -203,7 +239,11 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
             await transaction.finish()
 
             return restoredCount
-        case .pending, .userCancelled:
+        case .pending:
+            // Ask to Buy: the restore lands later through the transaction listener
+            // if it is approved. Callers show that it is waiting, not a cancel.
+            throw PaeoniaPurchaseError.pendingApproval
+        case .userCancelled:
             return nil
         @unknown default:
             return nil
@@ -237,11 +277,20 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
             } catch {
                 // Leave it unfinished so the next attempt can retry; the server
                 // restore is idempotent, so a replay never restores twice.
-                continue
+                recoveredCount = Self.pendingRestoreCount(recoveredCount, afterFailure: error)
             }
         }
 
         return recoveredCount
+    }
+
+    /// A paid restore that the server has not confirmed yet still counts as
+    /// pending (0), so the sheet waits for it instead of selling a second one.
+    /// A restore the server refused for good, or one that belongs to another
+    /// account, does not hold up this person's purchase.
+    static func pendingRestoreCount(_ count: Int?, afterFailure error: any Error) -> Int? {
+        let refusedForGood: [PaeoniaPurchaseError] = [.streakNotRestorable, .purchaseLinkedToAnotherAccount]
+        return refusedForGood.contains { $0 == error as? PaeoniaPurchaseError } ? count : count ?? 0
     }
 
     private func startTransactionListener() {
@@ -294,6 +343,32 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         }
     }
 
+}
+
+// MARK: - Server confirmation
+
+extension PaeoniaStoreKitService {
+    /// Apple has charged the user by the time this runs. Any failure that is not
+    /// already specific becomes `.serverConfirmationFailed`, so the paywall can
+    /// say the payment went through and point to Restore.
+    private func confirmPaidPurchase(
+        transaction: Transaction,
+        jwsRepresentation: String,
+        priceDisplay: String?
+    ) async throws {
+        do {
+            try await confirm(
+                transaction: transaction,
+                jwsRepresentation: jwsRepresentation,
+                priceDisplay: priceDisplay
+            )
+        } catch let error as PaeoniaPurchaseError {
+            throw error
+        } catch {
+            throw PaeoniaPurchaseError.serverConfirmationFailed(nil)
+        }
+    }
+
     private func configuredAppAccountToken() async throws -> UUID {
         guard let userID else {
             throw PaeoniaPurchaseError.userNotConfigured
@@ -311,6 +386,12 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
 
         guard let token = UUID(uuidString: tokenString) else {
             throw PaeoniaPurchaseError.invalidUserID
+        }
+
+        // A sign-out or account switch during the request must not hand the old
+        // account's token to the new one.
+        guard self.userID == userID else {
+            throw PaeoniaPurchaseError.userNotConfigured
         }
 
         appAccountToken = token
@@ -346,7 +427,7 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
                 throw purchaseError(fromConfirmationReason: response.error)
             }
         } catch let error as PaeoniaConvexError {
-            throw purchaseError(fromConfirmationReason: confirmationFailureReason(from: error))
+            throw purchaseError(fromConfirmationReason: Self.confirmationFailureReason(from: error))
         }
     }
 
@@ -370,16 +451,26 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
             )
 
             guard response.isConfirmed else {
-                throw streakRestoreError(fromConfirmationReason: response.error)
+                throw Self.streakRestoreError(fromConfirmationReason: response.error)
             }
 
             return response.restoredCount ?? 0
-        } catch let error as PaeoniaConvexError {
-            throw streakRestoreError(fromConfirmationReason: confirmationFailureReason(from: error))
+        } catch {
+            throw Self.streakRestoreConfirmationError(from: error)
         }
     }
 
-    private func streakRestoreError(fromConfirmationReason reason: String?) -> PaeoniaPurchaseError {
+    /// Apple has charged by the time a streak restore is confirmed. Any failure
+    /// that is not already specific, such as a lost connection, becomes
+    /// `.serverConfirmationFailed`, so the sheet says the payment is waiting
+    /// instead of offering to buy again.
+    static func streakRestoreConfirmationError(from error: any Error) -> PaeoniaPurchaseError {
+        if let error = error as? PaeoniaPurchaseError { return error }
+        guard let error = error as? PaeoniaConvexError else { return .serverConfirmationFailed(nil) }
+        return streakRestoreError(fromConfirmationReason: confirmationFailureReason(from: error))
+    }
+
+    private static func streakRestoreError(fromConfirmationReason reason: String?) -> PaeoniaPurchaseError {
         if reason == "Apple appAccountToken is not registered"
             || reason == "Apple transaction belongs to a different user" {
             return .purchaseLinkedToAnotherAccount
@@ -413,7 +504,7 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
 
     /// The backend turns a failed purchase check into `server(code: "http_<status>",
     /// message: <reason>)`, where the message is the verifier's own reason text.
-    private func confirmationFailureReason(from error: PaeoniaConvexError) -> String {
+    private static func confirmationFailureReason(from error: PaeoniaConvexError) -> String {
         switch error {
         case let .server(code, message):
             if !message.isEmpty {

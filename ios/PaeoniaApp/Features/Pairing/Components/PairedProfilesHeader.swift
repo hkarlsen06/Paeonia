@@ -6,7 +6,8 @@ import SwiftUI
 /// the pairing celebration.
 ///
 /// Profile photos load the same way the celebration loads them, falling back to
-/// initials while they load or when none is set.
+/// initials while they load or when none is set. VoiceOver reads the whole header
+/// as one element, for example "You and Oda".
 struct PairedProfilesHeader: View {
     private static let coordinateSpace = "pairedProfilesHeader"
 
@@ -16,8 +17,10 @@ struct PairedProfilesHeader: View {
     let partnerProfilePhotoAssetID: UUID?
     private let profilePhotoProvider: (any ProfilePhotoImageProviding)?
 
-    @State private var currentPhotoData: Data?
-    @State private var partnerPhotoData: Data?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @State private var currentPhoto = PairingProfilePhoto()
+    @State private var partnerPhoto = PairingProfilePhoto()
 
     init(
         currentName: String,
@@ -33,21 +36,12 @@ struct PairedProfilesHeader: View {
         self.profilePhotoProvider = profilePhotoProvider ?? ProfilePhotoImageProviderFactory.shared
     }
 
-    private var photoLoadID: String {
-        [
-            currentProfilePhotoAssetID?.uuidString ?? "none",
-            partnerProfilePhotoAssetID?.uuidString ?? "none"
-        ].joined(separator: "|")
-    }
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     var body: some View {
         PairingCelebrationProfilesView(
             currentName: currentName,
-            currentPhotoData: currentPhotoData,
+            currentPhoto: currentPhoto.image,
             partnerName: partnerName,
-            partnerPhotoData: partnerPhotoData,
+            partnerPhoto: partnerPhoto.image,
             partnerSlotIsPlaceholder: false,
             surroundingsOpacity: 1,
             slotCoordinateSpace: Self.coordinateSpace,
@@ -55,39 +49,18 @@ struct PairedProfilesHeader: View {
             onPartnerSlotChange: { _ in }
         )
         // Crossfade between initials and photo, and between different photos on
-        // reload. Keyed on the pair of asset IDs so the animation triggers only
-        // when the actual identity changes, not on every render.
-        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: currentPhotoData)
-        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: partnerPhotoData)
-        .task(id: photoLoadID) {
-            await loadProfilePhotos()
+        // reload. Keyed on the decoded image, so it animates only when a photo
+        // actually changes, not on every render.
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: currentPhoto.imageID)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: partnerPhoto.imageID)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(.pairingCelebrationPairedHeaderLabel(partnerName)))
+        .task(id: currentProfilePhotoAssetID) {
+            await currentPhoto.load(assetID: currentProfilePhotoAssetID, provider: profilePhotoProvider)
         }
-    }
-
-    @MainActor
-    private func loadProfilePhotos() async {
-        guard let profilePhotoProvider else {
-            return
+        .task(id: partnerProfilePhotoAssetID) {
+            await partnerPhoto.load(assetID: partnerProfilePhotoAssetID, provider: profilePhotoProvider)
         }
-
-        // Do NOT clear the photos to nil before the new load completes.
-        // Clearing eagerly causes the avatar to flash back to initials on every
-        // reload (e.g. when photoLoadID changes because names refreshed). Instead
-        // we keep the last-known photo visible until the new value arrives, then
-        // replace it in one step. If the asset ID genuinely became nil the load
-        // returns nil and the initials appear once — after the crossfade — not
-        // before.
-
-        async let current = profilePhotoProvider.profilePhotoData(for: currentProfilePhotoAssetID)
-        async let partner = profilePhotoProvider.profilePhotoData(for: partnerProfilePhotoAssetID)
-        let (currentData, partnerData) = await (current, partner)
-
-        guard !Task.isCancelled else {
-            return
-        }
-
-        currentPhotoData = currentData
-        partnerPhotoData = partnerData
     }
 }
 

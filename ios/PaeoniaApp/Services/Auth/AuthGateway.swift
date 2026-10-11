@@ -257,6 +257,8 @@ actor LiveAuthGateway: AuthGateway {
     }
 
     func signOut() async throws {
+        // Needs the account's token, so it runs before Clerk forgets the session.
+        await ConvexPushRegistrationService.disableRegisteredDevice(client: client)
         try await Self.signOutOfClerk()
     }
 
@@ -316,7 +318,10 @@ private extension LiveAuthGateway {
         // The app only starts a sign-in while signed out. A session left over
         // from an earlier failed attempt would make Clerk refuse the new one.
         if Clerk.shared.session != nil {
-            try? await Clerk.shared.auth.signOut()
+            // Bounded, so a stalled connection cannot hold up the sign-in sheet.
+            _ = try? await AuthNetworkDeadline.run(within: AuthNetworkDeadline.cleanup) { @MainActor in
+                try await Clerk.shared.auth.signOut()
+            }
         }
         _ = try await signIn()
         // A flow that needs more steps leaves no active session behind.

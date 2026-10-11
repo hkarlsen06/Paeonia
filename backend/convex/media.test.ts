@@ -34,10 +34,8 @@ function reserveArgs(coupleId: string, overrides: Record<string, unknown> = {}) 
 async function reserveAndStore(t: TestConvex, user: TestUser, coupleId: string, bytes = new TextEncoder().encode("photo")) {
   const operationId = newUuid();
   const parentId = newUuid();
-  const [row] = await user.as.mutation(
-    api.media.create_pending_media_upload,
-    reserveArgs(coupleId, { ...op(operationId), p_reserved_parent_id: parentId }),
-  );
+  const reserve = reserveArgs(coupleId, { ...op(operationId), p_reserved_parent_id: parentId });
+  const [row] = await user.as.mutation(api.media.create_pending_media_upload, reserve);
   const storageId = await storeBlob(t, bytes, "image/jpeg");
   const finalize = (overrides: Record<string, unknown> = {}) => ({
     ...op(),
@@ -57,7 +55,7 @@ async function reserveAndStore(t: TestConvex, user: TestUser, coupleId: string, 
     p_height: 10,
     ...overrides,
   });
-  return { row, storageId, bytes, parentId, finalize, sha: await sha256Hex(bytes) };
+  return { row, reserve, storageId, bytes, parentId, finalize, sha: await sha256Hex(bytes) };
 }
 
 describe("create_pending_media_upload", () => {
@@ -108,6 +106,40 @@ describe("create_pending_media_upload", () => {
     });
     const error = await failure(couple.first.as.mutation(api.media.create_pending_media_upload, args));
     expect(error).toEqual({ code: "42501", message: "active entitled couple access is required" });
+  });
+
+  test("a replay after finalize returns the finalized asset, so a retried send can finish", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const up = await reserveAndStore(t, couple.first, couple.coupleId);
+    const finalizeArgs = up.finalize({ p_sha256_hex: up.sha });
+    const [finalized] = await couple.first.as.mutation(api.media.finalize_media_upload, finalizeArgs);
+    // Sending the answer failed after finalize, so the app retries reserve, upload, and finalize.
+    vi.setSystemTime(new Date("2026-10-10T14:00:00.000Z"));
+    const [replay] = await couple.first.as.mutation(api.media.create_pending_media_upload, up.reserve);
+    expect(replay).toMatchObject({ media_asset_id: up.row.media_asset_id, storage_path: up.row.storage_path });
+    expect(replay.upload_url).toMatch(/^https:\/\//);
+    expect(await couple.first.as.mutation(api.media.finalize_media_upload, finalizeArgs)).toEqual([finalized]);
+    expect(await asset(t, up.row.media_asset_id)).toMatchObject({ upload_status: "finalized", storage_id: up.storageId });
+  });
+
+  test("a replay renews a reservation that ran out before the upload", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const up = await reserveAndStore(t, couple.first, couple.coupleId);
+    // Past the expiry, before the cleanup job runs.
+    vi.setSystemTime(new Date("2026-10-10T13:00:01.000Z"));
+    const [renewed] = await couple.first.as.mutation(api.media.create_pending_media_upload, up.reserve);
+    expect(renewed).toMatchObject({ media_asset_id: up.row.media_asset_id, upload_expires_at: "2026-10-10T14:00:01.000Z" });
+    // After the cleanup job marked it expired.
+    vi.setSystemTime(new Date("2026-10-10T15:00:00.000Z"));
+    expect(await t.mutation(internal.media.cleanup_media_storage, {})).toMatchObject({ expired: 1 });
+    const [again] = await couple.first.as.mutation(api.media.create_pending_media_upload, up.reserve);
+    expect(again).toMatchObject({ media_asset_id: up.row.media_asset_id, upload_expires_at: "2026-10-10T16:00:00.000Z" });
+    expect(await asset(t, up.row.media_asset_id)).toMatchObject({ upload_status: "pending", storage_delete_status: "none" });
+    expect((await asset(t, up.row.media_asset_id))?.deleted_at).toBeUndefined();
+    const [finalized] = await couple.first.as.mutation(api.media.finalize_media_upload, up.finalize({ p_sha256_hex: up.sha }));
+    expect(finalized.upload_status).toBe("finalized");
   });
 
   test("the same operation id with a different request is rejected", async () => {
@@ -807,10 +839,15 @@ describe("storage cleanup", () => {
     const fresh = await storeBlob(t, new TextEncoder().encode("fresh"), "image/jpeg");
 
     const result = await t.mutation(internal.media.sweep_orphan_storage, {});
-    expect(result).toEqual({ queued: 1, blobs: 2 });
+    expect(result).toEqual({ queued: 0, blobs: 2 });
     expect(await blobExists(t, rejected)).toBe(false);
     expect(await blobExists(t, recent)).toBe(false);
     expect(await blobExists(t, fresh)).toBe(true);
+    // A day-old upload may still be waiting for an offline write to attach it.
+    expect((await asset(t, orphanAsset.assetId))?.storage_delete_status).toBe("none");
+
+    vi.setSystemTime(new Date("2026-10-17T12:00:01.000Z"));
+    expect(await t.mutation(internal.media.sweep_orphan_storage, {})).toMatchObject({ queued: 1 });
     // The finalized asset's blob is referenced, so the sweep keeps it until the asset is deleted.
     expect(await blobExists(t, orphanAsset.storageId)).toBe(true);
     expect((await asset(t, orphanAsset.assetId))?.storage_delete_status).toBe("pending");

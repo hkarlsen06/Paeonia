@@ -109,6 +109,11 @@ nonisolated enum PaeoniaPurchaseError: Error, Equatable {
     case purchaseLinkedToAnotherAccount
     case purchaseFailed
     case restoreFailed
+    /// The user closed an App Store sheet. Callers stay quiet about it.
+    case cancelled
+    /// The purchase is waiting for approval, for example by a parent through Ask
+    /// to Buy. The transaction listener confirms it later if it is approved.
+    case pendingApproval
     /// The streak could not be brought back — the offer had already closed or
     /// there was nothing to restore by the time the purchase was verified.
     case streakNotRestorable

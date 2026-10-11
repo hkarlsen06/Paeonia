@@ -48,6 +48,9 @@ nonisolated struct WidgetCanvasSnapshot: Sendable, Equatable {
     let drawingData: Data
     let authorName: String?
     let createdAt: Date?
+    /// Side of the square canvas the strokes were drawn on, when known. A
+    /// drawing from a phone with a different screen size is scaled by this.
+    var canvasSide: CGFloat?
 }
 
 nonisolated protocol WidgetCanvasManaging: Sendable {
@@ -71,6 +74,16 @@ nonisolated protocol WidgetCanvasManaging: Sendable {
         createdAt: Date
     ) async throws
 
+    /// Shows a partner's drawing that came from the server. `revisionID` is the
+    /// server's revision, so the widget can tell it already has this drawing.
+    func saveSyncedDrawing(
+        _ drawingData: Data,
+        canvasSize: CGSize,
+        authorName: String?,
+        createdAt: Date,
+        revisionID: UUID
+    ) async throws
+
     /// Removes the saved drawing and widget previews so private content does not
     /// linger on the Home Screen after a session ends.
     func clearForPrivacy() async
@@ -90,6 +103,16 @@ extension WidgetCanvasManaging {
 
     func hideForPrivacy() async {
         await clearForPrivacy()
+    }
+
+    func saveSyncedDrawing(
+        _ drawingData: Data,
+        canvasSize: CGSize,
+        authorName: String?,
+        createdAt: Date,
+        revisionID _: UUID
+    ) async throws {
+        try await saveDrawing(drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
     }
 }
 
@@ -120,6 +143,11 @@ actor WidgetCanvasService: WidgetCanvasManaging {
     private let canonicalDrawingURL: URL?
     private let rasterizer: any WidgetDrawingRasterizing
     private let reloader: any WidgetTimelineReloading
+    /// App Group defaults shared with the widget extension. The widget reads
+    /// `widgetPrivacyEpochKey` before and during a refresh and gives up if a
+    /// purge bumped it meanwhile.
+    private let sharedDefaults: UserDefaults?
+    nonisolated static let widgetPrivacyEpochKey = "paeonia.widget.privacyEpoch"
     private var privacyGeneration: UInt64 = 0
     private var publicationGeneration: UInt64 = 0
 
@@ -134,12 +162,14 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         appGroupContainerURL: URL? = PaeoniaAppGroup.containerURL,
         canonicalDrawingURL: URL? = WidgetCanvasService.defaultCanonicalDrawingURL(),
         rasterizer: any WidgetDrawingRasterizing = WidgetDrawingRasterizer(),
-        reloader: any WidgetTimelineReloading = WidgetCenterReloader()
+        reloader: any WidgetTimelineReloading = WidgetCenterReloader(),
+        sharedDefaults: UserDefaults? = UserDefaults(suiteName: PaeoniaAppGroup.identifier)
     ) {
         self.appGroupContainerURL = appGroupContainerURL
         self.canonicalDrawingURL = canonicalDrawingURL
         self.rasterizer = rasterizer
         self.reloader = reloader
+        self.sharedDefaults = sharedDefaults
     }
 
     // Synchronous, but actor isolation makes it `await` from outside, so it
@@ -166,13 +196,14 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         return WidgetCanvasSnapshot(
             drawingData: data,
             authorName: metadata?.authorName,
-            createdAt: metadata?.createdAt
+            createdAt: metadata?.createdAt,
+            canvasSide: metadata?.canvasSide.map { CGFloat($0) }
         )
     }
 
-    /// Reads the saved widget payload and returns its attribution only if its
-    /// content hash matches `data`.
-    private func savedPayloadMetadata(matching data: Data) -> (authorName: String?, createdAt: Date)? {
+    /// Reads the saved widget payload, but only if its content hash matches
+    /// `data`, so its attribution describes this exact drawing.
+    private func savedPayloadMetadata(matching data: Data) -> WidgetSharePayload? {
         guard let appGroupContainerURL else {
             return nil
         }
@@ -183,7 +214,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         else {
             return nil
         }
-        return (payload.authorName, payload.createdAt)
+        return payload
     }
 
     func saveDrawing(
@@ -191,6 +222,38 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         canvasSize: CGSize,
         authorName: String?,
         createdAt: Date
+    ) async throws {
+        try await publish(
+            drawingData,
+            canvasSize: canvasSize,
+            authorName: authorName,
+            createdAt: createdAt,
+            serverRevisionID: nil
+        )
+    }
+
+    func saveSyncedDrawing(
+        _ drawingData: Data,
+        canvasSize: CGSize,
+        authorName: String?,
+        createdAt: Date,
+        revisionID: UUID
+    ) async throws {
+        try await publish(
+            drawingData,
+            canvasSize: canvasSize,
+            authorName: authorName,
+            createdAt: createdAt,
+            serverRevisionID: revisionID.uuidString.lowercased()
+        )
+    }
+
+    private func publish(
+        _ drawingData: Data,
+        canvasSize: CGSize,
+        authorName: String?,
+        createdAt: Date,
+        serverRevisionID: String?
     ) async throws {
         // Required precondition: never persist data we cannot re-render.
         guard (try? PKDrawing(data: drawingData)) != nil else {
@@ -214,6 +277,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
                 canvasSize: canvasSize,
                 authorName: authorName,
                 createdAt: createdAt,
+                serverRevisionID: serverRevisionID,
                 privacyGeneration: expectedPrivacyGeneration,
                 publicationGeneration: expectedPublicationGeneration
             )
@@ -242,6 +306,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
 
     func clearForPrivacy() async {
         privacyGeneration &+= 1
+        bumpWidgetPrivacyEpoch()
         let fileManager = FileManager.default
         var didRemoveSomething = false
 
@@ -257,32 +322,26 @@ actor WidgetCanvasService: WidgetCanvasManaging {
 
     func hideForPrivacy() async {
         privacyGeneration &+= 1
+        bumpWidgetPrivacyEpoch()
         let didRemoveSomething = removeWidgetVisibleFiles(fileManager: .default)
         await reloadWidgetIfNeeded(didRemoveSomething)
+    }
+
+    /// Tells a widget refresh that is running in the extension right now that it
+    /// must not publish what it downloaded. Bumped before the files go.
+    private func bumpWidgetPrivacyEpoch() {
+        guard let sharedDefaults else {
+            return
+        }
+        let nextEpoch = sharedDefaults.integer(forKey: Self.widgetPrivacyEpochKey) &+ 1
+        sharedDefaults.set(nextEpoch, forKey: Self.widgetPrivacyEpochKey)
     }
 
     private func removeWidgetVisibleFiles(fileManager: FileManager) -> Bool {
         guard let appGroupContainerURL else {
             return false
         }
-
-        var didRemoveSomething = false
-        let payloadURL = appGroupContainerURL.appendingPathComponent(PaeoniaAppGroup.widgetPayloadPath)
-        if fileManager.fileExists(atPath: payloadURL.path) {
-            try? fileManager.removeItem(at: payloadURL)
-            didRemoveSomething = true
-        }
-
-        let previewsURL = appGroupContainerURL.appendingPathComponent(
-            PaeoniaAppGroup.widgetPreviewsDirectory,
-            isDirectory: true
-        )
-        if fileManager.fileExists(atPath: previewsURL.path) {
-            try? fileManager.removeItem(at: previewsURL)
-            didRemoveSomething = true
-        }
-
-        return didRemoveSomething
+        return WidgetPreviewFiles.removeWidgetVisibleFiles(in: appGroupContainerURL, fileManager: fileManager)
     }
 
     private func reloadWidgetIfNeeded(_ didRemoveSomething: Bool) async {
@@ -337,6 +396,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         canvasSize: CGSize,
         authorName: String?,
         createdAt: Date,
+        serverRevisionID: String?,
         privacyGeneration expectedPrivacyGeneration: UInt64,
         publicationGeneration expectedPublicationGeneration: UInt64
     ) async throws {
@@ -355,7 +415,10 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         )
         try fileManager.createDirectory(at: previewsURL, withIntermediateDirectories: true)
 
-        let revisionID = UUID().uuidString.lowercased()
+        // File names always get a fresh id, so this never overwrites (or, on a
+        // failed write, deletes) a file the widget extension wrote for the same
+        // server revision.
+        let fileRevisionID = UUID().uuidString.lowercased()
         var previews: [String: String] = [:]
         var newPreviewURLs: [URL] = []
         var didPublishPayload = false
@@ -384,7 +447,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
                 publication: expectedPublicationGeneration
             )
 
-            let fileName = spec.fileName(revisionID: revisionID)
+            let fileName = spec.fileName(revisionID: fileRevisionID)
             let previewURL = previewsURL.appendingPathComponent(fileName)
             try pngData.write(to: previewURL, options: .atomic)
             newPreviewURLs.append(previewURL)
@@ -397,14 +460,15 @@ actor WidgetCanvasService: WidgetCanvasManaging {
 
         let trimmedAuthorName = authorName?.trimmingCharacters(in: .whitespacesAndNewlines)
         let payload = WidgetSharePayload(
-            revisionID: revisionID,
+            revisionID: serverRevisionID ?? fileRevisionID,
             authorName: trimmedAuthorName?.isEmpty == false ? trimmedAuthorName : nil,
             createdAt: createdAt,
             renderedAt: Date(),
             privacyMode: .normal,
             isRedacted: false,
             contentHash: Self.contentHash(for: drawingData),
-            previews: previews
+            previews: previews,
+            canvasSide: canvasSize.width > 0 ? Double(canvasSize.width) : nil
         )
 
         // Write the metadata last so it never references previews that do not
@@ -423,45 +487,12 @@ actor WidgetCanvasService: WidgetCanvasManaging {
             privacy: expectedPrivacyGeneration,
             publication: expectedPublicationGeneration
         )
-        removeExpiredUnreferencedPreviews(
+        WidgetPreviewFiles.removeExpiredUnreferencedPreviews(
             keeping: Set(previews.values),
             previewsURL: previewsURL,
+            olderThan: Date().addingTimeInterval(-Self.unreferencedPreviewRetention),
             fileManager: fileManager
         )
-    }
-
-    /// Preview names include the revision so a new timeline never points at the
-    /// same URL as stale image bytes. Cleanup starts only after the new payload
-    /// is atomically visible and retains recent revisions for old timeline
-    /// entries; a crash can leave an orphan but cannot break the current payload.
-    private func removeExpiredUnreferencedPreviews(
-        keeping referencedPaths: Set<String>,
-        previewsURL: URL,
-        fileManager: FileManager
-    ) {
-        guard let files = try? fileManager.contentsOfDirectory(
-            at: previewsURL,
-            includingPropertiesForKeys: [.isRegularFileKey, .contentModificationDateKey],
-            options: [.skipsHiddenFiles]
-        ) else {
-            return
-        }
-
-        let expirationDate = Date().addingTimeInterval(-Self.unreferencedPreviewRetention)
-        for fileURL in files {
-            let relativePath = "\(PaeoniaAppGroup.widgetPreviewsDirectory)/\(fileURL.lastPathComponent)"
-            let values = try? fileURL.resourceValues(
-                forKeys: [.isRegularFileKey, .contentModificationDateKey]
-            )
-            guard !referencedPaths.contains(relativePath),
-                  values?.isRegularFile == true,
-                  let modifiedAt = values?.contentModificationDate,
-                  modifiedAt <= expirationDate
-            else {
-                continue
-            }
-            try? fileManager.removeItem(at: fileURL)
-        }
     }
 
     private func checkGenerations(privacy: UInt64, publication: UInt64) throws {

@@ -243,13 +243,20 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
         let canvasSide = state.bounds?.canvasSide ?? Double(WidgetDrawingViewModel.fallbackCanvasSide)
         let authorName = Self.authorName(for: state.activeRevisionAuthorUserID, identity: identity)
 
-        // `saveDrawing` persists locally, reloads the widget, and posts
+        // The download took a while. If the person saved a drawing meanwhile, it
+        // is marked as not sent yet and is newer than this one, so keep it.
+        guard !pendingStore.hasPending else {
+            return
+        }
+
+        // Persists locally, reloads the widget, and posts
         // `.paeoniaWidgetCanvasDidUpdate` so open in-app surfaces refresh.
-        try await localStore.saveDrawing(
+        try await localStore.saveSyncedDrawing(
             data,
             canvasSize: CGSize(width: canvasSide, height: canvasSide),
             authorName: authorName,
-            createdAt: state.revisionCreatedAt ?? Date()
+            createdAt: state.revisionCreatedAt ?? Date(),
+            revisionID: revisionID
         )
 
         try Task.checkCancellation()
@@ -316,19 +323,13 @@ nonisolated enum WidgetCanvasSyncServiceFactory {
         guard let client = try? PaeoniaConvexClientProvider.shared.client() else {
             return NoOpWidgetCanvasSync()
         }
-        let gateway = LiveWidgetCanvasGateway(client: client)
-        let pendingStore = WidgetPendingUploadStore.shared
-        let uploader = WidgetCanvasUploadService(
-            gateway: gateway,
-            operationFactory: WidgetCanvasClientOperationFactory.shared,
-            pendingStore: pendingStore
-        )
-
+        // The drawing screen's uploader, so a retry here queues behind a send
+        // that is already running instead of uploading the same drawing twice.
         return WidgetCanvasSyncService(
-            gateway: gateway,
+            gateway: LiveWidgetCanvasGateway(client: client),
             localStore: WidgetCanvasService.shared,
-            pendingStore: pendingStore,
-            pendingUploader: uploader
+            pendingStore: WidgetPendingUploadStore.shared,
+            pendingUploader: WidgetCanvasUploadServiceFactory.shared
         )
     }
 }

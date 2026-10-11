@@ -7,6 +7,7 @@ struct PaeoniaWidgetEntryView: View {
     let entry: PaeoniaWidgetEntry
 
     @Environment(\.widgetFamily) private var family
+    @Environment(\.redactionReasons) private var redactionReasons
 
     var body: some View {
         overlayContent
@@ -24,13 +25,6 @@ struct PaeoniaWidgetEntryView: View {
         }
         .padding(contentPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var drawingImage: UIImage? {
-        guard case let .drawing(content) = entry.content else {
-            return nil
-        }
-        return UIImage(contentsOfFile: content.previewURL.path)
     }
 
     private var header: some View {
@@ -65,32 +59,50 @@ struct PaeoniaWidgetEntryView: View {
             switch entry.content {
             case .placeholder:
                 PaeoniaPlaceholderDrawing()
-            case .drawing:
-                if let drawingImage {
-                    Image(uiImage: drawingImage)
-                        .resizable()
-                        .interpolation(.high)
-                        .scaledToFit()
-                        .accessibilityHidden(true)
+            case let .drawing(content):
+                // Small widgets can show in StandBy while the phone is locked.
+                if redactionReasons.contains(.privacy) {
+                    redactedContent
                 } else {
-                    PaeoniaPlaceholderDrawing()
+                    drawingImageView(content)
                 }
             case .redacted:
-                VStack(spacing: PaeoniaWidgetSpacing.space8) {
-                    Image(systemName: "eye.slash.fill")
-                        .font(.system(size: redactedIconSize, weight: .semibold))
-                        .foregroundStyle(.paeoniaWidgetAccentPrimary)
-                        .accessibilityHidden(true)
-
-                    Text(.widgetRedactedTitle)
-                        .font(PaeoniaWidgetTypography.title(family: family))
-                        .foregroundStyle(.paeoniaWidgetTextPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                redactedContent
             }
         }
+    }
+
+    private func drawingImageView(_ content: PaeoniaWidgetDrawingContent) -> some View {
+        Image(uiImage: content.image)
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .privacySensitive()
+            .accessibilityLabel(drawingAccessibilityLabel(for: content))
+    }
+
+    private func drawingAccessibilityLabel(for content: PaeoniaWidgetDrawingContent) -> Text {
+        if let authorName = content.authorName, !authorName.isEmpty {
+            Text(.widgetDrawingAccessibility(authorName))
+        } else {
+            Text(.widgetDrawingTitle)
+        }
+    }
+
+    private var redactedContent: some View {
+        VStack(spacing: PaeoniaWidgetSpacing.space8) {
+            Image(systemName: "eye.slash.fill")
+                .font(.system(size: redactedIconSize, weight: .semibold))
+                .foregroundStyle(.paeoniaWidgetAccentPrimary)
+                .accessibilityHidden(true)
+
+            Text(.widgetRedactedTitle)
+                .font(PaeoniaWidgetTypography.title(family: family))
+                .foregroundStyle(.paeoniaWidgetTextPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
@@ -135,6 +147,7 @@ struct PaeoniaWidgetEntryView: View {
     private var footerLeadingLabel: some View {
         if let authorName = drawingContent?.authorName, !authorName.isEmpty {
             Text(verbatim: authorName)
+                .privacySensitive()
         } else {
             Text(footerTitle)
         }
@@ -208,7 +221,6 @@ struct PaeoniaWidgetEntryView: View {
 
 private enum PaeoniaWidgetURL {
     // A fixed, known-valid literal URL; the optional initializer cannot fail here.
-    // swiftlint:disable:next force_unwrapping
     static let drawing = URL(string: "paeonia://widget/drawing")!
 }
 

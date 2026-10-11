@@ -14,6 +14,8 @@ struct PaeoniaWidgetRefreshIntent: AppIntent {
         comment: "Accessibility label and title for the widget refresh button."
     )
     static var supportedModes: IntentModes { .background }
+    /// Only the widget button runs this intent, so keep it out of Shortcuts.
+    static var isDiscoverable: Bool { false }
 
     #if compiler(>=6.4)
     @available(iOS 27.0, *)

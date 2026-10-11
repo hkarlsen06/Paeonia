@@ -16,7 +16,7 @@ nonisolated struct WidgetCanvasReference: Decodable, Sendable {
 /// The drawing metadata the submit RPC records alongside the payload pointer.
 /// `parentRevisionID` is mutable so a conflict retry can re-anchor to the new
 /// active revision without rebuilding the whole submission.
-nonisolated struct WidgetDrawingRevisionSubmission: Sendable {
+nonisolated struct WidgetDrawingRevisionSubmission: Codable, Equatable, Sendable {
     let canvasID: UUID
     let payloadMediaAssetID: UUID
     var parentRevisionID: UUID?
@@ -41,7 +41,7 @@ nonisolated struct WidgetDrawingFinalizeInput: Sendable {
 
 /// Stored as the revision `bounds` jsonb. `canvasSide` lets the partner render
 /// the preview at the same scale the author drew at.
-nonisolated struct WidgetDrawingBounds: Codable, Sendable {
+nonisolated struct WidgetDrawingBounds: Codable, Equatable, Sendable {
     let x: Double
     let y: Double
     let width: Double

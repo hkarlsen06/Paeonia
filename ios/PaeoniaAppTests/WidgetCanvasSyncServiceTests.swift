@@ -62,6 +62,29 @@ struct WidgetCanvasSyncServiceTests {
         #expect(env.localStore.savedCalls.count == 1)
     }
 
+    /// A partner's drawing that finished downloading after the person saved
+    /// their own drawing used to overwrite it on the widget and canvas.
+    @Test func partnerDrawingDownloadedWhileTheUserSavedIsNotApplied() async throws {
+        let downloadedData = SyncEnvironment.makeDrawing().dataRepresentation()
+        let downloader = SyncSuspendingDownloaderSpy(data: downloadedData)
+        let env = SyncEnvironment(downloadedData: downloadedData, downloader: downloader)
+        let partnerID = UUID()
+        env.gateway.state = Self.state(authorUserID: partnerID, canvasSide: 280)
+        env.gateway.signedURL = URL(string: "https://example.com/payload")
+
+        async let sync: Void = env.service.sync(identity: Self.identity(partnerID: partnerID))
+        await downloader.waitUntilDownloadStarted()
+        // The person sends a drawing while the partner's one downloads.
+        env.pendingStore.markPending(
+            Self.uploadPayload(for: Data([0x09])),
+            contentHash: WidgetCanvasUploadService.sha256Hex(of: Data([0x09]))
+        )
+        await downloader.resume()
+        await sync
+
+        #expect(env.localStore.savedCalls.isEmpty)
+    }
+
     @Test func syncSkipsWhileLocalUploadIsPending() async {
         let env = SyncEnvironment()
         env.gateway.state = Self.state(authorUserID: UUID(), canvasSide: 280)
@@ -384,7 +407,7 @@ private nonisolated final class SyncUploadSpy: WidgetCanvasUploading, @unchecked
         self.pendingStore = pendingStore
     }
 
-    func enqueueUpload(_ payload: WidgetDrawingUploadPayload) {}
+    func send(_: WidgetDrawingUploadPayload) -> WidgetDrawingDelivery { .delivered }
 
     // swiftlint:disable:next async_without_await
     func uploadPending(_ payload: WidgetDrawingUploadPayload) async throws {

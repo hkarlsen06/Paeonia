@@ -11,7 +11,7 @@ import {
   getCoupleDayStreakQualifiedAt,
   resolveNextActivityDeadlineAt,
 } from "./streakDeadlines";
-import { addHours, nowIso } from "./time";
+import { addDaysToDate, addHours, nowIso, zonedLocalToUtcMs } from "./time";
 
 export {
   getCoupleDayStreakQualifiedAt,
@@ -539,11 +539,10 @@ export async function applyStreakRestore(
     resolvedDeadline = await resolveNextActivityDeadlineAt(ctx, args.couple_id, todayQualifiedAt);
   } else {
     resolvedCount = state.restorable_count;
-    const yesterdayId = await getOrCreateCoupleDayAt(
-      ctx,
-      args.couple_id,
-      new Date(Date.parse(now) - 86_400_000).toISOString(),
-    );
+    // Yesterday by the calendar, in the zone that anchors today. Noon stays inside the day even
+    // across a daylight saving change, where now minus 24 hours can land on today or two days back.
+    const yesterdayNoon = zonedLocalToUtcMs(addDaysToDate(today.local_date, -1), today.anchor_time_zone_id, 12);
+    const yesterdayId = await getOrCreateCoupleDayAt(ctx, args.couple_id, new Date(yesterdayNoon).toISOString());
     const yesterday = (await getByUuid(ctx, "couple_days", yesterdayId))!;
     resolvedLastDate = yesterday.local_date;
     resolvedLastDayId = yesterdayId;

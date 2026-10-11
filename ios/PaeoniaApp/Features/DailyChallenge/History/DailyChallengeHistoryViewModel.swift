@@ -53,6 +53,11 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
     private(set) var state: ViewState = .loading
     private(set) var notice: Notice?
     private(set) var threadSummariesByInstanceID: [UUID: DailyQuestionThreadSummary] = [:]
+    /// Numbers each `load()` call in the order it started.
+    private var loadSequence = 0
+    /// The number of the newest load that has written a result. A load that started
+    /// earlier never writes after it, so a slow older read can't overwrite a newer one.
+    private var lastAppliedLoad = 0
 
     init(
         service: any DailyChallengeServicing,
@@ -79,14 +84,20 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
     /// empty / failed state. A reload that fails while content is already on screen
     /// keeps that content and surfaces a recoverable banner instead of a full-screen
     /// error.
+    ///
+    /// Loads can overlap (first load, pull to refresh, retry, reload after answering),
+    /// so each one takes a number when it starts and only writes if no newer load has
+    /// written already. A cancelled load writes nothing and leaves the state alone; the
+    /// next load settles it.
     func load() async {
         guard let currentUserID else {
             state = .empty
             return
         }
 
-        let hasContent: Bool
-        if case .content = state { hasContent = true } else { hasContent = false }
+        loadSequence += 1
+        let loadNumber = loadSequence
+
         if !hasContent { state = .loading }
 
         applyThreadSummaries(await chatService.cachedThreadSummaries(ownerUserID: currentUserID))
@@ -96,25 +107,52 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
 
         do {
             let questions = try await service.loadHistory(currentUserID: currentUserID)
-            if let summaries = await threadSummariesTask.value {
+            let summaries = await threadSummariesTask.value
+            guard loadNumber > lastAppliedLoad else { return }
+            lastAppliedLoad = loadNumber
+            if let summaries {
                 applyThreadSummaries(summaries)
             }
-            let days = DailyChallengeHistory.grouped(questions)
-            let pending = pendingPartnerQuestions(excluding: questions)
-            if days.isEmpty, pending.isEmpty {
-                state = .empty
-            } else {
-                state = .content(Content(pendingPartnerQuestions: pending, days: days))
-            }
+            settle(days: DailyChallengeHistory.grouped(questions))
         } catch {
-            guard !isCancellation(error) else { return }
-            logFailure("Loading the question history failed", error)
-            if hasContent {
-                // Keep what's on screen; nudge the user with a recoverable banner.
-                notice = .loadFailed
-            } else {
-                state = .failed
+            guard !isCancellation(error) else {
+                threadSummariesTask.cancel()
+                return
             }
+            guard loadNumber > lastAppliedLoad else { return }
+            showLoadFailure(error)
+        }
+    }
+
+    private var hasContent: Bool {
+        if case .content = state { return true }
+        return false
+    }
+
+    private func showLoadFailure(_ error: Error) {
+        logFailure("Loading the question history failed", error)
+        if hasContent {
+            // Keep what's on screen; nudge the user with a recoverable banner.
+            notice = .loadFailed
+        } else {
+            state = .failed
+        }
+    }
+
+    /// Re-reads only the "waiting for you" section from the daily challenge, without
+    /// fetching the history again. The daily challenge changes while the history is
+    /// open (the partner answers another question), and the completed days don't.
+    /// Does nothing until a load has settled to content or empty; a load reads the
+    /// section itself.
+    func refreshPendingPartnerQuestions() {
+        guard currentUserID != nil else { return }
+        switch state {
+        case let .content(content):
+            settle(days: content.days)
+        case .empty:
+            settle(days: [])
+        case .loading, .failed:
+            return
         }
     }
 
@@ -158,15 +196,28 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
         )
     }
 
+    /// Builds the loaded state from the completed days plus the partner's waiting
+    /// questions. The waiting section is read from the daily challenge on every call, so
+    /// it is current whether the days were just loaded or only the section is refreshed.
+    private func settle(days: [DailyChallengeHistoryDay]) {
+        let answeredInstanceIDs = Set(days.flatMap { $0.questions.map(\.id) })
+        let pending = pendingPartnerQuestions(excluding: answeredInstanceIDs)
+        let newState: ViewState = days.isEmpty && pending.isEmpty
+            ? .empty
+            : .content(Content(pendingPartnerQuestions: pending, days: days))
+        if newState != state {
+            state = newState
+        }
+    }
+
     /// The partner's still-unanswered questions for the top of the history, most recent
     /// partner answer first. Any instance already present in the answered history is
     /// dropped, so a question can never show as both "waiting for you" and "completed"
     /// (e.g. mid-reload after you reply).
     private func pendingPartnerQuestions(
-        excluding answered: [DailyChallengeQuestion]
+        excluding answeredInstanceIDs: Set<UUID>
     ) -> [DailyChallengeQuestion] {
-        let answeredInstanceIDs = Set(answered.map(\.id))
-        return pendingPartnerQuestionsProvider()
+        pendingPartnerQuestionsProvider()
             .filter { !answeredInstanceIDs.contains($0.id) }
             .sorted { lhs, rhs in
                 let lhsDate = lhs.partnerAnswer?.answeredAt ?? lhs.startsAt

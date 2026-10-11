@@ -1,146 +1,115 @@
 import SwiftUI
 
-/// The screen behind the Me tab's identity row: the inline name and photo editor,
-/// with the account actions underneath it.
+/// The screen behind the Me tab's identity row: the user's name and photo.
 ///
-/// Signing out, leaving the relationship, and deleting the account all live here
-/// rather than on the tab itself, so no destructive action sits one stray tap away
-/// from the settings a user opens every day.
+/// While there are unsaved edits the back button steps aside for Cancel, so a
+/// stray swipe can never throw away a new name or photo. Save sits at the bottom
+/// within thumb reach and rises with the keyboard. The Me tab shows the banner
+/// for the result, so it still appears if the user has moved on.
 struct ProfileSettingsView: View {
-    let viewModel: SettingsViewModel
+    let editor: ProfileEditorViewModel
     let savedDisplayName: String?
     let customProfilePhotoAssetID: UUID?
     let providerProfilePhotoAssetID: UUID?
-    let authProvider: AuthProvider?
-    /// Names the partner in the unpair confirmation instead of saying "your partner".
-    let partnerName: String
     let onSave: @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool
-    let onLeftRelationship: () -> Void
-    let onLogout: () -> Void
-    let onDeleteAccount: () -> Void
 
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-
-    /// Gates leaving behind a centered confirmation alert, so the pairing can never
-    /// end on a single stray tap.
-    @State private var isConfirmingLeave = false
-    @State private var isConfirmingDelete = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         SettingsDetailScreen(title: .settingsProfileSectionTitle) {
-            ProfileHeaderEditorView(
-                savedDisplayName: savedDisplayName,
-                customProfilePhotoAssetID: customProfilePhotoAssetID,
-                providerProfilePhotoAssetID: providerProfilePhotoAssetID,
-                authProvider: authProvider,
-                onSave: { [onSave] displayName, photoUpdate in
-                    await onSave(displayName, photoUpdate)
+            ProfileHeaderEditorView(editor: editor)
+        }
+        .safeAreaInset(edge: .bottom) {
+            if showsSaveBar {
+                saveBar
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: showsSaveBar)
+        .navigationBarBackButtonHidden(holdsUnsavedEdits)
+        .toolbar {
+            if holdsUnsavedEdits {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        PaeoniaKeyboard.dismiss()
+                        editor.discard()
+                    } label: {
+                        Text(.commonCancel)
+                    }
                 }
-            )
-
-            accountActions
+            }
         }
         // The name field lives on this screen, so the keyboard needs the standard
         // Done button and tap/scroll-away dismissal here.
         .keyboardDismissable()
         .scrollDismissesKeyboard(.interactively)
-        .alert(
-            Text(.pairingUnpairConfirmTitle(partnerName)),
-            isPresented: $isConfirmingLeave
-        ) {
-            Button(role: .destructive, action: leaveRelationship) {
-                Text(.pairingUnpairConfirmAction)
-            }
-
-            Button(role: .cancel, action: {}) {
-                Text(.pairingUnpairConfirmCancel)
-            }
-        } message: {
-            Text(.pairingUnpairConfirmMessage(partnerName))
-        }
-        .alert(
-            Text(.authDeleteAccountConfirmTitle),
-            isPresented: $isConfirmingDelete
-        ) {
-            Button(role: .destructive, action: onDeleteAccount) {
-                Text(.authDeleteAccountConfirmAction)
-            }
-
-            Button(role: .cancel, action: {}) {
-                Text(.authDeleteAccountConfirmCancel)
-            }
-        } message: {
-            Text(.authDeleteAccountConfirmMessage)
+        .onChange(of: savedProfile, initial: true) { _, saved in
+            editor.updateSavedProfile(
+                name: saved.name,
+                customPhotoAssetID: saved.customPhotoAssetID,
+                providerPhotoAssetID: saved.providerPhotoAssetID
+            )
         }
     }
 
-    /// Log out and leave-relationship sit together as real buttons. Leaving is
-    /// destructive, so it uses the destructive style and a broken-heart icon, and
-    /// still only opens the confirmation alert — nothing happens until the user
-    /// confirms there.
-    private var accountActions: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            Text(.settingsAccountSectionTitle)
-                .font(PaeoniaTypography.sectionTitle)
-                .foregroundStyle(.paeoniaTextSecondary)
+    /// Edits or a photo still loading keep the user here until they save or
+    /// cancel. A running save does not: it finishes on its own and the Me tab
+    /// shows how it went.
+    private var holdsUnsavedEdits: Bool {
+        (editor.draft.hasChanges || editor.isLoadingPhoto) && !editor.isSaving
+    }
 
-            Button(action: onLogout) {
-                Text(.settingsAccountLogoutButton)
-            }
-            .buttonStyle(PaeoniaSecondaryButtonStyle())
+    private var showsSaveBar: Bool {
+        editor.draft.hasChanges || editor.isSaving
+    }
 
-            Button {
-                isConfirmingLeave = true
-            } label: {
-                Label {
-                    Text(.settingsUnpairButton)
-                } icon: {
-                    Image(systemName: "heart.slash.fill")
+    private var saveBar: some View {
+        Button {
+            PaeoniaKeyboard.dismiss()
+            Task { await editor.save(using: onSave) }
+        } label: {
+            HStack(spacing: PaeoniaSpacing.space8) {
+                if editor.isSaving {
+                    ProgressView()
+                        .tint(.paeoniaTextInverse)
                         .accessibilityHidden(true)
                 }
-            }
-            .buttonStyle(PaeoniaDestructiveButtonStyle())
-            .disabled(viewModel.isLeavingRelationship)
 
-            // Delete stays quiet so it doesn't compete with the leave button above
-            // it: leaving is the likelier intent, deleting is the last resort.
-            Button {
-                isConfirmingDelete = true
-            } label: {
-                Text(.authDeleteAccountButton)
-                    .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(PaeoniaQuietDestructiveButtonStyle())
-            .disabled(viewModel.isLeavingRelationship)
-        }
-        .padding(.top, PaeoniaSpacing.space24)
-    }
-
-    private func leaveRelationship() {
-        Task {
-            let didLeave = await viewModel.leaveRelationship()
-            if didLeave {
-                bannerCenter.dismiss()
-                onLeftRelationship()
+                Text(editor.isSaving ? .settingsProfileSaving : .settingsProfileSave)
             }
         }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
+        .disabled(!editor.canSave)
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.vertical, PaeoniaSpacing.space12)
+        .background(.paeoniaBackgroundPrimary)
     }
+
+    /// The saved profile can change while the screen is open, for example when
+    /// the name finishes loading or another device changes the photo.
+    private var savedProfile: SavedProfile {
+        SavedProfile(
+            name: savedDisplayName,
+            customPhotoAssetID: customProfilePhotoAssetID,
+            providerPhotoAssetID: providerProfilePhotoAssetID
+        )
+    }
+}
+
+private struct SavedProfile: Equatable {
+    let name: String?
+    let customPhotoAssetID: UUID?
+    let providerPhotoAssetID: UUID?
 }
 
 #Preview {
     NavigationStack {
         ProfileSettingsView(
-            viewModel: SettingsViewModel(),
+            editor: ProfileEditorViewModel(),
             savedDisplayName: "Hjalmar",
             customProfilePhotoAssetID: nil,
             providerProfilePhotoAssetID: nil,
-            authProvider: .apple,
-            partnerName: "Oda",
-            onSave: { _, _ in true },
-            onLeftRelationship: {},
-            onLogout: {},
-            onDeleteAccount: {}
+            onSave: { _, _ in true }
         )
     }
     .environment(PaeoniaBannerCenter())

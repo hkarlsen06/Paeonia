@@ -1,73 +1,6 @@
 import Foundation
 import SwiftUI
 
-/// Stable source ids for the Daily Challenge zoom transition. The Home prompt card and
-/// the Questions-tab hero card each tag themselves with one of these via
-/// `.matchedTransitionSource`, and `MainTabView` zooms the answer flow's full-screen
-/// cover out of whichever card opened it. (Partner-answer cards use their question id.)
-enum DailyFlowZoom {
-    static let home = "dailyFlow.home"
-    static let questions = "dailyFlow.questions"
-}
-
-extension View {
-    /// Marks this view as the source the answer flow zooms out of, but only when a
-    /// namespace is provided. A nil namespace passes through untouched — used by
-    /// previews (which present no flow) and to skip the source under Reduce Motion.
-    @ViewBuilder
-    func zoomSource(_ id: some Hashable, in namespace: Namespace.ID?) -> some View {
-        if let namespace {
-            matchedTransitionSource(id: id, in: namespace)
-        } else {
-            self
-        }
-    }
-
-    /// Zooms a presentation out of its matching `zoomSource(_:in:)`, so the source card
-    /// appears to grow into the full-screen cover. When `enabled` is false (Reduce
-    /// Motion) or no namespace is provided, the cover keeps its default transition.
-    @ViewBuilder
-    func zoomTransition(_ id: some Hashable, in namespace: Namespace.ID?, enabled: Bool) -> some View {
-        if enabled, let namespace {
-            navigationTransition(.zoom(sourceID: id, in: namespace))
-        } else {
-            self
-        }
-    }
-
-    /// Dismisses the keyboard when the user taps anywhere on the view that isn't an
-    /// interactive control. This is a convenience for sighted users, not an
-    /// accessibility control, so it intentionally does not advertise a button trait
-    /// (VoiceOver dismisses the keyboard through its own affordances). Shared by the
-    /// daily challenge flow and the Questions-tab partner-answer flow.
-    func dismissesKeyboardOnTap(_ action: @escaping () -> Void) -> some View {
-        contentShape(Rectangle()).onTapGesture(perform: action)
-    }
-}
-
-/// A short-lived snapshot of what the answer cover was already showing when the user
-/// tapped Send. The view model clears the durable draft as soon as the answer is
-/// queued, so the cover keeps this visual copy just long enough for the transition to
-/// the next question or streak screen.
-struct DailyAnswerStepVisualHold: Equatable {
-    let questionID: UUID
-    let text: String
-    let partnerChoiceUserID: UUID?
-    let composeKind: DailyChallengeAnswerKind?
-    let mediaData: Data?
-    let voiceDurationMs: Int?
-
-    @MainActor
-    init(question: DailyChallengeQuestion, viewModel: DailyChallengeViewModel) {
-        questionID = question.id
-        text = viewModel.draftText(for: question.id)
-        partnerChoiceUserID = viewModel.partnerChoiceSelection(for: question.id)
-        composeKind = viewModel.composeKind(for: question)
-        mediaData = viewModel.stagedMediaData(for: question.id)
-        voiceDurationMs = viewModel.stagedVoiceDurationMs(for: question.id)
-    }
-}
-
 /// The focused, full-screen answering experience for today's daily challenge.
 ///
 /// It is presented as a full-screen cover that zooms out of the card that opened it
@@ -142,7 +75,7 @@ struct DailyChallengeAnswerFlow: View {
         StreakCelebration.celebratedCount(
             serverCurrentCount: viewModel.streak.currentCount,
             lastQualifiedDate: viewModel.streak.lastQualifiedDate,
-            todayLocalDate: viewModel.snapshot.questions.first?.localDate,
+            todayLocalDate: viewModel.snapshot.currentDayLocalDate,
             partnerContributedToday: viewModel.streak.partnerContributedToday
         )
     }
@@ -174,6 +107,9 @@ struct DailyChallengeAnswerFlow: View {
                         question: partnerRevealQuestion,
                         revealedQuestion: revealedQuestion(for: partnerRevealQuestion.id),
                         participants: viewModel.participants,
+                        sending: viewModel.sendingPreview(
+                            for: revealedQuestion(for: partnerRevealQuestion.id) ?? partnerRevealQuestion
+                        ),
                         onDone: finishPartnerReveal
                     )
                     .transition(.opacity)
@@ -216,6 +152,15 @@ struct DailyChallengeAnswerFlow: View {
             }
         }
         .onChange(of: index) { _, _ in isComposerFocused = false }
+        .onChange(of: wasPartnerAnswerReturned) { _, returned in
+            guard returned, let questionID = partnerRevealQuestion?.id else { return }
+            withAnimation(PaeoniaMotion.stateChange) {
+                partnerRevealQuestion = nil
+                if let returnedIndex = questions.firstIndex(where: { $0.id == questionID }) {
+                    index = returnedIndex
+                }
+            }
+        }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
     }
 
@@ -232,7 +177,7 @@ struct DailyChallengeAnswerFlow: View {
     private func stepHeader(currentStep: Int?) -> some View {
         DailyChallengeStepBar(
             total: DailyChallengeProgress.requiredOwnQuestionCount,
-            completed: answeredRequiredCount,
+            completedSteps: answeredRequiredSteps,
             current: currentStep,
             height: 8,
             onSelect: requiredQuestions.isEmpty ? nil : { (step: Int) in goToRequiredStep(step) }
@@ -341,10 +286,23 @@ struct DailyChallengeAnswerFlow: View {
             )
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             Spacer()
-            Button(action: onClose) {
-                Text(.dailyChallengeFlowDoneButton)
+            // Reached when starting failed (often offline) or the couple's day ended
+            // while the flow was open. Either way, starting is the next step, so it's
+            // offered here instead of sending the user back to the card.
+            VStack(spacing: PaeoniaSpacing.space12) {
+                Button {
+                    Task { await viewModel.startToday() }
+                } label: {
+                    Text(.dailyChallengeStartButton)
+                }
+                .buttonStyle(PaeoniaPrimaryButtonStyle())
+
+                Button(action: dismiss) {
+                    Text(.dailyChallengeFlowClose)
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
             }
-            .buttonStyle(PaeoniaSecondaryButtonStyle())
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.bottom, PaeoniaSpacing.space16)
         }
@@ -371,13 +329,16 @@ struct DailyChallengeAnswerFlow: View {
         return requiredQuestions.firstIndex { $0.id == currentQuestion.id }
     }
 
+    /// The required steps the user has answered, by position. An answer that is still
+    /// sending counts, because it's done from the user's side.
+    private var answeredRequiredSteps: Set<Int> {
+        Set(requiredQuestions.indices.filter { index in
+            requiredQuestions[index].hasOwnAnswer || viewModel.isSending(requiredQuestions[index].id)
+        })
+    }
+
     private var answeredRequiredCount: Int {
-        // A staged photo that's still uploading counts toward progress — it's done
-        // from the user's side.
-        min(
-            requiredQuestions.filter { $0.hasOwnAnswer || viewModel.isSending($0.id) }.count,
-            DailyChallengeProgress.requiredOwnQuestionCount
-        )
+        min(answeredRequiredSteps.count, DailyChallengeProgress.requiredOwnQuestionCount)
     }
 
     private var hasFinishedRequiredQuestions: Bool {
@@ -414,11 +375,21 @@ struct DailyChallengeAnswerFlow: View {
             && !viewModel.isSending(currentQuestion.id)
     }
 
-    /// True once the draft holds a real answer. Skipping discards it, so Skip must
-    /// not be reachable while there's an answer in progress.
+    /// True once anything is typed, picked, or staged. Skipping discards it, so Skip
+    /// must not be reachable while there's an answer in progress, even one that
+    /// can't be sent yet (for example text over the length limit).
     private var hasDraftForCurrent: Bool {
         guard let currentQuestion else { return false }
-        return viewModel.hasDraftToSubmit(for: currentQuestion)
+        return viewModel.hasDraftContent(for: currentQuestion.id)
+    }
+
+    /// The server refused the partner answer on the reveal for good, and it is back in
+    /// the composer. Nothing will unlock, so the reveal gives way to the question.
+    private var wasPartnerAnswerReturned: Bool {
+        guard let questionID = partnerRevealQuestion?.id, !isAwaitingPartnerReveal else { return false }
+        return !viewModel.isSending(questionID)
+            && revealedQuestion(for: questionID)?.hasOwnAnswer != true
+            && viewModel.hasDraftContent(for: questionID)
     }
 
     /// The flow's primary button sends a new answer when one is being typed, saves
@@ -462,7 +433,7 @@ struct DailyChallengeAnswerFlow: View {
         }
 
         if isPrimaryActionSave {
-            return isSubmittingCurrent
+            return isSubmittingCurrent || viewModel.isDraftTextTooLong(for: currentQuestion.id)
         }
 
         // Next / Done is plain navigation, always available.
@@ -496,7 +467,14 @@ struct DailyChallengeAnswerFlow: View {
     }
 
     private func submitCurrent() async {
-        guard let question = currentQuestion else { return }
+        // A second tap's task runs after the first one has started saving. Without
+        // this guard it would see "not sent yet" and clear the first send's held
+        // answer, so the composer flashed empty before moving on.
+        guard
+            let question = currentQuestion,
+            viewModel.submittingQuestionID == nil,
+            partnerRevealQuestion == nil
+        else { return }
 
         committedAnswerHold = DailyAnswerStepVisualHold(question: question, viewModel: viewModel)
         await viewModel.submitAnswer(for: question)
@@ -521,18 +499,14 @@ struct DailyChallengeAnswerFlow: View {
             let didReveal = await viewModel.awaitAnswerReveal(for: question.id)
             if didReveal, revealedQuestion(for: question.id)?.canViewPartnerAnswer == true {
                 PaeoniaHaptics.answerRevealed()
-                withAnimation(PaeoniaMotion.meaningfulMoment) {
-                    isAwaitingPartnerReveal = false
-                }
-                releaseVisualHold(for: question.id)
-            } else {
-                // Offline or still sending: move on normally. The Questions card
-                // reveals the exchange after the queued answer eventually lands.
-                partnerRevealQuestion = nil
-                isAwaitingPartnerReveal = false
-                clearVisualHold(for: question.id)
-                advanceAfterPartnerAnswer()
             }
+            // Slow or offline: the reveal still opens, shows the answer as saved, and
+            // fills in their reply when it arrives. Skipping it used to hide the
+            // payoff until the user found the card again.
+            withAnimation(PaeoniaMotion.meaningfulMoment) {
+                isAwaitingPartnerReveal = false
+            }
+            releaseVisualHold(for: question.id)
         } else if hasFinishedRequiredQuestions {
             celebrate()
             releaseVisualHold(for: question.id)
@@ -566,7 +540,11 @@ struct DailyChallengeAnswerFlow: View {
     }
 
     private func editCurrent() async {
-        guard let question = currentQuestion, let kind = question.editableAnswerKind else { return }
+        guard
+            let question = currentQuestion,
+            let kind = question.editableAnswerKind,
+            viewModel.submittingQuestionID == nil
+        else { return }
 
         switch kind {
         case .partnerChoice:
@@ -682,810 +660,9 @@ struct DailyChallengeAnswerFlow: View {
     }
 }
 
-// MARK: - One question
-
-/// One question's prompt + composer, shared by the daily challenge flow and the
-/// Questions-tab partner-answer flow.
-struct DailyChallengeAnswerStep: View {
-    let question: DailyChallengeQuestion
-    let viewModel: DailyChallengeViewModel
-    var isFocused: FocusState<Bool>.Binding
-    var visualHold: DailyAnswerStepVisualHold? = nil
-    /// Top inset for the question. Defaults to a full screen-top clearance for flows
-    /// where the question is the topmost element (the partner-answer flow). The
-    /// multi-question flow passes a smaller value because the progress bar sits just
-    /// above the question and already establishes the top spacing.
-    var topPadding: CGFloat = PaeoniaSpacing.space24
-
-    /// Mirrors `!isFocused`, driving the combined-question secondary-composer fold
-    /// (see `combinedComposer`). Toggled inside `withAnimation` from the focus change
-    /// so the fade animates the secondary alone, never the keyboard-driven field.
-    @State private var showsSecondaryComposer = true
-
-    var body: some View {
-        // The question always sits at the top. The answer-method picker is pinned
-        // right under it, so its position never shifts with the composer. The actual
-        // composer (text field, photo, voice, choice) drops to the bottom within
-        // thumb reach; a keyboard just shrinks the gap, keeping the question on top.
-        // The waiting hint reads as question context, so it stays up top too. Review
-        // states have no bottom composer and sit under the question.
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            promptView
-
-            if showsKindPicker {
-                DailyAnswerKindPicker(
-                    kinds: question.composableAnswerKinds,
-                    selection: composeKind,
-                    onSelect: setComposeKind
-                )
-            }
-
-            if showsPartnerWaitingNote {
-                DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
-            }
-
-            if hasBottomComposer {
-                Spacer(minLength: PaeoniaSpacing.space24)
-            }
-
-            answerSection
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.top, topPadding)
-        .padding(.bottom, PaeoniaSpacing.space8)
-        .onAppear {
-            seedEditDraftIfNeeded()
-            showsSecondaryComposer = !isFocused.wrappedValue
-        }
-        .onChange(of: isFocused.wrappedValue) { _, focused in
-            withAnimation(PaeoniaMotion.stateChange) { showsSecondaryComposer = !focused }
-        }
-    }
-
-    /// The question text, sitting at the top of the step.
-    private var promptView: some View {
-        Text(question.prompt)
-            .font(PaeoniaTypography.title)
-            .foregroundStyle(.paeoniaTextPrimary)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// The kind of composer currently on screen, or nil when the step is showing a
-    /// review/sending state rather than an editable composer.
-    private var activeComposerKind: DailyChallengeAnswerKind? {
-        if showsSendingState { return nil }
-        if let editKind = question.editableAnswerKind { return editKind }
-        if question.hasOwnAnswer { return nil }
-        if question.canSubmitAnswer { return composeKind }
-        return nil
-    }
-
-    /// Whether an input composer is on screen (compose or edit), so it should drop to
-    /// the bottom for thumb reach. Review/sending states have none and sit up top.
-    private var hasBottomComposer: Bool {
-        activeComposerKind != nil
-    }
-
-    /// The answer-method picker shows only while composing a fresh answer that accepts
-    /// more than one kind. It's pinned under the question so its position is stable
-    /// regardless of which composer is selected.
-    private var showsKindPicker: Bool {
-        !showsSendingState
-            && question.editableAnswerKind == nil
-            && !question.hasOwnAnswer
-            && question.canSubmitAnswer
-            && question.composableAnswerKinds.count > 1
-            // Combined questions show both composers at once, so there's nothing to pick.
-            && !question.usesCombinedCompose
-    }
-
-    /// Whether the partner's reply is waiting behind a fresh answer, so the "answer
-    /// to see their reply" hint should show under the question.
-    private var showsPartnerWaitingNote: Bool {
-        !showsSendingState
-            && question.editableAnswerKind == nil
-            && !question.hasOwnAnswer
-            && question.canSubmitAnswer
-            && question.partnerAnswer != nil
-            && !question.canViewPartnerAnswer
-    }
-
-    @ViewBuilder
-    private var answerSection: some View {
-        if showsSendingState {
-            DailySendingAnswerView(
-                mediaKind: question.mediaAnswerKind,
-                mediaData: viewModel.sendingMediaData(for: question.id),
-                voiceDurationMs: viewModel.sendingVoiceDurationMs(for: question.id),
-                partnerChoiceName: viewModel.sendingPartnerChoiceName(for: question.id),
-                text: viewModel.sendingText(for: question.id)
-            )
-        } else if let editKind = question.editableAnswerKind {
-            editComposer(kind: editKind)
-        } else if question.hasOwnAnswer {
-            DailyQuestionStatusView(question: question, participants: viewModel.participants)
-            DailyAnswerDetailsView(question: question, participants: viewModel.participants)
-        } else if question.canSubmitAnswer {
-            // Just the input here — the kind picker and the "answer to see their
-            // reply" hint are pinned under the question in `body`, so only the
-            // composer itself drops to the bottom for thumb reach.
-            if question.usesCombinedCompose {
-                combinedComposer
-            } else {
-                kindComposer
-            }
-        } else {
-            DailyUnsupportedAnswerMessage(answerKinds: question.answerKinds)
-        }
-    }
-
-    /// The composer for an answer the user already sent but can still change while
-    /// it's private. Text reopens the editable field; partner choice reopens the
-    /// avatar picker (pre-selected) with a line showing when it was answered.
-    @ViewBuilder
-    private func editComposer(kind: DailyChallengeAnswerKind) -> some View {
-        switch kind {
-        case .partnerChoice:
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                DailyQuestionStatusView(question: question, participants: viewModel.participants)
-
-                if let options = viewModel.participants.partnerChoiceOptions {
-                    DailyPartnerChoicePicker(
-                        options: options,
-                        selection: partnerChoiceSelection,
-                        onSelect: setPartnerChoice
-                    )
-                } else {
-                    DailyAnswerDetailsView(question: question, participants: viewModel.participants)
-                }
-            }
-        default:
-            DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
-        }
-    }
-
-    /// For questions that accept text alongside a photo or partner pick, both
-    /// composers show together — each optional — so the user can add one, the other,
-    /// or both. The text field sits below so it lands just above the keyboard. While
-    /// the field is focused the photo / partner pick folds away so the text composer
-    /// owns the shorter height, and returns once the field is dismissed. This is safe
-    /// to animate because the secondary sits *above* the field, which is pinned to the
-    /// bottom: folding it grows the spacer above, never moving the field. The fold is
-    /// driven by `showsSecondaryComposer` (toggled in `withAnimation` from the focus
-    /// change) rather than an `.animation(_:value: isFocused)` on this stack, so the
-    /// fade animates the secondary alone and never sweeps in the field's keyboard
-    /// movement (which would bounce it).
-    @ViewBuilder
-    private var combinedComposer: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            if showsSecondaryComposer {
-                combinedSecondaryComposer
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-
-            DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
-        }
-    }
-
-    /// The non-text half of a combined question — a photo picker or partner pick —
-    /// shown above the text field and hidden while the field is focused.
-    @ViewBuilder
-    private var combinedSecondaryComposer: some View {
-        switch question.combinedSecondaryKind {
-        case .photo:
-            DailyPhotoAnswerComposer(
-                imageData: stagedMediaData,
-                onPick: stagePhoto,
-                onRemove: removeStagedMedia
-            )
-        case .partnerChoice:
-            if let options = viewModel.participants.partnerChoiceOptions {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-                    Label {
-                        Text(.dailyChallengeCombinedChoiceHint)
-                    } icon: {
-                        Image(systemName: "person.2.fill")
-                            .accessibilityHidden(true)
-                    }
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(.paeoniaTextSecondary)
-
-                    DailyPartnerChoicePicker(
-                        options: options,
-                        selection: partnerChoiceSelection,
-                        onSelect: setPartnerChoice
-                    )
-                }
-            }
-        default:
-            EmptyView()
-        }
-    }
-
-    @ViewBuilder
-    private var kindComposer: some View {
-        switch composeKind {
-        case .partnerChoice:
-            if let options = viewModel.participants.partnerChoiceOptions {
-                DailyPartnerChoicePicker(
-                    options: options,
-                    selection: partnerChoiceSelection,
-                    onSelect: setPartnerChoice
-                )
-            } else {
-                DailyUnsupportedAnswerMessage(answerKinds: question.answerKinds)
-            }
-        case .photo:
-            DailyPhotoAnswerComposer(
-                imageData: stagedMediaData,
-                onPick: stagePhoto,
-                onRemove: removeStagedMedia
-            )
-        case .voice:
-            voiceComposer
-        default:
-            DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
-        }
-    }
-
-    @ViewBuilder
-    private var voiceComposer: some View {
-        if let voiceData = stagedMediaData {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                Text(.dailyChallengeVoiceLabel)
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(.paeoniaTextSecondary)
-
-                DailyVoicePlaybackView(
-                    source: .data(voiceData),
-                    fallbackDurationMs: voiceDurationMs
-                )
-
-                Button {
-                    removeStagedMedia()
-                } label: {
-                    Label {
-                        Text(.dailyChallengeVoiceReRecord)
-                    } icon: {
-                        Image(systemName: "arrow.counterclockwise").accessibilityHidden(true)
-                    }
-                }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-                .frame(maxWidth: .infinity)
-            }
-        } else {
-            DailyVoiceRecorderView(
-                onRecorded: { url, durationMs in
-                    stageVoice(url: url, durationMs: durationMs)
-                }
-            )
-        }
-    }
-
-    private var showsSendingState: Bool {
-        visualHold == nil && viewModel.isSending(question.id)
-    }
-
-    private var composeKind: DailyChallengeAnswerKind? {
-        visualHold?.composeKind ?? viewModel.composeKind(for: question)
-    }
-
-    private var partnerChoiceSelection: UUID? {
-        visualHold?.partnerChoiceUserID ?? viewModel.partnerChoiceSelection(for: question.id)
-    }
-
-    private var stagedMediaData: Data? {
-        visualHold?.mediaData ?? viewModel.stagedMediaData(for: question.id)
-    }
-
-    private var voiceDurationMs: Int? {
-        visualHold?.voiceDurationMs ?? viewModel.stagedVoiceDurationMs(for: question.id)
-    }
-
-    private func setPartnerChoice(_ userID: UUID?) {
-        guard visualHold == nil else { return }
-        viewModel.setPartnerChoice(userID, for: question.id)
-    }
-
-    private func setComposeKind(_ kind: DailyChallengeAnswerKind) {
-        guard visualHold == nil else { return }
-        viewModel.setComposeKind(kind, for: question.id)
-    }
-
-    private func stagePhoto(_ imageData: Data) {
-        guard visualHold == nil else { return }
-        viewModel.stagePhoto(imageData, for: question.id)
-    }
-
-    private func stageVoice(url: URL, durationMs: Int) {
-        guard visualHold == nil else { return }
-        viewModel.stageVoice(url: url, durationMs: durationMs, for: question.id)
-    }
-
-    private func removeStagedMedia() {
-        guard visualHold == nil else { return }
-        viewModel.removeStagedMedia(for: question.id)
-    }
-
-    /// When revisiting an answer you can still edit, start the composer from what you
-    /// previously sent (unless you already have an unsaved edit in progress).
-    private func seedEditDraftIfNeeded() {
-        switch question.editableAnswerKind {
-        case .text:
-            guard
-                viewModel.draftText(for: question.id).isEmpty,
-                let existing = question.ownAnswerDetail?.textBody,
-                !existing.isEmpty
-            else { return }
-            viewModel.setDraftText(existing, for: question.id)
-        case .partnerChoice:
-            guard
-                viewModel.partnerChoiceSelection(for: question.id) == nil,
-                let existing = question.ownAnswerDetail?.selectedUserID
-            else { return }
-            viewModel.setPartnerChoice(existing, for: question.id)
-        default:
-            break
-        }
-    }
-
-    private var draftBinding: Binding<String> {
-        Binding(
-            get: { visualHold?.text ?? viewModel.draftText(for: question.id) },
-            set: {
-                guard visualHold == nil else { return }
-                viewModel.setDraftText($0, for: question.id)
-            }
-        )
-    }
-}
-
-private struct DailyPartnerWaitingNote: View {
-    let partnerName: String
-
-    var body: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            Image(systemName: "lock.circle.fill")
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .accessibilityHidden(true)
-
-            Text(.dailyChallengePartnerHiddenMessage(partnerName))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(PaeoniaSpacing.space12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.paeoniaSurfaceSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-    }
-}
-
-// MARK: - Bottom action bar
-
-/// The fixed bottom action bar, shared by the daily challenge flow and the
-/// Questions-tab partner-answer flow. Skip is optional (off for partner answers).
-///
-/// It is a single row of three equal-width slots — Close · Send · (Shuffle/Done) —
-/// whose height never changes. While the keyboard is up the trailing slot's *content*
-/// swaps from Shuffle to Done, but the row stays exactly the same size, so the only
-/// thing that ever moves the composer above it is the keyboard itself. Nothing folds
-/// or resizes here on focus, which is what keeps the composer tracking the keyboard
-/// 1:1 instead of overshooting (an earlier version folded the Send button away on
-/// focus; that height change raced the keyboard's own animation and bounced).
-struct DailyChallengeAnswerActionBar: View {
-    let primaryTitle: LocalizedStringResource
-    let isPrimaryBusy: Bool
-    let isPrimaryDisabled: Bool
-    /// Whether the composer is focused (keyboard up). Only swaps the trailing slot
-    /// from Shuffle to Done — it never changes the bar's height.
-    var isComposing = false
-    var canSkip = false
-    var isSkipBusy = false
-    var isSkipDisabled = false
-    let onPrimary: () -> Void
-    /// Leaves the flow. Close always closes now — it is no longer overloaded to also
-    /// mean "put the keyboard away", since Done owns that while composing.
-    let onClose: () -> Void
-    var onSkip: () -> Void = {}
-    /// Puts the keyboard away. Backs the Done button that occupies the trailing slot
-    /// while composing.
-    var onDone: () -> Void = {}
-
-    /// Width of the row's slot area (the three buttons plus the two gaps), measured so
-    /// the primary can be floored at a third of it.
-    @State private var slotsWidth: CGFloat = 0
-
-    /// At least a third of the row, so a short title like "Neste" still reads as a real
-    /// button instead of collapsing to its text width. The primary grows past this for
-    /// longer titles; the side icons take whatever is left, split evenly.
-    private var primaryMinWidth: CGFloat {
-        max(0, (slotsWidth - PaeoniaSpacing.space12 * 2) / 3)
-    }
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    var body: some View {
-        // Send sits in the middle at least a third wide (growing with its title); the
-        // side actions are compact icons centered in the even slots either side of it.
-        // Only the row's *height* must stay constant to keep the composer bounce-free;
-        // width is free to vary.
-        HStack(spacing: PaeoniaSpacing.space12) {
-            closeButton
-                .frame(maxWidth: .infinity)
-            primaryButton
-                .frame(minWidth: primaryMinWidth)
-                .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: false)
-            trailingButton
-                .frame(maxWidth: .infinity)
-        }
-        .background {
-            GeometryReader { proxy in
-                Color.clear
-                    .onChange(of: proxy.size.width, initial: true) { _, width in
-                        slotsWidth = width
-                    }
-            }
-        }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.top, PaeoniaSpacing.space12)
-        .padding(.bottom, PaeoniaSpacing.space8)
-        .background(.paeoniaBackgroundPrimary)
-    }
-
-    private var primaryButton: some View {
-        Button(action: onPrimary) {
-            // The title keeps its width while busy (hidden, spinner overlaid) so the
-            // content-hugging pill doesn't shrink to the spinner the moment Send is
-            // tapped.
-            Text(primaryTitle)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .multilineTextAlignment(.center)
-                .opacity(isPrimaryBusy ? 0 : 1)
-                .overlay {
-                    if isPrimaryBusy {
-                        ProgressView().tint(.paeoniaTextInverse)
-                    }
-                }
-        }
-        .buttonStyle(PaeoniaPrimaryButtonStyle())
-        .disabled(isPrimaryDisabled || isPrimaryBusy)
-    }
-
-    /// The trailing icon. Done while composing (put the keyboard away); otherwise
-    /// Shuffle when the flow allows skipping, and empty for the partner-answer flow
-    /// that has none. Swapping content here cannot change the row height, and the swap
-    /// is instant (no cross-fade) so Done/Shuffle don't morph into each other.
-    @ViewBuilder
-    private var trailingButton: some View {
-        Group {
-            if isComposing {
-                doneButton
-                    .id("daily-answer-action-done")
-            } else if canSkip {
-                skipButton
-                    .id("daily-answer-action-skip")
-            } else {
-                Color.clear
-                    .frame(width: 1, height: PaeoniaSpacing.compactButtonHeight)
-            }
-        }
-        .transaction { transaction in
-            transaction.animation = nil
-        }
-    }
-
-    // The side actions are icon-only so Send's title owns the row's width. Each carries
-    // an accessibility label since the glyph alone carries the meaning.
-    private var closeButton: some View {
-        Button(action: onClose) {
-            Image(systemName: "xmark")
-        }
-        .buttonStyle(PaeoniaQuietButtonStyle())
-        .accessibilityLabel(Text(.dailyChallengeFlowClose))
-    }
-
-    private var doneButton: some View {
-        Button(action: onDone) {
-            Image(systemName: "keyboard.chevron.compact.down")
-        }
-        .buttonStyle(PaeoniaQuietButtonStyle())
-        .accessibilityLabel(Text(.dailyChallengeFlowDoneButton))
-    }
-
-    private var skipButton: some View {
-        Button(action: onSkip) {
-            if isSkipBusy {
-                ProgressView().controlSize(.small)
-            } else {
-                Image(systemName: "shuffle")
-            }
-        }
-        .buttonStyle(PaeoniaQuietButtonStyle())
-        .disabled(isSkipDisabled)
-        .accessibilityLabel(Text(.dailyChallengeSkipButton))
-    }
-}
-
-// MARK: - Completion
-
-private struct DailyChallengeCompletionView: View {
-    let streak: Int
-    /// The partner's display name, so the finish copy and CTA name them.
-    let partnerName: String
-    /// The lost streak length when a restore is on offer; `nil` for a normal,
-    /// celebratory finish. When set (and not yet restored), the flame reads
-    /// "slipped" and a buy-it-back action is offered above Done.
-    var restorableCount: Int?
-    /// The in-place buy action follows the same server-owned restore window as
-    /// the standalone offer. Keeping it here prevents a completion screen left
-    /// open in the foreground from selling an already-expired restore.
-    var restoreDeadline: Date? = nil
-    /// Drives the in-place restore purchase. Present only for a slipped streak's
-    /// completion; `nil` for a normal finish. Once its `restoredCount` lands the
-    /// screen turns celebratory and the flame reignites and refills.
-    var restoreViewModel: StreakRestoreViewModel?
-    var hasPartnerQuestionsToAnswer = false
-    var onOpenPartnerQuestions: () -> Void = {}
-    let onDone: () -> Void
-
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// Holds the supporting copy and actions back for a beat so the flame lands
-    /// first, then lifts them in. The flame itself is always present so its count-up
-    /// starts the instant the screen arrives.
-    @State private var showDetails = false
-
-    /// The restored streak length once a purchase (or a recovered pending one) lands.
-    private var restoredCount: Int? { restoreViewModel?.restoredCount }
-    private var isRestored: Bool { restoredCount != nil }
-    private var isPurchasing: Bool { restoreViewModel?.isPurchasing ?? false }
-
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            completionContent(now: context.date)
-        }
-        // Reignite-and-refill the flame (and swap the copy) once a restore lands.
-        .animation(reduceMotion ? nil : PaeoniaMotion.celebrationReveal, value: restoredCount)
-        .onAppear(perform: revealDetails)
-        .task {
-            // Load the price and re-apply any paid-but-unconfirmed restore, but only
-            // for a slipped streak's completion — a normal finish has no purchase.
-            guard restorableCount != nil else { return }
-            await restoreViewModel?.load()
-        }
-        .onChange(of: restoreViewModel?.error) { _, error in
-            guard let error else { return }
-            bannerCenter.show(.error(message: error.message))
-            restoreViewModel?.clearError()
-        }
-    }
-
-    private func completionContent(now: Date) -> some View {
-        VStack(spacing: PaeoniaSpacing.space32) {
-            Spacer()
-
-            flame(now: now)
-                .transition(.opacity)
-
-            VStack(spacing: PaeoniaSpacing.space8) {
-                Text(titleText)
-                    .font(PaeoniaTypography.title)
-                    .foregroundStyle(.paeoniaTextPrimary)
-
-                Text(messageText(now: now))
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .multilineTextAlignment(.center)
-            .modifier(StreakDetailReveal(shown: showDetails))
-
-            Spacer()
-
-            actions(now: now)
-                .modifier(StreakDetailReveal(shown: showDetails))
-        }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.vertical, PaeoniaSpacing.space32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    /// The hero flame: slipped and cold before a restore, then a fresh warm flame
-    /// that fills from empty and counts up once the streak is bought back — the
-    /// "coming back to life" moment. Distinct ids so the restored flame is a new
-    /// view and replays its fill-up celebration.
-    @ViewBuilder
-    private func flame(now: Date) -> some View {
-        if let restoredCount {
-            PaeoniaStreakFlame(count: restoredCount, playsCelebration: true)
-                .id("streak-restored")
-        } else if let restorableCount, isRestorable(now: now) {
-            PaeoniaStreakFlame(count: restorableCount, isBroken: true)
-                .id("streak-broken")
-        } else {
-            PaeoniaStreakFlame(count: streak, playsCelebration: true)
-                .id("streak-earned")
-        }
-    }
-
-    private var titleText: LocalizedStringResource {
-        isRestored ? .streakRestoreSuccessTitle : .dailyChallengeFlowAllDoneTitle
-    }
-
-    private func messageText(now: Date) -> LocalizedStringResource {
-        if isRestored { return .streakRestoreSuccessMessage }
-        if isRestorable(now: now) { return .streakRestoreMessage }
-        return .dailyChallengeFlowAllDoneMessage(partnerName)
-    }
-
-    private func isRestorable(now: Date) -> Bool {
-        guard restorableCount != nil, !isRestored else { return false }
-        return StreakRestoreDeadlineState.resolve(
-            deadline: restoreDeadline,
-            now: now
-        ) == .active
-    }
-
-    /// Lifts the copy and actions in shortly after the flame appears. Under Reduce
-    /// Motion they are simply shown, with no delay or movement.
-    private func revealDetails() {
-        guard !showDetails else { return }
-        if reduceMotion {
-            showDetails = true
-        } else {
-            withAnimation(PaeoniaMotion.meaningfulMoment.delay(0.28)) {
-                showDetails = true
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func actions(now: Date) -> some View {
-        if isRestorable(now: now) {
-            restorableActions(now: now)
-        } else {
-            finishedActions
-        }
-    }
-
-    /// The buy-it-back action for a slipped streak: a real purchase button (showing
-    /// the price once it loads) that calls StoreKit directly, rather than opening a
-    /// second, near-identical restore screen.
-    private func restorableActions(now: Date) -> some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            Button(action: purchase) {
-                if isPurchasing {
-                    ProgressView().tint(.paeoniaTextInverse)
-                } else {
-                    Text(verbatim: buyTitle)
-                }
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
-            .disabled(
-                isPurchasing
-                    || StreakRestoreDeadlineState.resolve(
-                        deadline: restoreDeadline,
-                        now: now
-                    ).blocksPurchase
-            )
-
-            partnerQuestionsButton(style: .secondary)
-
-            Button(action: onDone) {
-                Text(.dailyChallengeFlowDoneButton)
-            }
-            .buttonStyle(PaeoniaQuietButtonStyle())
-            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-        }
-    }
-
-    /// Actions for a normal celebratory finish — and, after a restore, the revived
-    /// streak too: pick up optional partner questions, or just finish.
-    @ViewBuilder
-    private var finishedActions: some View {
-        if hasPartnerQuestionsToAnswer {
-            VStack(spacing: PaeoniaSpacing.space12) {
-                partnerQuestionsButton(style: .primary)
-
-                Button(action: onDone) {
-                    Text(.dailyChallengeFlowDoneButton)
-                }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-            }
-        } else {
-            Button(action: onDone) {
-                Text(.dailyChallengeFlowDoneButton)
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
-        }
-    }
-
-    /// The buy button's title: "Restore streak", with the price appended once the
-    /// consumable has loaded.
-    private var buyTitle: String {
-        let base = String(localized: .streakRestoreBuyButton)
-        guard let price = restoreViewModel?.priceText else { return base }
-        return "\(base) · \(price)"
-    }
-
-    private func purchase() {
-        Task { _ = await restoreViewModel?.purchase() }
-    }
-
-    @ViewBuilder
-    private func partnerQuestionsButton(style: PartnerQuestionsButtonStyle) -> some View {
-        if hasPartnerQuestionsToAnswer {
-            switch style {
-            case .primary:
-                Button(action: onOpenPartnerQuestions) {
-                    Text(.dailyChallengeFlowPartnerQuestionsButton(partnerName))
-                }
-                .buttonStyle(PaeoniaPrimaryButtonStyle())
-            case .secondary:
-                Button(action: onOpenPartnerQuestions) {
-                    Text(.dailyChallengeFlowPartnerQuestionsButton(partnerName))
-                }
-                .buttonStyle(PaeoniaSecondaryButtonStyle())
-            }
-        }
-    }
-
-    private enum PartnerQuestionsButtonStyle {
-        case primary
-        case secondary
-    }
-}
-
-/// Fades and lifts the streak screen's supporting copy and actions in after the
-/// flame has landed. Toggling `shown` (animated by the caller) plays the entrance;
-/// the small offset gives the content a gentle rise rather than a flat fade.
-private struct StreakDetailReveal: ViewModifier {
-    let shown: Bool
-
-    func body(content: Content) -> some View {
-        content
-            .opacity(shown ? 1 : 0)
-            .offset(y: shown ? 0 : PaeoniaSpacing.space12)
-    }
-}
-
 #if DEBUG
 #Preview {
     DailyChallengeAnswerFlowPreviewHost()
-}
-
-#Preview("Completion") {
-    DailyChallengeCompletionView(streak: 7, partnerName: "Oda", restorableCount: nil, onDone: {})
-        .background(.paeoniaBackgroundPrimary)
-        .environment(PaeoniaBannerCenter())
-        .preferredColorScheme(.dark)
-}
-
-#Preview("Completion · streak slipped") {
-    DailyChallengeCompletionView(
-        streak: 1,
-        partnerName: "Oda",
-        restorableCount: 30,
-        restoreViewModel: StreakRestoreViewModel(
-            streak: CoupleStreak(
-                currentCount: 1,
-                longestCount: 30,
-                lastQualifiedDate: "2026-06-26",
-                restoreAvailable: true,
-                restorableCount: 30,
-                restoreDeadline: .now.addingTimeInterval(86_400)
-            ),
-            userID: nil
-        ),
-        onDone: {}
-    )
-    .background(.paeoniaBackgroundPrimary)
-    .environment(PaeoniaBannerCenter())
-    .preferredColorScheme(.dark)
 }
 
 private struct DailyChallengeAnswerFlowPreviewHost: View {

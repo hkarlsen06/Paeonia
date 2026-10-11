@@ -6,7 +6,10 @@ import SwiftUI
 /// and the full answering flow so the "three steps" read identically in both.
 struct DailyChallengeStepBar: View {
     let total: Int
-    let completed: Int
+    /// Which segments are answered. The flow passes the real steps, because the user
+    /// can jump ahead and answer the second question before the first. The Home card
+    /// only knows a count, so it fills from the start.
+    let completedSteps: Set<Int>
     var current: Int?
     var height: CGFloat
     /// When set, segments become tappable so the user can jump to that step.
@@ -19,8 +22,24 @@ struct DailyChallengeStepBar: View {
         height: CGFloat = 6,
         onSelect: ((Int) -> Void)? = nil
     ) {
+        self.init(
+            total: total,
+            completedSteps: Set(0..<max(completed, 0)),
+            current: current,
+            height: height,
+            onSelect: onSelect
+        )
+    }
+
+    init(
+        total: Int,
+        completedSteps: Set<Int>,
+        current: Int? = nil,
+        height: CGFloat = 6,
+        onSelect: ((Int) -> Void)? = nil
+    ) {
         self.total = total
-        self.completed = completed
+        self.completedSteps = completedSteps
         self.current = current
         self.height = height
         self.onSelect = onSelect
@@ -28,31 +47,57 @@ struct DailyChallengeStepBar: View {
 
     private var segmentCount: Int { max(total, 1) }
 
+    private var completedCount: Int {
+        completedSteps.filter { (0..<segmentCount).contains($0) }.count
+    }
+
     var body: some View {
-        HStack(spacing: PaeoniaSpacing.space4) {
+        let bar = HStack(spacing: PaeoniaSpacing.space4) {
             ForEach(0..<segmentCount, id: \.self) { index in
                 segment(at: index)
             }
         }
-        .animation(PaeoniaMotion.stateChange, value: completed)
+        .animation(PaeoniaMotion.stateChange, value: completedSteps)
         .animation(PaeoniaMotion.stateChange, value: current)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.dailyChallengeProgressAccessibilityLabel))
-        .accessibilityValue(Text(verbatim: "\(completed)/\(segmentCount)"))
+        .accessibilityValue(Text(verbatim: "\(completedCount)/\(segmentCount)"))
+
+        if let onSelect {
+            // VoiceOver users swipe up or down to move between questions, the same
+            // jump sighted users get by tapping a segment.
+            bar.accessibilityAdjustableAction { direction in
+                let from = current ?? 0
+                switch direction {
+                case .increment where from + 1 < segmentCount: onSelect(from + 1)
+                case .decrement where from > 0: onSelect(from - 1)
+                default: break
+                }
+            }
+        } else {
+            bar
+        }
     }
 
     @ViewBuilder
     private func segment(at index: Int) -> some View {
         if let onSelect {
-            Button { onSelect(index) } label: { fill(at: index) }
-                .buttonStyle(.plain)
+            Button { onSelect(index) } label: {
+                // The bar is only a few points tall, so the tap area is padded to a
+                // comfortable size without changing how the bar looks or sits.
+                fill(at: index)
+                    .padding(.vertical, PaeoniaSpacing.space16)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.vertical, -PaeoniaSpacing.space16)
         } else {
             fill(at: index)
         }
     }
 
     private func fill(at index: Int) -> some View {
-        let isCompleted = index < completed
+        let isCompleted = completedSteps.contains(index)
         let isCurrent = index == current
         let shape = Capsule(style: .continuous)
 

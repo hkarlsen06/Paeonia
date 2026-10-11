@@ -1,24 +1,58 @@
 import SwiftUI
 
+/// Keeps the label in the layout but hidden while `isLoading`, so the button
+/// does not change size, and centers a spinner over it.
+private struct PaeoniaButtonLoadingModifier: ViewModifier {
+    let isLoading: Bool
+    let spinnerColor: Color
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(isLoading ? 0 : 1)
+            .overlay {
+                if isLoading {
+                    ProgressView()
+                        .tint(spinnerColor)
+                        .accessibilityHidden(true)
+                }
+            }
+            .accessibilityValue(isLoading ? String(localized: .commonLoading) : "")
+    }
+}
+
+/// While `isLoading`, the button keeps its enabled look, shows a spinner, and
+/// ignores taps. Pair it with the screen's own guard against double submits.
 struct PaeoniaPrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    private let isLoading: Bool
+
+    init(isLoading: Bool = false) {
+        self.isLoading = isLoading
+    }
+
+    private var showsEnabled: Bool { isEnabled || isLoading }
+    private var labelColor: Color { showsEnabled ? .paeoniaTextInverse : .paeoniaTextTertiary }
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
+
+        return configuration.label
             .font(PaeoniaTypography.button)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
             .padding(.horizontal, PaeoniaSpacing.space16)
-            .foregroundStyle(isEnabled ? .paeoniaTextInverse : .paeoniaTextSecondary)
+            .foregroundStyle(labelColor)
+            .modifier(PaeoniaButtonLoadingModifier(isLoading: isLoading, spinnerColor: labelColor))
             .background(backgroundColor(isPressed: configuration.isPressed))
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
-            .scaleEffect(configuration.isPressed && isEnabled ? 0.98 : 1)
+            .clipShape(shape)
+            .contentShape(shape)
+            .scaleEffect(configuration.isPressed && showsEnabled ? 0.98 : 1)
             .animation(PaeoniaMotion.buttonPress, value: configuration.isPressed)
+            .allowsHitTesting(!isLoading)
     }
 
     private func backgroundColor(isPressed: Bool) -> Color {
-        if !isEnabled {
+        if !showsEnabled {
             return .paeoniaSurfaceDisabled
         }
 
@@ -26,29 +60,41 @@ struct PaeoniaPrimaryButtonStyle: ButtonStyle {
     }
 }
 
+/// Same loading behavior as `PaeoniaPrimaryButtonStyle`.
 struct PaeoniaSecondaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    private let isLoading: Bool
+
+    init(isLoading: Bool = false) {
+        self.isLoading = isLoading
+    }
+
+    private var showsEnabled: Bool { isEnabled || isLoading }
+    private var labelColor: Color { showsEnabled ? .paeoniaTextPrimary : .paeoniaTextTertiary }
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
+
+        return configuration.label
             .font(PaeoniaTypography.button)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
             .padding(.horizontal, PaeoniaSpacing.space16)
-            .foregroundStyle(isEnabled ? .paeoniaTextPrimary : .paeoniaTextTertiary)
+            .foregroundStyle(labelColor)
+            .modifier(PaeoniaButtonLoadingModifier(isLoading: isLoading, spinnerColor: labelColor))
             .background(backgroundColor(isPressed: configuration.isPressed))
+            .clipShape(shape)
             .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+                shape.strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
             }
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
-            .scaleEffect(configuration.isPressed && isEnabled ? 0.98 : 1)
+            .contentShape(shape)
+            .scaleEffect(configuration.isPressed && showsEnabled ? 0.98 : 1)
             .animation(PaeoniaMotion.buttonPress, value: configuration.isPressed)
+            .allowsHitTesting(!isLoading)
     }
 
     private func backgroundColor(isPressed: Bool) -> Color {
-        if !isEnabled {
+        if !showsEnabled {
             return .paeoniaSurfaceDisabled
         }
 
@@ -84,7 +130,7 @@ struct PaeoniaQuietButtonStyle: ButtonStyle {
 /// A quiet text button for destructive actions that must stay visually
 /// subordinate to the actions above them (for example "Delete account" under
 /// "Log out"). Unlike `PaeoniaQuietButtonStyle`, the label reads in the error
-/// color so the consequence is visible before tapping.
+/// text color so the consequence is visible before tapping.
 struct PaeoniaQuietDestructiveButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
@@ -94,7 +140,7 @@ struct PaeoniaQuietDestructiveButtonStyle: ButtonStyle {
             .multilineTextAlignment(.center)
             .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
             .padding(.horizontal, PaeoniaSpacing.space12)
-            .foregroundStyle(isEnabled ? .paeoniaError : .paeoniaTextTertiary)
+            .foregroundStyle(isEnabled ? .paeoniaErrorText : .paeoniaTextTertiary)
             .background(backgroundColor(isPressed: configuration.isPressed))
             .clipShape(Capsule(style: .continuous))
             .contentShape(Capsule(style: .continuous))
@@ -119,7 +165,7 @@ struct PaeoniaDestructiveButtonStyle: ButtonStyle {
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
             .padding(.horizontal, PaeoniaSpacing.space16)
-            .foregroundStyle(isEnabled ? .paeoniaTextInverse : .paeoniaTextSecondary)
+            .foregroundStyle(isEnabled ? .paeoniaTextInverse : .paeoniaTextTertiary)
             .background(backgroundColor(isPressed: configuration.isPressed))
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
             .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
@@ -132,6 +178,6 @@ struct PaeoniaDestructiveButtonStyle: ButtonStyle {
             return .paeoniaSurfaceDisabled
         }
 
-        return isPressed ? .paeoniaWarning : .paeoniaError
+        return isPressed ? .paeoniaErrorPressed : .paeoniaError
     }
 }

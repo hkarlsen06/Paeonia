@@ -19,12 +19,18 @@ extension DailyChallengeViewModel.Notice {
             .dailyChallengeEditLockedTitle
         case .editFailed:
             .dailyChallengeEditFailedTitle
+        case .photoFailed:
+            .dailyChallengePhotoFailedTitle
+        case .voiceFailed:
+            .dailyChallengeVoiceFailedTitle
+        case .dayEnded:
+            .dailyChallengeDayEndedTitle
         }
     }
 
     /// The message takes the partner's name so notices that name the partner (e.g.
     /// "Oda has answered…") read with the real name; other notices ignore it.
-    func message(partnerName: String) -> LocalizedStringResource {
+    func message(partnerName: String) -> LocalizedStringResource { // swiftlint:disable:this cyclomatic_complexity
         switch self {
         case .loadFailed:
             .dailyChallengeLoadFailedMessage
@@ -42,6 +48,12 @@ extension DailyChallengeViewModel.Notice {
             .dailyChallengeEditLockedMessage(partnerName)
         case .editFailed:
             .dailyChallengeEditFailedMessage
+        case .photoFailed:
+            .dailyChallengePhotoFailedMessage
+        case .voiceFailed:
+            .dailyChallengeVoiceFailedMessage
+        case .dayEnded:
+            .dailyChallengeDayEndedMessage
         }
     }
 }

@@ -10,6 +10,25 @@ final class SettingsViewModel {
         case purchasesRestored
         case noPurchasesToRestore
         case restorePurchasesFailed
+        case purchaseLinkedToAnotherAccount
+    }
+
+    /// What iOS allows. The switches only matter once iOS allows notifications.
+    enum SystemNotificationPermission: Equatable {
+        case allowed
+        /// iOS has never asked, for example after "Not now" on the app's own
+        /// primer. The screen offers to ask now.
+        case notAsked
+        /// The user said no in iOS. Only the Settings app can change it.
+        case denied
+    }
+
+    enum NotificationLoadState: Equatable {
+        case loading
+        case loaded
+        /// The first load failed and no live value has arrived yet. The switches
+        /// stay disabled so they never show a guess as if it were saved.
+        case failed
     }
 
     private let preferences: (any NotificationPreferencesProviding)?
@@ -18,24 +37,27 @@ final class SettingsViewModel {
     private let operationProvider: any PairingClientOperationProviding
     private let storeKitService: any PaeoniaStoreKitServicing
 
-    /// Notification toggles default to the server defaults (on) until the real
-    /// values load, so controls never flicker off.
-    private(set) var streakRemindersEnabled = true
-    private(set) var dailyChallengeEnabled = true
-    private(set) var partnerAnsweredEnabled = true
-    private(set) var messagesEnabled = true
-    private(set) var widgetAlertsEnabled = true
-    private(set) var memoriesEnabled = true
-    private(set) var isLoaded = false
-    /// True when the user has turned notifications off in iOS Settings, so the
-    /// in-app toggle can explain why nothing arrives.
-    private(set) var systemNotificationsDenied = false
+    /// What the switches show. Starts at the server defaults (all on) so nothing
+    /// flickers off while the real values load.
+    private(set) var notificationPreferences = NotificationPreferences()
+    private(set) var notificationLoadState = NotificationLoadState.loading
+    private(set) var systemNotificationPermission = SystemNotificationPermission.allowed
+    private(set) var isRequestingSystemPermission = false
     /// True while the leave-relationship request is in flight, so the button can
     /// disable and avoid a double tap.
     private(set) var isLeavingRelationship = false
     private(set) var isRestoringPurchases = false
     private(set) var notice: Notice?
-    private var savesInFlight = [NotificationPreferenceKind: Int]()
+
+    /// The last value the server reported or accepted for each switch. A failed
+    /// save puts the switch back to this, not to whatever it showed before the tap.
+    private var confirmedPreferences = NotificationPreferences()
+    /// Switches with a save running. Each kind has at most one request in flight,
+    /// so rapid taps can never reach the server out of order.
+    private var savingKinds = Set<NotificationPreferenceKind>()
+    /// Goes up whenever newer server values arrive: a live update or a save the
+    /// server accepted. A one-shot read that started earlier is then ignored.
+    private var serverValuesRevision = 0
 
     init(
         preferences: (any NotificationPreferencesProviding)? = NotificationPreferencesServiceFactory.makeDefault(),
@@ -55,52 +77,113 @@ final class SettingsViewModel {
         }
     }
 
-    func load() async {
-        systemNotificationsDenied = await authorization.isDenied()
+    var isNotificationSettingsLoaded: Bool {
+        notificationLoadState == .loaded
+    }
+
+    func isEnabled(_ kind: NotificationPreferenceKind) -> Bool {
+        notificationPreferences[kind]
+    }
+
+    func loadNotificationSettings() async {
+        await refreshSystemNotificationStatus()
 
         guard let preferences else {
-            isLoaded = true
+            notificationLoadState = .loaded
             return
         }
 
-        do {
-            apply(try await preferences.loadNotificationPreferences())
-        } catch {
-            // Keep the optimistic default visible; the next save still works.
+        if notificationLoadState == .failed {
+            notificationLoadState = .loading
         }
-        isLoaded = true
+
+        let revision = serverValuesRevision
+        do {
+            let values = try await preferences.loadNotificationPreferences()
+            // A live update or a finished save while this read was in flight is
+            // newer than what the read saw, so the read's result is stale.
+            guard revision == serverValuesRevision else {
+                return
+            }
+            applyServerValues(values)
+        } catch {
+            // Keep the last values the server sent. Only a screen that never got
+            // real values says it could not load them.
+            if notificationLoadState != .loaded {
+                notificationLoadState = .failed
+            }
+        }
+    }
+
+    /// The user may come back from iOS Settings with notifications turned on, so
+    /// the screen re-checks whenever the app becomes active.
+    func refreshSystemNotificationStatus() async {
+        if await authorization.isDenied() {
+            systemNotificationPermission = .denied
+        } else if await authorization.isNotDetermined() {
+            systemNotificationPermission = .notAsked
+        } else {
+            systemNotificationPermission = .allowed
+        }
+    }
+
+    /// Shows the real iOS permission prompt. APNs registration already runs on
+    /// every app activation, so only the permission itself is missing here.
+    func requestSystemNotificationPermission() async {
+        guard systemNotificationPermission == .notAsked, !isRequestingSystemPermission else {
+            return
+        }
+
+        isRequestingSystemPermission = true
+        defer { isRequestingSystemPermission = false }
+
+        await authorization.requestAuthorizationIfNeeded()
+        await refreshSystemNotificationStatus()
     }
 
     /// Applies preference changes from the server (another device, defaults).
     /// Runs until the screen's task is cancelled.
-    func observe() async {
+    func observeNotificationSettings() async {
         guard let preferences else {
             return
         }
         for await latest in preferences.notificationPreferenceUpdates() {
-            apply(latest)
+            applyServerValues(latest)
         }
     }
 
+    /// Shows the new value at once and saves it. While a save for the same switch
+    /// is running, later taps only update the shown value; the running save sends
+    /// the newest value once its current request finishes. That keeps one request
+    /// per switch in flight, so the server always ends on the last tap.
     func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled: Bool) async {
-        guard enabled != value(for: kind) else {
+        guard enabled != notificationPreferences[kind] else {
             return
         }
 
-        let previous = value(for: kind)
-        setLocalValue(enabled, for: kind)
-        savesInFlight[kind, default: 0] += 1
-        defer { savesInFlight[kind, default: 1] -= 1 }
+        notificationPreferences[kind] = enabled
 
         guard let preferences else {
+            confirmedPreferences[kind] = enabled
             return
         }
 
-        do {
-            try await preferences.setNotificationPreference(kind, enabled: enabled)
-        } catch {
-            setLocalValue(previous, for: kind)
-            notice = .saveFailed
+        guard savingKinds.insert(kind).inserted else {
+            return
+        }
+        defer { savingKinds.remove(kind) }
+
+        while notificationPreferences[kind] != confirmedPreferences[kind] {
+            let desired = notificationPreferences[kind]
+            do {
+                try await preferences.setNotificationPreference(kind, enabled: desired)
+                confirmedPreferences[kind] = desired
+                serverValuesRevision += 1
+            } catch {
+                notificationPreferences[kind] = confirmedPreferences[kind]
+                notice = .saveFailed
+                return
+            }
         }
     }
 
@@ -108,6 +191,10 @@ final class SettingsViewModel {
     /// access and the user lands back in the unpaired flow; the caller is
     /// responsible for asking the root to refresh.
     func leaveRelationship() async -> Bool {
+        guard !isLeavingRelationship else {
+            return false
+        }
+
         guard let pairingService else {
             notice = .leaveFailed
             return false
@@ -139,6 +226,12 @@ final class SettingsViewModel {
             let restored = try await storeKitService.restorePurchases()
             notice = restored ? .purchasesRestored : .noPurchasesToRestore
             return restored
+        } catch PaeoniaPurchaseError.cancelled {
+            // The user closed the App Store sign-in sheet. Nothing went wrong.
+            return false
+        } catch PaeoniaPurchaseError.purchaseLinkedToAnotherAccount {
+            notice = .purchaseLinkedToAnotherAccount
+            return false
         } catch {
             notice = .restorePurchasesFailed
             return false
@@ -149,51 +242,17 @@ final class SettingsViewModel {
         notice = nil
     }
 
-    /// Skips toggles with a save in flight, so a value read before the save
-    /// reached the server cannot flip the toggle back.
-    private func apply(_ preferences: NotificationPreferences) {
-        func isIdle(_ kind: NotificationPreferenceKind) -> Bool {
-            savesInFlight[kind, default: 0] == 0
+    /// Switches with a save running keep the value the user picked. Their
+    /// confirmed value still updates, so a failed save falls back to the newest
+    /// server value instead of an older one.
+    private func applyServerValues(_ values: NotificationPreferences) {
+        serverValuesRevision += 1
+        for kind in NotificationPreferenceKind.allCases {
+            confirmedPreferences[kind] = values[kind]
+            if !savingKinds.contains(kind) {
+                notificationPreferences[kind] = values[kind]
+            }
         }
-        if isIdle(.streakReminders) { streakRemindersEnabled = preferences.streakRemindersEnabled }
-        if isIdle(.dailyChallenge) { dailyChallengeEnabled = preferences.dailyChallengeEnabled }
-        if isIdle(.partnerAnswered) { partnerAnsweredEnabled = preferences.partnerAnsweredEnabled }
-        if isIdle(.messages) { messagesEnabled = preferences.messagesEnabled }
-        if isIdle(.widgetUpdates) { widgetAlertsEnabled = preferences.widgetUpdatesEnabled }
-        if isIdle(.memories) { memoriesEnabled = preferences.memoriesEnabled }
-    }
-
-    private func value(for kind: NotificationPreferenceKind) -> Bool {
-        switch kind {
-        case .streakReminders:
-            streakRemindersEnabled
-        case .dailyChallenge:
-            dailyChallengeEnabled
-        case .partnerAnswered:
-            partnerAnsweredEnabled
-        case .messages:
-            messagesEnabled
-        case .widgetUpdates:
-            widgetAlertsEnabled
-        case .memories:
-            memoriesEnabled
-        }
-    }
-
-    private func setLocalValue(_ enabled: Bool, for kind: NotificationPreferenceKind) {
-        switch kind {
-        case .streakReminders:
-            streakRemindersEnabled = enabled
-        case .dailyChallenge:
-            dailyChallengeEnabled = enabled
-        case .partnerAnswered:
-            partnerAnsweredEnabled = enabled
-        case .messages:
-            messagesEnabled = enabled
-        case .widgetUpdates:
-            widgetAlertsEnabled = enabled
-        case .memories:
-            memoriesEnabled = enabled
-        }
+        notificationLoadState = .loaded
     }
 }

@@ -233,6 +233,62 @@ struct PaeoniaConvexClientTests {
         #expect(recorder.last == nil)
     }
 
+    @Test func functionCallsGiveUpOnAStalledConnectionButUploadsKeepTheDefault() async throws {
+        let recorder = RequestRecorder()
+        StubURLProtocol.handler = { request in
+            recorder.record(request)
+            return (200, Data(#"{"status":"success","value":null,"storageId":"s1"}"#.utf8))
+        }
+        let client = Self.makeClient()
+
+        try await client.mutation("identity:save")
+        let mutationTimeout = try #require(recorder.last).timeoutInterval
+        try await client.query("identity:read")
+        let queryTimeout = try #require(recorder.last).timeoutInterval
+        let _: PaeoniaConvexIgnoredResult? = try await client.action("access:verify")
+        let actionTimeout = try #require(recorder.last).timeoutInterval
+        _ = try await client.upload(Data([1]), contentType: "image/jpeg", to: Self.baseURL)
+        let uploadTimeout = try #require(recorder.last).timeoutInterval
+
+        #expect(mutationTimeout == 20)
+        #expect(queryTimeout == 20)
+        #expect(actionTimeout == 60)
+        #expect(uploadTimeout == URLRequest(url: Self.baseURL).timeoutInterval)
+    }
+
+    @Test func signOutDisablesTheDeviceThatRegistrationReturned() async throws {
+        let suiteName = "PaeoniaConvexClientTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let deviceID = "0F0F0F0F-0000-4000-8000-000000000001"
+        let recorder = RequestRecorder()
+        StubURLProtocol.handler = { request in
+            recorder.record(request)
+            let body = (try? JSONSerialization.jsonObject(with: request.bodyData)) as? [String: Any]
+            if body?["path"] as? String == "identity:register_user_device" {
+                return (200, Data(#"{"status":"success","value":"\#(deviceID)"}"#.utf8))
+            }
+            return (200, Data(#"{"status":"success","value":true}"#.utf8))
+        }
+        let client = Self.makeClient()
+        let store = PushRegistrationFingerprintStore(channel: .device, defaults: defaults)
+        let registration = ConvexPushRegistrationService(
+            client: client,
+            currentAccountID: { "user_a" },
+            fingerprintStore: store
+        )
+
+        await registration.registerDevice(pushToken: String(repeating: "ab", count: 32))
+        await ConvexPushRegistrationService.disableRegisteredDevice(client: client, fingerprintStore: store)
+
+        let request = try #require(recorder.last)
+        let body = try #require(try JSONSerialization.jsonObject(with: request.bodyData) as? [String: Any])
+        #expect(body["path"] as? String == "identity:disable_user_device")
+        #expect((body["args"] as? [String: Any])?["p_device_id"] as? String == deviceID)
+        // The next sign-in registers the phone again.
+        #expect(store.lastSent() == nil)
+    }
+
     private static let baseURL = URL(string: "https://convex.test") ?? URL(fileURLWithPath: "/")
 
     private static func makeSession() -> URLSession {
@@ -316,3 +372,4 @@ private final class StubURLProtocol: URLProtocol, @unchecked Sendable {
 
     override func stopLoading() {}
 }
+// swiftlint:enable static_over_final_class

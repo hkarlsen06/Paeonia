@@ -61,8 +61,9 @@ struct ReportAndLeaveView: View {
                     }
                 }
                 .buttonStyle(PaeoniaDestructiveButtonStyle())
-                .disabled(viewModel.isSubmitting)
+                .disabled(!viewModel.canSubmit)
             }
+            .disabled(viewModel.isFormLocked)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
             .padding(.bottom, PaeoniaSpacing.space40)
@@ -71,11 +72,14 @@ struct ReportAndLeaveView: View {
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle(Text(.reportAndLeaveTitle))
         .navigationBarTitleDisplayMode(.inline)
+        // Going back mid-send would leave the app unaware that the relationship
+        // ended. This also turns off the swipe-back gesture.
+        .navigationBarBackButtonHidden(viewModel.isSubmitting)
         .onChange(of: viewModel.notice) { _, notice in
             guard let notice else {
                 return
             }
-            handleNotice(notice)
+            showBanner(for: notice)
             viewModel.dismissNotice()
         }
         .alert(
@@ -83,15 +87,13 @@ struct ReportAndLeaveView: View {
             isPresented: $isConfirmingSubmission
         ) {
             Button(role: .destructive) {
-                Task {
-                    await viewModel.submit(target: reportTarget)
-                }
+                submit()
             } label: {
                 Text(.reportAndLeaveConfirmAction)
             }
 
             Button(role: .cancel, action: {}) {
-                Text(.reportAndLeaveConfirmCancel)
+                Text(.commonCancel)
             }
         } message: {
             Text(confirmMessage)
@@ -104,7 +106,7 @@ struct ReportAndLeaveView: View {
     ) -> some View {
         PaeoniaCard {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                reportReasonField(selectedReason: selectedReason)
+                ReportReasonField(selection: selectedReason)
 
                 Divider()
                     .overlay(.paeoniaSurfacePressed)
@@ -114,45 +116,12 @@ struct ReportAndLeaveView: View {
         }
     }
 
-    private func reportReasonField(
-        selectedReason: Binding<PrivacyReportReason?>
-    ) -> some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(.reportAndLeaveReasonLabel)
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
-
-            Picker(
-                selection: selectedReason,
-                label: Text(.reportAndLeaveReasonLabel)
-            ) {
-                Text(.reportAndLeaveReasonPlaceholder)
-                    .tag(Optional<PrivacyReportReason>.none)
-
-                ForEach(PrivacyReportReason.allCases, id: \.self) { reason in
-                    Text(reason.title)
-                        .tag(Optional(reason))
-                }
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .tint(.paeoniaAccentPrimary)
-            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight, alignment: .leading)
-            .padding(.horizontal, PaeoniaSpacing.space16)
-            .background(.paeoniaSurfaceSecondary)
-            .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
-        }
-    }
-
     private func reportNoteField(note: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             Text(.reportAndLeaveNoteLabel)
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)
+                .accessibilityHidden(true)
 
             Text(.reportAndLeaveNoteDescription)
                 .font(PaeoniaTypography.caption)
@@ -161,13 +130,9 @@ struct ReportAndLeaveView: View {
 
             PrivacySafetyMultilineField(
                 text: note,
+                label: .reportAndLeaveNoteLabel,
                 placeholder: .reportAndLeaveNotePlaceholder
             )
-            .onChange(of: note.wrappedValue) { _, newValue in
-                if newValue.count > 4_000 {
-                    note.wrappedValue = String(newValue.prefix(4_000))
-                }
-            }
         }
     }
 
@@ -202,7 +167,30 @@ struct ReportAndLeaveView: View {
             : .reportAndLeaveSubmitButton(partnerName)
     }
 
-    private func handleNotice(_ notice: ReportAndLeaveViewModel.Notice) {
+    /// Reports success from the same task that sent the report, so the app still
+    /// learns that the relationship ended if this screen is gone by then. The task
+    /// takes its own copies of everything it uses for that reason.
+    private func submit() {
+        let viewModel = self.viewModel
+        let target = reportTarget
+        let bannerCenter = self.bannerCenter
+        let onReportedAndLeft = self.onReportedAndLeft
+
+        Task {
+            guard await viewModel.submit(target: target) else {
+                return
+            }
+            bannerCenter.show(
+                .info(
+                    title: String(localized: .reportAndLeaveSubmittedTitle),
+                    message: String(localized: .reportAndLeaveSubmittedMessage)
+                )
+            )
+            onReportedAndLeft()
+        }
+    }
+
+    private func showBanner(for notice: ReportAndLeaveViewModel.Notice) {
         switch notice {
         case .reasonRequired:
             bannerCenter.show(
@@ -218,14 +206,6 @@ struct ReportAndLeaveView: View {
                     message: String(localized: .reportAndLeaveFailedMessage)
                 )
             )
-        case .submitted:
-            bannerCenter.show(
-                .info(
-                    title: String(localized: .reportAndLeaveSubmittedTitle),
-                    message: String(localized: .reportAndLeaveSubmittedMessage)
-                )
-            )
-            onReportedAndLeft()
         }
     }
 }

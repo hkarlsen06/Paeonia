@@ -1,6 +1,9 @@
 import Foundation
 
+// These mirror `MemoryDataServicing`, which mirrors the backend functions' arguments.
+// swiftlint:disable function_parameter_count
 extension MemoryDataService {
+    // swiftlint:disable:next function_body_length
     func createMemory(
         ownerUserID: UUID,
         coupleID: UUID,
@@ -18,6 +21,12 @@ extension MemoryDataService {
         let normalizedTitle = Self.normalizedRequired(title)
         guard !normalizedTitle.isEmpty else {
             throw MemoryDataServiceError.emptyTitle
+        }
+        guard !Self.isOverLimit(normalizedTitle, Self.titleCharacterLimit) else {
+            throw MemoryDataServiceError.titleTooLong
+        }
+        if let normalizedNote, Self.isOverLimit(normalizedNote, Self.noteCharacterLimit) {
+            throw MemoryDataServiceError.noteTooLong
         }
 
         let payload = CreateMemoryOperationPayload(
@@ -92,13 +101,24 @@ extension MemoryDataService {
         guard !normalizedTitle.isEmpty else {
             throw MemoryDataServiceError.emptyTitle
         }
+        guard !Self.isOverLimit(normalizedTitle, Self.titleCharacterLimit) else {
+            throw MemoryDataServiceError.titleTooLong
+        }
 
-        let resolvedRevision = max(expectedRevision, existing.snapshot.revision)
+        // The caller decided which fields to keep from the record it read. If that
+        // record changed since, its untouched fields may now hold the partner's newer
+        // values, which this edit would quietly undo.
+        guard existing.snapshot.revision == expectedRevision else {
+            throw MemoryDataServiceError.staleRevision
+        }
+        let resolvedRevision = existing.snapshot.revision
         let payload = UpdateMemoryOperationPayload(
             memoryID: memoryID,
             expectedRevision: resolvedRevision,
             title: normalizedTitle,
-            memoryDate: memoryDate
+            memoryDate: memoryDate,
+            baseTitle: existing.snapshot.title,
+            baseMemoryDate: existing.snapshot.memoryDate
         )
         let next = record(
             from: existing,
@@ -163,6 +183,9 @@ extension MemoryDataService {
         let normalizedBody = Self.normalizedOptional(body)
         guard let normalizedBody else {
             throw MemoryDataServiceError.emptyNote
+        }
+        guard !Self.isOverLimit(normalizedBody, Self.noteCharacterLimit) else {
+            throw MemoryDataServiceError.noteTooLong
         }
 
         let existing = try await requireMemory(ownerUserID: ownerUserID, memoryID: memoryID)
@@ -325,3 +348,4 @@ extension MemoryDataService {
         )
     }
 }
+// swiftlint:enable function_parameter_count

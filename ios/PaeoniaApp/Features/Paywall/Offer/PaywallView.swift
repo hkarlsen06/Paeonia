@@ -1,16 +1,6 @@
 import Foundation
 import SwiftUI
 
-/// Deterministic display data used by previews and the developer scenario harness.
-/// The production view hierarchy stays intact; only StoreKit's opaque product data
-/// and purchase action are replaced.
-struct PaywallPresentationOverride {
-    let presentation: (PaeoniaBillingPeriod) -> PaywallPresentation
-    let priceLine: (PaeoniaBillingPeriod) -> String
-    let purchaseIsEnabled: Bool
-    let onPurchase: @MainActor () async -> Bool
-}
-
 // swiftlint:disable:next type_body_length
 struct PaywallView: View {
     @State private var viewModel: PaywallViewModel
@@ -102,48 +92,22 @@ struct PaywallView: View {
         .onChange(of: viewModel.error) { _, error in
             showBanner(for: error)
         }
-        .alert(
-            Text(.authDeleteAccountConfirmTitle),
-            isPresented: $isConfirmingDelete
-        ) {
-            Button(role: .destructive, action: onDeleteAccount) {
-                Text(.authDeleteAccountConfirmAction)
-            }
-
-            Button(role: .cancel, action: {}) {
-                Text(.authDeleteAccountConfirmCancel)
-            }
-        } message: {
-            Text(.authDeleteAccountConfirmMessage)
+        .sensoryFeedback(.success, trigger: viewModel.purchaseSucceeded) { _, succeeded in
+            succeeded
         }
-        .alert(
-            Text(.pairingUnpairConfirmTitle(audience.partnerNameForCopy)),
-            isPresented: $isConfirmingUnpair
-        ) {
-            Button(role: .destructive, action: unpair) {
-                Text(.pairingUnpairConfirmAction)
-            }
-
-            Button(role: .cancel, action: {}) {
-                Text(.pairingUnpairConfirmCancel)
-            }
-        } message: {
-            Text(.pairingUnpairConfirmMessage(audience.partnerNameForCopy))
-        }
-        .alert(
-            Text(PaywallInviteConfirmation.title(for: viewModel.invitePreview)),
-            isPresented: $isConfirmingInvite
-        ) {
-            Button(action: redeemPreviewedInvite) {
-                Text(.paywallInviteConfirmAction)
-            }
-
-            Button(role: .cancel, action: cancelInviteConfirmation) {
-                Text(.paywallInviteConfirmCancel)
-            }
-        } message: {
-            Text(PaywallInviteConfirmation.message(for: viewModel.invitePreview))
-        }
+        .modifier(
+            PaywallConfirmationAlerts(
+                isConfirmingDelete: $isConfirmingDelete,
+                isConfirmingUnpair: $isConfirmingUnpair,
+                isConfirmingInvite: $isConfirmingInvite,
+                partnerName: audience.partnerNameForCopy,
+                invitePreview: viewModel.invitePreview,
+                onDeleteAccount: onDeleteAccount,
+                onUnpair: unpair,
+                onAcceptInvite: redeemPreviewedInvite,
+                onCancelInvite: cancelInviteConfirmation
+            )
+        )
     }
 
     private func paywallScene(geometry: GeometryProxy) -> some View {
@@ -169,7 +133,7 @@ struct PaywallView: View {
 
             if showInviteOverlay {
                 inviteOverlay
-                    .transition(.opacity.animation(.easeInOut(duration: 0.25)))
+                    .transition(.opacity.animation(overlayAnimation))
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -204,18 +168,19 @@ struct PaywallView: View {
     private func paywallContent(geometry: GeometryProxy) -> some View {
         PaywallContentView(
             topSafeAreaInset: geometry.safeAreaInsets.top,
-            heroHeight: heroHeight(for: geometry),
-            aboveFoldMinHeight: aboveFoldMinHeight(for: geometry),
+            heroHeight: PaywallContentView.heroHeight(for: geometry),
+            aboveFoldMinHeight: PaywallContentView.aboveFoldMinHeight(for: geometry),
             billingPeriod: $viewModel.billingPeriod,
             headlineTitle: headlineTitle,
             subtitle: subtitle,
             priceLine: presentationOverride?.priceLine(viewModel.billingPeriod)
                 ?? presentation.priceLine,
+            spokenPriceLine: presentation.spokenPriceLine,
             timelineItems: presentation.timelineItems,
             allowsInviteEntry: allowsInviteEntry,
             showsArtworkHeader: !audience.isPaired,
             onRevealInvite: {
-                withAnimation(.easeInOut(duration: 0.25)) {
+                withAnimation(overlayAnimation) {
                     showInviteOverlay = true
                 }
                 inviteFieldFocused = true
@@ -263,7 +228,7 @@ struct PaywallView: View {
 
         inviteCode = normalizedCode
 
-        withAnimation(.easeInOut(duration: 0.25)) {
+        withAnimation(overlayAnimation) {
             showInviteOverlay = true
         }
 
@@ -272,21 +237,17 @@ struct PaywallView: View {
         guard await viewModel.previewInvite(codeInput: normalizedCode) != nil,
               showInviteOverlay
         else {
+            // A wrong or expired code would otherwise open this overlay again on
+            // every launch. The typed code stays in the field to fix or replace.
+            if viewModel.lastInviteCodeWasUnusable {
+                pendingInviteCode = nil
+            }
             inviteFieldFocused = true
             return
         }
 
         inviteFieldFocused = false
         isConfirmingInvite = true
-    }
-
-    private func heroHeight(for geometry: GeometryProxy) -> CGFloat {
-        let band = min(max(geometry.size.height * 0.15, 128), 156)
-        return geometry.safeAreaInsets.top + band
-    }
-
-    private func aboveFoldMinHeight(for geometry: GeometryProxy) -> CGFloat {
-        geometry.size.height + geometry.safeAreaInsets.top - 120
     }
 
     // MARK: - Bottom CTA
@@ -296,7 +257,7 @@ struct PaywallView: View {
             if let presentationOverride {
                 PaywallBottomCTAView(
                     title: presentation.primaryButtonTitle,
-                    caption: .paywallCancelAnytime,
+                    caption: presentation.billingDisclosure,
                     isEnabled: presentationOverride.purchaseIsEnabled,
                     isBusy: presentation.isPurchasing,
                     action: {
@@ -326,6 +287,10 @@ struct PaywallView: View {
         hasPresentedPaywallContent || reduceMotion ? 0 : -10
     }
 
+    private var overlayAnimation: Animation? {
+        reduceMotion ? nil : PaeoniaMotion.stateChange
+    }
+
     private func previewInvite(codeInput: String) {
         guard !viewModel.isPreviewingInvite,
               !viewModel.isAcceptingInvite
@@ -335,12 +300,15 @@ struct PaywallView: View {
 
         Task {
             let preview = await viewModel.previewInvite(codeInput: codeInput)
-            pendingInviteCode = codeInput
 
             guard preview != nil else {
                 inviteFieldFocused = true
                 return
             }
+
+            // Remember only a code that works, so a typo is not reopened on the
+            // next launch.
+            pendingInviteCode = codeInput
 
             guard showInviteOverlay else {
                 viewModel.clearInvitePreview()
@@ -410,8 +378,8 @@ struct PaywallView: View {
 
     private var footerActions: some View {
         PaywallFooterActionsView(
-            isPurchasing: viewModel.isPurchasing,
-            isLoading: viewModel.isLoading,
+            isBusyWithStore: viewModel.isBusyWithStore,
+            isRestoring: viewModel.isRestoring,
             showsUnpair: audience.isPaired,
             isLeavingRelationship: viewModel.isLeavingRelationship,
             onRestorePurchases: restorePurchases,
@@ -478,7 +446,7 @@ struct PaywallView: View {
             return
         }
 
-        bannerCenter.show(.error(message: error.message))
+        bannerCenter.show(error.bannerContent)
         viewModel.clearError()
     }
 
@@ -498,25 +466,4 @@ struct PaywallView: View {
             }
         }
     }
-}
-
-#Preview {
-    PaywallView(
-        session: AuthSession(
-            id: UUID().uuidString,
-            provider: .apple,
-            displayName: "Alvilde",
-            timeZoneID: "Europe/Oslo",
-            profilePhotoAssetID: nil,
-            profileStatus: .complete
-        ),
-        audience: .unpaired,
-        onPurchaseConfirmed: {},
-        onInviteAccepted: {},
-        onSignOut: {},
-        onUnpaired: {},
-        onDeleteAccount: {}
-    )
-    .preferredColorScheme(.dark)
-    .environment(PaeoniaBannerCenter())
 }

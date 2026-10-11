@@ -36,6 +36,10 @@ nonisolated protocol LocalPrivacyPurgeRetryStoring: Actor {
 }
 
 actor UserDefaultsLocalPrivacyPurgeRetryStore: LocalPrivacyPurgeRetryStoring {
+    /// Every purge service shares this one, so each read-change-write of the
+    /// ledger runs alone. Two instances on the same key could drop a request.
+    static let shared = UserDefaultsLocalPrivacyPurgeRetryStore()
+
     private static let storageKey = "privacy.pendingRecordPurges.v1"
 
     private let defaults: UserDefaults

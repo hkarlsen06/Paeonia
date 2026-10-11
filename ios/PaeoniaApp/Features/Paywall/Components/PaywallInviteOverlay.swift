@@ -31,6 +31,9 @@ struct PaywallInviteOverlay: View {
             )
             .padding(.horizontal, PaeoniaSpacing.space20)
         }
+        // VoiceOver stays inside the invite card instead of wandering into the
+        // offer behind the dimmer.
+        .accessibilityAddTraits(.isModal)
     }
 }
 

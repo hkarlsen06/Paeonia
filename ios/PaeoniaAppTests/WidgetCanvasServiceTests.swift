@@ -253,6 +253,24 @@ struct WidgetCanvasServiceTests {
         #expect(environment.reloader.reloadCount == 2)
     }
 
+    /// Older widget builds wrote refreshed previews to `Widget/Previews`, which is
+    /// a separate folder on the case-sensitive device file system.
+    @Test func clearForPrivacyRemovesPreviewsWrittenByOlderWidgetBuilds() async throws {
+        let environment = TestEnvironment()
+        let service = environment.makeService()
+        let legacyFile = environment.url(relativePath: "Widget/Previews/systemSmall-old.png")
+        try FileManager.default.createDirectory(
+            at: legacyFile.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data([0x01]).write(to: legacyFile)
+
+        await service.clearForPrivacy()
+
+        #expect(!FileManager.default.fileExists(atPath: legacyFile.path))
+        #expect(environment.reloader.reloadCount == 1)
+    }
+
     @Test func clearForPrivacyDoesNotReloadWhenNothingStored() async {
         let environment = TestEnvironment()
         let service = environment.makeService()

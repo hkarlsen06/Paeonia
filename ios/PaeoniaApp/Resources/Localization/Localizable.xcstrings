@@ -41,78 +41,6 @@
         }
       }
     },
-    "app.state.deletingAccount" : {
-      "comment" : "Short status label while account deletion is in progress.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deleting account"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sletter konto"
-          }
-        }
-      }
-    },
-    "app.state.entitlementLost" : {
-      "comment" : "Short status label when paid access is no longer active.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Access paused"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tilgang pauset"
-          }
-        }
-      }
-    },
-    "app.state.entitlementRestored" : {
-      "comment" : "Short status label when paid access has been restored.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Access restored"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tilgang gjenopprettet"
-          }
-        }
-      }
-    },
-    "app.state.invitePending" : {
-      "comment" : "Short status label when a partner invite is waiting.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invite pending"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invitasjon venter"
-          }
-        }
-      }
-    },
     "app.state.launching" : {
       "comment" : "Short status label while the app starts.",
       "extractionState" : "manual",
@@ -127,132 +55,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Starter"
-          }
-        }
-      }
-    },
-    "app.state.limitedAuthenticated" : {
-      "comment" : "Short status label for signed-in users without full access.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Limited access"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Begrenset tilgang"
-          }
-        }
-      }
-    },
-    "app.state.onboarding" : {
-      "comment" : "Short status label while profile setup is incomplete.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Onboarding"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Introduksjon"
-          }
-        }
-      }
-    },
-    "app.state.paired" : {
-      "comment" : "Short status label when both partners are paired and have access.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paired"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Koblet sammen"
-          }
-        }
-      }
-    },
-    "app.state.pairedPaywalled" : {
-      "comment" : "Short status label when partners are paired but still need a subscription.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paired, subscription needed"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Koblet sammen, abonnement trengs"
-          }
-        }
-      }
-    },
-    "app.state.relationshipEndedNotice" : {
-      "comment" : "Short status label when a relationship ended notice must be shown.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Space closed"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rommet er lukket"
-          }
-        }
-      }
-    },
-    "app.state.unauthenticated" : {
-      "comment" : "Short status label when the user is signed out.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Signed out"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Logget ut"
-          }
-        }
-      }
-    },
-    "app.state.unpaired" : {
-      "comment" : "Short status label when the user has access but no partner yet.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Waiting for pairing"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Venter på sammenkobling"
           }
         }
       }
@@ -526,42 +328,6 @@
         }
       }
     },
-    "auth.notice.inviteEntryPending.message" : {
-      "comment" : "Alert message for invite entry that is not implemented yet.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invite links will open here in the next build."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invitasjonslenker åpnes her i neste bygg."
-          }
-        }
-      }
-    },
-    "auth.notice.inviteEntryPending.title" : {
-      "comment" : "Alert title for invite entry that is not implemented yet.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invite entry is next"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invitasjon kommer snart"
-          }
-        }
-      }
-    },
     "auth.notice.onboardingFailed.message" : {
       "comment" : "Alert message shown when profile setup cannot be saved.",
       "extractionState" : "manual",
@@ -671,19 +437,19 @@
       }
     },
     "auth.notice.signInFailed.message" : {
-      "comment" : "Alert message shown when Apple or Google sign-in fails.",
+      "comment" : "Banner message when sign-in fails",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We could not sign you in. Try again."
+            "value" : "We couldn't sign you in. Check your connection and try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke logge deg inn. Prøv igjen."
+            "value" : "Vi fikk ikke logget deg inn. Sjekk tilkoblingen og prøv igjen."
           }
         }
       }
@@ -958,42 +724,6 @@
         }
       }
     },
-    "auth.routeUnavailable.message" : {
-      "comment" : "Message shown for an unexpected unavailable app route.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Paeonia again in a moment. If this keeps happening, contact support."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Åpne Paeonia igjen om litt. Kontakt oss hvis dette fortsetter."
-          }
-        }
-      }
-    },
-    "auth.routeUnavailable.title" : {
-      "comment" : "Title shown for an unexpected unavailable app route.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This screen is unavailable"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Denne skjermen er ikke tilgjengelig"
-          }
-        }
-      }
-    },
     "auth.signIn.apple.button" : {
       "comment" : "Button that starts Sign in with Apple.",
       "extractionState" : "manual",
@@ -1152,24 +882,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Logg ut"
-          }
-        }
-      }
-    },
-    "auth.start.message" : {
-      "comment" : "Supporting message on the sign-in screen.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For closeness, sharing, and everything that matters."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For nærhet, deling og alt som betyr noe."
           }
         }
       }
@@ -2669,19 +2381,19 @@
       }
     },
     "dailyChallenge.submitFailed.message" : {
-      "comment" : "Banner message shown when a daily challenge answer could not be sent",
+      "comment" : "Banner message when an answer could not be saved on the phone to send",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your text is still here. Try again."
+            "value" : "Your answer is still here. Try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Teksten din er fortsatt her. Prøv igjen."
+            "value" : "Svaret ditt er fortsatt her. Prøv igjen."
           }
         }
       }
@@ -3101,19 +2813,19 @@
       }
     },
     "dailyChat.error.send.message" : {
-      "comment" : "Message when a chat message could not be saved or the question chat became unavailable",
+      "comment" : "Message when a chat message could not be saved on this phone. The text stays in the message field.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your message is still here. Check that both answers are revealed, then try again."
+            "value" : "Your message is still in the text box. Tap send to try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Meldingen din er fortsatt her. Sjekk at begge svarene er synlige, og prøv igjen."
+            "value" : "Meldingen din står fortsatt i tekstfeltet. Trykk på send for å prøve igjen."
           }
         }
       }
@@ -3479,37 +3191,37 @@
       }
     },
     "home.map.recorded.recent" : {
-      "comment" : "Relative recorded-time status below the couple map. %@ is a localized relative time such as 12 minutes ago.",
+      "comment" : "Status below the couple map. %1$@ is the partner's name. %2$@ is a relative time such as 12 minutes ago.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Updated %@."
+            "value" : "%1$@'s location was updated %2$@."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Oppdatert %@."
+            "value" : "Posisjonen til %1$@ ble oppdatert %2$@."
           }
         }
       }
     },
     "home.map.recorded.stale" : {
-      "comment" : "Stale relative recorded-time warning below the couple map after 24 hours. %@ is a localized relative time.",
+      "comment" : "Status below the couple map when the partner's location is more than a day old. %1$@ is the partner's name. %2$@ is a relative time such as 3 days ago.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Updated %@."
+            "value" : "%1$@'s location was last updated %2$@. It may have changed since."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Oppdatert %@."
+            "value" : "Posisjonen til %1$@ ble sist oppdatert %2$@. Den kan ha endret seg siden."
           }
         }
       }
@@ -5188,24 +4900,6 @@
         }
       }
     },
-    "pairing.invite.checking.button" : {
-      "comment" : "Button label while checking whether the partner has joined.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Checking pairing"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekker sammenkobling"
-          }
-        }
-      }
-    },
     "pairing.invite.code.label" : {
       "comment" : "Label for the generated partner invite code.",
       "extractionState" : "manual",
@@ -5314,56 +5008,20 @@
         }
       }
     },
-    "pairing.invite.loading.message" : {
-      "comment" : "Message while creating a partner invite.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This usually takes a moment."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dette tar vanligvis et øyeblikk."
-          }
-        }
-      }
-    },
-    "pairing.invite.loading.title" : {
-      "comment" : "Title while creating a partner invite.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Making your invite"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lager invitasjonen din"
-          }
-        }
-      }
-    },
     "pairing.invite.message" : {
-      "comment" : "Message explaining the invite code after a user has subscribed.",
+      "comment" : "Short line under the invite screen title. Explains what to do with the code and that one subscription covers both partners.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Share this code with your partner. Your subscription covers both of you."
+            "value" : "Send this code to your partner. Your subscription covers you both."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Del denne koden med partneren din. Ditt abonnement dekker dere begge."
+            "value" : "Send denne koden til partneren din. Abonnementet ditt dekker dere begge."
           }
         }
       }
@@ -5382,24 +5040,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lag ny kode"
-          }
-        }
-      }
-    },
-    "pairing.invite.refresh.button" : {
-      "comment" : "Button that checks whether the partner has joined.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check pairing"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekk sammenkobling"
           }
         }
       }
@@ -5688,24 +5328,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Årlig"
-          }
-        }
-      }
-    },
-    "paywall.cancelAnytime" : {
-      "comment" : "Short reassurance below the purchase button.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You'll confirm in the App Store. Cancel anytime."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du bekrefter i App Store. Avslutt når som helst."
           }
         }
       }
@@ -6611,19 +6233,19 @@
       }
     },
     "paywall.timeline.reminder.body" : {
-      "comment" : "Timeline body explaining the reminder before billing.",
+      "comment" : "Paywall trial timeline step two days before the trial ends.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We'll remind you — 2 days left"
+            "value" : "We'll send a reminder 2 days before, if notifications are on"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi varsler deg — 2 dager igjen"
+            "value" : "Vi minner deg på det 2 dager før, hvis varsler er på"
           }
         }
       }
@@ -6977,13 +6599,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Request access"
+            "value" : "Ask to see it"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Be om innsyn"
+            "value" : "Be om å se det"
           }
         }
       }
@@ -6995,13 +6617,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask what personal data Paeonia has about you and how it is used."
+            "value" : "Ask which details Paeonia stores about you and how they are used."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Be om innsyn i hvilke personopplysninger Paeonia har om deg, og hvordan de brukes."
+            "value" : "Be om å få vite hvilke opplysninger Paeonia lagrer om deg, og hvordan de brukes."
           }
         }
       }
@@ -7013,13 +6635,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Access request"
+            "value" : "See what we store about you"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Forespørsel om innsyn"
+            "value" : "Se hva vi lagrer om deg"
           }
         }
       }
@@ -7163,7 +6785,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rett opplysningene dine"
+            "value" : "Rett opp opplysningene dine"
           }
         }
       }
@@ -7199,7 +6821,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rett opplysningene dine"
+            "value" : "Rett opp opplysningene dine"
           }
         }
       }
@@ -7229,13 +6851,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask for a copy of your account data that you can save or use elsewhere."
+            "value" : "Ask for a file with your account data. You can save it or move it to another app."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Be om en kopi av kontoopplysningene dine som du kan lagre eller bruke andre steder."
+            "value" : "Be om en fil med kontoopplysningene dine. Du kan lagre den eller flytte den til en annen app."
           }
         }
       }
@@ -7283,13 +6905,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pull down to try again. You can still contact support at support@paeonia.no."
+            "value" : "Pull down to try again. You can also write to contact@paeonia.no."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dra ned for å prøve igjen. Du kan fortsatt kontakte support på support@paeonia.no."
+            "value" : "Dra ned for å prøve igjen. Du kan også skrive til contact@paeonia.no."
           }
         }
       }
@@ -7409,13 +7031,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check your connection and try again. No changes were made."
+            "value" : "We couldn't confirm that your request was sent. Check your connection and try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen. Ingen endringer ble gjort."
+            "value" : "Vi kunne ikke bekrefte at forespørselen ble sendt. Sjekk tilkoblingen og prøv igjen."
           }
         }
       }
@@ -7463,13 +7085,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We'll contact you at the email connected to your account."
+            "value" : "We'll email you at the address on your account. If you don't hear from us within a month, write to contact@paeonia.no."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kontakter deg på e-postadressen som er knyttet til kontoen din."
+            "value" : "Vi sender deg en e-post på adressen som er knyttet til kontoen din. Hører du ikke fra oss innen en måned, kan du skrive til contact@paeonia.no."
           }
         }
       }
@@ -7589,13 +7211,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Could not be completed"
+            "value" : "Couldn't be completed. Write to contact@paeonia.no."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kunne ikke fullføres"
+            "value" : "Kunne ikke fullføres. Skriv til contact@paeonia.no."
           }
         }
       }
@@ -7625,13 +7247,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Confirming your request"
+            "value" : "We're checking your request"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bekrefter forespørselen"
+            "value" : "Vi sjekker forespørselen din"
           }
         }
       }
@@ -7643,7 +7265,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Privacy & Safety"
+            "value" : "Privacy and safety"
           }
         },
         "nb" : {
@@ -7715,31 +7337,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your report will be sent, your relationship with %@ will end, and they will be blocked from pairing with you again. Shared content will no longer be available in the app."
+            "value" : "Your report will be sent, your relationship with %@ will end, and they will be blocked from pairing with you again. Shared content will no longer be available in the app. This can't be undone."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rapporten din blir sendt, forholdet med %@ avsluttes, og personen blokkeres fra å koble seg til deg igjen. Delt innhold vil ikke lenger være tilgjengelig i appen."
-          }
-        }
-      }
-    },
-    "reportAndLeave.confirm.cancel" : {
-      "comment" : "Cancel action in the centered report-and-leave confirmation",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancel"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Avbryt"
+            "value" : "Rapporten din blir sendt, forholdet med %@ avsluttes, og personen blokkeres fra å koble seg til deg igjen. Delt innhold vil ikke lenger være tilgjengelig i appen. Dette kan ikke angres."
           }
         }
       }
@@ -7751,13 +7355,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your report will be sent and your relationship with %@ will end. Shared content will no longer be available in the app."
+            "value" : "Your report will be sent and your relationship with %@ will end. Shared content will no longer be available in the app. This can't be undone."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rapporten din blir sendt, og forholdet med %@ avsluttes. Delt innhold vil ikke lenger være tilgjengelig i appen."
+            "value" : "Rapporten din blir sendt, og forholdet med %@ avsluttes. Delt innhold vil ikke lenger være tilgjengelig i appen. Dette kan ikke angres."
           }
         }
       }
@@ -7769,7 +7373,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Report %@ and leave?"
+            "value" : "Report %@ and leave the relationship?"
           }
         },
         "nb" : {
@@ -7787,13 +7391,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The relationship was not changed. Check your connection and try again."
+            "value" : "We couldn't confirm that your report was sent. Check your connection and try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Forholdet ble ikke endret. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Vi kunne ikke bekrefte at rapporten ble sendt. Sjekk tilkoblingen og prøv igjen."
           }
         }
       }
@@ -7823,13 +7427,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tell us what happened with %@. Your report is private and is not shown to the person you report."
+            "value" : "Tell us what happened with %@. We never show your report to them."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fortell oss hva som skjedde med %@. Rapporten din er privat og vises ikke til personen du rapporterer."
+            "value" : "Fortell oss hva som skjedde med %@. Vi viser aldri rapporten din til personen."
           }
         }
       }
@@ -8045,7 +7649,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bekymring for selvskading"
+            "value" : "Bekymring for at noen kan skade seg selv"
           }
         }
       }
@@ -8111,13 +7715,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Select what best describes what happened."
+            "value" : "Choose the reason that fits best."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Velg det som best beskriver hva som skjedde."
+            "value" : "Velg grunnen som passer best."
           }
         }
       }
@@ -8165,13 +7769,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The relationship has ended. Your report is ready for review."
+            "value" : "Paeonia will look at your report. Your relationship has ended."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Forholdet er avsluttet. Rapporten er klar til behandling."
+            "value" : "Paeonia ser på rapporten din. Forholdet ditt er avsluttet."
           }
         }
       }
@@ -8226,78 +7830,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rapporter og forlat forholdet"
-          }
-        }
-      }
-    },
-    "root.empty.message" : {
-      "comment" : "Message for an early placeholder empty state.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pairing, daily check-ins, memories, and drawings will come together here."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sammenkobling, daglige innsjekker, minner og tegninger vil samles her."
-          }
-        }
-      }
-    },
-    "root.empty.title" : {
-      "comment" : "Title for an early placeholder empty state.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your private space starts here"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Det private rommet deres starter her"
-          }
-        }
-      }
-    },
-    "root.foundation.message" : {
-      "comment" : "Message for an early foundation placeholder state.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We are setting up the private space before the first real features arrive."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi gjør klart det private rommet før de første ekte funksjonene kommer."
-          }
-        }
-      }
-    },
-    "root.foundation.title" : {
-      "comment" : "Title for an early foundation placeholder state.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A calm start"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En rolig start"
           }
         }
       }
@@ -8465,19 +7997,19 @@
       }
     },
     "settings.location.saveError.message" : {
-      "comment" : "Top banner message when saving location sharing fails.",
+      "comment" : "Banner message when a location sharing change could not be saved on the phone.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check your connection and try again."
+            "value" : "Try again in a moment."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen."
+            "value" : "Prøv igjen om litt."
           }
         }
       }
@@ -8519,19 +8051,19 @@
       }
     },
     "settings.location.sharing.subtitle" : {
-      "comment" : "Explains location sharing. %@ is the partner name.",
+      "comment" : "Location sharing toggle subtitle. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ can see only your latest location while this is on. Paeonia does not show location history."
+            "value" : "%@ sees only your latest location, never a history. The map shows up when you both turn this on."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ kan bare se den nyeste posisjonen din når dette er på. Paeonia viser ikke posisjonshistorikk."
+            "value" : "%@ ser bare den nyeste posisjonen din, aldri en historikk. Kartet vises når dere begge har slått dette på."
           }
         }
       }
@@ -8897,37 +8429,19 @@
       }
     },
     "settings.privacySafety.message" : {
-      "comment" : "Manage your data or report a safety concern.",
+      "comment" : "Supporting line on the Me tab row that opens data requests: seeing, copying, or correcting the user's data.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Manage your data or report a safety concern."
+            "value" : "See, copy, or correct your data"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Administrer dataene dine eller rapporter noe utrygt."
-          }
-        }
-      }
-    },
-    "settings.profile.discard" : {
-      "comment" : "Button that throws away unsaved name and photo edits in the Me tab",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Discard changes"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Forkast endringene"
+            "value" : "Se, kopier eller rett opp opplysningene dine"
           }
         }
       }
@@ -9094,19 +8608,19 @@
       }
     },
     "settings.profile.row.message" : {
-      "comment" : "Supporting line on the settings menu row that opens the profile screen",
+      "comment" : "Supporting line on the Me tab row that opens the profile editor.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your name, photo, and account"
+            "value" : "Change your name and photo"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Navnet ditt, bildet og kontoen"
+            "value" : "Endre navnet og bildet ditt"
           }
         }
       }
@@ -9130,19 +8644,19 @@
       }
     },
     "settings.profile.saved.message" : {
-      "comment" : "Your changes are ready for both of you.",
+      "comment" : "Banner message after the user saves a new name or photo. %@ is the partner's first name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your changes are ready for both of you."
+            "value" : "%@ will see the change soon."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Endringene dine er klare for dere begge."
+            "value" : "%@ ser endringen snart."
           }
         }
       }
@@ -9166,19 +8680,19 @@
       }
     },
     "settings.profile.saveFailed.message" : {
-      "comment" : "Your old profile is still there. Check your connection and try again.",
+      "comment" : "Banner message when saving the profile name or photo failed. Tells the user their edits are kept and what to do.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your old profile is still there. Check your connection and try again."
+            "value" : "Your changes are still here. Check your connection and try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Den gamle profilen din er fortsatt der. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Endringene dine er fortsatt her. Sjekk tilkoblingen og prøv igjen."
           }
         }
       }
@@ -9400,19 +8914,19 @@
       }
     },
     "settings.purchases.sectionTitle" : {
-      "comment" : "Purchases",
+      "comment" : "Title of the Me tab row and screen for the subscription: manage it in the App Store or restore a purchase.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Purchases"
+            "value" : "Subscription"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kjøp"
+            "value" : "Abonnement"
           }
         }
       }
@@ -9600,13 +9114,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each of you does one small thing each day to keep the flame going. Answer questions, send a drawing, add a memory, or write a message. If one of you misses a day, it cools down, but you can always start again."
+            "value" : "Each of you does one small thing each day to keep the flame going. Answer questions, send a drawing, add a memory, or write a message. If a day goes by without both of you, the flame cools down. You can always light it again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Begge gjør én liten ting hver dag for å holde flammen i live. Svar på spørsmål, send en tegning, legg til et minne eller skriv en melding. Hvis én av dere hopper over en dag, kjølner den, men dere kan alltid begynne på nytt."
+            "value" : "Begge gjør én liten ting hver dag for å holde flammen i live. Svar på spørsmål, send en tegning, legg til et minne eller skriv en melding. Hvis en dag går uten at dere begge har vært med, kjølner flammen. Dere kan alltid tenne den igjen."
           }
         }
       }
@@ -9672,13 +9186,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "That streak can't be brought back anymore."
+            "value" : "You paid, but this streak couldn't be brought back. Contact us from Settings and we'll help."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Den rekken kan ikke hentes tilbake lenger."
+            "value" : "Du har betalt, men rekken kunne ikke hentes tilbake. Kontakt oss fra Innstillinger, så hjelper vi deg."
           }
         }
       }
@@ -9690,13 +9204,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your streak slipped, but you can still bring it back. Do it soon to keep going together."
+            "value" : "Your flame cooled down. A one-time purchase brings your streak back. Either of you can do it before the time runs out."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rekken røk, men du kan fortsatt få den tilbake. Gjør det snart for å holde den i gang sammen."
+            "value" : "Flammen kjølnet. Et engangskjøp henter rekken tilbake. Begge kan gjøre det før tiden går ut."
           }
         }
       }
@@ -9726,13 +9240,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The flame is glowing again. Keep showing up together."
+            "value" : "The flame is glowing again. Keep it going together."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flammen gløder igjen. Fortsett å møte opp sammen."
+            "value" : "Flammen gløder igjen. Hold den i gang sammen."
           }
         }
       }
@@ -9773,42 +9287,6 @@
         }
       }
     },
-    "sync.status.failed" : {
-      "comment" : "Short sync status label for a failed send.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Needs attention"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trenger oppmerksomhet"
-          }
-        }
-      }
-    },
-    "sync.status.offline" : {
-      "comment" : "Short sync status label when the device is offline.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Offline"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Frakoblet"
-          }
-        }
-      }
-    },
     "sync.status.savedLocally" : {
       "comment" : "Short sync status label for content saved only on this phone.",
       "extractionState" : "manual",
@@ -9823,168 +9301,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lagret på denne telefonen"
-          }
-        }
-      }
-    },
-    "sync.status.synced" : {
-      "comment" : "Short sync status label for content sent successfully.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sent"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sendt"
-          }
-        }
-      }
-    },
-    "sync.status.syncing" : {
-      "comment" : "Short sync status label while content is sending.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sending"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sender"
-          }
-        }
-      }
-    },
-    "welcome.countdown.subtitle" : {
-      "comment" : "Welcome carousel screen 3: looking-forward line",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Count down to your next visit and the milestones along the way."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tell ned til neste gjensyn og milepælene på veien."
-          }
-        }
-      }
-    },
-    "welcome.countdown.title" : {
-      "comment" : "Welcome carousel screen 3: looking-forward headline",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Looking forward, together"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se fram til det sammen"
-          }
-        }
-      }
-    },
-    "welcome.dailyQuestions.subtitle" : {
-      "comment" : "Welcome carousel screen 2: closeness line",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The small things you share keep the two of you near."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "De små tingene dere deler, holder dere to nær hverandre."
-          }
-        }
-      }
-    },
-    "welcome.dailyQuestions.title" : {
-      "comment" : "Welcome carousel screen 2: closeness headline",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Closer, every day"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nærmere, hver dag"
-          }
-        }
-      }
-    },
-    "welcome.doodle.subtitle" : {
-      "comment" : "Welcome carousel screen 1: warm greeting line",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Welcome to Paeonia — a private little place to stay close, however far apart you are."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velkommen til Paeonia – et lite, privat sted for å være nær, uansett hvor langt fra hverandre dere er."
-          }
-        }
-      }
-    },
-    "welcome.doodle.title" : {
-      "comment" : "Welcome carousel screen 1: warm greeting headline",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For the two of you"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For dere to"
-          }
-        }
-      }
-    },
-    "welcome.getStarted" : {
-      "comment" : "Welcome carousel: primary button on the last screen, leads to sign-in",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get started"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kom i gang"
           }
         }
       }
@@ -10097,42 +9413,6 @@
         }
       }
     },
-    "welcome.next" : {
-      "comment" : "Welcome carousel: advance to the next screen",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neste"
-          }
-        }
-      }
-    },
-    "welcome.skip" : {
-      "comment" : "Welcome carousel: skip to sign-in",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skip"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hopp over"
-          }
-        }
-      }
-    },
     "widget.history.done" : {
       "comment" : "Button that closes the drawing history screen",
       "extractionState" : "manual",
@@ -10152,19 +9432,19 @@
       }
     },
     "widget.history.empty.message" : {
-      "comment" : "Empty state for the drawing history. %@ is the partner's name.",
+      "comment" : "Empty drawing history message. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Drawings you and %@ save will show up here."
+            "value" : "Drawings you and %@ send will show up here."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegninger du og %@ lagrer, dukker opp her."
+            "value" : "Tegninger du og %@ sender, dukker opp her."
           }
         }
       }
@@ -10443,19 +9723,19 @@
       }
     },
     "widgetDrawing.clear.confirm.message" : {
-      "comment" : "Body of the confirmation dialog shown before clearing the canvas.",
+      "comment" : "Message in the clear-canvas confirmation alert.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This clears what you're drawing now. The last saved drawing stays until you save a new one."
+            "value" : "This clears what you're drawing now. The drawing on your widgets stays until you send a new one."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dette tømmer det du tegner nå. Den siste tegningen blir værende til du lagrer en ny."
+            "value" : "Dette tømmer det du tegner nå. Tegningen på widgetene blir værende til du sender en ny."
           }
         }
       }
@@ -10659,19 +9939,19 @@
       }
     },
     "widgetDrawing.save.button" : {
-      "comment" : "Primary button that sends the drawing to the shared Home Screen widget.",
+      "comment" : "Primary button on the drawing screen that sends the drawing to both partners' widgets.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save"
+            "value" : "Send"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lagre"
+            "value" : "Send"
           }
         }
       }
@@ -10927,6 +10207,2508 @@
         }
       },
       "comment" : "Button label after the user's memory text was copied"
+    },
+    "settings.notifications.partnerSection.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra %@"
+          }
+        }
+      },
+      "comment" : "Heading above the notification switches for things the partner does. %@ is the partner's first name."
+    },
+    "settings.notifications.remindersSection.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminders"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Påminnelser"
+          }
+        }
+      },
+      "comment" : "Heading above the notification switches for reminders Paeonia sends to the user."
+    },
+    "settings.notifications.loadFailed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load your notification settings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke hente varselinnstillingene dine"
+          }
+        }
+      },
+      "comment" : "Title of a note shown when the notification settings could not be loaded."
+    },
+    "settings.notifications.loadFailed.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again. You can change the switches as soon as your settings load."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk tilkoblingen og prøv igjen. Du kan endre bryterne så snart innstillingene er hentet."
+          }
+        }
+      },
+      "comment" : "Message under the title shown when notification settings could not be loaded. Tells the user what to do."
+    },
+    "common.tryAgain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen"
+          }
+        }
+      },
+      "comment" : "Generic button that repeats an action that failed."
+    },
+    "settings.account.logoutConfirm.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log out of Paeonia?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logge ut av Paeonia?"
+          }
+        }
+      },
+      "comment" : "Title of the confirmation shown before the user logs out of Paeonia on this phone."
+    },
+    "settings.account.logoutConfirm.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Everything you've shared stays saved, and you can log back in any time. Anything on this phone that hasn't finished sending will be removed."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alt du har delt, er lagret, og du kan logge inn igjen når som helst. Det som ikke er ferdig sendt fra denne telefonen, blir fjernet."
+          }
+        }
+      },
+      "comment" : "Message in the log out confirmation. Explains what stays and what is removed from this phone."
+    },
+    "settings.purchases.linkedElsewhere.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscription belongs to another account"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abonnementet tilhører en annen konto"
+          }
+        }
+      },
+      "comment" : "Banner title when restoring purchases finds a subscription that belongs to a different Paeonia account."
+    },
+    "settings.purchases.linkedElsewhere.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Apple ID's subscription is linked to a different Paeonia account. Log in with that account to use it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abonnementet på denne Apple-ID-en er knyttet til en annen Paeonia-konto. Logg inn med den kontoen for å bruke det."
+          }
+        }
+      },
+      "comment" : "Banner message when the App Store subscription found during restore is linked to a different Paeonia account. Tells the user what to do."
+    },
+    "paywall.disclosure.trial" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ free, then %2$@. Renews automatically until you cancel in your App Store settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ gratis, deretter %2$@. Fornyes automatisk til du avslutter i App Store-innstillingene."
+          }
+        }
+      },
+      "comment" : "Billing terms under the paywall purchase button when a free trial applies. %1$@ is the trial length, for example '14 days'. %2$@ is the price and period, for example 'kr 99 per month'."
+    },
+    "paywall.disclosure.subscription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@. Renews automatically until you cancel in your App Store settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@. Fornyes automatisk til du avslutter i App Store-innstillingene."
+          }
+        }
+      },
+      "comment" : "Billing terms under the paywall purchase button without a free trial. %@ is the price and period, for example 'kr 99 per month'."
+    },
+    "paywall.price.unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Price isn't available right now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prisen er ikke tilgjengelig akkurat nå"
+          }
+        }
+      },
+      "comment" : "Shown on the paywall instead of the price when the App Store price could not be loaded."
+    },
+    "paywall.purchasePending.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for approval"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på godkjenning"
+          }
+        }
+      },
+      "comment" : "Banner title after a purchase needs approval first, for example by a parent through Ask to Buy."
+    },
+    "paywall.purchasePending.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia opens as soon as the purchase is approved. You don't need to buy it again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia åpnes så snart kjøpet er godkjent. Du trenger ikke kjøpe det på nytt."
+          }
+        }
+      },
+      "comment" : "Banner message after a purchase needs approval first. Explains what happens next."
+    },
+    "paywall.error.purchaseNotFinished.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your payment went through"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Betalingen gikk gjennom"
+          }
+        }
+      },
+      "comment" : "Banner title when the App Store charged the user but Paeonia could not finish unlocking the subscription."
+    },
+    "paywall.error.purchaseNotFinished.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't finish opening Paeonia. Check your connection, then tap Restore purchases. You won't be charged again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å åpne Paeonia helt. Sjekk tilkoblingen, og trykk deretter på Gjenopprett kjøp. Du blir ikke belastet på nytt."
+          }
+        }
+      },
+      "comment" : "Banner message when the payment worked but Paeonia could not finish unlocking. Tells the user what to do."
+    },
+    "reportAndLeave.emergency.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you or someone else is in danger right now, call your local emergency number."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvis du eller noen andre er i fare nå, ring 113 eller 112."
+          }
+        }
+      },
+      "comment" : "Shown under the reason menu when the reason is threats or self-harm. Points to emergency help. Norwegian emergency numbers are 112 (police) and 113 (ambulance)."
+    },
+    "privacySafety.introductionDataOnly" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask to see, copy, or correct the details we store about you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Be om å se, kopiere eller rette opplysningene vi lagrer om deg."
+          }
+        }
+      },
+      "comment" : "Intro on the privacy screen when the user has no partner, so there is no mention of reporting."
+    },
+    "privacySafety.field.charactersLeft" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Characters left: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn igjen: %@"
+          }
+        }
+      },
+      "comment" : "Counter under a text field that is close to its limit. %@ is the number of characters the user can still type."
+    },
+    "privacySafety.loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laster"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the small spinner shown while the user's data requests load."
+    },
+    "settings.profile.photo.loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpner bildet"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the spinner shown on the profile photo while a picked photo opens."
+    },
+    "memories.notice.editFailed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save your changes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å lagre endringene"
+          }
+        }
+      },
+      "comment" : "Banner title when changes to an existing memory could not be saved"
+    },
+    "memories.notice.memoryRemoved.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner deleted this memory, so your changes weren't saved."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din slettet dette minnet, så endringene dine ble ikke lagret."
+          }
+        }
+      },
+      "comment" : "Banner message when the partner deleted a memory while the user was changing it"
+    },
+    "memories.notice.photoSaved.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to your Photos."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret i Bilder."
+          }
+        }
+      },
+      "comment" : "Banner message after a memory photo was added to the phone's photo library"
+    },
+    "memories.notice.photoSaveDenied.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia can't save to your Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia kan ikke lagre i Bilder"
+          }
+        }
+      },
+      "comment" : "Banner title when Paeonia is not allowed to add photos to the photo library"
+    },
+    "memories.notice.photoSaveDenied.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on photo access for Paeonia in Settings, then try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå på tilgang til bilder for Paeonia i Innstillinger, og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Banner message telling the user how to allow saving photos"
+    },
+    "memories.notice.photoSaveFailed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save the photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å lagre bildet"
+          }
+        }
+      },
+      "comment" : "Banner title when a memory photo could not be saved to the photo library"
+    },
+    "memories.photo.retryHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Double-tap to try loading the photo again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dobbelttrykk for å prøve å laste inn bildet igjen."
+          }
+        }
+      },
+      "comment" : "VoiceOver hint on a memory photo that failed to load"
+    },
+    "home.milestone.timeline.firstDay" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your first day together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deres første dag sammen"
+          }
+        }
+      },
+      "comment" : "Large line on the milestones screen on the day the couple got together"
+    },
+    "memories.editor.discard.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard your changes?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forkaste endringene?"
+          }
+        }
+      },
+      "comment" : "Alert title when closing the memory edit form with unsaved changes"
+    },
+    "memories.editor.discard.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The changes you made to this memory won't be saved."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endringene du gjorde i dette minnet blir ikke lagret."
+          }
+        }
+      },
+      "comment" : "Alert message explaining that unsaved memory edits will be lost"
+    },
+    "memories.editor.discard.action" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forkast"
+          }
+        }
+      },
+      "comment" : "Destructive button that closes the memory edit form without saving"
+    },
+    "memories.editor.discard.keepEditing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep editing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett å redigere"
+          }
+        }
+      },
+      "comment" : "Button that keeps the memory edit form open"
+    },
+    "memories.editor.noteRequired" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can change your note, but you can't remove it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan endre notatet ditt, men ikke fjerne det."
+          }
+        }
+      },
+      "comment" : "Hint under the note field when the user empties a note they already saved"
+    },
+    "memories.editor.photoLoadFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't add one of those photos. Try picking it again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å legge til ett av bildene. Prøv å velge det på nytt."
+          }
+        }
+      },
+      "comment" : "Banner message when a photo picked from the library could not be loaded into the memory form"
+    },
+    "memories.editor.uploadingPhoto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adding photo %1$@ of %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legger til bilde %1$@ av %2$@"
+          }
+        }
+      },
+      "comment" : "Save button label while photos upload. The first value is the photo number and the second is the total, for example Adding photo 2 of 3"
+    },
+    "memories.photo.save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save to Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre i Bilder"
+          }
+        }
+      },
+      "comment" : "Menu action that adds a memory photo to the phone's photo library"
+    },
+    "memories.card.photoCount.one" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 bilde"
+          }
+        }
+      },
+      "comment" : "VoiceOver description of a memory card that has one photo"
+    },
+    "memories.card.photoCount" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bilder"
+          }
+        }
+      },
+      "comment" : "VoiceOver description of a memory card with several photos. The value is the number of photos"
+    },
+    "dailyChallenge.textAnswer.characterCount" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld characters"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld av %lld tegn"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the answer length counter. First number is the characters used, second is the limit."
+    },
+    "dailyChallenge.photoFailed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't use that photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke bruke det bildet"
+          }
+        }
+      },
+      "comment" : "Banner title when a picked or taken photo could not be prepared for a daily answer"
+    },
+    "dailyChallenge.photoFailed.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try picking it again, or choose another photo."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv å velge det på nytt, eller velg et annet bilde."
+          }
+        }
+      },
+      "comment" : "Banner message when a picked photo could not be prepared for a daily answer"
+    },
+    "dailyChallenge.voiceFailed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save your voice note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke lagre talemeldingen din"
+          }
+        }
+      },
+      "comment" : "Banner title when a recorded voice note could not be saved for a daily answer"
+    },
+    "dailyChallenge.voiceFailed.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try recording it again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv å spille den inn på nytt."
+          }
+        }
+      },
+      "comment" : "Banner message when a recorded voice note could not be saved for a daily answer"
+    },
+    "dailyChallenge.voice.pause" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        }
+      },
+      "comment" : "Accessibility label for the voice answer pause button, shown while playing"
+    },
+    "dailyChallenge.voice.stopRecording" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop recording"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopp opptaket"
+          }
+        }
+      },
+      "comment" : "Accessibility label for the button that stops recording a voice answer"
+    },
+    "dailyChallenge.voice.tooShort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That was too short. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det ble for kort. Prøv igjen."
+          }
+        }
+      },
+      "comment" : "Shown when a voice recording was too short to keep and was thrown away"
+    },
+    "dailyChallenge.voice.loadFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load this voice note."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke laste inn denne talemeldingen."
+          }
+        }
+      },
+      "comment" : "Shown when a voice note can't be loaded for playback"
+    },
+    "dailyChallenge.voice.retry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen"
+          }
+        }
+      },
+      "comment" : "Button that tries loading a voice note again"
+    },
+    "dailyChallenge.voice.position" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playback position"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avspillingsposisjon"
+          }
+        }
+      },
+      "comment" : "Accessibility label for the voice note playback slider"
+    },
+    "dailyChallenge.voice.timeOfTotal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ of %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ av %2$@"
+          }
+        }
+      },
+      "comment" : "Accessibility value for the playback slider. First value is the current time, second is the total length, for example 0:05 of 0:12"
+    },
+    "dailyChallenge.dayEnded.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's questions have ended"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dagens spørsmål er over"
+          }
+        }
+      },
+      "comment" : "Banner title when the user tries to send an answer to one of their own questions after the couple's day has ended"
+    },
+    "dailyChallenge.dayEnded.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A new day has started. Open today's questions to keep going."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En ny dag har startet. Åpne dagens spørsmål for å fortsette."
+          }
+        }
+      },
+      "comment" : "Banner message after the couple's day ended while answering. Tells the user new questions are ready."
+    },
+    "dailyChallenge.partnerReveal.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s answer opens as soon as yours is sent."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svaret til %@ åpnes så snart ditt er sendt."
+          }
+        }
+      },
+      "comment" : "Shown on the reveal screen while the user's answer finishes sending. The argument is the partner's name."
+    },
+    "dailyChallenge.home.partnerAnsweredNote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ has answered. Finish yours to see their answers."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har svart. Fullfør dine for å se svarene."
+          }
+        }
+      },
+      "comment" : "Small note on the Home daily card while the user is still answering. The argument is the partner's name."
+    },
+    "dailyChallenge.home.completePartnerAnsweredMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ has answered too. See what they said."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har også svart. Se hva som ble svart."
+          }
+        }
+      },
+      "comment" : "Home daily card message after the user answered their three questions and the partner has answers they can now see. The argument is the partner's name."
+    },
+    "dailyChallenge.home.completeWaitingMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your part is done. You'll see %@'s answers when they reply."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din del er ferdig. Du ser svarene når %@ svarer."
+          }
+        }
+      },
+      "comment" : "Home daily card message after the user answered their three questions while the partner hasn't answered yet today. The argument is the partner's name."
+    },
+    "dailyChallenge.progress.pillAccessibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld answered"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld av %lld besvart"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the small progress pill on the daily card. First number is answered questions, second is the total."
+    },
+    "streakRestore.error.paidNotConfirmed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You paid, but your streak isn't back yet. We'll keep trying whenever you open Paeonia. If it's still missing, contact us from Settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du har betalt, men rekken er ikke tilbake ennå. Vi prøver igjen hver gang du åpner Paeonia. Hvis den fortsatt mangler, kan du kontakte oss fra Innstillinger."
+          }
+        }
+      },
+      "comment" : "Inline message when the App Store charged the person but the streak has not come back yet."
+    },
+    "streakRestore.error.priceUnavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load the price. Check your internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke laste prisen. Sjekk nettet og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Shown when the streak restore price cannot be loaded."
+    },
+    "streakRestore.error.purchaseNotCompleted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The purchase didn't go through. Try again in a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kjøpet gikk ikke gjennom. Prøv igjen om litt."
+          }
+        }
+      },
+      "comment" : "Shown when the restore purchase did not go through and nothing was charged."
+    },
+    "streakRestore.error.alreadyBack" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good news: your streak is already back."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gode nyheter: rekken er allerede tilbake."
+          }
+        }
+      },
+      "comment" : "Shown before buying when the partner already restored the streak."
+    },
+    "streakRestore.expired.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time for a fresh start"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tid for en ny start"
+          }
+        }
+      },
+      "comment" : "Title on the restore screen once the time to restore has run out."
+    },
+    "streakRestore.expired.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The time to bring this streak back has passed. Start a new one together today."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiden for å hente tilbake denne rekken er ute. Start en ny sammen i dag."
+          }
+        }
+      },
+      "comment" : "Body once the restore time has passed. Also used as the inline message when the offer closed before buying."
+    },
+    "streakRestore.checkAgainButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk igjen"
+          }
+        }
+      },
+      "comment" : "Buy button label after a payment that is not confirmed yet. It checks again and never charges again."
+    },
+    "streakRestore.countdown.accessibilityLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ igjen"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the restore countdown. The argument is a spoken duration such as 23 hours, 41 minutes."
+    },
+    "streakRestore.pill.accessibilityLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streak paused. You can still bring back your %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekken er på pause. Du kan fortsatt hente tilbake %@."
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the toolbar streak pill while a restore is offered. The argument is for example 30 day streak."
+    },
+    "streakDetail.empty.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do one small thing together today to start your streak. Answer a question, send a drawing, add a memory, or write a message."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør én liten ting sammen i dag for å starte rekken. Svar på et spørsmål, send en tegning, legg til et minne eller skriv en melding."
+          }
+        }
+      },
+      "comment" : "Streak sheet body when no streak has started yet."
+    },
+    "dailyChallenge.photo.loadFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load this photo. Tap to try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste bildet. Trykk for å prøve igjen."
+          }
+        }
+      },
+      "comment" : "Shown in place of a revealed photo answer that failed to download. Tapping it tries again."
+    },
+    "dailyChat.error.delivery.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't send your message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke sende meldingen din"
+          }
+        }
+      },
+      "comment" : "Title of the banner shown when a chat message saved on this phone could not be sent"
+    },
+    "dailyChat.error.delivery.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the red icon next to your message to try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk på det røde ikonet ved siden av meldingen for å prøve igjen."
+          }
+        }
+      },
+      "comment" : "Message of the banner when a chat message could not be sent. The red icon next to the failed message is the retry button."
+    },
+    "streakRestore.pendingApproval.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for approval. Your streak comes back as soon as the purchase is approved."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på godkjenning. Rekken kommer tilbake så snart kjøpet er godkjent."
+          }
+        }
+      },
+      "comment" : "Shown on the streak restore offer when the purchase needs approval first, for example by a parent through Ask to Buy."
+    },
+    "home.map.locating.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finding your location"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finner posisjonen din"
+          }
+        }
+      },
+      "comment" : "Map card title while the phone looks up the user's own location after they chose to share it."
+    },
+    "home.map.locating.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This takes a few seconds."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette tar noen sekunder."
+          }
+        }
+      },
+      "comment" : "Map card message while the phone looks up the user's own location."
+    },
+    "home.map.currentMissing.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We can't find you right now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi finner deg ikke akkurat nå"
+          }
+        }
+      },
+      "comment" : "Map card title when the user shares location but the phone could not find it yet."
+    },
+    "home.map.currentMissing.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check that you have a signal, then try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk at du har dekning, og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Map card message when the phone could not find the user's location. Suggests a fix."
+    },
+    "home.map.currentMissing.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen"
+          }
+        }
+      },
+      "comment" : "Map card button that tries to find the user's location again."
+    },
+    "home.map.accessOff.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location access is off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posisjonstilgang er av"
+          }
+        }
+      },
+      "comment" : "Map card title when iOS location access for Paeonia is turned off."
+    },
+    "home.map.accessOff.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow location for Paeonia in Settings to share where you are with %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tillat posisjon for Paeonia i Innstillinger for å dele hvor du er med %@."
+          }
+        }
+      },
+      "comment" : "Map card message when iOS location access is off. %@ is the partner's name. A button to open Settings follows."
+    },
+    "home.map.partnerWaiting.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is sharing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ deler posisjonen sin"
+          }
+        }
+      },
+      "comment" : "Map card title when the partner turned on location sharing but has not sent a location yet. %@ is the partner's name."
+    },
+    "home.map.partnerWaiting.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will show up here after opening Paeonia."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ dukker opp her etter å ha åpnet Paeonia."
+          }
+        }
+      },
+      "comment" : "Map card message when the partner shares but has no location yet. %@ is the partner's name."
+    },
+    "home.map.unavailable.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't show the map right now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kan ikke vise kartet akkurat nå"
+          }
+        }
+      },
+      "comment" : "Map card title when the map cannot be shown, for example while offline."
+    },
+    "home.map.unavailable.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It updates by itself when you're back online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det oppdateres av seg selv når du er på nett igjen."
+          }
+        }
+      },
+      "comment" : "Map card message when the map cannot be shown right now."
+    },
+    "home.map.relationshipEnded.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can no longer see each other's location."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere kan ikke lenger se hverandres posisjon."
+          }
+        }
+      },
+      "comment" : "Map card message after the relationship ended and location sharing stopped."
+    },
+    "home.map.recorded.justNow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s location was updated just now."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posisjonen til %@ ble nettopp oppdatert."
+          }
+        }
+      },
+      "comment" : "Status below the couple map when the partner's location was updated less than a minute ago. %@ is the partner's name."
+    },
+    "home.map.distance.accessibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ apart"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ fra hverandre"
+          }
+        }
+      },
+      "comment" : "VoiceOver value on the couple map. %@ is a distance such as 12 km."
+    },
+    "settings.location.accessOff.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location access for Paeonia is off, so %@ can't see where you are now."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posisjonstilgang for Paeonia er av, så %@ ser ikke hvor du er nå."
+          }
+        }
+      },
+      "comment" : "Note in location settings when sharing is on but iOS location access is off. %@ is the partner's name. A button to open Settings follows."
+    },
+    "widgetDrawing.waiting.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved on this phone. It will reach %@ when you're online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret på denne telefonen. Den kommer frem til %@ når du er på nett."
+          }
+        }
+      },
+      "comment" : "Note under the drawing canvas after sending while offline. %@ is the partner's name."
+    },
+    "widgetDrawing.notSent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not sent yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke sendt ennå"
+          }
+        }
+      },
+      "comment" : "Small label above the drawing canvas when the canvas has changes that have not been sent yet."
+    },
+    "widgetDrawing.partnerSent.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ just sent a drawing. Sending yours will replace it on your widgets."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sendte nettopp en tegning. Sender du din, bytter den ut tegningen på widgetene."
+          }
+        }
+      },
+      "comment" : "Note on the drawing screen when the partner sent a drawing while the user was drawing. %@ is the partner's name."
+    },
+    "widgetDrawing.tooBig.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This drawing is too big to send"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen er for stor til å sendes"
+          }
+        }
+      },
+      "comment" : "Banner title when a drawing has too many lines to be sent."
+    },
+    "widgetDrawing.tooBig.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erase some lines and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visk ut noen streker og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Banner message when a drawing has too many lines to be sent."
+    },
+    "widgetDrawing.onWidget.accessibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On your widgets now: a drawing by %1$@, %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På widgetene nå: en tegning av %1$@, %2$@"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the row above the canvas that describes the drawing shown on the widgets. %1$@ is who drew it. %2$@ is when."
+    },
+    "widget.history.thumbnail.failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load this drawing. Tap to try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste tegningen. Trykk for å prøve igjen."
+          }
+        }
+      },
+      "comment" : "VoiceOver label and hint on a drawing in history that could not load. Tapping tries again."
+    },
+    "widget.history.loadMore.failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load older drawings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste eldre tegninger."
+          }
+        }
+      },
+      "comment" : "Text at the bottom of the drawing history when older drawings could not load. A Try again button follows."
+    },
+    "widgetDrawing.partnerSent.short" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sent a new drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sendte en ny tegning"
+          }
+        }
+      },
+      "comment" : "Short line above the drawing canvas when the partner sent a drawing while the user was drawing. %@ is the partner's name."
+    },
+    "widgetDrawing.waiting.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sends when online"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sendes når du er på nett"
+          }
+        }
+      },
+      "comment" : "Label on the send button after sending while offline. The drawing goes out automatically when the phone is online."
+    },
+    "common.loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laster"
+          }
+        }
+      },
+      "comment" : "Accessibility value read on a button while its action is running"
+    },
+    "common.close" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lukk"
+          }
+        }
+      },
+      "comment" : "Accessibility label and button title that closes a full-screen viewer"
+    },
+    "imageViewer.pageCounter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ of %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ av %2$@"
+          }
+        }
+      },
+      "comment" : "Page counter in the full-screen photo viewer. First value is the current photo number, second is the total, e.g. 2 of 5"
+    },
+    "streak.flame.lost.accessibility" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ day streak, paused"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ dager på rad, satt på pause"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the streak flame when the streak is paused and can be restored. The argument is the number of days."
+    },
+    "pairing.invite.waiting.status" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll take you in as soon as they join."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kommer rett inn så snart partneren din blir med."
+          }
+        }
+      },
+      "comment" : "Quiet status line under the invite code. The app moves on by itself when the partner joins, so there is no button."
+    },
+    "pairing.invite.join.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Have a code from your partner?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Har du en kode fra partneren din?"
+          }
+        }
+      },
+      "comment" : "Quiet button on the invite screen that opens code entry for someone whose partner already has a code"
+    },
+    "pairing.invite.newCode.confirm.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make a new code?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lage en ny kode?"
+          }
+        }
+      },
+      "comment" : "Title of the confirmation alert before replacing the invite code"
+    },
+    "pairing.invite.newCode.confirm.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your old code will stop working."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den gamle koden slutter å virke."
+          }
+        }
+      },
+      "comment" : "Message of the confirmation alert before replacing the invite code. Says what happens to the old code."
+    },
+    "pairing.invite.copied.announcement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Code copied"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koden er kopiert"
+          }
+        }
+      },
+      "comment" : "VoiceOver announcement after the invite code is copied to the clipboard"
+    },
+    "pairing.invite.error.replaceFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't make a new code. Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å lage en ny kode. Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Top banner shown when making a new invite code fails. The current code stays on screen."
+    },
+    "pairing.join.error.notFound" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That code doesn't work anymore. Ask your partner for a new one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den koden virker ikke lenger. Be partneren din om en ny."
+          }
+        }
+      },
+      "comment" : "Top banner shown when a partner's invite code is expired, used up, or does not exist"
+    },
+    "pairing.join.error.invalid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That code doesn't look right. Check it and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koden ser ikke riktig ut. Sjekk den og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Top banner shown when the typed partner code is not a valid code"
+    },
+    "pairing.join.error.checkFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't check that code. Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke sjekke koden. Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Top banner shown when the app could not look up a partner's code, usually because the connection failed"
+    },
+    "pairing.join.error.joinFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't connect you with your partner. Check your connection, then enter the code again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å koble deg til partneren din. Sjekk tilkoblingen, og skriv inn koden på nytt."
+          }
+        }
+      },
+      "comment" : "Top banner shown when the user confirmed joining their partner but it failed. The code has to be entered again."
+    },
+    "pairing.join.error.ownCode" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That is your own code. Send it to your partner instead."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det er din egen kode. Send den til partneren din i stedet."
+          }
+        }
+      },
+      "comment" : "Top banner shown when the user enters the invite code they made themselves"
+    },
+    "pairing.codeEntry.field.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Double tap to type the 6 characters."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dobbeltrykk for å skrive de 6 tegnene."
+          }
+        }
+      },
+      "comment" : "VoiceOver hint on the invite code entry field"
+    },
+    "root.joinLink.alreadyPaired.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're already paired"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er allerede koblet sammen"
+          }
+        }
+      },
+      "comment" : "Banner title shown when someone opens a partner invite link while already paired"
+    },
+    "root.joinLink.alreadyPaired.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This invite link was not used. You can only be paired with one person at a time."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne invitasjonslenken ble ikke brukt. Du kan bare være koblet sammen med én person om gangen."
+          }
+        }
+      },
+      "comment" : "Banner message shown when someone opens a partner invite link while already paired"
+    },
+    "pairing.codeEntry.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your partner's code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv inn koden fra partneren din"
+          }
+        }
+      },
+      "comment" : "Title of the sheet where someone who already has a subscription types the code their partner sent them"
+    },
+    "pairing.codeEntry.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type the 6 characters your partner sent you, or paste them."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv inn de 6 tegnene partneren din sendte deg, eller lim dem inn."
+          }
+        }
+      },
+      "comment" : "Line under the code entry sheet title. The partner's code is 6 characters long."
+    },
+    "pairing.codeEntry.submit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      },
+      "comment" : "Button in the code entry sheet. The next step is a confirmation that shows who the code belongs to."
+    },
+    "auth.onboarding.menu" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More options"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere valg"
+          }
+        }
+      },
+      "comment" : "Accessibility label for the menu on the profile setup screen with sign out and delete account"
+    },
+    "auth.onboarding.photoLoadFailed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't open that photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke åpne bildet"
+          }
+        }
+      },
+      "comment" : "Banner title when the chosen profile photo could not be opened during profile setup"
+    },
+    "auth.onboarding.photoLoadFailed.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try a different photo."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv et annet bilde."
+          }
+        }
+      },
+      "comment" : "Banner message when the chosen profile photo could not be opened during profile setup"
+    },
+    "welcome.feature.drawing.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw on their Home Screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn på hjemskjermen til partneren din"
+          }
+        }
+      },
+      "comment" : "Welcome screen feature title: send drawings to the partner's Home Screen widget"
+    },
+    "welcome.feature.drawing.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawing shows up in the Paeonia widget on their phone."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen din dukker opp i Paeonia-widgeten på telefonen til partneren din."
+          }
+        }
+      },
+      "comment" : "Welcome screen feature description for the drawing widget"
+    },
+    "welcome.feature.questions.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questions for the two of you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmål til dere to"
+          }
+        }
+      },
+      "comment" : "Welcome screen feature title for the daily questions"
+    },
+    "welcome.feature.questions.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer a few questions each day, then see what your partner said."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på noen spørsmål hver dag, og se hva partneren din svarte."
+          }
+        }
+      },
+      "comment" : "Welcome screen feature description for the daily questions"
+    },
+    "welcome.feature.memories.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep your memories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta vare på minnene deres"
+          }
+        }
+      },
+      "comment" : "Welcome screen feature title for shared memories"
+    },
+    "welcome.feature.memories.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save photos and moments from your time together in one place."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samle bilder og øyeblikk fra tiden sammen på ett sted."
+          }
+        }
+      },
+      "comment" : "Welcome screen feature description for shared memories"
+    },
+    "welcome.feature.milestones.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Count down to your big days"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell ned til de store dagene"
+          }
+        }
+      },
+      "comment" : "Welcome screen feature title for relationship milestones and countdown"
+    },
+    "welcome.feature.milestones.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See how long you have been together and what is coming up next."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se hvor lenge dere har vært sammen, og hva som kommer snart."
+          }
+        }
+      },
+      "comment" : "Welcome screen feature description for relationship milestones"
+    },
+    "pairing.celebration.skipAnimationAction" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip animation"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hopp over animasjonen"
+          }
+        }
+      },
+      "comment" : "VoiceOver action on the pairing celebration that ends the animation early."
+    },
+    "pairing.celebration.connectedAnnouncement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You and %@ are connected"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du og %@ er koblet sammen"
+          }
+        }
+      },
+      "comment" : "Spoken by VoiceOver when the pairing celebration settles. %@ is the partner's display name."
+    },
+    "pairing.celebration.pairedHeaderLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You and %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du og %@"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the avatars at the top of the Home tab. %@ is the partner's display name."
+    },
+    "auth.notice.sessionEnded.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You were signed out"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du ble logget ut"
+          }
+        }
+      },
+      "comment" : "Banner title when the user's sign-in expired or was ended on another device while the app was open"
+    },
+    "auth.notice.sessionEnded.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in again to pick up where you left off. What you saved on this phone is kept."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logg inn igjen for å fortsette der du slapp. Det du har lagret på denne telefonen, blir tatt vare på."
+          }
+        }
+      },
+      "comment" : "Banner message when the sign-in ended on its own; local data is kept and sent after signing in again"
+    },
+    "settings.notifications.systemNotAsked.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications are not on yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varsler er ikke slått på ennå"
+          }
+        }
+      },
+      "comment" : "Title of a note on the notification settings screen when iOS has never asked the user to allow notifications."
+    },
+    "settings.notifications.systemNotAsked.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow notifications so you get the ones you choose below."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tillat varsler, så får du dem du velger nedenfor."
+          }
+        }
+      },
+      "comment" : "Message in the note shown when iOS has never asked the user to allow notifications. Explains why the switches below do nothing yet."
+    },
+    "settings.notifications.turnOnButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on notifications"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå på varsler"
+          }
+        }
+      },
+      "comment" : "Button that shows the iOS prompt to allow notifications for Paeonia."
+    },
+    "memories.notice.tooLong.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too long to save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For langt til å lagre"
+          }
+        }
+      },
+      "comment" : "Banner title when a memory title or note is longer than the app can save"
+    },
+    "memories.notice.tooLong.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The title or note is longer than we can save. Make it shorter and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tittelen eller notatet er lengre enn vi kan lagre. Gjør det kortere og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Banner message when a memory title or note is longer than the app can save. Tells the person to shorten it."
     }
   },
   "version" : "1.0"

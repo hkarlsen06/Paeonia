@@ -29,6 +29,8 @@ struct LaunchExperienceView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var sequence = LaunchExperienceSequence()
+    /// When the intro first appeared, continuing the system launch screen.
+    @State private var shownAt = ContinuousClock.now
     /// Per-side horizontal travel of each petal half. `0` composes the full mark,
     /// exactly matching the system launch screen.
     @State private var petalSpread: CGFloat = 0
@@ -105,6 +107,9 @@ struct LaunchExperienceView: View {
         // after readiness prevents launch work from stealing frames mid-motion.
         .task(id: contentReady) {
             guard contentReady else { return }
+            sequence.markContentReady()
+            // Readiness can flip again during the intro. The spring plays once.
+            guard sequence.phase == .mark else { return }
             await runScript()
         }
         .onChange(of: sequence.phase) { _, phase in
@@ -158,12 +163,15 @@ struct LaunchExperienceView: View {
     // MARK: - Timing
 
     private func runScript() async {
-        sequence.markContentReady()
-
-        do {
-            try await Task.sleep(for: .seconds(Self.markHold))
-        } catch {
-            return
+        // The composed-mark hold counts from when the intro first showed, so a
+        // slow auth/access check already covers it instead of adding to it.
+        let remainingHold = Duration.seconds(Self.markHold) - (ContinuousClock.now - shownAt)
+        if remainingHold > .zero {
+            do {
+                try await Task.sleep(for: remainingHold)
+            } catch {
+                return
+            }
         }
         sequence.beginSpring()
 

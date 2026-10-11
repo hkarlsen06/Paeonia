@@ -41,7 +41,7 @@ actor LocalPrivacyPurgeService: LocalPrivacyPurging {
     init(
         recordStore: any LocalPrivacyRecordPurging,
         privateContentPurger: any LocalPrivateContentPurging = LiveLocalPrivateContentPurger(),
-        retryStore: any LocalPrivacyPurgeRetryStoring = UserDefaultsLocalPrivacyPurgeRetryStore(),
+        retryStore: any LocalPrivacyPurgeRetryStoring = UserDefaultsLocalPrivacyPurgeRetryStore.shared,
         retryDelay: Duration = .seconds(30),
         automaticallyRetry: Bool = true
     ) {

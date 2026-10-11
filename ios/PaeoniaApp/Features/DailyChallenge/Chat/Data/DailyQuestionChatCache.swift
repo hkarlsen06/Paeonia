@@ -11,6 +11,9 @@ protocol DailyQuestionChatCaching: Actor {
     )
     func append(_ message: DailyQuestionChatMessage, ownerUserID: UUID)
     func markFailed(ownerUserID: UUID, clientOperationID: UUID)
+    /// Removes a message that failed to send, so a retry replaces it. Messages that
+    /// are still sending or already sent are left alone.
+    func discardFailed(ownerUserID: UUID, clientOperationID: UUID)
     func confirm(
         ownerUserID: UUID,
         instanceID: UUID,
@@ -33,6 +36,24 @@ protocol DailyQuestionChatCaching: Actor {
         _ messages: [DailyQuestionChatMessage],
         ownerUserID: UUID,
         instanceID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool
+    /// Like `saveMessages(_:ownerUserID:instanceID:unlessPurgedSince:)`, for a one-shot
+    /// read that can be older than the cache. Confirmed cached messages that the read
+    /// lacks and that are newer than its newest message stay.
+    @discardableResult
+    func mergeMessages(
+        _ messages: [DailyQuestionChatMessage],
+        ownerUserID: UUID,
+        instanceID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool
+    /// Like `saveSummaries`, but writes nothing when `clearAll()` ran after `generation`
+    /// was read. Returns whether it wrote.
+    @discardableResult
+    func saveSummaries(
+        _ summaries: [DailyQuestionThreadSummary],
+        ownerUserID: UUID,
         unlessPurgedSince generation: Int
     ) -> Bool
 }
@@ -79,6 +100,12 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     func append(_ message: DailyQuestionChatMessage, ownerUserID: UUID) {
         var document = document(ownerUserID: ownerUserID)
         var messages = document.messagesByInstanceID[message.instanceID.uuidString] ?? []
+        // A confirmation that ran first already stored the final copy. Adding the
+        // sending copy again would show a sent message as sending.
+        if let operationID = message.clientOperationID,
+           messages.contains(where: { $0.clientOperationID == operationID && !$0.isSending }) {
+            return
+        }
         messages.removeAll { $0.clientOperationID == message.clientOperationID }
         messages.append(message)
         document.messagesByInstanceID[message.instanceID.uuidString] = messages.sorted {
@@ -106,16 +133,18 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     func markFailed(ownerUserID: UUID, clientOperationID: UUID) {
         var document = document(ownerUserID: ownerUserID)
         for key in Array(document.messagesByInstanceID.keys) {
-            guard let index = document.messagesByInstanceID[key]?.firstIndex(where: {
-                $0.clientOperationID == clientOperationID
-            }) else { continue }
-            document.messagesByInstanceID[key]![index] = DailyQuestionChatMessage(
-                id: document.messagesByInstanceID[key]![index].id,
-                threadID: document.messagesByInstanceID[key]![index].threadID,
-                instanceID: document.messagesByInstanceID[key]![index].instanceID,
-                senderUserID: document.messagesByInstanceID[key]![index].senderUserID,
-                body: document.messagesByInstanceID[key]![index].body,
-                createdAt: document.messagesByInstanceID[key]![index].createdAt,
+            guard
+                let messages = document.messagesByInstanceID[key],
+                let index = messages.firstIndex(where: { $0.clientOperationID == clientOperationID })
+            else { continue }
+            let message = messages[index]
+            document.messagesByInstanceID[key]?[index] = DailyQuestionChatMessage(
+                id: message.id,
+                threadID: message.threadID,
+                instanceID: message.instanceID,
+                senderUserID: message.senderUserID,
+                body: message.body,
+                createdAt: message.createdAt,
                 clientOperationID: clientOperationID,
                 isSending: false,
                 sendFailed: true
@@ -123,6 +152,18 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
             save(document, ownerUserID: ownerUserID)
             return
         }
+    }
+
+    func discardFailed(ownerUserID: UUID, clientOperationID: UUID) {
+        var document = document(ownerUserID: ownerUserID)
+        let before = document.messagesByInstanceID
+        for key in Array(document.messagesByInstanceID.keys) {
+            document.messagesByInstanceID[key]?.removeAll {
+                $0.clientOperationID == clientOperationID && $0.sendFailed
+            }
+        }
+        guard document.messagesByInstanceID != before else { return }
+        save(document, ownerUserID: ownerUserID)
     }
 
     func confirm(
@@ -152,7 +193,7 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
             isSending: false
         )
         if let index {
-            document.messagesByInstanceID[key]![index] = confirmed
+            document.messagesByInstanceID[key]?[index] = confirmed
         } else {
             document.messagesByInstanceID[key, default: []].append(confirmed)
         }
@@ -201,6 +242,34 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     ) -> Bool {
         guard generation == self.generation else { return false }
         saveMessages(messages, ownerUserID: ownerUserID, instanceID: instanceID)
+        return true
+    }
+
+    @discardableResult
+    func mergeMessages(
+        _ messages: [DailyQuestionChatMessage],
+        ownerUserID: UUID,
+        instanceID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool {
+        guard generation == self.generation else { return false }
+        let cached = self.messages(ownerUserID: ownerUserID, instanceID: instanceID)
+        saveMessages(
+            DailyQuestionChatMessage.keepingNewerCached(messages, cached: cached),
+            ownerUserID: ownerUserID,
+            instanceID: instanceID
+        )
+        return true
+    }
+
+    @discardableResult
+    func saveSummaries(
+        _ summaries: [DailyQuestionThreadSummary],
+        ownerUserID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool {
+        guard generation == self.generation else { return false }
+        saveSummaries(summaries, ownerUserID: ownerUserID)
         return true
     }
 

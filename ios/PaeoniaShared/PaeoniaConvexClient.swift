@@ -70,6 +70,7 @@ nonisolated final class PaeoniaConvexClient: Sendable {
         args: some Encodable
     ) async throws -> Result {
         var request = URLRequest(url: deploymentURL.appending(path: "api/\(kind)"))
+        request.timeoutInterval = Self.timeoutInterval(forKind: kind)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let token = try await tokenProvider() {
@@ -96,6 +97,16 @@ nonisolated final class PaeoniaConvexClient: Sendable {
                 message: envelope.errorData?.message ?? envelope.errorMessage ?? "Unknown error"
             )
         }
+    }
+
+    /// Seconds a function call may wait for the server before it fails with
+    /// `URLError.timedOut`. Queries and mutations finish in well under a second
+    /// on the server, so 20 seconds only cuts off a stalled connection instead
+    /// of leaving a spinner up for a minute. Actions call Apple and Clerk, so
+    /// they keep the 60-second system default. Uploads in `upload` keep it too,
+    /// because a photo on a slow connection needs the time.
+    static func timeoutInterval(forKind kind: String) -> TimeInterval {
+        kind == "action" ? 60 : 20
     }
 
     private static func requireSuccessStatus(_ response: URLResponse, body: Data) throws {

@@ -6,6 +6,8 @@ struct PaeoniaEmptyStateView<Action: View>: View {
     private let systemImage: String?
     private let action: Action
 
+    @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 32
+
     init(
         title: LocalizedStringResource,
         message: LocalizedStringResource,
@@ -26,6 +28,7 @@ struct PaeoniaEmptyStateView<Action: View>: View {
                 Text(title)
                     .font(PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
+                    .accessibilityAddTraits(.isHeader)
 
                 Text(message)
                     .font(PaeoniaTypography.body)
@@ -43,7 +46,7 @@ struct PaeoniaEmptyStateView<Action: View>: View {
     private var image: some View {
         if let systemImage {
             Image(systemName: systemImage)
-                .font(.system(size: 32, weight: .semibold))
+                .font(.system(size: iconSize, weight: .semibold))
                 .foregroundStyle(.paeoniaAccentPrimary)
                 .accessibilityHidden(true)
         }

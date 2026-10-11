@@ -1,5 +1,17 @@
 import Foundation
 
+// Every handler ends a queued memory write in one of four ways:
+// - The server accepted it: pull the server copy so the local record is clean again.
+// - The partner changed the memory first (revision conflict): rebase the write on the
+//   server copy and send it again, keeping the partner's change for anything this
+//   write didn't touch.
+// - The server refused it because the memory is gone (the partner deleted it): show
+//   the server copy on this device and stop retrying.
+// - A server check refused it (`23514`, such as a title that is too long): stop
+//   retrying and keep the text on this phone, so newer edits are not held up.
+// Any other failure is thrown, so the outbox retries later. Nothing is marked as a
+// conflict, because a conflicted record would never take server updates again.
+
 struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .createMemory
 
@@ -23,28 +35,12 @@ struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
         }
 
         let payload = try JSONDecoder().decode(CreateMemoryOperationPayload.self, from: requestData)
-
-        do {
-            _ = try await gateway.createMemory(payload, operation: operation.operation)
-            try await MemoryPendingOperationRefresh.refresh(
-                gateway: gateway,
-                memoryStore: memoryStore,
-                ownerUserID: operation.ownerUserID,
-                confirmedOperationID: operation.operation.id
-            )
-            return .succeeded
-        } catch {
-            guard MemoryPendingOperationRefresh.isMemoryConflict(error) else {
-                throw error
-            }
-
-            try await memoryStore.markConflict(
-                ownerUserID: operation.ownerUserID,
-                memoryID: payload.memoryID,
-                reason: "Memory create conflict"
-            )
-            return .terminalFailure("Memory create conflict")
-        }
+        _ = try await gateway.createMemory(payload, operation: operation.operation)
+        return try await MemoryPendingOperationRefresh.succeeded(
+            operation,
+            gateway: gateway,
+            memoryStore: memoryStore
+        )
     }
 }
 
@@ -64,35 +60,48 @@ struct UpdateMemoryPendingOperationHandler: PendingSyncOperationHandling {
 
     func send(
         _ operation: PendingSyncOperationSnapshot,
-        context _: SyncContext
+        context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
         guard let requestData = operation.requestData else {
             return .terminalFailure("Missing update memory payload")
         }
 
         let payload = try JSONDecoder().decode(UpdateMemoryOperationPayload.self, from: requestData)
+        let refresh = MemoryPendingOperationRefresh.self
+        if let older = try await refresh.olderPendingWrite(
+            before: operation,
+            memoryID: payload.memoryID,
+            context: context,
+            memoryIDIn: { try? JSONDecoder().decode(UpdateMemoryOperationPayload.self, from: $0).memoryID }
+        ) {
+            return .retry(after: refresh.retryDate(after: older))
+        }
 
         do {
             _ = try await gateway.updateMemory(payload, operation: operation.operation)
-            try await MemoryPendingOperationRefresh.refresh(
-                gateway: gateway,
-                memoryStore: memoryStore,
-                ownerUserID: operation.ownerUserID,
-                confirmedOperationID: operation.operation.id
-            )
-            return .succeeded
-        } catch {
-            guard MemoryPendingOperationRefresh.isMemoryConflict(error) else {
+        } catch where refresh.isMemoryConflict(error) {
+            guard let row = try await refresh.serverRow(memoryID: payload.memoryID, gateway: gateway) else {
                 throw error
             }
+            guard row.isVisibleMemory else {
+                return try await refresh.acceptRemoval(row, operation, memoryStore: memoryStore)
+            }
 
-            try await memoryStore.markConflict(
-                ownerUserID: operation.ownerUserID,
+            let rebased = payload.rebased(onto: row)
+            if rebased.title != row.title || rebased.memoryDate != row.memoryDate {
+                _ = try await gateway.updateMemory(rebased, operation: operation.operation)
+            }
+        } catch {
+            return try await refresh.settleRejectedWrite(
+                error,
                 memoryID: payload.memoryID,
-                reason: "Memory revision conflict"
+                operation,
+                gateway: gateway,
+                memoryStore: memoryStore
             )
-            return .terminalFailure("Memory revision conflict")
         }
+
+        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore)
     }
 }
 
@@ -119,28 +128,34 @@ struct HideMemoryPendingOperationHandler: PendingSyncOperationHandling {
         }
 
         let payload = try JSONDecoder().decode(HideMemoryOperationPayload.self, from: requestData)
+        let refresh = MemoryPendingOperationRefresh.self
 
         do {
             _ = try await gateway.hideMemory(payload, operation: operation.operation)
-            try await MemoryPendingOperationRefresh.refresh(
-                gateway: gateway,
-                memoryStore: memoryStore,
-                ownerUserID: operation.ownerUserID,
-                confirmedOperationID: operation.operation.id
-            )
-            return .succeeded
         } catch {
-            guard MemoryPendingOperationRefresh.isMemoryConflict(error) else {
+            // The person confirmed the delete, so it wins over an edit the partner made
+            // in the meantime. If the memory is already gone, the delete is done.
+            guard refresh.isServerRejection(error),
+                  let row = try await refresh.serverRow(memoryID: payload.memoryID, gateway: gateway)
+            else {
                 throw error
             }
-
-            try await memoryStore.markConflict(
-                ownerUserID: operation.ownerUserID,
-                memoryID: payload.memoryID,
-                reason: "Memory revision conflict"
+            guard row.isVisibleMemory else {
+                try await memoryStore.saveRemote(
+                    [row],
+                    ownerUserID: operation.ownerUserID,
+                    mergePolicy: .overwriteLocalChanges
+                )
+                return .succeeded
+            }
+            guard refresh.isMemoryConflict(error) else { throw error }
+            _ = try await gateway.hideMemory(
+                HideMemoryOperationPayload(memoryID: payload.memoryID, expectedRevision: row.revision),
+                operation: operation.operation
             )
-            return .terminalFailure("Memory revision conflict")
         }
+
+        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore)
     }
 }
 
@@ -160,35 +175,53 @@ struct UpsertMemoryNotePendingOperationHandler: PendingSyncOperationHandling {
 
     func send(
         _ operation: PendingSyncOperationSnapshot,
-        context _: SyncContext
+        context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
         guard let requestData = operation.requestData else {
             return .terminalFailure("Missing upsert memory note payload")
         }
 
         let payload = try JSONDecoder().decode(UpsertMemoryNoteOperationPayload.self, from: requestData)
+        let refresh = MemoryPendingOperationRefresh.self
+        if let older = try await refresh.olderPendingWrite(
+            before: operation,
+            memoryID: payload.memoryID,
+            context: context,
+            memoryIDIn: { try? JSONDecoder().decode(UpsertMemoryNoteOperationPayload.self, from: $0).memoryID }
+        ) {
+            return .retry(after: refresh.retryDate(after: older))
+        }
 
         do {
             _ = try await gateway.upsertMemoryNote(payload, operation: operation.operation)
-            try await MemoryPendingOperationRefresh.refresh(
-                gateway: gateway,
-                memoryStore: memoryStore,
-                ownerUserID: operation.ownerUserID,
-                confirmedOperationID: operation.operation.id
-            )
-            return .succeeded
-        } catch {
-            guard MemoryPendingOperationRefresh.isMemoryConflict(error) else {
+        } catch where refresh.isMemoryConflict(error) {
+            // Only this person writes their own note, so a conflict means another of
+            // their devices saved first. The newest save wins.
+            guard let row = try await refresh.serverRow(memoryID: payload.memoryID, gateway: gateway) else {
                 throw error
             }
-
-            try await memoryStore.markConflict(
-                ownerUserID: operation.ownerUserID,
-                memoryID: payload.memoryID,
-                reason: "Memory note revision conflict"
+            guard row.isVisibleMemory else {
+                return try await refresh.acceptRemoval(row, operation, memoryStore: memoryStore)
+            }
+            _ = try await gateway.upsertMemoryNote(
+                UpsertMemoryNoteOperationPayload(
+                    memoryID: payload.memoryID,
+                    expectedRevision: row.ownNoteRevision,
+                    body: payload.body
+                ),
+                operation: operation.operation
             )
-            return .terminalFailure("Memory note revision conflict")
+        } catch {
+            return try await refresh.settleRejectedWrite(
+                error,
+                memoryID: payload.memoryID,
+                operation,
+                gateway: gateway,
+                memoryStore: memoryStore
+            )
         }
+
+        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore)
     }
 }
 
@@ -215,14 +248,22 @@ struct AttachMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
         }
 
         let payload = try JSONDecoder().decode(AttachMemoryMediaOperationPayload.self, from: requestData)
-        _ = try await gateway.attachMemoryMedia(payload, operation: operation.operation)
-        try await MemoryPendingOperationRefresh.refresh(
+        do {
+            _ = try await gateway.attachMemoryMedia(payload, operation: operation.operation)
+        } catch {
+            return try await MemoryPendingOperationRefresh.settleRejectedWrite(
+                error,
+                memoryID: payload.memoryID,
+                operation,
+                gateway: gateway,
+                memoryStore: memoryStore
+            )
+        }
+        return try await MemoryPendingOperationRefresh.succeeded(
+            operation,
             gateway: gateway,
-            memoryStore: memoryStore,
-            ownerUserID: operation.ownerUserID,
-            confirmedOperationID: operation.operation.id
+            memoryStore: memoryStore
         )
-        return .succeeded
     }
 }
 
@@ -249,17 +290,31 @@ struct RemoveMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
         }
 
         let payload = try JSONDecoder().decode(RemoveMemoryMediaOperationPayload.self, from: requestData)
-        _ = try await gateway.removeMemoryMedia(payload, operation: operation.operation)
-        try await MemoryPendingOperationRefresh.refresh(
-            gateway: gateway,
-            memoryStore: memoryStore,
-            ownerUserID: operation.ownerUserID,
-            confirmedOperationID: operation.operation.id
-        )
-        return .succeeded
+        let refresh = MemoryPendingOperationRefresh.self
+        do {
+            _ = try await gateway.removeMemoryMedia(payload, operation: operation.operation)
+        } catch {
+            // A photo that is already gone (removed on another device, or by moderation)
+            // needs no more work.
+            guard refresh.isServerRejection(error),
+                  let row = try await refresh.serverRow(memoryID: payload.memoryID, gateway: gateway),
+                  row.isVisibleMemory,
+                  !row.memoryMediaIDs.contains(payload.memoryMediaID)
+            else {
+                return try await refresh.settleRejectedWrite(
+                    error,
+                    memoryID: payload.memoryID,
+                    operation,
+                    gateway: gateway,
+                    memoryStore: memoryStore
+                )
+            }
+        }
+        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore)
     }
 }
 
+// swiftlint:disable:next type_name
 struct CreateMemoryThreadMessagePendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .createMemoryThreadWithMessage
 
@@ -284,53 +339,10 @@ struct CreateMemoryThreadMessagePendingOperationHandler: PendingSyncOperationHan
 
         let payload = try JSONDecoder().decode(CreateMemoryThreadMessageOperationPayload.self, from: requestData)
         _ = try await gateway.createMemoryThreadWithMessage(payload, operation: operation.operation)
-        try await MemoryPendingOperationRefresh.refresh(
+        return try await MemoryPendingOperationRefresh.succeeded(
+            operation,
             gateway: gateway,
-            memoryStore: memoryStore,
-            ownerUserID: operation.ownerUserID,
-            confirmedOperationID: operation.operation.id
+            memoryStore: memoryStore
         )
-        return .succeeded
-    }
-}
-
-private enum MemoryPendingOperationRefresh {
-    nonisolated static func refresh(
-        gateway: any MemoryGateway,
-        memoryStore: any MemoryRecordPersisting,
-        ownerUserID: UUID,
-        confirmedOperationID: UUID,
-        pageSize: Int = 100
-    ) async throws {
-        var cursor = SyncCursor()
-
-        while true {
-            let rows = try await gateway.loadMemories(
-                updatedAfter: cursor.updatedAt,
-                cursorMemoryID: cursor.tieID,
-                limit: pageSize
-            )
-
-            guard !rows.isEmpty else {
-                return
-            }
-
-            try await memoryStore.saveRemote(
-                rows,
-                ownerUserID: ownerUserID,
-                mergePolicy: .overwriteIfPendingOperationMatches(confirmedOperationID)
-            )
-
-            guard let last = rows.last, rows.count == pageSize else {
-                return
-            }
-
-            cursor = SyncCursor(updatedAt: last.syncUpdatedAt, tieID: last.memoryID)
-        }
-    }
-
-    nonisolated static func isMemoryConflict(_ error: any Error) -> Bool {
-        let description = String(describing: error).lowercased()
-        return description.contains("revision conflict") || description.contains("40001")
     }
 }

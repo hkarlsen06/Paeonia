@@ -1,160 +1,89 @@
 import SwiftUI
 
-/// The pre-auth entry surface. It leads with a short, swipeable carousel of the
-/// shared-artifact heroes (doodle, daily questions, countdown) and then hands off to
-/// the existing `SignInView`. It is the first app surface the cold-launch intro
-/// uncovers, so its content cascades in with `View.launchEntrance(order:)`.
+/// The signed-out entry screen. One screen says what Paeonia does and lets the
+/// person sign in right away; there is no carousel to page through first. It is
+/// the first surface the cold-launch intro uncovers, so its parts cascade in
+/// with `View.launchEntrance(order:)`.
 ///
-/// A "Have an invite code?" path is reachable throughout for a partner who was sent a
-/// code: it captures the code and moves them to sign-in, where the paywall picks the
-/// code up so they join instead of paying.
+/// "Have an invite code?" is for a partner who was sent a code. The code is
+/// saved before sign-in, then joined on the next screen.
 struct WelcomeView: View {
     let isWorking: Bool
+    let signingInWith: AuthProvider?
     let pendingInviteCode: String?
     let onAppleSignIn: () -> Void
     let onGoogleSignIn: () -> Void
     let onSubmitInviteCode: (String) -> Void
 
-    private enum Phase {
-        case carousel
-        case signIn
-    }
-
-    private let carousel = WelcomeCarousel.standard
-    @State private var index = 0
-    @State private var phase: Phase = .carousel
     @State private var isInviteSheetPresented = false
 
     var body: some View {
-        ZStack {
-            background
+        ScrollView {
+            VStack(spacing: PaeoniaSpacing.space32) {
+                PaeoniaBrandLockup(wordmarkSize: 40, taglineSize: 17)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isHeader)
+                    .launchEntrance(order: 0)
 
-            switch phase {
-            case .carousel:
-                carouselContent
-                    .transition(.opacity)
-            case .signIn:
-                SignInView(
-                    isWorking: isWorking,
-                    pendingInviteCode: pendingInviteCode,
-                    onAppleSignIn: onAppleSignIn,
-                    onGoogleSignIn: onGoogleSignIn,
-                    onHaveInviteCode: presentInviteSheet
+                WelcomeFeatureList()
+                    .launchEntrance(order: 1)
+            }
+            .frame(maxWidth: 430)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.space40)
+            .padding(.bottom, PaeoniaSpacing.space24)
+        }
+        .scrollIndicators(.hidden)
+        .scrollBounceBehavior(.basedOnSize)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            SignInView(
+                isWorking: isWorking,
+                signingInWith: signingInWith,
+                pendingInviteCode: pendingInviteCode,
+                onAppleSignIn: onAppleSignIn,
+                onGoogleSignIn: onGoogleSignIn,
+                onHaveInviteCode: { isInviteSheetPresented = true }
+            )
+            .frame(maxWidth: 430)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.space12)
+            .background(alignment: .top) {
+                // Content scrolling under the buttons fades out instead of
+                // being cut off by a hard edge.
+                LinearGradient(
+                    colors: [.paeoniaBackgroundPrimary.opacity(0), .paeoniaBackgroundPrimary],
+                    startPoint: .top,
+                    endPoint: .init(x: 0.5, y: 0.12)
                 )
-                .transition(.opacity)
-            }
-        }
-        .preferredColorScheme(.dark)
-        .sensoryFeedback(.selection, trigger: index)
-        .sheet(isPresented: $isInviteSheetPresented) {
-            WelcomeInviteCodeSheet { code in
-                onSubmitInviteCode(code)
-                goToSignIn()
-            }
-        }
-        // A code can arrive from the entry sheet, a Universal Link, or a previous
-        // launch. In every case, resume at sign-in instead of making the joining
-        // partner repeat the value carousel.
-        .onChange(of: pendingInviteCode, initial: true) { _, code in
-            guard let code,
-                  (try? PairingInviteCode.normalized(code)) != nil
-            else {
-                return
-            }
-
-            goToSignIn()
-        }
-    }
-
-    // MARK: - Carousel
-
-    private var carouselContent: some View {
-        VStack(spacing: PaeoniaSpacing.space16) {
-            header
-                .launchEntrance(order: 0)
-
-            TabView(selection: $index) {
-                ForEach(Array(carousel.pages.enumerated()), id: \.element.id) { offset, page in
-                    WelcomeHeroPage(
-                        title: page.title,
-                        subtitle: page.subtitle,
-                        showsBrandMark: offset == 0
-                    )
-                    .tag(offset)
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .launchEntrance(order: 1)
-
-            VStack(spacing: PaeoniaSpacing.space24) {
-                pageIndicator
-                bottomControls
+                .ignoresSafeArea()
+                .accessibilityHidden(true)
             }
             .launchEntrance(order: 2)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var header: some View {
-        ZStack {
-            // Text-only wordmark here — the petal mark is the centered hero below, so
-            // showing it in the header too would double up.
-            Text(.appTitle)
-                .font(PaeoniaTypography.wordmark(size: 22))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .accessibilityAddTraits(.isHeader)
-
-            HStack {
-                Spacer()
-                Button(action: skipToSignIn) {
-                    Text(.welcomeSkip)
-                }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-                .accessibilityIdentifier("auth.welcome.skip")
+        .background(background)
+        .sheet(isPresented: $isInviteSheetPresented) {
+            PairingCodeEntrySheet(
+                title: .welcomeInviteCodeTitle,
+                message: .welcomeInviteCodeSubtitle,
+                submitTitle: .welcomeInviteCodeContinue
+            ) { code in
+                onSubmitInviteCode(code)
+                return true
             }
         }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.top, PaeoniaSpacing.space16)
     }
-
-    private var pageIndicator: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            ForEach(0..<carousel.count, id: \.self) { dot in
-                Capsule(style: .continuous)
-                    .fill(dot == index ? Color.paeoniaAccentPrimary : Color.paeoniaTextTertiary.opacity(0.35))
-                    .frame(width: dot == index ? 22 : 7, height: 7)
-            }
-        }
-        .animation(PaeoniaMotion.stateChange, value: index)
-        .accessibilityHidden(true)
-    }
-
-    private var bottomControls: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            Button(action: advance) {
-                Text(carousel.isLast(index) ? .welcomeGetStarted : .welcomeNext)
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
-
-            Button(action: presentInviteSheet) {
-                Text(.welcomeHaveInviteCode)
-                    .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(PaeoniaQuietButtonStyle())
-        }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.bottom, PaeoniaSpacing.space16)
-    }
-
-    // MARK: - Background
 
     private var background: some View {
         ZStack {
             Color.paeoniaBackgroundPrimary
 
+            // A soft petal glow as ambient light. Static, so it is comfortable
+            // with Reduce Motion and never competes with the content.
             RadialGradient(
-                colors: [.paeoniaAccentPrimary.opacity(0.14), .clear],
+                colors: [.paeoniaAccentPrimary.opacity(0.16), .clear],
                 center: .top,
                 startRadius: 0,
                 endRadius: 380
@@ -163,65 +92,69 @@ struct WelcomeView: View {
         .ignoresSafeArea()
         .accessibilityHidden(true)
     }
-
-    // MARK: - Actions
-
-    private func advance() {
-        if carousel.isLast(index) {
-            goToSignIn()
-        } else {
-            withAnimation(PaeoniaMotion.stateChange) {
-                index += 1
-            }
-        }
-    }
-
-    private func skipToSignIn() {
-        goToSignIn()
-    }
-
-    private func goToSignIn() {
-        withAnimation(PaeoniaMotion.meaningfulMoment) {
-            phase = .signIn
-        }
-    }
-
-    private func presentInviteSheet() {
-        isInviteSheetPresented = true
-    }
 }
 
-/// One carousel page: its headline and supporting line, centered. Only the first page
-/// shows the brand mark above the copy — the others are copy-only so the logo isn't
-/// repeated across the carousel.
-private struct WelcomeHeroPage: View {
-    let title: LocalizedStringResource
-    let subtitle: LocalizedStringResource
-    let showsBrandMark: Bool
+/// What the two of you can do in Paeonia, one short row per feature.
+private struct WelcomeFeatureList: View {
+    private struct Feature: Identifiable {
+        let systemImage: String
+        let title: LocalizedStringResource
+        let message: LocalizedStringResource
+
+        var id: String { systemImage }
+    }
+
+    private let features = [
+        Feature(
+            systemImage: "scribble.variable",
+            title: .welcomeFeatureDrawingTitle,
+            message: .welcomeFeatureDrawingMessage
+        ),
+        Feature(
+            systemImage: "bubble.left.and.bubble.right.fill",
+            title: .welcomeFeatureQuestionsTitle,
+            message: .welcomeFeatureQuestionsMessage
+        ),
+        Feature(
+            systemImage: "photo.on.rectangle.angled",
+            title: .welcomeFeatureMemoriesTitle,
+            message: .welcomeFeatureMemoriesMessage
+        ),
+        Feature(
+            systemImage: "calendar.badge.clock",
+            title: .welcomeFeatureMilestonesTitle,
+            message: .welcomeFeatureMilestonesMessage
+        ),
+    ]
+
+    @ScaledMetric(relativeTo: .title3) private var iconSize: CGFloat = 44
 
     var body: some View {
-        VStack(spacing: PaeoniaSpacing.space32) {
-            if showsBrandMark {
-                WelcomeBrandArt()
-                    .frame(maxWidth: .infinity)
-            }
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space20) {
+            ForEach(features) { feature in
+                HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
+                    Image(systemName: feature.systemImage)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.paeoniaAccentPrimary)
+                        .frame(width: iconSize, height: iconSize)
+                        .background(.paeoniaAccentPrimary.opacity(0.14), in: Circle())
+                        .accessibilityHidden(true)
 
-            VStack(spacing: PaeoniaSpacing.space12) {
-                Text(title)
-                    .font(PaeoniaTypography.heroTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
+                    VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                        Text(feature.title)
+                            .font(PaeoniaTypography.bodyEmphasis)
+                            .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(subtitle)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
+                        Text(feature.message)
+                            .font(PaeoniaTypography.body)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                    }
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .accessibilityElement(children: .combine)
             }
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: 360)
         }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -229,10 +162,13 @@ private struct WelcomeHeroPage: View {
 #Preview {
     WelcomeView(
         isWorking: false,
+        signingInWith: nil,
         pendingInviteCode: nil,
         onAppleSignIn: {},
         onGoogleSignIn: {},
         onSubmitInviteCode: { _ in }
     )
+    .environment(PaeoniaBannerCenter())
+    .preferredColorScheme(.dark)
 }
 #endif

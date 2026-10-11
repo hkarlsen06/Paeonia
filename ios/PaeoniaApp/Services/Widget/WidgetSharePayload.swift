@@ -33,6 +33,9 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
     var isRedacted = true
     let contentHash: String
     let previews: [String: String]
+    /// Side of the square canvas the drawing was made on. Optional so payloads
+    /// from older builds still decode; the widget ignores it.
+    var canvasSide: Double?
 
     enum CodingKeys: String, CodingKey {
         case schemaVersion
@@ -45,6 +48,7 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
         case isRedacted
         case contentHash
         case previews
+        case canvasSide
     }
 
     nonisolated static func encoder() -> JSONEncoder {

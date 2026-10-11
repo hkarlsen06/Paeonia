@@ -9,10 +9,20 @@ struct PaywallContentView: View {
     let headlineTitle: LocalizedStringResource
     let subtitle: LocalizedStringResource
     let priceLine: String
+    let spokenPriceLine: String?
     let timelineItems: [PaywallTimelineItem]
     let allowsInviteEntry: Bool
     let showsArtworkHeader: Bool
     let onRevealInvite: () -> Void
+
+    static func heroHeight(for geometry: GeometryProxy) -> CGFloat {
+        let band = min(max(geometry.size.height * 0.15, 128), 156)
+        return geometry.safeAreaInsets.top + band
+    }
+
+    static func aboveFoldMinHeight(for geometry: GeometryProxy) -> CGFloat {
+        geometry.size.height + geometry.safeAreaInsets.top - 120
+    }
 
     var body: some View {
         aboveFold
@@ -74,6 +84,7 @@ struct PaywallContentView: View {
                 .foregroundStyle(.paeoniaTextPrimary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, PaeoniaSpacing.space2)
+                .accessibilityLabel(Text(spokenPriceLine ?? priceLine))
 
             Text(.paywallOneSubscription)
                 .font(PaeoniaTypography.caption)

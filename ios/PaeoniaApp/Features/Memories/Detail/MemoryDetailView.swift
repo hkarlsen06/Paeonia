@@ -2,9 +2,9 @@ import SwiftUI
 import UIKit
 
 /// A single memory, in full. Photos, both partners' notes, and the actions that change
-/// it through the edit sheet or delete confirmation. The record
-/// is re-read from the view model by id so the screen always reflects the latest local
-/// state and dismisses itself once the memory is deleted.
+/// it through the edit sheet or delete confirmation. The record is re-read from the
+/// view model by id so the screen always reflects the latest local state and dismisses
+/// itself once the memory is deleted.
 struct MemoryDetailView: View {
     let memoryID: UUID
     let currentUserID: UUID?
@@ -14,15 +14,15 @@ struct MemoryDetailView: View {
 
     @State private var isEditingMemory = false
     @State private var editDraft = MemoryDraft()
-    /// The memory as it was when the edit sheet opened. The sheet keeps using it if the
-    /// memory is deleted mid-edit, so the typed text stays on screen.
+    /// The memory as it was when the edit sheet opened. Saving compares against it, so
+    /// only what the person changed is sent, and the sheet keeps using it if the
+    /// memory is deleted mid-edit so the typed text stays on screen.
     @State private var editingRecord: MemoryRecord?
     @State private var wasRemovedWhileEditing = false
     @State private var isConfirmingDelete = false
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
-    @State private var loadedImagesByMediaAssetID: [UUID: UIImage] = [:]
 
-    private let photoCarouselHeight: CGFloat = 280
+    private let photoCarouselHeight: CGFloat = 320
     private let photoCarouselPageControlInset: CGFloat = PaeoniaSpacing.space40
 
     private var record: MemoryRecord? {
@@ -81,10 +81,7 @@ struct MemoryDetailView: View {
 
                 yourNoteSection(for: record)
 
-                if let partnerNote = record.snapshot.partnerNote,
-                   partnerNote.isVisible,
-                   let body = partnerNote.body,
-                   !body.isEmpty {
+                if let body = visibleBody(of: record.snapshot.partnerNote) {
                     noteBlock(title: .memoriesDetailPartnerNote, body: body)
                 }
             }
@@ -105,7 +102,9 @@ struct MemoryDetailView: View {
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityAddTraits(.isHeader)
         }
+        .accessibilityElement(children: .combine)
     }
 
     private func photoGallery(for record: MemoryRecord) -> some View {
@@ -116,17 +115,16 @@ struct MemoryDetailView: View {
                     mediaAssetID: media.mediaAssetID,
                     height: photoCarouselHeight,
                     cornerRadius: PaeoniaRadius.radius16,
-                    onTapImage: { mediaAssetID, image in
-                        presentImageViewer(
-                            initialMediaAssetID: mediaAssetID,
-                            image: image,
-                            record: record
-                        )
-                    },
-                    onImageLoaded: { mediaAssetID, image in
-                        loadedImagesByMediaAssetID[mediaAssetID] = image
+                    onTapImage: { mediaAssetID, _ in
+                        presentImageViewer(initialMediaAssetID: mediaAssetID, mediaItems: mediaItems)
                     }
                 )
+                .contextMenu {
+                    savePhotoButton(for: media)
+                }
+                .accessibilityAction(named: Text(.memoriesPhotoSave)) {
+                    Task { await viewModel.savePhotoToLibrary(mediaAssetID: media.mediaAssetID) }
+                }
                 .padding(.bottom, mediaItems.count > 1 ? photoCarouselPageControlInset : 0)
             }
         }
@@ -134,10 +132,30 @@ struct MemoryDetailView: View {
         .frame(height: mediaItems.count > 1 ? photoCarouselHeight + photoCarouselPageControlInset : photoCarouselHeight)
     }
 
+    private func savePhotoButton(for media: MemoryMediaSnapshot) -> some View {
+        Button {
+            Task { await viewModel.savePhotoToLibrary(mediaAssetID: media.mediaAssetID) }
+        } label: {
+            Label { Text(.memoriesPhotoSave) } icon: { Image(systemName: "square.and.arrow.down") }
+        }
+    }
+
+    /// The person's own note, or a quiet prompt to add one when they haven't yet.
     @ViewBuilder
     private func yourNoteSection(for record: MemoryRecord) -> some View {
-        if let own = record.snapshot.ownNote, own.isVisible, let body = own.body, !body.isEmpty {
+        if let body = visibleBody(of: record.snapshot.ownNote) {
             noteBlock(title: .memoriesDetailYourNote, body: body)
+        } else {
+            Button {
+                openMemoryEditor()
+            } label: {
+                Label {
+                    Text(.memoriesDetailAddNote)
+                } icon: {
+                    Image(systemName: "square.and.pencil").accessibilityHidden(true)
+                }
+            }
+            .buttonStyle(PaeoniaQuietButtonStyle())
         }
     }
 
@@ -152,7 +170,9 @@ struct MemoryDetailView: View {
                 .foregroundStyle(.paeoniaTextPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
         }
+        .accessibilityElement(children: .combine)
     }
 
     @ToolbarContentBuilder
@@ -171,30 +191,36 @@ struct MemoryDetailView: View {
                     Label { Text(.memoriesDetailDelete) } icon: { Image(systemName: "trash") }
                 }
             } label: {
-                Image(systemName: "ellipsis.circle")
+                Image(systemName: "ellipsis")
                     .accessibilityLabel(Text(.memoriesDetailMenu))
             }
+            .disabled(record == nil)
         }
     }
 
     @ViewBuilder
     private var memoryEditorSheet: some View {
-        if let record = record ?? editingRecord {
+        if let base = editingRecord {
+            let current = record ?? base
             MemoryEditorView(
                 draft: $editDraft,
                 mode: .edit,
-                existingMedia: visibleMedia(for: record),
+                existingMedia: visibleMedia(for: current),
                 currentUserID: currentUserID,
+                hasExistingNote: visibleBody(of: current.snapshot.ownNote) != nil,
                 isMemoryRemoved: wasRemovedWhileEditing,
-                allowsPhotos: viewModel.canAttachPhotos
+                allowsPhotos: viewModel.canAttachPhotos,
+                uploadProgress: viewModel.photoUploadProgress
             ) { title, date, note, photos, removedMedia in
-                await saveMemoryEdits(
-                    record: record,
-                    title: title,
-                    date: date,
-                    note: note,
-                    photos: photos,
-                    removedMedia: removedMedia
+                await viewModel.saveEdits(
+                    MemoryEdit(
+                        base: base,
+                        title: title,
+                        date: date,
+                        note: note,
+                        newPhotos: photos,
+                        removedMedia: removedMedia
+                    )
                 )
             }
         }
@@ -204,6 +230,11 @@ struct MemoryDetailView: View {
 
     private func visibleMedia(for record: MemoryRecord) -> [MemoryMediaSnapshot] {
         record.snapshot.media.filter(\.isVisible).sortedForMemoryDisplay()
+    }
+
+    private func visibleBody(of note: MemoryNoteSnapshot?) -> String? {
+        guard let note, note.isVisible, let body = note.body, !body.isEmpty else { return nil }
+        return body
     }
 
     private func dayStartUTC(for record: MemoryRecord) -> Date {
@@ -216,8 +247,8 @@ struct MemoryDetailView: View {
         guard let record else { return }
         editDraft = MemoryDraft(
             title: record.snapshot.title ?? "",
-            date: dayStartUTC(for: record),
-            note: record.snapshot.ownNote?.body ?? "",
+            date: MemoryTimeline.pickerDate(forLocalDate: record.snapshot.memoryDate) ?? record.snapshot.createdAt,
+            note: visibleBody(of: record.snapshot.ownNote) ?? "",
             photos: []
         )
         editingRecord = record
@@ -240,84 +271,22 @@ struct MemoryDetailView: View {
         await viewModel.deleteMemory(record)
     }
 
-    private func presentImageViewer(initialMediaAssetID: UUID?, image: UIImage, record: MemoryRecord) {
-        guard let initialMediaAssetID else {
-            imageViewerSelection = PaeoniaImageViewerSelection(image: image)
-            return
+    /// Opens the full-screen viewer on the tapped photo, with every photo of the memory
+    /// to swipe through. Each page loads the full-resolution photo itself; the carousel
+    /// only holds smaller copies.
+    private func presentImageViewer(initialMediaAssetID: UUID?, mediaItems: [MemoryMediaSnapshot]) {
+        guard let initialMediaAssetID else { return }
+        let provider = MemoryMediaImageProviderFactory.shared
+        let items = mediaItems.map { media in
+            let mediaAssetID = media.mediaAssetID
+            return PaeoniaImageViewerItem(id: mediaAssetID) {
+                guard let data = await provider?.imageData(for: mediaAssetID) else { return nil }
+                return UIImage(data: data)
+            }
         }
-
-        var items = visibleMedia(for: record).map { media in
-            imageViewerItem(for: media, initialMediaAssetID: initialMediaAssetID, image: image)
-        }
-
-        if !items.contains(where: { $0.id == initialMediaAssetID.uuidString }) {
-            items.insert(PaeoniaImageViewerItem(id: initialMediaAssetID, image: image), at: 0)
-        }
-
         imageViewerSelection = PaeoniaImageViewerSelection(
             items: items,
             initialItemID: initialMediaAssetID.uuidString
         )
-    }
-
-    private func imageViewerItem(
-        for media: MemoryMediaSnapshot,
-        initialMediaAssetID: UUID,
-        image: UIImage
-    ) -> PaeoniaImageViewerItem {
-        let mediaAssetID = media.mediaAssetID
-        let provider = MemoryMediaImageProviderFactory.shared
-        let initialImage = mediaAssetID == initialMediaAssetID ? image : loadedImagesByMediaAssetID[mediaAssetID]
-
-        return PaeoniaImageViewerItem(id: mediaAssetID, image: initialImage) {
-            guard let data = await provider?.imageData(for: mediaAssetID) else {
-                return nil
-            }
-            return UIImage(data: data)
-        }
-    }
-
-    private func saveMemoryEdits(
-        record: MemoryRecord,
-        title: String,
-        date: String,
-        note: String,
-        photos: [Data],
-        removedMedia: [MemoryMediaSnapshot]
-    ) async -> Bool {
-        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTitle.isEmpty else { return false }
-
-        var latestRecord = viewModel.record(for: record.snapshot.memoryID) ?? record
-
-        if trimmedTitle != (latestRecord.snapshot.title ?? "") || date != latestRecord.snapshot.memoryDate {
-            guard await viewModel.updateDetails(for: latestRecord, title: trimmedTitle, date: date) else {
-                return false
-            }
-            latestRecord = viewModel.record(for: record.snapshot.memoryID) ?? latestRecord
-        }
-
-        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedNote.isEmpty, trimmedNote != (latestRecord.snapshot.ownNote?.body ?? "") {
-            guard await viewModel.saveNote(for: latestRecord, body: trimmedNote) else {
-                return false
-            }
-            latestRecord = viewModel.record(for: record.snapshot.memoryID) ?? latestRecord
-        }
-
-        for media in removedMedia {
-            guard await viewModel.removePhoto(from: latestRecord, media: media) else {
-                return false
-            }
-            latestRecord = viewModel.record(for: record.snapshot.memoryID) ?? latestRecord
-        }
-
-        if !photos.isEmpty {
-            guard await viewModel.addPhotos(to: latestRecord, photos: photos) else {
-                return false
-            }
-        }
-
-        return true
     }
 }

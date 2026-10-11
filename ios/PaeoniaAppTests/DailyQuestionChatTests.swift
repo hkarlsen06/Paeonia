@@ -114,33 +114,192 @@ struct DailyQuestionChatViewModelTests {
         #expect(creates.isEmpty)
     }
 
-    @Test func failedCachedSendSurfacesHumanErrorWithoutDroppingMessage() async {
+    @Test func failedCachedSendStaysVisibleWithoutRaisingABannerOnOpen() async {
         let fixture = ChatTestFixture()
-        let operation = fixture.operationProvider.makeOperation()
-        await fixture.cache.append(
-            DailyQuestionChatMessage(
-                id: operation.id,
-                threadID: nil,
-                instanceID: fixture.question.id,
-                senderUserID: fixture.ownerUserID,
-                body: "Keep this message",
-                createdAt: operation.localCreatedAt,
-                clientOperationID: operation.id,
-                isSending: true
-            ),
-            ownerUserID: fixture.ownerUserID
-        )
-        await fixture.cache.markFailed(
-            ownerUserID: fixture.ownerUserID,
-            clientOperationID: operation.id
-        )
+        _ = await fixture.cacheFailedMessage("Keep this message")
         let viewModel = fixture.makeViewModel()
 
         await viewModel.load()
 
-        #expect(viewModel.notice == .sendFailed)
+        // The red icon on the message is enough. A banner on every visit would nag.
+        #expect(viewModel.notice == nil)
         #expect(viewModel.messages.first?.body == "Keep this message")
         #expect(viewModel.messages.first?.sendFailed == true)
+    }
+
+    @Test func aMessageTheServerRejectsWhileTheChatIsOpenRaisesOneBanner() async throws {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        let observing = Task { await viewModel.observeLiveUpdates() }
+        #expect(await viewModel.send("Hello"))
+        #expect(await waitForMain { viewModel.messages.map(\.isSending) == [true] })
+        let creates = try await fixture.pendingStore.inFlightOperations(
+            ownerUserID: fixture.ownerUserID,
+            kind: .createDailyQuestionThreadWithMessage
+        )
+        let operation = try #require(creates.first)
+
+        // The handler marks the message failed, then tells the open chat.
+        await fixture.cache.markFailed(
+            ownerUserID: fixture.ownerUserID,
+            clientOperationID: operation.operation.id
+        )
+        LocalStoreChanges.post(.dailyChat, ownerUserID: fixture.ownerUserID)
+        #expect(await waitForMain { viewModel.notice == .deliveryFailed })
+
+        // The same failure does not raise the banner again on the next change.
+        viewModel.dismissNotice()
+        LocalStoreChanges.post(.dailyChat, ownerUserID: fixture.ownerUserID)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(viewModel.notice == nil)
+        observing.cancel()
+        await observing.value
+    }
+
+    @Test func aRejectedFirstMessageDoesNotBlockTheRetryFromCreatingTheThread() async throws {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        let observing = Task { await viewModel.observeLiveUpdates() }
+        #expect(await viewModel.send("Hello"))
+        let creates = try await fixture.pendingStore.inFlightOperations(
+            ownerUserID: fixture.ownerUserID,
+            kind: .createDailyQuestionThreadWithMessage
+        )
+        let operation = try #require(creates.first)
+        await fixture.cache.markFailed(
+            ownerUserID: fixture.ownerUserID,
+            clientOperationID: operation.operation.id
+        )
+        LocalStoreChanges.post(.dailyChat, ownerUserID: fixture.ownerUserID)
+        #expect(await waitForMain { viewModel.messages.first?.sendFailed == true })
+
+        #expect(await viewModel.send("Hello", replacingFailed: operation.operation.id))
+
+        // The retry starts the thread again. It is not a message for a thread that never existed.
+        let recreates = try await fixture.pendingStore.inFlightOperations(
+            ownerUserID: fixture.ownerUserID,
+            kind: .createDailyQuestionThreadWithMessage
+        )
+        #expect(recreates.count == 2)
+        observing.cancel()
+        await observing.value
+    }
+
+    @Test func doubleTapSendsOnceAndQueuesOneThreadCreation() async throws {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        await viewModel.load()
+
+        async let first = viewModel.send("On my way")
+        async let second = viewModel.send("On my way")
+        let (didSendFirst, didSendSecond) = await (first, second)
+
+        #expect([didSendFirst, didSendSecond].filter { $0 }.count == 1)
+        let creates = try await fixture.pendingStore.inFlightOperations(
+            ownerUserID: fixture.ownerUserID,
+            kind: .createDailyQuestionThreadWithMessage
+        )
+        let sends = try await fixture.pendingStore.inFlightOperations(
+            ownerUserID: fixture.ownerUserID,
+            kind: .sendThreadMessage
+        )
+        #expect(creates.count == 1)
+        #expect(sends.isEmpty)
+        #expect(viewModel.messages.count == 1)
+    }
+
+    @Test func retryingAFailedMessageReplacesItInsteadOfAddingACopy() async throws {
+        let fixture = ChatTestFixture()
+        let operation = await fixture.cacheFailedMessage("Keep this message")
+        let viewModel = fixture.makeViewModel()
+        await viewModel.load()
+        #expect(viewModel.messages.map(\.sendFailed) == [true])
+
+        let sent = await viewModel.send("Keep this message", replacingFailed: operation.id)
+
+        #expect(sent)
+        #expect(viewModel.messages.count == 1)
+        #expect(viewModel.messages.first?.sendFailed == false)
+        #expect(viewModel.messages.first?.isSending == true)
+        let cached = await fixture.cache.messages(
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id
+        )
+        #expect(cached.count == 1)
+        #expect(cached.first?.sendFailed == false)
+    }
+
+    @Test func messageLimitCountsCodePointsLikeTheServer() async throws {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        await viewModel.load()
+        // One family emoji is a single character but five code points.
+        let family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}"
+
+        #expect(await viewModel.send(String(repeating: family, count: 801)) == false)
+        #expect(viewModel.notice == .messageTooLong)
+        let creates = try await fixture.pendingStore.inFlightOperations(
+            ownerUserID: fixture.ownerUserID,
+            kind: .createDailyQuestionThreadWithMessage
+        )
+        #expect(creates.isEmpty)
+
+        // 800 of them are exactly 4,000 code points.
+        #expect(await viewModel.send(String(repeating: family, count: 800)))
+    }
+
+    @Test func openingAnEmptyChatOfflineDoesNotReportALoadError() async {
+        let fixture = ChatTestFixture()
+        await fixture.gateway.setFailure(true)
+        let viewModel = fixture.makeViewModel()
+
+        await viewModel.load()
+
+        // No thread exists yet, so nothing failed to load and the composer still works.
+        #expect(viewModel.notice == nil)
+        #expect(viewModel.isLoading == false)
+    }
+
+    @Test func aKnownThreadThatCannotBeLoadedReportsALoadError() async {
+        let fixture = ChatTestFixture()
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        await fixture.gateway.setFailure(true)
+        let viewModel = fixture.makeViewModel()
+
+        await viewModel.load()
+
+        #expect(viewModel.notice == .loadFailed)
+    }
+
+    @Test func theEmptyStateWaitsForTheFirstLoadAndEndsEvenWhenChatIsUnavailable() async {
+        let fixture = ChatTestFixture(question: makeChatQuestion(revealed: false))
+        let viewModel = fixture.makeViewModel()
+        #expect(viewModel.isLoading)
+
+        await viewModel.load()
+
+        #expect(viewModel.isLoading == false)
+        #expect(viewModel.notice == .unavailable)
+    }
+
+    @Test func aReadThatFinishesLateDoesNotReplaceNewerMessages() async throws {
+        let fixture = ChatTestFixture()
+        let service = PausingChatService(base: fixture.makeService())
+        let viewModel = fixture.makeViewModel(service: service)
+        await service.pauseNextRead()
+
+        // The first read has the empty chat when it stops.
+        let loading = Task { await viewModel.load() }
+        #expect(await waitUntil { await service.isPaused })
+
+        #expect(await viewModel.send("Hello"))
+        #expect(viewModel.messages.map(\.body) == ["Hello"])
+        // Let the reads that the send starts finish first, so only the paused one is left.
+        try await Task.sleep(for: .milliseconds(50))
+        await service.resumePausedRead()
+        await loading.value
+
+        #expect(viewModel.messages.map(\.body) == ["Hello"])
     }
 
     @Test func chatRejectsSendUntilPartnerAnswerIsRevealed() async throws {
@@ -339,6 +498,247 @@ struct DailyQuestionChatPendingOperationHandlerTests {
             kind: .createDailyQuestionThreadWithMessage
         )
         #expect(pending.first?.status == .failedRetryable)
+    }
+
+    @Test func handlersTellTheOpenChatAfterConfirmingAMessage() async throws {
+        let fixture = ChatTestFixture()
+        let recorder = ChatChangeRecorder(ownerUserID: fixture.ownerUserID)
+        defer { recorder.stop() }
+        let createOperation = fixture.operationProvider.makeOperation()
+        let sendOperation = fixture.operationProvider.makeOperation()
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+
+        _ = try await CreateDailyQuestionThreadMessagePendingOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache
+        ).send(
+            pendingSnapshot(
+                ownerUserID: fixture.ownerUserID,
+                operation: createOperation,
+                kind: .createDailyQuestionThreadWithMessage,
+                payload: try JSONEncoder().encode(
+                    CreateDailyQuestionThreadMessageOperationPayload(
+                        instanceID: fixture.question.id,
+                        coupleID: fixture.question.coupleID,
+                        body: "First"
+                    )
+                )
+            ),
+            context: chatSyncContext(ownerUserID: fixture.ownerUserID)
+        )
+        let changes = recorder.count
+        #expect(await waitUntil { changes.value == 1 })
+
+        _ = try await SendDailyQuestionThreadMessagePendingOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache
+        ).send(
+            pendingSnapshot(
+                ownerUserID: fixture.ownerUserID,
+                operation: sendOperation,
+                kind: .sendThreadMessage,
+                payload: try JSONEncoder().encode(
+                    SendDailyQuestionThreadMessageOperationPayload(
+                        instanceID: fixture.question.id,
+                        coupleID: fixture.question.coupleID,
+                        threadID: fixture.threadID,
+                        body: "Second"
+                    )
+                )
+            ),
+            context: chatSyncContext(ownerUserID: fixture.ownerUserID)
+        )
+        #expect(await waitUntil { changes.value == 2 })
+    }
+
+    @Test func sendHandlerMarksAServerRejectionAsFailedAndStopsRetrying() async throws {
+        let fixture = ChatTestFixture()
+        let recorder = ChatChangeRecorder(ownerUserID: fixture.ownerUserID)
+        defer { recorder.stop() }
+        let operation = fixture.operationProvider.makeOperation()
+        await fixture.cache.append(
+            DailyQuestionChatMessage(
+                id: operation.id,
+                threadID: fixture.threadID,
+                instanceID: fixture.question.id,
+                senderUserID: fixture.ownerUserID,
+                body: "Second",
+                createdAt: operation.localCreatedAt,
+                clientOperationID: operation.id,
+                isSending: true
+            ),
+            ownerUserID: fixture.ownerUserID
+        )
+        await fixture.gateway.setSendError(
+            PaeoniaConvexError.server(code: "23514", message: "thread message body is too long")
+        )
+        let handler = SendDailyQuestionThreadMessagePendingOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache
+        )
+
+        let result = try await handler.send(
+            pendingSnapshot(
+                ownerUserID: fixture.ownerUserID,
+                operation: operation,
+                kind: .sendThreadMessage,
+                payload: try JSONEncoder().encode(
+                    SendDailyQuestionThreadMessageOperationPayload(
+                        instanceID: fixture.question.id,
+                        coupleID: fixture.question.coupleID,
+                        threadID: fixture.threadID,
+                        body: "Second"
+                    )
+                )
+            ),
+            context: chatSyncContext(ownerUserID: fixture.ownerUserID)
+        )
+
+        var isTerminal = false
+        if case .terminalFailure = result { isTerminal = true }
+        #expect(isTerminal)
+        let cached = await fixture.cache.messages(
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id
+        )
+        #expect(cached.first?.sendFailed == true)
+        #expect(cached.first?.isSending == false)
+        let changes = recorder.count
+        #expect(await waitUntil { changes.value == 1 })
+    }
+
+    @Test func sendHandlerKeepsAConnectionErrorRetryable() async throws {
+        let fixture = ChatTestFixture()
+        let operation = fixture.operationProvider.makeOperation()
+        await fixture.gateway.setSendError(URLError(.notConnectedToInternet))
+        let handler = SendDailyQuestionThreadMessagePendingOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache
+        )
+
+        var threw = false
+        do {
+            _ = try await handler.send(
+                pendingSnapshot(
+                    ownerUserID: fixture.ownerUserID,
+                    operation: operation,
+                    kind: .sendThreadMessage,
+                    payload: try JSONEncoder().encode(
+                        SendDailyQuestionThreadMessageOperationPayload(
+                            instanceID: fixture.question.id,
+                            coupleID: fixture.question.coupleID,
+                            threadID: fixture.threadID,
+                            body: "Second"
+                        )
+                    )
+                ),
+                context: chatSyncContext(ownerUserID: fixture.ownerUserID)
+            )
+        } catch {
+            threw = true
+        }
+
+        #expect(threw)
+    }
+
+    /// A message queued behind a refused thread used to retry forever.
+    @Test func aRefusedThreadFailsTheMessagesWaitingForIt() async throws {
+        let fixture = ChatTestFixture()
+        let ownerUserID = fixture.ownerUserID
+        let instanceID = fixture.question.id
+        let coupleID = fixture.question.coupleID
+        let otherInstanceID = UUID()
+        let create = fixture.operationProvider.makeOperation()
+        let waiting = fixture.operationProvider.makeOperation()
+        let otherChat = fixture.operationProvider.makeOperation()
+        let createData = try JSONEncoder().encode(
+            CreateDailyQuestionThreadMessageOperationPayload(
+                instanceID: instanceID,
+                coupleID: coupleID,
+                body: "First"
+            )
+        )
+
+        for (operation, messageInstanceID, body) in [
+            (create, instanceID, "First"),
+            (waiting, instanceID, "Second"),
+            (otherChat, otherInstanceID, "Other chat")
+        ] {
+            await fixture.cache.append(
+                DailyQuestionChatMessage(
+                    id: operation.id,
+                    threadID: nil,
+                    instanceID: messageInstanceID,
+                    senderUserID: ownerUserID,
+                    body: body,
+                    createdAt: operation.localCreatedAt,
+                    clientOperationID: operation.id,
+                    isSending: true
+                ),
+                ownerUserID: ownerUserID
+            )
+        }
+        try await fixture.pendingStore.enqueue(
+            PendingSyncOperationRequest(
+                ownerUserID: ownerUserID,
+                operation: create,
+                operationKind: .createDailyQuestionThreadWithMessage,
+                idempotencyScope: "chat",
+                requestData: createData
+            )
+        )
+        // Both sends have no thread id yet. Only the one for the refused chat may fail.
+        for (operation, sendInstanceID, body) in [
+            (waiting, instanceID, "Second"),
+            (otherChat, otherInstanceID, "Other chat")
+        ] {
+            try await fixture.pendingStore.enqueue(
+                PendingSyncOperationRequest(
+                    ownerUserID: ownerUserID,
+                    operation: operation,
+                    operationKind: .sendThreadMessage,
+                    idempotencyScope: "chat",
+                    requestData: try JSONEncoder().encode(
+                        SendDailyQuestionThreadMessageOperationPayload(
+                            instanceID: sendInstanceID,
+                            coupleID: coupleID,
+                            threadID: nil,
+                            body: body
+                        )
+                    )
+                )
+            )
+        }
+        await fixture.gateway.setSendError(
+            PaeoniaConvexError.server(code: "P0001", message: "you must answer this daily question")
+        )
+
+        let result = try await CreateDailyQuestionThreadMessagePendingOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache
+        ).send(
+            pendingSnapshot(
+                ownerUserID: ownerUserID,
+                operation: create,
+                kind: .createDailyQuestionThreadWithMessage,
+                payload: createData
+            ),
+            context: chatSyncContext(ownerUserID: ownerUserID, pendingStore: fixture.pendingStore)
+        )
+
+        var isTerminal = false
+        if case .terminalFailure = result { isTerminal = true }
+        #expect(isTerminal)
+        let stillWaiting = try await fixture.pendingStore.inFlightOperations(
+            ownerUserID: ownerUserID,
+            kind: .sendThreadMessage
+        )
+        #expect(stillWaiting.map(\.operation.id) == [otherChat.id])
+        let refusedChat = await fixture.cache.messages(ownerUserID: ownerUserID, instanceID: instanceID)
+        #expect(refusedChat.first(where: { $0.clientOperationID == waiting.id })?.sendFailed == true)
+        let untouchedChat = await fixture.cache.messages(ownerUserID: ownerUserID, instanceID: otherInstanceID)
+        #expect(untouchedChat.first?.sendFailed == false)
+        #expect(untouchedChat.first?.isSending == true)
     }
 }
 
@@ -634,6 +1034,144 @@ struct DailyQuestionChatLiveTests {
         #expect(claimed.first(where: { $0.id == earlierServerID })?.clientOperationID == nil)
         #expect(claimed.first(where: { $0.id == newServerID })?.clientOperationID == operation)
     }
+
+    @Test func aSlowRefreshDoesNotDropAMessageThatArrivedWhileItWasLoading() async throws {
+        let fixture = ChatTestFixture()
+        let service = fixture.makeService()
+        let gateway = fixture.gateway
+        let earlier = partnerMessage(fixture, body: "Earlier", at: 5)
+        let justNow = partnerMessage(fixture, body: "Just now", at: 9)
+        await gateway.setRemote(summaries: [fixture.summary], messages: [earlier])
+        await gateway.holdLoads()
+        let owner = fixture.ownerUserID
+        let instanceID = fixture.question.id
+        let threadID = fixture.threadID
+
+        let refresh = Task {
+            try await service.refreshMessages(ownerUserID: owner, instanceID: instanceID, threadID: threadID)
+        }
+        #expect(await waitUntil { await gateway.loadCallCount == 1 })
+
+        // The live result lands while the request is still out.
+        let updates = service.liveMessageUpdates(ownerUserID: owner, instanceID: instanceID, threadID: threadID)
+        var iterator = updates.makeAsyncIterator()
+        await gateway.liveSource.push([earlier, justNow])
+        await iterator.next()
+        await gateway.releaseLoads()
+        _ = try await refresh.value
+
+        let cached = await fixture.cache.messages(ownerUserID: owner, instanceID: instanceID)
+        #expect(cached.map(\.body) == ["Earlier", "Just now"])
+    }
+
+    @Test func refreshesThatFinishAfterAPurgeAreNotWrittenBack() async throws {
+        let fixture = ChatTestFixture()
+        let service = fixture.makeService()
+        let gateway = fixture.gateway
+        await gateway.setRemote(
+            summaries: [fixture.summary],
+            messages: [partnerMessage(fixture, body: "Private")]
+        )
+        await gateway.holdLoads()
+        let owner = fixture.ownerUserID
+        let instanceID = fixture.question.id
+        let threadID = fixture.threadID
+
+        let summaries = Task { try await service.refreshThreadSummaries(ownerUserID: owner) }
+        let messages = Task {
+            try await service.refreshMessages(ownerUserID: owner, instanceID: instanceID, threadID: threadID)
+        }
+        #expect(await waitUntil { await gateway.loadCallCount == 2 })
+
+        // Sign-out clears the cache while both requests are out.
+        await fixture.cache.clearAll()
+        await gateway.releaseLoads()
+        let refreshedSummaries = try await summaries.value
+        _ = try await messages.value
+
+        #expect(refreshedSummaries.isEmpty)
+        #expect(await fixture.cache.summaries(ownerUserID: owner).isEmpty)
+        #expect(await fixture.cache.messages(ownerUserID: owner, instanceID: instanceID).isEmpty)
+    }
+
+    @Test func theFileCacheKeepsTheConfirmedCopyWhenTheSendingCopyArrivesLate() async {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ChatCacheAppend-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = FileDailyQuestionChatCache(directoryURL: directory)
+        let fixture = ChatTestFixture()
+        let operation = fixture.operationProvider.makeOperation()
+
+        // The send's confirmation can land before the queued message is added to the cache.
+        await cache.confirm(
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id,
+            coupleID: fixture.question.coupleID,
+            clientOperationID: operation.id,
+            threadID: fixture.threadID,
+            messageID: fixture.messageID,
+            body: "Hi",
+            senderUserID: fixture.ownerUserID,
+            createdAt: operation.localCreatedAt
+        )
+        await cache.append(
+            DailyQuestionChatMessage(
+                id: operation.id,
+                threadID: nil,
+                instanceID: fixture.question.id,
+                senderUserID: fixture.ownerUserID,
+                body: "Hi",
+                createdAt: operation.localCreatedAt,
+                clientOperationID: operation.id,
+                isSending: true
+            ),
+            ownerUserID: fixture.ownerUserID
+        )
+
+        let messages = await cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        #expect(messages.map(\.id) == [fixture.messageID])
+        #expect(messages.first?.isSending == false)
+    }
+
+    @Test func theFileCacheDiscardsOnlyAFailedMessage() async {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ChatCacheDiscard-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = FileDailyQuestionChatCache(directoryURL: directory)
+        let fixture = ChatTestFixture()
+        let failed = fixture.operationProvider.makeOperation()
+        let sending = fixture.operationProvider.makeOperation()
+        for operation in [failed, sending] {
+            await cache.append(
+                DailyQuestionChatMessage(
+                    id: operation.id,
+                    threadID: nil,
+                    instanceID: fixture.question.id,
+                    senderUserID: fixture.ownerUserID,
+                    body: "Hi",
+                    createdAt: operation.localCreatedAt,
+                    clientOperationID: operation.id,
+                    isSending: true
+                ),
+                ownerUserID: fixture.ownerUserID
+            )
+        }
+        await cache.markFailed(ownerUserID: fixture.ownerUserID, clientOperationID: failed.id)
+
+        await cache.discardFailed(ownerUserID: fixture.ownerUserID, clientOperationID: sending.id)
+        let afterSendingDiscard = await cache.messages(
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id
+        )
+        await cache.discardFailed(ownerUserID: fixture.ownerUserID, clientOperationID: failed.id)
+        let afterFailedDiscard = await cache.messages(
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id
+        )
+
+        #expect(afterSendingDiscard.count == 2)
+        #expect(afterFailedDiscard.map(\.id) == [sending.id])
+    }
 }
 
 private final class ChatPushTransport: LiveQueryTransport, @unchecked Sendable {
@@ -717,7 +1255,15 @@ private final class ChatTestFixture {
         )
     }
 
-    func makeViewModel() -> DailyQuestionChatViewModel {
+    func makeService() -> DailyQuestionChatService {
+        DailyQuestionChatService(
+            gateway: gateway,
+            cache: cache,
+            pendingOperationStore: pendingStore
+        )
+    }
+
+    func makeViewModel(service: (any DailyQuestionChatServicing)? = nil) -> DailyQuestionChatViewModel {
         DailyQuestionChatViewModel(
             question: question,
             participants: DailyChallengeParticipants(
@@ -726,12 +1272,131 @@ private final class ChatTestFixture {
                 partnerUserID: partnerUserID,
                 partnerDisplayName: "Partner"
             ),
-            service: DailyQuestionChatService(
-                gateway: gateway,
-                cache: cache,
-                pendingOperationStore: pendingStore
-            ),
+            service: service ?? makeService(),
             operationProvider: operationProvider
+        )
+    }
+
+    /// A message that was saved on this phone and then rejected by the server.
+    func cacheFailedMessage(_ body: String) async -> SyncClientOperation {
+        let operation = operationProvider.makeOperation()
+        await cache.append(
+            DailyQuestionChatMessage(
+                id: operation.id,
+                threadID: nil,
+                instanceID: question.id,
+                senderUserID: ownerUserID,
+                body: body,
+                createdAt: operation.localCreatedAt,
+                clientOperationID: operation.id,
+                isSending: true
+            ),
+            ownerUserID: ownerUserID
+        )
+        await cache.markFailed(ownerUserID: ownerUserID, clientOperationID: operation.id)
+        return operation
+    }
+}
+
+/// Counts `.dailyChat` changes posted for one user.
+private final class ChatChangeRecorder: @unchecked Sendable {
+    let count = LockedBox(0)
+    private var task: Task<Void, Never>?
+
+    init(ownerUserID: UUID) {
+        // The stream starts watching when it is created, so no later post is missed.
+        let changes = LocalStoreChanges.changes(in: .dailyChat)
+        let count = self.count
+        task = Task {
+            for await change in changes where change.ownerUserID == ownerUserID {
+                count.mutate { $0 += 1 }
+            }
+        }
+    }
+
+    func stop() {
+        task?.cancel()
+    }
+}
+
+/// Wraps the real service and pauses one `hasPendingThreadCreation` call after it has
+/// read, so a test can finish a newer read first and then let this older one return.
+private actor PausingChatService: DailyQuestionChatServicing {
+    private let base: DailyQuestionChatService
+    private var pausesNextRead = false
+    private var pausedRead: CheckedContinuation<Void, Never>?
+
+    init(base: DailyQuestionChatService) {
+        self.base = base
+    }
+
+    var isPaused: Bool {
+        pausedRead != nil
+    }
+
+    func pauseNextRead() {
+        pausesNextRead = true
+    }
+
+    func resumePausedRead() {
+        pausedRead?.resume()
+        pausedRead = nil
+    }
+
+    func hasPendingThreadCreation(ownerUserID: UUID, instanceID: UUID) async -> Bool {
+        let result = await base.hasPendingThreadCreation(ownerUserID: ownerUserID, instanceID: instanceID)
+        if pausesNextRead {
+            pausesNextRead = false
+            await withCheckedContinuation { pausedRead = $0 }
+        }
+        return result
+    }
+
+    func cachedThreadSummaries(ownerUserID: UUID) async -> [DailyQuestionThreadSummary] {
+        await base.cachedThreadSummaries(ownerUserID: ownerUserID)
+    }
+
+    func refreshThreadSummaries(ownerUserID: UUID) async throws -> [DailyQuestionThreadSummary] {
+        try await base.refreshThreadSummaries(ownerUserID: ownerUserID)
+    }
+
+    func cachedMessages(ownerUserID: UUID, instanceID: UUID) async -> [DailyQuestionChatMessage] {
+        await base.cachedMessages(ownerUserID: ownerUserID, instanceID: instanceID)
+    }
+
+    func refreshMessages(
+        ownerUserID: UUID,
+        instanceID: UUID,
+        threadID: UUID
+    ) async throws -> [DailyQuestionChatMessage] {
+        try await base.refreshMessages(ownerUserID: ownerUserID, instanceID: instanceID, threadID: threadID)
+    }
+
+    func pendingMessages(ownerUserID: UUID, instanceID: UUID) async -> [DailyQuestionChatMessage] {
+        await base.pendingMessages(ownerUserID: ownerUserID, instanceID: instanceID)
+    }
+
+    func discardFailedMessage(ownerUserID: UUID, clientOperationID: UUID) async {
+        await base.discardFailedMessage(ownerUserID: ownerUserID, clientOperationID: clientOperationID)
+    }
+
+    func queueMessage(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        instanceID: UUID,
+        threadID: UUID?,
+        body: String,
+        createThread: Bool,
+        operation: SyncClientOperation
+    ) async throws -> DailyQuestionChatMessage {
+        try await base.queueMessage(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            instanceID: instanceID,
+            threadID: threadID,
+            body: body,
+            createThread: createThread,
+            operation: operation
         )
     }
 }
@@ -762,6 +1427,10 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
     private var summaries: [DailyQuestionThreadSummary] = []
     private var messages: [DailyQuestionChatMessage] = []
     private var shouldFail = false
+    private var sendError: (any Error)?
+    private var holdsLoads = false
+    private var heldLoads = [CheckedContinuation<Void, Never>]()
+    private(set) var loadCallCount = 0
     private(set) var createCallCount = 0
     private(set) var sendCallCount = 0
 
@@ -782,14 +1451,43 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
         self.shouldFail = shouldFail
     }
 
-    func loadThreadSummaries() throws -> [DailyQuestionThreadSummary] {
-        if shouldFail { throw ChatTestError.requested }
-        return summaries
+    /// Makes only the send calls fail, with the error a real server would produce.
+    func setSendError(_ error: (any Error)?) {
+        sendError = error
     }
 
-    func loadMessages(threadID _: UUID, instanceID _: UUID) throws -> [DailyQuestionChatMessage] {
+    /// Makes loads stop after they read their result, so a test can change the
+    /// cache while a request is out. The result is the data from before the stop.
+    func holdLoads() {
+        holdsLoads = true
+    }
+
+    func releaseLoads() {
+        holdsLoads = false
+        let waiting = heldLoads
+        heldLoads = []
+        waiting.forEach { $0.resume() }
+    }
+
+    func loadThreadSummaries() async throws -> [DailyQuestionThreadSummary] {
+        loadCallCount += 1
+        let result = summaries
+        await waitWhileHeld()
         if shouldFail { throw ChatTestError.requested }
-        return messages
+        return result
+    }
+
+    func loadMessages(threadID _: UUID, instanceID _: UUID) async throws -> [DailyQuestionChatMessage] {
+        loadCallCount += 1
+        let result = messages
+        await waitWhileHeld()
+        if shouldFail { throw ChatTestError.requested }
+        return result
+    }
+
+    private func waitWhileHeld() async {
+        guard holdsLoads else { return }
+        await withCheckedContinuation { heldLoads.append($0) }
     }
 
     nonisolated func liveMessages(threadID _: UUID, instanceID _: UUID) -> AsyncStream<[DailyQuestionChatMessage]> {
@@ -801,6 +1499,7 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
         operation _: SyncClientOperation
     ) throws -> DailyQuestionThreadMessageResponse {
         createCallCount += 1
+        if let sendError { throw sendError }
         if shouldFail { throw ChatTestError.requested }
         return DailyQuestionThreadMessageResponse(threadID: threadID, messageID: messageID)
     }
@@ -811,6 +1510,7 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
         operation _: SyncClientOperation
     ) throws -> DailyQuestionThreadMessageResponse {
         sendCallCount += 1
+        if let sendError { throw sendError }
         if shouldFail { throw ChatTestError.requested }
         return DailyQuestionThreadMessageResponse(threadID: threadID, messageID: messageID)
     }
@@ -846,19 +1546,43 @@ private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
     }
 
     func append(_ message: DailyQuestionChatMessage, ownerUserID: UUID) {
+        let existing = storedMessages[ownerUserID]?[message.instanceID] ?? []
+        if let operationID = message.clientOperationID,
+           existing.contains(where: { $0.clientOperationID == operationID && !$0.isSending }) {
+            return
+        }
         storedMessages[ownerUserID, default: [:]][message.instanceID, default: []].append(message)
     }
 
     func markFailed(ownerUserID: UUID, clientOperationID: UUID) {
         guard let instanceIDs = storedMessages[ownerUserID]?.keys else { return }
         for instanceID in instanceIDs {
-            guard let index = storedMessages[ownerUserID]?[instanceID]?.firstIndex(where: {
-                $0.clientOperationID == clientOperationID
-            }) else { continue }
-            var message = storedMessages[ownerUserID]![instanceID]![index]
-            message.sendFailed = true
-            storedMessages[ownerUserID]![instanceID]![index] = message
+            guard
+                let messages = storedMessages[ownerUserID]?[instanceID],
+                let index = messages.firstIndex(where: { $0.clientOperationID == clientOperationID })
+            else { continue }
+            let message = messages[index]
+            storedMessages[ownerUserID]?[instanceID]?[index] = DailyQuestionChatMessage(
+                id: message.id,
+                threadID: message.threadID,
+                instanceID: message.instanceID,
+                senderUserID: message.senderUserID,
+                body: message.body,
+                createdAt: message.createdAt,
+                clientOperationID: clientOperationID,
+                isSending: false,
+                sendFailed: true
+            )
             return
+        }
+    }
+
+    func discardFailed(ownerUserID: UUID, clientOperationID: UUID) {
+        guard let instanceIDs = storedMessages[ownerUserID]?.keys else { return }
+        for instanceID in Array(instanceIDs) {
+            storedMessages[ownerUserID]?[instanceID]?.removeAll {
+                $0.clientOperationID == clientOperationID && $0.sendFailed
+            }
         }
     }
 
@@ -887,7 +1611,7 @@ private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
             isSending: false
         )
         if let index {
-            storedMessages[ownerUserID]![instanceID]![index] = confirmed
+            storedMessages[ownerUserID]?[instanceID]?[index] = confirmed
         } else {
             storedMessages[ownerUserID, default: [:]][instanceID, default: []].append(confirmed)
         }
@@ -926,6 +1650,32 @@ private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
     ) -> Bool {
         guard generation == self.generation else { return false }
         saveMessages(messages, ownerUserID: ownerUserID, instanceID: instanceID)
+        return true
+    }
+
+    func mergeMessages(
+        _ messages: [DailyQuestionChatMessage],
+        ownerUserID: UUID,
+        instanceID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool {
+        guard generation == self.generation else { return false }
+        let cached = self.messages(ownerUserID: ownerUserID, instanceID: instanceID)
+        saveMessages(
+            DailyQuestionChatMessage.keepingNewerCached(messages, cached: cached),
+            ownerUserID: ownerUserID,
+            instanceID: instanceID
+        )
+        return true
+    }
+
+    func saveSummaries(
+        _ summaries: [DailyQuestionThreadSummary],
+        ownerUserID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool {
+        guard generation == self.generation else { return false }
+        saveSummaries(summaries, ownerUserID: ownerUserID)
         return true
     }
 }

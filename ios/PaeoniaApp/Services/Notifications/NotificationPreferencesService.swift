@@ -12,7 +12,32 @@ nonisolated struct NotificationPreferences: Equatable, Sendable {
     var memoriesEnabled = true
 }
 
-nonisolated enum NotificationPreferenceKind: Hashable, Sendable {
+nonisolated extension NotificationPreferences {
+    subscript(kind: NotificationPreferenceKind) -> Bool {
+        get {
+            switch kind {
+            case .streakReminders: streakRemindersEnabled
+            case .dailyChallenge: dailyChallengeEnabled
+            case .partnerAnswered: partnerAnsweredEnabled
+            case .messages: messagesEnabled
+            case .widgetUpdates: widgetUpdatesEnabled
+            case .memories: memoriesEnabled
+            }
+        }
+        set {
+            switch kind {
+            case .streakReminders: streakRemindersEnabled = newValue
+            case .dailyChallenge: dailyChallengeEnabled = newValue
+            case .partnerAnswered: partnerAnsweredEnabled = newValue
+            case .messages: messagesEnabled = newValue
+            case .widgetUpdates: widgetUpdatesEnabled = newValue
+            case .memories: memoriesEnabled = newValue
+            }
+        }
+    }
+}
+
+nonisolated enum NotificationPreferenceKind: CaseIterable, Hashable, Sendable {
     case streakReminders
     case dailyChallenge
     case partnerAnswered

@@ -145,10 +145,33 @@ struct WidgetDrawingHistoryView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, PaeoniaSpacing.space8)
                 }
+
+                if viewModel.loadMoreFailed {
+                    loadMoreFailedRow
+                }
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.vertical, PaeoniaSpacing.space20)
         }
+    }
+
+    /// Shown below the last row when an older page failed to load. The last row's
+    /// own load only fires once, so this button is the way to try again.
+    private var loadMoreFailedRow: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            Text(.widgetHistoryLoadMoreFailed)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .multilineTextAlignment(.center)
+
+            Button {
+                Task { await viewModel.retryLoadMore() }
+            } label: {
+                Text(.widgetHistoryRetry)
+            }
+            .buttonStyle(PaeoniaSecondaryButtonStyle())
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var emptyState: some View {
@@ -219,26 +242,29 @@ private struct WidgetDrawingHistoryThumbnail: View {
     let loader: any WidgetRevisionThumbnailLoading
     let saveState: WidgetDrawingHistoryViewModel.SaveButtonState
     let onSave: () -> Void
-    @State private var imageData: Data?
+    @State private var loadState: LoadState = .loading
+    /// Bumped by the retry button to restart the load task for the same drawing.
+    @State private var attempt = 0
+
+    private enum LoadState: Equatable {
+        case loading
+        case loaded(UIImage)
+        case failed
+    }
+
+    private struct LoadKey: Equatable {
+        let revisionID: UUID
+        let attempt: Int
+    }
 
     var body: some View {
         // The plum square defines the size on its own, so the box is identical
-        // whether the spinner or the loaded drawing is on top — no layout shift
-        // when the thumbnail finishes loading.
+        // whether the spinner, the retry glyph, or the loaded drawing is on top.
+        // The box never changes size when the load finishes or fails.
         Rectangle()
             .fill(.paeoniaBackgroundPrimary)
             .aspectRatio(1, contentMode: .fit)
-            .overlay {
-                if let imageData, let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFit()
-                        .accessibilityHidden(true)
-                } else {
-                    ProgressView()
-                        .tint(.paeoniaAccentPrimary)
-                }
-            }
+            .overlay { stateContent }
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
@@ -248,21 +274,64 @@ private struct WidgetDrawingHistoryThumbnail: View {
             // person can see what they're saving and we don't export a blank box.
             // Sits in the top-trailing corner so it stays clear of centered ink.
             .overlay(alignment: .topTrailing) {
-                if imageData != nil {
+                if case .loaded = loadState {
                     WidgetDrawingSaveButton(state: saveState, action: onSave)
                         .padding(PaeoniaSpacing.space4)
                 }
             }
             // The finished drawing (and its save button) fades in over the spinner
             // instead of snapping into the box the moment the download lands.
-            .animation(PaeoniaMotion.stateChange, value: imageData != nil)
-            .task(id: item.id) {
-                imageData = await loader.thumbnailPNG(
-                    revisionID: item.id,
-                    mediaAssetID: item.mediaAssetID,
-                    canvasSide: item.canvasSide
-                )
+            .animation(PaeoniaMotion.stateChange, value: loadState)
+            .task(id: LoadKey(revisionID: item.id, attempt: attempt)) {
+                await load()
             }
+    }
+
+    @ViewBuilder
+    private var stateContent: some View {
+        switch loadState {
+        case .loading:
+            ProgressView()
+                .tint(.paeoniaAccentPrimary)
+        case .loaded(let uiImage):
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFit()
+                .accessibilityHidden(true)
+        case .failed:
+            // The whole square is the retry target, so a failed drawing can be
+            // tried again without scrolling it off screen and back.
+            Button {
+                loadState = .loading
+                attempt += 1
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(.widgetHistoryThumbnailFailed))
+        }
+    }
+
+    private func load() async {
+        let data = await loader.thumbnailPNG(
+            revisionID: item.id,
+            mediaAssetID: item.mediaAssetID,
+            canvasSide: item.canvasSide
+        )
+        // A cancelled load (the row left the screen, or a retry replaced it) says
+        // nothing about whether the drawing can load.
+        guard !Task.isCancelled else {
+            return
+        }
+        if let data, let uiImage = UIImage(data: data) {
+            loadState = .loaded(uiImage)
+        } else {
+            loadState = .failed
+        }
     }
 }
 
@@ -271,6 +340,7 @@ private struct WidgetDrawingHistoryThumbnail: View {
 private struct WidgetDrawingSaveButton: View {
     let state: WidgetDrawingHistoryViewModel.SaveButtonState
     let action: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let glyphSize: CGFloat = 32
     private static let hitTarget: CGFloat = 44
@@ -309,7 +379,7 @@ private struct WidgetDrawingSaveButton: View {
             Image(systemName: "checkmark")
                 .font(.footnote.weight(.bold))
                 .foregroundStyle(.paeoniaSuccess)
-                .transition(.scale.combined(with: .opacity))
+                .transition(reduceMotion ? .opacity : .scale.combined(with: .opacity))
                 .accessibilityHidden(true)
         }
     }

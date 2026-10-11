@@ -2,31 +2,49 @@ import Foundation
 import SwiftUI
 import UIKit
 
+/// The app root. It mounts the cold-launch intro and the shared top banner,
+/// routes between the signed-out, setup, pairing, paywall, and paired screens,
+/// and runs app-wide work such as deep links, widget sync, and permission
+/// primers. Screens live in `RootView+Screens.swift`, user actions in
+/// `RootView+Actions.swift`, system integration in `RootView+System.swift`,
+/// and the primers in `RootView+PermissionPrimers.swift`.
 struct RootView: View {
-    @State private var viewModel: RootViewModel
-    @State private var locationViewModel: LocationMapViewModel
-    @State private var bannerCenter = PaeoniaBannerCenter()
-    @State private var isLaunchExperienceActive = true
-    @State private var launchContentRevealed = false
-    @State private var permissionPrimerCoordinator: RootPairingPermissionPrimerCoordinator
-    @State private var hasFinishedPostLaunchWork = false
-    @Binding private var deepLink: PaeoniaDeepLink?
-    @Binding private var pendingJoinInviteCode: String?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.openURL) private var openURL
-    @Environment(\.scenePhase) private var scenePhase
-    private let appleSignInProvider: any AppleSignInProviding
-    private let widgetCanvasService: any WidgetCanvasManaging
-    private let widgetCanvasSync: any WidgetCanvasSyncing
-    private let pushAuthorization: any PushAuthorizationProviding
-    private let widgetPushRegistration: any WidgetPushRegistering
-    private let partnerAvatarSharing: (any PartnerAvatarSharing)?
-    private let featureDependencies: RootFeatureDependencies
-    private let allowsSystemIntegrations: Bool
+    @State var viewModel: RootViewModel
+    @State var locationViewModel: LocationMapViewModel
+    @State var bannerCenter = PaeoniaBannerCenter()
+    @State var isLaunchExperienceActive = true
+    @State var launchContentRevealed = false
+    @State var permissionPrimerCoordinator: RootPairingPermissionPrimerCoordinator
+    @State var hasFinishedPostLaunchWork = false
+    /// The running foreground pass. A second activation while it runs is
+    /// skipped instead of starting an overlapping pass.
+    @State var foregroundActivationTask: Task<Void, Never>?
+    /// An invite link opened the app before the route was known. If the route
+    /// turns out to be paired, the root explains why the link did nothing.
+    @State var joinLinkOpenedDuringLaunch = false
+    /// A permission primer appeared since the app last came to the front. Only
+    /// one is offered per visit; the flag resets when the app goes to the background.
+    @State var primerShownThisVisit = false
+    @Binding var deepLink: PaeoniaDeepLink?
+    @Binding var pendingJoinInviteCode: String?
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @Environment(\.openURL) var openURL
+    @Environment(\.scenePhase) var scenePhase
+    let appleSignInProvider: any AppleSignInProviding
+    let widgetCanvasService: any WidgetCanvasManaging
+    let widgetCanvasSync: any WidgetCanvasSyncing
+    let pushAuthorization: any PushAuthorizationProviding
+    let widgetPushRegistration: any WidgetPushRegistering
+    let partnerAvatarSharing: (any PartnerAvatarSharing)?
+    let featureDependencies: RootFeatureDependencies
+    let allowsSystemIntegrations: Bool
     /// Lets the first screen's entrance animation settle before sync, widget, avatar,
     /// and APNs warm-up begin. None of this work is required to choose the route.
-    private static let postLaunchWorkDelay: Duration = .milliseconds(700)
+    static let postLaunchWorkDelay: Duration = .milliseconds(700)
 
+    /// `viewModel` and `locationViewModel` should be created once by the owner
+    /// (see `PaeoniaApp`). The defaults build new ones, and this initializer runs
+    /// on every parent update, so only previews and tests should rely on them.
     @MainActor
     init(
         deepLink: Binding<PaeoniaDeepLink?> = .constant(nil),
@@ -76,19 +94,7 @@ struct RootView: View {
                 await viewModel.start(deferringSyncUntilLaunchCompletes: true)
             }
             .task(id: isLaunchExperienceActive) {
-                guard !isLaunchExperienceActive else { return }
-
-                do {
-                    try await Task.sleep(for: Self.postLaunchWorkDelay)
-                } catch {
-                    return
-                }
-
-                guard !Task.isCancelled else { return }
-                registerForRemoteNotificationsIfSignedIn(viewModel.currentSession?.id)
-                await viewModel.finishDeferredLaunchStartup()
-                hasFinishedPostLaunchWork = true
-                await performWidgetSyncIfPaired(viewModel.state)
+                await runPostLaunchWork()
             }
             .preferredColorScheme(.dark)
             // Handle deep links from an async task (fires on appear and whenever
@@ -113,16 +119,11 @@ struct RootView: View {
             .onChange(of: viewModel.notice) { _, notice in
                 showBanner(for: notice)
             }
-            .onChange(of: viewModel.currentSession?.id, initial: true) { _, userID in
-                guard allowsSystemIntegrations else {
-                    return
-                }
-
-                if let userID {
-                    PaeoniaStoreKitService.shared.configure(userID: userID)
-                } else {
-                    PaeoniaStoreKitService.shared.stopTransactionListener()
-                }
+            .onChange(of: locationViewModel.notice) { _, notice in
+                showBanner(for: notice)
+            }
+            .onChange(of: viewModel.currentSession?.id, initial: true) { previousUserID, userID in
+                sessionChanged(from: previousUserID, to: userID)
             }
             .onReceive(NotificationCenter.default.publisher(for: .paeoniaSubscriptionDidUpdate)) { _ in
                 guard allowsSystemIntegrations else {
@@ -130,64 +131,25 @@ struct RootView: View {
                 }
                 subscriptionChanged()
             }
-            .onChange(of: locationViewModel.notice) { _, notice in
-                showBanner(for: notice)
-            }
             // A partner's widget update arrived while the app is open: the delegate
             // suppressed the system banner and relayed it here for the in-app one.
             .onChange(of: PaeoniaNotificationRouter.shared.pendingForegroundNotice) { _, notice in
-                guard allowsSystemIntegrations else {
-                    return
-                }
-                guard let notice else {
-                    return
-                }
-                bannerCenter.show(
-                    .info(
-                        title: notice.title,
-                        message: notice.message,
-                        imageData: partnerAvatarData(),
-                        isTappable: true
-                    )
-                )
-                PaeoniaNotificationRouter.shared.consumeForegroundNotice()
+                showForegroundNotice(notice)
             }
             .onChange(of: viewModel.state) { _, state in
-                if state != .paired {
-                    permissionPrimerCoordinator.dismiss()
-                }
-                if !isLaunchExperienceActive {
-                    syncWidgetIfPaired(state)
-                }
+                stateChanged(to: state)
+            }
+            .onChange(of: pendingJoinInviteCode) { _, code in
+                pendingJoinInviteCodeChanged(to: code)
             }
             .onChange(of: scenePhase) { _, phase in
+                if phase == .background {
+                    primerShownThisVisit = false
+                }
                 guard phase == .active, !isLaunchExperienceActive else {
                     return
                 }
-                // Re-arm APNs so a rotated token reaches registration; the
-                // fingerprint gate drops the RPC when nothing changed.
-                registerForRemoteNotificationsIfSignedIn(viewModel.currentSession?.id)
-                // One ordered pass per activation instead of racing tasks: refresh
-                // our location, run a single foreground sync, then pull the
-                // partner's widget drawing. The map follows store changes itself.
-                Task {
-                    await locationViewModel.refreshOwnLocationIfSharingEnabled(
-                        source: .foregroundOpen,
-                        mayPromptForAuthorization: false
-                    )
-                    await viewModel.refreshAfterForegroundActivation()
-                    if let identity = stablePairedLocationIdentity {
-                        await presentPermissionPrimerIfNeeded(for: identity)
-                    }
-                    await performWidgetSyncIfPaired(viewModel.state)
-                }
-            }
-            .onChange(of: viewModel.currentSession?.id, initial: true) { _, sessionID in
-                // Once signed in, get an APNs token so the backend can send the
-                // silent push that wakes us to sync a partner's drawing.
-                if !isLaunchExperienceActive {
-                    registerForRemoteNotificationsIfSignedIn(sessionID)
-                }
+                runForegroundActivation()
             }
             .paeoniaTopBanner(bannerCenter) {
                 // Tapping a partner-update notice opens the drawing screen, the
@@ -198,39 +160,31 @@ struct RootView: View {
                 Text(.authDeleteAccountAppleManualTitle),
                 isPresented: manualAppleRevocationBinding
             ) {
-                Button {
-                    viewModel.dismissManualAppleRevocation()
-                    if let url = URL(string: "https://account.apple.com/") {
-                        openURL(url)
-                    }
-                } label: {
-                    Text(.authDeleteAccountAppleManualOpenButton)
-                }
-
-                Button(role: .cancel) {
-                    viewModel.dismissManualAppleRevocation()
-                } label: {
-                    Text(.authDeleteAccountAppleManualDoneButton)
-                }
+                manualAppleRevocationActions
             } message: {
                 Text(.authDeleteAccountAppleManualMessage)
             }
             .sheet(item: pairingPermissionPrimerBinding) { primer in
-                switch primer {
-                case .location:
-                    LocationSharingPrimerView(
-                        partnerName: pairingPermissionPrimerPartnerName,
-                        onShare: enableLocationSharing,
-                        onNotNow: dismissLocationSharingPrimer
-                    )
-                case .notifications:
-                    PushPermissionPrimerView(
-                        partnerName: pairingPermissionPrimerPartnerName,
-                        onEnable: enablePushNotifications,
-                        onNotNow: dismissPushPermissionPrimer
-                    )
-                }
+                permissionPrimerSheet(primer)
             }
+    }
+
+    @ViewBuilder
+    private var manualAppleRevocationActions: some View {
+        Button {
+            viewModel.dismissManualAppleRevocation()
+            if let url = URL(string: "https://account.apple.com/") {
+                openURL(url)
+            }
+        } label: {
+            Text(.authDeleteAccountAppleManualOpenButton)
+        }
+
+        Button(role: .cancel) {
+            viewModel.dismissManualAppleRevocation()
+        } label: {
+            Text(.authDeleteAccountAppleManualDoneButton)
+        }
     }
 
     private var manualAppleRevocationBinding: Binding<Bool> {
@@ -244,7 +198,7 @@ struct RootView: View {
         )
     }
 
-    private var widgetDrawingPresented: Binding<Bool> {
+    var widgetDrawingPresented: Binding<Bool> {
         Binding(
             get: {
                 viewModel.presentedDestination == .widgetDrawing
@@ -257,7 +211,7 @@ struct RootView: View {
         )
     }
 
-    private var mainTabSelection: Binding<MainTab> {
+    var mainTabSelection: Binding<MainTab> {
         Binding(
             get: { viewModel.selectedMainTab },
             set: { viewModel.selectMainTab($0) }
@@ -279,7 +233,7 @@ struct RootView: View {
                 // (`onRevealContent`) and when it has fully exited (`onFinished`), so the
                 // overlay stays mounted past the moment `state` leaves `.launching`.
                 LaunchExperienceView(
-                    contentReady: !isLaunching,
+                    contentReady: viewModel.state != .launching,
                     onRevealContent: { launchContentRevealed = true },
                     onFinished: {
                         isLaunchExperienceActive = false
@@ -290,711 +244,6 @@ struct RootView: View {
             }
         }
     }
-
-    private var isLaunching: Bool {
-        viewModel.state == .launching
-    }
-
-    /// The routed surfaces crossfade into each other (sign-in → profile setup →
-    /// paywall) instead of swapping in one frame, so moving through the flow reads
-    /// as one continuous journey. A fade only, so Reduce Motion needs no branch.
-    private var routedRootContent: some View {
-        ZStack {
-            Group {
-                // One branch for every paywall route, so saving a pending invite
-                // code doesn't swap in a new PaywallView and drop its confirm alert.
-                if showsPaywallScreen {
-                    paywallScreen
-                } else {
-                    routedContentForCurrentState
-                }
-            }
-            .transition(.opacity)
-        }
-        .animation(PaeoniaMotion.meaningfulMoment, value: viewModel.state)
-    }
-
-    private var showsPaywallScreen: Bool {
-        switch viewModel.state {
-        case .limitedAuthenticated, .pairedPaywalled, .entitlementLost:
-            true
-        default:
-            PendingJoinInviteFlowResolver().shouldPresentInviteAcceptance(
-                for: viewModel.state,
-                pendingInviteCode: pendingJoinInviteCode
-            )
-        }
-    }
-
-    @ViewBuilder
-    private var routedContentForCurrentState: some View {
-        switch viewModel.state {
-        case .launching:
-            Color.paeoniaBackgroundPrimary
-                .ignoresSafeArea()
-        case .unauthenticated:
-            welcomeScreen
-        case .onboarding:
-            onboardingScaffold
-        case .unpaired, .invitePending:
-            pairingScaffold
-        case .paired:
-            pairedScaffold
-        case .relationshipEndedNotice:
-            relationshipEndedScaffold
-        default:
-            scaffold
-        }
-    }
-
-    private var welcomeScreen: some View {
-        WelcomeView(
-            isWorking: viewModel.isWorking,
-            pendingInviteCode: pendingJoinInviteCode,
-            onAppleSignIn: signInWithApple,
-            onGoogleSignIn: signInWithGoogle,
-            onSubmitInviteCode: captureInviteCode
-        )
-    }
-
-    private var paywallScreen: some View {
-        PaywallView(
-            session: viewModel.currentSession,
-            pendingInviteCode: $pendingJoinInviteCode,
-            audience: paywallAudience,
-            onPurchaseConfirmed: subscriptionChanged,
-            onInviteAccepted: inviteAccepted,
-            onSignOut: signOut,
-            onUnpaired: refreshPairing,
-            onDeleteAccount: deleteAccount,
-            viewModel: featureDependencies.paywallViewModel,
-            presentationOverride: featureDependencies.paywallPresentationOverride
-        )
-    }
-
-    /// A paired-but-unentitled couple gets the paired paywall (clear partner
-    /// context plus an unpair action); everyone else on the paywall is a signed-in
-    /// user who is not paired yet.
-    private var paywallAudience: PaywallAudience {
-        switch viewModel.state {
-        case .pairedPaywalled:
-            .paired(partnerName: viewModel.currentPartnerDisplayName)
-        default:
-            .unpaired
-        }
-    }
-
-    private var scaffold: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: PaeoniaSpacing.sectionSpacing) {
-                    header
-                    content
-                }
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.screenTopSpacing)
-                .padding(.bottom, PaeoniaSpacing.space40)
-            }
-            .background(.paeoniaBackgroundPrimary)
-        }
-    }
-
-    private var pairingScaffold: some View {
-        NavigationStack {
-            VStack(spacing: PaeoniaSpacing.sectionSpacing) {
-                header
-
-                PairingInviteView(
-                    session: viewModel.currentSession,
-                    viewModel: featureDependencies.pairingInviteViewModel,
-                    onRefreshAccess: refreshPairing
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            }
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.screenTopSpacing)
-            .padding(.bottom, PaeoniaSpacing.space16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(.paeoniaBackgroundPrimary)
-        }
-    }
-
-    private var relationshipEndedScaffold: some View {
-        NavigationStack {
-            VStack(spacing: PaeoniaSpacing.sectionSpacing) {
-                header
-
-                RelationshipEndedNoticeView(
-                    isWorking: viewModel.isWorking,
-                    onAcknowledge: acknowledgeRelationshipEnded
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            }
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.screenTopSpacing)
-            .padding(.bottom, PaeoniaSpacing.space16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(.paeoniaBackgroundPrimary)
-        }
-    }
-
-    private var onboardingScaffold: some View {
-        NavigationStack {
-            VStack(spacing: PaeoniaSpacing.sectionSpacing) {
-                header
-                    .screenEntrance(order: 0)
-
-                AuthOnboardingView(
-                    session: viewModel.currentSession,
-                    isWorking: viewModel.isWorking,
-                    onCompleteOnboarding: completeOnboarding,
-                    onSignOut: signOut,
-                    onDeleteAccount: deleteAccount
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            }
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.screenTopSpacing)
-            .padding(.bottom, PaeoniaSpacing.space16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(.paeoniaBackgroundPrimary)
-        }
-    }
-
-    private var pairedScaffold: some View {
-        ZStack {
-            if viewModel.isPairingCelebrationPresented {
-                pairingCelebration
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity,
-                            removal: pairedCelebrationRemovalTransition
-                        )
-                    )
-            } else {
-                MainTabView(
-                    currentUserID: viewModel.currentSession.flatMap { UUID(uuidString: $0.id) },
-                    currentDisplayName: viewModel.currentSession?.displayName,
-                    currentProfilePhotoAssetID: viewModel.currentProfilePhotoAssetID,
-                    currentCustomProfilePhotoAssetID: viewModel.currentCustomProfilePhotoAssetID,
-                    currentProviderProfilePhotoAssetID: viewModel.currentProviderProfilePhotoAssetID,
-                    currentAuthProvider: viewModel.currentSession?.provider,
-                    partnerUserID: viewModel.currentPartnerUserID,
-                    partnerDisplayName: viewModel.currentPartnerDisplayName,
-                    partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
-                    authorName: viewModel.currentSession?.displayName,
-                    coupleID: viewModel.currentActiveCoupleID,
-                    relationshipStartedOn: viewModel.currentRelationshipStartedOn,
-                    locationMapState: locationViewModel.mapState,
-                    locationViewModel: locationViewModel,
-                    selection: mainTabSelection,
-                    widgetDrawingPresented: widgetDrawingPresented,
-                    deepLink: $deepLink,
-                    onOpenWidgetDrawing: { viewModel.openWidgetDrawing() },
-                    onHomeRefresh: { await refreshHomeSurfacesFromPull() },
-                    onDailyChallengeRefresh: { await viewModel.refreshFromHomePull() },
-                    onDailyChallengeLocalChange: { await viewModel.syncAfterLocalChange() },
-                    onRelationshipStartedOnLocalChange: { await viewModel.syncAfterLocalChange() },
-                    onMemoriesLocalChange: { await viewModel.syncAfterLocalChange() },
-                    onLeftRelationship: refreshPairing,
-                    onLogout: signOut,
-                    onDeleteAccount: deleteAccount,
-                    onUpdateProfile: { displayName, profilePhotoUpdate in
-                        await viewModel.updateCurrentProfile(
-                            displayName: displayName,
-                            profilePhotoUpdate: profilePhotoUpdate
-                        )
-                    },
-                    onPurchasesRestored: {
-                        await viewModel.refreshAfterSubscriptionChange()
-                    },
-                    dailyChallengeViewModel: featureDependencies.dailyChallengeViewModel,
-                    milestoneViewModel: featureDependencies.milestoneViewModel,
-                    memoriesViewModel: featureDependencies.memoriesViewModel,
-                    settingsViewModel: featureDependencies.settingsViewModel,
-                    settingsPrivacyService: featureDependencies.settingsPrivacyService,
-                    settingsPrivacyOperationProvider: featureDependencies.settingsPrivacyOperationProvider,
-                    widgetDrawingViewModel: featureDependencies.widgetDrawingViewModel,
-                    widgetHistoryViewModel: featureDependencies.widgetHistoryViewModel,
-                    widgetHistoryThumbnailLoader: featureDependencies.widgetHistoryThumbnailLoader
-                )
-                .transition(
-                    .asymmetric(
-                        insertion: pairedHomeInsertionTransition,
-                        removal: .opacity
-                    )
-                )
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.paeoniaBackgroundPrimary)
-        .animation(pairedScreenAnimation, value: viewModel.isPairingCelebrationPresented)
-    }
-
-    private var pairingCelebration: some View {
-        PairingCelebrationView(
-            currentDisplayName: viewModel.currentSession?.displayName,
-            currentProfilePhotoAssetID: viewModel.currentProfilePhotoAssetID,
-            partnerDisplayName: viewModel.currentPartnerDisplayName,
-            partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
-            playsIntro: viewModel.pendingPairingCelebration,
-            onIntroComplete: {
-                viewModel.consumePairingCelebration()
-            },
-            onDismiss: {
-                dismissPairingCelebration()
-            }
-        )
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.top, PaeoniaSpacing.screenTopSpacing)
-        .padding(.bottom, PaeoniaSpacing.space16)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    private var pairedScreenAnimation: Animation? {
-        reduceMotion ? nil : PaeoniaMotion.pairedScreenTransition
-    }
-
-    private var pairedCelebrationRemovalTransition: AnyTransition {
-        reduceMotion ? .opacity : .scale(scale: 0.96).combined(with: .opacity)
-    }
-
-    private var pairedHomeInsertionTransition: AnyTransition {
-        reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity)
-    }
-
-    private var header: some View {
-        PaeoniaBrandLockup(
-            wordmarkSize: 36,
-            taglineSize: 17,
-            taglineColor: .paeoniaTextSecondary
-        )
-        .frame(maxWidth: .infinity)
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        switch viewModel.state {
-        case .launching:
-            // Handled at the top level by `LaunchExperienceView`; never shown here.
-            EmptyView()
-        case .unauthenticated:
-            // Handled at the top level by `welcomeScreen`; never shown here.
-            EmptyView()
-        case .onboarding:
-            // Handled by `onboardingScaffold`; never shown here.
-            EmptyView()
-        case .limitedAuthenticated:
-            // Handled at the top level by `paywallScreen`; never shown here.
-            EmptyView()
-        case .unpaired, .invitePending:
-            // Handled by `pairingScaffold`; never shown here.
-            EmptyView()
-        case .deletingAccount:
-            AuthDeletingAccountView()
-        case .entitlementRestored:
-            privateSpacePlaceholder
-        case .paired:
-            // Handled by `pairedScaffold`; never shown here.
-            EmptyView()
-        case .pairedPaywalled,
-             .entitlementLost:
-            AuthUnavailableRouteView()
-        case .relationshipEndedNotice:
-            // Handled by `relationshipEndedScaffold`; never shown here.
-            EmptyView()
-        }
-    }
-
-    private var privateSpacePlaceholder: some View {
-        PaeoniaCard {
-            PaeoniaEmptyStateView(
-                title: .rootEmptyTitle,
-                message: .rootEmptyMessage,
-                systemImage: "heart.circle.fill"
-            )
-        }
-    }
-
-    private func signInWithApple() {
-        Task {
-            await viewModel.signInWithApple(using: appleSignInProvider)
-        }
-    }
-
-    private func signInWithGoogle() {
-        Task {
-            await viewModel.signInWithGoogle()
-        }
-    }
-
-    /// Stashes an invite code a joining partner entered before signing in. Once they
-    /// sign in, the paywall reads this pending code so they join their partner instead
-    /// of paying. The binding owner persists production changes so this view remains
-    /// safe to host with an in-memory binding in local flows and previews.
-    private func captureInviteCode(_ code: String) {
-        pendingJoinInviteCode = code
-    }
-
-    private func completeOnboarding(displayName: String, profilePhotoData: Data?) {
-        Task {
-            await viewModel.completeOnboarding(
-                displayName: displayName,
-                timeZoneID: TimeZone.current.identifier,
-                profilePhotoData: profilePhotoData
-            )
-        }
-    }
-
-    private func signOut() {
-        Task {
-            await viewModel.signOut()
-            finishDepartingUserCleanup()
-        }
-    }
-
-    private func deleteAccount() {
-        Task {
-            let authorizationCode: String?
-            if viewModel.currentSession?.provider == .apple {
-                let credential = try? await appleSignInProvider.signIn()
-                authorizationCode = credential?.authorizationCode
-            } else {
-                authorizationCode = nil
-            }
-
-            // If Apple re-authentication is cancelled or unavailable, deletion
-            // still proceeds and the server records Apple's documented manual
-            // revocation fallback.
-            await viewModel.deleteAccount(appleAuthorizationCode: authorizationCode)
-            finishDepartingUserCleanup()
-        }
-    }
-
-    /// Provider identity and invite codes must not carry into the next app
-    /// account. Keep both intact when an account action fails, and clear them
-    /// only after the current user has actually departed.
-    private func finishDepartingUserCleanup() {
-        guard viewModel.state == .unauthenticated else {
-            return
-        }
-
-        pendingJoinInviteCode = nil
-    }
-
-    private func subscriptionChanged() {
-        Task {
-            await viewModel.refreshAfterSubscriptionChange()
-        }
-    }
-
-    private func inviteAccepted() {
-        Task {
-            await viewModel.refreshAfterInviteAccepted()
-            pendingJoinInviteCode = nil
-        }
-    }
-
-    private func refreshPairing() {
-        Task {
-            await viewModel.refreshAfterPairingChange()
-        }
-    }
-
-    private func acknowledgeRelationshipEnded() {
-        Task {
-            await viewModel.acknowledgeRelationshipEnded()
-        }
-    }
-
-    private func dismissPairingCelebration() {
-        withAnimation(pairedScreenAnimation) {
-            viewModel.dismissPairingCelebration()
-        }
-    }
-
-    /// Reads the partner avatar the app stages in the shared App Group (the same
-    /// image the notification service extension uses) so the in-app notice can
-    /// show the partner's face instead of a generic icon.
-    private func partnerAvatarData() -> Data? {
-        guard let url = PaeoniaAppGroup.containerURL?
-            .appendingPathComponent(PaeoniaAppGroup.communicationPartnerAvatarPath)
-        else {
-            return nil
-        }
-        return try? Data(contentsOf: url)
-    }
-
-    @MainActor
-    private func handleDeepLink(_ deepLink: PaeoniaDeepLink?) async {
-        guard let deepLink else {
-            return
-        }
-
-        switch deepLink {
-        case .widgetDrawing:
-            viewModel.openWidgetDrawing()
-            self.deepLink = nil
-        case .widgetRefresh:
-            // A widget extension cannot always use the signed-in session.
-            // Route refresh through the host app, keep the destination useful,
-            // and await the real paired sync before consuming the request.
-            viewModel.openWidgetDrawing()
-            await performWidgetSyncIfPaired(viewModel.state)
-            // `.task(id:)` cancels this handler when a newer route arrives. Do
-            // not let the completed refresh erase that newer navigation intent.
-            guard !Task.isCancelled, self.deepLink == deepLink else {
-                return
-            }
-            self.deepLink = nil
-        case .dailyReveal, .dailyToday, .dailyChat:
-            switch viewModel.state {
-            case .paired, .launching:
-                viewModel.selectMainTab(.questions)
-            default:
-                self.deepLink = nil
-            }
-        case .memories:
-            switch viewModel.state {
-            case .paired, .launching:
-                viewModel.selectMainTab(.memories)
-            default:
-                self.deepLink = nil
-            }
-        case .streak:
-            switch viewModel.state {
-            case .paired, .launching:
-                viewModel.selectMainTab(.home)
-            default:
-                self.deepLink = nil
-            }
-        case .subscription:
-            openURL(PaeoniaDeepLink.appStoreSubscriptionsURL)
-            self.deepLink = nil
-        }
-    }
-
-    /// Pulls the partner's latest drawing (and our own latest) into the widget
-    /// and in-app canvas whenever we're paired and the app comes forward.
-    private func syncWidgetIfPaired(_ state: AppState) {
-        Task { await performWidgetSyncIfPaired(state) }
-    }
-
-    /// Awaitable core of the widget sync, so pull-to-refresh can keep its spinner
-    /// up until the partner's drawing and avatar are staged.
-    private func performWidgetSyncIfPaired(_ state: AppState) async {
-        guard allowsSystemIntegrations, state == .paired else {
-            return
-        }
-
-        let identity = WidgetSyncIdentity(
-            currentUserID: viewModel.currentSession.flatMap { UUID(uuidString: $0.id) },
-            currentDisplayName: viewModel.currentSession?.displayName,
-            partnerDisplayName: viewModel.currentPartnerDisplayName
-        )
-        // Persist so a silent-push-triggered background sync can label the
-        // drawing with the right nickname even when no view is alive.
-        WidgetSyncIdentityStore.shared.save(identity)
-        await widgetCanvasSync.sync(identity: identity)
-        await WidgetCenterReloader().reloadWidget()
-        // Stage the partner's avatar so the alert can render it as a
-        // communication notification while the app is in the background.
-        await partnerAvatarSharing?.cachePartnerAvatar(assetID: viewModel.currentPartnerProfilePhotoAssetID)
-    }
-
-    private func registerForRemoteNotificationsIfSignedIn(_ sessionID: String?) {
-        guard allowsSystemIntegrations, sessionID != nil else {
-            return
-        }
-
-        UIApplication.shared.registerForRemoteNotifications()
-        Task {
-            await widgetPushRegistration.registerCurrentWidgetPushToken()
-        }
-    }
-
-    /// Pull-to-refresh on Home after the Daily Challenge refresh has run: refreshes
-    /// shared local surfaces and widget sync without delaying the challenge rollover.
-    private func refreshHomeSurfacesFromPull() async {
-        await locationViewModel.refreshOwnLocationIfSharingEnabled(
-            source: .manualRefresh,
-            mayPromptForAuthorization: false
-        )
-        await performWidgetSyncIfPaired(viewModel.state)
-    }
-
-    private var pairingPermissionPrimerBinding: Binding<RootPairingPermissionPrimerCoordinator.Primer?> {
-        Binding(
-            get: { permissionPrimerCoordinator.presentedPrimer },
-            set: { primer in
-                if primer == nil {
-                    let dismissedPrimer = permissionPrimerCoordinator.presentedPrimer
-                    let dismissedIdentity = permissionPrimerCoordinator.presentedIdentity
-                    permissionPrimerCoordinator.dismiss()
-
-                    if dismissedPrimer == .notifications,
-                       let dismissedIdentity {
-                        Task { @MainActor in
-                            await continuePermissionPrimerSequence(for: dismissedIdentity)
-                        }
-                    }
-                }
-            }
-        )
-    }
-
-    private var pairingPermissionPrimerPartnerName: String {
-        viewModel.currentPartnerDisplayName?.trimmedNonEmpty
-            ?? String(localized: .pairingCelebrationPartnerName)
-    }
-
-    private func enableLocationSharing() {
-        permissionPrimerCoordinator.markLocationResponded(identity: locationIdentity)
-        permissionPrimerCoordinator.dismiss()
-        Task { @MainActor in
-            await locationViewModel.promptForCurrentLocation()
-        }
-    }
-
-    private func dismissLocationSharingPrimer() {
-        permissionPrimerCoordinator.markLocationResponded(identity: locationIdentity)
-        permissionPrimerCoordinator.dismiss()
-    }
-
-    private func enablePushNotifications() {
-        let primerIdentity = locationIdentity
-        permissionPrimerCoordinator.dismiss()
-        Task { @MainActor in
-            let didSettleAuthorization = await pushAuthorization.requestAuthorizationIfNeeded()
-            // Persist only after the call has reached and settled the system
-            // authorization flow. If the app is terminated before then, the
-            // primer remains eligible on the next launch instead of disappearing
-            // forever while iOS is still `.notDetermined`.
-            if didSettleAuthorization {
-                permissionPrimerCoordinator.markPushResponded()
-                await continuePermissionPrimerSequence(for: primerIdentity)
-            }
-        }
-    }
-
-    private func dismissPushPermissionPrimer() {
-        let primerIdentity = locationIdentity
-        permissionPrimerCoordinator.markPushResponded()
-        permissionPrimerCoordinator.dismiss()
-        Task { @MainActor in
-            await continuePermissionPrimerSequence(for: primerIdentity)
-        }
-    }
-
-    /// Give SwiftUI time to finish dismissing the notification sheet before it
-    /// receives the next item. This keeps the two explanations ordered without
-    /// presenting one permission surface on top of another.
-    private func continuePermissionPrimerSequence(for identity: LocationIdentity) async {
-        do {
-            try await Task.sleep(for: .milliseconds(400))
-        } catch {
-            return
-        }
-        guard isCurrentStableIdentity(identity) else { return }
-        await presentPermissionPrimerIfNeeded(for: identity)
-    }
-
-    private func showBanner(for notice: RootNotice?) {
-        guard let notice else {
-            return
-        }
-
-        bannerCenter.show(
-            .error(
-                title: String(localized: notice.title),
-                message: String(localized: notice.message)
-            )
-        )
-        viewModel.dismissNotice()
-    }
-
-    private func showBanner(for notice: LocationMapViewModel.Notice?) {
-        guard let notice else {
-            return
-        }
-
-        let partnerName = viewModel.currentPartnerDisplayName?.trimmedNonEmpty
-            ?? String(localized: .pairingCelebrationPartnerName)
-        bannerCenter.show(
-            .error(
-                title: String(localized: notice.title),
-                message: String(localized: notice.message(partnerName: partnerName))
-            )
-        )
-        locationViewModel.dismissNotice()
-    }
-
-    private var locationIdentity: LocationIdentity {
-        LocationIdentity(
-            currentUserID: viewModel.currentSession.flatMap { UUID(uuidString: $0.id) },
-            coupleID: viewModel.currentActiveCoupleID
-        )
-    }
-
-    private var stablePairedLocationIdentity: LocationIdentity? {
-        guard hasFinishedPostLaunchWork,
-              viewModel.state == .paired,
-              !viewModel.isPairingCelebrationPresented,
-              locationIdentity.currentUserID != nil,
-              locationIdentity.coupleID != nil
-        else {
-            return nil
-        }
-
-        return locationIdentity
-    }
-
-    private func restorePairedLocationPresentation(for identity: LocationIdentity) async {
-        await viewModel.synchronizePairedPresentationData()
-        guard isCurrentStableIdentity(identity) else { return }
-
-        // Configure again rather than assuming the cache-first task has already
-        // settled; both tasks can become eligible after a fast sign-in transition.
-        await locationViewModel.configure(identity: identity)
-        guard isCurrentStableIdentity(identity) else { return }
-
-        // A fresh install may restore an enabled server preference while iOS
-        // permission is undecided. The primer remains the only prompting path.
-        await locationViewModel.refreshOwnLocationIfSharingEnabled(
-            source: .foregroundOpen,
-            mayPromptForAuthorization: false
-        )
-        guard isCurrentStableIdentity(identity) else { return }
-
-        await presentPermissionPrimerIfNeeded(for: identity)
-    }
-
-    private func presentPermissionPrimerIfNeeded(for identity: LocationIdentity) async {
-        guard allowsSystemIntegrations, isCurrentStableIdentity(identity) else {
-            return
-        }
-
-        await permissionPrimerCoordinator.presentIfNeeded(
-            identity: identity,
-            sharingStateIsKnown: locationViewModel.hasResolvedSharingPreference,
-            sharingEnabled: locationViewModel.sharingEnabled,
-            locationAuthorizationState: locationViewModel.authorizationState,
-            pushAuthorization: pushAuthorization
-        )
-
-        // Scene-activation work is intentionally unstructured and can outlive
-        // the paired identity while the authorization status read is suspended.
-        // Never let that stale result resurrect a primer after unpair/sign-out.
-        if !isCurrentStableIdentity(identity),
-           permissionPrimerCoordinator.presentedIdentity == identity {
-            permissionPrimerCoordinator.dismiss()
-        }
-    }
-
-    private func isCurrentStableIdentity(_ identity: LocationIdentity) -> Bool {
-        !Task.isCancelled && stablePairedLocationIdentity == identity
-    }
-
 }
 
 #Preview {

@@ -5,7 +5,7 @@ import UIKit
 
 enum PaeoniaBannerStyle: Equatable {
     case error
-    /// A neutral, non-error notice — used to surface a partner's update in-app
+    /// A neutral, non-error notice used to surface a partner's update in-app
     /// while the app is open, in place of the system notification banner.
     case info
 }
@@ -18,9 +18,13 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
     /// Optional leading avatar (e.g. the partner's profile photo) shown in place
     /// of the style's icon.
     let imageData: Data?
+    /// `imageData` decoded once here, so the banner does not decode it on every render.
+    let avatar: UIImage?
     /// When true, tapping the banner invokes the host's tap handler (used to open
     /// the drawing screen from a partner-update notice).
     let isTappable: Bool
+    /// SF Symbol shown instead of the style's default icon.
+    let systemImage: String?
 
     init(
         id: UUID = UUID(),
@@ -28,14 +32,32 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
         title: String? = nil,
         message: String,
         imageData: Data? = nil,
-        isTappable: Bool = false
+        isTappable: Bool = false,
+        systemImage: String? = nil
     ) {
         self.id = id
         self.style = style
         self.title = title
         self.message = message
         self.imageData = imageData
+        self.avatar = imageData.flatMap { UIImage(data: $0) }
         self.isTappable = isTappable
+        self.systemImage = systemImage
+    }
+
+    static func == (lhs: PaeoniaBannerContent, rhs: PaeoniaBannerContent) -> Bool {
+        lhs.id == rhs.id
+            && lhs.style == rhs.style
+            && lhs.title == rhs.title
+            && lhs.message == rhs.message
+            && lhs.imageData == rhs.imageData
+            && lhs.isTappable == rhs.isTappable
+            && lhs.systemImage == rhs.systemImage
+    }
+
+    /// True when `other` would look the same to the user, even with a different id.
+    func hasSameText(as other: PaeoniaBannerContent) -> Bool {
+        style == other.style && title == other.title && message == other.message
     }
 
     static func error(title: String? = nil, message: String) -> PaeoniaBannerContent {
@@ -46,14 +68,16 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
         title: String? = nil,
         message: String,
         imageData: Data? = nil,
-        isTappable: Bool = false
+        isTappable: Bool = false,
+        systemImage: String? = nil
     ) -> PaeoniaBannerContent {
         PaeoniaBannerContent(
             style: .info,
             title: title,
             message: message,
             imageData: imageData,
-            isTappable: isTappable
+            isTappable: isTappable,
+            systemImage: systemImage
         )
     }
 }
@@ -62,8 +86,51 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
 @Observable
 final class PaeoniaBannerCenter {
     private(set) var content: PaeoniaBannerContent?
+    /// Every place that can draw the banner, oldest first. Only the newest
+    /// draws it: a sheet or cover that mounts `.paeoniaTopBanner` takes over
+    /// from the screen under it, and hands back when it goes away. Nested
+    /// attachments therefore never show the same banner twice.
+    private(set) var hosts: [UUID] = []
 
+    private let errorDuration: Duration
+    private let infoDuration: Duration
+    private let isVoiceOverRunning: @MainActor () -> Bool
+    @ObservationIgnored private var dismissTask: Task<Void, Never>?
+
+    /// Banners dismiss themselves after `errorDuration` or `infoDuration`. With
+    /// VoiceOver running they stay until the user dismisses them.
+    init(
+        errorDuration: Duration = .seconds(6),
+        infoDuration: Duration = .seconds(4),
+        isVoiceOverRunning: @escaping @MainActor () -> Bool = { UIAccessibility.isVoiceOverRunning }
+    ) {
+        self.errorDuration = errorDuration
+        self.infoDuration = infoDuration
+        self.isVoiceOverRunning = isVoiceOverRunning
+    }
+
+    func registerHost(_ id: UUID) {
+        hosts.removeAll { $0 == id }
+        hosts.append(id)
+    }
+
+    func unregisterHost(_ id: UUID) {
+        hosts.removeAll { $0 == id }
+    }
+
+    /// True for the host that should draw the banner right now.
+    func isActiveHost(_ id: UUID) -> Bool {
+        hosts.last == id
+    }
+
+    /// Shows `content`. If the banner on screen reads the same, it stays as is
+    /// (same id, no haptic, no new animation) and only its timer restarts.
     func show(_ content: PaeoniaBannerContent) {
+        if let current = self.content, current.hasSameText(as: content) {
+            scheduleDismiss(of: current)
+            return
+        }
+
         self.content = content
 
         switch content.style {
@@ -72,10 +139,52 @@ final class PaeoniaBannerCenter {
         case .info:
             PaeoniaHaptics.drawingSent()
         }
+
+        announce(content)
+        scheduleDismiss(of: content)
     }
 
     func dismiss() {
+        dismissTask?.cancel()
+        dismissTask = nil
         content = nil
+    }
+
+    /// Dismisses only if the banner with `id` is still the one on screen, so a
+    /// late timer or swipe for an old banner cannot remove a newer one.
+    func dismiss(id: UUID) {
+        guard content?.id == id else {
+            return
+        }
+
+        dismiss()
+    }
+
+    private func scheduleDismiss(of banner: PaeoniaBannerContent) {
+        dismissTask?.cancel()
+        dismissTask = nil
+
+        guard !isVoiceOverRunning() else {
+            return
+        }
+
+        let duration = banner.style == .error ? errorDuration : infoDuration
+        let id = banner.id
+        dismissTask = Task { [weak self] in
+            try? await Task.sleep(for: duration)
+            guard !Task.isCancelled else {
+                return
+            }
+
+            self?.dismiss(id: id)
+        }
+    }
+
+    private func announce(_ banner: PaeoniaBannerContent) {
+        let text = [banner.title?.nilIfBlank, banner.message.nilIfBlank]
+            .compactMap { $0 }
+            .joined(separator: ". ")
+        AccessibilityNotification.Announcement(text).post()
     }
 }
 
@@ -105,6 +214,9 @@ struct PaeoniaTopBanner: View {
         .shadow(color: .black.opacity(0.26), radius: 24, x: 0, y: 14)
         .accessibilityElement(children: .contain)
         .accessibilityAction(named: Text(.appBannerDismissButton)) {
+            onDismiss()
+        }
+        .accessibilityAction(.escape) {
             onDismiss()
         }
     }
@@ -146,8 +258,8 @@ struct PaeoniaTopBanner: View {
 
     @ViewBuilder
     private var leadingIcon: some View {
-        if let imageData = content.imageData, let image = UIImage(data: imageData) {
-            Image(uiImage: image)
+        if let avatar = content.avatar {
+            Image(uiImage: avatar)
                 .resizable()
                 .scaledToFill()
                 .frame(width: 36, height: 36)
@@ -157,7 +269,7 @@ struct PaeoniaTopBanner: View {
                 }
                 .accessibilityHidden(true)
         } else {
-            Image(systemName: iconName)
+            Image(systemName: content.systemImage ?? iconName)
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(accentColor)
                 .frame(width: 24, height: 24)
@@ -168,11 +280,13 @@ struct PaeoniaTopBanner: View {
     private var dismissButton: some View {
         Button(action: onDismiss) {
             Image(systemName: "xmark")
-                .font(.caption.weight(.bold))
+                .font(PaeoniaTypography.caption.weight(.bold))
                 .foregroundStyle(.paeoniaTextSecondary)
                 .frame(width: 32, height: 32)
                 .background(Color.paeoniaSurfacePrimary.opacity(0.28))
                 .clipShape(Circle())
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(.appBannerDismissButton))
@@ -201,19 +315,39 @@ private struct PaeoniaTopBannerModifier: ViewModifier {
     let center: PaeoniaBannerCenter
     let onTap: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hostID = UUID()
+
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .top) {
-                if let bannerContent = center.content {
+                if let bannerContent = center.content, center.isActiveHost(hostID) {
                     PaeoniaTopBannerPresentation(
                         content: bannerContent,
                         center: center,
                         onTap: onTap
                     )
+                    // A new id resets per-banner state such as the drag offset.
+                    .id(bannerContent.id)
+                    .transition(bannerTransition)
                     .zIndex(1)
                 }
             }
-            .animation(.spring(response: 0.34, dampingFraction: 0.88), value: center.content?.id)
+            .animation(bannerAnimation, value: center.content?.id)
+            // The newest host (a sheet or cover on top) draws the banner, so it
+            // is never hidden under a presentation or shown twice.
+            .onAppear { center.registerHost(hostID) }
+            .onDisappear { center.unregisterHost(hostID) }
+    }
+
+    private var bannerTransition: AnyTransition {
+        reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity)
+    }
+
+    private var bannerAnimation: Animation {
+        reduceMotion
+            ? PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionFast)
+            : .spring(response: 0.34, dampingFraction: 0.88)
     }
 }
 
@@ -222,6 +356,8 @@ private struct PaeoniaTopBannerPresentation: View {
     let content: PaeoniaBannerContent
     let center: PaeoniaBannerCenter
     let onTap: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Live upward drag, clamped to `<= 0`, so the banner follows the finger as
     /// the user swipes it up to dismiss.
@@ -234,23 +370,22 @@ private struct PaeoniaTopBannerPresentation: View {
             .gesture(swipeUpToDismiss)
             .padding(.horizontal, PaeoniaSpacing.space16)
             .safeAreaPadding(.top, PaeoniaSpacing.space8)
-            .transition(
-                .asymmetric(
-                    insertion: .move(edge: .top).combined(with: .opacity),
-                    removal: .move(edge: .top).combined(with: .opacity)
-                )
-            )
-            .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.86), value: dragOffset)
+            .animation(dragAnimation, value: dragOffset)
+    }
+
+    /// With Reduce Motion on, the banner follows the finger but snaps back without a spring.
+    private var dragAnimation: Animation? {
+        reduceMotion ? nil : Animation.interactiveSpring(response: 0.3, dampingFraction: 0.86)
     }
 
     @ViewBuilder
     private var tappableBanner: some View {
         PaeoniaTopBanner(
             content: content,
-            onDismiss: center.dismiss,
+            onDismiss: { center.dismiss(id: content.id) },
             onTap: content.isTappable
                 ? {
-                    center.dismiss()
+                    center.dismiss(id: content.id)
                     onTap()
                 }
                 : nil
@@ -265,7 +400,7 @@ private struct PaeoniaTopBannerPresentation: View {
             }
             .onEnded { value in
                 if value.translation.height < -Self.dismissThreshold {
-                    center.dismiss()
+                    center.dismiss(id: content.id)
                 }
                 dragOffset = 0
             }

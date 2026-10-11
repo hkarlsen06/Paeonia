@@ -5,6 +5,12 @@
     let prefilled: Bool
 
     var body: some View {
+      NavigationStack {
+        onboarding
+      }
+    }
+
+    private var onboarding: some View {
       AuthOnboardingView(
         session: AuthSession(
           id: DeveloperScenarioFixture.currentUserID.uuidString,
@@ -33,7 +39,12 @@
     var body: some View {
       switch scenario {
       case .pairingJoin:
-        WelcomeInviteCodeSheet(onSubmit: { _ in })
+        PairingCodeEntrySheet(
+          title: .welcomeInviteCodeTitle,
+          message: .welcomeInviteCodeSubtitle,
+          submitTitle: .welcomeInviteCodeContinue,
+          onSubmit: { _ in true }
+        )
           .frame(maxWidth: .infinity, maxHeight: .infinity)
           .background(.paeoniaBackgroundPrimary)
       case .pairingSafetyWarning:
@@ -51,6 +62,9 @@
         PairingInviteView(
           session: DeveloperScenarioFixture.completeSession,
           viewModel: inviteViewModel,
+          pendingJoinCode: nil,
+          onClearPendingJoinCode: {},
+          onInviteAccepted: {},
           onRefreshAccess: {}
         )
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -167,7 +181,9 @@
             product: nil,
             freeTrial: trial,
             isPurchasing: false,
-            isLoading: false
+            isLoading: false,
+            displayPrice: (billingPeriod == .monthly ? 49 : 399)
+              .formatted(.currency(code: "NOK").precision(.fractionLength(0)))
           )
         },
         priceLine: priceLine(for:),

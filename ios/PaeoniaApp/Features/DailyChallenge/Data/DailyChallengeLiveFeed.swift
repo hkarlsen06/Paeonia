@@ -13,11 +13,13 @@ import Foundation
 ///   read change and it pushes the new day. The feed then switches to the day query.
 ///
 /// Convex reruns a query only when data it read changes. The clock is not data, so
-/// the today query can return a stale result after midnight, even to a new
-/// subscription with the same arguments. At `ends_at` the feed therefore opens a
-/// new today subscription with a different `p_day_key`. A different key is a
-/// different cached query, so it runs again. The feed never starts a day. Starting
-/// stays a user action (`start_daily_challenge_snapshot`).
+/// the today query can return a stale result after the couple's day ends, even to a
+/// new subscription with the same arguments. Every today subscription therefore uses
+/// a fresh `p_day_key`: a different key is a different cached query, so it runs
+/// again. The couple's day ends at the westmost partner's midnight, which this phone
+/// doesn't know before a day exists, so without a day the feed also renews the
+/// subscription every half hour. The feed never starts a day. Starting stays a user
+/// action (`start_daily_challenge_snapshot`).
 nonisolated struct DailyChallengeLiveFeed: LiveFeed {
     let name = "daily_challenge"
 
@@ -56,24 +58,19 @@ nonisolated struct DailyChallengeLiveFeed: LiveFeed {
 
         let owner = session.userID
         var window = cache.load(ownerUserID: owner).flatMap(DayWindow.init)
-        var dayKey = localDateKey()
         while !Task.isCancelled {
             if let followed = window, followed.endsAt > now() {
                 await follow(followed, owner: owner, live: live)
                 guard !Task.isCancelled else {
                     return
                 }
-                // A day that ended gets a key no earlier request used. A day the
-                // server rejected (for example another couple's) falls back to today.
-                dayKey = now() >= followed.endsAt ? Self.key(endingAt: followed.endsAt) : localDateKey()
+                // The day ended, or the server rejected it (for example another
+                // couple's). Either way, find today's day again.
                 window = nil
             } else {
-                window = await followToday(key: dayKey, owner: owner, live: live)
+                window = await followToday(key: Self.freshKey(), owner: owner, live: live)
                 guard !Task.isCancelled else {
                     return
-                }
-                if window == nil {
-                    dayKey = localDateKey()
                 }
             }
         }
@@ -107,9 +104,9 @@ nonisolated struct DailyChallengeLiveFeed: LiveFeed {
     }
 
     /// Follows today's query until it reports a couple day that has not ended, or
-    /// until the next local midnight, when the caller opens a new subscription.
+    /// until the renewal time, when the caller opens a new subscription.
     private func followToday(key: String, owner: UUID, live: LiveQueryService) async -> DayWindow? {
-        await first(until: nextLocalMidnight()) {
+        await first(until: todayRenewalDate()) {
             let results = live.subscribe(
                 "daily:get_today_daily_challenge_snapshot",
                 args: ["p_day_key": key],
@@ -154,20 +151,21 @@ nonisolated struct DailyChallengeLiveFeed: LiveFeed {
         LocalStoreChanges.post(.dailyChallenge, ownerUserID: owner)
     }
 
-    private func localDateKey() -> String {
-        let parts = Calendar.current.dateComponents([.year, .month, .day], from: now())
-        return String(format: "%04ld-%02ld-%02ld", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
-    }
-
-    private func nextLocalMidnight() -> Date {
-        Calendar.current.nextDate(
+    /// When a today subscription that hasn't found a day is renewed: the next local
+    /// midnight, or half an hour from now if that comes first.
+    private func todayRenewalDate() -> Date {
+        let midnight = Calendar.current.nextDate(
             after: now(),
             matching: DateComponents(hour: 0, minute: 0, second: 0),
             matchingPolicy: .nextTime
         ) ?? now().addingTimeInterval(86_400)
+        return min(midnight, now().addingTimeInterval(Self.todayRenewalInterval))
     }
 
-    private static func key(endingAt date: Date) -> String {
-        date.formatted(.iso8601)
+    private static let todayRenewalInterval: TimeInterval = 30 * 60
+
+    /// A key no earlier request used, so the server runs the today query again.
+    private static func freshKey() -> String {
+        UUID().uuidString.lowercased()
     }
 }

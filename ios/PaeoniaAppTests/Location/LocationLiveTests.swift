@@ -483,13 +483,15 @@ struct LocationLiveReloadTests {
         let viewModel = makeViewModel(visibilityStore: visibilityStore, ownLocationStore: ownLocationStore)
         try await visibilityStore.save(snapshot(state: .notSharing, capturedAt: Date()))
         await viewModel.configure(identity: LocationIdentity(currentUserID: liveOwnerID, coupleID: liveCoupleID))
-        #expect(viewModel.mapState == .currentUnknown)
+        // Sharing is on but this phone has not found its own location yet.
+        #expect(viewModel.mapState == .currentLocationMissing)
 
         try await ownLocationStore.save(ownLocation())
-        let partnerNotSharing = await waitUntil {
-            await viewModel.mapState == .partnerUnknown(.notSharing)
+        // The partner switched sharing on but has not sent a location yet.
+        let partnerWaiting = await waitUntil {
+            await viewModel.mapState == .waitingForPartnerLocation
         }
-        #expect(partnerNotSharing)
+        #expect(partnerWaiting)
 
         try await visibilityStore.save(snapshot(state: .visible, capturedAt: Date()))
         let ready = await waitUntil {

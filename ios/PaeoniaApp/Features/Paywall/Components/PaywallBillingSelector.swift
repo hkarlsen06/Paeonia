@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PaywallBillingSelector: View {
     @Binding var billingPeriod: PaeoniaBillingPeriod
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space4) {
@@ -19,7 +20,7 @@ struct PaywallBillingSelector: View {
         let isSelected = billingPeriod == period
 
         return Button {
-            withAnimation(.easeOut(duration: 0.18)) {
+            withAnimation(reduceMotion ? nil : PaeoniaMotion.buttonPress) {
                 billingPeriod = period
             }
         } label: {

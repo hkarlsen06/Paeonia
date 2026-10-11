@@ -25,6 +25,9 @@ struct RelationshipTimelineView: View {
     /// Once the user scrolls, the veil dissolves for the rest of the presentation —
     /// re-blurring rows someone is trying to read would fight them.
     @State private var isVeilLifted = false
+    /// The instant every day count is measured from. Refreshed when the calendar
+    /// day changes so a sheet left open overnight moves to the new day.
+    @State private var now = Date()
 
     private static let pastLimit = 4
     private static let upcomingLimit = 8
@@ -71,6 +74,7 @@ struct RelationshipTimelineView: View {
         }
         .presentationDetents([.large])
         .presentationBackground(.paeoniaSurfacePrimary)
+        .onCalendarDayChange { now = Date() }
         .sheet(isPresented: $isEditorPresented) {
             RelationshipDateEditorView(
                 selectedDate: $selectedDate,
@@ -111,7 +115,7 @@ struct RelationshipTimelineView: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            Text(.homeMilestoneTimelineTogetherFor(daysTogetherText))
+            heroTitle
                 .font(PaeoniaTypography.display)
                 .foregroundStyle(.paeoniaTextPrimary)
 
@@ -125,6 +129,13 @@ struct RelationshipTimelineView: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .combine)
+    }
+
+    /// "Together for 186 days", or a first-day line while the count is still 0.
+    private var heroTitle: Text {
+        daysTogether == 0
+            ? Text(.homeMilestoneTimelineFirstDay)
+            : Text(.homeMilestoneTimelineTogetherFor(Self.daysText(daysTogether)))
     }
 
     private func milestoneRow(for milestone: RelationshipMilestone, isPast: Bool) -> some View {
@@ -145,7 +156,7 @@ struct RelationshipTimelineView: View {
         if milestone.daysRemaining == 0 {
             return Text(.homeMilestoneToday)
         }
-        let date = milestone.date.formatted(.dateTime.weekday(.wide).day().month(.wide))
+        let date = milestone.date.formatted(dateFormat(for: milestone.date))
         if milestone.daysRemaining < 0 {
             return Text(verbatim: date)
         }
@@ -157,22 +168,31 @@ struct RelationshipTimelineView: View {
     /// Recomputed per render so the list refreshes after the date is edited while
     /// the sheet stays open. The math is a handful of bounded calendar additions.
     private var pastMilestones: [RelationshipMilestone] {
-        RelationshipMilestoneCalculator().pastMilestones(startedOn: startedOn, limit: Self.pastLimit)
+        RelationshipMilestoneCalculator().pastMilestones(startedOn: startedOn, now: now, limit: Self.pastLimit)
     }
 
     private var upcomingMilestones: [RelationshipMilestone] {
-        RelationshipMilestoneCalculator().upcomingMilestones(startedOn: startedOn, limit: Self.upcomingLimit)
+        RelationshipMilestoneCalculator().upcomingMilestones(startedOn: startedOn, now: now, limit: Self.upcomingLimit)
+    }
+
+    /// Weekday, day and month, plus the year when the date is not in the current
+    /// year. Past rows from earlier years and upcoming rows more than a year out
+    /// would otherwise read as the wrong year.
+    private func dateFormat(for date: Date) -> Date.FormatStyle {
+        let format = Date.FormatStyle.dateTime.weekday(.wide).day().month(.wide)
+        return Calendar.current.isDate(date, equalTo: now, toGranularity: .year) ? format : format.year()
     }
 
     private var startDate: Date? {
         (try? PairingStartDate(rawValue: startedOn))?.date()
     }
 
-    /// The elapsed time as a localized "186 days" string. The day count comes from
-    /// the calculator so it matches the milestone schedule (100 days together lands
-    /// exactly on the 100-days milestone).
-    private var daysTogetherText: String {
-        Self.daysText(RelationshipMilestoneCalculator().daysTogether(startedOn: startedOn) ?? 0)
+    /// The elapsed whole days. The count comes from the calculator so it matches the
+    /// milestone schedule (100 days together lands exactly on the 100-days
+    /// milestone). It is never negative: a partner who set the start date from a
+    /// time zone that is already on the next day would otherwise produce -1.
+    private var daysTogether: Int {
+        max(0, RelationshipMilestoneCalculator().daysTogether(startedOn: startedOn, now: now) ?? 0)
     }
 
     /// Formats a whole-day count as "9 days" / "9 dager". Two plain catalog keys

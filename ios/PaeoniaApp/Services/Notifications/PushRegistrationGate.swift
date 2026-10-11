@@ -6,6 +6,9 @@ import Foundation
 nonisolated struct PushRegistrationRecord: Codable, Equatable, Sendable {
     let fingerprint: String
     let sentAt: Date
+    /// The backend row for this phone, so sign-out can turn its alerts off.
+    /// Records saved before this field existed decode it as `nil`.
+    var deviceID: UUID?
 }
 
 /// Every field a registration RPC sends. A change to any of these should

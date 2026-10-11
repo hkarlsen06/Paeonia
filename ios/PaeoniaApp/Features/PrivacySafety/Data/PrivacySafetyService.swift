@@ -50,9 +50,9 @@ actor PrivacySafetyService: PrivacySafetyServicing {
     nonisolated func privacyRequestUpdates() -> AsyncStream<[PrivacyRequest]> {
         ScreenLiveUpdates.values(
             "identity:get_privacy_requests",
-            as: [PrivacyRequestRemoteRow].self
-        ) { rows in
-            rows.map(\.request).sorted { $0.requestedAt > $1.requestedAt }
+            as: PrivacyRequestRemoteRows.self
+        ) { list in
+            list.rows.map(\.request).sorted { $0.requestedAt > $1.requestedAt }
         }
     }
 

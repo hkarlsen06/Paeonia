@@ -342,6 +342,23 @@ describe("privacy requests", () => {
     expect(listed.map((row) => row.id)).toEqual([secondId, firstId]);
   });
 
+  test("a second open request of the same kind returns the open one", async () => {
+    const t = newTest();
+    const user = await createSignedInUser(t, {});
+    const first = await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "export" });
+    // Another device files the same request before it sees the first one.
+    expect(await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "export" })).toEqual(first);
+    const access = await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "access" });
+    expect(access.id).not.toBe(first.id);
+    await t.run(async (ctx) => {
+      const row = await ctx.db.query("privacy_requests").withIndex("by_uuid", (q) => q.eq("id", first.id)).unique();
+      await ctx.db.patch(row!._id, { status: "completed" });
+    });
+    const next = await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "export" });
+    expect(next.id).not.toBe(first.id);
+    expect(await user.as.query(api.identity.get_privacy_requests, {})).toHaveLength(3);
+  });
+
   test("rejects bad input, duplicate ids, and a second open deletion request", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, {});

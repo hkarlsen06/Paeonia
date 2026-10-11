@@ -193,12 +193,12 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
 
     func markSending(clientOperationID: UUID, at date: Date) async throws {
         let context = ModelContext(container)
-        guard let operation = try fetchOperation(id: clientOperationID, in: context) else {
-            return
-        }
-        // The batch was read earlier. An operation cancelled or finished since then
-        // must not be sent.
-        guard operation.status != .failedTerminal, operation.status != .succeeded else {
+        // The batch was read earlier. An operation cancelled, finished, or purged
+        // since then must not be sent.
+        guard let operation = try fetchOperation(id: clientOperationID, in: context),
+              operation.status != .failedTerminal,
+              operation.status != .succeeded
+        else {
             throw PendingSyncOperationClaimError.notPending
         }
         operation.markSending(at: date)
@@ -245,9 +245,11 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
             }
         )
 
-        for operation in try context.fetch(descriptor) where operation.status == .succeeded {
-            context.delete(operation)
+        let completed = try context.fetch(descriptor).filter { $0.status == .succeeded }
+        guard !completed.isEmpty else {
+            return
         }
+        completed.forEach(context.delete)
 
         try context.save()
         LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
@@ -408,7 +410,10 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
     }
 
     func markSending(clientOperationID: UUID, at date: Date) async throws {
-        if let status = operations[clientOperationID]?.status, status == .failedTerminal || status == .succeeded {
+        guard let status = operations[clientOperationID]?.status,
+              status != .failedTerminal,
+              status != .succeeded
+        else {
             throw PendingSyncOperationClaimError.notPending
         }
         update(id: clientOperationID) { operation in

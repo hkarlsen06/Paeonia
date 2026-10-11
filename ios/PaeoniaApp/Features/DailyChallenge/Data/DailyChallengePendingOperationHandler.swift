@@ -21,6 +21,23 @@ nonisolated struct DailySubmitAnswerOperationPayload: Codable, Sendable, Equatab
         case media(Media)
         case textAndMedia(String, Media)
         case textAndPartnerChoice(String, UUID)
+
+        /// The editable draft this answer came from, so an answer the server refuses
+        /// for good can go back into the composer instead of disappearing.
+        var restoredDraft: DailyAnswerDraft {
+            switch self {
+            case let .text(body):
+                DailyAnswerDraft(text: body)
+            case let .partnerChoice(userID):
+                DailyAnswerDraft(partnerChoiceUserID: userID, selectedKind: .partnerChoice)
+            case let .media(media):
+                DailyAnswerDraft(selectedKind: media.draft.purpose == .voice ? .voice : .photo, media: media.draft)
+            case let .textAndMedia(body, media):
+                DailyAnswerDraft(text: body, media: media.draft)
+            case let .textAndPartnerChoice(body, userID):
+                DailyAnswerDraft(text: body, partnerChoiceUserID: userID)
+            }
+        }
     }
 
     /// The staged-media details a queued photo/voice answer needs to upload. The
@@ -61,18 +78,40 @@ nonisolated struct DailySubmitAnswerOperationPayload: Codable, Sendable, Equatab
 struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .submitDailyAnswer
 
+    /// Puts a refused answer back into the owner's drafts.
+    typealias DraftRestorer = @Sendable (
+        _ ownerUserID: UUID,
+        _ instanceID: UUID,
+        _ draft: DailyAnswerDraft
+    ) async -> Void
+
     private let mediaUploadService: any DailyAnswerMediaUploading
     private let gateway: any DailyChallengeGateway
     private let mediaDraftStore: any DailyAnswerMediaDraftStoring
+    private let restoreDraft: DraftRestorer
 
     init(
         mediaUploadService: any DailyAnswerMediaUploading,
         gateway: any DailyChallengeGateway,
-        mediaDraftStore: any DailyAnswerMediaDraftStoring
+        mediaDraftStore: any DailyAnswerMediaDraftStoring,
+        restoreDraft: @escaping DraftRestorer = Self.restoreToSharedDraftStore
     ) {
         self.mediaUploadService = mediaUploadService
         self.gateway = gateway
         self.mediaDraftStore = mediaDraftStore
+        self.restoreDraft = restoreDraft
+    }
+
+    nonisolated static func restoreToSharedDraftStore(
+        ownerUserID: UUID,
+        instanceID: UUID,
+        draft: DailyAnswerDraft
+    ) async {
+        // The drain then marks the operation failed and posts `.pendingOperations`,
+        // which tells an open daily challenge screen to pick the draft back up.
+        await MainActor.run {
+            UserDefaultsDailyChallengeDraftStore.shared.setDraft(draft, for: instanceID, userID: ownerUserID)
+        }
     }
 
     func send(
@@ -87,22 +126,23 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
 
         switch payload.content {
         case let .text(body):
-            try await submit(DailyAnswerPayload(text: body), payload: payload, operation: operation)
-            return .succeeded
+            return try await submit(DailyAnswerPayload(text: body), payload: payload, operation: operation)
         case let .partnerChoice(userID):
-            try await submit(DailyAnswerPayload(partnerChoiceUserID: userID), payload: payload, operation: operation)
-            return .succeeded
+            return try await submit(
+                DailyAnswerPayload(partnerChoiceUserID: userID),
+                payload: payload,
+                operation: operation
+            )
         case let .media(media):
             return try await sendMedia(media, text: nil, payload: payload, operation: operation)
         case let .textAndMedia(body, media):
             return try await sendMedia(media, text: body, payload: payload, operation: operation)
         case let .textAndPartnerChoice(body, userID):
-            try await submit(
+            return try await submit(
                 DailyAnswerPayload(text: body, partnerChoiceUserID: userID),
                 payload: payload,
                 operation: operation
             )
-            return .succeeded
         }
     }
 
@@ -138,15 +178,18 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
             finalizeOperation: media.finalizeOperation
         )
 
-        try await submit(
+        let result = try await submit(
             DailyAnswerPayload(text: text, mediaAssetIDs: [assetID]),
             payload: payload,
             operation: operation
         )
 
-        // The answer is sent; the staged copy is no longer needed.
-        mediaDraftStore.removeStagedMedia(instanceID: payload.instanceID)
-        return .succeeded
+        // Once sent, the staged copy is no longer needed. A refused answer keeps it,
+        // because its draft points at it again.
+        if result == .succeeded {
+            mediaDraftStore.removeStagedMedia(instanceID: payload.instanceID)
+        }
+        return result
     }
 
     private func restorableMediaData(
@@ -165,16 +208,36 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
         return stagedData
     }
 
+    /// Submits the answer. When the server refuses it for good (for example its day
+    /// ended, or it no longer fits the question), retrying would only keep it showing
+    /// as "sending" forever. The operation stops instead, and the answer goes back
+    /// into the drafts so nothing the user wrote is lost. Upload errors are not
+    /// classified here and keep retrying.
     private func submit(
         _ answer: DailyAnswerPayload,
         payload: DailySubmitAnswerOperationPayload,
         operation: PendingSyncOperationSnapshot
-    ) async throws {
-        _ = try await gateway.submitAnswer(
-            instanceID: payload.instanceID,
-            answerID: payload.answerID,
-            payload: answer,
-            operation: operation.operation
-        )
+    ) async throws -> PendingSyncOperationSendResult {
+        do {
+            _ = try await gateway.submitAnswer(
+                instanceID: payload.instanceID,
+                answerID: payload.answerID,
+                payload: answer,
+                operation: operation.operation
+            )
+            return .succeeded
+        } catch let error as PaeoniaConvexError where Self.isPermanentRejection(error) {
+            await restoreDraft(operation.ownerUserID, payload.instanceID, payload.content.restoredDraft)
+            return .terminalFailure(error.description)
+        }
+    }
+
+    /// Server rejections that a retry can never fix: a check failed (`23514`, such as
+    /// an answer made after its day ended), the operation was replayed with different
+    /// content (`23505`), or the question no longer exists (`22023`). Access errors
+    /// (`42501`) keep retrying, because access can come back.
+    nonisolated static func isPermanentRejection(_ error: PaeoniaConvexError) -> Bool {
+        guard case let .server(code, _) = error else { return false }
+        return ["23514", "23505", "22023"].contains(code)
     }
 }

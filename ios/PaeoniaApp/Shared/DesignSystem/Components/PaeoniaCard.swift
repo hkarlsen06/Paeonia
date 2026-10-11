@@ -13,14 +13,15 @@ struct PaeoniaCard<Content: View>: View {
     }
 
     var body: some View {
+        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
+
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.paeoniaSurfacePrimary)
+            .clipShape(shape)
             .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
-                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeHairline)
+                shape.strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeHairline)
             }
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
     }
 }

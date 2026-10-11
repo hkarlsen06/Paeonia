@@ -43,6 +43,10 @@ final class WidgetDrawingHistoryViewModel {
     private(set) var items: [WidgetDrawingHistoryItem] = []
     private(set) var phase: Phase = .loading
     private(set) var isLoadingMore = false
+    /// True after an older page failed to load. Stays set until
+    /// `retryLoadMore()` runs or the first page reloads, so the timeline can show
+    /// a retry row instead of silently stopping.
+    private(set) var loadMoreFailed = false
     private(set) var hasMore = true
 
     /// Per-drawing save button state, keyed by revision id. Survives reloads so a
@@ -69,6 +73,10 @@ final class WidgetDrawingHistoryViewModel {
     private var cursor: Cursor?
     private var seenRevisionIDs: Set<UUID> = []
     private var didStartInitialLoad = false
+    /// Bumped by every first-page load. A load, refresh, or older-page fetch that
+    /// finds a different value after an `await` was overtaken by a newer first-page
+    /// load and must stop without touching state.
+    private var loadGeneration = 0
 
     private struct Cursor: Equatable {
         let createdBefore: Date
@@ -114,12 +122,19 @@ final class WidgetDrawingHistoryViewModel {
             await loadFirstPage()
             return
         }
+        let generation = loadGeneration
         guard let page = try? await gateway.listRevisions(
             canvasID: canvasID,
             limit: pageSize,
             createdBefore: nil,
             createdBeforeRevisionID: nil
-        ) else {
+        ), generation == loadGeneration else {
+            return
+        }
+        // A full page with nothing already loaded in it may have more new drawings
+        // behind it, which would leave a gap above the older rows. Start over.
+        if page.count == pageSize, !page.contains(where: { seenRevisionIDs.contains($0.revisionID) }) {
+            await loadFirstPage()
             return
         }
         items.insert(contentsOf: newItems(from: page), at: 0)
@@ -168,42 +183,78 @@ final class WidgetDrawingHistoryViewModel {
     }
 
     func loadMoreIfNeeded(currentItem: WidgetDrawingHistoryItem) async {
-        guard phase == .loaded,
-              hasMore,
-              !isLoadingMore,
-              cursor != nil,
-              shouldLoadMore(after: currentItem)
-        else {
+        // After a failure the retry row is the only way to try again. Scrolling
+        // must not keep re-sending a request that just failed.
+        guard !loadMoreFailed, canLoadMore, shouldLoadMore(after: currentItem) else {
             return
         }
+        await loadMore()
+    }
 
+    func retryLoadMore() async {
+        guard canLoadMore else {
+            return
+        }
+        await loadMore()
+    }
+
+    private var canLoadMore: Bool {
+        phase == .loaded && hasMore && !isLoadingMore && cursor != nil
+    }
+
+    private func loadMore() async {
+        let generation = loadGeneration
         isLoadingMore = true
-        defer { isLoadingMore = false }
-        // Keep the list intact and leave `hasMore` true on failure so scrolling
-        // retries.
-        try? await fetchUntilProgressOrEnd()
+        loadMoreFailed = false
+        defer {
+            if generation == loadGeneration {
+                isLoadingMore = false
+            }
+        }
+        do {
+            try await fetchUntilProgressOrEnd(generation: generation)
+        } catch {
+            if generation == loadGeneration {
+                // The list stays as it is and `hasMore` stays true for the retry.
+                loadMoreFailed = true
+            }
+        }
     }
 
     private func loadFirstPage() async {
+        loadGeneration += 1
+        let generation = loadGeneration
         phase = .loading
         items = []
         cursor = nil
         seenRevisionIDs = []
         hasMore = true
+        isLoadingMore = false
+        loadMoreFailed = false
 
         do {
             guard let state = try await gateway.getCanvasState() else {
+                guard generation == loadGeneration else {
+                    return
+                }
                 // No canvas yet (e.g. not paired) means no drawings to show.
                 canvasID = nil
                 hasMore = false
                 phase = .loaded
                 return
             }
+            guard generation == loadGeneration else {
+                return
+            }
             canvasID = state.canvasID
-            try await fetchUntilProgressOrEnd()
-            phase = .loaded
+            try await fetchUntilProgressOrEnd(generation: generation)
+            if generation == loadGeneration {
+                phase = .loaded
+            }
         } catch {
-            phase = .failed
+            if generation == loadGeneration {
+                phase = .failed
+            }
         }
     }
 
@@ -212,7 +263,10 @@ final class WidgetDrawingHistoryViewModel {
     /// entirely of hidden/deleted revisions (payload nulled), which yields no
     /// items but must still advance the cursor — otherwise the timeline would
     /// show a false empty state with no row available to trigger the next page.
-    private func fetchUntilProgressOrEnd() async throws {
+    ///
+    /// Stops early, leaving state untouched, once a newer first-page load has
+    /// started (`generation` no longer matches `loadGeneration`).
+    private func fetchUntilProgressOrEnd(generation: Int) async throws {
         guard let canvasID else {
             return
         }
@@ -224,6 +278,9 @@ final class WidgetDrawingHistoryViewModel {
                 createdBefore: cursor?.createdBefore,
                 createdBeforeRevisionID: cursor?.revisionID
             )
+            guard generation == loadGeneration else {
+                return
+            }
             apply(page)
         } while hasMore && items.count == startCount
     }

@@ -5,7 +5,21 @@ import UIKit
 
 /// Shared square crop sheet for profile images. Display surfaces can still
 /// choose their own clipping shape after the cropped image is saved.
-struct PaeoniaProfileImageCropSheet: UIViewControllerRepresentable {
+///
+/// Callers present it with `.sheet(item:)`. Swipe-down is disabled so a crop only
+/// ends through the Cancel and Done buttons, which keeps `onCancel` reliable.
+struct PaeoniaProfileImageCropSheet: View {
+    let image: UIImage
+    let onCrop: (UIImage) -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        CropControllerRepresentable(image: image, onCrop: onCrop, onCancel: onCancel)
+            .interactiveDismissDisabled()
+    }
+}
+
+private struct CropControllerRepresentable: UIViewControllerRepresentable {
     let image: UIImage
     let onCrop: (UIImage) -> Void
     let onCancel: () -> Void

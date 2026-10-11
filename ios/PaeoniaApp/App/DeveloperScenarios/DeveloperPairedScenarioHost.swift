@@ -20,20 +20,7 @@
         scenario == .questionsOfflineQueued
         ? DeveloperScenarioOfflineDailyOperationStore()
         : InMemoryPendingSyncOperationRepository()
-      let memoryRecords =
-        scenario == .memoriesPopulated
-        ? DeveloperScenarioFixture.memoryRecords()
-        : []
-
-      switch scenario {
-      case .questions, .questionsPartial, .questionsRevealed, .questionsEmpty,
-        .questionsLoading, .questionsError, .questionAnswerFlow:
-        _selection = State(initialValue: .questions)
-      case .memoriesEmpty, .memoriesPopulated:
-        _selection = State(initialValue: .memories)
-      default:
-        _selection = State(initialValue: .home)
-      }
+      _selection = State(initialValue: Self.initialTab(for: scenario))
       _deepLink = State(
         initialValue: scenario == .questionAnswerFlow
           ? .dailyToday(coupleDayID: DeveloperScenarioDailyFixture.coupleDayID)
@@ -47,7 +34,8 @@
           draftStore: DeveloperScenarioDailyDraftStore(),
           mediaDraftStore: DeveloperScenarioMediaDraftStore(),
           pendingOperationStore: pendingOperationStore,
-          snapshotCache: DeveloperScenarioSnapshotCache()
+          snapshotCache: DeveloperScenarioSnapshotCache(),
+          now: { DeveloperScenarioFixture.now }
         )
       )
       _milestoneViewModel = State(
@@ -60,14 +48,41 @@
         )
       )
       _memoriesViewModel = State(
-        initialValue: MemoriesViewModel(
-          memoryService: DeveloperScenarioMemoryDataService(records: memoryRecords),
-          operationProvider: operationProvider,
-          mediaUploader: nil,
-          mediaImageCache: nil
-        )
+        initialValue: Self.makeMemoriesViewModel(scenario: scenario, operationProvider: operationProvider)
       )
-      locationViewModel = LocationMapViewModel(
+      locationViewModel = Self.makeLocationViewModel(operationProvider: operationProvider)
+    }
+
+    private static func makeMemoriesViewModel(
+      scenario: DeveloperScenario,
+      operationProvider: DeveloperScenarioOperationProvider
+    ) -> MemoriesViewModel {
+      MemoriesViewModel(
+        memoryService: DeveloperScenarioMemoryDataService(
+          records: scenario == .memoriesPopulated ? DeveloperScenarioFixture.memoryRecords() : []
+        ),
+        operationProvider: operationProvider,
+        mediaUploader: nil,
+        mediaImageCache: nil
+      )
+    }
+
+    private static func initialTab(for scenario: DeveloperScenario) -> MainTab {
+      switch scenario {
+      case .questions, .questionsPartial, .questionsRevealed, .questionsEmpty,
+        .questionsLoading, .questionsError, .questionAnswerFlow:
+        .questions
+      case .memoriesEmpty, .memoriesPopulated:
+        .memories
+      default:
+        .home
+      }
+    }
+
+    private static func makeLocationViewModel(
+      operationProvider: DeveloperScenarioOperationProvider
+    ) -> LocationMapViewModel {
+      LocationMapViewModel(
         visibilityStore: InMemoryLocationVisibilitySnapshotRepository(),
         ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
         pendingOperationStore: InMemoryPendingSyncOperationRepository(),
@@ -93,27 +108,25 @@
       } else {
         MainTabView(
           tabs: [.home, .questions, .memories],
-          currentUserID: DeveloperScenarioFixture.currentUserID,
-          currentDisplayName: "Alex",
-          currentProfilePhotoAssetID: nil,
-          currentCustomProfilePhotoAssetID: nil,
-          currentProviderProfilePhotoAssetID: nil,
-          currentAuthProvider: .development,
-          partnerUserID: DeveloperScenarioFixture.partnerUserID,
-          partnerDisplayName: "Robin",
-          partnerProfilePhotoAssetID: nil,
-          authorName: "Alex",
-          coupleID: DeveloperScenarioFixture.coupleID,
-          relationshipStartedOn: "2025-09-14",
+          identity: MainTabIdentity(
+            currentUserID: DeveloperScenarioFixture.currentUserID,
+            currentDisplayName: "Alex",
+            currentAuthProvider: .development,
+            partnerUserID: DeveloperScenarioFixture.partnerUserID,
+            partnerDisplayName: "Robin",
+            coupleID: DeveloperScenarioFixture.coupleID,
+            relationshipStartedOn: "2025-09-14"
+          ),
           locationMapState: .partnerUnknown(.notSharing),
           locationViewModel: locationViewModel,
           selection: $selection,
           widgetDrawingPresented: .constant(false),
           deepLink: $deepLink,
-          onOpenWidgetDrawing: {},
-          dailyChallengeViewModel: dailyChallengeViewModel,
-          milestoneViewModel: milestoneViewModel,
-          memoriesViewModel: memoriesViewModel
+          dependencies: RootFeatureDependencies(
+            dailyChallengeViewModel: dailyChallengeViewModel,
+            milestoneViewModel: milestoneViewModel,
+            memoriesViewModel: memoriesViewModel
+          )
         )
       }
     }
@@ -168,6 +181,7 @@
 
   @MainActor
   private final class DeveloperScenarioLocationCapture: ForegroundLocationCapturing {
+    // swiftlint:disable:next async_without_await
     func captureCurrentLocation() async throws -> LocationPoint {
       throw ForegroundLocationCaptureError.unavailable
     }

@@ -2,30 +2,46 @@ import SwiftUI
 
 struct PaeoniaLegalLinksView: View {
     var body: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            if let termsURL = Self.termsURL {
-                Link(destination: termsURL) {
-                    footerLabel(.authSignInLegalTerms)
-                }
-                .accessibilityIdentifier("legal.terms")
+        // Side by side when they fit, stacked at large text sizes so they do not clip.
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: PaeoniaSpacing.space12) {
+                termsLink
+                separator
+                privacyLink
             }
 
-            separator
-
-            if let privacyURL = Self.privacyURL {
-                Link(destination: privacyURL) {
-                    footerLabel(.authSignInLegalPrivacy)
-                }
-                .accessibilityIdentifier("legal.privacy")
+            VStack(spacing: 0) {
+                termsLink
+                privacyLink
             }
         }
         .font(PaeoniaTypography.caption)
         .foregroundStyle(.paeoniaTextSecondary)
     }
 
+    @ViewBuilder
+    private var termsLink: some View {
+        if let termsURL = Self.termsURL {
+            Link(destination: termsURL) {
+                footerLabel(.authSignInLegalTerms)
+            }
+            .accessibilityIdentifier("legal.terms")
+        }
+    }
+
+    @ViewBuilder
+    private var privacyLink: some View {
+        if let privacyURL = Self.privacyURL {
+            Link(destination: privacyURL) {
+                footerLabel(.authSignInLegalPrivacy)
+            }
+            .accessibilityIdentifier("legal.privacy")
+        }
+    }
+
     private func footerLabel(_ text: LocalizedStringResource) -> some View {
         Text(text)
-            .frame(minHeight: 44)
+            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
             .contentShape(Rectangle())
     }
 

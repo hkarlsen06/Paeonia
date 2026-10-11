@@ -15,6 +15,28 @@ nonisolated struct UpdateMemoryOperationPayload: Codable, Equatable, Sendable {
     let expectedRevision: Int
     let title: String
     let memoryDate: String
+    /// The title and date this edit started from. When the partner changed the memory
+    /// in the meantime, the sync handler keeps their change for any field this edit
+    /// left alone. Nil in operations queued before these fields existed; those resend
+    /// both fields as they are.
+    var baseTitle: String?
+    var baseMemoryDate: String?
+
+    init(
+        memoryID: UUID,
+        expectedRevision: Int,
+        title: String,
+        memoryDate: String,
+        baseTitle: String? = nil,
+        baseMemoryDate: String? = nil
+    ) {
+        self.memoryID = memoryID
+        self.expectedRevision = expectedRevision
+        self.title = title
+        self.memoryDate = memoryDate
+        self.baseTitle = baseTitle
+        self.baseMemoryDate = baseMemoryDate
+    }
 }
 
 nonisolated struct HideMemoryOperationPayload: Codable, Equatable, Sendable {
@@ -39,6 +61,7 @@ nonisolated struct RemoveMemoryMediaOperationPayload: Codable, Equatable, Sendab
     let memoryMediaID: UUID
 }
 
+// swiftlint:disable:next type_name
 nonisolated struct CreateMemoryThreadMessageOperationPayload: Codable, Equatable, Sendable {
     let memoryID: UUID
     let body: String

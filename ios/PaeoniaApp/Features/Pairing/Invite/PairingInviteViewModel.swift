@@ -7,7 +7,17 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     private(set) var invite: PairingInvite?
     private(set) var isLoading = false
     private(set) var isRevoking = false
+    private(set) var isPreviewingJoin = false
+    private(set) var isAcceptingJoin = false
+    /// What the partner's code points to, kept until the user confirms or cancels.
+    private(set) var joinPreview: PairingInvitePreview?
+    /// The newest problem. The view shows it in the top banner and then clears it, except
+    /// for `.createFailed`, which stays so the retry card can show.
     private(set) var error: PairingInviteFlowError?
+    /// The newest join problem. Unlike `error`, the view does not clear it, so the caller
+    /// can check right after a failed preview whether the code is worth keeping.
+    private(set) var lastJoinError: PairingInviteFlowError?
+    private(set) var didCopyCode = false
 
     private let userID: String?
     private let pairingService: (any PairingServicing)?
@@ -15,6 +25,8 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     private let inviteStore: any PairingInviteStoring
     private let now: @MainActor () -> Date
     private var cachedInvite: PairingInvite?
+    private var previewedJoinCode: String?
+    private var copyResetTask: Task<Void, Never>?
 
     init(
         userID: String?,
@@ -35,7 +47,16 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     }
 
     var isPresentationReady: Bool {
-        invite != nil || error != nil
+        invite != nil || error == .createFailed
+    }
+
+    var isJoining: Bool {
+        isPreviewingJoin || isAcceptingJoin
+    }
+
+    /// True while something is changing the invite or joining, so buttons wait.
+    var isBusy: Bool {
+        isLoading || isRevoking || isJoining
     }
 
     func loadInviteIfNeeded() async {
@@ -52,6 +73,10 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     }
 
     func createInvite() async {
+        guard !isLoading, !isRevoking else {
+            return
+        }
+
         guard let userID, let pairingService else {
             error = .createFailed
             return
@@ -74,28 +99,21 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
         isLoading = false
     }
 
+    /// Replaces the shown code. A failure keeps the current code on screen and reports
+    /// `.replaceFailed`. Only when there is no code at all does it show the retry card.
     @discardableResult
     func revokeAndCreateNewInvite() async -> Bool {
         guard !isLoading, !isRevoking else {
             return false
         }
 
-        guard let userID else {
-            error = .createFailed
-            return false
-        }
-
         let existingInvite = invite
         isRevoking = true
         error = nil
+        defer { isRevoking = false }
 
-        guard let pairingService else {
-            isRevoking = false
-            if existingInvite == nil {
-                invite = nil
-                inviteStore.clearInvite(for: userID)
-                error = .createFailed
-            }
+        guard let userID, let pairingService else {
+            error = existingInvite == nil ? .createFailed : .replaceFailed
             return false
         }
 
@@ -116,22 +134,130 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
             invite = createdInvite
             cachedInvite = nil
             inviteStore.saveInvite(createdInvite, for: userID)
-            isRevoking = false
             return true
         } catch {
-            invite = existingInvite
             if existingInvite == nil {
                 inviteStore.clearInvite(for: userID)
                 self.error = .createFailed
+            } else {
+                self.error = .replaceFailed
             }
-            isRevoking = false
             return false
         }
+    }
+
+    /// Swaps in a fresh code when the shown one passed its 7 days while the app was away.
+    /// Returns false only when a swap was needed and failed.
+    func replaceInviteIfExpired() async -> Bool {
+        guard let invite, invite.expiresAt <= now() else {
+            return true
+        }
+
+        return await revokeAndCreateNewInvite()
     }
 
     func clearError() {
         error = nil
     }
+
+    /// Call after writing the code to the pasteboard. Shows "Copied" for a moment, and a
+    /// second copy restarts that moment instead of ending early.
+    func noteCodeCopied() {
+        didCopyCode = true
+        copyResetTask?.cancel()
+        copyResetTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else {
+                return
+            }
+
+            self?.didCopyCode = false
+        }
+    }
+
+    // MARK: - Joining a partner's code
+
+    /// Looks up a partner's code and keeps what it found so the user can confirm. Only
+    /// runs once the user's own code is showing, and never twice at the same time.
+    func previewJoin(codeInput: String) async -> Bool {
+        guard invite != nil, !isJoining else {
+            return false
+        }
+
+        isPreviewingJoin = true
+        defer { isPreviewingJoin = false }
+        clearJoinPreview()
+        lastJoinError = nil
+
+        do {
+            let code = try PairingInviteCode.normalized(codeInput)
+            guard code != invite?.code else {
+                return failJoin(.joinOwnCode)
+            }
+
+            guard let pairingService else {
+                return failJoin(.joinCheckFailed)
+            }
+
+            guard let preview = try await pairingService.previewInvite(codeInput: code) else {
+                return failJoin(.joinNotFound)
+            }
+
+            joinPreview = preview
+            previewedJoinCode = code
+            return true
+        } catch is PairingInviteCodeError {
+            return failJoin(.joinInvalid)
+        } catch is CancellationError {
+            return false
+        } catch {
+            return failJoin(.joinCheckFailed)
+        }
+    }
+
+    /// Joins only the code that `previewJoin` found, so a code can never be accepted
+    /// without the user having seen who it belongs to.
+    func acceptPreviewedJoin() async -> Bool {
+        guard !isJoining,
+              joinPreview != nil,
+              let previewedJoinCode,
+              let pairingService
+        else {
+            return false
+        }
+
+        isAcceptingJoin = true
+        defer { isAcceptingJoin = false }
+        lastJoinError = nil
+
+        do {
+            _ = try await pairingService.acceptInvite(
+                codeInput: previewedJoinCode,
+                operation: operationProvider.makeOperation(),
+                startedOn: nil
+            )
+            clearJoinPreview()
+            return true
+        } catch is CancellationError {
+            return false
+        } catch {
+            clearJoinPreview()
+            return failJoin(.joinFailed)
+        }
+    }
+
+    func clearJoinPreview() {
+        joinPreview = nil
+        previewedJoinCode = nil
+    }
+
+    private func failJoin(_ failure: PairingInviteFlowError) -> Bool {
+        error = failure
+        lastJoinError = failure
+        return false
+    }
+
+    // MARK: - Invite helpers
 
     private func inviteExpiryDate() -> Date {
         Calendar.current.date(byAdding: .day, value: 7, to: now())
@@ -169,20 +295,18 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
             inviteStore.clearInvite(for: userID)
             isLoading = false
             await createInvite()
-        } catch {
-            self.error = .createFailed
+        } catch is CancellationError {
             isLoading = false
-        }
-    }
-}
-
-enum PairingInviteFlowError: Equatable {
-    case createFailed
-
-    var message: LocalizedStringResource {
-        switch self {
-        case .createFailed:
-            .pairingInviteErrorMessage
+        } catch {
+            // The check did not finish, which is not the same as the server saying the
+            // code is dead. A code that has not expired is still the best one to show.
+            if cachedInvite.expiresAt > now() {
+                invite = cachedInvite
+                self.cachedInvite = nil
+            } else {
+                self.error = .createFailed
+            }
+            isLoading = false
         }
     }
 }

@@ -76,6 +76,16 @@ nonisolated final class PendingSharingChoiceLedger: @unchecked Sendable {
         defer { lock.unlock() }
         return try body(&choices)
     }
+
+    /// Forgets every unconfirmed choice of one user. A privacy purge deletes the
+    /// rows these choices describe; a leftover entry could otherwise override
+    /// the server's answer after the next sign-in in the same app session.
+    func removeChoices(ownerUserID: UUID) {
+        let prefix = ownerUserID.uuidString.lowercased() + ":"
+        withChoices { choices in
+            choices = choices.filter { !$0.key.hasPrefix(prefix) }
+        }
+    }
 }
 
 nonisolated extension LocationVisibilitySnapshot {

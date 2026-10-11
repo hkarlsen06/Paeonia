@@ -21,12 +21,15 @@ struct SettingsToggleRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            // The switch below reads the title and subtitle itself.
+            .accessibilityHidden(true)
 
             Toggle("", isOn: $isOn)
                 .labelsHidden()
                 .tint(.paeoniaAccentPrimary)
                 .disabled(!isEnabled)
                 .accessibilityLabel(Text(title))
+                .accessibilityHint(Text(subtitle))
         }
     }
 }

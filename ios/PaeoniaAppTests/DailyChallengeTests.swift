@@ -1513,7 +1513,7 @@ struct DailyChallengeMappingTests {
         #expect(viewModel.composeKind(for: question) == .photo)
         #expect(!viewModel.hasDraftToSubmit(for: question))
 
-        viewModel.stagePhoto(sampleImageData(), for: question.id)
+        await viewModel.stagePhoto(sampleImageData(), for: question.id)
         #expect(viewModel.hasDraftToSubmit(for: question))
 
         await viewModel.submitAnswer(for: question)
@@ -1617,7 +1617,7 @@ struct DailyChallengeMappingTests {
 
         // The user adds both a photo and a caption; either alone would also send.
         viewModel.setDraftText("By the lake", for: question.id)
-        viewModel.stagePhoto(sampleImageData(), for: question.id)
+        await viewModel.stagePhoto(sampleImageData(), for: question.id)
         #expect(viewModel.hasDraftToSubmit(for: question))
 
         await viewModel.submitAnswer(for: question)
@@ -2394,7 +2394,9 @@ private enum TestDailyChallengeIDs {
     static let coupleDay = fixedUUID("44444444-4444-4444-4444-444444444444")
     static let previousCoupleDay = fixedUUID("55555555-5555-5555-5555-555555555555")
     static let startsAt = Date(timeIntervalSince1970: 1_782_432_000)
-    static let endsAt = Date(timeIntervalSince1970: 1_782_518_400)
+    /// Far in the future, so the view model (which drops a day once its end passes)
+    /// never treats the fixture day as ended.
+    static let endsAt = Date(timeIntervalSince1970: 4_102_444_800)
     static let answerDate = Date(timeIntervalSince1970: 1_782_450_000)
 }
 
@@ -2814,6 +2816,11 @@ private func sampleImageData() -> Data {
 private actor RecordingDailyChallengeGateway: DailyChallengeGateway {
     private(set) var submittedPayloads: [DailyAnswerPayload] = []
     private(set) var submittedAnswerIDs: [UUID] = []
+    private var submitError: (any Error)?
+
+    func failSubmits(with error: any Error) {
+        submitError = error
+    }
 
     func loadTodaySnapshot() async throws -> DailyChallengeRemoteSnapshotRow {
         DailyChallengeRemoteSnapshotRow(questions: [], answerDetails: [], streak: nil, generatedAt: Date())
@@ -2837,6 +2844,9 @@ private actor RecordingDailyChallengeGateway: DailyChallengeGateway {
         payload: DailyAnswerPayload,
         operation _: SyncClientOperation
     ) async throws -> UUID {
+        if let submitError {
+            throw submitError
+        }
         submittedPayloads.append(payload)
         submittedAnswerIDs.append(answerID)
         return UUID()
@@ -3045,17 +3055,22 @@ struct DailyChallengeGatewayRequestTests {
         return LiveDailyChallengeGateway(client: client)
     }
 
-    @Test func todaysSnapshotIsReadWithAQueryAndADayKey() async throws {
+    @Test func todaysSnapshotIsReadWithAQueryAndAFreshDayKey() async throws {
         let gateway = makeGateway()
 
         _ = try await gateway.loadTodaySnapshot()
+        _ = try await gateway.loadTodaySnapshot()
 
-        let request = try #require(DailyGatewayStubProtocol.requests.value.first)
+        let requests = DailyGatewayStubProtocol.requests.value
+        let request = try #require(requests.first)
         #expect(request.path == "/api/query")
         #expect(request.body["path"] as? String == "daily:get_today_daily_challenge_snapshot")
-        let args = try #require(request.body["args"] as? [String: Any])
-        let dayKey = try #require(args["p_day_key"] as? String)
-        #expect(dayKey.wholeMatch(of: /\d{4}-\d{2}-\d{2}/) != nil)
+        let keys = requests.compactMap { ($0.body["args"] as? [String: Any])?["p_day_key"] as? String }
+        // A key per local date could be served a result cached before the couple's
+        // day ended (its boundary is the westmost partner's midnight, not this
+        // phone's). Every load uses a key no earlier load used.
+        #expect(keys.count == 2)
+        #expect(Set(keys).count == 2)
     }
 
     @Test func startAndShuffleStayMutations() async throws {
@@ -3246,7 +3261,7 @@ struct DailyChallengeLiveTests {
             cache: cache,
             now: { clock.value },
             sleep: { _ in
-                // The first sleep is the wait for the day to end. Later ones wait for local midnight.
+                // The first sleep is the wait for the day to end. Later ones wait for the renewal time.
                 let isDayEndWait = sleeps.value == 0
                 sleeps.mutate { $0 += 1 }
                 if isDayEndWait {
@@ -3267,7 +3282,8 @@ struct DailyChallengeLiveTests {
         #expect(await waitUntil { transport.openedPaths.value.count == 2 })
         #expect(transport.openedPaths.value.last == "daily:get_today_daily_challenge_snapshot")
         let key = try #require(transport.openedArgs.value.last?["p_day_key"])
-        #expect(key.contains(endsAt.formatted(.iso8601)))
+        // Args arrive JSON encoded, so the string keeps its quotes.
+        #expect(UUID(uuidString: key.trimmingCharacters(in: CharacterSet(charactersIn: "\""))) != nil)
 
         // The new day has no couple day yet, and nothing starts one for the user.
         try await transport.push([row(dayID: nil, endsAt: nil)], to: "daily:get_today_daily_challenge_snapshot")
@@ -3380,5 +3396,415 @@ struct DailyChallengeLiveTests {
         )
 
         #expect(transport.openedPaths.value.isEmpty)
+    }
+
+    @Test func aResponseInFlightDuringAPrivacyPurgeIsNotWrittenBack() {
+        let cache = LockedSnapshotCache()
+        let clock = DailyChallengeLiveWriteClock()
+        let response = row(dayID: dayID, endsAt: Date().addingTimeInterval(3_600))
+        let start = clock.count(ownerUserID: user)
+
+        // Sign-out or leaving the relationship wipes the cache while a load is out.
+        clock.notePurge()
+        cache.clearAll()
+        let used = clock.saveResponse(response, ownerUserID: user, since: start, cache: cache)
+
+        #expect(used == response)
+        #expect(cache.load(ownerUserID: user) == nil)
+    }
+}
+
+// MARK: - Day boundary, sending state, and refused answers
+
+@MainActor
+struct DailyChallengeDayBoundaryAndSendingTests {
+    private let user = TestDailyChallengeIDs.currentUser
+    private let dayEnd = Date(timeIntervalSince1970: 1_800_000_000)
+
+    private func makeViewModel(
+        service: RecordingDailyChallengeService,
+        pendingStore: any PendingSyncOperationPersisting = InMemoryPendingSyncOperationRepository(),
+        mediaStore: InMemoryDailyAnswerMediaDraftStore = InMemoryDailyAnswerMediaDraftStore(),
+        now: @escaping @Sendable () -> Date = { Date() }
+    ) -> DailyChallengeViewModel {
+        DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            mediaDraftStore: mediaStore,
+            pendingOperationStore: pendingStore,
+            now: now
+        )
+    }
+
+    @Test func aDayWhoseEndHasPassedIsNotShownAsToday() async throws {
+        let partnerQuestionID = UUID()
+        let snapshot = makeSnapshot(rows: [
+            questionRow(endsAt: dayEnd, slotNumber: 1, seededForUserID: user),
+            questionRow(
+                endsAt: dayEnd,
+                instanceID: partnerQuestionID,
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: TestDailyChallengeIDs.answerDate
+            ),
+        ])
+        let clock = LockedBox(dayEnd.addingTimeInterval(-60))
+        let before = makeViewModel(service: RecordingDailyChallengeService(snapshots: [snapshot]), now: { clock.value })
+        await before.configure(currentUserID: user)
+        #expect(before.snapshot.ownQuestions.count == 1)
+
+        // The same day seen after it ended (for example from the cache on an offline
+        // launch the next morning) is not today any more.
+        clock.mutate { $0 = dayEnd.addingTimeInterval(1) }
+        let after = makeViewModel(service: RecordingDailyChallengeService(snapshots: [snapshot]), now: { clock.value })
+        await after.configure(currentUserID: user)
+
+        #expect(after.snapshot.ownQuestions.isEmpty)
+        #expect(after.homeCardState.kind == .noChallenge)
+        // The partner's question can still be answered on a later day.
+        #expect(after.snapshot.answerablePartnerQuestions.map(\.id) == [partnerQuestionID])
+    }
+
+    @Test func sendingYourOwnAnswerAfterTheDayEndedQueuesNothingAndKeepsTheDraft() async throws {
+        let snapshot = makeSnapshot(rows: [questionRow(endsAt: dayEnd, slotNumber: 1, seededForUserID: user)])
+        let clock = LockedBox(dayEnd.addingTimeInterval(-60))
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let viewModel = makeViewModel(
+            service: RecordingDailyChallengeService(snapshots: [snapshot]),
+            pendingStore: pendingStore,
+            now: { clock.value }
+        )
+        await viewModel.configure(currentUserID: user)
+        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        viewModel.setDraftText("Late answer", for: question.id)
+
+        // The screen stayed open past the end of the couple's day. The server only
+        // takes your own answers made during their day, so a queued one would never
+        // send and would show as "sending" forever.
+        clock.mutate { $0 = dayEnd.addingTimeInterval(1) }
+        await viewModel.submitAnswer(for: question)
+
+        #expect(viewModel.notice == .dayEnded)
+        #expect(!viewModel.isSending(question.id))
+        #expect(viewModel.draftText(for: question.id) == "Late answer")
+        #expect(viewModel.snapshot.ownQuestions.isEmpty)
+        let queued = try await pendingStore.inFlightOperations(ownerUserID: user, kind: .submitDailyAnswer)
+        #expect(queued.isEmpty)
+    }
+
+    @Test func theCompletionDateIsTheActiveDayEvenWhenACarriedQuestionComesFirst() {
+        let snapshot = makeSnapshot(rows: [
+            questionRow(
+                coupleDayID: TestDailyChallengeIDs.previousCoupleDay,
+                localDate: "2026-06-26",
+                slotNumber: 1,
+                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
+                isCurrentDay: false
+            ),
+            questionRow(localDate: "2026-06-27", slotNumber: 1, seededForUserID: user, isCurrentDay: true),
+        ])
+
+        #expect(snapshot.questions.first?.localDate == "2026-06-26")
+        #expect(snapshot.currentDayLocalDate == "2026-06-27")
+    }
+
+    @Test func anAnswerLongerThanTheServerAllowsCannotBeSent() async throws {
+        let snapshot = makeSnapshot(rows: [questionRow(slotNumber: 1, seededForUserID: user)])
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let viewModel = makeViewModel(
+            service: RecordingDailyChallengeService(snapshots: [snapshot]),
+            pendingStore: pendingStore
+        )
+        await viewModel.configure(currentUserID: user)
+        let question = try #require(viewModel.snapshot.ownQuestions.first)
+
+        viewModel.setDraftText(String(repeating: "a", count: DailyAnswerDraft.maxTextLength), for: question.id)
+        #expect(viewModel.hasDraftToSubmit(for: question))
+
+        // The backend counts code points, and each family emoji is five of them, so
+        // 401 of them are over the limit even though Swift counts 401 characters.
+        viewModel.setDraftText(String(repeating: "👨‍👩‍👧", count: 401), for: question.id)
+        #expect(viewModel.isDraftTextTooLong(for: question.id))
+        #expect(!viewModel.hasDraftToSubmit(for: question))
+
+        await viewModel.submitAnswer(for: question)
+
+        #expect(!viewModel.isSending(question.id))
+        let queued = try await pendingStore.inFlightOperations(ownerUserID: user, kind: .submitDailyAnswer)
+        #expect(queued.isEmpty)
+    }
+
+    @Test func aResultThatCarriesTheSentAnswerEndsTheSendingPreview() async throws {
+        let instanceID = UUID()
+        let unanswered = makeSnapshot(rows: [questionRow(instanceID: instanceID, slotNumber: 1, seededForUserID: user)])
+        let answered = makeSnapshot(rows: [
+            questionRow(
+                instanceID: instanceID,
+                slotNumber: 1,
+                seededForUserID: user,
+                ownAnswerID: UUID(),
+                ownAnsweredAt: TestDailyChallengeIDs.answerDate
+            ),
+        ])
+        let service = RecordingDailyChallengeService(
+            snapshots: [unanswered, answered, answered, answered],
+            advancesSnapshotsOnLoad: true
+        )
+        // The queued operation is never drained here, like the moment after the live
+        // result lands but before the outbox marks the send finished.
+        let viewModel = makeViewModel(service: service)
+        await viewModel.configure(currentUserID: user)
+        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        viewModel.setDraftText("On my way", for: question.id)
+        await viewModel.submitAnswer(for: question)
+        #expect(viewModel.isSending(question.id))
+
+        await viewModel.reload()
+
+        #expect(viewModel.snapshot.ownQuestions.first?.hasOwnAnswer == true)
+        #expect(!viewModel.isSending(question.id))
+        #expect(viewModel.sendingPreview(for: question) == nil)
+    }
+
+    @Test func aSendDuringAnOlderStoreReadStaysShownAsSending() async throws {
+        let snapshot = makeSnapshot(rows: [questionRow(slotNumber: 1, seededForUserID: user)])
+        let pendingStore = GatedReadPendingStore()
+        let viewModel = makeViewModel(
+            service: RecordingDailyChallengeService(snapshots: [snapshot]),
+            pendingStore: pendingStore
+        )
+        await viewModel.configure(currentUserID: user)
+        let question = try #require(viewModel.snapshot.ownQuestions.first)
+
+        // A reload reads the outbox before the answer is queued, and its result
+        // arrives after the send. Other tests' outbox changes for the same test user
+        // can wake the view model's observer too, so more than one read may be held.
+        await pendingStore.holdReads()
+        let reload = Task { await viewModel.reload() }
+        #expect(await waitUntil(timeout: .seconds(30)) { await pendingStore.heldReadCount >= 1 })
+
+        viewModel.setDraftText("Thinking of you", for: question.id)
+        await viewModel.submitAnswer(for: question)
+        #expect(viewModel.isSending(question.id))
+
+        await pendingStore.releaseReads()
+        await reload.value
+
+        // The older read must not replace the list with one that misses the send. The
+        // draft is already cleared, so that would make the answer look lost.
+        #expect(viewModel.isSending(question.id))
+        #expect(viewModel.sendingText(for: question.id) == "Thinking of you")
+    }
+
+    @Test func skippingAQuestionRemovesItsStagedPhoto() async throws {
+        let question = questionRow(slotNumber: 1, seededForUserID: user, answerKinds: [.photo])
+        let replacement = questionRow(slotNumber: 1, seededForUserID: user, answerKinds: [.photo])
+        let mediaStore = InMemoryDailyAnswerMediaDraftStore()
+        let viewModel = makeViewModel(
+            service: RecordingDailyChallengeService(
+                snapshots: [makeSnapshot(rows: [question])],
+                shuffleSnapshot: makeSnapshot(rows: [replacement])
+            ),
+            mediaStore: mediaStore
+        )
+        await viewModel.configure(currentUserID: user)
+        let current = try #require(viewModel.snapshot.ownQuestions.first)
+        await viewModel.stagePhoto(sampleImageData(), for: current.id)
+        #expect(mediaStore.stagedMediaData(instanceID: current.id) != nil)
+
+        await viewModel.shuffle(current)
+
+        // The skipped question is gone for good, so its private photo shouldn't stay
+        // on the phone.
+        #expect(mediaStore.stagedMediaData(instanceID: current.id) == nil)
+        #expect(viewModel.snapshot.ownQuestions.first?.id == replacement.instanceID)
+    }
+
+    @Test func removingAPhotoWhileItIsBeingPreparedDropsIt() async throws {
+        let mediaStore = InMemoryDailyAnswerMediaDraftStore()
+        let viewModel = makeViewModel(
+            service: RecordingDailyChallengeService(
+                snapshots: [
+                    makeSnapshot(rows: [questionRow(slotNumber: 1, seededForUserID: user, answerKinds: [.photo])]),
+                ]
+            ),
+            mediaStore: mediaStore
+        )
+        await viewModel.configure(currentUserID: user)
+        let question = try #require(viewModel.snapshot.ownQuestions.first)
+
+        // Large enough that compressing it takes a moment.
+        let photo = largeSampleImageData()
+        let staging = Task { await viewModel.stagePhoto(photo, for: question.id) }
+        for _ in 0..<10_000 where !viewModel.isPreparingPhoto(for: question.id) {
+            await Task.yield()
+        }
+        try #require(viewModel.isPreparingPhoto(for: question.id))
+        #expect(!viewModel.hasDraftToSubmit(for: question))
+        viewModel.removeStagedMedia(for: question.id)
+        await staging.value
+
+        #expect(viewModel.stagedMediaData(for: question.id) == nil)
+        #expect(mediaStore.stagedMediaData(instanceID: question.id) == nil)
+        #expect(!viewModel.hasDraftToSubmit(for: question))
+    }
+
+    @Test func anAnswerTheServerRefusesForGoodStopsRetryingAndReturnsToTheDraft() async throws {
+        let gateway = RecordingDailyChallengeGateway()
+        await gateway.failSubmits(
+            with: PaeoniaConvexError.server(
+                code: "23514",
+                message: "daily answer timestamp is outside the question day"
+            )
+        )
+        let restored = LockedBox<[UUID: DailyAnswerDraft]>([:])
+        let handler = DailySubmitAnswerPendingOperationHandler(
+            mediaUploadService: RecordingMediaUploadService(assetID: UUID()),
+            gateway: gateway,
+            mediaDraftStore: InMemoryDailyAnswerMediaDraftStore(),
+            restoreDraft: { _, instanceID, draft in restored.mutate { $0[instanceID] = draft } }
+        )
+        let instanceID = UUID()
+        let payload = DailySubmitAnswerOperationPayload(
+            instanceID: instanceID,
+            answerID: UUID(),
+            content: .textAndPartnerChoice("Because they plan", TestDailyChallengeIDs.partnerUser)
+        )
+
+        let result = try await handler.send(
+            pendingSnapshot(requestData: try JSONEncoder().encode(payload)),
+            context: dailyChallengeSyncContext()
+        )
+
+        guard case .terminalFailure = result else {
+            Issue.record("Expected a terminal failure, got \(result)")
+            return
+        }
+        #expect(restored.value[instanceID] == DailyAnswerDraft(
+            text: "Because they plan",
+            partnerChoiceUserID: TestDailyChallengeIDs.partnerUser
+        ))
+    }
+
+    @Test func anAccessErrorKeepsTheAnswerQueuedForARetry() async throws {
+        let gateway = RecordingDailyChallengeGateway()
+        await gateway.failSubmits(
+            with: PaeoniaConvexError.server(code: "42501", message: "active entitled couple access is required")
+        )
+        let restored = LockedBox<[UUID: DailyAnswerDraft]>([:])
+        let handler = DailySubmitAnswerPendingOperationHandler(
+            mediaUploadService: RecordingMediaUploadService(assetID: UUID()),
+            gateway: gateway,
+            mediaDraftStore: InMemoryDailyAnswerMediaDraftStore(),
+            restoreDraft: { _, instanceID, draft in restored.mutate { $0[instanceID] = draft } }
+        )
+        let payload = DailySubmitAnswerOperationPayload(instanceID: UUID(), answerID: UUID(), content: .text("Hi"))
+        let operation = pendingSnapshot(requestData: try JSONEncoder().encode(payload))
+
+        // Access can come back (for example after the subscription renews), so the
+        // drain records a retry instead of dropping the answer.
+        await #expect(throws: PaeoniaConvexError.self) {
+            try await handler.send(operation, context: dailyChallengeSyncContext())
+        }
+        #expect(restored.value.isEmpty)
+    }
+}
+
+@MainActor
+private func largeSampleImageData() -> Data {
+    let renderer = UIGraphicsImageRenderer(size: CGSize(width: 2_400, height: 2_400))
+    let image = renderer.image { context in
+        for row in 0..<24 {
+            for column in 0..<24 {
+                UIColor(hue: CGFloat(row * 24 + column) / 576, saturation: 0.7, brightness: 0.9, alpha: 1).setFill()
+                context.fill(CGRect(x: column * 100, y: row * 100, width: 100, height: 100))
+            }
+        }
+    }
+    return image.jpegData(compressionQuality: 1) ?? Data()
+}
+
+/// Delegates to an in-memory outbox, but can hold `inFlightOperations` reads after
+/// they've read the store, like a slow read that started before a send.
+private actor GatedReadPendingStore: PendingSyncOperationPersisting {
+    private let base = InMemoryPendingSyncOperationRepository()
+    private var holdsReads = false
+    private var heldReads: [CheckedContinuation<Void, Never>] = []
+    private(set) var heldReadCount = 0
+
+    func holdReads() {
+        holdsReads = true
+    }
+
+    func releaseReads() {
+        holdsReads = false
+        heldReads.forEach { $0.resume() }
+        heldReads = []
+    }
+
+    func inFlightOperations(
+        ownerUserID: UUID,
+        kind: SyncPendingOperationKind
+    ) async throws -> [PendingSyncOperationSnapshot] {
+        let snapshot = try await base.inFlightOperations(ownerUserID: ownerUserID, kind: kind)
+        if holdsReads {
+            heldReadCount += 1
+            await withCheckedContinuation { heldReads.append($0) }
+        }
+        return snapshot
+    }
+
+    func enqueue(_ request: PendingSyncOperationRequest) async throws {
+        try await base.enqueue(request)
+    }
+
+    func readyOperations(ownerUserID: UUID, limit: Int, now: Date) async throws -> [PendingSyncOperationSnapshot] {
+        try await base.readyOperations(ownerUserID: ownerUserID, limit: limit, now: now)
+    }
+
+    func nextPendingOperationDate(ownerUserID: UUID, now: Date) async throws -> Date? {
+        try await base.nextPendingOperationDate(ownerUserID: ownerUserID, now: now)
+    }
+
+    func markSending(clientOperationID: UUID, at date: Date) async throws {
+        try await base.markSending(clientOperationID: clientOperationID, at: date)
+    }
+
+    func markSucceeded(clientOperationID: UUID, at date: Date) async throws {
+        try await base.markSucceeded(clientOperationID: clientOperationID, at: date)
+    }
+
+    func markRetryableFailure(
+        clientOperationID: UUID,
+        errorDescription: String,
+        nextRetryAt: Date?,
+        at date: Date
+    ) async throws {
+        try await base.markRetryableFailure(
+            clientOperationID: clientOperationID,
+            errorDescription: errorDescription,
+            nextRetryAt: nextRetryAt,
+            at: date
+        )
+    }
+
+    func markTerminalFailure(clientOperationID: UUID, errorDescription: String, at date: Date) async throws {
+        try await base.markTerminalFailure(
+            clientOperationID: clientOperationID,
+            errorDescription: errorDescription,
+            at: date
+        )
+    }
+
+    func deleteCompleted(ownerUserID: UUID) async throws {
+        try await base.deleteCompleted(ownerUserID: ownerUserID)
+    }
+
+    func resetInFlight(ownerUserID: UUID) async throws {
+        try await base.resetInFlight(ownerUserID: ownerUserID)
     }
 }

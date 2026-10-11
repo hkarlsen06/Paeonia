@@ -122,8 +122,19 @@ nonisolated struct OwnLocationSnapshot: Codable, Equatable, Sendable {
 
 nonisolated enum CoupleMapState: Equatable, Sendable {
     case loading
+    /// You are not sharing your location.
     case currentUnknown
+    /// You asked to share and the phone is looking up where you are.
+    case locatingCurrent
+    /// You share, but no location has been found yet. The card offers a retry.
+    case currentLocationMissing
+    /// iOS location access for Paeonia is off, so nothing can be shared.
+    case locationAccessOff
+    /// Your partner does not share, the relationship ended, or the map cannot
+    /// be shown right now (`.unknown`).
     case partnerUnknown(PartnerLocationVisibilityState)
+    /// Your partner turned sharing on but has not sent a location yet.
+    case waitingForPartnerLocation
     case ready(current: LocationPoint, partner: LocationPoint, partnerWasStaleAtLastRefresh: Bool)
 }
 

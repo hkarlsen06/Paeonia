@@ -207,18 +207,15 @@ actor LiveDailyChallengeGateway: DailyChallengeGateway {
 
     func loadTodaySnapshot() async throws -> DailyChallengeRemoteSnapshotRow {
         // A query since the backend moved it off the mutation path. The server
-        // ignores `p_day_key`, but a different key each local day is a different
-        // cached query, so a result computed before midnight is not served after it.
+        // ignores `p_day_key`, but each key is a separate cached query. The couple's
+        // day ends at the westmost partner's midnight, not this phone's, so a key per
+        // local date could still be served a result from before the couple's day
+        // ended. A fresh key per load is never served a stale result.
         let rows: [DailyChallengeRemoteSnapshotRow] = try await client.query(
             "daily:get_today_daily_challenge_snapshot",
-            args: DailyChallengeTodayRequest(dayKey: Self.localDayKey())
+            args: DailyChallengeTodayRequest(dayKey: UUID().uuidString.lowercased())
         )
         return Self.firstOrEmpty(rows)
-    }
-
-    private static func localDayKey(now: Date = Date()) -> String {
-        let parts = Calendar.current.dateComponents([.year, .month, .day], from: now)
-        return String(format: "%04ld-%02ld-%02ld", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
     private static func firstOrEmpty(_ rows: [DailyChallengeRemoteSnapshotRow]) -> DailyChallengeRemoteSnapshotRow {

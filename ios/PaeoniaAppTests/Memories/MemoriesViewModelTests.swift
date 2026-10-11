@@ -32,7 +32,7 @@ struct MemoriesViewModelTests {
     }
 
     @Test func createMemoryWithPhotoUploadsAndAttachesMedia() async throws {
-        let uploader = StubMemoryMediaUploader()
+        let uploader = MemoryTestMediaUploader()
         let env = makeEnvironment(uploader: uploader)
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
 
@@ -54,7 +54,7 @@ struct MemoriesViewModelTests {
     }
 
     @Test func createMemoryFailsWhenPhotoUploadFails() async throws {
-        let uploader = StubMemoryMediaUploader(shouldFail: true)
+        let uploader = MemoryTestMediaUploader(shouldFail: true)
         let env = makeEnvironment(uploader: uploader)
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
 
@@ -87,13 +87,20 @@ struct MemoriesViewModelTests {
     }
 
     @Test func addPhotosCachesUploadedImageForImmediateDisplay() async throws {
-        let uploader = StubMemoryMediaUploader()
+        let uploader = MemoryTestMediaUploader()
         let env = makeEnvironment(uploader: uploader)
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
         _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "First", photos: [])
         let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
 
-        let added = await env.viewModel.addPhotos(to: record, photos: [makeImageData()])
+        let added = await env.viewModel.saveEdits(MemoryEdit(
+            base: record,
+            title: "Trip",
+            date: "2026-06-30",
+            note: "First",
+            newPhotos: [makeImageData()],
+            removedMedia: []
+        ))
 
         #expect(added)
         let updated = try #require(env.viewModel.timeline.flatMap(\.memories).first)
@@ -120,7 +127,14 @@ struct MemoriesViewModelTests {
         _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "First", photos: [])
         let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
 
-        let saved = await env.viewModel.saveNote(for: record, body: "Updated note")
+        let saved = await env.viewModel.saveEdits(MemoryEdit(
+            base: record,
+            title: "Trip",
+            date: "2026-06-30",
+            note: "Updated note",
+            newPhotos: [],
+            removedMedia: []
+        ))
 
         #expect(saved)
         let updated = try #require(env.viewModel.timeline.flatMap(\.memories).first)
@@ -129,7 +143,7 @@ struct MemoriesViewModelTests {
 
     @Test func configureFlushesLocalChangesThroughTheSyncHandler() async throws {
         let env = makeEnvironment()
-        let counter = CallCounter()
+        let counter = MemoryTestCallCounter()
         env.viewModel.setLocalChangeSyncHandler { counter.count += 1 }
 
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
@@ -155,7 +169,11 @@ struct MemoriesViewModelTests {
             )
         }
 
-        try await env.memoryStore.saveRemote([row(revision: 1)], ownerUserID: env.userID, mergePolicy: .preserveLocalChanges)
+        try await env.memoryStore.saveRemote(
+            [row(revision: 1)],
+            ownerUserID: env.userID,
+            mergePolicy: .preserveLocalChanges
+        )
         await waitUntil { env.viewModel.record(for: memoryID) != nil }
         #expect(env.viewModel.record(for: memoryID)?.snapshot.title == "From my partner")
 
@@ -240,7 +258,7 @@ struct MemoriesViewModelTests {
     @Test func aFailedSaveKeepsTheSavedDraft() async {
         let store = makeIsolatedMemoryDraftStore()
         let env = makeEnvironment(
-            uploader: StubMemoryMediaUploader(shouldFail: true),
+            uploader: MemoryTestMediaUploader(shouldFail: true),
             draftStore: store
         )
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
@@ -271,114 +289,23 @@ struct MemoriesViewModelTests {
 
     // MARK: - Environment
 
-    private struct Environment {
-        let viewModel: MemoriesViewModel
-        let pendingStore: InMemoryPendingSyncOperationRepository
-        let memoryStore: InMemoryMemoryRecordRepository
-        let imageCache: StubMemoryMediaImageCache
-        let userID: UUID
-        let coupleID: UUID
-    }
-
     private func makeEnvironment(
         uploader: (any MemoryMediaUploading)? = nil,
         draftStore: (any MemoryDraftStoring)? = nil
-    ) -> Environment {
-        let memoryStore = InMemoryMemoryRecordRepository()
-        let pendingStore = InMemoryPendingSyncOperationRepository()
-        let service = MemoryDataService(memoryStore: memoryStore, pendingOperationStore: pendingStore)
-        let imageCache = StubMemoryMediaImageCache()
-        let viewModel = MemoriesViewModel(
-            memoryService: service,
-            operationProvider: StubOperationProvider(),
-            mediaUploader: uploader,
-            mediaImageCache: imageCache,
-            draftStore: draftStore ?? makeIsolatedMemoryDraftStore()
-        )
-        return Environment(
-            viewModel: viewModel,
-            pendingStore: pendingStore,
-            memoryStore: memoryStore,
-            imageCache: imageCache,
-            userID: UUID(),
-            coupleID: UUID()
+    ) -> MemoriesTestEnvironment {
+        makeMemoriesTestEnvironment(
+            uploader: uploader,
+            imageProvider: nil,
+            photoSaver: MemoryTestPhotoSaver(result: .saved),
+            draftStore: draftStore
         )
     }
 
-    private func makeImageData() -> Data {
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 8, height: 8))
-        let image = renderer.image { context in
-            UIColor.systemPink.setFill()
-            context.fill(CGRect(x: 0, y: 0, width: 8, height: 8))
-        }
-        return image.jpegData(compressionQuality: 0.9) ?? Data()
+    private func makeImageData(color: UIColor = .systemPink) -> Data {
+        makeMemoryTestImageData(color: color)
     }
 
-    private func waitUntil(_ condition: @MainActor () -> Bool, timeout: Duration = .seconds(1)) async {
-        let deadline = ContinuousClock.now.advanced(by: timeout)
-        while ContinuousClock.now < deadline {
-            if condition() { return }
-            try? await Task.sleep(for: .milliseconds(5))
-        }
+    private func waitUntil(_ condition: @MainActor () -> Bool) async {
+        await waitForMemoryTestCondition(condition)
     }
-}
-
-@MainActor
-private final class CallCounter {
-    var count = 0
-}
-
-@MainActor
-private final class StubOperationProvider: SyncClientOperationProviding {
-    private var sequence: Int64 = 0
-    private let clientID = UUID()
-
-    func makeOperation() -> SyncClientOperation {
-        sequence += 1
-        return SyncClientOperation(clientID: clientID, clientSequence: sequence)
-    }
-}
-
-private actor StubMemoryMediaImageCache: MemoryMediaImageCacheWriting {
-    private(set) var cachedMediaAssetIDs: [UUID] = []
-
-    func cacheImageData(_ data: Data, for mediaAssetID: UUID) async {
-        guard !data.isEmpty else { return }
-        cachedMediaAssetIDs.append(mediaAssetID)
-    }
-}
-
-private actor StubMemoryMediaUploader: MemoryMediaUploading {
-    private let shouldFail: Bool
-    private(set) var uploadCount = 0
-
-    init(shouldFail: Bool = false) {
-        self.shouldFail = shouldFail
-    }
-
-    func uploadMedia(
-        _ media: MemoryUploadMedia,
-        memoryMediaID: UUID,
-        coupleID: UUID,
-        reserveOperation: SyncClientOperation,
-        finalizeOperation: SyncClientOperation
-    ) async throws -> MemoryMediaUploadResult {
-        uploadCount += 1
-        if shouldFail {
-            throw MemoryMediaUploadError.finalizeFailed
-        }
-        return MemoryMediaUploadResult(memoryMediaID: memoryMediaID, mediaAssetID: UUID())
-    }
-}
-
-/// A draft store backed by a throwaway defaults suite and temp directory, so tests never
-/// touch the app's real drafts.
-@MainActor
-func makeIsolatedMemoryDraftStore() -> LocalMemoryDraftStore {
-    let name = "MemoryDraftTests-\(UUID().uuidString)"
-    let defaults = UserDefaults(suiteName: name) ?? .standard
-    defaults.removePersistentDomain(forName: name)
-    let directory = FileManager.default.temporaryDirectory
-        .appendingPathComponent(name, isDirectory: true)
-    return LocalMemoryDraftStore(defaults: defaults, directoryURL: directory)
 }

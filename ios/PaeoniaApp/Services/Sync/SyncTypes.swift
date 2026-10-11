@@ -14,6 +14,9 @@ nonisolated protocol PaeoniaSyncing: Actor {
     ) async -> LocalPrivacyPurgeResult
     @discardableResult
     func retryPendingPrivacyPurges() async -> LocalPrivacyPurgeRetryResult
+    /// Tries to send every waiting write and returns after at most `timeout`.
+    /// Sign-out calls it while the account can still send.
+    func flushPendingWrites(timeout: Duration) async
 }
 
 extension PaeoniaSyncing {
@@ -21,6 +24,9 @@ extension PaeoniaSyncing {
     func retryPendingPrivacyPurges() async -> LocalPrivacyPurgeRetryResult {
         .completed
     }
+
+    // swiftlint:disable:next async_without_await
+    func flushPendingWrites(timeout _: Duration) async {}
 }
 
 nonisolated protocol SyncStream: Sendable {

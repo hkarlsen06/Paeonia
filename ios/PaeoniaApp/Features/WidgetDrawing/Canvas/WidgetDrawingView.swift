@@ -1,16 +1,24 @@
+import PencilKit
 import SwiftUI
 
+/// Draw on the shared widget. The canvas sits on top; the tools, colors, size,
+/// and the Send button sit below it, within reach of the thumb. Status lives in
+/// fixed-height rows, so the canvas never changes size when the status does
+/// (a resize would rescale the drawing).
 struct WidgetDrawingView: View {
     @State private var viewModel: WidgetDrawingViewModel
     private let historyViewModel: WidgetDrawingHistoryViewModel?
     private let historyThumbnailLoader: (any WidgetRevisionThumbnailLoading)?
+    private let partnerName: String
     @State private var isClearConfirmationPresented = false
     @State private var isHistoryPresented = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(
         ownerUserID: UUID? = nil,
+        coupleID: UUID? = nil,
         authorName: String? = nil,
         viewModel: WidgetDrawingViewModel? = nil,
         historyViewModel: WidgetDrawingHistoryViewModel? = nil,
@@ -19,31 +27,34 @@ struct WidgetDrawingView: View {
         _viewModel = State(
             initialValue: viewModel ?? WidgetDrawingViewModel(
                 ownerUserID: ownerUserID,
+                coupleID: coupleID,
                 authorName: authorName
             )
         )
         self.historyViewModel = historyViewModel
         self.historyThumbnailLoader = historyThumbnailLoader
+        partnerName = WidgetSyncIdentityStore.shared.load().partnerDisplayName?.trimmedNonEmpty
+            ?? String(localized: .pairingCelebrationPartnerName)
     }
 
     var body: some View {
-        VStack(spacing: PaeoniaSpacing.space16) {
-            WidgetDrawingToolControlsView(viewModel: viewModel)
-
-            WidgetDrawingSizeControlsView(viewModel: viewModel)
-
-            WidgetDrawingColorControlsView(viewModel: viewModel)
-
-            canvasAttribution
+        VStack(spacing: PaeoniaSpacing.space12) {
+            WidgetDrawingCanvasHeader(viewModel: viewModel, partnerName: partnerName)
 
             drawingCanvas
+
+            VStack(spacing: PaeoniaSpacing.space8) {
+                WidgetDrawingToolControlsView(viewModel: viewModel)
+                WidgetDrawingColorControlsView(viewModel: viewModel)
+                WidgetDrawingSizeControlsView(viewModel: viewModel)
+            }
 
             bottomActions
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.top, PaeoniaSpacing.space12)
-        .padding(.bottom, PaeoniaSpacing.space24)
+        .padding(.top, PaeoniaSpacing.space8)
+        .padding(.bottom, PaeoniaSpacing.space16)
         .background(.paeoniaBackgroundSecondary)
         .navigationTitle(Text(.widgetDrawingTitle))
         .navigationBarTitleDisplayMode(.inline)
@@ -71,22 +82,29 @@ struct WidgetDrawingView: View {
             }
         }
         .task {
-            await viewModel.loadSavedDrawingIfNeeded()
-            // The user is now looking at the drawing, so drop any lingering
+            // The person is now looking at the drawing, so drop any lingering
             // "partner updated the widget" alerts from Notification Center.
             await WidgetUpdateNotifications.clearDelivered()
         }
-        // A partner's update synced in while this screen was open.
+        // A partner's drawing synced in while this screen was open. With unsent
+        // changes on the canvas, the header says so instead of replacing them.
         .onReceive(NotificationCenter.default.publisher(for: .paeoniaWidgetCanvasDidUpdate)) { _ in
             Task {
                 await viewModel.reloadSavedDrawingFromSyncIfSafe()
                 await WidgetUpdateNotifications.clearDelivered()
             }
         }
+        // A drawing that was waiting for the network went out in the background.
+        .onReceive(NotificationCenter.default.publisher(for: .paeoniaWidgetUploadDidFinish)) { _ in
+            Task { await viewModel.refreshDelivery() }
+        }
         // Catch a sync that landed while we were backgrounded.
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                Task { await viewModel.reloadSavedDrawingFromSyncIfSafe() }
+                Task {
+                    await viewModel.reloadSavedDrawingFromSyncIfSafe()
+                    await viewModel.refreshDelivery()
+                }
             } else {
                 viewModel.persistDraftIfNeeded()
             }
@@ -94,21 +112,26 @@ struct WidgetDrawingView: View {
         .onDisappear {
             viewModel.persistDraftIfNeeded()
         }
-        .onChange(of: viewModel.recentlySaved) { _, recentlySaved in
-            if recentlySaved {
+        .onChange(of: viewModel.delivery) { _, delivery in
+            switch delivery {
+            case .sent:
                 PaeoniaHaptics.drawingSaved()
+            case .waiting:
+                PaeoniaHaptics.drawingSent()
+            case .idle, .sending:
+                break
+            }
+        }
+        .onChange(of: viewModel.partnerSentWhileEditing) { _, didSend in
+            if didSend {
+                PaeoniaHaptics.partnerDrawingReceived()
             }
         }
         .onChange(of: viewModel.saveFailure) { _, failure in
-            guard failure != nil else {
+            guard let failure else {
                 return
             }
-            bannerCenter.show(
-                .error(
-                    title: String(localized: .widgetDrawingSaveErrorTitle),
-                    message: String(localized: .widgetDrawingSaveErrorMessage)
-                )
-            )
+            showBanner(for: failure)
         }
         .alert(
             Text(.widgetDrawingClearConfirmTitle),
@@ -116,6 +139,7 @@ struct WidgetDrawingView: View {
         ) {
             Button(role: .destructive) {
                 viewModel.clearCanvas()
+                PaeoniaHaptics.destructiveActionConfirmed()
             } label: {
                 Text(.widgetDrawingClearConfirmAction)
             }
@@ -127,6 +151,68 @@ struct WidgetDrawingView: View {
             Text(.widgetDrawingClearConfirmMessage)
         }
     }
+
+    private func showBanner(for failure: WidgetDrawingSaveFailure) {
+        switch failure.reason {
+        case .couldNotSave:
+            bannerCenter.show(
+                .error(
+                    title: String(localized: .widgetDrawingSaveErrorTitle),
+                    message: String(localized: .widgetDrawingSaveErrorMessage)
+                )
+            )
+        case .tooBig:
+            bannerCenter.show(
+                .error(
+                    title: String(localized: .widgetDrawingTooBigTitle),
+                    message: String(localized: .widgetDrawingTooBigMessage)
+                )
+            )
+        }
+    }
+
+    // MARK: - Canvas
+
+    private var drawingCanvas: some View {
+        GeometryReader { proxy in
+            let side = min(proxy.size.width, proxy.size.height)
+
+            PencilKitCanvasView(
+                drawing: $viewModel.drawing,
+                drawingRevision: viewModel.drawingRevision,
+                tool: viewModel.pencilKitTool,
+                toolConfigurationRevision: viewModel.toolConfigurationRevision,
+                onCanvasReady: viewModel.bindCanvasView,
+                onDrawingChange: viewModel.updateDrawing,
+                onStrokeInProgressChange: viewModel.setDrawingStrokeInProgress
+            )
+            // PencilKit coordinates, the rasterizer source rect, previews, and
+            // widget rendering all use this exact square. Constraining the UIKit
+            // view itself avoids recording a wider coordinate space on devices
+            // where the remaining vertical space is shorter than screen width.
+            .frame(width: side, height: side)
+            .background(.paeoniaBackgroundPrimary)
+            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
+                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            // The side is known before the saved drawing loads, so a drawing
+            // from a phone with another screen size is scaled on the first try.
+            .task {
+                viewModel.canvasDidLayout(side: side)
+                await viewModel.loadSavedDrawingIfNeeded()
+            }
+            .onChange(of: side) { _, newSide in
+                viewModel.canvasDidLayout(side: newSide)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
+    }
+
+    // MARK: - Actions
 
     private var bottomActions: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
@@ -141,106 +227,51 @@ struct WidgetDrawingView: View {
             Button {
                 Task { await viewModel.save() }
             } label: {
-                saveButtonLabel
+                sendButtonLabel
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .disabled(!viewModel.canSave)
-            // The label crossfades through save → saving → saved instead of
-            // swapping in one frame while the concurrent save settles.
-            .animation(PaeoniaMotion.stateChange, value: viewModel.isSaving)
-            .animation(PaeoniaMotion.stateChange, value: viewModel.recentlySaved)
-            .accessibilityLabel(Text(.widgetDrawingSaveButton))
+            // The label crossfades between states instead of swapping in one frame.
+            .animation(PaeoniaMotion.stateChange, value: viewModel.delivery)
+            .animation(PaeoniaMotion.stateChange, value: viewModel.canSave)
         }
     }
 
     @ViewBuilder
-    private var saveButtonLabel: some View {
-        if viewModel.isSaving {
-            HStack(spacing: PaeoniaSpacing.space8) {
-                ProgressView()
-                    .tint(.paeoniaTextInverse)
-                Text(.widgetDrawingSaving)
-            }
-        } else if viewModel.recentlySaved {
-            Label {
-                Text(.widgetDrawingSaved)
-            } icon: {
-                Image(systemName: "checkmark")
-                    .accessibilityHidden(true)
-            }
-        } else {
+    private var sendButtonLabel: some View {
+        // Unsent changes always offer Send, even while an older send is still
+        // uploading; the newer drawing replaces it.
+        if viewModel.canSave {
             Text(.widgetDrawingSaveButton)
-        }
-    }
-
-    private var drawingCanvas: some View {
-        GeometryReader { proxy in
-            let side = min(proxy.size.width, proxy.size.height)
-
-            PencilKitCanvasView(
-                drawing: $viewModel.drawing,
-                tool: viewModel.pencilKitTool,
-                toolConfigurationRevision: viewModel.toolConfigurationRevision,
-                onCanvasReady: viewModel.bindCanvasView,
-                onDrawingChange: viewModel.updateDrawing
-            )
-            // PencilKit coordinates, the rasterizer source rect, previews, and
-            // widget rendering all use this exact square. Constraining the UIKit
-            // view itself avoids recording a wider coordinate space on devices
-            // where the remaining vertical space is shorter than screen width.
-            .frame(width: side, height: side)
-            .background(.paeoniaBackgroundPrimary)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+        } else {
+            switch viewModel.delivery {
+            case .sending:
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    ProgressView()
+                        .tint(.paeoniaTextInverse)
+                    Text(.widgetDrawingSaving)
+                }
+            case .sent:
+                Label {
+                    Text(.widgetDrawingSaved)
+                } icon: {
+                    Image(systemName: "checkmark")
+                        .accessibilityHidden(true)
+                }
+            case .waiting:
+                Label {
+                    Text(.widgetDrawingWaitingButton)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                        .minimumScaleFactor(0.8)
+                } icon: {
+                    Image(systemName: "wifi.slash")
+                        .accessibilityHidden(true)
+                }
+                .accessibilityLabel(Text(.widgetDrawingWaitingMessage(partnerName)))
+            case .idle:
+                Text(.widgetDrawingSaveButton)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
-    }
-
-    // Attribution for the saved drawing, sitting above the canvas: who drew it
-    // (leading) and when (trailing), in the widget's own type styles. The row
-    // always participates in layout, including while the first saved drawing is
-    // loading and before a first-ever save, so its visibility never resizes the
-    // square canvas. It is struck out while the editable canvas differs from the
-    // drawing that is still displayed on the widget.
-    private var canvasAttribution: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            Text(verbatim: viewModel.savedDrawingAuthorName ?? " ")
-                .font(PaeoniaTypography.widgetPrimary)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(1)
-
-            Spacer(minLength: PaeoniaSpacing.space8)
-
-            Text(
-                verbatim: viewModel.savedDrawingCreatedAt.map(Self.attributionTimestamp) ?? " "
-            )
-            .font(PaeoniaTypography.widgetSecondary)
-            .foregroundStyle(.paeoniaTextSecondary)
-            .lineLimit(1)
-        }
-        .opacity(viewModel.isShowingSavedAttribution ? 1 : 0)
-        .accessibilityHidden(!viewModel.isShowingSavedAttribution)
-        .strikethrough(viewModel.hasUnsavedEdits)
-        // Inset so the text tucks inside the canvas's rounded corners rather
-        // than sitting flush at the screen edges.
-        .padding(.horizontal, PaeoniaSpacing.space16)
-        // Pull the row down toward the canvas, tightening the VStack's
-        // default 16pt gap so the attribution reads as belonging to it.
-        .padding(.bottom, -PaeoniaSpacing.space8)
-    }
-
-    /// Matches the widget's timestamp treatment: just the time today, otherwise
-    /// the date.
-    nonisolated private static func attributionTimestamp(_ date: Date) -> String {
-        if Calendar.current.isDateInToday(date) {
-            return date.formatted(date: .omitted, time: .shortened)
-        }
-        return date.formatted(date: .abbreviated, time: .omitted)
     }
 }
 

@@ -12,15 +12,34 @@ import Foundation
 /// cached live row when the count moved, unless the response is for a later couple day.
 /// One lock covers the count and the file write, so a response never lands between
 /// the two.
+///
+/// A privacy purge calls `notePurge()` before it deletes the cache. A response that
+/// was in flight during the purge then never writes the couple's content back to disk.
 nonisolated final class DailyChallengeLiveWriteClock: @unchecked Sendable {
     /// One clock for the whole app, because the feed and the service use separate cache objects.
     static let shared = DailyChallengeLiveWriteClock()
 
+    /// What a request saw before it started: the owner's live write count and the
+    /// purge count.
+    nonisolated struct Mark: Equatable, Sendable {
+        fileprivate let liveWrites: Int
+        fileprivate let purges: Int
+    }
+
     private let lock = NSLock()
     private var counts: [UUID: Int] = [:]
+    private var purges = 0
 
-    func count(ownerUserID: UUID) -> Int {
-        lock.withLock { counts[ownerUserID, default: 0] }
+    func count(ownerUserID: UUID) -> Mark {
+        lock.withLock { Mark(liveWrites: counts[ownerUserID, default: 0], purges: purges) }
+    }
+
+    /// Called before the snapshot cache is wiped for privacy.
+    func notePurge() {
+        lock.withLock {
+            purges += 1
+            counts = [:]
+        }
     }
 
     /// Saves a row the live feed received and counts it.
@@ -40,11 +59,13 @@ nonisolated final class DailyChallengeLiveWriteClock: @unchecked Sendable {
     func saveResponse(
         _ row: DailyChallengeRemoteSnapshotRow,
         ownerUserID: UUID,
-        since start: Int,
+        since start: Mark,
         cache: any DailyChallengeSnapshotCaching
     ) -> DailyChallengeRemoteSnapshotRow {
         lock.withLock {
-            if counts[ownerUserID, default: 0] != start,
+            // The cache was wiped for privacy while this request was in flight.
+            guard purges == start.purges else { return row }
+            if counts[ownerUserID, default: 0] != start.liveWrites,
                let live = cache.load(ownerUserID: ownerUserID),
                !row.isNewerDay(than: live) {
                 return live
@@ -58,7 +79,7 @@ nonisolated final class DailyChallengeLiveWriteClock: @unchecked Sendable {
 private extension DailyChallengeRemoteSnapshotRow {
     /// Whether this response moves to a later couple day than `live`. A response
     /// for the same day, an earlier day, or no day at all is older than live data.
-    func isNewerDay(than live: Self) -> Bool {
+    nonisolated func isNewerDay(than live: Self) -> Bool {
         guard coupleDayID != live.coupleDayID, let endsAt else {
             return false
         }

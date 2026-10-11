@@ -1,12 +1,41 @@
 import Foundation
 import StoreKit
 
+/// Deterministic display data used by previews and the developer scenario harness.
+/// The production view hierarchy stays intact; only StoreKit's opaque product data
+/// and purchase action are replaced.
+struct PaywallPresentationOverride {
+    let presentation: (PaeoniaBillingPeriod) -> PaywallPresentation
+    let priceLine: (PaeoniaBillingPeriod) -> String
+    let purchaseIsEnabled: Bool
+    let onPurchase: @MainActor () async -> Bool
+}
+
 struct PaywallPresentation {
     let billingPeriod: PaeoniaBillingPeriod
     let product: Product?
     let freeTrial: PaeoniaFreeTrial?
     let isPurchasing: Bool
     let isLoading: Bool
+    /// The App Store price text. Previews and developer scenarios pass it
+    /// directly because they have no StoreKit product.
+    let displayPrice: String?
+
+    init(
+        billingPeriod: PaeoniaBillingPeriod,
+        product: Product?,
+        freeTrial: PaeoniaFreeTrial?,
+        isPurchasing: Bool,
+        isLoading: Bool,
+        displayPrice: String? = nil
+    ) {
+        self.billingPeriod = billingPeriod
+        self.product = product
+        self.freeTrial = freeTrial
+        self.isPurchasing = isPurchasing
+        self.isLoading = isLoading
+        self.displayPrice = displayPrice ?? product?.displayPrice
+    }
 
     var primaryButtonIsEnabled: Bool {
         product != nil && !isPurchasing && !isLoading
@@ -30,7 +59,7 @@ struct PaywallPresentation {
 
     var priceLine: String {
         guard let product else {
-            return String(localized: .paywallPriceLoading)
+            return String(localized: isLoading ? .paywallPriceLoading : .paywallPriceUnavailable)
         }
 
         let renewal = "\(compactDisplayPrice(for: product))\(String(localized: compactPeriodLabel))"
@@ -43,6 +72,46 @@ struct PaywallPresentation {
             .lowercased(with: Locale.current)
 
         return "\(freeTrial.localizedDurationText) \(freeWord), \(then) \(renewal)"
+    }
+
+    /// The price line read in full words, so VoiceOver says "per month"
+    /// instead of "slash m o".
+    var spokenPriceLine: String? {
+        guard let renewalPrice else {
+            return nil
+        }
+        guard let freeTrial else {
+            return renewalPrice
+        }
+        let freeWord = String(localized: .paywallTrialFreeWord)
+        let then = String(localized: .paywallTrialThen).lowercased(with: Locale.current)
+        return "\(freeTrial.localizedDurationText) \(freeWord), \(then) \(renewalPrice)"
+    }
+
+    /// Price, period, trial, and auto-renewal in one sentence under the purchase
+    /// button, as App Store review expects next to the button that buys.
+    var billingDisclosure: String? {
+        guard let renewalPrice else {
+            return nil
+        }
+        guard let freeTrial else {
+            return String(localized: .paywallDisclosureSubscription(renewalPrice))
+        }
+        return String(localized: .paywallDisclosureTrial(freeTrial.localizedDurationText, renewalPrice))
+    }
+
+    /// For example "kr 99 per month".
+    private var renewalPrice: String? {
+        displayPrice.map { "\($0) \(String(localized: fullPeriodLabel))" }
+    }
+
+    private var fullPeriodLabel: LocalizedStringResource {
+        switch billingPeriod {
+        case .monthly:
+            .paywallPeriodMonthly
+        case .yearly:
+            .paywallPeriodYearly
+        }
     }
 
     var timelineItems: [PaywallTimelineItem] {
