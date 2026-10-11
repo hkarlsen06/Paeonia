@@ -40,6 +40,9 @@ struct CoupleMapSnapshot: View {
     let partnerCoordinate: CLLocationCoordinate2D
     let partnerCapturedAt: Date
     let partnerWasStaleAtLastRefresh: Bool
+    /// Both partners are in the same place right now (see `CoupleMapFraming.areTogether`).
+    /// Shows a heart between the avatars and "Together" in place of the distance.
+    let isTogether: Bool
     let onLongPress: () -> Void
 
     private static let scrimHeight: CGFloat = 52
@@ -204,16 +207,7 @@ struct CoupleMapSnapshot: View {
             .position(snap.partnerPoint)
 
             if isTogether {
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.paeoniaAccentSecondary)
-                    .symbolEffect(.breathe)
-                    .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
-                    .position(
-                        x: (snap.currentPoint.x + snap.partnerPoint.x) / 2,
-                        y: (snap.currentPoint.y + snap.partnerPoint.y) / 2
-                    )
-                    .accessibilityHidden(true)
+                togetherHeart(between: snap)
             }
 
             // The distance pill (scrim + number + icon) lives inside the revealed unit
@@ -285,15 +279,28 @@ struct CoupleMapSnapshot: View {
         }
     }
 
+    private func togetherHeart(between snap: SnapshotResult) -> some View {
+        Image(systemName: "heart.fill")
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(.paeoniaAccentSecondary)
+            .symbolEffect(.breathe)
+            .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+            .position(
+                x: (snap.currentPoint.x + snap.partnerPoint.x) / 2,
+                y: (snap.currentPoint.y + snap.partnerPoint.y) / 2
+            )
+            .accessibilityHidden(true)
+    }
+
     // The distance number and unit, right-aligned so it sits on the same line as
     // the Apple Maps watermark baked into the bottom-left of the snapshot.
     private var distanceLabel: some View {
         HStack(spacing: PaeoniaSpacing.space4) {
-            Image(systemName: "location.fill")
+            Image(systemName: isTogether ? "person.2.fill" : "location.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .accessibilityHidden(true)
 
-            Text(verbatim: distanceText)
+            Text(isTogether ? String(localized: .homeMapTogether) : distanceText)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
@@ -337,20 +344,6 @@ struct CoupleMapSnapshot: View {
         .frame(height: Self.scrimHeight)
         .frame(maxHeight: .infinity, alignment: edge == .top ? .top : .bottom)
         .allowsHitTesting(false)
-    }
-
-    private var isTogether: Bool {
-        CoupleMapFraming.areTogether(
-            current: currentCoordinate,
-            currentCapturedAt: currentCapturedAt,
-            partner: partnerCoordinate,
-            partnerCapturedAt: partnerCapturedAt,
-            partnerIsStale: LocationDisplayRecency.resolve(
-                capturedAt: partnerCapturedAt,
-                now: .now,
-                wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh
-            ) == .stale
-        )
     }
 
     private var distanceText: String {

@@ -4,10 +4,10 @@ import SwiftUI
 /// the Us-tab prompt card and opens the focused answering flow (zooming into it).
 /// Below it, every question — the user's own and the partner's — sits in one list:
 /// questions still waiting for the user's answer are pinned on top so they're never
-/// buried, then everything else follows by most recent answer. Most cards are
-/// read-only; a partner question the user can still answer carries a CTA that zooms
-/// into its single-question flow, where the reply is revealed on send. Answering
-/// itself happens in the flow, never inline.
+/// buried, then everything else follows by most recent answer. The rows hold no
+/// answers. A row the user has answered opens the question's page, where the answers
+/// start the chat. A partner question the user can still answer zooms into its
+/// single-question flow, where the reply is revealed on send.
 struct DailyChallengeScreen: View {
     let viewModel: DailyChallengeViewModel
     /// Namespace for the Daily Challenge zoom transition. The hero card and each
@@ -31,7 +31,11 @@ struct DailyChallengeScreen: View {
     /// History button is tapped, and presented by item so it carries its own state.
     @State private var historyViewModel: DailyChallengeHistoryViewModel?
     @State private var highlightedQuestionID: UUID?
-    @State private var reportedPartnerAnswerID: UUID?
+    @State private var reportTarget: PrivacyReportTarget?
+    /// Hides the tab bar while a chat is about to open, before the push starts. Hiding
+    /// it from the pushed chat instead would bring it back only after the back swipe
+    /// ends. Same approach as Tidex's chat.
+    @State private var isOpeningChat = false
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -43,11 +47,12 @@ struct DailyChallengeScreen: View {
                         // One list for everything — the partner's questions and the user's
                         // own. Questions still waiting for you are pinned on top (so the
                         // actionable cards are never buried); everything else follows by most
-                        // recent answer. A partner question you can still answer shows its
-                        // CTA, locked until you finish your own three (answers saved locally
-                        // and still sending count), matching the answer flow's gating; every
-                        // other card is read-only. Answering one reveals the reply in the
-                        // flow itself, so it's fine that the card then re-sorts down here.
+                        // recent answer. A partner question you can still answer opens its
+                        // flow, locked until you finish your own three (answers saved locally
+                        // and still sending count), matching the answer flow's gating. A row
+                        // you have answered opens the question's page with the answers and
+                        // the chat. Answering reveals the reply in the flow itself, so it's
+                        // fine that the row then re-sorts down here.
                         VStack(spacing: PaeoniaSpacing.space12) {
                             ForEach(readQuestions) { question in
                                 DailyChallengeReadCard(
@@ -58,12 +63,9 @@ struct DailyChallengeScreen: View {
                                     zoomNamespace: zoomNamespace,
                                     isHighlighted: highlightedQuestionID == question.id,
                                     onAnswer: { onAnswerPartnerQuestion(question) },
-                                    onReportPartnerAnswer: { reportedPartnerAnswerID = $0 },
                                     lastMessagePreview: viewModel.threadPreview(for: question.id),
                                     hasUnreadChat: viewModel.hasUnreadChat(for: question.id),
-                                    onOpenChat: question.isChatAvailable
-                                        ? { chatQuestion.wrappedValue = question }
-                                        : nil
+                                    onOpen: { openChat(question) }
                                 )
                                 .id(question.id)
                             }
@@ -75,10 +77,10 @@ struct DailyChallengeScreen: View {
                         .animation(PaeoniaMotion.stateChange, value: readQuestions.map(\.id))
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.top, PaeoniaSpacing.space16)
                 .padding(.bottom, PaeoniaSpacing.space32)
+                .paeoniaReadableWidth(alignment: .leading)
             }
             .refreshable {
                 if let onRefresh {
@@ -94,6 +96,10 @@ struct DailyChallengeScreen: View {
         }
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle(Text(.mainTabQuestions))
+        .toolbar(chatQuestion.wrappedValue != nil || isOpeningChat ? .hidden : .visible, for: .tabBar)
+        .onChange(of: chatQuestion.wrappedValue == nil) { _, isClosed in
+            if isClosed { isOpeningChat = false }
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // The streak sits just before the History button, sized to match the brand
@@ -126,12 +132,12 @@ struct DailyChallengeScreen: View {
             .environment(bannerCenter)
             .paeoniaTopBanner(bannerCenter)
         }
-        .navigationDestination(item: $reportedPartnerAnswerID) { answerID in
+        .navigationDestination(item: $reportTarget) { reportTarget in
             if let partnerUserID = viewModel.participants.partnerUserID {
                 ReportAndLeaveView(
                     partnerUserID: partnerUserID,
                     partnerName: viewModel.participants.partnerName,
-                    reportTarget: .dailyAnswer(answerID: answerID),
+                    reportTarget: reportTarget,
                     service: privacySafetyService,
                     operationProvider: privacyOperationProvider,
                     onReportedAndLeft: onReportedAndLeft
@@ -141,7 +147,9 @@ struct DailyChallengeScreen: View {
         .navigationDestination(item: chatQuestion) { question in
             DailyQuestionChatView(
                 viewModel: viewModel.makeChatViewModel(question: question),
-                participants: viewModel.participants
+                question: viewModel.latestQuestion(question),
+                participants: viewModel.participants,
+                onReport: { reportTarget = $0 }
             )
             .id(question.id)
         }
@@ -171,6 +179,18 @@ struct DailyChallengeScreen: View {
             onAnswer: onOpenAnswerFlow
         )
         .zoomSource(DailyFlowZoom.questions, in: zoomNamespace)
+    }
+
+    /// Reads the chat from the phone and hides the tab bar, then pushes the chat, so
+    /// it opens complete with nothing moving in after.
+    private func openChat(_ question: DailyChallengeQuestion) {
+        guard !isOpeningChat else { return }
+        isOpeningChat = true
+        Task {
+            await viewModel.prepareChat(for: question)
+            await Task.yield()
+            chatQuestion.wrappedValue = question
+        }
     }
 
     private func showBanner(for notice: DailyChallengeViewModel.Notice?) {

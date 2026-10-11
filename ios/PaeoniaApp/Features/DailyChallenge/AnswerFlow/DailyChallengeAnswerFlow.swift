@@ -137,6 +137,7 @@ struct DailyChallengeAnswerFlow: View {
                 }
             }
         }
+        .paeoniaReadableWidth()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Let the plum bleed under the keyboard's safe-area region too. Keyboard
         // avoidance otherwise shrinks this surface above the keyboard, so the window's

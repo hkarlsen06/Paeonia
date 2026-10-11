@@ -30,6 +30,11 @@ struct PaeoniaProfilePhotoAvatar: View {
         self.profilePhotoProvider = profilePhotoProvider
             ?? ProfilePhotoImageProviderFactory.shared
             ?? EmptyProfilePhotoImageProvider()
+        // A photo shown before is in the first frame, with no initials in between.
+        if let cached = PaeoniaImageMemoryCache.image(for: mediaAssetID) {
+            _profileImage = State(initialValue: cached)
+            _loadedAssetID = State(initialValue: mediaAssetID)
+        }
     }
 
     var body: some View {
@@ -82,6 +87,9 @@ struct PaeoniaProfilePhotoAvatar: View {
 
         profileImage = image
         loadedAssetID = mediaAssetID
+        if let mediaAssetID {
+            PaeoniaImageMemoryCache.store(image, for: mediaAssetID)
+        }
     }
 
     private static func decode(_ data: Data) async -> UIImage? {

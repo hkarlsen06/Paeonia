@@ -1,0 +1,132 @@
+import Foundation
+import Observation
+
+/// Typing dots and read receipts for one question's chat, with Tidex's timings.
+///
+/// While the person types, the server hears "typing" at most every 2.5 seconds, and
+/// "stopped" after 4 seconds without a keystroke, on send, on an emptied field, or on
+/// leaving. The partner's dots hide 5 seconds after their last heartbeat, 2 seconds
+/// after they stop, and right away when their message arrives.
+@MainActor
+@Observable
+final class DailyChatPresenceModel {
+    private enum Timing {
+        static let typingRefreshInterval: TimeInterval = 2.5
+        static let typingIdleStop: Duration = .seconds(4)
+        static let remoteTypingTimeout: Duration = .seconds(5)
+        static let remoteStopGrace: Duration = .seconds(2)
+        /// A heartbeat older than this when it arrives is left over, not live. It allows
+        /// for the two phones' clocks being a little apart.
+        static let remoteFreshness: TimeInterval = 15
+        static let readDebounce: Duration = .milliseconds(200)
+    }
+
+    private(set) var partnerIsTyping = false
+    private(set) var partnerLastReadMessageID: UUID?
+
+    private let instanceID: UUID
+    private let service: any DailyQuestionChatServicing
+    private let now: () -> Date
+
+    private var didSendTypingStart = false
+    private var lastTypingStartSentAt: Date?
+    private var idleStopTask: Task<Void, Never>?
+    private var lastRemoteTypingAt: Date?
+    private var remoteTypingTask: Task<Void, Never>?
+    private var lastMarkedMessageID: UUID?
+    private var readTask: Task<Void, Never>?
+
+    init(instanceID: UUID, service: any DailyQuestionChatServicing, now: @escaping () -> Date = Date.init) {
+        self.instanceID = instanceID
+        self.service = service
+        self.now = now
+    }
+
+    // MARK: - Own typing
+
+    func draftChanged(_ text: String) {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            Task { await stopTyping() }
+            return
+        }
+        sendTypingStartIfNeeded()
+        idleStopTask?.cancel()
+        idleStopTask = Task { [weak self] in
+            try? await Task.sleep(for: Timing.typingIdleStop)
+            guard !Task.isCancelled else { return }
+            await self?.stopTyping()
+        }
+    }
+
+    /// Sends "stopped", but only after a "typing" went out.
+    func stopTyping() async {
+        idleStopTask?.cancel()
+        idleStopTask = nil
+        guard didSendTypingStart else { return }
+        didSendTypingStart = false
+        lastTypingStartSentAt = nil
+        await service.setTyping(instanceID: instanceID, isTyping: false)
+    }
+
+    private func sendTypingStartIfNeeded() {
+        if let lastTypingStartSentAt, now().timeIntervalSince(lastTypingStartSentAt) < Timing.typingRefreshInterval {
+            return
+        }
+        lastTypingStartSentAt = now()
+        didSendTypingStart = true
+        Task { await service.setTyping(instanceID: instanceID, isTyping: true) }
+    }
+
+    // MARK: - Partner
+
+    /// Follows the partner's typing and read state until the calling task ends.
+    func observe() async {
+        for await presence in service.livePresence(instanceID: instanceID) {
+            apply(presence)
+        }
+        remoteTypingTask?.cancel()
+    }
+
+    func apply(_ presence: DailyChatPresence) {
+        partnerLastReadMessageID = presence.partnerLastReadMessageID
+        guard presence.partnerTypingAt != lastRemoteTypingAt else { return }
+        lastRemoteTypingAt = presence.partnerTypingAt
+        remoteTypingTask?.cancel()
+
+        if let typingAt = presence.partnerTypingAt, now().timeIntervalSince(typingAt) < Timing.remoteFreshness {
+            partnerIsTyping = true
+            remoteTypingTask = hideTyping(after: Timing.remoteTypingTimeout)
+        } else if partnerIsTyping {
+            remoteTypingTask = hideTyping(after: Timing.remoteStopGrace)
+        }
+    }
+
+    /// The partner's message replaces their dots at once, with no grace.
+    func partnerMessageArrived() {
+        remoteTypingTask?.cancel()
+        partnerIsTyping = false
+    }
+
+    private func hideTyping(after delay: Duration) -> Task<Void, Never> {
+        Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            self?.partnerIsTyping = false
+        }
+    }
+
+    // MARK: - Read receipts
+
+    /// Tells the server the person has seen the thread up to `messageID`, shortly after
+    /// it shows, so a burst of messages sends one mark.
+    func markRead(threadID: UUID, messageID: UUID) {
+        guard messageID != lastMarkedMessageID else { return }
+        readTask?.cancel()
+        readTask = Task { [weak self, service] in
+            try? await Task.sleep(for: Timing.readDebounce)
+            guard !Task.isCancelled, let self else { return }
+            lastMarkedMessageID = messageID
+            await service.markThreadReadOnServer(threadID: threadID, messageID: messageID)
+        }
+    }
+}

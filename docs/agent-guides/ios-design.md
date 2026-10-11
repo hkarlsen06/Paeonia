@@ -29,6 +29,14 @@ Also centralize:
 
 Use cards only when the framed surface has product meaning, such as a distinct repeated item, modal, or tool. Prefer few or no cards, and do not wrap ordinary screen content in cards by default. Place content directly in the screen layout with intentional spacing and hierarchy. Put primary CTA clusters near the bottom of the screen when it improves thumb reach and matches the flow. In bottom button clusters, text-only actions without visible button backgrounds should still occupy button-sized hit targets and be spaced like adjacent buttons, not tucked close to the primary CTA.
 
+### iPad Layout
+
+The app runs on iPhone and iPad, and on iPad it can be any width from a narrow Split View column to full landscape. Build one adaptive layout, not a separate iPad design.
+
+- Put `.paeoniaReadableWidth()` on a screen's content inside its scroll view, so content stops at `PaeoniaSpacing.readableContentWidth` and the background still reaches the screen edges. Bottom button bars get the same cap.
+- The welcome, onboarding, paywall, pairing, and pairing celebration screens use the narrower `PaeoniaSpacing.focusedContentWidth`. `RootBrandedFrame` already applies it.
+- Size from the space the view is given, not from `UIScreen` or the device type. Check new screens on an iPad simulator in portrait and landscape.
+
 ### Brand Wordmark
 
 - When `Paeonia` is shown as a standalone single-word app name in the iOS app or widget surfaces, use the shared `PaeoniaWordmark` logo lockup in the app target, or the same mark-left, serif, semibold wordmark treatment in targets that cannot import it.

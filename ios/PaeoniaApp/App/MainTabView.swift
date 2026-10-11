@@ -272,7 +272,7 @@ struct MainTabView: View {
                 UnreadChatRow(
                     id: summary.instanceID,
                     prompt: dailyChallengeViewModel.questionPrompt(for: summary.instanceID),
-                    preview: summary.lastMessageBody
+                    preview: summary.lastMessagePreview
                 )
             },
             onOpenChat: { instanceID in

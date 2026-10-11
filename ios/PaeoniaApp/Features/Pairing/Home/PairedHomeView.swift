@@ -104,6 +104,7 @@ struct PairedHomeView: View {
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space16)
+            .paeoniaReadableWidth()
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
         }
         .scrollIndicators(.hidden)

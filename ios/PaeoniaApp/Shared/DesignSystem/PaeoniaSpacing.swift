@@ -25,4 +25,25 @@ enum PaeoniaSpacing {
     /// Maps watermark line so the two tiles read consistently. Adjust this single
     /// value to nudge both labels together.
     static let tileCaptionBottomInset: CGFloat = 10
+
+    /// Widest a screen's content column grows, padding included. On iPhone the
+    /// screen is narrower, so this only matters on iPad, where a phone layout
+    /// stretched edge to edge reads badly.
+    static let readableContentWidth: CGFloat = 680
+    /// Narrower column for the welcome, sign-in, onboarding, paywall, and pairing
+    /// screens, where a short stack of copy and buttons should stay phone-sized.
+    static let focusedContentWidth: CGFloat = 430
+}
+
+extension View {
+    /// Caps the content at `PaeoniaSpacing.readableContentWidth` and centers it in
+    /// the space it was given. Put it on the content inside a scroll view, not on the
+    /// scroll view, so the background and scroll edge still reach the screen edges.
+    func paeoniaReadableWidth(
+        _ maxWidth: CGFloat = PaeoniaSpacing.readableContentWidth,
+        alignment: Alignment = .center
+    ) -> some View {
+        frame(maxWidth: maxWidth, alignment: alignment)
+            .frame(maxWidth: .infinity)
+    }
 }

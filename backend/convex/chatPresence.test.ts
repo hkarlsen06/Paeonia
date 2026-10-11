@@ -1,0 +1,145 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { api, internal } from "./_generated/api";
+import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
+import { newUuid } from "./lib/ids";
+import { failure, op } from "./media.testing";
+import { createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple } from "./test.setup";
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+const tick = (seconds: number) => vi.setSystemTime(new Date(Date.now() + seconds * 1000));
+
+/** A daily question both partners answered, so its chat can start. */
+async function answeredInstance(t: TestConvex, couple: TestCouple) {
+  const instanceId = newUuid();
+  await t.run(async (ctx) => {
+    const now = new Date().toISOString();
+    const dayId = await getOrCreateCoupleDayAt(ctx, couple.coupleId, now);
+    await ctx.db.insert("daily_question_instances", {
+      id: instanceId,
+      couple_day_id: dayId,
+      question_version_id: newUuid(),
+      seeded_for_user_id: couple.first.userId,
+      slot_number: 1,
+      status: "active",
+      created_at: now,
+    });
+    for (const user of [couple.first, couple.second]) {
+      await ctx.db.insert("daily_question_answers", {
+        id: newUuid(),
+        instance_id: instanceId,
+        user_id: user.userId,
+        moderation_status: "visible",
+        created_at: now,
+        updated_at: now,
+      });
+    }
+  });
+  return instanceId;
+}
+
+const presence = (user: TestCouple["first"], instanceId: string) =>
+  user.as.query(api.chatPresence.get_daily_chat_presence, { p_instance_id: instanceId });
+
+describe("typing", () => {
+  test("the partner sees typing until it stops, and never their own", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const instanceId = await answeredInstance(t, couple);
+
+    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: true });
+    expect((await presence(couple.second, instanceId)).partner_typing_at).toBe("2026-10-11T12:00:00.000Z");
+    expect((await presence(couple.first, instanceId)).partner_typing_at).toBeNull();
+
+    tick(3);
+    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: true });
+    expect((await presence(couple.second, instanceId)).partner_typing_at).toBe("2026-10-11T12:00:03.000Z");
+
+    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: false });
+    expect((await presence(couple.second, instanceId)).partner_typing_at).toBeNull();
+  });
+
+  test("strangers cannot type or read presence", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const instanceId = await answeredInstance(t, couple);
+    const stranger = await createSignedInUser(t);
+
+    expect(
+      await failure(stranger.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: true })),
+    ).toEqual({ code: "42501", message: "active entitled couple access is required" });
+    expect(await presence(stranger, instanceId)).toEqual({
+      partner_typing_at: null,
+      partner_last_read_message_id: null,
+      partner_read_at: null,
+    });
+  });
+
+  test("the cleanup removes typing rows nobody refreshed", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const instanceId = await answeredInstance(t, couple);
+    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: true });
+
+    tick(11 * 60);
+    expect(await t.mutation(internal.chatPresence.cleanup_stale_daily_chat_typing, {})).toBe(1);
+    expect(await t.run((ctx) => ctx.db.query("daily_chat_typing").collect())).toHaveLength(0);
+  });
+});
+
+describe("read receipts", () => {
+  test("marking read moves forward only and the partner sees it", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const instanceId = await answeredInstance(t, couple);
+    const [first] = await couple.first.as.mutation(api.threads.create_daily_question_thread_with_message, {
+      ...op(),
+      p_instance_id: instanceId,
+      p_body: "one",
+    });
+    tick(5);
+    const [second] = await couple.first.as.mutation(api.threads.send_thread_message, {
+      ...op(),
+      p_thread_id: first.thread_id,
+      p_body: "two",
+    });
+
+    await couple.second.as.mutation(api.chatPresence.mark_thread_read, {
+      p_thread_id: first.thread_id,
+      p_message_id: second.message_id,
+    });
+    await couple.second.as.mutation(api.chatPresence.mark_thread_read, {
+      p_thread_id: first.thread_id,
+      p_message_id: first.message_id,
+    });
+
+    const state = await presence(couple.first, instanceId);
+    expect(state.partner_last_read_message_id).toBe(second.message_id);
+    expect(state.partner_read_at).toEqual(expect.any(String));
+    expect((await presence(couple.second, instanceId)).partner_last_read_message_id).toBeNull();
+  });
+
+  test("a message from another thread is refused", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const [a] = await couple.first.as.mutation(api.threads.create_daily_question_thread_with_message, {
+      ...op(),
+      p_instance_id: await answeredInstance(t, couple),
+      p_body: "a",
+    });
+    const [b] = await couple.first.as.mutation(api.threads.create_daily_question_thread_with_message, {
+      ...op(),
+      p_instance_id: await answeredInstance(t, couple),
+      p_body: "b",
+    });
+    expect(
+      await failure(couple.second.as.mutation(api.chatPresence.mark_thread_read, { p_thread_id: a.thread_id, p_message_id: b.message_id })),
+    ).toEqual({ code: "23514", message: "read message must be in the thread" });
+  });
+});

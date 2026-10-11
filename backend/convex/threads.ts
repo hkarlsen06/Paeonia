@@ -13,7 +13,7 @@ import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { getByUuid, orNull } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
-import { newUuid, uuidArg } from "./lib/ids";
+import { newUuid, optionalUuidArg, uuidArg } from "./lib/ids";
 import { enqueuePartnerNotification } from "./lib/notifications";
 import { applyCoupleActivity } from "./lib/streaks";
 import { btrimToNull, charLength } from "./lib/text";
@@ -162,6 +162,15 @@ export async function handleThreadMessageCreated(ctx: WriterCtx, message: Doc<"t
   }
 }
 
+/** A reply must point at a shown message in the same thread. */
+async function assertReplyTargetAllowed(ctx: ReaderCtx, threadId: string, replyToMessageId: string): Promise<void> {
+  const target = await getByUuid(ctx, "thread_messages", replyToMessageId);
+  if (!target || target.thread_id !== threadId) fail("23514", "reply target must be in the same thread");
+  if (target.deleted_at !== undefined || target.moderation_status !== "visible") {
+    fail("23514", "reply target is not available");
+  }
+}
+
 /** Port of `internal.insert_thread_message`. Returns the new message id. */
 export async function insertThreadMessage(
   ctx: WriterCtx,
@@ -169,6 +178,7 @@ export async function insertThreadMessage(
   threadId: string,
   body: string | null | undefined,
   mediaAssetIds: string[] | null | undefined,
+  replyToMessageId?: string,
 ): Promise<string> {
   const thread = await getByUuid(ctx, "conversation_threads", threadId);
   if (
@@ -197,6 +207,7 @@ export async function insertThreadMessage(
   }
 
   await assertThreadMessageAllowed(ctx, thread.id, userId);
+  if (replyToMessageId !== undefined) await assertReplyTargetAllowed(ctx, thread.id, replyToMessageId);
   if (await getByUuid(ctx, "thread_messages", messageId)) uniqueViolation("thread_messages_pkey");
   const now = nowIso();
   const docId = await ctx.db.insert("thread_messages", {
@@ -204,6 +215,7 @@ export async function insertThreadMessage(
     thread_id: thread.id,
     sender_user_id: userId,
     body: normalizedBody ?? undefined,
+    reply_to_message_id: replyToMessageId,
     moderation_status: "visible",
     created_at: now,
     updated_at: now,
@@ -232,21 +244,37 @@ export const send_thread_message = mutation({
     p_thread_id: v.string(),
     p_body: v.optional(v.union(v.null(), v.string())),
     p_media_asset_ids: nullableMediaIds,
+    p_reply_to_message_id: v.optional(v.union(v.null(), v.string())),
     ...clientOperationArgs,
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const threadId = uuidArg(args.p_thread_id);
+    const replyToMessageId = optionalUuidArg(args.p_reply_to_message_id);
     const stored = await runClientOperation(
       ctx,
       userId,
       toClientOperation(args, {
         kind: "send_thread_message",
         scope: "conversation_threads",
-        request: ["send_thread_message", threadId, ...mediaFingerprint(args.p_body, args.p_media_asset_ids)],
+        // A reply adds its target. A plain message keeps the request it had before
+        // replies existed, so a send queued before then still replays.
+        request: [
+          "send_thread_message",
+          threadId,
+          ...mediaFingerprint(args.p_body, args.p_media_asset_ids),
+          ...(replyToMessageId === undefined ? [] : [replyToMessageId]),
+        ],
       }),
       async () => {
-        const messageId = await insertThreadMessage(ctx, userId, threadId, args.p_body, args.p_media_asset_ids);
+        const messageId = await insertThreadMessage(
+          ctx,
+          userId,
+          threadId,
+          args.p_body,
+          args.p_media_asset_ids,
+          replyToMessageId,
+        );
         return { thread_id: threadId, message_id: messageId };
       },
     );
@@ -410,6 +438,15 @@ export const get_conversation_threads = query({
         last !== null &&
         last.deleted_at === undefined &&
         last.moderation_status === "visible";
+      // What the newest message carries when it has no text, so the preview can say
+      // "Photo" or "Voice message".
+      const lastMedia = visible
+        ? await ctx.db
+            .query("thread_message_media")
+            .withIndex("by_message_id_sort_order", (q) => q.eq("message_id", last.id))
+            .first()
+        : null;
+      const lastMediaAsset = lastMedia ? await getByUuid(ctx, "media_assets", lastMedia.media_asset_id) : null;
       rows.push({
         thread_id: thread.id,
         couple_id: thread.couple_id,
@@ -427,6 +464,7 @@ export const get_conversation_threads = query({
         last_message_deleted_at: orNull(last?.deleted_at),
         last_message_moderation_status: orNull(last?.moderation_status),
         last_message_body: visible ? orNull(last.body) : null,
+        last_message_media_type: orNull(lastMediaAsset?.media_type),
       });
     }
     // order by last_message_at desc (Postgres puts nulls first for desc), created_at desc, thread_id
@@ -464,6 +502,8 @@ export const get_thread_messages = query({
           .collect()
       ).sort((a, b) => a.sort_order - b.sort_order || (a.media_asset_id < b.media_asset_id ? -1 : 1));
       const mediaAssetIds: string[] = [];
+      // The shown attachments with what the app needs to lay them out before downloading.
+      const media = [];
       const mediaStates = [];
       for (const link of links) {
         const asset = await getByUuid(ctx, "media_assets", link.media_asset_id);
@@ -478,6 +518,13 @@ export const get_thread_messages = query({
           asset.deleted_at === undefined
         ) {
           mediaAssetIds.push(link.media_asset_id);
+          media.push({
+            media_asset_id: link.media_asset_id,
+            media_type: asset.media_type,
+            width: orNull(asset.width),
+            height: orNull(asset.height),
+            duration_ms: orNull(asset.duration_ms),
+          });
         }
         mediaStates.push({
           media_asset_id: link.media_asset_id,
@@ -493,11 +540,13 @@ export const get_thread_messages = query({
         message_id: message.id,
         sender_user_id: message.sender_user_id,
         body: messageVisible ? orNull(message.body) : null,
+        reply_to_message_id: orNull(message.reply_to_message_id),
         created_at: message.created_at,
         edited_at: orNull(message.edited_at),
         deleted_at: orNull(message.deleted_at),
         moderation_status: message.moderation_status,
         media_asset_ids: mediaAssetIds,
+        media,
         media_states: mediaStates,
       });
     }

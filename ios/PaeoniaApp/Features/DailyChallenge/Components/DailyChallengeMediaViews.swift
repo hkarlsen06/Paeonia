@@ -322,6 +322,20 @@ struct DailyAnswerImageView: View {
     @State private var attempt = 0
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
 
+    init(
+        mediaAssetID: UUID?,
+        provider: (any DailyAnswerMediaImageProviding)? = DailyAnswerMediaImageProviderFactory.shared,
+        height: CGFloat = 220,
+        allowsViewing: Bool = true
+    ) {
+        self.mediaAssetID = mediaAssetID
+        self.provider = provider
+        self.height = height
+        self.allowsViewing = allowsViewing
+        // A photo shown before is in the first frame, with no placeholder in between.
+        _image = State(initialValue: PaeoniaImageMemoryCache.image(for: mediaAssetID))
+    }
+
     private struct LoadKey: Hashable {
         let mediaAssetID: UUID?
         let attempt: Int
@@ -384,6 +398,8 @@ struct DailyAnswerImageView: View {
     }
 
     private func load() async {
+        // Already showing this photo from memory. A new photo or a retry loads again.
+        if let image, image === PaeoniaImageMemoryCache.image(for: mediaAssetID) { return }
         image = nil
         didFail = false
 
@@ -395,6 +411,7 @@ struct DailyAnswerImageView: View {
         let data = await provider.imageData(for: mediaAssetID)
         if let data, let loaded = UIImage(data: data) {
             image = loaded
+            PaeoniaImageMemoryCache.store(loaded, for: mediaAssetID)
         } else {
             didFail = true
         }

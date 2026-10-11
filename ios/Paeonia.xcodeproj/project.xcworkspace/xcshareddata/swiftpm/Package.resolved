@@ -25,7 +25,7 @@
       "location" : "https://github.com/hkarlsen06/Chat.git",
       "state" : {
         "branch" : "main",
-        "revision" : "ec1bb93be6bafe6491e97f181cc89400bd2ea23a"
+        "revision" : "76d11f4a3d25b5aa7336b401d7f637914b134240"
       }
     },
     {
@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/exyte/MediaPicker.git",
       "state" : {
-        "revision" : "ce2eda6300337d1478a78fc033bce8dd9bf4bb2c",
-        "version" : "3.3.2"
+        "revision" : "3d1db8d5b1f553d066d67a57590f211ab534a531",
+        "version" : "3.4.7"
       }
     },
     {

@@ -242,6 +242,8 @@ extension RootView {
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.screenTopSpacing)
         .padding(.bottom, PaeoniaSpacing.space16)
+        // Same column as the onboarding and pairing screens just before it.
+        .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 

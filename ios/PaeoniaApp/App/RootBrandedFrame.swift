@@ -33,6 +33,8 @@ struct RootBrandedFrame<Content: View>: View {
                 content
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            // The same column as the welcome screen, so the flow keeps one width on iPad.
+            .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.screenTopSpacing)

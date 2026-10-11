@@ -159,7 +159,10 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
                 createdAt: message.createdAt,
                 clientOperationID: clientOperationID,
                 isSending: false,
-                sendFailed: true
+                sendFailed: true,
+                voice: message.voice,
+                photos: message.photos,
+                replyToMessageID: message.replyToMessageID
             )
             save(document, ownerUserID: ownerUserID)
             return
@@ -194,6 +197,8 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         let index = document.messagesByInstanceID[key]?.firstIndex(where: {
             $0.clientOperationID == clientOperationID
         })
+        // A voice message keeps playing from this phone's copy until the server's
+        // copy, which carries the uploaded file, replaces it.
         let confirmed = DailyQuestionChatMessage(
             id: messageID,
             threadID: threadID,
@@ -202,7 +207,10 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
             body: body,
             createdAt: createdAt,
             clientOperationID: clientOperationID,
-            isSending: false
+            isSending: false,
+            voice: index.flatMap { document.messagesByInstanceID[key]?[$0].voice },
+            photos: index.flatMap { document.messagesByInstanceID[key]?[$0].photos },
+            replyToMessageID: index.flatMap { document.messagesByInstanceID[key]?[$0].replyToMessageID }
         )
         if let index {
             document.messagesByInstanceID[key]?[index] = confirmed

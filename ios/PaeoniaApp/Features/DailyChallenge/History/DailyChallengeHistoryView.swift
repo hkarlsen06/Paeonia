@@ -20,7 +20,7 @@ struct DailyChallengeHistoryView: View {
     /// The question whose answer flow is open, presented over the history. Driving it
     /// by item lets the flow zoom out of the tapped card and carry its own state.
     @State private var answeringQuestion: DailyChallengeQuestion?
-    @State private var reportedPartnerAnswerID: UUID?
+    @State private var reportTarget: PrivacyReportTarget?
     @State private var chattingQuestion: DailyChallengeQuestion?
     /// Bumped to ask for a fresh history load (retry, or the partner answer flow closing).
     /// The load runs as a `.task(id:)`, so it lives and dies with this screen: closing the
@@ -88,12 +88,12 @@ struct DailyChallengeHistoryView: View {
                             .accessibilityLabel(Text(.dailyChallengeFlowClose))
                         }
                     }
-                    .navigationDestination(item: $reportedPartnerAnswerID) { answerID in
+                    .navigationDestination(item: $reportTarget) { reportTarget in
                         if let partnerUserID = viewModel.participants.partnerUserID {
                             ReportAndLeaveView(
                                 partnerUserID: partnerUserID,
                                 partnerName: viewModel.participants.partnerName,
-                                reportTarget: .dailyAnswer(answerID: answerID),
+                                reportTarget: reportTarget,
                                 service: privacySafetyService,
                                 operationProvider: privacyOperationProvider,
                                 onReportedAndLeft: onReportedAndLeft
@@ -103,7 +103,9 @@ struct DailyChallengeHistoryView: View {
                     .navigationDestination(item: $chattingQuestion) { question in
                         DailyQuestionChatView(
                             viewModel: dailyChallengeViewModel.makeChatViewModel(question: question),
-                            participants: dailyChallengeViewModel.participants
+                            question: dailyChallengeViewModel.latestQuestion(question),
+                            participants: dailyChallengeViewModel.participants,
+                            onReport: { reportTarget = $0 }
                         )
                         .id(question.id)
                     }
@@ -165,7 +167,7 @@ struct DailyChallengeHistoryView: View {
 
     /// Whether the chat or report screen is pushed on the cover's navigation stack.
     private var isDetailPushed: Bool {
-        chattingQuestion != nil || reportedPartnerAnswerID != nil
+        chattingQuestion != nil || reportTarget != nil
     }
 
     /// A rightward drag started from the leading edge: the cover follows the finger, and
@@ -224,12 +226,14 @@ struct DailyChallengeHistoryView: View {
                             DailyChallengeReadCard(
                                 question: question,
                                 participants: viewModel.participants,
-                                onReportPartnerAnswer: { reportedPartnerAnswerID = $0 },
                                 lastMessagePreview: viewModel.threadPreview(for: question.id),
                                 hasUnreadChat: dailyChallengeViewModel.hasUnreadChat(for: question.id),
-                                onOpenChat: question.isChatAvailable
-                                    ? { chattingQuestion = question }
-                                    : nil
+                                onOpen: {
+                                    Task {
+                                        await dailyChallengeViewModel.prepareChat(for: question)
+                                        chattingQuestion = question
+                                    }
+                                }
                             )
                         }
                     }
@@ -238,6 +242,7 @@ struct DailyChallengeHistoryView: View {
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space32)
+            .paeoniaReadableWidth()
         }
         .refreshable { await viewModel.load() }
     }

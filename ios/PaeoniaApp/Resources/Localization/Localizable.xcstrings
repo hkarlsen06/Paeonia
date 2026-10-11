@@ -2,16 +2,6 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {},
-    "%@: %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@: %2$@"
-          }
-        }
-      }
-    },
     "+%lld" : {},
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
@@ -2028,24 +2018,6 @@
         }
       }
     },
-    "dailyChallenge.partner.answerCta" : {
-      "comment" : "Button on a partner-answered question that opens the answer flow; answering reveals the partner reply",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer to unlock it"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar for å låse opp"
-          }
-        }
-      }
-    },
     "dailyChallenge.partner.lockedCta" : {
       "comment" : "Disabled button on a partner-answered question, shown until the user has finished their own three daily questions",
       "extractionState" : "manual",
@@ -2456,6 +2428,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rapporter dette svaret"
+          }
+        }
+      }
+    },
+    "dailyChallenge.row.bothAnswered" : {
+      "comment" : "Status on a question row when both partners answered and there are no chat messages yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You both answered. Tap to read."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere har begge svart. Trykk for å lese."
+          }
+        }
+      }
+    },
+    "dailyChallenge.row.waiting" : {
+      "comment" : "Status on a question row in the Questions tab when you answered and your partner hasn't. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@"
           }
         }
       }
@@ -3072,38 +3080,38 @@
         }
       }
     },
-    "dailyChat.card.open" : {
-      "comment" : "Affordance on a revealed question card that opens its conversation",
+    "dailyChat.answer.partnerTitle" : {
+      "comment" : "Label on the partner's answer bubble at the top of a question's conversation. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Talk about this question"
+            "value" : "%@'s answer"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Snakk om dette spørsmålet"
+            "value" : "Svaret til %@"
           }
         }
       }
     },
-    "dailyChat.card.preview" : {
-      "comment" : "Accessibility label for a question card with a chat preview",
+    "dailyChat.card.unreadTitle" : {
+      "comment" : "Title of the chat button on a question card when there is an unread message. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open question chat"
+            "value" : "New message from %@"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Åpne spørsmålsprat"
+            "value" : "Ny melding fra %@"
           }
         }
       }
@@ -3230,24 +3238,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Legg til tekst"
-          }
-        }
-      }
-    },
-    "dailyChat.empty.message" : {
-      "comment" : "Encouragement shown before either partner sends a follow-up message",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Say something about this question."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Si noe om dette spørsmålet."
           }
         }
       }
@@ -3432,6 +3422,42 @@
         }
       }
     },
+    "dailyChat.error.voice.message" : {
+      "comment" : "Banner message when a recorded voice message could not be saved on the phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try recording it again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv å ta den opp på nytt."
+          }
+        }
+      }
+    },
+    "dailyChat.error.voice.title" : {
+      "comment" : "Banner title when a recorded voice message could not be saved on the phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save your voice message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre talemeldingen"
+          }
+        }
+      }
+    },
     "dailyChat.navigation.title" : {
       "comment" : "Navigation title for a daily question conversation",
       "extractionState" : "manual",
@@ -3500,6 +3526,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lagret på denne telefonen. Vi sender det når du er på nett."
+          }
+        }
+      }
+    },
+    "dailyChat.voice.preview" : {
+      "comment" : "Preview text for a question chat whose latest message is a voice message.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talemelding"
+          }
+        }
+      }
+    },
+    "dailyChat.waiting.partner" : {
+      "comment" : "Shown in a question's conversation under your answer while your partner hasn't answered. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hasn't answered yet. You can chat once you've both answered."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har ikke svart ennå. Dere kan prate når begge har svart."
           }
         }
       }
@@ -3986,6 +4048,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Posisjon er av"
+          }
+        }
+      }
+    },
+    "home.map.together" : {
+      "comment" : "Short label in the corner of the couple map, in place of the distance, when both partners are in the same place right now.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen"
+          }
+        }
+      }
+    },
+    "home.map.together.accessibility" : {
+      "comment" : "VoiceOver value on the couple map, in place of the distance, when both partners are in the same place right now.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere er sammen"
           }
         }
       }
@@ -4566,6 +4664,42 @@
         }
       }
     },
+    "home.unreadChats.eyebrow" : {
+      "comment" : "Heading of the Home card that lists chats with unread messages from the partner",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New messages"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nye meldinger"
+          }
+        }
+      }
+    },
+    "home.unreadChats.hiddenPreview" : {
+      "comment" : "Shown in the Home unread chats card when the newest message has no text to preview",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the chat to read it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne praten for å lese den."
+          }
+        }
+      }
+    },
     "home.widget.card.hint" : {
       "comment" : "Accessibility hint for the tappable widget preview on the home screen",
       "extractionState" : "manual",
@@ -4616,6 +4750,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tegn noe"
+          }
+        }
+      }
+    },
+    "home.widget.partnerDrawing" : {
+      "comment" : "Label under the drawing preview on the home screen while the partner is drawing on the shared canvas right now. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tegner"
           }
         }
       }
@@ -6816,6 +6968,24 @@
         }
       }
     },
+    "paywall.cta.done" : {
+      "comment" : "Paywall button label right after a purchase or joining a partner went through, while the next screen opens.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're all set"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alt er klart"
+          }
+        }
+      }
+    },
     "paywall.cta.freeTrial" : {
       "comment" : "Primary purchase button when a free trial is available.",
       "extractionState" : "manual",
@@ -7212,6 +7382,42 @@
         }
       }
     },
+    "paywall.invite.entry" : {
+      "comment" : "Paywall link for someone whose partner already subscribes. Opens the code entry sheet. Joining is free.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Got a code? Join for free"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Har du en kode? Bli med gratis"
+          }
+        }
+      }
+    },
+    "paywall.invite.sheet.message" : {
+      "comment" : "Code entry sheet opened from the paywall. Reassures that joining a partner costs nothing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type or paste the 6 characters your partner sent you. Joining them is free."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv inn eller lim inn de 6 tegnene partneren din sendte deg. Det er gratis å bli med."
+          }
+        }
+      }
+    },
     "paywall.manageSubscription" : {
       "comment" : "Link label for opening subscription management.",
       "extractionState" : "manual",
@@ -7244,6 +7450,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ett abonnement gjelder for dere begge."
+          }
+        }
+      }
+    },
+    "paywall.paired.headline" : {
+      "comment" : "Paywall headline for a couple whose subscription ended. They are still paired.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick up where you left off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett der dere slapp"
+          }
+        }
+      }
+    },
+    "paywall.paired.message" : {
+      "comment" : "Paywall line for a couple whose subscription ended. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Everything you and %@ saved is safe. One subscription opens Paeonia again for both of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alt du og %@ har lagret, er trygt. Ett abonnement åpner Paeonia igjen for dere begge."
           }
         }
       }
@@ -7316,6 +7558,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "per år"
+          }
+        }
+      }
+    },
+    "paywall.plan.save" : {
+      "comment" : "Badge on the yearly plan card. %@ is a percentage such as 32 %.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spar %@"
           }
         }
       }
@@ -7442,6 +7702,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "gratis"
+          }
+        }
+      }
+    },
+    "paywall.trial.reminder" : {
+      "comment" : "Paywall note shown when the plan has a free trial. The server sends this reminder 2 days before the trial ends.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll remind you 2 days before the free trial ends, if notifications are on."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi minner deg på det 2 dager før prøveperioden slutter, hvis varsler er på."
           }
         }
       }
@@ -11746,6 +12024,42 @@
         }
       }
     },
+    "widgetDrawing.live.together" : {
+      "comment" : "Short line above the drawing canvas while the partner has the same canvas open and both can see each other draw. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is drawing with you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tegner sammen med deg"
+          }
+        }
+      }
+    },
+    "widgetDrawing.live.watching" : {
+      "comment" : "Short line above the drawing canvas while the partner is looking at the shared drawing on their home screen in the app, without drawing. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is watching"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser på"
+          }
+        }
+      }
+    },
     "widgetDrawing.notSent" : {
       "comment" : "Small label above the drawing canvas when the canvas has changes that have not been sent yet.",
       "extractionState" : "manual",
@@ -11922,6 +12236,114 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sender …"
+          }
+        }
+      }
+    },
+    "widgetDrawing.setAside.discard" : {
+      "comment" : "Accessibility label of the small x button next to 'Bring back your drawing'. It deletes the user's unsent drawing that was put aside.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete saved drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett lagret tegning"
+          }
+        }
+      }
+    },
+    "widgetDrawing.setAside.discardAction" : {
+      "comment" : "Destructive button in the confirmation that deletes the user's put-aside drawing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett"
+          }
+        }
+      }
+    },
+    "widgetDrawing.setAside.discardMessage" : {
+      "comment" : "Message in the confirmation before deleting the user's unsent drawing that was put aside when a new drawing came in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It was saved when a new drawing came in. You can't undo this."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den ble lagret da en ny tegning kom inn. Du kan ikke angre dette."
+          }
+        }
+      }
+    },
+    "widgetDrawing.setAside.discardTitle" : {
+      "comment" : "Title of the confirmation before deleting the user's unsent drawing that was put aside when a new drawing came in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete your saved drawing?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vil du slette den lagrede tegningen din?"
+          }
+        }
+      }
+    },
+    "widgetDrawing.setAside.keep" : {
+      "comment" : "Cancel button in the confirmation. Keeps the user's put-aside drawing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behold"
+          }
+        }
+      }
+    },
+    "widgetDrawing.setAside.restore" : {
+      "comment" : "Button over the drawing canvas. A new drawing replaced the user's unsent drawing on the canvas, and this puts the user's drawing back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring back your drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hent tilbake tegningen din"
           }
         }
       }
@@ -12106,365 +12528,491 @@
         }
       }
     },
-    "paywall.paired.headline" : {
+    "dailyChat.date.today" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pick up where you left off"
+            "value" : "Today"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fortsett der dere slapp"
+            "value" : "I dag"
           }
         }
       },
-      "comment" : "Paywall headline for a couple whose subscription ended. They are still paired."
+      "comment" : "Day divider in a question chat for messages sent today."
     },
-    "paywall.paired.message" : {
+    "dailyChat.date.yesterday" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Everything you and %@ saved is safe. One subscription opens Paeonia again for both of you."
+            "value" : "Yesterday"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alt du og %@ har lagret, er trygt. Ett abonnement åpner Paeonia igjen for dere begge."
+            "value" : "I går"
           }
         }
       },
-      "comment" : "Paywall line for a couple whose subscription ended. %@ is the partner's name."
+      "comment" : "Day divider in a question chat for messages sent yesterday."
     },
-    "paywall.plan.save" : {
+    "dailyChat.action.reply" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save %@"
+            "value" : "Reply"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spar %@"
+            "value" : "Svar"
           }
         }
       },
-      "comment" : "Badge on the yearly plan card. %@ is a percentage such as 32 %."
+      "comment" : "Menu and VoiceOver action that starts a reply to a chat message."
     },
-    "paywall.trial.reminder" : {
+    "dailyChat.action.copy" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We'll remind you 2 days before the free trial ends, if notifications are on."
+            "value" : "Copy"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi minner deg på det 2 dager før prøveperioden slutter, hvis varsler er på."
+            "value" : "Kopier"
           }
         }
       },
-      "comment" : "Paywall note shown when the plan has a free trial. The server sends this reminder 2 days before the trial ends."
+      "comment" : "Menu action that copies a chat message's text."
     },
-    "paywall.cta.done" : {
+    "dailyChat.action.report" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You're all set"
+            "value" : "Report"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alt er klart"
+            "value" : "Rapporter"
           }
         }
       },
-      "comment" : "Paywall button label right after a purchase or joining a partner went through, while the next screen opens."
+      "comment" : "Menu action that reports the partner's chat message or answer."
     },
-    "paywall.invite.entry" : {
+    "dailyChat.status.sending" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Got a code? Join for free"
+            "value" : "Sending"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Har du en kode? Bli med gratis"
+            "value" : "Sender"
           }
         }
       },
-      "comment" : "Paywall link for someone whose partner already subscribes. Opens the code entry sheet. Joining is free."
+      "comment" : "Small status under your chat message while it is sending."
     },
-    "paywall.invite.sheet.message" : {
+    "dailyChat.status.sent" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Type or paste the 6 characters your partner sent you. Joining them is free."
+            "value" : "Sent"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skriv inn eller lim inn de 6 tegnene partneren din sendte deg. Det er gratis å bli med."
+            "value" : "Sendt"
           }
         }
       },
-      "comment" : "Code entry sheet opened from the paywall. Reassures that joining a partner costs nothing."
+      "comment" : "Small status under your latest chat message once the server has it."
     },
-    "widgetDrawing.live.together" : {
+    "dailyChat.status.failed" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ is drawing with you"
+            "value" : "Not sent"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ tegner sammen med deg"
+            "value" : "Ikke sendt"
           }
         }
       },
-      "comment" : "Short line above the drawing canvas while the partner has the same canvas open and both can see each other draw. %@ is the partner's name."
+      "comment" : "Small status under your chat message when it could not be sent. A Try again button follows."
     },
-    "widgetDrawing.live.watching" : {
+    "dailyChat.reply.jumpHint" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ is watching"
+            "value" : "Shows the message it answers."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ ser på"
+            "value" : "Viser meldingen den svarer på."
           }
         }
       },
-      "comment" : "Short line above the drawing canvas while the partner is looking at the shared drawing on their home screen in the app, without drawing. %@ is the partner's name."
+      "comment" : "VoiceOver hint on the quoted message above a reply."
     },
-    "home.widget.partnerDrawing" : {
+    "dailyChat.reply.unavailable" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ is drawing"
+            "value" : "This message isn't here anymore."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ tegner"
+            "value" : "Denne meldingen er ikke her lenger."
           }
         }
       },
-      "comment" : "Label under the drawing preview on the home screen while the partner is drawing on the shared canvas right now. %@ is the partner's name."
+      "comment" : "Shown in a quote when the message it answers was removed."
     },
-    "widgetDrawing.setAside.restore" : {
+    "dailyChat.reply.cancel" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bring back your drawing"
+            "value" : "Cancel reply"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hent tilbake tegningen din"
+            "value" : "Avbryt svar"
           }
         }
       },
-      "comment" : "Button over the drawing canvas. A new drawing replaced the user's unsent drawing on the canvas, and this puts the user's drawing back."
+      "comment" : "VoiceOver label for the button that removes the reply above the composer."
     },
-    "widgetDrawing.setAside.discard" : {
+    "dailyChat.composer.send" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Delete saved drawing"
+            "value" : "Send"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Slett lagret tegning"
+            "value" : "Send"
           }
         }
       },
-      "comment" : "Accessibility label of the small x button next to 'Bring back your drawing'. It deletes the user's unsent drawing that was put aside."
+      "comment" : "VoiceOver label for the chat's send button."
     },
-    "widgetDrawing.setAside.discardMessage" : {
+    "dailyChat.composer.record" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "It was saved when a new drawing came in. You can't undo this."
+            "value" : "Record a voice message"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Den ble lagret da en ny tegning kom inn. Du kan ikke angre dette."
+            "value" : "Spill inn en talemelding"
           }
         }
       },
-      "comment" : "Message in the confirmation before deleting the user's unsent drawing that was put aside when a new drawing came in."
+      "comment" : "VoiceOver label for the chat's microphone button."
     },
-    "widgetDrawing.setAside.discardAction" : {
+    "dailyChat.composer.deleteRecording" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Delete"
+            "value" : "Delete recording"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Slett"
+            "value" : "Slett opptaket"
           }
         }
       },
-      "comment" : "Destructive button in the confirmation that deletes the user's put-aside drawing."
+      "comment" : "VoiceOver label for the button that throws away a voice message being recorded."
     },
-    "widgetDrawing.setAside.keep" : {
+    "dailyChat.composer.sendRecording" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Keep"
+            "value" : "Send voice message"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Behold"
+            "value" : "Send talemeldingen"
           }
         }
       },
-      "comment" : "Cancel button in the confirmation. Keeps the user's put-aside drawing."
+      "comment" : "VoiceOver label for the button that sends the voice message being recorded."
     },
-    "widgetDrawing.setAside.discardTitle" : {
+    "dailyChat.composer.permissionDenied" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Delete your saved drawing?"
+            "value" : "Allow microphone access in Settings to record a voice message."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vil du slette den lagrede tegningen din?"
+            "value" : "Gi tilgang til mikrofonen i Innstillinger for å spille inn en talemelding."
           }
         }
       },
-      "comment" : "Title of the confirmation before deleting the user's unsent drawing that was put aside when a new drawing came in."
+      "comment" : "Shown above the chat composer when the microphone is not allowed."
     },
-    "dailyChat.card.newBadge" : {
+    "dailyChat.photo.preview" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New message"
+            "value" : "Photo"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ny melding"
+            "value" : "Bilde"
           }
         }
       },
-      "comment" : "Small badge on a question card when the partner sent a chat message the user has not read yet"
+      "comment" : "Preview text for a question chat message that is a photo without a caption."
     },
-    "dailyChat.card.unreadTitle" : {
+    "dailyChat.error.photo.title" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New message from %@"
+            "value" : "Couldn't send your photos"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ny melding fra %@"
+            "value" : "Kunne ikke sende bildene"
           }
         }
       },
-      "comment" : "Title of the chat button on a question card when there is an unread message. %@ is the partner's name."
+      "comment" : "Banner title when picked chat photos could not be prepared or saved."
     },
-    "home.unreadChats.eyebrow" : {
+    "dailyChat.error.photo.message" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New messages"
+            "value" : "Try picking them again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nye meldinger"
+            "value" : "Prøv å velge dem på nytt."
           }
         }
       },
-      "comment" : "Heading of the Home card that lists chats with unread messages from the partner"
+      "comment" : "Banner message when picked chat photos could not be prepared or saved."
     },
-    "home.unreadChats.hiddenPreview" : {
+    "dailyChat.status.read" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open the chat to read it."
+            "value" : "Read"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Åpne praten for å lese den."
+            "value" : "Lest"
           }
         }
       },
-      "comment" : "Shown in the Home unread chats card when the newest message has no text to preview"
+      "comment" : "Small status under your newest chat message your partner has read."
+    },
+    "dailyChat.typing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is typing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ skriver"
+          }
+        }
+      },
+      "comment" : "VoiceOver label and announcement for the typing dots. %@ is the partner's name."
+    },
+    "dailyChat.composer.addPhoto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til bilder"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the plus button that opens the photo drawer in the chat composer."
+    },
+    "dailyChat.composer.library" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilder"
+          }
+        }
+      },
+      "comment" : "Button in the chat's photo drawer that opens the whole photo library."
+    },
+    "dailyChat.composer.camera" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kamera"
+          }
+        }
+      },
+      "comment" : "Button in the chat's photo drawer that opens the camera."
+    },
+    "dailyChat.composer.removePhoto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern bildet"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the button that takes a picked photo out of the message."
+    },
+    "imageViewer.save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save to Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre i Bilder"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the button that saves the photo on screen to the photo library."
+    },
+    "imageViewer.saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret i Bilder"
+          }
+        }
+      },
+      "comment" : "VoiceOver label for the save button once the photo has been saved."
     }
   },
   "version" : "1.0"

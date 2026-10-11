@@ -255,9 +255,14 @@ struct DailyVoicePlaybackView: View {
             .accessibilityHidden(true)
     }
 
+    /// Recordings that already played once this session load from the phone in a
+    /// moment, so they skip the spinner. Otherwise every rebuild of a chat row would
+    /// flash it.
+    private static var loadedAssetIDs = Set<UUID>()
+
     private var isDownloading: Bool {
-        if case .mediaAsset = source {
-            return loadState == .loading
+        if case let .mediaAsset(id) = source {
+            return loadState == .loading && !Self.loadedAssetIDs.contains(id)
         }
         return false
     }
@@ -285,6 +290,9 @@ struct DailyVoicePlaybackView: View {
 
         if let data, player.load(data: data) {
             loadState = .loaded
+            if case let .mediaAsset(id) = source {
+                Self.loadedAssetIDs.insert(id)
+            }
         } else {
             loadState = .failed
         }
@@ -433,7 +441,7 @@ struct DailyVoiceRecorderView: View {
 
 /// A small red dot that pulses while the microphone is on. It stays still under
 /// Reduce Motion.
-private struct RecordingDot: View {
+struct RecordingDot: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .body) private var size: CGFloat = 8
     @State private var isDimmed = false
@@ -454,6 +462,6 @@ private struct RecordingDot: View {
 }
 
 /// Formats seconds as minutes and seconds, such as "0:12".
-private func voiceClock(_ seconds: TimeInterval) -> String {
+func voiceClock(_ seconds: TimeInterval) -> String {
     Duration.seconds(seconds).formatted(.time(pattern: .minuteSecond(padMinuteToLength: 1)))
 }

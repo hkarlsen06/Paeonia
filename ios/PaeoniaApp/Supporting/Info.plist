@@ -44,7 +44,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Paeonia uses your location only when you turn on sharing, so your partner can see your latest location.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Paeonia uses your microphone so you can record a voice answer to the daily question.</string>
+	<string>Paeonia uses your microphone so you can record voice answers and voice messages for your partner.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Paeonia saves a drawing to your photos when you tap save.</string>
 	<key>NSUserActivityTypes</key>

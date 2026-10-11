@@ -219,6 +219,9 @@ extension MainTabView {
     func openDailyChat(instanceID: UUID) async {
         selection.wrappedValue = .questions
         let question = await dailyChallengeViewModel.questionForChat(instanceID: instanceID)
+        if let question {
+            await dailyChallengeViewModel.prepareChat(for: question)
+        }
         guard !Task.isCancelled else { return }
 
         dailyChatQuestion = question

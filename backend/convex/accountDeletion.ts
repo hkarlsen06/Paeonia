@@ -469,6 +469,8 @@ async function removeDeletedUserRows(ctx: MutationCtx, userId: string): Promise<
       .withIndex("by_user_id_question_id_exclude_until", (q) => q.eq("user_id", userId))
       .collect()),
     ...(await ctx.db.query("review_demo_partners").withIndex("by_user_id", (q) => q.eq("user_id", userId)).collect()),
+    ...(await ctx.db.query("thread_read_states").withIndex("by_user_id", (q) => q.eq("user_id", userId)).collect()),
+    ...(await ctx.db.query("daily_chat_typing").withIndex("by_user_id", (q) => q.eq("user_id", userId)).collect()),
   ];
   for (const row of rows) await ctx.db.delete(row._id);
   const user = await getByUuid(ctx, "users", userId);

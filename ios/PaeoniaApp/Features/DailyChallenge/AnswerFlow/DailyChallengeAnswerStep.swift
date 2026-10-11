@@ -42,11 +42,33 @@ struct DailyChallengeAnswerStep: View {
     @State private var showsSecondaryComposer = true
 
     var body: some View {
-        // The question card takes all the height the composer leaves, so there is no
-        // empty gap on the screen. The composer (text field, photo, voice, choice)
-        // sits under it within thumb reach; a keyboard just shrinks the card. The
-        // answer-method picker and the waiting hint live inside the card, at its top
-        // and bottom edges. Review states show the answers under the card instead.
+        Group {
+            if isReviewing {
+                // Sent answers can be taller than the screen (two photos), so the
+                // review state scrolls and the card keeps its natural height.
+                ScrollView {
+                    content(cardFillsHeight: false)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+            } else {
+                content(cardFillsHeight: true)
+            }
+        }
+        .onAppear {
+            seedEditDraftIfNeeded()
+            showsSecondaryComposer = !isFocused.wrappedValue
+        }
+        .onChange(of: isFocused.wrappedValue) { _, focused in
+            withAnimation(PaeoniaMotion.stateChange) { showsSecondaryComposer = !focused }
+        }
+    }
+
+    /// While composing, the question card takes all the height the composer leaves, so
+    /// there is no empty gap on the screen. The composer (text field, photo, voice,
+    /// choice) sits under it within thumb reach; a keyboard just shrinks the card. The
+    /// answer-method picker and the waiting hint live inside the card, at its top and
+    /// bottom edges. Review states show the answers under the card instead.
+    private func content(cardFillsHeight: Bool) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             DailyQuestionCard(prompt: question.prompt) {
                 cardHeader
@@ -55,21 +77,20 @@ struct DailyChallengeAnswerStep: View {
                     DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
                 }
             }
-            .frame(maxHeight: .infinity)
+            .frame(maxHeight: cardFillsHeight ? .infinity : nil)
 
             answerSection
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: cardFillsHeight ? .infinity : nil, alignment: .top)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, topPadding)
         .padding(.bottom, PaeoniaSpacing.space8)
-        .onAppear {
-            seedEditDraftIfNeeded()
-            showsSecondaryComposer = !isFocused.wrappedValue
-        }
-        .onChange(of: isFocused.wrappedValue) { _, focused in
-            withAnimation(PaeoniaMotion.stateChange) { showsSecondaryComposer = !focused }
-        }
+    }
+
+    /// Showing an answer already sent and no longer editable, so nothing here needs
+    /// the keyboard and the content may be taller than the screen.
+    private var isReviewing: Bool {
+        !showsSendingState && question.editableAnswerKind == nil && question.hasOwnAnswer
     }
 
     /// The card's top row: the answer-method picker when the user can choose, and

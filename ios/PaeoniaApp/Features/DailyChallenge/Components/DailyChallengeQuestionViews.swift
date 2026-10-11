@@ -206,13 +206,31 @@ private struct DailyVisibleAnswerBlock: View {
     var mediaKind: DailyChallengeAnswerKind = .photo
 
     var body: some View {
-        // A combined answer can carry several parts at once, so each present part is
-        // shown — media first, then a partner pick, then the text caption beneath.
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             Text(verbatim: title)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextSecondary)
 
+            DailyAnswerContent(detail: detail, participants: participants, mediaKind: mediaKind)
+        }
+        .padding(PaeoniaSpacing.space12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.paeoniaSurfaceSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+    }
+}
+
+/// The parts of one revealed answer, without a heading or background, so both the
+/// answer blocks and the chat's answer bubbles can show it.
+struct DailyAnswerContent: View {
+    let detail: DailyQuestionAnswerDetail
+    var participants = DailyChallengeParticipants()
+    var mediaKind: DailyChallengeAnswerKind = .photo
+
+    var body: some View {
+        // A combined answer can carry several parts at once, so each present part is
+        // shown — media first, then a partner pick, then the text caption beneath.
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             if let mediaAssetID = detail.mediaAssetIDs.first {
                 if mediaKind == .voice {
                     DailyVoicePlaybackView(source: .mediaAsset(mediaAssetID))
@@ -237,10 +255,6 @@ private struct DailyVisibleAnswerBlock: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(PaeoniaSpacing.space12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.paeoniaSurfaceSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
     }
 }
 

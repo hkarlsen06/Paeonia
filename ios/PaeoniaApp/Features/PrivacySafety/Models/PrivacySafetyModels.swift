@@ -75,9 +75,10 @@ nonisolated enum PrivacyReportReason: String, CaseIterable, Codable, Hashable, S
 /// The existing reporting RPC accepts several kinds of relationship content. Keep
 /// that wire detail here so every entry point still opens the same report-and-leave
 /// flow while preserving the specific content the user reported.
-nonisolated enum PrivacyReportTarget: Equatable, Sendable {
+nonisolated enum PrivacyReportTarget: Hashable, Sendable {
     case conduct(userID: UUID)
     case dailyAnswer(answerID: UUID)
+    case threadMessage(messageID: UUID)
 
     var kind: String {
         switch self {
@@ -85,6 +86,8 @@ nonisolated enum PrivacyReportTarget: Equatable, Sendable {
             "conduct"
         case .dailyAnswer:
             "daily_answer"
+        case .threadMessage:
+            "thread_message"
         }
     }
 
@@ -94,6 +97,8 @@ nonisolated enum PrivacyReportTarget: Equatable, Sendable {
             userID
         case let .dailyAnswer(answerID):
             answerID
+        case let .threadMessage(messageID):
+            messageID
         }
     }
 }

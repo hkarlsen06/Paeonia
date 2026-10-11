@@ -1254,6 +1254,276 @@ private final class ChatTestOperationProvider: SyncClientOperationProviding {
 }
 
 @MainActor
+struct DailyQuestionChatVoiceTests {
+    @Test func aQueuedVoiceMessageUploadsItsRecordingAndSendsTheUpload() async throws {
+        let fixture = ChatTestFixture()
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        let service = fixture.makeService()
+        let recording = Data([1, 2, 3])
+        _ = try await service.queueVoiceMessage(
+            ownerUserID: fixture.ownerUserID,
+            coupleID: fixture.question.coupleID,
+            instanceID: fixture.question.id,
+            threadID: fixture.threadID,
+            voice: DailyQuestionChatVoicePayload(
+                messageID: fixture.messageID,
+                data: recording,
+                durationMs: 1_500,
+                reserveOperation: fixture.operationProvider.makeOperation(),
+                finalizeOperation: fixture.operationProvider.makeOperation()
+            ),
+            createThread: false,
+            replyToMessageID: nil,
+            operation: fixture.operationProvider.makeOperation()
+        )
+
+        let pending = await service.pendingMessages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        #expect(pending.map(\.id) == [fixture.messageID])
+        #expect(pending.first?.voice?.data == recording)
+
+        let assetID = UUID()
+        let uploader = ChatVoiceUploader(assetID: assetID)
+        let queued = try #require(
+            try await fixture.pendingStore.inFlightOperations(ownerUserID: fixture.ownerUserID, kind: .sendThreadMessage)
+                .first
+        )
+        let result = try await SendDailyQuestionThreadMessagePendingOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache,
+            mediaUploadService: uploader
+        ).send(queued, context: chatSyncContext(ownerUserID: fixture.ownerUserID))
+
+        #expect(result == .succeeded)
+        #expect(await uploader.uploadedParentIDs == [fixture.messageID])
+        #expect(await fixture.gateway.lastMediaAssetIDs == [assetID])
+        let cached = await fixture.cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        #expect(cached.first?.isSending == false)
+    }
+
+    @Test func aConfirmedVoiceMessageKeepsPlayingFromThisPhone() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ChatVoice-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = FileDailyQuestionChatCache(directoryURL: directory)
+        let owner = UUID()
+        let operationID = UUID()
+        let message = DailyQuestionChatMessage(
+            id: UUID(), threadID: nil, instanceID: UUID(), senderUserID: owner, body: "",
+            createdAt: Date(timeIntervalSince1970: 1), clientOperationID: operationID, isSending: true,
+            voice: DailyQuestionChatVoice(data: Data([7]), durationMs: 900)
+        )
+        await cache.append(message, ownerUserID: owner)
+
+        await cache.confirm(
+            ownerUserID: owner, instanceID: message.instanceID, coupleID: UUID(), clientOperationID: operationID,
+            threadID: UUID(), messageID: message.id, body: "", senderUserID: owner, createdAt: message.createdAt
+        )
+
+        let confirmed = try #require(await cache.messages(ownerUserID: owner, instanceID: message.instanceID).first)
+        #expect(!confirmed.isSending)
+        #expect(confirmed.voice == message.voice)
+    }
+
+    @Test func aPhotoMessageUploadsEachPhotoAsAChatPhotoAndSendsThemInOrder() async throws {
+        let fixture = ChatTestFixture()
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        await fixture.cache.saveMessages(
+            [fixture.remoteMessage(body: "Earlier")],
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id
+        )
+        let viewModel = fixture.makeViewModel()
+        await viewModel.prepare()
+        let photos = [
+            DailyQuestionChatPhoto(data: Data([1]), width: 400, height: 300),
+            DailyQuestionChatPhoto(data: Data([2]), width: 300, height: 400),
+        ]
+
+        #expect(await viewModel.send("Look", photos: photos))
+        let pending = viewModel.messages.last
+        #expect(pending?.photos?.map(\.data) == [Data([1]), Data([2])])
+        #expect(pending?.body == "Look")
+
+        let uploader = ChatVoiceUploader(assetID: UUID())
+        let queued = try #require(
+            try await fixture.pendingStore.inFlightOperations(ownerUserID: fixture.ownerUserID, kind: .sendThreadMessage)
+                .first
+        )
+        let result = try await SendDailyQuestionThreadMessagePendingOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache,
+            mediaUploadService: uploader
+        ).send(queued, context: chatSyncContext(ownerUserID: fixture.ownerUserID))
+
+        #expect(result == .succeeded)
+        #expect(await uploader.uploadedPurposes == [.threadPhoto, .threadPhoto])
+        // Both photos are reserved under the message's own id, which the server requires.
+        let parentIDs = await uploader.uploadedParentIDs
+        #expect(Set(parentIDs).count == 1)
+        #expect(parentIDs.first == pending?.id)
+        #expect(await fixture.gateway.lastMediaAssetIDs?.count == 2)
+    }
+
+    @Test func aMessageWithoutTextPreviewsByItsAttachment() {
+        func summary(mediaType: String?) -> DailyQuestionThreadSummary {
+            DailyQuestionThreadSummary(
+                threadID: UUID(), coupleID: UUID(), instanceID: UUID(), createdAt: .now, updatedAt: .now,
+                lastMessageID: UUID(), lastMessageAt: .now, lastMessageSenderUserID: UUID(), lastMessageBody: nil,
+                lastMessageMediaType: mediaType
+            )
+        }
+
+        #expect(summary(mediaType: "image").lastMessagePreview == String(localized: .dailyChatPhotoPreview))
+        #expect(summary(mediaType: "voice").lastMessagePreview == String(localized: .dailyChatVoicePreview))
+    }
+
+    @Test func theServerCopyOfAVoiceMessageIsMatchedByItsID() {
+        let me = UUID()
+        func pendingVoice(_ id: UUID) -> DailyQuestionChatMessage {
+            DailyQuestionChatMessage(
+                id: id, threadID: nil, instanceID: UUID(), senderUserID: me, body: "",
+                createdAt: Date(timeIntervalSince1970: 1), clientOperationID: UUID(), isSending: true,
+                voice: DailyQuestionChatVoice(data: Data([1]))
+            )
+        }
+        let first = pendingVoice(UUID())
+        let second = pendingVoice(UUID())
+        let remoteSecond = DailyQuestionChatMessage(
+            id: second.id, threadID: UUID(), instanceID: second.instanceID, senderUserID: me, body: "",
+            createdAt: Date(timeIntervalSince1970: 2), clientOperationID: nil, isSending: false,
+            voice: DailyQuestionChatVoice(mediaAssetID: UUID())
+        )
+
+        let claimed = DailyQuestionChatMessage.claimingPending(remote: [remoteSecond], cached: [], pending: [first, second])
+
+        #expect(claimed.first?.clientOperationID == second.clientOperationID)
+    }
+
+    @Test func aMessageWithNoTextPreviewsAsAVoiceMessage() {
+        func summary(body: String?, messageID: UUID?) -> DailyQuestionThreadSummary {
+            DailyQuestionThreadSummary(
+                threadID: UUID(), coupleID: UUID(), instanceID: UUID(), createdAt: .now, updatedAt: .now,
+                lastMessageID: messageID, lastMessageAt: .now, lastMessageSenderUserID: UUID(), lastMessageBody: body
+            )
+        }
+
+        #expect(summary(body: "Hi", messageID: UUID()).lastMessagePreview == "Hi")
+        #expect(summary(body: nil, messageID: UUID()).lastMessagePreview == String(localized: .dailyChatVoicePreview))
+        #expect(summary(body: nil, messageID: nil).lastMessagePreview == nil)
+    }
+
+    @Test func theConversationOpensWithBothAnswersOldestFirst() {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+
+        #expect(viewModel.answers.count == 2)
+        #expect(viewModel.answers.map(\.answeredAt) == viewModel.answers.map(\.answeredAt).sorted())
+        #expect(viewModel.waitingMessage == nil)
+    }
+
+    @Test func thePageKnowsWhenItHasReadThePhonesCopyOfTheChat() async {
+        let fixture = ChatTestFixture()
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        let viewModel = fixture.makeViewModel()
+        #expect(!viewModel.hasReadStore)
+
+        await viewModel.load()
+
+        #expect(viewModel.hasReadStore)
+        #expect(viewModel.messages.isEmpty)
+    }
+
+    @Test func preparingReadsThePhonesCopyWithoutTheNetwork() async {
+        let fixture = ChatTestFixture()
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        await fixture.cache.saveMessages(
+            [fixture.remoteMessage(body: "Saved earlier")],
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id
+        )
+        let viewModel = fixture.makeViewModel()
+
+        await viewModel.prepare()
+
+        #expect(viewModel.hasReadStore)
+        #expect(viewModel.messages.map(\.body) == ["Saved earlier"])
+        #expect(await fixture.gateway.loadCallCount == 0)
+    }
+
+    @Test func aReplyGoesOutWithItsTargetAndClearsTheBanner() async throws {
+        let fixture = ChatTestFixture()
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        await fixture.cache.saveMessages(
+            [fixture.remoteMessage(body: "Earlier")],
+            ownerUserID: fixture.ownerUserID,
+            instanceID: fixture.question.id
+        )
+        let viewModel = fixture.makeViewModel()
+        await viewModel.prepare()
+        let target = try #require(viewModel.messages.first)
+
+        viewModel.setReplyTarget(target)
+        #expect(viewModel.replyTarget?.id == target.id)
+        #expect(await viewModel.send("Answering that"))
+        #expect(viewModel.replyTarget == nil)
+
+        let queued = try #require(
+            try await fixture.pendingStore.inFlightOperations(ownerUserID: fixture.ownerUserID, kind: .sendThreadMessage)
+                .first
+        )
+        _ = try await SendDailyQuestionThreadMessagePendingOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache
+        ).send(queued, context: chatSyncContext(ownerUserID: fixture.ownerUserID))
+        #expect(await fixture.gateway.lastReplyToMessageID == target.id)
+    }
+
+    @Test func aMessageStillSendingCannotBeRepliedTo() {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        let sending = DailyQuestionChatMessage(
+            id: UUID(), threadID: nil, instanceID: fixture.question.id, senderUserID: fixture.ownerUserID,
+            body: "Hi", createdAt: .now, clientOperationID: UUID(), isSending: true
+        )
+
+        viewModel.setReplyTarget(sending)
+
+        #expect(viewModel.replyTarget == nil)
+    }
+
+    @Test func aHiddenPartnerAnswerStaysOutAndThePageSaysWhoItWaitsFor() {
+        let fixture = ChatTestFixture(question: makeChatQuestion(revealed: false))
+        let viewModel = fixture.makeViewModel()
+
+        #expect(viewModel.answers.map(\.isOwnAnswer) == [true])
+        #expect(!viewModel.isChatAvailable)
+        #expect(viewModel.waitingMessage != nil)
+    }
+}
+
+private actor ChatVoiceUploader: DailyAnswerMediaUploading {
+    let assetID: UUID
+    private(set) var uploadedParentIDs: [UUID] = []
+    private(set) var uploadedPurposes: [DailyAnswerMediaPurpose] = []
+
+    init(assetID: UUID) {
+        self.assetID = assetID
+    }
+
+    func uploadMedia(
+        _ media: DailyAnswerUploadMedia,
+        answerID: UUID,
+        coupleID _: UUID,
+        reserveOperation _: SyncClientOperation,
+        finalizeOperation _: SyncClientOperation
+    ) async throws -> UUID {
+        uploadedParentIDs.append(answerID)
+        uploadedPurposes.append(media.purpose)
+        return assetID
+    }
+}
+
+@MainActor
 private final class ChatTestFixture {
     let ownerUserID: UUID
     let partnerUserID: UUID
@@ -1433,7 +1703,9 @@ private actor PausingChatService: DailyQuestionChatServicing {
         instanceID: UUID,
         threadID: UUID?,
         body: String,
+        photos: DailyQuestionChatPhotosPayload?,
         createThread: Bool,
+        replyToMessageID: UUID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionChatMessage {
         try await base.queueMessage(
@@ -1442,7 +1714,9 @@ private actor PausingChatService: DailyQuestionChatServicing {
             instanceID: instanceID,
             threadID: threadID,
             body: body,
+            photos: photos,
             createThread: createThread,
+            replyToMessageID: replyToMessageID,
             operation: operation
         )
     }
@@ -1480,6 +1754,8 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
     private(set) var loadCallCount = 0
     private(set) var createCallCount = 0
     private(set) var sendCallCount = 0
+    private(set) var lastMediaAssetIDs: [UUID]?
+    private(set) var lastReplyToMessageID: UUID?
 
     init(threadID: UUID, messageID: UUID) {
         self.threadID = threadID
@@ -1543,9 +1819,11 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
 
     func createThreadWithMessage(
         _: CreateDailyQuestionThreadMessageOperationPayload,
+        mediaAssetIDs: [UUID],
         operation _: SyncClientOperation
     ) throws -> DailyQuestionThreadMessageResponse {
         createCallCount += 1
+        lastMediaAssetIDs = mediaAssetIDs
         if let sendError { throw sendError }
         if shouldFail { throw ChatTestError.requested }
         return DailyQuestionThreadMessageResponse(threadID: threadID, messageID: messageID)
@@ -1554,9 +1832,13 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
     func sendMessage(
         threadID _: UUID,
         body _: String,
+        mediaAssetIDs: [UUID],
+        replyToMessageID: UUID?,
         operation _: SyncClientOperation
     ) throws -> DailyQuestionThreadMessageResponse {
         sendCallCount += 1
+        lastMediaAssetIDs = mediaAssetIDs
+        lastReplyToMessageID = replyToMessageID
         if let sendError { throw sendError }
         if shouldFail { throw ChatTestError.requested }
         return DailyQuestionThreadMessageResponse(threadID: threadID, messageID: messageID)

@@ -120,6 +120,7 @@ struct MemoriesScreen: View {
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: memoryIDs)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.bottom, PaeoniaSpacing.space32)
+            .paeoniaReadableWidth()
         }
         .refreshable { await viewModel.refresh() }
     }

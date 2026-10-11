@@ -28,12 +28,57 @@ protocol DailyQuestionChatServicing: Actor {
         instanceID: UUID,
         threadID: UUID?,
         body: String,
+        photos: DailyQuestionChatPhotosPayload?,
         createThread: Bool,
+        replyToMessageID: UUID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionChatMessage
+    /// Queues a voice message. The recording travels in the queued operation, so it
+    /// still sends after the app closes or the phone goes offline.
+    func queueVoiceMessage(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        instanceID: UUID,
+        threadID: UUID?,
+        voice: DailyQuestionChatVoicePayload,
+        createThread: Bool,
+        replyToMessageID: UUID?,
+        operation: SyncClientOperation
+    ) async throws -> DailyQuestionChatMessage
+    /// Tells the partner's phone this person is typing in the chat, or has stopped.
+    func setTyping(instanceID: UUID, isTyping: Bool) async
+    /// Tells the server this person has read the thread up to `messageID`, for read receipts.
+    func markThreadReadOnServer(threadID: UUID, messageID: UUID) async
+    /// Follows the partner's typing and read state while the caller iterates.
+    nonisolated func livePresence(instanceID: UUID) -> AsyncStream<DailyChatPresence>
+}
+
+/// The partner's typing and read state in one question's chat.
+nonisolated struct DailyChatPresence: Equatable, Sendable {
+    var partnerTypingAt: Date?
+    var partnerLastReadMessageID: UUID?
+
+    static let none = DailyChatPresence()
 }
 
 extension DailyQuestionChatServicing {
+    func setTyping(instanceID _: UUID, isTyping _: Bool) async {}
+    func markThreadReadOnServer(threadID _: UUID, messageID _: UUID) async {}
+    nonisolated func livePresence(instanceID _: UUID) -> AsyncStream<DailyChatPresence> {
+        AsyncStream { $0.finish() }
+    }
+
+    func queueVoiceMessage(
+        ownerUserID _: UUID,
+        coupleID _: UUID,
+        instanceID _: UUID,
+        threadID _: UUID?,
+        voice _: DailyQuestionChatVoicePayload,
+        createThread _: Bool,
+        replyToMessageID _: UUID?,
+        operation _: SyncClientOperation
+    ) async throws -> DailyQuestionChatMessage { throw DailyQuestionChatServiceError.unavailable }
+
     func chatReadMarks(ownerUserID _: UUID) async -> [UUID: Date] { [:] }
     func markThreadRead(ownerUserID _: UUID, threadID _: UUID, through _: Date) async {}
 
@@ -50,17 +95,29 @@ protocol DailyQuestionChatGateway: Actor {
     nonisolated func liveMessages(threadID: UUID, instanceID: UUID) -> AsyncStream<[DailyQuestionChatMessage]>
     func createThreadWithMessage(
         _ payload: CreateDailyQuestionThreadMessageOperationPayload,
+        mediaAssetIDs: [UUID],
         operation: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse
     func sendMessage(
         threadID: UUID,
         body: String,
+        mediaAssetIDs: [UUID],
+        replyToMessageID: UUID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse
+    func setTyping(instanceID: UUID, isTyping: Bool) async throws
+    func markThreadRead(threadID: UUID, messageID: UUID) async throws
+    nonisolated func livePresence(instanceID: UUID) -> AsyncStream<DailyChatPresence>
 }
 
 extension DailyQuestionChatGateway {
     nonisolated func liveMessages(threadID _: UUID, instanceID _: UUID) -> AsyncStream<[DailyQuestionChatMessage]> {
+        AsyncStream { $0.finish() }
+    }
+
+    func setTyping(instanceID _: UUID, isTyping _: Bool) async throws {}
+    func markThreadRead(threadID _: UUID, messageID _: UUID) async throws {}
+    nonisolated func livePresence(instanceID _: UUID) -> AsyncStream<DailyChatPresence> {
         AsyncStream { $0.finish() }
     }
 }
@@ -217,6 +274,20 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
         await cache.readMarks(ownerUserID: ownerUserID)
     }
 
+    // Typing and read receipts are live hints, so a failed call is dropped rather than
+    // queued. The next keystroke or the next message tries again.
+    func setTyping(instanceID: UUID, isTyping: Bool) async {
+        try? await gateway.setTyping(instanceID: instanceID, isTyping: isTyping)
+    }
+
+    func markThreadReadOnServer(threadID: UUID, messageID: UUID) async {
+        try? await gateway.markThreadRead(threadID: threadID, messageID: messageID)
+    }
+
+    nonisolated func livePresence(instanceID: UUID) -> AsyncStream<DailyChatPresence> {
+        gateway.livePresence(instanceID: instanceID)
+    }
+
     func markThreadRead(ownerUserID: UUID, threadID: UUID, through date: Date) async {
         guard await cache.markRead(ownerUserID: ownerUserID, threadID: threadID, through: date) else { return }
         LocalStoreChanges.post(.dailyChat, ownerUserID: ownerUserID)
@@ -228,7 +299,59 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
         instanceID: UUID,
         threadID: UUID?,
         body: String,
+        photos: DailyQuestionChatPhotosPayload?,
         createThread: Bool,
+        replyToMessageID: UUID?,
+        operation: SyncClientOperation
+    ) async throws -> DailyQuestionChatMessage {
+        try await enqueue(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            instanceID: instanceID,
+            threadID: threadID,
+            body: body,
+            voice: nil,
+            photos: photos,
+            createThread: createThread,
+            replyToMessageID: replyToMessageID,
+            operation: operation
+        )
+    }
+
+    func queueVoiceMessage(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        instanceID: UUID,
+        threadID: UUID?,
+        voice: DailyQuestionChatVoicePayload,
+        createThread: Bool,
+        replyToMessageID: UUID?,
+        operation: SyncClientOperation
+    ) async throws -> DailyQuestionChatMessage {
+        try await enqueue(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            instanceID: instanceID,
+            threadID: threadID,
+            body: "",
+            voice: voice,
+            photos: nil,
+            createThread: createThread,
+            replyToMessageID: replyToMessageID,
+            operation: operation
+        )
+    }
+
+    private func enqueue(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        instanceID: UUID,
+        threadID: UUID?,
+        body: String,
+        voice: DailyQuestionChatVoicePayload?,
+        photos: DailyQuestionChatPhotosPayload?,
+        createThread: Bool,
+        replyToMessageID: UUID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionChatMessage {
         let requestData: Data
@@ -239,7 +362,9 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
                 CreateDailyQuestionThreadMessageOperationPayload(
                     instanceID: instanceID,
                     coupleID: coupleID,
-                    body: body
+                    body: body,
+                    voice: voice,
+                    photos: photos
                 )
             )
         } else {
@@ -249,7 +374,10 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
                     instanceID: instanceID,
                     coupleID: coupleID,
                     threadID: threadID,
-                    body: body
+                    body: body,
+                    voice: voice,
+                    photos: photos,
+                    replyToMessageID: replyToMessageID
                 )
             )
         }
@@ -265,14 +393,18 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
         )
 
         let message = DailyQuestionChatMessage(
-            id: operation.id,
+            id: voice?.messageID ?? photos?.messageID ?? operation.id,
             threadID: threadID,
             instanceID: instanceID,
             senderUserID: ownerUserID,
             body: body,
             createdAt: operation.localCreatedAt,
             clientOperationID: operation.id,
-            isSending: true
+            isSending: true,
+            voice: voice?.pendingVoice,
+            photos: photos?.pendingPhotos,
+            // The first message creates the thread, so there is nothing to reply to yet.
+            replyToMessageID: createThread ? nil : replyToMessageID
         )
         await cache.append(message, ownerUserID: ownerUserID)
         return message
@@ -286,6 +418,9 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
 
         let body: String
         let messageThreadID: UUID?
+        let voice: DailyQuestionChatVoicePayload?
+        let photos: DailyQuestionChatPhotosPayload?
+        var replyToMessageID: UUID?
         switch operation.operationKind {
         case .createDailyQuestionThreadWithMessage:
             guard let payload = try? JSONDecoder().decode(
@@ -294,6 +429,8 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
             ), payload.instanceID == instanceID else { return nil }
             body = payload.body
             messageThreadID = nil
+            voice = payload.voice
+            photos = payload.photos
         case .sendThreadMessage:
             guard let payload = try? JSONDecoder().decode(
                 SendDailyQuestionThreadMessageOperationPayload.self,
@@ -301,19 +438,25 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
             ), payload.instanceID == instanceID else { return nil }
             body = payload.body
             messageThreadID = payload.threadID
+            voice = payload.voice
+            photos = payload.photos
+            replyToMessageID = payload.replyToMessageID
         default:
             return nil
         }
 
         return DailyQuestionChatMessage(
-            id: operation.operation.id,
+            id: voice?.messageID ?? photos?.messageID ?? operation.operation.id,
             threadID: messageThreadID,
             instanceID: instanceID,
             senderUserID: operation.ownerUserID,
             body: body,
             createdAt: operation.operation.localCreatedAt,
             clientOperationID: operation.operation.id,
-            isSending: true
+            isSending: true,
+            voice: voice?.pendingVoice,
+            photos: photos?.pendingPhotos,
+            replyToMessageID: replyToMessageID
         )
     }
 }
@@ -363,14 +506,51 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
         }
     }
 
+    func setTyping(instanceID: UUID, isTyping: Bool) async throws {
+        try await PaeoniaSignedIn.require(isSignedIn)
+        try await client.mutation(
+            "chatPresence:set_daily_chat_typing",
+            args: TypingRequest(instanceID: instanceID, isTyping: isTyping)
+        )
+    }
+
+    func markThreadRead(threadID: UUID, messageID: UUID) async throws {
+        try await PaeoniaSignedIn.require(isSignedIn)
+        try await client.mutation(
+            "chatPresence:mark_thread_read",
+            args: MarkThreadReadRequest(threadID: threadID, messageID: messageID)
+        )
+    }
+
+    nonisolated func livePresence(instanceID: UUID) -> AsyncStream<DailyChatPresence> {
+        AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+            let task = Task { @MainActor in
+                let live = LiveQueryService(transport: ConvexLiveTransport(connection: .shared))
+                let results = live.subscribe(
+                    "chatPresence:get_daily_chat_presence",
+                    args: ["p_instance_id": instanceID.uuidString.lowercased()],
+                    as: PresenceRow.self
+                )
+                for await result in results {
+                    if case let .value(row) = result {
+                        continuation.yield(row.presence)
+                    }
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
     func createThreadWithMessage(
         _ payload: CreateDailyQuestionThreadMessageOperationPayload,
+        mediaAssetIDs: [UUID],
         operation: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse {
         try await PaeoniaSignedIn.require(isSignedIn)
         let rows: [DailyQuestionThreadMessageResponse] = try await client.mutation(
             "threads:create_daily_question_thread_with_message",
-            args: CreateThreadMessageRequest(payload: payload, operation: operation)
+            args: CreateThreadMessageRequest(payload: payload, mediaAssetIDs: mediaAssetIDs, operation: operation)
         )
         guard let response = rows.first else { throw DailyQuestionChatServiceError.missingResponse }
         return response
@@ -379,6 +559,8 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
     func sendMessage(
         threadID: UUID,
         body: String,
+        mediaAssetIDs: [UUID],
+        replyToMessageID: UUID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse {
         try await PaeoniaSignedIn.require(isSignedIn)
@@ -387,6 +569,8 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
             args: SendThreadMessageRequest(
                 threadID: threadID,
                 body: body,
+                mediaAssetIDs: mediaAssetIDs,
+                replyToMessageID: replyToMessageID,
                 operation: operation
             )
         )
@@ -442,7 +626,9 @@ actor EmptyDailyQuestionChatService: DailyQuestionChatServicing {
         instanceID _: UUID,
         threadID _: UUID?,
         body _: String,
+        photos _: DailyQuestionChatPhotosPayload?,
         createThread _: Bool,
+        replyToMessageID _: UUID?,
         operation _: SyncClientOperation
     ) async throws -> DailyQuestionChatMessage { throw DailyQuestionChatServiceError.unavailable }
 }
@@ -452,11 +638,14 @@ private actor UnavailableDailyQuestionChatGateway: DailyQuestionChatGateway {
     func loadMessages(threadID _: UUID, instanceID _: UUID) async throws -> [DailyQuestionChatMessage] { throw DailyQuestionChatServiceError.unavailable }
     func createThreadWithMessage(
         _: CreateDailyQuestionThreadMessageOperationPayload,
+        mediaAssetIDs _: [UUID],
         operation _: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse { throw DailyQuestionChatServiceError.unavailable }
     func sendMessage(
         threadID _: UUID,
         body _: String,
+        mediaAssetIDs _: [UUID],
+        replyToMessageID _: UUID?,
         operation _: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse { throw DailyQuestionChatServiceError.unavailable }
 }
@@ -476,6 +665,7 @@ nonisolated struct ConversationThreadRow: Decodable {
     let lastMessageDeletedAt: Date?
     let lastMessageModerationStatus: String?
     let lastMessageBody: String?
+    let lastMessageMediaType: String?
 
     var dailyQuestionSummary: DailyQuestionThreadSummary? {
         guard kind == "daily_question", deletedAt == nil, moderationStatus == "visible",
@@ -491,7 +681,8 @@ nonisolated struct ConversationThreadRow: Decodable {
             lastMessageID: previewIsVisible ? lastMessageID : nil,
             lastMessageAt: previewIsVisible ? lastMessageAt : nil,
             lastMessageSenderUserID: previewIsVisible ? lastMessageSenderUserID : nil,
-            lastMessageBody: previewIsVisible ? lastMessageBody : nil
+            lastMessageBody: previewIsVisible ? lastMessageBody : nil,
+            lastMessageMediaType: previewIsVisible ? lastMessageMediaType : nil
         )
     }
 
@@ -510,6 +701,7 @@ nonisolated struct ConversationThreadRow: Decodable {
         case lastMessageDeletedAt = "last_message_deleted_at"
         case lastMessageModerationStatus = "last_message_moderation_status"
         case lastMessageBody = "last_message_body"
+        case lastMessageMediaType = "last_message_media_type"
     }
 }
 
@@ -521,18 +713,51 @@ nonisolated private struct ThreadMessageRow: Decodable {
     let createdAt: Date
     let deletedAt: Date?
     let moderationStatus: String
+    let mediaAssetIDs: [UUID]?
+    let media: [MediaRow]?
+    let replyToMessageID: UUID?
+
+    nonisolated struct MediaRow: Decodable {
+        let mediaAssetID: UUID
+        let mediaType: String
+        let width: Int?
+        let height: Int?
+        let durationMs: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case mediaAssetID = "media_asset_id"
+            case mediaType = "media_type"
+            case width
+            case height
+            case durationMs = "duration_ms"
+        }
+    }
 
     func message(instanceID: UUID) -> DailyQuestionChatMessage? {
-        guard deletedAt == nil, moderationStatus == "visible", let body else { return nil }
+        guard deletedAt == nil, moderationStatus == "visible" else { return nil }
+        // A server without media details only ever had voice messages in these chats.
+        let media = media ?? (mediaAssetIDs ?? []).map {
+            MediaRow(mediaAssetID: $0, mediaType: "voice", width: nil, height: nil, durationMs: nil)
+        }
+        let voice = media.first { $0.mediaType == "voice" }.map {
+            DailyQuestionChatVoice(mediaAssetID: $0.mediaAssetID, durationMs: $0.durationMs)
+        }
+        let photos = media.filter { $0.mediaType == "image" }.map {
+            DailyQuestionChatPhoto(mediaAssetID: $0.mediaAssetID, width: $0.width, height: $0.height)
+        }
+        guard body != nil || voice != nil || !photos.isEmpty else { return nil }
         return DailyQuestionChatMessage(
             id: messageID,
             threadID: threadID,
             instanceID: instanceID,
             senderUserID: senderUserID,
-            body: body,
+            body: body ?? "",
             createdAt: createdAt,
             clientOperationID: nil,
-            isSending: false
+            isSending: false,
+            voice: voice,
+            photos: photos.isEmpty ? nil : photos,
+            replyToMessageID: replyToMessageID
         )
     }
 
@@ -544,6 +769,41 @@ nonisolated private struct ThreadMessageRow: Decodable {
         case createdAt = "created_at"
         case deletedAt = "deleted_at"
         case moderationStatus = "moderation_status"
+        case mediaAssetIDs = "media_asset_ids"
+        case media
+        case replyToMessageID = "reply_to_message_id"
+    }
+}
+
+nonisolated private struct TypingRequest: Encodable {
+    let instanceID: UUID
+    let isTyping: Bool
+    enum CodingKeys: String, CodingKey {
+        case instanceID = "p_instance_id"
+        case isTyping = "p_is_typing"
+    }
+}
+
+nonisolated private struct MarkThreadReadRequest: Encodable {
+    let threadID: UUID
+    let messageID: UUID
+    enum CodingKeys: String, CodingKey {
+        case threadID = "p_thread_id"
+        case messageID = "p_message_id"
+    }
+}
+
+nonisolated private struct PresenceRow: Decodable {
+    let partnerTypingAt: Date?
+    let partnerLastReadMessageID: UUID?
+
+    var presence: DailyChatPresence {
+        DailyChatPresence(partnerTypingAt: partnerTypingAt, partnerLastReadMessageID: partnerLastReadMessageID)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case partnerTypingAt = "partner_typing_at"
+        case partnerLastReadMessageID = "partner_last_read_message_id"
     }
 }
 
@@ -555,15 +815,20 @@ nonisolated private struct ThreadMessagesRequest: Encodable {
 nonisolated private struct CreateThreadMessageRequest: Encodable {
     let instanceID: UUID
     let body: String
-    let mediaAssetIDs: [UUID] = []
+    let mediaAssetIDs: [UUID]
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64
     let localCreatedAt: Date
 
-    init(payload: CreateDailyQuestionThreadMessageOperationPayload, operation: SyncClientOperation) {
+    init(
+        payload: CreateDailyQuestionThreadMessageOperationPayload,
+        mediaAssetIDs: [UUID],
+        operation: SyncClientOperation
+    ) {
         instanceID = payload.instanceID
         body = payload.body
+        self.mediaAssetIDs = mediaAssetIDs
         clientOperationID = operation.id
         clientID = operation.clientID
         clientSequence = operation.clientSequence
@@ -584,15 +849,26 @@ nonisolated private struct CreateThreadMessageRequest: Encodable {
 nonisolated private struct SendThreadMessageRequest: Encodable {
     let threadID: UUID
     let body: String
-    let mediaAssetIDs: [UUID] = []
+    let mediaAssetIDs: [UUID]
+    /// Left out of the request when nil, so a plain send matches what servers
+    /// without replies accept.
+    let replyToMessageID: UUID?
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64
     let localCreatedAt: Date
 
-    init(threadID: UUID, body: String, operation: SyncClientOperation) {
+    init(
+        threadID: UUID,
+        body: String,
+        mediaAssetIDs: [UUID],
+        replyToMessageID: UUID?,
+        operation: SyncClientOperation
+    ) {
         self.threadID = threadID
         self.body = body
+        self.mediaAssetIDs = mediaAssetIDs
+        self.replyToMessageID = replyToMessageID
         clientOperationID = operation.id
         clientID = operation.clientID
         clientSequence = operation.clientSequence
@@ -603,6 +879,7 @@ nonisolated private struct SendThreadMessageRequest: Encodable {
         case threadID = "p_thread_id"
         case body = "p_body"
         case mediaAssetIDs = "p_media_asset_ids"
+        case replyToMessageID = "p_reply_to_message_id"
         case clientOperationID = "p_client_operation_id"
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"

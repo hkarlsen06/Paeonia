@@ -5,13 +5,19 @@ struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOpera
 
     private let gateway: any DailyQuestionChatGateway
     private let cache: any DailyQuestionChatCaching
+    private let mediaUploadService: (any DailyAnswerMediaUploading)?
+    private let imageCache: (any DailyAnswerMediaImageCacheWriting)?
 
     init(
         gateway: any DailyQuestionChatGateway,
-        cache: any DailyQuestionChatCaching
+        cache: any DailyQuestionChatCaching,
+        mediaUploadService: (any DailyAnswerMediaUploading)? = nil,
+        imageCache: (any DailyAnswerMediaImageCacheWriting)? = nil
     ) {
         self.gateway = gateway
         self.cache = cache
+        self.mediaUploadService = mediaUploadService
+        self.imageCache = imageCache
     }
 
     func send(
@@ -25,10 +31,18 @@ struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOpera
             CreateDailyQuestionThreadMessageOperationPayload.self,
             from: data
         )
+        let mediaAssetIDs = try await uploadAttachments(
+            voice: payload.voice,
+            photos: payload.photos,
+            coupleID: payload.coupleID,
+            with: mediaUploadService,
+            imageCache: imageCache
+        )
         let response: DailyQuestionThreadMessageResponse
         do {
             response = try await gateway.createThreadWithMessage(
                 payload,
+                mediaAssetIDs: mediaAssetIDs,
                 operation: operation.operation
             )
         } catch {
@@ -86,13 +100,19 @@ struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperati
 
     private let gateway: any DailyQuestionChatGateway
     private let cache: any DailyQuestionChatCaching
+    private let mediaUploadService: (any DailyAnswerMediaUploading)?
+    private let imageCache: (any DailyAnswerMediaImageCacheWriting)?
 
     init(
         gateway: any DailyQuestionChatGateway,
-        cache: any DailyQuestionChatCaching
+        cache: any DailyQuestionChatCaching,
+        mediaUploadService: (any DailyAnswerMediaUploading)? = nil,
+        imageCache: (any DailyAnswerMediaImageCacheWriting)? = nil
     ) {
         self.gateway = gateway
         self.cache = cache
+        self.mediaUploadService = mediaUploadService
+        self.imageCache = imageCache
     }
 
     func send(
@@ -112,11 +132,20 @@ struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperati
             return .retry(after: nil)
         }
 
+        let mediaAssetIDs = try await uploadAttachments(
+            voice: payload.voice,
+            photos: payload.photos,
+            coupleID: payload.coupleID,
+            with: mediaUploadService,
+            imageCache: imageCache
+        )
         let response: DailyQuestionThreadMessageResponse
         do {
             response = try await gateway.sendMessage(
                 threadID: threadID,
                 body: payload.body,
+                mediaAssetIDs: mediaAssetIDs,
+                replyToMessageID: payload.replyToMessageID,
                 operation: operation.operation
             )
         } catch {
@@ -140,6 +169,58 @@ struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperati
     }
 }
 
+/// Uploads a message's photos, or its voice recording, and returns the media asset ids
+/// in order. The fixed operations make a retry pick up the same uploads. Upload
+/// errors throw, so the operation retries later.
+private func uploadAttachments(
+    voice: DailyQuestionChatVoicePayload?,
+    photos: DailyQuestionChatPhotosPayload?,
+    coupleID: UUID,
+    with uploader: (any DailyAnswerMediaUploading)?,
+    imageCache: (any DailyAnswerMediaImageCacheWriting)?
+) async throws -> [UUID] {
+    guard voice != nil || photos != nil else { return [] }
+    guard let uploader else { throw DailyQuestionChatServiceError.unavailable }
+    var assetIDs: [UUID] = []
+    for photo in photos?.items ?? [] {
+        let assetID = try await uploader.uploadMedia(
+            DailyAnswerUploadMedia(
+                data: photo.data,
+                purpose: .threadPhoto,
+                mimeType: "image/jpeg",
+                fileExtension: "jpg",
+                width: photo.width,
+                height: photo.height
+            ),
+            answerID: photos?.messageID ?? UUID(),
+            coupleID: coupleID,
+            reserveOperation: photo.reserveOperation,
+            finalizeOperation: photo.finalizeOperation
+        )
+        assetIDs.append(assetID)
+        // The sender's own photo then shows from this phone, with no download or flash
+        // when the server's copy of the message replaces the local one.
+        await imageCache?.cacheImageData(photo.data, for: assetID)
+        _ = await DailyChatPhotoLayout.decodeAndCache(photo.data, key: "chat-\(assetID.uuidString)")
+    }
+    if let voice {
+        assetIDs.append(try await uploader.uploadMedia(
+            DailyAnswerUploadMedia(
+                data: voice.data,
+                purpose: .voice,
+                mimeType: DailyChatVoiceRecording.mimeType,
+                fileExtension: DailyChatVoiceRecording.fileExtension,
+                durationMs: voice.durationMs
+            ),
+            answerID: voice.messageID,
+            coupleID: coupleID,
+            reserveOperation: voice.reserveOperation,
+            finalizeOperation: voice.finalizeOperation
+        ))
+    }
+    return assetIDs
+}
+
 /// Server rejections that sending again cannot fix. The Convex client puts the
 /// server's message in the error's description. Everything else, such as a lost
 /// connection, stays retryable.
@@ -150,7 +231,9 @@ private nonisolated func isPermanentChatFailure(_ error: any Error) -> Bool {
         "daily question thread requires both partners",
         "daily question instance was not found",
         "message sender must be an active visible thread member",
-        "thread message body is too long"
+        "thread message body is too long",
+        "reply target must be in the same thread",
+        "reply target is not available"
     ].contains { description.contains($0) }
 }
 

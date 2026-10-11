@@ -320,6 +320,9 @@ describe("send_thread_message", () => {
     const messages = await couple.second.as.query(api.threads.get_thread_messages, { p_thread_id: threadId });
     const message = messages.find((item: { message_id: string }) => item.message_id === a.parentId);
     expect(message).toMatchObject({ body: null, media_asset_ids: [a.assetId] });
+    expect(message!.media).toEqual([
+      { media_asset_id: a.assetId, media_type: "image", width: expect.anything(), height: expect.anything(), duration_ms: null },
+    ]);
     expect(message!.media_states).toEqual([
       {
         media_asset_id: a.assetId,
@@ -332,6 +335,44 @@ describe("send_thread_message", () => {
     ]);
     const [url] = await couple.second.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: a.assetId });
     expect(url.signed_url).toContain("/media?asset=");
+  });
+
+  test("a reply points at an earlier message in the same thread", async () => {
+    const t = newTest();
+    const { couple, threadId } = await thread(t);
+    const [first] = await send(couple.first, threadId, { p_body: "question" });
+    const [reply] = await send(couple.second, threadId, { p_body: "answer", p_reply_to_message_id: first.message_id.toUpperCase() });
+    const rows = await couple.first.as.query(api.threads.get_thread_messages, { p_thread_id: threadId });
+    const replyRow = rows.find((row: { message_id: string }) => row.message_id === reply.message_id);
+    expect(replyRow?.reply_to_message_id).toBe(first.message_id);
+  });
+
+  test("a reply to another thread's message or a removed message is refused", async () => {
+    const t = newTest();
+    const { couple, threadId } = await thread(t);
+    const otherMemory = await createMemory(couple.first);
+    const [{ message_id: elsewhere }] = await memoryThread(couple.first, otherMemory);
+    expect(await failure(send(couple.first, threadId, { p_reply_to_message_id: elsewhere }))).toEqual({
+      code: "23514",
+      message: "reply target must be in the same thread",
+    });
+    const [target] = await send(couple.first, threadId, { p_body: "soon hidden" });
+    await t.run(async (ctx) => {
+      const row = await ctx.db.query("thread_messages").withIndex("by_uuid", (q) => q.eq("id", target.message_id)).unique();
+      await ctx.db.patch(row!._id, { moderation_status: "hidden" });
+    });
+    expect(await failure(send(couple.second, threadId, { p_reply_to_message_id: target.message_id }))).toEqual({
+      code: "23514",
+      message: "reply target is not available",
+    });
+  });
+
+  test("a plain send replays the same way it did before replies existed", async () => {
+    const t = newTest();
+    const { couple, threadId } = await thread(t);
+    const args = { ...op(), p_thread_id: threadId, p_body: "once" };
+    const first = await couple.first.as.mutation(api.threads.send_thread_message, args);
+    expect(await couple.first.as.mutation(api.threads.send_thread_message, { ...args, p_reply_to_message_id: null })).toEqual(first);
   });
 
   test("strangers and former partners cannot send", async () => {
@@ -417,6 +458,7 @@ describe("reads", () => {
       last_message_deleted_at: null,
       last_message_moderation_status: "visible",
       last_message_body: "latest",
+      last_message_media_type: null,
     });
     expect(rows[2]).toMatchObject({ kind: "daily_question", daily_question_instance_id: instanceId, memory_id: null, last_message_body: "daily hello" });
     expect(rows[0]).toMatchObject({ last_message_id: null, last_message_at: null, last_message_body: null });
@@ -441,11 +483,13 @@ describe("reads", () => {
       message_id,
       sender_user_id: couple.first.userId,
       body: "first",
+      reply_to_message_id: null,
       created_at: expect.any(String),
       edited_at: null,
       deleted_at: null,
       moderation_status: "visible",
       media_asset_ids: [],
+      media: [],
       media_states: [],
     });
     expect(rows[1]).toMatchObject({ body: null, moderation_status: "hidden" });

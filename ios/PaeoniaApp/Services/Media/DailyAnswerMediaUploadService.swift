@@ -7,10 +7,12 @@ import Foundation
 nonisolated enum DailyAnswerMediaPurpose: String, Codable, Sendable, Equatable {
     case photo = "daily_answer_media"
     case voice = "voice_note"
+    /// A photo in a question chat message.
+    case threadPhoto = "thread_media"
 
     var mediaType: String {
         switch self {
-        case .photo:
+        case .photo, .threadPhoto:
             "image"
         case .voice:
             "voice"
@@ -68,11 +70,16 @@ nonisolated enum DailyAnswerMediaUploadError: Error, Equatable, Sendable {
 /// Uploads daily-answer media through the same reserve → storage → finalize path the
 /// profile photo uses, but scoped to the `daily_answer_media` parent so the asset
 /// links to a specific answer.
+///
+/// Question chats reuse it for voice messages with the `thread_message_media` parent.
+/// Then `answerID` is the id the message will get.
 actor LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
     private let client: PaeoniaConvexClient
+    private let reservedParentKind: String
 
-    init(client: PaeoniaConvexClient) {
+    init(client: PaeoniaConvexClient, reservedParentKind: String = "daily_answer_media") {
         self.client = client
+        self.reservedParentKind = reservedParentKind
     }
 
     static func live() throws -> LiveDailyAnswerMediaUploadService {
@@ -90,6 +97,7 @@ actor LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
             "media:create_pending_media_upload",
             args: ReserveDailyAnswerMediaRequest(
                 operation: reserveOperation,
+                reservedParentKind: reservedParentKind,
                 answerID: answerID,
                 coupleID: coupleID,
                 purpose: media.purpose,
@@ -113,6 +121,7 @@ actor LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
                 storageID: storageID,
                 reservedByClientOperationID: reserveOperation.id,
                 operation: finalizeOperation,
+                reservedParentKind: reservedParentKind,
                 answerID: answerID,
                 media: media
             )
@@ -130,7 +139,7 @@ nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
     let clientID: UUID
     let clientSequence: Int64
     let localCreatedAt: Date
-    let reservedParentKind = "daily_answer_media"
+    let reservedParentKind: String
     let reservedParentID: UUID
     let coupleID: UUID
     let uploadPurpose: String
@@ -139,6 +148,7 @@ nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
 
     init(
         operation: SyncClientOperation,
+        reservedParentKind: String = "daily_answer_media",
         answerID: UUID,
         coupleID: UUID,
         purpose: DailyAnswerMediaPurpose,
@@ -148,6 +158,7 @@ nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
         clientID = operation.clientID
         clientSequence = operation.clientSequence
         localCreatedAt = operation.localCreatedAt
+        self.reservedParentKind = reservedParentKind
         reservedParentID = answerID
         self.coupleID = coupleID
         uploadPurpose = purpose.rawValue
@@ -179,7 +190,7 @@ nonisolated struct FinalizeDailyAnswerMediaRequest: Encodable {
     let bucket: String
     let storagePath: String
     let storageID: String
-    let reservedParentKind = "daily_answer_media"
+    let reservedParentKind: String
     let reservedParentID: UUID
     let uploadPurpose: String
     let mediaType: String
@@ -195,6 +206,7 @@ nonisolated struct FinalizeDailyAnswerMediaRequest: Encodable {
         storageID: String,
         reservedByClientOperationID: UUID,
         operation: SyncClientOperation,
+        reservedParentKind: String = "daily_answer_media",
         answerID: UUID,
         media: DailyAnswerUploadMedia
     ) {
@@ -207,6 +219,7 @@ nonisolated struct FinalizeDailyAnswerMediaRequest: Encodable {
         localCreatedAt = operation.localCreatedAt
         bucket = reservation.bucket
         storagePath = reservation.storagePath
+        self.reservedParentKind = reservedParentKind
         reservedParentID = answerID
         uploadPurpose = media.purpose.rawValue
         mediaType = media.purpose.mediaType

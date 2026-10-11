@@ -225,7 +225,25 @@ final class DailyChallengeViewModel {
         )
     }
 
+    /// The chat screen to open next, already read from this phone by `prepareChat(for:)`.
+    @ObservationIgnored private var preparedChat: DailyQuestionChatViewModel?
+
+    /// Reads a question's chat before its screen opens, so the screen's first frame
+    /// is complete. Callers await this, then open the screen.
+    func prepareChat(for question: DailyChallengeQuestion) async {
+        let chat = newChatViewModel(question: question)
+        await chat.prepare()
+        preparedChat = chat
+    }
+
     func makeChatViewModel(question: DailyChallengeQuestion) -> DailyQuestionChatViewModel {
+        if let preparedChat, preparedChat.question.id == question.id {
+            return preparedChat
+        }
+        return newChatViewModel(question: question)
+    }
+
+    private func newChatViewModel(question: DailyChallengeQuestion) -> DailyQuestionChatViewModel {
         DailyQuestionChatViewModel(
             question: question,
             participants: participants,
@@ -240,7 +258,7 @@ final class DailyChallengeViewModel {
     }
 
     func threadPreview(for instanceID: UUID) -> String? {
-        threadSummariesByInstanceID[instanceID]?.lastMessageBody
+        threadSummariesByInstanceID[instanceID]?.lastMessagePreview
     }
 
     func hasUnreadChat(for instanceID: UUID) -> Bool {
@@ -259,6 +277,12 @@ final class DailyChallengeViewModel {
     /// The question text for a chat, when today's questions include it.
     func questionPrompt(for instanceID: UUID) -> String? {
         snapshot.questions.first(where: { $0.id == instanceID })?.prompt
+    }
+
+    /// Today's copy of a question opened earlier, so an open page sees the partner's
+    /// answer arrive. Older questions are not in today's snapshot and stay as they were.
+    func latestQuestion(_ question: DailyChallengeQuestion) -> DailyChallengeQuestion {
+        snapshot.questions.first(where: { $0.id == question.id }) ?? question
     }
 
     func refreshThreadSummaries() async {

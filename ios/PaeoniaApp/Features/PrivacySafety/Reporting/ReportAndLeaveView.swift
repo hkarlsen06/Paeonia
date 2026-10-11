@@ -67,7 +67,7 @@ struct ReportAndLeaveView: View {
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
             .padding(.bottom, PaeoniaSpacing.space40)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .paeoniaReadableWidth(alignment: .leading)
         }
         .scrollBounceBehavior(.basedOnSize)
         .background(.paeoniaBackgroundPrimary)

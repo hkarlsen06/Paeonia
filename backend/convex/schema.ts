@@ -1194,6 +1194,34 @@ export default defineSchema({
     .index("by_apple_product_id", ["apple_product_id"])
     .index("by_is_active_kind", ["is_active", "kind"]),
 
+  // New in Convex: how far each person has read a thread, for read receipts. One row per
+  // (thread_id, user_id). FK: thread_id -> conversation_threads cascade; user_id -> users cascade.
+  thread_read_states: defineTable({
+    thread_id: uuid,
+    user_id: uuid,
+    last_read_message_id: uuid,
+    // created_at of the last read message, so a later mark can only move forward.
+    last_read_message_created_at: ts,
+    read_at: ts,
+  })
+    .index("by_thread_id_user_id", ["thread_id", "user_id"])
+    .index("by_user_id", ["user_id"]),
+
+  // New in Convex: who is typing in a daily question chat. Keyed by the instance, so typing
+  // shows before the first message creates the thread. One row per (instance_id, user_id),
+  // removed when typing stops; readers treat a row older than a few seconds as stopped.
+  // FK: instance_id -> daily_question_instances cascade; couple_id -> couples cascade; user_id -> users cascade.
+  daily_chat_typing: defineTable({
+    instance_id: uuid,
+    couple_id: uuid,
+    user_id: uuid,
+    typing_at: ts,
+  })
+    .index("by_instance_id_user_id", ["instance_id", "user_id"])
+    .index("by_couple_id", ["couple_id"])
+    .index("by_user_id", ["user_id"])
+    .index("by_typing_at", ["typing_at"]),
+
   // FK: message_id -> thread_messages cascade; media_asset_id -> media_assets cascade.
   // (message_id, media_asset_id) and (message_id, sort_order) are unique.
   thread_message_media: defineTable({
@@ -1205,12 +1233,14 @@ export default defineSchema({
     .index("by_message_id_sort_order", ["message_id", "sort_order"])
     .index("by_media_asset_id", ["media_asset_id"]),
 
-  // FK: thread_id -> conversation_threads cascade
+  // FK: thread_id -> conversation_threads cascade. reply_to_message_id -> thread_messages
+  // in the same thread, kept when that message is removed (the reader hides its text).
   thread_messages: defineTable({
     id: uuid,
     thread_id: uuid,
     sender_user_id: uuid,
     body: optString,
+    reply_to_message_id: optUuid,
     created_at: ts,
     updated_at: ts,
     edited_at: optTs,

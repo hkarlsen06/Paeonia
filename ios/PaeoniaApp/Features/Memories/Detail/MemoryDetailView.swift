@@ -89,6 +89,7 @@ struct MemoryDetailView: View {
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space32)
+            .paeoniaReadableWidth()
         }
     }
 

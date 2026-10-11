@@ -157,7 +157,7 @@ final class DailyChallengeHistoryViewModel: Identifiable, PresentationReadinessP
     }
 
     func threadPreview(for instanceID: UUID) -> String? {
-        threadSummariesByInstanceID[instanceID]?.lastMessageBody
+        threadSummariesByInstanceID[instanceID]?.lastMessagePreview
     }
 
     func refreshThreadSummaries() async {

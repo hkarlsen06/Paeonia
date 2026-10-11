@@ -45,6 +45,7 @@ struct DailyPartnerAnswerFlow: View {
                     .transition(.opacity)
             }
         }
+        .paeoniaReadableWidth()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Let the plum bleed under the keyboard's safe-area region too, so the window's
         // black doesn't show through the keyboard's rounded top corners.

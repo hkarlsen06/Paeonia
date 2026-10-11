@@ -3,39 +3,102 @@ export const marketingNo = {
     title: 'Paeonia - Føl dere nær hverandre mellom besøk',
     description: 'Paeonia er en privat app for par som vil føle seg nær hverandre mellom besøk.',
     ogTitle: 'Paeonia - Føl dere nær hverandre mellom besøk',
-    ogDescription: 'Ta vare på små notater, felles øyeblikk, tegninger og nedtellinger på ett privat sted.',
+    ogDescription: 'Daglige spørsmål, felles minner, tegninger og nedtellinger på ett privat sted.',
     ogImageAlt: 'Paeonia, et privat sted for dere to',
   },
   hero: {
     brandName: 'Paeonia',
-    navPrivacy: 'Personvern',
-    navSupport: 'Hjelp',
-    eyebrow: 'Laget for dagene mellom besøk',
     title: 'Føl dere nær hverandre mellom besøk',
+    titleEmphasis: 'nær',
     description:
-      'Ta vare på små notater, tegninger, minner og nedtellinger som gjør avstanden litt lettere. Ett privat sted, bare for dere to.',
+      'En privat app for dere to. Svar på noen spørsmål hver dag, ta vare på minnene og tell ned til neste gang dere ses.',
     primaryCta: 'Jeg er interessert',
-    secondaryCta: 'Spørsmål',
-    trustNote:
-      'Den ene partneren sender en lenke til den andre. Det finnes ikke personsøk, folk å bla gjennom eller offentlige profiler.',
-    screenshotAlt: 'Paeonia-appen med et privat fellesrom for et par.',
-    preview: {
-      appLabel: 'I dag',
-      partnerName: 'Mina og Elias',
-      checkInLabel: 'Kveldssjekk',
-      checkInText: 'Et lite spørsmål dere begge kan svare på når dagen roer seg.',
-      drawingLabel: 'Felles tegning',
-      memoryDate: '47 dager fra hverandre',
-      memoryTitle: 'Neste besøk i mars',
-      widgetLabel: 'Widget på hjemskjermen',
-      widgetText: 'Et lite tegn på at partneren din tenkte på deg.',
-    },
+    secondaryCta: 'Se inni appen',
+    note: 'Kommer snart til iPhone',
+    screenshotAlt:
+      'Hjemskjermen i Paeonia med kart over hvor dere er, dagens spørsmål, nedtelling til neste besøk og en felles tegning.',
+  },
+  features: {
+    eyebrow: 'Inni appen',
+    items: [
+      {
+        label: 'Spørsmål',
+        title: 'Tre små spørsmål hver dag',
+        description:
+          'Paeonia velger tre spørsmål til deg hver dag. Skriv svaret, send en talemelding eller legg ved et bilde.',
+        points: [
+          'Svaret til partneren din åpnes når du har svart selv',
+          'Snakk om et svar i en egen chat',
+          'Se tilbake på alle svarene dere har delt',
+        ],
+        screens: [
+          {
+            src: 'questions',
+            alt: 'Dagens spørsmål i Paeonia, med svarene fra begge om lydene rundt dem.',
+          },
+        ],
+      },
+      {
+        label: 'Minner',
+        title: 'Ta vare på besøkene dere vil huske',
+        description:
+          'Lagre en dag med bilder og dato. Dere skriver hvert deres notat, så hvert minne har begge sider.',
+        points: ['Begge kan legge til bilder', 'Sortert etter måned, nyeste først'],
+        screens: [
+          {
+            src: 'memories',
+            alt: 'En tidslinje med felles minner og bilder fra en helg borte, en kafé og en konsert.',
+          },
+          {
+            src: 'memory',
+            alt: 'Ett minne med et bilde av en fjord og et notat fra hver av dem.',
+          },
+        ],
+      },
+    ],
+  },
+  extras: {
+    heading: 'Også i Paeonia',
+    items: [
+      {
+        title: 'Nedtelling',
+        description: 'Se hvor mange dager det er til dere ses, og hvor lenge dere har vært sammen.',
+      },
+      {
+        title: 'Felles tegning',
+        description: 'Tegn noe lite. Det dukker opp i widgeten på hjemskjermen til partneren din.',
+      },
+      {
+        title: 'Avstand',
+        description: 'Når dere begge deler posisjon, ser dere hvor langt det er mellom dere.',
+      },
+    ],
+  },
+  privacy: {
+    eyebrow: 'Personvern',
+    heading: 'Bare dere to',
+    description: 'Paeonia er laget rundt ett forhold. Andre kan ikke finne dere i appen.',
+    items: [
+      {
+        title: 'Ingen offentlige profiler',
+        description: 'Det finnes ingen følgere, ikke personsøk og ingen foreslåtte personer.',
+      },
+      {
+        title: 'Koblet sammen med én invitasjon',
+        description: 'Én av dere sender en invitasjonslenke til den andre. Lenken brukes bare til å koble dere sammen.',
+      },
+      {
+        title: 'Ett abonnement for begge',
+        description: 'Planen er at én betalende partner låser opp Paeonia for begge.',
+      },
+    ],
+    link: 'Les personvernerklæringen',
   },
   faq: {
     eyebrow: 'Spørsmål',
-    heading: 'Før lansering',
-    description:
-      'Noen enkle svar om hva Paeonia er, hvordan invitasjoner fungerer og hvordan forholdet deres holdes privat.',
+    heading: 'Spørsmål og svar',
+    description: 'Korte svar om hva Paeonia er, hvordan dere kobles sammen og hva det koster.',
+    contactLink: 'Spør oss om noe annet',
     items: [
       {
         question: 'Kan vi bruke Paeonia nå?',
@@ -72,43 +135,14 @@ export const marketingNo = {
         ],
       },
       {
-        question: 'Hva kan vi ha i den?',
-        answers: [
-          'Små daglige sjekker, felles tegninger, minner fra besøk, og nedtellinger til neste gang dere møtes.',
-        ],
+        question: 'Finnes Paeonia for Android?',
+        answers: ['Nei. Foreløpig finnes Paeonia bare for iPhone.'],
       },
     ],
-  },
-  socialProof: {
-    eyebrow: 'Laget for to',
-    heading: 'Hvorfor det føles annerledes',
-    description: 'Paeonia er formet rundt ett forhold: privat, personlig og lett å komme tilbake til.',
-    items: [
-      {
-        title: 'Bare dere to',
-        description:
-          'Ingen offentlige profiler, ingen personsøk, ingen publikum. Rommet tilhører bare forholdet deres.',
-      },
-      {
-        title: 'Små ritualer, uten press',
-        description:
-          'Små spørsmål og felles øyeblikk gjør avstanden litt lettere, uten press eller skyldfølelse.',
-      },
-      {
-        title: 'Deres å beholde',
-        description: 'Notater, tegninger og minner blir på ett sted i stedet for å forsvinne i en chat.',
-      },
-    ],
-  },
-  ctaPrimary: {
-    heading: 'Bygget varsomt for private forhold',
-    description:
-      'Personvern er en del av Paeonia fra første versjon. Les hvordan opplysningene dine behandles, og hvordan du kan kontakte oss med spørsmål.',
-    button: 'Les om personvern',
   },
   contact: {
     heading: 'Interessert i Paeonia?',
-    description: 'Send oss en melding hvis du vil ha nytt om lanseringen eller har et spørsmål.',
+    description: 'Send oss en melding hvis du vil vite når appen kommer, eller hvis du har et spørsmål.',
     button: 'Send en melding',
     emailSubject: 'Interessert i Paeonia',
     emailBody: 'Hei!\n\nJeg er interessert i Paeonia og vil gjerne vite mer.',

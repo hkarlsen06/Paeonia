@@ -11,6 +11,7 @@
 import type * as access from "../access.js";
 import type * as accountDeletion from "../accountDeletion.js";
 import type * as catalog from "../catalog.js";
+import type * as chatPresence from "../chatPresence.js";
 import type * as crons from "../crons.js";
 import type * as daily from "../daily.js";
 import type * as http from "../http.js";
@@ -79,6 +80,7 @@ declare const fullApi: ApiFromModules<{
   access: typeof access;
   accountDeletion: typeof accountDeletion;
   catalog: typeof catalog;
+  chatPresence: typeof chatPresence;
   crons: typeof crons;
   daily: typeof daily;
   http: typeof http;

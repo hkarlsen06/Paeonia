@@ -5,6 +5,9 @@ import { internal } from "./_generated/api";
 // comment per job naming the pg_cron job or SQL function it replaces.
 const crons = cronJobs();
 
+// New in Convex: removes typing rows left behind by an app that closed mid-typing. See chatPresence.ts.
+crons.interval("cleanup-stale-daily-chat-typing", { minutes: 10 }, internal.chatPresence.cleanup_stale_daily_chat_typing, {});
+
 // pg_cron 'paeonia-push-notification-drain' (internal.run_scheduled_push_notification_jobs).
 crons.interval(
   "paeonia-push-notification-drain",

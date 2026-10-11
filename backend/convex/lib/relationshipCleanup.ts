@@ -95,6 +95,13 @@ export async function cleanupCoupleContent(
   for (const answer of await coupleAnswers(ctx, instances)) {
     await ctx.db.patch(answer._id, withUpdatedAt(softDeleteFields(answer, now)));
   }
+  // Typing rows only matter while both people chat, so they go right away.
+  for (const row of await ctx.db
+    .query("daily_chat_typing")
+    .withIndex("by_couple_id", (q) => q.eq("couple_id", couple.id))
+    .collect()) {
+    await ctx.db.delete(row._id);
+  }
 
   const threads = await ctx.db
     .query("conversation_threads")
@@ -254,6 +261,12 @@ export async function purgeCoupleContent(
       }
       await tombstoneReportTargets(ctx, "thread_message", message.id);
       await remove(message);
+    }
+    for (const readState of await ctx.db
+      .query("thread_read_states")
+      .withIndex("by_thread_id_user_id", (q) => q.eq("thread_id", thread.id))
+      .collect()) {
+      await remove(readState);
     }
     await remove(thread);
   }

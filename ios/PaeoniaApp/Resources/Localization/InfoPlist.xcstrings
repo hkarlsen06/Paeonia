@@ -81,18 +81,17 @@
     },
     "NSMicrophoneUsageDescription" : {
       "comment" : "Privacy - Microphone Usage Description",
-      "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Paeonia uses your microphone so you can record a voice answer to the daily question."
+            "state" : "translated",
+            "value" : "Paeonia uses your microphone so you can record voice answers and voice messages for your partner."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia bruker mikrofonen din så du kan spille inn et lydsvar på dagens spørsmål."
+            "value" : "Paeonia bruker mikrofonen din så du kan spille inn lydsvar og talemeldinger til partneren din."
           }
         }
       }

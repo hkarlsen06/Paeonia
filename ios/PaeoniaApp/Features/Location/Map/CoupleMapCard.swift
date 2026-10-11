@@ -88,14 +88,45 @@ struct CoupleMapCard: View {
         }
     }
 
+    private static func areTogether(
+        current: LocationPoint,
+        partner: LocationPoint,
+        partnerWasStaleAtLastRefresh: Bool
+    ) -> Bool {
+        CoupleMapFraming.areTogether(
+            current: current.coordinate,
+            currentCapturedAt: current.capturedAt,
+            partner: partner.coordinate,
+            partnerCapturedAt: partner.capturedAt,
+            partnerIsStale: LocationDisplayRecency.resolve(
+                capturedAt: partner.capturedAt,
+                now: .now,
+                wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh
+            ) == .stale
+        )
+    }
+
+    private static func distanceAccessibilityText(
+        current: LocationPoint,
+        partner: LocationPoint,
+        isTogether: Bool
+    ) -> String {
+        guard !isTogether else {
+            return String(localized: .homeMapTogetherAccessibility)
+        }
+        let distanceText = CoupleMapSnapshot.formattedDistance(from: current.coordinate, to: partner.coordinate)
+        return String(localized: .homeMapDistanceAccessibility(distanceText))
+    }
+
     private func readyContent(
         current: LocationPoint,
         partner: LocationPoint,
         partnerWasStaleAtLastRefresh: Bool
     ) -> some View {
-        let distanceText = CoupleMapSnapshot.formattedDistance(
-            from: current.coordinate,
-            to: partner.coordinate
+        let isTogether = Self.areTogether(
+            current: current,
+            partner: partner,
+            partnerWasStaleAtLastRefresh: partnerWasStaleAtLastRefresh
         )
 
         let recordedText = PartnerLocationRecordedStatus.accessibilityText(
@@ -116,6 +147,7 @@ struct CoupleMapCard: View {
                 partnerCoordinate: partner.coordinate,
                 partnerCapturedAt: partner.capturedAt,
                 partnerWasStaleAtLastRefresh: partnerWasStaleAtLastRefresh,
+                isTogether: isTogether,
                 onLongPress: {
                     openInAppleMaps(current: current, partner: partner)
                 }
@@ -124,7 +156,7 @@ struct CoupleMapCard: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.homeMapAccessibilityLabel(partnerName)))
         .accessibilityValue(Text(verbatim: [
-            String(localized: .homeMapDistanceAccessibility(distanceText)),
+            Self.distanceAccessibilityText(current: current, partner: partner, isTogether: isTogether),
             String(localized: recordedText),
         ].joined(separator: ", ")))
         .accessibilityHint(Text(.homeMapOpenHint))

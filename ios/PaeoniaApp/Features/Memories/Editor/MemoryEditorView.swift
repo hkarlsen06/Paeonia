@@ -130,6 +130,7 @@ struct MemoryEditorView: View {
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space24)
+            .paeoniaReadableWidth()
         }
         .scrollBounceBehavior(.basedOnSize)
     }
@@ -219,6 +220,7 @@ struct MemoryEditorView: View {
         .animation(PaeoniaMotion.stateChange, value: uploadProgress)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space12)
+        .paeoniaReadableWidth()
         .background(.paeoniaBackgroundPrimary)
     }
 

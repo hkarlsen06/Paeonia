@@ -1,46 +1,67 @@
 import ExyteChat
 import SwiftUI
 
+/// A question's own page, laid out like a group chat. Paeonia sends the question,
+/// then both answers follow as bubbles from the people who wrote them, then the
+/// conversation about them. Until both answers are revealed the page shows what is
+/// there and says who it is waiting for, with no composer.
+///
+/// The chat follows Tidex's friends chat: the same ExyteChat setup, row gestures
+/// (swipe to reply, swipe left for times, swipe right to go back), long-press menu,
+/// and a composer of its own. The rows come from a cached `DailyChatProjection`, and
+/// ExyteChat redraws only rows whose content changed, so scrolling stays smooth.
 struct DailyQuestionChatView: View {
+    private static let bottomComposerClearance: CGFloat = 14
+    private static let highlightDuration: Duration = .seconds(1.6)
+
     @State private var viewModel: DailyQuestionChatViewModel
+    let question: DailyChallengeQuestion
     let participants: DailyChallengeParticipants
+    var onReport: ((PrivacyReportTarget) -> Void)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var photoViewer: PaeoniaImageViewerSelection?
+    @State private var projectionStore = DailyChatProjectionStore()
+    @State private var timestampRevealOffset: CGFloat = 0
+    @State private var highlightedRowID: String?
     @State private var showsSendingReassurance = false
+    /// Where the list scrolls next. Nil keeps the list where it is.
+    @State private var scrollTarget: ScrollToParams?
+    @State private var didApplyOpeningScroll = false
 
     init(
         viewModel: DailyQuestionChatViewModel,
-        participants: DailyChallengeParticipants
+        question: DailyChallengeQuestion,
+        participants: DailyChallengeParticipants,
+        onReport: ((PrivacyReportTarget) -> Void)? = nil
     ) {
         _viewModel = State(initialValue: viewModel)
+        self.question = question
         self.participants = participants
+        self.onReport = onReport
     }
 
     var body: some View {
-        ChatView(
-            messages: exyteMessages,
-            chatType: .conversation,
-            didSendMessage: { draft async -> Bool in
-                // Tapping a failed message's red icon sends its draft back with the id
-                // of the message that failed, so the retry replaces it.
-                await viewModel.send(draft.text, replacingFailed: draft.id.flatMap(UUID.init(uuidString:)))
+        Group {
+            if viewModel.isChatAvailable {
+                chat
+            } else {
+                waitingPage
             }
-        )
-        .mainHeaderBuilder { questionContext }
-        .betweenListAndInputViewBuilder { sendingReassurance }
-        .localization(chatLocalization)
-        .setAvailableInputs([.text])
-        .showMessageMenuOnLongPress(false)
-        .keyboardDismissMode(.interactive)
-        .chatTheme(chatTheme)
+        }
+        .paeoniaReadableWidth()
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle(Text(.dailyChatNavigationTitle))
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: viewModel.question.id) {
+        .task(id: viewModel.isChatAvailable) {
+            guard viewModel.isChatAvailable else { return }
             await viewModel.load()
             await viewModel.observeLiveUpdates()
         }
         .task(id: viewModel.hasSendingMessages) {
-            // A send that finishes quickly never shows the strip, so the list does not jump.
+            // A send that finishes quickly never shows the note.
             showsSendingReassurance = false
             guard viewModel.hasSendingMessages else { return }
             try? await Task.sleep(for: .seconds(2))
@@ -49,91 +70,188 @@ struct DailyQuestionChatView: View {
         .onChange(of: participants) { _, participants in
             viewModel.refreshParticipants(participants)
         }
+        .onChange(of: question) { _, question in
+            viewModel.refreshQuestion(question)
+        }
+        .task(id: viewModel.isChatAvailable) {
+            guard viewModel.isChatAvailable else { return }
+            await viewModel.presence.observe()
+        }
+        .onAppear { viewModel.setScreenActive(scenePhase == .active) }
+        .onDisappear { viewModel.setScreenActive(false) }
+        .onChange(of: scenePhase) { _, phase in viewModel.setScreenActive(phase == .active) }
+        .onChange(of: viewModel.presence.partnerIsTyping) { _, isTyping in
+            guard isTyping else { return }
+            AccessibilityNotification.Announcement(
+                String(localized: .dailyChatTyping(viewModel.participants.partnerName))
+            ).post()
+        }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
+        .onChange(of: viewModel.hasReadStore) { applyOpeningScroll() }
+        .paeoniaImageViewer(selection: $photoViewer)
     }
 
-    private var exyteMessages: [ExyteChat.Message] {
-        viewModel.messages.map { message in
-            let isCurrentUser = message.senderUserID == viewModel.participants.currentUserID
-            let name = isCurrentUser
-                ? String(localized: .dailyChallengeChoiceYou)
-                : viewModel.participants.partnerName
-            return ExyteChat.Message(
-                // A message keeps its row when the server confirms it.
-                id: (message.clientOperationID ?? message.id).uuidString,
-                user: ExyteChat.User(
-                    id: message.senderUserID.uuidString,
-                    name: name,
-                    avatarURL: nil,
-                    isCurrentUser: isCurrentUser
-                ),
-                status: messageStatus(message),
-                createdAt: message.createdAt,
-                text: message.body
-            )
-        }
+    private var projectionInput: DailyChatProjection.Input {
+        DailyChatProjection.Input(
+            prompt: viewModel.question.prompt,
+            questionStartsAt: viewModel.question.startsAt,
+            answers: viewModel.answers,
+            messages: viewModel.messages,
+            currentUserID: viewModel.participants.currentUserID,
+            partnerName: viewModel.participants.partnerName,
+            youName: String(localized: .dailyChallengeChoiceYou),
+            partnerIsTyping: viewModel.presence.partnerIsTyping,
+            partnerLastReadMessageID: viewModel.presence.partnerLastReadMessageID
+        )
     }
 
-    private func messageStatus(_ message: DailyQuestionChatMessage) -> ExyteChat.Message.Status {
-        if message.sendFailed {
-            return .error(
-                DraftMessage(
-                    id: message.clientOperationID?.uuidString,
-                    text: message.body,
-                    medias: [],
-                    giphyMedia: nil,
-                    recording: nil,
-                    replyMessage: nil,
-                    createdAt: message.createdAt
-                )
-            )
-        }
-        return message.isSending ? .sending : .sent
+    private var projection: DailyChatProjection {
+        projectionStore.projection(for: projectionInput)
     }
 
-    private var questionContext: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            Text(viewModel.question.prompt)
-                .font(PaeoniaTypography.title)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .fixedSize(horizontal: false, vertical: true)
+    // MARK: - Chat
 
-            DailyAnswerDetailsView(
-                question: viewModel.question,
-                participants: viewModel.participants
-            )
-
-            if viewModel.messages.isEmpty, !viewModel.isLoading {
-                Label {
-                    Text(.dailyChatEmptyMessage)
-                } icon: {
-                    Image(systemName: "bubble.left.and.bubble.right")
-                        .accessibilityHidden(true)
+    private var chat: some View {
+        let projection = projection
+        return ChatView(
+            messages: projection.highlighting(highlightedRowID),
+            chatType: .conversation,
+            replyMode: .quote,
+            // The composer sends by itself.
+            didSendMessage: { _ in },
+            messageBuilder: { params in
+                if let row = projection.rowsByID[params.message.id] {
+                    messageRow(row, messageFrame: params.messageFrame)
                 }
-                .font(PaeoniaTypography.body)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .padding(.top, PaeoniaSpacing.space4)
+            },
+            inputViewBuilder: { params in
+                DailyChatComposer(
+                    text: params.text,
+                    replyPreview: replyPreview,
+                    focusRequest: viewModel.composerFocusRequest,
+                    onCancelReply: viewModel.cancelReply,
+                    onSendText: { await viewModel.send($0) },
+                    onSendPhotos: { await viewModel.send($0, photos: $1) },
+                    onSendVoice: { await viewModel.sendVoice(fileURL: $0, durationMs: $1) },
+                    onTextChanged: viewModel.draftChanged
+                )
+            },
+            messageMenuAction: handleMenuAction
+        )
+        .localization(chatLocalization)
+        .showDateHeaders(true)
+        .dateHeaderBuilder { DailyChatDateSeparator(date: $0) }
+        .appliesFocusModifierToCustomInputView(false)
+        .animateMessageUpdates(false)
+        .betweenListAndInputViewBuilder { footerAccessory }
+        .showMessageTimeView(false)
+        .showMessageMenuOnLongPress(true)
+        .showScrollToBottomButton(false)
+        .setAvailableInputs([.text])
+        .keyboardDismissMode(.interactive)
+        .contentInsets(bottom: Self.bottomComposerClearance)
+        .scrollTo(scrollTarget)
+        .chatTheme(chatTheme)
+        .overlay {
+            ZStack {
+                DailyChatNavigationGestureBridge { dismiss() }
+                DailyChatTimestampRevealGestureBridge(
+                    isEnabled: true,
+                    onChanged: handleBackgroundTimestampRevealChanged,
+                    onEnded: handleBackgroundTimestampRevealEnded
+                )
             }
+            .allowsHitTesting(false)
         }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.vertical, PaeoniaSpacing.space16)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .onAppear { applyOpeningScroll() }
     }
 
-    @ViewBuilder
-    private var sendingReassurance: some View {
-        if viewModel.hasSendingMessages, showsSendingReassurance {
-            Text(.dailyChatSendingReassurance)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.vertical, PaeoniaSpacing.space4)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.paeoniaBackgroundPrimary)
+    private func messageRow(_ row: DailyChatRow, messageFrame: Binding<CGRect>?) -> some View {
+        DailyChatMessageRow(
+            row: row,
+            participants: viewModel.participants,
+            mediaKind: viewModel.question.mediaAnswerKind,
+            isHighlighted: row.id == highlightedRowID,
+            onReply: row.message.flatMap { message in
+                viewModel.canReply(to: message) ? { viewModel.setReplyTarget(message) } : nil
+            },
+            onRetry: { retry(row.message) },
+            onTapQuoted: jumpToMessage,
+            onOpenPhoto: openPhoto,
+            timestampRevealOffset: $timestampRevealOffset,
+            messageFrame: messageFrame
+        )
+        .id(row.id)
+    }
+
+    /// Floats above the composer at zero height. ExyteChat sizes the list's inset
+    /// from this view, so a note with height would move the list each time it showed.
+    private var footerAccessory: some View {
+        Color.clear
+            .frame(height: 0)
+            .overlay(alignment: .bottom) {
+                if viewModel.hasSendingMessages, showsSendingReassurance {
+                    Text(.dailyChatSendingReassurance)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                        .padding(.horizontal, PaeoniaSpacing.space12)
+                        .padding(.vertical, PaeoniaSpacing.space4)
+                        .glassEffect(.regular, in: Capsule())
+                        .padding(.bottom, PaeoniaSpacing.space4)
+                        .transition(.opacity)
+                }
+            }
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: showsSendingReassurance)
+    }
+
+    private var replyPreview: DailyChatReplyPreview? {
+        guard let target = viewModel.replyTarget else { return nil }
+        return DailyChatProjection.preview(of: target, id: target.id, input: projectionInput)
+    }
+
+    // MARK: - Waiting
+
+    /// The page before both answers are revealed: the question, your answer, and who
+    /// the chat is waiting for. It uses the same rows as the chat.
+    private var waitingPage: some View {
+        let projection = projection
+        return ScrollView {
+            VStack(spacing: 0) {
+                ForEach(projection.exyteMessages, id: \.id) { message in
+                    if let row = projection.rowsByID[message.id] {
+                        messageRow(row, messageFrame: nil)
+                    }
+                }
+                if let waitingMessage = viewModel.waitingMessage {
+                    Text(waitingMessage)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                        .padding(.top, PaeoniaSpacing.space16)
+                }
+            }
+            .padding(.vertical, PaeoniaSpacing.space12)
         }
     }
 
-    private var chatLocalization: ChatLocalization {
+    private func showBanner(for notice: DailyQuestionChatViewModel.Notice?) {
+        guard let notice else { return }
+        bannerCenter.show(
+            .error(
+                title: String(localized: notice.title),
+                message: String(localized: notice.message)
+            )
+        )
+        viewModel.dismissNotice()
+    }
+}
+
+// MARK: - ExyteChat setup
+
+private extension DailyQuestionChatView {
+    var chatLocalization: ChatLocalization {
         ChatLocalization(
             inputPlaceholder: String(localized: .dailyChatComposerPlaceholder),
             signatureText: String(localized: .dailyChatComposerSignature),
@@ -145,7 +263,7 @@ struct DailyQuestionChatView: View {
         )
     }
 
-    private var chatTheme: ChatTheme {
+    var chatTheme: ChatTheme {
         ChatTheme(
             colors: .init(
                 mainBG: .paeoniaBackgroundPrimary,
@@ -162,7 +280,7 @@ struct DailyQuestionChatView: View {
                 messageSystemBG: .paeoniaSurfaceSecondary,
                 messageSystemText: .paeoniaTextPrimary,
                 messageSystemTimeText: .paeoniaTextTertiary,
-                inputBG: .paeoniaBackgroundSecondary,
+                inputBG: .paeoniaBackgroundPrimary,
                 inputText: .paeoniaTextPrimary,
                 inputPlaceholderText: .paeoniaTextTertiary,
                 inputSignatureBG: .paeoniaBackgroundSecondary,
@@ -178,15 +296,114 @@ struct DailyQuestionChatView: View {
             )
         )
     }
+}
 
-    private func showBanner(for notice: DailyQuestionChatViewModel.Notice?) {
-        guard let notice else { return }
-        bannerCenter.show(
-            .error(
-                title: String(localized: notice.title),
-                message: String(localized: notice.message)
+extension DailyQuestionChatView {
+    // MARK: - Actions
+
+    private func retry(_ message: DailyQuestionChatMessage?) {
+        guard let message, message.sendFailed else { return }
+        Task {
+            if message.voice != nil {
+                await viewModel.resendVoice(message)
+            } else if !(message.photos ?? []).isEmpty {
+                await viewModel.resendPhotos(message)
+            } else {
+                _ = await viewModel.send(
+                    message.body,
+                    replacingFailed: message.clientOperationID,
+                    replyToMessageID: message.replyToMessageID
+                )
+            }
+        }
+    }
+
+    private func handleMenuAction(
+        _ action: DailyChatMenuAction,
+        _: (ExyteChat.Message, DefaultMessageMenuAction) -> Void,
+        _ message: ExyteChat.Message
+    ) {
+        guard let row = projection.rowsByID[message.id] else { return }
+        switch action {
+        case .reply:
+            if let target = row.message { viewModel.setReplyTarget(target) }
+        case .copy:
+            UIPasteboard.general.string = message.text
+        case .report:
+            switch row.kind {
+            case let .answer(answer):
+                onReport?(.dailyAnswer(answerID: answer.answerID))
+            case let .message(target):
+                onReport?(.threadMessage(messageID: target.id))
+            case .question, .typing:
+                break
+            }
+        }
+    }
+
+    /// Opens every photo in the chat in the full-screen viewer, at the tapped one, so a
+    /// swipe goes through the rest. Like Tidex's chat gallery.
+    private func openPhoto(_ tapped: DailyQuestionChatPhoto) {
+        let photos = viewModel.messages.flatMap { $0.photos ?? [] }
+        let items = photos.compactMap { photo -> PaeoniaImageViewerItem? in
+            guard let key = DailyChatPhotoLayout.cacheKey(for: photo) else { return nil }
+            return PaeoniaImageViewerItem(
+                id: key,
+                image: nil,
+                imageLoader: { await Self.fullImage(of: photo) }
             )
-        )
-        viewModel.dismissNotice()
+        }
+        guard let initial = DailyChatPhotoLayout.cacheKey(for: tapped), !items.isEmpty else { return }
+        photoViewer = PaeoniaImageViewerSelection(items: items, initialItemID: initial, allowsSaving: true)
+    }
+
+    /// The whole photo for the viewer, from this phone's copy or the downloaded file.
+    @concurrent
+    private nonisolated static func fullImage(of photo: DailyQuestionChatPhoto) async -> UIImage? {
+        if let data = photo.data { return UIImage(data: data) }
+        guard let mediaAssetID = photo.mediaAssetID,
+              let data = await DailyAnswerMediaImageProviderFactory.shared?.imageData(for: mediaAssetID)
+        else { return nil }
+        return UIImage(data: data)
+    }
+
+    /// Tapping a quote scrolls to the message it answers and lights it up for a moment.
+    private func jumpToMessage(_ messageID: UUID) {
+        guard let target = viewModel.message(withID: messageID) else { return }
+        let rowID = DailyChatProjection.rowID(for: target)
+        scrollTarget = nil
+        Task { @MainActor in
+            scrollTarget = ScrollToParams(messageID: rowID, position: .middle)
+            highlightedRowID = rowID
+            try? await Task.sleep(for: Self.highlightDuration)
+            if highlightedRowID == rowID { highlightedRowID = nil }
+        }
+    }
+
+    /// With only the question and answers there, the chat opens at the question, so
+    /// the page reads from the start. Once anyone has written, it opens at the newest
+    /// message. The chat is usually read before the screen opens, so this runs as the
+    /// list first fills, not after it was shown.
+    private func applyOpeningScroll() {
+        guard !didApplyOpeningScroll, viewModel.hasReadStore else { return }
+        didApplyOpeningScroll = true
+        guard viewModel.messages.isEmpty else { return }
+        scrollTarget = ScrollToParams(.oldestMessage)
+    }
+
+    private func handleBackgroundTimestampRevealChanged(_ value: DailyChatDragValue) {
+        guard let offset = DailyChatTimestampRevealResolver.clampedRevealOffset(
+            horizontal: value.translation.width,
+            vertical: value.translation.height
+        ) else { return }
+        timestampRevealOffset = offset
+    }
+
+    private func handleBackgroundTimestampRevealEnded(_ value: DailyChatDragValue) {
+        handleBackgroundTimestampRevealChanged(value)
+        guard timestampRevealOffset != 0 else { return }
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) {
+            timestampRevealOffset = 0
+        }
     }
 }

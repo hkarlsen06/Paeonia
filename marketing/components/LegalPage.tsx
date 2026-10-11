@@ -12,7 +12,7 @@ export function LegalPage({ locale, variant }: LegalPageProps) {
   const content = dictionary.legal[variant];
 
   return (
-    <SiteShell locale={locale}>
+    <SiteShell locale={locale} path={`/${variant}`}>
       <main className="page-shell narrow">
         <p className="label">{content.updated}</p>
         <h1>{content.title}</h1>

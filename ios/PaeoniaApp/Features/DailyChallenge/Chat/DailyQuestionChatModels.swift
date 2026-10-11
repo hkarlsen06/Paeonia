@@ -10,6 +10,16 @@ nonisolated struct DailyQuestionThreadSummary: Codable, Equatable, Sendable {
     let lastMessageAt: Date?
     let lastMessageSenderUserID: UUID?
     let lastMessageBody: String?
+    /// The media type of the newest message's first attachment ("image" or "voice").
+    var lastMessageMediaType: String?
+
+    /// What to show for the newest message. A shown message with no text has an
+    /// attachment, because the server only leaves out the text of hidden messages.
+    var lastMessagePreview: String? {
+        if let body = lastMessageBody?.trimmedNonEmpty { return body }
+        guard lastMessageID != nil else { return nil }
+        return String(localized: lastMessageMediaType == "image" ? .dailyChatPhotoPreview : .dailyChatVoicePreview)
+    }
 
     /// The newest message came from the partner after `readThrough`, the last time
     /// this user saw the chat on this phone.
@@ -30,6 +40,13 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
     let clientOperationID: UUID?
     let isSending: Bool
     var sendFailed = false
+    /// Set when the message is a voice message instead of text.
+    var voice: DailyQuestionChatVoice?
+    /// Photos in the message, in order. The text, if any, is their caption. Optional, so
+    /// messages cached before photos existed still decode.
+    var photos: [DailyQuestionChatPhoto]?
+    /// The earlier message in the thread this one answers.
+    var replyToMessageID: UUID?
 
     static func visibleOrdered(
         remote: [DailyQuestionChatMessage],
@@ -107,12 +124,18 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
                 return message.confirmed(by: operationID)
             }
             guard !knownIDs.contains(message.id),
-                  let index = waiting.firstIndex(where: {
-                      $0.senderUserID == message.senderUserID && $0.body == message.body
-                  })
+                  let index = waiting.firstIndex(where: { $0.isSameSend(as: message) })
             else { return message }
             return message.confirmed(by: waiting.remove(at: index).clientOperationID)
         }
+    }
+
+    /// A voice message gets its id on this phone, so the server copy has the same id.
+    /// Two texts can only be matched by what they say.
+    private func isSameSend(as remote: DailyQuestionChatMessage) -> Bool {
+        guard senderUserID == remote.senderUserID else { return false }
+        if hasMedia || remote.hasMedia { return id == remote.id }
+        return body == remote.body
     }
 
     private func confirmed(by operationID: UUID?) -> DailyQuestionChatMessage {
@@ -124,8 +147,69 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
             body: body,
             createdAt: createdAt,
             clientOperationID: operationID,
-            isSending: false
+            isSending: false,
+            voice: voice,
+            photos: photos,
+            replyToMessageID: replyToMessageID
         )
+    }
+
+    var hasMedia: Bool {
+        voice != nil || !(photos ?? []).isEmpty
+    }
+}
+
+/// One photo in a chat message.
+nonisolated struct DailyQuestionChatPhoto: Codable, Equatable, Hashable, Sendable {
+    /// The uploaded photo. Nil until the message is sent.
+    var mediaAssetID: UUID?
+    /// The compressed photo on this phone while it sends, or after it failed.
+    var data: Data?
+    var width: Int?
+    var height: Int?
+}
+
+/// The photos of a queued message, already compressed. Every photo is reserved under
+/// the message's id, and the upload operations are fixed so a retry reuses them.
+nonisolated struct DailyQuestionChatPhotosPayload: Codable, Equatable, Sendable {
+    nonisolated struct Item: Codable, Equatable, Sendable {
+        let data: Data
+        let width: Int
+        let height: Int
+        let reserveOperation: SyncClientOperation
+        let finalizeOperation: SyncClientOperation
+    }
+
+    let messageID: UUID
+    let items: [Item]
+
+    var pendingPhotos: [DailyQuestionChatPhoto] {
+        items.map { DailyQuestionChatPhoto(data: $0.data, width: $0.width, height: $0.height) }
+    }
+}
+
+/// The recording in a voice message.
+nonisolated struct DailyQuestionChatVoice: Codable, Equatable, Sendable {
+    /// The uploaded recording. Nil until the message is sent.
+    var mediaAssetID: UUID?
+    /// The recording on this phone while it sends, or after it failed, so it plays
+    /// without a download and can be sent again.
+    var data: Data?
+    var durationMs: Int?
+}
+
+/// A queued voice message. The upload operations are fixed here, so a retry never
+/// uploads the recording twice.
+nonisolated struct DailyQuestionChatVoicePayload: Codable, Equatable, Sendable {
+    /// The upload is reserved under this id, and the server gives the message the same id.
+    let messageID: UUID
+    let data: Data
+    let durationMs: Int
+    let reserveOperation: SyncClientOperation
+    let finalizeOperation: SyncClientOperation
+
+    var pendingVoice: DailyQuestionChatVoice {
+        DailyQuestionChatVoice(data: data, durationMs: durationMs)
     }
 }
 
@@ -139,6 +223,8 @@ nonisolated struct CreateDailyQuestionThreadMessageOperationPayload: Codable, Eq
     let instanceID: UUID
     let coupleID: UUID
     let body: String
+    var voice: DailyQuestionChatVoicePayload?
+    var photos: DailyQuestionChatPhotosPayload?
 }
 
 nonisolated struct SendDailyQuestionThreadMessageOperationPayload: Codable, Equatable, Sendable {
@@ -146,6 +232,9 @@ nonisolated struct SendDailyQuestionThreadMessageOperationPayload: Codable, Equa
     let coupleID: UUID
     let threadID: UUID?
     let body: String
+    var voice: DailyQuestionChatVoicePayload?
+    var photos: DailyQuestionChatPhotosPayload?
+    var replyToMessageID: UUID?
 }
 
 nonisolated struct DailyQuestionThreadMessageResponse: Decodable, Equatable, Sendable {

@@ -56,6 +56,8 @@ struct WidgetDrawingView: View {
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.space8)
         .padding(.bottom, PaeoniaSpacing.space16)
+        // A canvas wider than this makes strokes look thin once they shrink onto the widget.
+        .paeoniaReadableWidth()
         .background(.paeoniaBackgroundSecondary)
         .navigationTitle(Text(.widgetDrawingTitle))
         .navigationBarTitleDisplayMode(.inline)

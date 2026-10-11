@@ -168,6 +168,7 @@ actor ProfilePhotoImageService:
     }
 
     func clearAll() async {
+        PaeoniaImageMemoryCache.removeAll()
         privacyGeneration &+= 1
         let downloads = Array(inFlightDownloads.values)
         downloads.forEach { $0.cancel() }

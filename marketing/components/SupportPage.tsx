@@ -15,7 +15,7 @@ export function SupportPage({ locale }: SupportPageProps) {
   const contactEmail = dictionary.legal.contactEmail;
 
   return (
-    <SiteShell locale={locale}>
+    <SiteShell locale={locale} path="/support">
       <main className="page-shell narrow">
         <h1>{content.title}</h1>
         <p className="lede">{content.description}</p>

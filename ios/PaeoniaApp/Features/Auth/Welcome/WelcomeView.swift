@@ -31,7 +31,7 @@ struct WelcomeView: View {
                 WelcomeFeatureList()
                     .launchEntrance(order: 1)
             }
-            .frame(maxWidth: 430)
+            .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
@@ -48,7 +48,7 @@ struct WelcomeView: View {
                 onGoogleSignIn: onGoogleSignIn,
                 onHaveInviteCode: { isInviteSheetPresented = true }
             )
-            .frame(maxWidth: 430)
+            .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space12)
