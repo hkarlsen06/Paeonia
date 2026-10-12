@@ -53,6 +53,12 @@ struct DrawAndGuessDrawerResultView: View {
         } footer: {
             footer
         } bottom: {
+            // The save button sits in the pinned cluster above the main button, so a tall
+            // result never hides it under the button.
+            if isRevealed, timeline.saveShown {
+                DrawAndGuessSaveRow(viewModel: viewModel)
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 12)))
+            }
             if isRevealed, timeline.buttonShown {
                 Button {
                     Task { await viewModel.continueFromReveal() }
@@ -198,10 +204,6 @@ struct DrawAndGuessDrawerResultView: View {
                     showsSpeedBonus: timeline.speedBonusShown
                 )
                 .transition(transition)
-            }
-            if timeline.saveShown {
-                DrawAndGuessSaveRow(viewModel: viewModel)
-                    .transition(transition)
             }
         }
     }
