@@ -148,6 +148,8 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `games` | `get_game_settings`, `set_game_settings`, `ensure_draw_and_guess_game`, `get_draw_and_guess`, `pick_draw_word`, `submit_drawing`, `mark_round_seen`, `submit_guess`, `give_up_round`, `respond_save_prompt`, `save_round_to_memories`, `send_game_invite`, `set_game_presence`, `create_game_live_ticket` |
 | `widget` | `get_or_create_widget_canvas`, `get_widget_canvas`, `get_widget_drawing_revisions`, `submit_widget_drawing_revision`, `register_widget_push_device`, `create_widget_live_ticket` |
 | `location` | `update_latest_partner_location`, `update_location_sharing_preference`, `get_partner_location_visibility` |
+
+Games speed bonus. `submit_guess` takes optional `p_speed_bonus` (boolean) and `p_solve_ms` (0 to 30 days). They are what the guesser's phone showed on its own clock, and the server stores them when present, so a guess that waited offline or reached the server before `mark_round_seen` keeps the bonus on screen. `scoreSolve` in `lib/games.ts` decides only when a value is missing. Both values are in the request hash. `mark_round_seen` still records `guesser_first_seen_at` for the live display and the fallback.
 | `reports` | `submit_leave_and_report` |
 
 These functions replace direct PostgREST table access from iOS. They return full rows with SQL column names and apply the old RLS rules:

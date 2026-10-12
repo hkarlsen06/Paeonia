@@ -50,18 +50,63 @@ nonisolated enum DrawAndGuessCustomWordValidation: Equatable, Sendable {
     }
 }
 
-/// Where the partner is, for the line under the game's title.
+/// Where the partner is, as far as the relay room and the open-screen heartbeat tell.
 nonisolated enum DrawAndGuessPartnerPresence: Equatable, Sendable {
     case away
-    /// Has the game screen open.
+    /// Has the game screen open, and the room does not say more.
     case here
     /// In the live room, watching the drawing.
     case watching
     /// In the live room, drawing.
     case drawing
+    /// On the screen where a word is picked.
+    case choosing
+    /// Looking at the result of a round.
+    case result
 
     var isHere: Bool {
         self != .away
+    }
+
+    /// The partner's phone told the room what it is doing.
+    var isInRoom: Bool {
+        self != .away && self != .here
+    }
+
+    /// The left side of the drawer's live row.
+    func drawingLine(partnerName: String) -> LocalizedStringResource {
+        switch self {
+        case .watching: .gamesDrawAndGuessDrawWatching(partnerName)
+        case .result: .gamesDrawAndGuessDrawLookingAtResult(partnerName)
+        case .choosing: .gamesDrawAndGuessWaitChoosing(partnerName)
+        case .here, .drawing: .gamesDrawAndGuessDrawHere(partnerName)
+        case .away: .gamesDrawAndGuessDrawLater(partnerName)
+        }
+    }
+}
+
+/// What the drawer's result screen says about the drawing they sent.
+nonisolated enum DrawAndGuessSentStatus: Equatable, Sendable {
+    /// The partner is on the guess screen right now.
+    case looking
+    /// The partner saw the drawing and has left the guess screen.
+    case seen
+    case notSeen
+
+    /// - Parameter guesserFirstSeenAt: The server's record of the partner's first look.
+    static func make(partner: DrawAndGuessPartnerPresence, guesserFirstSeenAt: Date?) -> DrawAndGuessSentStatus {
+        if partner == .watching {
+            return .looking
+        }
+        return guesserFirstSeenAt == nil ? .notSeen : .seen
+    }
+
+    func line(partnerName: String) -> LocalizedStringResource {
+        switch self {
+        case .looking: .gamesDrawAndGuessResultLooking(partnerName)
+        case .seen: .gamesDrawAndGuessResultSeen(partnerName)
+        case .notSeen: .gamesDrawAndGuessResultNotSeen(partnerName)
+        }
     }
 }
 

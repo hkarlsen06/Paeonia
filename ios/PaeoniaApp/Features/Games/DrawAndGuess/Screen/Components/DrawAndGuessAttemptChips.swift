@@ -13,14 +13,13 @@ struct DrawAndGuessAttemptChips: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+        VStack(spacing: PaeoniaSpacing.space8) {
             Text(.gamesDrawAndGuessResultTried(partnerName))
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextSecondary)
             DrawAndGuessFlowLayout(
                 spacing: PaeoniaSpacing.space8,
-                lineSpacing: PaeoniaSpacing.space8,
-                alignsLeading: true
+                lineSpacing: PaeoniaSpacing.space8
             ) {
                 ForEach(wrongAttempts) { attempt in
                     chip(attempt.text.uppercased(), isCorrect: false)
@@ -32,7 +31,7 @@ struct DrawAndGuessAttemptChips: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(spokenSentence))
         .accessibilityIdentifier("draw.attempts")

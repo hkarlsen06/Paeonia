@@ -9,6 +9,7 @@
   enum DeveloperGamesFixture {
     nonisolated static let gameID = UUID(uuidString: "aaaaaaaa-0000-4000-8000-000000000001") ?? UUID()
     nonisolated static let roundID = UUID(uuidString: "bbbbbbbb-0000-4000-8000-000000000001") ?? UUID()
+    nonisolated static let nextRoundID = UUID(uuidString: "bbbbbbbb-0000-4000-8000-000000000002") ?? UUID()
     nonisolated static let assetID = UUID(uuidString: "cccccccc-0000-4000-8000-000000000001") ?? UUID()
     nonisolated static let me = DeveloperScenarioFixture.currentUserID
     nonisolated static let partner = DeveloperScenarioFixture.partnerUserID
@@ -65,7 +66,8 @@
       attempts: [(text: String, correct: Bool)] = [],
       solveMs: Int? = nil,
       speedBonus: Int = 0,
-      mySaveResponse: DrawAndGuessSaveResponse? = nil
+      mySaveResponse: DrawAndGuessSaveResponse? = nil,
+      guesserHasSeenIt: Bool = false
     ) -> RemoteDrawAndGuessRound {
       let guesser = drawer == me ? partner : me
       let finished = state == .solved || state == .missed
@@ -81,7 +83,7 @@
         drawingMediaAssetID: hasDrawing ? assetID : nil,
         drawingSubmittedAt: hasDrawing ? now.addingTimeInterval(-900) : nil,
         startedAt: now.addingTimeInterval(-1_200),
-        guesserFirstSeenAt: solveMs == nil ? nil : now.addingTimeInterval(-600),
+        guesserFirstSeenAt: solveMs == nil && !guesserHasSeenIt ? nil : now.addingTimeInterval(-600),
         endedAt: finished ? now.addingTimeInterval(-580) : nil,
         solveMs: solveMs,
         speedBonus: speedBonus,

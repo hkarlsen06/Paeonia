@@ -18,7 +18,7 @@ struct DrawAndGuessDrawingView: View {
     }
 
     var body: some View {
-        DrawAndGuessPhaseLayout {
+        DrawAndGuessPhaseLayout(sharing: .publishes, sideMemory: viewModel.squareMemory) {
             VStack(spacing: PaeoniaSpacing.space8) {
                 DrawAndGuessWordLine(word: DrawAndGuessAnswer.display(viewModel.round?.word ?? ""))
                 liveRow
@@ -72,9 +72,9 @@ struct DrawAndGuessDrawingView: View {
             guard id != nil, let attempt = viewModel.round?.attempts.last(where: { $0.id == id }) else { return }
             showGuess(attempt)
         }
-        .onChange(of: viewModel.partnerPresence.isHere) { old, new in
-            guard new, !old else { return }
-            partnerJoined()
+        .onChange(of: viewModel.partnerPresence) { old, new in
+            guard new != .away, new != old else { return }
+            partnerPresenceChanged(from: old)
         }
         .task(id: shownGuess?.id) {
             guard shownGuess != nil else { return }
@@ -112,8 +112,8 @@ struct DrawAndGuessDrawingView: View {
             if viewModel.partnerPresence.isHere {
                 DrawAndGuessPresenceLabel(
                     player: viewModel.partner,
-                    text: .gamesDrawAndGuessDrawWatching(viewModel.partnerName),
-                    showsRing: true,
+                    text: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName),
+                    showsRing: viewModel.partnerPresence == .watching,
                     scale: partnerPulse
                 )
                 .accessibilityElement(children: .combine)
@@ -158,11 +158,13 @@ struct DrawAndGuessDrawingView: View {
         AccessibilityNotification.Announcement(announcement).post()
     }
 
-    private func partnerJoined() {
-        PaeoniaHaptics.partnerDrawingReceived()
+    /// The partner came into the game, or their phone said what they are doing.
+    private func partnerPresenceChanged(from old: DrawAndGuessPartnerPresence) {
         AccessibilityNotification.Announcement(
-            String(localized: .gamesDrawAndGuessDrawWatching(viewModel.partnerName))
+            String(localized: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName))
         ).post()
+        guard !old.isHere else { return }
+        PaeoniaHaptics.partnerDrawingReceived()
         guard !reduceMotion else { return }
         withAnimation(PaeoniaMotion.stateChange) { partnerPulse = 1.12 }
         withAnimation(PaeoniaMotion.stateChange.delay(PaeoniaMotion.motionDefault)) { partnerPulse = 1 }

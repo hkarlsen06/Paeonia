@@ -30,6 +30,7 @@ import {
   roundJson,
   scoreSolve,
   settingsJson,
+  SPEED_BONUS_POINTS,
   TURN_REMINDER_AFTER_MS,
   type Game,
   type GameMove,
@@ -411,22 +412,42 @@ export const mark_round_seen = mutation({
   },
 });
 
+/** The longest solve time a phone may report: 30 days. */
+const MAX_CLAIMED_SOLVE_MS = 30 * 24 * 60 * 60 * 1000;
+
 /**
  * Stores one attempt. A correct guess solves the round: the points are added, the speed
  * bonus applies, and the next turn begins with the guesser as the drawer.
+ *
+ * The phone sends what the player saw: `p_speed_bonus` says whether the bonus was still on
+ * screen when the guess was made, and `p_solve_ms` is the time since the player first saw the
+ * drawing, both on the phone's clock. A guess can reach the server late (offline queue) or
+ * before `mark_round_seen`, so the server clock alone would disagree with the screen. When the
+ * phone sends a value, the server uses it. When it sends nothing, `scoreSolve` decides.
  */
 export const submit_guess = mutation({
-  args: { p_round_id: v.string(), p_guess: v.string(), ...clientOperationArgs },
+  args: {
+    p_round_id: v.string(),
+    p_guess: v.string(),
+    p_speed_bonus: v.optional(v.union(v.null(), v.boolean())),
+    p_solve_ms: v.optional(v.union(v.null(), v.number())),
+    ...clientOperationArgs,
+  },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const roundId = uuidArg(args.p_round_id);
     const guess = normalizeWordText(args.p_guess);
     if (guess === "" || charLength(guess) > MAX_GUESS_LENGTH) fail("23514", "guess must be 1 to 40 characters");
+    const claimedBonus = args.p_speed_bonus ?? null;
+    const claimedSolveMs = args.p_solve_ms ?? null;
+    if (claimedSolveMs !== null && !(Number.isFinite(claimedSolveMs) && claimedSolveMs >= 0 && claimedSolveMs <= MAX_CLAIMED_SOLVE_MS)) {
+      fail("23514", "solve time must be between 0 and 30 days");
+    }
 
     return await runClientOperation(
       ctx,
       userId,
-      toClientOperation(args, { kind: "submit_guess", scope: "games", request: ["submit_guess", roundId, guess] }),
+      toClientOperation(args, { kind: "submit_guess", scope: "games", request: ["submit_guess", roundId, guess, claimedBonus, claimedSolveMs] }),
       async () => {
         const { move, game } = await requireRound(ctx, userId, roundId);
         if (move.guesser_user_id !== userId) fail("42501", "only the guesser can guess");
@@ -448,7 +469,9 @@ export const submit_guess = mutation({
           return { guess_id: guessId, correct, round_state: move.state, points: 0, speed_bonus: 0, solve_ms: null, created_at: now };
         }
 
-        const { speedBonus, solveMs } = scoreSolve(move, now);
+        const scored = scoreSolve(move, now);
+        const speedBonus = claimedBonus === null ? scored.speedBonus : claimedBonus ? SPEED_BONUS_POINTS : 0;
+        const solveMs = claimedSolveMs === null ? scored.solveMs : Math.round(claimedSolveMs);
         await patchMove(ctx, move, { state: "solved", ended_at: now, solve_ms: solveMs, speed_bonus: speedBonus });
         // The shared total gets the word points. Each partner's total follows the "against each
         // other" rules, so switching the play style later loses nothing.

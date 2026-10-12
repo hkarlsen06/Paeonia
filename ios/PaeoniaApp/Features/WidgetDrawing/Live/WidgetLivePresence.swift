@@ -2,19 +2,41 @@ import Foundation
 
 /// Who else is in the couple's room on the relay, and what they are doing.
 /// The relay announces sockets with `welcome`, `joined`, and `left`. Each app
-/// then says whether it is drawing or watching with a `hello`.
+/// then says what it is doing with a `hello`.
 nonisolated struct WidgetLivePresence {
-    enum Role: String, Codable, Sendable {
+    /// The cases are in the order the partner's activity picks from when several
+    /// sockets are in the room. The widget canvas sends only `drawing` and
+    /// `watching`. The last three are for Draw & Guess.
+    enum Role: String, Codable, Sendable, CaseIterable {
         /// On the drawing canvas.
         case drawing
-        /// Looking at the widget on the Home tab.
+        /// Looking at the widget on the Home tab, or at a drawing as it is made.
         case watching
+        /// Game only: on the screen where a word is picked.
+        case choosing
+        /// Game only: looking at the result of a round.
+        case result
+        /// Game only: in the game on any other screen.
+        case present
     }
 
     enum PartnerActivity: Equatable {
         case away
         case watching
         case drawing
+        case choosing
+        case result
+        case present
+
+        init(_ role: Role) {
+            switch role {
+            case .drawing: self = .drawing
+            case .watching: self = .watching
+            case .choosing: self = .choosing
+            case .result: self = .result
+            case .present: self = .present
+            }
+        }
     }
 
     private(set) var ownID: String?
@@ -26,7 +48,8 @@ nonisolated struct WidgetLivePresence {
         guard peerCount > 0, !roles.isEmpty else {
             return .away
         }
-        return roles.values.contains(.drawing) ? .drawing : .watching
+        let present = Set(roles.values)
+        return Role.allCases.first(where: present.contains).map(PartnerActivity.init) ?? .away
     }
 
     mutating func welcome(id: String?, peers: Int) {

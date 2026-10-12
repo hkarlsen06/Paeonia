@@ -106,6 +106,21 @@ extension DrawAndGuessViewModel {
         )
     }
 
+    /// What the screen promised for a correct guess made at `now`: whether the
+    /// bonus was still available and how long the guesser had looked at the
+    /// drawing. It ignores the play style, because the server keeps every total.
+    func speedBonusClaim(at now: Date) -> (speedBonus: Bool, solveMs: Int?) {
+        let firstSeen = round.flatMap { $0.guesserFirstSeenAt ?? localFirstSeenAt[$0.id] }
+        let bonus = DrawAndGuessSpeedBonus.make(
+            playStyle: .against,
+            round: round,
+            userID: currentUserID,
+            firstSeenAt: firstSeen
+        )
+        let solveMs = firstSeen.map { max(0, Int((now.timeIntervalSince($0) * 1_000).rounded())) }
+        return (bonus.isAvailable(at: now), solveMs)
+    }
+
     /// The bonus can still be earned right now.
     var speedBonusIsAvailable: Bool {
         speedBonus.isAvailable(at: dependencies.now())
@@ -173,6 +188,11 @@ extension DrawAndGuessViewModel {
             hasSaveQueued: pending.hasSave(roundID: round.id),
             hasDrawing: finalDrawing != nil || round.drawingMediaAssetID != nil
         )
+        // The server's answer may still be on its way. Until it arrives, a "not now"
+        // from this phone keeps the question closed.
+        if savePrompt == .ask, declinedSaveRoundIDs.contains(round.id) {
+            savePrompt = .hidden
+        }
     }
 
     /// The finished drawing at the canonical size, from whichever source this phone

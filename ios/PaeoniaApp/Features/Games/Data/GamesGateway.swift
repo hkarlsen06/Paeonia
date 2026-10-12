@@ -15,7 +15,15 @@ nonisolated protocol GamesGateway: Sendable {
         operation: SyncClientOperation
     ) async throws -> RemoteSubmitDrawingResult
     func markRoundSeen(roundID: UUID) async throws -> RemoteMarkSeenResult
-    func submitGuess(roundID: UUID, guess: String, operation: SyncClientOperation) async throws -> RemoteGuessResult
+    /// `speedBonus` and `solveMs` are what the player saw on the phone. The server
+    /// uses them when present and works them out itself when nil.
+    func submitGuess(
+        roundID: UUID,
+        guess: String,
+        speedBonus: Bool?,
+        solveMs: Int?,
+        operation: SyncClientOperation
+    ) async throws -> RemoteGuessResult
     func giveUp(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteGiveUpResult
 
     func respondSavePrompt(roundID: UUID) async throws
@@ -71,10 +79,22 @@ nonisolated struct LiveGamesGateway: GamesGateway {
         try await client.mutation("games:mark_round_seen", args: RoundRequest(roundID: roundID))
     }
 
-    func submitGuess(roundID: UUID, guess: String, operation: SyncClientOperation) async throws -> RemoteGuessResult {
+    func submitGuess(
+        roundID: UUID,
+        guess: String,
+        speedBonus: Bool?,
+        solveMs: Int?,
+        operation: SyncClientOperation
+    ) async throws -> RemoteGuessResult {
         try await client.mutation(
             "games:submit_guess",
-            args: SubmitGuessRequest(roundID: roundID, guess: guess, operation: operation)
+            args: SubmitGuessRequest(
+                roundID: roundID,
+                guess: guess,
+                speedBonus: speedBonus,
+                solveMs: solveMs,
+                operation: operation
+            )
         )
     }
 
@@ -252,23 +272,31 @@ nonisolated private struct SubmitDrawingRequest: Encodable {
 nonisolated private struct SubmitGuessRequest: Encodable {
     let roundID: UUID
     let guess: String
+    let speedBonus: Bool?
+    let solveMs: Int?
     let operation: GameClientOperationFields
 
-    init(roundID: UUID, guess: String, operation: SyncClientOperation) {
+    init(roundID: UUID, guess: String, speedBonus: Bool?, solveMs: Int?, operation: SyncClientOperation) {
         self.roundID = roundID
         self.guess = guess
+        self.speedBonus = speedBonus
+        self.solveMs = solveMs
         self.operation = GameClientOperationFields(operation)
     }
 
     enum CodingKeys: String, CodingKey {
         case roundID = "p_round_id"
         case guess = "p_guess"
+        case speedBonus = "p_speed_bonus"
+        case solveMs = "p_solve_ms"
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(roundID, forKey: .roundID)
         try container.encode(guess, forKey: .guess)
+        try container.encodeIfPresent(speedBonus, forKey: .speedBonus)
+        try container.encodeIfPresent(solveMs, forKey: .solveMs)
         try operation.encode(to: encoder)
     }
 }

@@ -35,7 +35,8 @@
             state: .guessing,
             drawer: Fixture.me,
             hasDrawing: true,
-            attempts: [("cat", false), ("hat", false)]
+            attempts: [("cat", false), ("hat", false)],
+            guesserHasSeenIt: true
           )
         )
       case .gamesHubPartnerHere, .drawGuessingReplay:
@@ -77,6 +78,24 @@
           .solved,
           drawer: Fixture.me,
           attempts: [("cat", false), ("hat", false), ("umbrella", true)]
+        )
+      case .drawRevealPartnerDrawing:
+        // Robin solved the last drawing and has already started the next one.
+        return Fixture.state(
+          settings: mine,
+          game: Fixture.game(state: .drawing, turn: Fixture.me, roundID: Fixture.nextRoundID),
+          round: Fixture.round(id: Fixture.nextRoundID, state: .drawing, drawer: Fixture.partner),
+          recentRounds: [
+            Fixture.round(
+              state: .solved,
+              drawer: Fixture.me,
+              hasDrawing: true,
+              attempts: [("cat", false), ("hat", false), ("umbrella", true)],
+              solveMs: 18_400,
+              speedBonus: 1
+            ),
+          ],
+          partnerIsHere: true
         )
       default:
         return Fixture.state(settings: mine, game: nil)
@@ -138,7 +157,9 @@
       switch scenario {
       case .drawDrawing, .drawSavedOffline:
         simulatePartner(on: connection, role: .watching, canvas: nil)
-      case .drawWatchingLive:
+      case .drawWaitingForWord:
+        simulatePartner(on: connection, role: .choosing, canvas: nil)
+      case .drawWatchingLive, .drawRevealPartnerDrawing:
         simulatePartner(on: connection, role: .drawing, canvas: DeveloperGamesFixture.umbrella())
       default:
         break
@@ -212,6 +233,8 @@
     func submitGuess(
         roundID _: UUID,
         guess _: String,
+        speedBonus _: Bool?,
+        solveMs _: Int?,
         operation _: SyncClientOperation
     ) async throws -> RemoteGuessResult {
       throw URLError(.notConnectedToInternet)

@@ -204,6 +204,41 @@ struct WidgetLivePresenceTests {
         #expect(presence.peerCount == 0)
     }
 
+    @Test func gameRolesAreReportedAndTheBusiestOneWins() {
+        var presence = WidgetLivePresence()
+        presence.welcome(id: "me", peers: 5)
+
+        presence.hello(from: "a", role: .present)
+        #expect(presence.partnerActivity == .present)
+        presence.hello(from: "b", role: .result)
+        #expect(presence.partnerActivity == .result)
+        presence.hello(from: "c", role: .choosing)
+        #expect(presence.partnerActivity == .choosing)
+        presence.hello(from: "d", role: .watching)
+        #expect(presence.partnerActivity == .watching)
+        presence.hello(from: "e", role: .drawing)
+        #expect(presence.partnerActivity == .drawing)
+
+        // Each socket that leaves hands the activity down the list.
+        presence.left(id: "e")
+        #expect(presence.partnerActivity == .watching)
+        presence.left(id: "d")
+        #expect(presence.partnerActivity == .choosing)
+        presence.left(id: "c")
+        #expect(presence.partnerActivity == .result)
+        presence.left(id: "b")
+        #expect(presence.partnerActivity == .present)
+    }
+
+    @Test func aNewHelloFromTheSameSocketReplacesItsRole() {
+        var presence = WidgetLivePresence()
+        presence.welcome(id: "me", peers: 1)
+        presence.hello(from: "phone", role: .result)
+        #expect(presence.partnerActivity == .result)
+        presence.hello(from: "phone", role: .watching)
+        #expect(presence.partnerActivity == .watching)
+    }
+
     @Test func joinedThenHelloCountsThePartner() {
         var presence = WidgetLivePresence()
         presence.welcome(id: "me", peers: 0)

@@ -80,7 +80,8 @@ struct WidgetDrawingCanvasHeader: View {
             String(localized: .widgetDrawingLiveTogether(partnerName))
         case .watching:
             String(localized: .widgetDrawingLiveWatching(partnerName))
-        case .away, nil:
+        case .away, .choosing, .result, .present, nil:
+            // The widget canvas never meets the game-only roles.
             nil
         }
     }

@@ -193,7 +193,7 @@ final class WidgetLiveDrawing {
             if let id = message.id {
                 playback.end(id, now: CACurrentMediaTime())
             }
-        case .ops where role == .watching:
+        case .ops where role != .drawing:
             room.apply(message, upserts: Self.upserts(in: message, side: WidgetLiveRoom.side))
             playback.remove(message.ended ?? [])
         case .ops:

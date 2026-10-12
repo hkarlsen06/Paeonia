@@ -21,6 +21,7 @@ struct DrawAndGuessScreen: View {
         .background(.paeoniaBackgroundSecondary)
         .navigationTitle(Text(.gamesDrawAndGuessName))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)

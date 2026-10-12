@@ -65,9 +65,16 @@ The round starts in Convex the moment the drawer picks a word, not when they fin
 
 Live runs whenever both partners have the game screen open. Without the partner there, everything works as an async round. Nothing about the round changes except how fast each side sees the other.
 
-- **Presence.** While the game screen is open, the phone joins the game's relay room. The relay's `welcome`, `joined` and `left` messages tell each phone whether the partner is there. Reuse `WidgetLivePresence`. The drawer sees "[Name] is watching". A waiting partner sees "[Name] is drawing for you".
+- **Presence.** While the game screen is open, the phone joins the game's relay room. The relay's `welcome`, `joined` and `left` messages tell each phone whether the partner is there. Reuse `WidgetLivePresence`. Each phone's `hello` carries a role that says what its screen is doing, so the other phone never guesses. The widget canvas sends `drawing` and `watching`. The game adds three roles that the widget never sends.
+  - `drawing`: the drawer of a round that has not ended. The drawer stays `drawing` after Done while waiting for the guess, so the guesser keeps the live canvas.
+  - `watching`: watching live, waiting for the drawing, or guessing.
+  - `choosing`: on the choose word screen.
+  - `result`: on the reveal or the drawer's result screen.
+  - `present`: in the game on any other screen.
+
+  When a partner has several sockets in the room, the activity is the first role in that order. `DrawAndGuessPhase.liveRole` maps a phase to a role, and `DrawAndGuessPartnerPresence` maps the partner's role back to the copy (`present` reads as `here`, the heartbeat-only state). The drawer sees "[Name] is watching" only for a partner who is `watching`. A waiting partner sees "[Name] is drawing for you".
 - **Strokes.** The drawer's strokes stream over the relay as in `WidgetLiveMessage` and play on the guesser's screen through `WidgetLivePlayback`.
-- **Joining late.** A guesser who opens the game mid-drawing asks for a snapshot with `hello`, as `WidgetLiveRoom` does. The strokes so far play back quickly, then live strokes follow.
+- **Joining late.** A guesser who opens the game mid-drawing asks for a snapshot with `hello`, as `WidgetLiveRoom` does. The strokes so far play back quickly, then live strokes follow. A drawer who has tapped Done has no canvas left to answer, so a guesser who joins then gets no snapshot. The guesser's phone downloads the sent drawing and replays it whenever the live canvas holds no strokes.
 - **Guesses.** Guesses go through Convex, because they are saved anyway. The drawer's live query shows them within a few hundred milliseconds.
 - **A correct guess** ends the round right away. The drawer's phone sends the drawing as it is at that moment, and both phones show the reveal together. The roles then swap. The new drawer picks a word while the other partner stays to watch, so two partners who are both online can play back and forth without leaving the screen.
 - **The drawer taps Done before a correct guess.** The round continues as a normal round, and the guesser keeps guessing on the finished drawing.
@@ -83,7 +90,7 @@ The play style is a couple setting (see `docs/games-plan.md`).
 
 Points are 1 for easy, 2 for medium and 3 for hard.
 
-**Against each other.** Each partner has their own score. A correct guess gives the guesser the word's points plus a speed bonus of 1 point when the guess comes while the partner is still drawing, or within 30 seconds of first seeing the finished drawing. The drawer gets the word's points when the guess is right. Both partners draw and guess equally often, so the difference between the totals comes down to how fast and how well each one plays.
+**Against each other.** Each partner has their own score. A correct guess gives the guesser the word's points plus a speed bonus of 1 point when the guess comes while the partner is still drawing, or within 30 seconds of first seeing the finished drawing, as the guesser's own screen showed it. The drawer gets the word's points when the guess is right. Both partners draw and guess equally often, so the difference between the totals comes down to how fast and how well each one plays.
 
 In both styles the scores keep growing and never reset. The server keeps the shared total and both personal totals at all times, so switching play style loses nothing.
 
@@ -118,7 +125,7 @@ The functions are in `backend/convex/games.ts` and the helpers in `backend/conve
 - `game_presence` and `game_invites`: the open game screen, and the last invite each partner sent.
 - The guesser's phone receives the word when the round starts, because it builds the tiles and checks guesses locally for instant feedback. The UI never shows the word before the reveal. Cheating isn't a real risk between partners, so the server doesn't hide the word. The three word choices are different: only the drawer whose turn it is receives them.
 - A turn drawn offline is saved on the phone and sent when the phone is back online. The UI tells the drawer: "Saved on this phone. We'll send it when you're online." Picking a word, sending a drawing, a guess, and giving up are safe to retry.
-- Scoring: a correct guess adds the word's points to the shared total and to the drawer's total. The guesser's total gets the word's points plus 1 when the guess comes while the round is still `drawing`, or within 30 seconds of the later of `guesser_first_seen_at` and `drawing_submitted_at` (`scoreSolve` in `lib/games.ts`). The server keeps all three totals whatever the play style, so the style only changes what the app shows. The attempt time and the speed bonus use the server clock, so a guess that waited in the offline queue loses the bonus.
+- Scoring: a correct guess adds the word's points to the shared total and to the drawer's total. The guesser's total gets the word's points plus 1 when the phone says the bonus was on screen. When the guess has no claim, `scoreSolve` in `lib/games.ts` decides: 1 when the round is still `drawing`, or when the guess is within 30 seconds of the later of `guesser_first_seen_at` and `drawing_submitted_at`. The server keeps all three totals whatever the play style, so the style only changes what the app shows. The speed bonus follows what the player saw. A correct guess carries `p_speed_bonus` (whether the bonus was still on screen) and `p_solve_ms` (time since the player first saw the drawing), both from the phone's clock. The phone works them out the same way in both play styles. The server uses them when present and falls back to `scoreSolve` only when both are missing. A guess that waited in the offline queue, or that reached the server before `mark_round_seen`, keeps the bonus the screen showed. The server accepts a solve time from 0 ms to 30 days and rejects anything else. Both values are part of the request hash for the guess, so a retry with different values is refused. A wrong guess ignores them. Either partner could send false values, which is acceptable for a two-person game.
 - A correct guess ends the round at once, even when the drawer has not sent the drawing yet. The guesser's turn to draw starts, and the drawer's later `submit_drawing` attaches the drawing to the solved round without changing the turn.
 - Relationship cleanup deletes every game row of the couple and queues the drawings for deletion. Presence rows go as soon as the relationship ends. A memory saved from a round is an ordinary memory and follows the memory rules.
 
@@ -142,6 +149,8 @@ The screen-by-screen design. It does not change the rules above. Copy keys start
 - Look. `.paeoniaBackgroundSecondary` background, `.preferredColorScheme(.dark)`, inline title "Draw & Guess" / "Tegn og gjett", dark toolbar, as in `WidgetDrawingView`. The canvas surface is `.paeoniaBackgroundPrimary` with the widget ink palette, so a saved drawing looks like a widget drawing.
 - No cards. Only repeated items with meaning get a fill (word rows, tiles, slots, chips): `.paeoniaSurfacePrimary` or `.paeoniaSurfaceSecondary`, `PaeoniaRadius.radius12` for tiles and slots, `radius16` for word rows.
 - One square. Drawing and replay use the same square, side = min(width, space left), so strokes never rescale between drawing and watching. Phases never resize it. The two result phases shrink it to 80% once (see Reveal).
+- Side from the real rows. On a phone `DrawAndGuessPhaseLayout` measures the rows above and below the square once they exist, and sets the side so the screen fits without scrolling when the width allows it (minimum 200 pt, then it scrolls). A result that is playing freezes the side the guess screen had, and the drawer's result screen takes the side the drawing screen had (`DrawAndGuessSideMemory`), so the square never jumps. At accessibility text sizes the tiles are tall and the screen scrolls.
+- No tab bar. `DrawAndGuessScreen` hides the tab bar (`.toolbar(.hidden, for: .tabBar)`). It comes back on the Games hub.
 - Bottom clusters are pinned with `safeAreaInset(edge: .bottom)`, capped with `.paeoniaReadableWidth()`, buttons `PaeoniaSpacing.space12` apart. A text-only action keeps a `compactButtonHeight` hit target.
 - Phase change. Cross-fade plus a 12 pt rise over `PaeoniaMotion.meaningfulMoment`. Reduce Motion: cross-fade over `motionFast`, no rise.
 - Partner colors. Avatars are `PaeoniaProfilePhotoAvatar`, tinted `.paeoniaPartnerOne` for me and `.paeoniaPartnerTwo` for the partner.
@@ -209,7 +218,7 @@ VoiceOver. Rows read "Cat, easy, 1 point", with the `.isSelected` trait on the c
 
 First ever turn. There is no guess. The screen opens straight here with `choose.subtitleFirst`, and the subtitle is the only teaching. The first-time game setup (play style and language) runs before this and belongs to the Games tab.
 
-Offline and empty. The three words come from the game row, so they are cached after the first sync. With no cached words and no network, show `PaeoniaEmptyStateView` (`wifi.slash`): "You're offline" / "Du er ikke på nett", "Connect to the internet to get your words." / "Koble til internett for å få ordene dine.", action `common.tryAgain`. "Draw your own" needs no words, but the round still has to start in Convex, so it waits for the network too. The Start button then shows the sent-offline line from phase 2 and queues the pick.
+Offline and empty. The three words come from the game row, so they are cached after the first sync. With the turn mine, the state loaded and no words in it (`choicesUnavailable`), show `PaeoniaEmptyStateView` (`wifi.slash`): "You're offline" / "Du er ikke på nett", "Connect to the internet to get your words." / "Koble til internett for å få ordene dine.", action `common.tryAgain`. "Draw your own" needs no words, but the round still has to start in Convex, so it waits for the network too. The Start button then shows the sent-offline line from phase 2 and queues the pick. The message never shows during the hand-off to drawing. After a pick the phase changes and the view model clears the word list in the same step, while the old screen is still fading out. That screen keeps the words it showed, and the offline message follows `choicesUnavailable`, which is false outside the choose word phase.
 
 ### 2. Drawing
 
@@ -223,7 +232,7 @@ Layout, top to bottom (the widget canvas layout with two added lines).
 5. Pinned bottom: primary "Done", disabled while the canvas has no strokes.
 Toolbar trailing: "Clear" with a centered alert (not the widget's copy, which talks about widgets).
 
-Live indicator. When the relay says the partner is in the room, the leading slot shows the partner's avatar (24 pt, accent ring) and "[Name] is watching". When the partner joins, the avatar scales 1 to 1.12 and back once (`motionDefault`) and `partnerDrawingReceived()` fires. Reduce Motion: no scale, the haptic stays. When the partner is away the slot shows "[Name] will see it later" in `.paeoniaTextTertiary`, so async never feels broken. VoiceOver announces "[Name] is watching" when it appears.
+Live indicator. The leading slot follows what the partner's phone says it is doing. A partner who is `watching` shows the avatar (24 pt, accent ring) and "[Name] is watching". A partner on the last result shows "[Name] is looking at the result", and one who is in the game but has not said more shows "[Name] is here", both without the ring. When the partner joins, the avatar scales 1 to 1.12 and back once (`motionDefault`) and `partnerDrawingReceived()` fires. Reduce Motion: no scale, the haptic stays. When the partner is away the slot shows "[Name] will see it later" in `.paeoniaTextTertiary`, so async never feels broken. VoiceOver announces the line whenever it changes to a new one.
 
 Wrong guesses while drawing. The newest wrong guess fills the trailing slot as a capsule (`.paeoniaSurfacePrimary`, `caption` semibold, `.paeoniaTextSecondary`, never red). It arrives with `cardReveal` and an 8 pt rise, replaces the previous one, and fades out after 6 seconds, so the row is calm again. No layout shift, because the slot is always laid out. Haptic `partnerDrawingReceived()` only while no stroke is in progress (`onStrokeInProgressChange`). Reduce Motion: fade only. VoiceOver gets a queued, low priority announcement "[Name] tried CAT". Every guess is kept for the drawer's result (phase 6).
 
@@ -236,6 +245,8 @@ The partner solves it mid-drawing. The canvas stops taking touches in the same f
 | `draw.wordLabel` | Draw | Tegn |
 | `draw.watching` | [Name] is watching | [Name] ser på |
 | `draw.later` | [Name] will see it later | [Name] ser den senere |
+| `draw.here` | [Name] is here | [Name] er her |
+| `draw.lookingAtResult` | [Name] is looking at the result | [Name] ser på resultatet |
 | `draw.tried` | [Name] tried %@ | [Name] prøvde %@ |
 | `draw.sendOffline` | Saved on this phone. We'll send it when you're online. | Lagret på telefonen. Vi sender den når du er på nett. |
 | `draw.clear.title` | Clear the drawing? | Tømme tegningen? |
@@ -249,8 +260,9 @@ The offline line uses `.paeoniaSyncPending` with `clock`. The Done button reads 
 Purpose. Say what is happening, and make the wait feel shared.
 
 Variants, one layout.
-- Partner choosing a word. Title "[Name] is picking a word".
+- Waiting for the word. The title follows the partner's role. On the result screen: "Waiting for [Name] to continue". On the choose word screen: "[Name] is picking a word". Away or unknown: "Waiting for [Name]", with the later hint and the invite button. The live hint is left out here, because there is no drawing to watch yet.
 - Partner drawing, live or not. Title "[Name] is drawing for you".
+- The title of the screen is fixed when it opens, so it does not change its words while it fades out into the guess.
 - Once the round has started, dim answer slots appear under the title with "5 letters". It is the first hint that something is coming, and it leaks nothing, because the guesser's phone has the word anyway.
 
 Layout, centered in the content, top to bottom.
@@ -267,6 +279,8 @@ The switch to guessing happens at the first stroke (live) or when the drawing ar
 |---|---|---|
 | `wait.choosing` | [Name] is picking a word | [Name] velger et ord |
 | `wait.drawing` | [Name] is drawing for you | [Name] tegner for deg |
+| `wait.generic` | Waiting for [Name] | Venter på [Name] |
+| `wait.continue` | Waiting for [Name] to continue | Venter på at [Name] skal fortsette |
 | `wait.hintLive` | You'll watch it happen. | Du ser det skje. |
 | `wait.hintLater` | The drawing will show up here. We'll tell you when it's ready. | Tegningen dukker opp her. Vi sier fra når den er klar. |
 | `wait.letters` | %lld letters | %lld bokstaver |
@@ -339,11 +353,11 @@ Solve time. "You solved it in 24 seconds" (`Duration.UnitsFormatStyle`, seconds 
 Score panel.
 - Together. The couple total counts up from the old to the new total in 0.6 s, big, in `PaeoniaTypography.countdownNumber`, with "points together" under it and "+2" in `.paeoniaAccentPrimary` beside it. Both avatars sit above. One `streakTick` per point added.
 - Against each other. The two avatars are the two columns, each with a total below. A "+3" pops on mine and a "+2" on theirs, and the totals count up. Under my column, if I am the guesser, two quiet lines "The word +2" and "Speed bonus +1" (gold). Under theirs, "For the drawing +2". No winner banner and no comparison text. The numbers do that.
-- Queued win (offline). The panel shows the word's points without a bonus and the line "Your score updates when you're online." The server decides the bonus, and a queued guess loses it.
+- Queued win (offline). The panel shows the word's points without a bonus and the line "Your score updates when you're online." The server adds the bonus the phone claimed when the guess arrives, so a queued guess keeps it, and the bonus line appears once the result is confirmed.
 
-Save to Memories. The row has `caption` "Save this drawing to Memories?" and two equal buttons, "Not now" (quiet) and "Save to Memories" (secondary). Saving shows the button's loading state while the phone renders and uploads the image, then the whole row becomes `checkmark.circle.fill` "Saved to Memories" (`memorySaved()`). If the partner saved first, the row opens already in the saved state with "[Name] saved this to Memories". Offline, the row shows the `draw.sendOffline` line and keeps trying. "Not now" removes the row for me only.
+Save to Memories. The row is one full-width secondary button, "Save drawing to Memories", with no question above it. Saving shows the button's loading state while the phone renders and uploads the image, then the whole row becomes `checkmark.circle.fill` "Saved to Memories" (`memorySaved()`). If the partner saved first, the row opens already in the saved state with "[Name] saved this to Memories". Offline, the row shows the `draw.sendOffline` line and keeps trying. Continue at the bottom means no. It records "not now" for me only.
 
-If the player moves on without answering, the prompt is not lost. It moves to the pending save row at the top of the choose and waiting screens (compact: thumbnail, "Save CAT to Memories?", the same two buttons) until they answer.
+If the player leaves the result some other way, such as closing the app, the save option moves to the pending save row at the top of the choose and waiting screens (compact: thumbnail, "Save CAT to Memories?", the same single button) until the next round starts.
 
 Hand-off. The primary button is "Your turn to draw", pinned at the bottom and always the primary action. It crosses to phase 1 over `pairedScreenTransition` and keeps no state. There is no forced answer, no second confirm, and no auto-advance, because the player may want to look at the drawing a bit longer. In a live pair the drawer's phone is already on its own result screen, so the two phones move on independently.
 
@@ -355,9 +369,7 @@ Hand-off. The primary button is "Your turn to draw", pinned at the bottom and al
 | `reveal.you` | You | Du |
 | `reveal.word` / `reveal.speed` / `reveal.drawing` | The word / Speed bonus / For the drawing | Ordet / Fartsbonus / For tegningen |
 | `reveal.offlineScore` | Your score updates when you're online. | Poengene oppdateres når du er på nett. |
-| `save.prompt` | Save this drawing to Memories? | Lagre tegningen i Minner? |
-| `save.notNow` | Not now | Ikke nå |
-| `save.save` | Save to Memories | Lagre i Minner |
+| `save.save` | Save drawing to Memories | Lagre tegningen i Minner |
 | `save.saved` | Saved to Memories | Lagret i Minner |
 | `save.savedBy` | [Name] saved this to Memories | [Name] lagret dette i Minner |
 | `save.pendingRow` | Save %@ to Memories? | Lagre %@ i Minner? |
@@ -370,7 +382,7 @@ VoiceOver. On the word landing, post one announcement, "Correct. It was CAT. 2 p
 Purpose. The drawer's payoff. It should feel like watching the other person think.
 
 Right after Done, if the round is not solved, the drawer sees the same square (80%, static, showing the full drawing) with:
-1. Status line. "Sent to [Name]". Under it, "[Name] hasn't seen it yet", or "[Name] is looking at it" when the partner is live (avatar with the same joined pulse as phase 2).
+1. Status line. "Sent to [Name]". Under it, one of three lines. "[Name] is looking at it" while the partner is on the guess screen (role `watching`, with the avatar ring and the same joined pulse as phase 2). "[Name] has seen it" once the server has `guesser_first_seen_at` for the round and the partner has left the guess screen. "[Name] hasn't seen it yet" when the guesser has never seen the drawing, also while the partner is somewhere else in the game (`DrawAndGuessSentStatus`).
 2. Guess area. With no guesses, "No guesses yet. We'll tell you when [Name] tries." As guesses arrive, each wrong word is a chip (`.paeoniaSurfacePrimary`, `caption` semibold, wrapping, in order), appearing with `cardReveal` and `partnerDrawingReceived()`. The row reads "[Name] tried" in front.
 3. Pinned bottom: nothing, until the round ends. The drawer may leave with back.
 
@@ -387,6 +399,7 @@ Missed, from the drawer's side. Title "[Name] asked for the answer", then the ch
 | `result.sent` | Sent to [Name] | Sendt til [Name] |
 | `result.notSeen` | [Name] hasn't seen it yet | [Name] har ikke sett den ennå |
 | `result.looking` | [Name] is looking at it | [Name] ser på den nå |
+| `result.seen` | [Name] has seen it | [Name] har sett den |
 | `result.tried` | [Name] tried | [Name] prøvde |
 | `result.noTries` | No guesses yet. We'll tell you when [Name] tries. | Ingen gjetninger ennå. Vi sier fra når [Name] prøver. |
 | `result.gotIt` | [Name] got it! | [Name] fikk den! |
@@ -395,6 +408,9 @@ Missed, from the drawer's side. Title "[Name] asked for the answer", then the ch
 | `result.missed` | [Name] asked for the answer | [Name] ba om å få se svaret |
 | `result.noPoints` | No points this round. | Ingen poeng denne runden. |
 | `handoff.continue` | Continue | Fortsett |
+| `handoff.watch` | Watch [Name] draw | Se [Name] tegne |
+
+Watch the partner draw. When this phone is on the drawer's result and the server's current round is a newer round in state `drawing` with the partner as drawer, the bottom button changes from "Continue" to "Watch [Name] draw", with a pulsing dot in front (still under Reduce Motion). It gives one `partnerDrawingReceived()` haptic and a VoiceOver announcement ("[Name] is drawing for you") when it appears. Tapping it does what Continue does, which also counts as not saving, and lands in the live watching phase when the partner is drawing live. The save button stays above it. The view model exposes this as `partnerStartedDrawing`.
 
 VoiceOver reads the guesses as one sentence, "[Name] tried CAT, then HAT, then DOG", built with `ListFormatStyle`-style joining, and the chips are hidden from the rotor.
 
@@ -425,19 +441,19 @@ There is no score panel, in both styles, because nothing changed. The play style
 
 ### Rules questions this design raises
 
-- An unanswered save prompt waits in the pending row (above) instead of closing. This matches "the prompt waits until each partner answers" and needs no new backend field.
 - The unseen result gate is local to the phone (a second device would show the result again).
 
 ## iOS
 
 Code map in `docs/implementation-map.md`. Decisions the sections above leave open:
 
-- **Local first.** Picking a word, sending the drawing, a guess, "Show me" and saving to Memories go into the pending operations before anything is sent. The screen applies those queued moves on top of the server's state, so a correct guess shows the reveal at once and a drawing sent offline shows "Saved on this phone. We'll send it when you're online." The server's points, speed bonus and solve time replace the local values when they arrive. Creating the couple's game and changing settings need a connection.
+- **Local first.** Picking a word, sending the drawing, a guess, "Show me" and saving to Memories go into the pending operations before anything is sent. The screen applies those queued moves on top of the server's state, so a correct guess shows the reveal at once and a drawing sent offline shows "Saved on this phone. We'll send it when you're online." The server's points, speed bonus and solve time replace the local values when they arrive. The speed bonus and solve time are the ones the phone sent with the guess. Creating the couple's game and changing settings need a connection.
 - **Order.** A drawing waits for the word pick of its round, and a pick waits for this person's earlier guesses and give up. A guess or give up waits for the earlier guesses of the same round, so a wrong guess is never refused after the correct one ended the round. A refused word or drawing stops retrying and shows a notice. A refused drawing goes back on the canvas. When the word is refused, the drawing already made for it is not sent. It is kept and appears on the canvas of the drawer's next round, after they pick another word.
 - **One drawing size.** The drawer scales the drawing to a 320 point square before sending, and the guesser scales it to their own canvas. The live room uses the same size.
 - **Reveal.** Each person moves past a round's reveal once, and the phone remembers it. "Continue" with the save question still open keeps it open, and the choose and waiting screens show it as the pending save row until the next round starts. The guesser draws next, so "Your turn to draw" shows when the guesser leaves the reveal.
 - **Built screens.** The screens follow the design above with these differences. The answer slots sit under the square in the scrolling content (pinned with the tiles only at accessibility text sizes), so the reveal does not move them. The "Missed" result uses the same layout as the solved reveal instead of the focused width. When the partner solves the round while the drawer is still drawing, the drawer's screen cross-fades to the result instead of folding the tools away. The pending save row covers the round that just ended, and is gone once the next round starts. The Draw & Guess canvas shares the widget tool controls through `WidgetDrawingToolControlling` instead of the widget view model.
 - **Live to async.** A guesser who watched the drawing live keeps the live canvas when the drawer taps Done, until the drawer leaves the live room. Then the sent drawing is downloaded and replayed. A guesser who did not watch gets the replay. The speed bonus clock starts when the guesser first sees the drawing, live or replayed.
+- **Role.** The open screen announces the role from the Live section through the relay `hello` and changes it with the phase (`syncLiveRole`).
 - **Presence.** The open screen sends `set_game_presence` true on appear and every 30 seconds, and false on disappear and in the background. The hub and the game treat a heartbeat under 60 seconds old as "here", and check again every 15 seconds.
 - **Setup.** The couple's game language is preselected from the first supported language of the phone, because the app cannot see the partner's language. The partner who did not choose sees "Here's what [Name] picked" once, tracked on the phone.
 - **Drafts.** The drawer's unsent drawing is saved on the phone as they draw, so closing the app loses nothing.

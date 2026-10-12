@@ -259,6 +259,7 @@ final class PaeoniaAppUITests: XCTestCase {
         "draw-save-prompt",
         "draw-reveal-missed",
         "draw-reveal-as-drawer",
+        "draw-reveal-partner-drawing",
         "widget-drawing",
         "widget-history-empty",
         "widget-history-populated",

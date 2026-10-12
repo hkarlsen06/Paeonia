@@ -153,6 +153,7 @@ struct DrawAndGuessFixTests {
         await viewModel.reload()
         connection.onMessage?(WidgetLiveMessage(type: .welcome, id: "me", peers: 1))
         connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: "drawing"))
+        sendPartnerCanvasSnapshot(on: connection)
         viewModel.recompute()
         #expect(viewModel.phase == .watchingLive)
 

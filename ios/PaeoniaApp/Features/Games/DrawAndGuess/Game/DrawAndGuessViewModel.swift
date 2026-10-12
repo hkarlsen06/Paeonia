@@ -74,6 +74,10 @@ final class DrawAndGuessViewModel {
     var partner: DrawAndGuessPlayer
     /// The three words, while it is this person's turn to pick one.
     var choices: [DrawAndGuessWordChoice] = []
+    /// It is this person's turn to pick, the state has loaded, and it carries no
+    /// words. Only then does the choose screen show its offline message. Not
+    /// having words while the round starts or the screen leaves is no failure.
+    var choicesUnavailable = false
     /// The "Draw your own" text field. Bind to it.
     var customWord = "" {
         didSet { customWordValidation = DrawAndGuessCustomWordValidation(customWord) }
@@ -92,6 +96,9 @@ final class DrawAndGuessViewModel {
     var prefersReducedMotion = false
     var partnerPresence: DrawAndGuessPartnerPresence = .away
     var invite: GameInviteState = .hidden
+    /// The result screen is open and the partner has started drawing the next
+    /// round. The bottom button then reads "Watch [Name] draw".
+    var partnerStartedDrawing = false
     /// A move is saved on this phone and not sent yet. Show
     /// `.gamesPendingSavedOnPhone`.
     var isWaitingToSend = false
@@ -129,6 +136,8 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored let tickInterval: Duration
     @ObservationIgnored let monotonicNow: @Sendable () -> TimeInterval
     @ObservationIgnored let sleep: @Sendable (Duration) async throws -> Void
+    /// The square's side from the drawing screen, for the result screen that follows it.
+    @ObservationIgnored let squareMemory = DrawAndGuessSideMemory()
     @ObservationIgnored var syncAfterLocalChange: (@MainActor () async -> Void)?
 
     // MARK: - Internal state
@@ -137,6 +146,8 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var state: RemoteDrawAndGuessState?
     @ObservationIgnored var pending = DrawAndGuessPendingWork.none
     @ObservationIgnored var acknowledgedRoundIDs: Set<UUID> = []
+    /// Rounds where this person said "not now" to saving on this phone.
+    @ObservationIgnored var declinedSaveRoundIDs: Set<UUID> = []
     @ObservationIgnored var now: Date
     @ObservationIgnored var localInviteSentAt: Date?
     @ObservationIgnored var isRunning = false
@@ -301,7 +312,9 @@ final class DrawAndGuessViewModel {
             settings.map { DrawAndGuessScore(game: game, playStyle: $0.playStyle) }
         }
         choices = (phase == .chooseWord ? state?.choices : nil)?.map(DrawAndGuessWordChoice.init) ?? []
+        choicesUnavailable = phase == .chooseWord && choices.isEmpty
         updatePresenceState()
+        updatePartnerStartedDrawing()
         updateSpeedBonus()
         if phase == .preparing || phase == .needsSetup {
             startFailed = startFailed && phase == .preparing

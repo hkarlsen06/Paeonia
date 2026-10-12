@@ -40,6 +40,23 @@ nonisolated enum DrawAndGuessPhase: Equatable, Sendable {
     }
 }
 
+extension DrawAndGuessPhase {
+    /// What this phone tells the partner's phone through the relay room.
+    /// The drawer of a round that has not ended stays `drawing`, also after Done,
+    /// so the guesser keeps the live canvas.
+    static func liveRole(phase: DrawAndGuessPhase, isDrawerOfUnfinishedRound: Bool) -> WidgetLivePresence.Role {
+        if isDrawerOfUnfinishedRound {
+            return .drawing
+        }
+        switch phase {
+        case .watchingLive, .waitingForDrawing, .guessing: return .watching
+        case .chooseWord: return .choosing
+        case .reveal: return .result
+        default: return .present
+        }
+    }
+}
+
 nonisolated struct DrawAndGuessResolution: Equatable, Sendable {
     let phase: DrawAndGuessPhase
     /// The round the phase is about, with unsent moves applied.

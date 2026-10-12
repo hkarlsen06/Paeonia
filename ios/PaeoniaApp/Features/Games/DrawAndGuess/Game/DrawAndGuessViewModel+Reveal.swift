@@ -2,19 +2,21 @@ import Foundation
 
 // The reveal and the save prompt.
 extension DrawAndGuessViewModel {
-    /// Leaves the reveal for the next turn. A save question that is still open
-    /// stays open, and the choose and waiting screens show it as a row.
+    /// Leaves the reveal for the next turn. Continuing without saving means no,
+    /// so an open save question is answered "not now" for this person.
     func continueFromReveal() async {
         guard phase == .reveal, let round, let userID = currentUserID else { return }
+        await skipSaving()
         await dependencies.cache.acknowledgeRound(round.id, ownerUserID: userID)
         await reload()
     }
 
-    /// "Not now". Closes the prompt for this person only.
+    /// Closes the save question for this person only.
     func skipSaving() async {
         guard savePrompt == .ask, let round else { return }
         // Hidden at once. The server records it for the next time this person opens the game.
         savePrompt = .hidden
+        declinedSaveRoundIDs.insert(round.id)
         try? await gateway.respondSavePrompt(roundID: round.id)
     }
 

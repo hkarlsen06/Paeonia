@@ -81,6 +81,7 @@
     case drawSavePrompt = "draw-save-prompt"
     case drawRevealMissed = "draw-reveal-missed"
     case drawRevealAsDrawer = "draw-reveal-as-drawer"
+    case drawRevealPartnerDrawing = "draw-reveal-partner-drawing"
 
     case notificationPrimer = "notification-primer"
     case settings
@@ -181,6 +182,7 @@
       case .drawSavePrompt: "Draw & Guess · reveal with save prompt"
       case .drawRevealMissed: "Draw & Guess · reveal, missed"
       case .drawRevealAsDrawer: "Draw & Guess · reveal as the drawer"
+      case .drawRevealPartnerDrawing: "Draw & Guess · partner drew the next one"
       case .notificationPrimer: "Notifications · primer"
       case .settings: "Settings"
       case .settingsNotificationsDenied: "Settings · notifications denied"
@@ -328,6 +330,8 @@
         "You pressed Show me: the word and the drawing"
       case .drawRevealAsDrawer:
         "Robin solved your drawing: the guesses in order"
+      case .drawRevealPartnerDrawing:
+        "The result, and Robin already draws the next one: the button reads Watch Robin draw"
       case .notificationPrimer:
         "Pre-permission notification explanation"
       case .settings:
@@ -378,7 +382,7 @@
       case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting,
         .gamesHubPartnerHere, .drawChooseWord, .drawWaitingForWord, .drawDrawing, .drawSavedOffline,
         .drawWaitingForGuess, .drawWaitingForDrawing, .drawWatchingLive, .drawGuessingReplay,
-        .drawRevealSolved, .drawSavePrompt, .drawRevealMissed, .drawRevealAsDrawer:
+        .drawRevealSolved, .drawSavePrompt, .drawRevealMissed, .drawRevealAsDrawer, .drawRevealPartnerDrawing:
         .games
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         .widget

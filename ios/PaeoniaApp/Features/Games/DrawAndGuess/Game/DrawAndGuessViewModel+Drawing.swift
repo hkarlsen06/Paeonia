@@ -33,11 +33,21 @@ extension DrawAndGuessViewModel {
         }
     }
 
-    /// The guesser watched this round live and the drawer is still in the live
-    /// room. The live room clears the canvas when the drawer leaves, and the
-    /// guesser then needs the sent drawing.
+    /// The guesser watched this round live, the drawer is still in the live room,
+    /// and the room holds the drawer's strokes. The live room clears the canvas
+    /// when the drawer leaves, and the guesser then needs the sent drawing.
+    ///
+    /// The drawer stays in the room as `drawing` after tapping Done, but no
+    /// longer has a canvas to answer a snapshot request. A guesser who comes
+    /// back (a push, or the app returning from the background) joins an empty
+    /// room. Without the strokes check that guesser would look at the empty live
+    /// canvas and never download the drawing. A replay that is already playing
+    /// never goes back to the live canvas.
     func isWatchingLiveCanvas(of round: DrawAndGuessRoundView) -> Bool {
-        watchedLiveRoundIDs.contains(round.id) && live?.partnerActivity == .drawing
+        watchedLiveRoundIDs.contains(round.id)
+            && !isReplayReady
+            && live?.partnerActivity == .drawing
+            && live?.partnerCanvasDrawing?.strokes.isEmpty == false
     }
 
     /// Stops a fetch that is still running, and forgets that it was.

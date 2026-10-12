@@ -5,6 +5,9 @@ import SwiftUI
 struct DrawAndGuessChooseWordView: View {
     @Bindable var viewModel: DrawAndGuessViewModel
 
+    /// The words on screen. The screen keeps showing them while it fades out after
+    /// a pick, when the view model has already cleared its own list.
+    @State private var shownChoices: [DrawAndGuessWordChoice]
     @State private var selected: DrawAndGuessDifficulty?
     @State private var isWritingOwn = false
     @State private var isStarting = false
@@ -13,6 +16,11 @@ struct DrawAndGuessChooseWordView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(viewModel: DrawAndGuessViewModel) {
+        self.viewModel = viewModel
+        _shownChoices = State(initialValue: viewModel.choices)
+    }
 
     private var canStart: Bool {
         isWritingOwn ? viewModel.customWordValidation.word != nil : selected != nil
@@ -26,7 +34,7 @@ struct DrawAndGuessChooseWordView: View {
                     heading
                 }
                 DrawAndGuessPendingSaveRow(viewModel: viewModel)
-                if viewModel.choices.isEmpty, !isWritingOwn {
+                if viewModel.choicesUnavailable, !isWritingOwn {
                     offline
                 } else {
                     rows
@@ -45,6 +53,9 @@ struct DrawAndGuessChooseWordView: View {
             .accessibilityIdentifier("draw.choose.start")
         }
         .drawAndGuessScoreToolbar(viewModel)
+        .onChange(of: viewModel.choices) { _, new in
+            if !new.isEmpty { shownChoices = new }
+        }
         .onChange(of: viewModel.customWordValidation) { old, new in
             if case .invalid(let failure) = new, failure != .tooShort, new != old {
                 PaeoniaHaptics.validationError()
@@ -92,7 +103,7 @@ struct DrawAndGuessChooseWordView: View {
     private var rows: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             if !isWritingOwn {
-                ForEach(viewModel.choices) { choice in
+                ForEach(shownChoices) { choice in
                     DrawAndGuessWordRow(choice: choice, isSelected: selected == choice.difficulty) {
                         PaeoniaHaptics.selection()
                         withAnimation(PaeoniaMotion.buttonPress) { selected = choice.difficulty }

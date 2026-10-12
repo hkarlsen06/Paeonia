@@ -37,6 +37,13 @@ nonisolated struct GameGuessPayload: Codable, Equatable, Sendable {
     /// Whether the guess matched the answer on this phone.
     let isCorrect: Bool
     let createdAt: Date
+    /// Whether the speed bonus was still on screen when the player made the
+    /// correct guess, on this phone's clock. The server takes it as it is, so a
+    /// guess that waits offline keeps what the player saw. Nil for a wrong guess.
+    var speedBonus: Bool?
+    /// Milliseconds from when the player first saw the drawing to the correct
+    /// guess, on this phone's clock. Nil when the player never saw it.
+    var solveMs: Int?
 }
 
 nonisolated struct GameGiveUpPayload: Codable, Equatable, Sendable {

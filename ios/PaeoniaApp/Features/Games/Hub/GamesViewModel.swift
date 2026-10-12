@@ -130,7 +130,9 @@ final class GamesViewModel {
             guard try await dependencies.cache.fetchState(from: gateway, ownerUserID: userID) else { return }
             await reload()
         } catch {
-            if state == nil, hasLoaded {
+            // A read that was cancelled (the tab changed under it) says nothing about the network.
+            if state == nil, hasLoaded, !Task.isCancelled, !(error is CancellationError),
+               (error as? URLError)?.code != .cancelled {
                 screen = .unavailable
             }
         }

@@ -302,6 +302,7 @@ struct DrawAndGuessViewModelTests {
 
         connection.onMessage?(WidgetLiveMessage(type: .welcome, id: "me", peers: 1))
         connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: "drawing"))
+        sendPartnerCanvasSnapshot(on: connection)
         viewModel.recompute()
         #expect(viewModel.phase == .watchingLive)
         #expect(viewModel.partnerPresence == .drawing)
@@ -373,7 +374,7 @@ struct DrawAndGuessViewModelTests {
         #expect(viewModel.isNextTurnMine)
     }
 
-    @Test func continuingFromTheRevealKeepsTheSaveQuestionOpenAsARow() async {
+    @Test func continuingFromTheRevealCountsAsNoToSaving() async {
         let env = environment(solvedByMe)
         let viewModel = env.viewModel()
         await viewModel.reload()
@@ -382,9 +383,9 @@ struct DrawAndGuessViewModelTests {
 
         await viewModel.continueFromReveal()
 
-        #expect(env.gateway.savePromptAnswers.isEmpty)
+        #expect(env.gateway.savePromptAnswers == [GameFixture.roundID])
         #expect(viewModel.phase == .chooseWord)
-        #expect(viewModel.savePrompt == .ask)
+        #expect(viewModel.savePrompt == .hidden)
         #expect(await env.cache.document(ownerUserID: GameFixture.me).acknowledgedRoundIDs == [GameFixture.roundID])
     }
 

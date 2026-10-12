@@ -253,6 +253,8 @@ struct SubmitGameGuessPendingOperationHandler: PendingSyncOperationHandling {
             _ = try await gateway.submitGuess(
                 roundID: payload.roundID,
                 guess: payload.guess,
+                speedBonus: payload.speedBonus,
+                solveMs: payload.solveMs,
                 operation: operation.operation
             )
             return .succeeded

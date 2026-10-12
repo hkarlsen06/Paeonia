@@ -11,12 +11,19 @@ typealias GameFixture = DeveloperGamesFixture
 final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
     struct Failure: Error {}
 
+    /// What a guess sent along about the speed bonus.
+    struct GuessClaim: Equatable {
+        var speedBonus: Bool?
+        var solveMs: Int?
+    }
+
     private struct Record {
         var calls: [String] = []
         var presence: [Bool] = []
         var pickedWords: [GamePickWordPayload] = []
         var submittedDrawings: [(roundID: UUID, assetID: UUID)] = []
         var guesses: [String] = []
+        var guessClaims: [GuessClaim] = []
         var seenRounds: [UUID] = []
         var savePromptAnswers: [UUID] = []
         var inviteCount = 0
@@ -43,6 +50,7 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
     var pickedWords: [GamePickWordPayload] { read(\.pickedWords) }
     var submittedDrawings: [(roundID: UUID, assetID: UUID)] { read(\.submittedDrawings) }
     var guesses: [String] { read(\.guesses) }
+    var guessClaims: [GuessClaim] { read(\.guessClaims) }
     var seenRounds: [UUID] { read(\.seenRounds) }
     var savePromptAnswers: [UUID] { read(\.savePromptAnswers) }
     var inviteCount: Int { read(\.inviteCount) }
@@ -130,9 +138,18 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         return RemoteMarkSeenResult(guesserFirstSeenAt: GameFixture.now)
     }
 
-    func submitGuess(roundID _: UUID, guess: String, operation _: SyncClientOperation) async throws -> RemoteGuessResult {
+    func submitGuess(
+        roundID _: UUID,
+        guess: String,
+        speedBonus: Bool?,
+        solveMs: Int?,
+        operation _: SyncClientOperation
+    ) async throws -> RemoteGuessResult {
         try begin("guess")
-        write { $0.guesses.append(guess) }
+        write {
+            $0.guesses.append(guess)
+            $0.guessClaims.append(GuessClaim(speedBonus: speedBonus, solveMs: solveMs))
+        }
         return RemoteGuessResult(
             guessID: UUID(),
             correct: false,

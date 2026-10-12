@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The "Save this drawing to Memories?" row on the reveal. It turns into
-/// "Saved to Memories" once a save went through.
+/// The "Save drawing to Memories" button on the reveal. It turns into
+/// "Saved to Memories" once a save went through. Continuing without tapping it
+/// means no.
 struct DrawAndGuessSaveRow: View {
     let viewModel: DrawAndGuessViewModel
     @State private var isSavingFromHere = false
@@ -13,10 +14,7 @@ struct DrawAndGuessSaveRow: View {
                 EmptyView()
             case .ask, .saving:
                 VStack(spacing: PaeoniaSpacing.space12) {
-                    Text(.gamesDrawAndGuessSavePrompt)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                    buttons
+                    DrawAndGuessSaveButton(viewModel: viewModel)
                     if viewModel.savePrompt == .saving, viewModel.isWaitingToSend {
                         DrawAndGuessOfflineLine()
                     }
@@ -35,29 +33,6 @@ struct DrawAndGuessSaveRow: View {
             }
         }
         .accessibilityIdentifier("draw.save")
-    }
-
-    private var buttons: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            Button {
-                Task { await viewModel.skipSaving() }
-            } label: {
-                Text(.gamesDrawAndGuessSaveNotNow)
-            }
-            .buttonStyle(PaeoniaQuietButtonStyle())
-            .frame(maxWidth: .infinity)
-            .disabled(viewModel.savePrompt == .saving)
-            .accessibilityIdentifier("draw.save.notNow")
-
-            Button {
-                Task { await viewModel.saveToMemories() }
-            } label: {
-                Text(.gamesDrawAndGuessSaveSave)
-            }
-            .buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: viewModel.savePrompt == .saving))
-            .frame(maxWidth: .infinity)
-            .accessibilityIdentifier("draw.save.yes")
-        }
     }
 
     private func saved(_ text: Text) -> some View {
@@ -119,7 +94,7 @@ struct DrawAndGuessPendingSaveRow: View {
                 }
                 .font(PaeoniaTypography.bodyEmphasis)
                 if viewModel.savePrompt == .ask || viewModel.savePrompt == .saving {
-                    DrawAndGuessSaveRowButtons(viewModel: viewModel)
+                    DrawAndGuessSaveButton(viewModel: viewModel)
                 }
             }
             .padding(PaeoniaSpacing.space12)
@@ -131,28 +106,23 @@ struct DrawAndGuessPendingSaveRow: View {
     }
 }
 
-/// Not now and Save, as two equal buttons.
-private struct DrawAndGuessSaveRowButtons: View {
+/// "Save drawing to Memories", full width.
+private struct DrawAndGuessSaveButton: View {
     let viewModel: DrawAndGuessViewModel
 
     var body: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            Button {
-                Task { await viewModel.skipSaving() }
-            } label: {
-                Text(.gamesDrawAndGuessSaveNotNow)
-            }
-            .buttonStyle(PaeoniaQuietButtonStyle())
-            .frame(maxWidth: .infinity)
-            .disabled(viewModel.savePrompt == .saving)
-
-            Button {
-                Task { await viewModel.saveToMemories() }
-            } label: {
+        Button {
+            Task { await viewModel.saveToMemories() }
+        } label: {
+            Label {
                 Text(.gamesDrawAndGuessSaveSave)
+            } icon: {
+                Image(systemName: "photo.on.rectangle.angled")
+                    .accessibilityHidden(true)
             }
-            .buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: viewModel.savePrompt == .saving))
-            .frame(maxWidth: .infinity)
         }
+        .buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: viewModel.savePrompt == .saving))
+        .frame(maxWidth: .infinity)
+        .accessibilityIdentifier("draw.save.yes")
     }
 }

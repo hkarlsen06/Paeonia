@@ -22,10 +22,13 @@ struct DrawAndGuessGuessView: View {
     var body: some View {
         // A tap anywhere skips to the settled result. It is a shortcut, and the buttons stay.
         // swiftlint:disable:next accessibility_trait_for_button
-        DrawAndGuessPhaseLayout(scrollTrigger: revealProgress) {
-            if !isRevealed {
-                liveRow
-            }
+        DrawAndGuessPhaseLayout(scrollTrigger: revealProgress, freezesSide: isRevealed) {
+            // The rows that only matter while guessing fade out but keep their space,
+            // so nothing above or below the square jumps when the guess is right.
+            liveRow
+                .opacity(isRevealed ? 0 : 1)
+                .animation(PaeoniaMotion.stateChange, value: isRevealed)
+                .accessibilityHidden(isRevealed)
         } square: { side in
             square(side: side)
         } footer: {
@@ -107,8 +110,12 @@ struct DrawAndGuessGuessView: View {
             .accessibilityAction(named: Text(.gamesDrawAndGuessGuessReplaySkip)) {
                 viewModel.showWholeDrawing()
             }
-            if viewModel.speedBonus != .hidden, !reduceMotion, !isRevealed {
-                DrawAndGuessSpeedBonusLine(viewModel: viewModel, width: side)
+            if viewModel.settings?.playStyle == .against, !reduceMotion {
+                if viewModel.speedBonus != .hidden {
+                    DrawAndGuessSpeedBonusLine(viewModel: viewModel, width: side)
+                } else {
+                    Color.clear.frame(height: 3)
+                }
             }
         }
     }
@@ -199,15 +206,17 @@ struct DrawAndGuessGuessView: View {
                     slots
                 }
                 DrawAndGuessTileGrid(viewModel: viewModel, namespace: tileNamespace)
-                if !isRevealed {
-                    Button {
-                        isShowMeAlertPresented = true
-                    } label: {
-                        Text(.gamesDrawAndGuessShowMe)
-                    }
-                    .buttonStyle(PaeoniaQuietButtonStyle())
-                    .accessibilityIdentifier("draw.showMe")
+                Button {
+                    isShowMeAlertPresented = true
+                } label: {
+                    Text(.gamesDrawAndGuessShowMe)
                 }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .opacity(isRevealed ? 0 : 1)
+                .animation(PaeoniaMotion.stateChange, value: isRevealed)
+                .disabled(isRevealed)
+                .accessibilityHidden(isRevealed)
+                .accessibilityIdentifier("draw.showMe")
             }
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         }

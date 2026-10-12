@@ -13518,24 +13518,6 @@
       },
       "comment" : "Shown if the game opens before the couple chose how they play"
     },
-    "games.drawAndGuess.save.notNow" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not now"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ikke nå"
-          }
-        }
-      },
-      "comment" : "Button that declines saving the drawing."
-    },
     "games.pending.savedOnPhone" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -15174,41 +15156,23 @@
       },
       "comment" : "Button that leaves the drawer's result."
     },
-    "games.drawAndGuess.save.prompt" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save this drawing to Memories?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre tegningen i Minner?"
-          }
-        }
-      },
-      "comment" : "Question on the result of a round."
-    },
     "games.drawAndGuess.save.save" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save to Memories"
+            "value" : "Save drawing to Memories"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lagre i Minner"
+            "value" : "Lagre tegningen i Minner"
           }
         }
       },
-      "comment" : "Button that saves the drawing to Memories."
+      "comment" : "Draw & Guess result: full-width button that saves the round's drawing to the couple's Memories. Continuing without tapping it means no."
     },
     "games.drawAndGuess.save.saved" : {
       "extractionState" : "manual",
@@ -15671,6 +15635,114 @@
         }
       },
       "comment" : "Banner text when the word the drawer picked was refused after they had already drawn it. The drawing is kept."
+    },
+    "games.drawAndGuess.draw.here" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is here"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er her"
+          }
+        }
+      },
+      "comment" : "Shown above the canvas when the partner has the game open but is not watching yet"
+    },
+    "games.drawAndGuess.draw.lookingAtResult" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is looking at the result"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser på resultatet"
+          }
+        }
+      },
+      "comment" : "Shown above the canvas while the partner still looks at the result of the last round"
+    },
+    "games.drawAndGuess.wait.generic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@"
+          }
+        }
+      },
+      "comment" : "Title while waiting for the partner to pick a word and nothing more is known"
+    },
+    "games.drawAndGuess.wait.continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@ to continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på at %@ skal fortsette"
+          }
+        }
+      },
+      "comment" : "Title while the partner still looks at the result of the last round"
+    },
+    "games.drawAndGuess.result.seen" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ has seen it"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har sett den"
+          }
+        }
+      },
+      "comment" : "Line on the drawer's result screen after the partner saw the drawing and left"
+    },
+    "games.drawAndGuess.handoff.watch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch %@ draw"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se %@ tegne"
+          }
+        }
+      },
+      "comment" : "Button on the result screen once the partner has started drawing the next round"
     }
   },
   "version" : "1.0"

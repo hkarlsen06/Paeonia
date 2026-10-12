@@ -22,6 +22,8 @@ struct DrawAndGuessDrawerResultView: View {
     }
 
     private var isRevealed: Bool { viewModel.phase == .reveal }
+    /// The button reads "Watch [Name] draw" and is on screen.
+    private var showsWatchCall: Bool { isRevealed && timeline.buttonShown && viewModel.partnerStartedDrawing }
     private var revealProgress: Int {
         [timeline.titleShown, timeline.panelShown, timeline.saveShown].count { $0 }
     }
@@ -33,7 +35,12 @@ struct DrawAndGuessDrawerResultView: View {
     var body: some View {
         // A tap anywhere skips to the settled result. It is a shortcut, and the buttons stay.
         // swiftlint:disable:next accessibility_trait_for_button
-        DrawAndGuessPhaseLayout(scrollTrigger: revealProgress) {
+        DrawAndGuessPhaseLayout(
+            scrollTrigger: revealProgress,
+            freezesSide: isRevealed,
+            sharing: .inherits,
+            sideMemory: viewModel.squareMemory
+        ) {
             if !isRevealed {
                 statusRow
             }
@@ -50,7 +57,11 @@ struct DrawAndGuessDrawerResultView: View {
                 Button {
                     Task { await viewModel.continueFromReveal() }
                 } label: {
-                    Text(.gamesDrawAndGuessHandoffContinue)
+                    if viewModel.partnerStartedDrawing {
+                        DrawAndGuessWatchLabel(partnerName: viewModel.partnerName)
+                    } else {
+                        Text(.gamesDrawAndGuessHandoffContinue)
+                    }
                 }
                 .buttonStyle(PaeoniaPrimaryButtonStyle())
                 .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 12)))
@@ -67,6 +78,13 @@ struct DrawAndGuessDrawerResultView: View {
             if !isRevealed, new > old, !viewModel.board.isStrokeInProgress {
                 PaeoniaHaptics.partnerDrawingReceived()
             }
+        }
+        .onChange(of: showsWatchCall) { _, shows in
+            guard shows else { return }
+            PaeoniaHaptics.partnerDrawingReceived()
+            AccessibilityNotification.Announcement(
+                String(localized: .gamesDrawAndGuessWaitDrawing(viewModel.partnerName))
+            ).post()
         }
         .onChange(of: viewModel.partnerPresence.isHere) { old, new in
             guard new, !old else { return }
@@ -91,7 +109,7 @@ struct DrawAndGuessDrawerResultView: View {
         HStack(spacing: PaeoniaSpacing.space12) {
             DrawAndGuessAvatar(player: viewModel.partner, isMe: false, size: 40)
                 .overlay {
-                    if viewModel.partnerPresence.isHere {
+                    if viewModel.sentStatus == .looking {
                         Circle().strokeBorder(.paeoniaAccentPrimary, lineWidth: 2).padding(-2)
                     }
                 }
@@ -100,9 +118,7 @@ struct DrawAndGuessDrawerResultView: View {
                 Text(.gamesDrawAndGuessResultSent(viewModel.partnerName))
                     .font(PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
-                Text(viewModel.partnerPresence.isHere
-                    ? .gamesDrawAndGuessResultLooking(viewModel.partnerName)
-                    : .gamesDrawAndGuessResultNotSeen(viewModel.partnerName))
+                Text(viewModel.sentStatus.line(partnerName: viewModel.partnerName))
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextSecondary)
             }
@@ -235,5 +251,28 @@ struct DrawAndGuessDrawerResultView: View {
             beginReveal()
         }
         if timeline.titleShown { timeline.skip() }
+    }
+}
+
+/// "Watch [Name] draw" with a dot that pulses, as the live badge of the game does.
+struct DrawAndGuessWatchLabel: View {
+    let partnerName: String
+    @State private var isDim = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            Circle()
+                .fill(.paeoniaTextInverse)
+                .frame(width: 10, height: 10)
+                .opacity(isDim ? 0.35 : 1)
+                .scaleEffect(isDim ? 0.8 : 1)
+                .accessibilityHidden(true)
+            Text(.gamesDrawAndGuessHandoffWatch(partnerName))
+        }
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { isDim = true }
+        }
     }
 }

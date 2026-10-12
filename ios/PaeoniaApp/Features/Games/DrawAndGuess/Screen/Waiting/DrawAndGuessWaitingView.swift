@@ -4,9 +4,15 @@ import SwiftUI
 /// says what is happening and makes the wait feel shared.
 struct DrawAndGuessWaitingView: View {
     let viewModel: DrawAndGuessViewModel
+    /// Fixed when the screen opens. The screen fades out when the drawing starts
+    /// and must not change its words on the way.
+    private let isDrawing: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var isDrawing: Bool { viewModel.phase == .waitingForDrawing }
+    init(viewModel: DrawAndGuessViewModel) {
+        self.viewModel = viewModel
+        isDrawing = viewModel.phase == .waitingForDrawing
+    }
 
     var body: some View {
         DrawAndGuessFocusedLayout(fillsHeight: true) {
@@ -19,14 +25,14 @@ struct DrawAndGuessWaitingView: View {
                 VStack(spacing: PaeoniaSpacing.space16) {
                     avatar
                     VStack(spacing: PaeoniaSpacing.space8) {
-                        Text(isDrawing
-                            ? .gamesDrawAndGuessWaitDrawing(viewModel.partnerName)
-                            : .gamesDrawAndGuessWaitChoosing(viewModel.partnerName))
+                        Text(title)
                             .font(PaeoniaTypography.title)
                             .foregroundStyle(.paeoniaTextPrimary)
-                        Text(hint)
-                            .font(PaeoniaTypography.body)
-                            .foregroundStyle(.paeoniaTextSecondary)
+                        if let hint {
+                            Text(hint)
+                                .font(PaeoniaTypography.body)
+                                .foregroundStyle(.paeoniaTextSecondary)
+                        }
                     }
                     .multilineTextAlignment(.center)
                     if isDrawing, viewModel.slots.slots.contains(where: { !$0.isGap }) {
@@ -44,8 +50,26 @@ struct DrawAndGuessWaitingView: View {
         .drawAndGuessScoreToolbar(viewModel)
     }
 
-    private var hint: LocalizedStringResource {
-        viewModel.partnerPresence.isHere ? .gamesDrawAndGuessWaitHintLive : .gamesDrawAndGuessWaitHintLater
+    /// Says what the partner is doing when their phone has told us.
+    private var title: LocalizedStringResource {
+        let name = viewModel.partnerName
+        if isDrawing {
+            return .gamesDrawAndGuessWaitDrawing(name)
+        }
+        switch viewModel.partnerPresence {
+        case .result: return .gamesDrawAndGuessWaitContinue(name)
+        case .choosing: return .gamesDrawAndGuessWaitChoosing(name)
+        case .away, .here, .watching, .drawing: return .gamesDrawAndGuessWaitGeneric(name)
+        }
+    }
+
+    /// "You'll watch it happen" only fits a drawing that is coming. While the
+    /// partner is still picking a word or looking at a result, the title says enough.
+    private var hint: LocalizedStringResource? {
+        if isDrawing {
+            return viewModel.partnerPresence.isHere ? .gamesDrawAndGuessWaitHintLive : .gamesDrawAndGuessWaitHintLater
+        }
+        return viewModel.partnerPresence.isInRoom ? nil : .gamesDrawAndGuessWaitHintLater
     }
 
     // MARK: Avatar

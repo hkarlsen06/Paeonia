@@ -626,6 +626,76 @@ describe("scoring", () => {
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
+  describe("the phone's speed bonus claim", () => {
+    const claimed = (user: TestUser, roundId: string, text: string, claim: { p_speed_bonus?: boolean | null; p_solve_ms?: number | null }) =>
+      user.as.mutation(api.games.submit_guess, { ...op(), p_round_id: roundId, p_guess: text, ...claim });
+
+    test("a true claim gives the bonus even when the server clock alone says no", async () => {
+      const s = await startGame({ playStyle: "against" });
+      const picked = await pick(s.a, s.gameId, "easy");
+      await sendDrawing(s, s.a, picked.round_id);
+      // The guess waited in the offline queue, and mark_round_seen never arrived.
+      tick(300);
+      const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: true, p_solve_ms: 12_000 });
+      expect(solved).toMatchObject({ correct: true, points: 1, speed_bonus: 1, solve_ms: 12_000 });
+      expect((await view(s.b)).game).toMatchObject({ shared_points: 1, my_points: 2, partner_points: 1 });
+      await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    });
+
+    test("a false claim gives no bonus even when the server clock alone says yes", async () => {
+      const s = await startGame({ playStyle: "against" });
+      const picked = await pick(s.a, s.gameId, "easy");
+      await s.b.as.mutation(api.games.mark_round_seen, { p_round_id: picked.round_id });
+      tick(5);
+      const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: false, p_solve_ms: 45_000 });
+      expect(solved).toMatchObject({ correct: true, speed_bonus: 0, solve_ms: 45_000 });
+      expect((await view(s.b)).game).toMatchObject({ my_points: 1 });
+      await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    });
+
+    test("without a claim the server decides, and null counts as absent", async () => {
+      const s = await startGame({ playStyle: "against" });
+      const picked = await pick(s.a, s.gameId, "easy");
+      await s.b.as.mutation(api.games.mark_round_seen, { p_round_id: picked.round_id });
+      tick(8);
+      const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: null, p_solve_ms: null });
+      expect(solved).toMatchObject({ speed_bonus: 1, solve_ms: 8000 });
+      await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    });
+
+    test("a claim of the solve time alone keeps the server's bonus", async () => {
+      const s = await startGame({ playStyle: "against" });
+      const picked = await pick(s.a, s.gameId, "easy");
+      await sendDrawing(s, s.a, picked.round_id);
+      tick(300);
+      const solved = await claimed(s.b, picked.round_id, picked.word, { p_solve_ms: 9_000 });
+      expect(solved).toMatchObject({ speed_bonus: 0, solve_ms: 9_000 });
+      await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    });
+
+    test("a claim that is out of range is refused", async () => {
+      const s = await startGame();
+      const picked = await pick(s.a, s.gameId, "easy");
+      for (const p_solve_ms of [-1, Number.NaN, 31 * 24 * 60 * 60 * 1000]) {
+        expect((await failure(claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: true, p_solve_ms }))).code).toBe("23514");
+      }
+    });
+
+    test("a replay with the same claim returns the stored result and a different claim is a hash mismatch", async () => {
+      const s = await startGame({ playStyle: "against" });
+      const picked = await pick(s.a, s.gameId, "easy");
+      await sendDrawing(s, s.a, picked.round_id);
+      const args = { ...op(), p_round_id: picked.round_id, p_guess: picked.word, p_speed_bonus: true, p_solve_ms: 4000 };
+      const first = await s.b.as.mutation(api.games.submit_guess, args);
+      expect(await s.b.as.mutation(api.games.submit_guess, args)).toEqual(first);
+      const changed = { ...args, p_speed_bonus: false };
+      expect((await failure(s.b.as.mutation(api.games.submit_guess, changed))).message).toContain("replay hash mismatch");
+      const slower = { ...args, p_solve_ms: 5000 };
+      expect((await failure(s.b.as.mutation(api.games.submit_guess, slower))).message).toContain("replay hash mismatch");
+      await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    });
+  });
+
   test("mark_round_seen keeps the first time and only works for the guesser", async () => {
     const s = await startGame();
     const picked = await pick(s.a, s.gameId, "easy");

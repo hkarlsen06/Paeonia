@@ -74,6 +74,8 @@ nonisolated struct UnavailableGamesGateway: GamesGateway {
     func submitGuess(
         roundID _: UUID,
         guess _: String,
+        speedBonus _: Bool?,
+        solveMs _: Int?,
         operation _: SyncClientOperation
     ) async throws -> RemoteGuessResult {
         throw Unavailable()

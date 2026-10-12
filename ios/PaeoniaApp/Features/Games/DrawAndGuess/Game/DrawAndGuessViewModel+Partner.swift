@@ -38,7 +38,13 @@ extension DrawAndGuessViewModel {
             partnerPresence = .drawing
         case .watching:
             partnerPresence = .watching
-        default:
+        case .choosing:
+            partnerPresence = .choosing
+        case .result:
+            partnerPresence = .result
+        case .present:
+            partnerPresence = .here
+        case .away, nil:
             partnerPresence = isFresh ? .here : .away
         }
         invite = GameInviteState.make(
@@ -117,13 +123,30 @@ extension DrawAndGuessViewModel {
         live?.partnerActivity == .drawing
     }
 
-    /// The drawer joins as `drawing`, everyone else as `watching`.
+    /// Tells the partner's phone what this screen is doing.
     func syncLiveRole() {
         guard let live, let userID = currentUserID else { return }
-        if let round, round.isDrawer(userID), !round.isFinished {
-            live.switchRole(to: .drawing)
-        } else {
-            live.switchRole(to: .watching)
+        let isDrawerOfUnfinishedRound = round.map { $0.isDrawer(userID) && !$0.isFinished } ?? false
+        live.switchRole(to: DrawAndGuessPhase.liveRole(
+            phase: phase,
+            isDrawerOfUnfinishedRound: isDrawerOfUnfinishedRound
+        ))
+    }
+
+    /// What the drawer's result screen says about the sent drawing.
+    var sentStatus: DrawAndGuessSentStatus {
+        .make(partner: partnerPresence, guesserFirstSeenAt: round?.guesserFirstSeenAt)
+    }
+
+    /// This phone looks at an old result, and the partner already draws the next
+    /// round. The result screen then offers "Watch [Name] draw".
+    func updatePartnerStartedDrawing() {
+        guard phase == .reveal, let userID = currentUserID,
+              let current = state?.currentRound, current.id != round?.id
+        else {
+            partnerStartedDrawing = false
+            return
         }
+        partnerStartedDrawing = current.state == .drawing && current.drawerUserID != userID
     }
 }

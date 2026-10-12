@@ -164,12 +164,16 @@ extension DrawAndGuessViewModel {
                 await self?.returnWrongGuess(sleep: sleep)
             }
         }
+        let now = dependencies.now()
+        let claim = isCorrect ? speedBonusClaim(at: now) : nil
         let payload = GameGuessPayload(
             id: UUID(),
             roundID: round.id,
             guess: guess.lowercased(),
             isCorrect: isCorrect,
-            createdAt: dependencies.now()
+            createdAt: now,
+            speedBonus: claim?.speedBonus,
+            solveMs: claim?.solveMs
         )
         Task {
             await enqueue(.submitGameGuess, scope: "game-guess:\(round.id.uuidString.lowercased())", payload: payload)
