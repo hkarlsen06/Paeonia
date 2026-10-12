@@ -505,9 +505,9 @@ describe("history", () => {
     vi.setSystemTime(new Date("2026-10-12T10:00:00.000Z"));
     await submit(a, aSecond.id, { text: "two" }, "2026-10-10T20:00:00.000Z");
     const rows = await a.as.query(api.daily.get_daily_questions_history, {});
-    expect(rows.map((row) => [row.instance_id, row.effective_local_date, row.can_view_partner_answer])).toEqual([
-      [aSecond.id, "2026-10-12", false],
-      [aFirst.id, "2026-10-11", true],
+    expect(rows.map((row) => [row.instance_id, row.effective_local_date, row.can_view_partner_answer, row.is_current_day])).toEqual([
+      [aSecond.id, "2026-10-12", false, false],
+      [aFirst.id, "2026-10-11", true, false],
     ]);
     const details = await a.as.query(api.daily.get_daily_answer_history_details, {});
     expect(details.map((row) => row.text_body)).toEqual(["one", "reply", "two"]);

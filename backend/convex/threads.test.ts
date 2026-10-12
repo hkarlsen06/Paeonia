@@ -463,6 +463,31 @@ describe("reads", () => {
     expect(message_id).toBeTruthy();
   });
 
+  test("get_conversation_threads leaves out a question chat once an answer is deleted or hidden", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const deletedInstanceId = await dailyInstance(t, couple);
+    await dailyThread(couple.second, deletedInstanceId);
+    const hiddenInstanceId = await dailyInstance(t, couple);
+    await dailyThread(couple.second, hiddenInstanceId);
+    const instanceIds = async () =>
+      (await couple.first.as.query(api.threads.get_conversation_threads, {})).map(
+        (row: { daily_question_instance_id: string | null }) => row.daily_question_instance_id,
+      );
+    expect(await instanceIds()).toHaveLength(2);
+
+    await t.run(async (ctx) => {
+      const answerOf = async (instanceId: string) =>
+        (await ctx.db
+          .query("daily_question_answers")
+          .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instanceId).eq("user_id", couple.second.userId))
+          .unique())!;
+      await ctx.db.patch((await answerOf(deletedInstanceId))._id, { deleted_at: new Date().toISOString() });
+      await ctx.db.patch((await answerOf(hiddenInstanceId))._id, { moderation_status: "hidden" });
+    });
+    expect(await instanceIds()).toEqual([]);
+  });
+
   test("get_thread_messages orders by time and hides the text of removed messages", async () => {
     const t = newTest();
     const couple = await createCouple(t);

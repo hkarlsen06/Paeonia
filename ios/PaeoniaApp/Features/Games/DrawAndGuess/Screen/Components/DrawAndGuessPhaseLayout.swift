@@ -86,6 +86,8 @@ struct DrawAndGuessPhaseLayout<Header: View, Square: View, Footer: View, Bottom:
     /// The scrolling rows' height and the side they had when it was taken.
     @State private var measuredContent: (height: CGFloat, side: CGFloat)?
     @State private var measuredBottom: CGFloat?
+    /// The live height of the pinned cluster, unlike `measuredBottom`, which a frozen side stops updating.
+    @State private var pinnedHeight: CGFloat = 0
 
     var body: some View {
         GeometryReader { proxy in
@@ -150,10 +152,17 @@ struct DrawAndGuessPhaseLayout<Header: View, Square: View, Footer: View, Bottom:
             .onChange(of: scrollTrigger) {
                 withAnimation(PaeoniaMotion.meaningfulMoment) { reader.scrollTo("end", anchor: .bottom) }
             }
+            // A result row can grow the pinned cluster after the scroll above ran
+            // (the save button joins it), which would hide the last rows again.
+            .onChange(of: pinnedHeight) {
+                guard scrollTrigger > 0 else { return }
+                withAnimation(PaeoniaMotion.meaningfulMoment) { reader.scrollTo("end", anchor: .bottom) }
+            }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             pinnedBottom
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                    pinnedHeight = height
                     take(bottomHeight: height)
                 }
         }

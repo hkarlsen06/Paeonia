@@ -10,6 +10,7 @@ import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
+import { visibleAnswersOf } from "./lib/dailyQuestions";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { getByUuid, orNull } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
@@ -423,6 +424,11 @@ export const get_conversation_threads = query({
         .query("daily_question_threads")
         .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
         .unique();
+      // A question chat opens only while both answers are visible. Leave it out once one is
+      // deleted or hidden, so the app never lists a chat the user can't open.
+      if (daily && new Set((await visibleAnswersOf(ctx, daily.instance_id)).map((answer) => answer.user_id)).size < 2) {
+        continue;
+      }
       const memory = await ctx.db
         .query("memory_threads")
         .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))

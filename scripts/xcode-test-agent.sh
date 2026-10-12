@@ -161,6 +161,7 @@ XCODEBUILD_ARGS=(
   -scheme "$SCHEME_NAME"
   -configuration "$CONFIGURATION"
   -destination "$DESTINATION"
+  -parallel-testing-enabled NO
   test
 )
 

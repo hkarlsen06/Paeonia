@@ -42,7 +42,8 @@ export type DailyQuestionRow = {
   partner_answer_id: string | null;
   partner_answered_at: string | null;
   can_view_partner_answer: boolean;
-  is_current_day?: boolean;
+  /** False for exchanges carried over from earlier days, and for every history row. */
+  is_current_day: boolean;
   /** When the viewer first saw the partner's answer. */
   partner_answer_seen_at?: string | null;
   /** When the partner first saw the viewer's answer. */
@@ -110,6 +111,7 @@ function questionRow(
   ownAnswer: Doc<"daily_question_answers"> | null,
   partnerAnswer: Doc<"daily_question_answers"> | null,
   canViewPartnerAnswer: boolean,
+  isCurrentDay: boolean,
 ): DailyQuestionRow {
   return {
     couple_day_id: day.id,
@@ -134,6 +136,7 @@ function questionRow(
     partner_answer_id: partnerAnswer?.id ?? null,
     partner_answered_at: partnerAnswer?.created_at ?? null,
     can_view_partner_answer: canViewPartnerAnswer,
+    is_current_day: isCurrentDay,
   };
 }
 
@@ -275,8 +278,15 @@ async function todayQuestionsForFrame(
     const ownAnswer = item.answers.find((answer) => answer.user_id === currentUserId) ?? null;
     const partnerAnswer = item.answers.find((answer) => answer.user_id !== currentUserId) ?? null;
     if (item.isCurrentDay && item.instance.seeded_for_user_id !== currentUserId && !partnerAnswer) continue;
-    const row = questionRow(item.day, item.instance, content, ownAnswer, partnerAnswer, partnerAnswer !== null && ownAnswer !== null);
-    row.is_current_day = item.isCurrentDay;
+    const row = questionRow(
+      item.day,
+      item.instance,
+      content,
+      ownAnswer,
+      partnerAnswer,
+      partnerAnswer !== null && ownAnswer !== null,
+      item.isCurrentDay,
+    );
     rows.push({ row, day: item.day, instance: item.instance });
   }
 
@@ -321,7 +331,7 @@ export async function getDailyQuestionsHistory(
     if (!content) continue;
     const partnerAnswer = (await visibleAnswersOf(ctx, instance.id)).find((answer) => answer.user_id !== currentUserId) ?? null;
     const latest = partnerAnswer && partnerAnswer.created_at > ownAnswer.created_at ? partnerAnswer.created_at : ownAnswer.created_at;
-    const row = questionRow(day, instance, content, ownAnswer, partnerAnswer, partnerAnswer !== null);
+    const row = questionRow(day, instance, content, ownAnswer, partnerAnswer, partnerAnswer !== null, false);
     // Use the zone that anchored the question's day. The couple's current anchor moves when a
     // partner changes time zone, and would move old exchanges to another day in the history.
     row.effective_local_date = localDateOf(latest, day.anchor_time_zone_id);
