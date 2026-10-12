@@ -120,6 +120,8 @@ actor SettingsFakeNotificationPreferences: NotificationPreferencesProviding {
             preferences.widgetUpdatesEnabled = value
         case .memories:
             preferences.memoriesEnabled = value
+        case .games:
+            preferences.gamesEnabled = value
         }
     }
 }

@@ -78,6 +78,12 @@ struct NotificationSettingsView: View {
                 title: .settingsNotificationsMemoriesTitle,
                 subtitle: .settingsNotificationsMemoriesSubtitle(partnerName)
             )
+            SettingsMenuDivider()
+            toggleRow(
+                .games,
+                title: .settingsNotificationsGamesTitle,
+                subtitle: .settingsNotificationsGamesSubtitle(partnerName)
+            )
         }
     }
 

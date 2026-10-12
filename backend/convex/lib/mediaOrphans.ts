@@ -64,7 +64,12 @@ export async function mediaAssetHasLiveReference(ctx: ReaderCtx, assetId: string
     const canvas = await getByUuid(ctx, "widget_canvases", revision.canvas_id);
     if (canvas && canvas.deleted_at === undefined) return true;
   }
-  return false;
+
+  const moves = await ctx.db
+    .query("game_moves")
+    .withIndex("by_drawing_media_asset_id", (q) => q.eq("drawing_media_asset_id", assetId))
+    .first();
+  return moves !== null;
 }
 
 function isQueueable(asset: Doc<"media_assets">): boolean {

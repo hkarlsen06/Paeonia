@@ -86,6 +86,7 @@
       case .messages: preferences.messagesEnabled = enabled
       case .widgetUpdates: preferences.widgetUpdatesEnabled = enabled
       case .memories: preferences.memoriesEnabled = enabled
+      case .games: preferences.gamesEnabled = enabled
       }
     }
   }

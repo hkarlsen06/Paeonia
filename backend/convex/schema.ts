@@ -4,6 +4,8 @@ import {
   activityKind,
   apnsEnvironment,
   authProvider,
+  gameLanguage,
+  gamePlayStyle,
   literals,
   mediaBucket,
   mediaType,
@@ -14,6 +16,7 @@ import {
   reviewScenario,
   storekitEnvironment,
   locationSource,
+  wordDifficulty,
 } from "./lib/validators";
 
 // Conventions (see backend/AGENTS.md):
@@ -267,7 +270,7 @@ export default defineSchema({
     id: uuid,
     report_id: uuid,
     source_media_asset_id: optUuid,
-    source_bucket: literals("profile-photos", "couple-media", "widget-drawings"),
+    source_bucket: literals("profile-photos", "couple-media", "widget-drawings", "game-drawings"),
     source_storage_path: v.string(),
     bucket: v.literal("report-snapshots"),
     storage_path: v.string(),
@@ -808,6 +811,7 @@ export default defineSchema({
       "daily_answer_media",
       "thread_message_media",
       "widget_drawing_revision",
+      "game_move",
       "report_snapshot",
     ),
     reserved_parent_id: uuid,
@@ -822,6 +826,7 @@ export default defineSchema({
       "daily_answer_media",
       "thread_media",
       "widget_drawing_payload",
+      "game_drawing_payload",
       "report_snapshot",
     ),
     expected_media_type: mediaType,
@@ -953,6 +958,7 @@ export default defineSchema({
     updated_at: ts,
     memories_enabled: v.boolean(),
     messages_enabled: v.boolean(),
+    games_enabled: v.boolean(),
   }).index("by_user_id", ["user_id"]),
 
   // FK: couple_id -> couples cascade
@@ -1333,6 +1339,137 @@ export default defineSchema({
     .index("by_moderation_report_id", ["moderation_report_id"])
     .index("by_parent_revision_id", ["parent_revision_id"])
     .index("by_payload_media_asset_id", ["payload_media_asset_id"]),
+
+  // ---- games (new in Convex, see games.ts and docs/games/draw-and-guess.md) ----
+  // Every games table has a couple_id index. Relationship cleanup deletes the rows (lib/games.ts).
+
+  // FK: couple_id -> couples cascade. couple_id is unique. Shared by all games.
+  game_settings: defineTable({
+    couple_id: uuid,
+    play_style: gamePlayStyle,
+    language: gameLanguage,
+    updated_by_user_id: uuid,
+    created_at: ts,
+    updated_at: ts,
+  }).index("by_couple_id", ["couple_id"]),
+
+  // FK: couple_id -> couples cascade. (couple_id, kind) is unique.
+  games: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    kind: v.literal("draw_and_guess"),
+    // choosing_word: the drawer picks a word. drawing: a round is open and the drawer draws.
+    // guessing: the drawing is sent and the guesser guesses. turn_user_id is the person who acts next.
+    state: literals("choosing_word", "drawing", "guessing"),
+    turn_user_id: uuid,
+    turn_number: v.number(),
+    current_round_id: optUuid,
+    // Three fixed choices, only while state is choosing_word. Only the drawer may read them.
+    word_choices: v.optional(
+      v.array(v.object({ difficulty: wordDifficulty, word_id: v.string(), word: v.string() })),
+    ),
+    // Always kept: the shared total (word points) and each partner's own total (word points plus the speed bonus).
+    shared_points: v.number(),
+    points_by_user: v.record(v.string(), v.number()),
+    turn_started_at: ts,
+    turn_reminder_sent_at: optTs,
+    version: v.number(),
+    created_by_user_id: uuid,
+    created_at: ts,
+    updated_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_couple_id_kind", ["couple_id", "kind"])
+    .index("by_turn_reminder_sent_at_turn_started_at", ["turn_reminder_sent_at", "turn_started_at"]),
+
+  // FK: game_id -> games cascade. One row per round. (game_id, round_number) is unique.
+  game_moves: defineTable({
+    id: uuid,
+    game_id: uuid,
+    couple_id: uuid,
+    round_number: v.number(),
+    drawer_user_id: uuid,
+    guesser_user_id: uuid,
+    state: literals("drawing", "guessing", "solved", "missed"),
+    difficulty: literals("easy", "medium", "hard", "custom"),
+    // Absent for a custom word.
+    word_id: optString,
+    // Lowercase, single spaces.
+    word: v.string(),
+    points: v.number(),
+    // FK: media_assets restrict. A pkdrawing in the game-drawings bucket.
+    drawing_media_asset_id: optUuid,
+    drawing_submitted_at: optTs,
+    guesser_first_seen_at: optTs,
+    started_at: ts,
+    ended_at: optTs,
+    solve_ms: v.optional(v.number()),
+    speed_bonus: v.number(),
+    // The memory this round was saved to, at most one per round.
+    memory_id: optUuid,
+    saved_by_user_id: optUuid,
+    created_at: ts,
+    updated_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_game_id_round_number", ["game_id", "round_number"])
+    .index("by_couple_id", ["couple_id"])
+    .index("by_drawing_media_asset_id", ["drawing_media_asset_id"]),
+
+  // FK: move_id -> game_moves cascade
+  game_guesses: defineTable({
+    id: uuid,
+    move_id: uuid,
+    couple_id: uuid,
+    user_id: uuid,
+    // Trimmed, lowercase, single spaces.
+    text: v.string(),
+    correct: v.boolean(),
+    created_at: ts,
+  })
+    .index("by_move_id_created_at", ["move_id", "created_at"])
+    .index("by_couple_id", ["couple_id"]),
+
+  // FK: move_id -> game_moves cascade. (move_id, user_id) is unique. Only "Not now" is stored; a yes saves the memory.
+  game_save_responses: defineTable({
+    move_id: uuid,
+    couple_id: uuid,
+    user_id: uuid,
+    response: v.literal("not_now"),
+    created_at: ts,
+  })
+    .index("by_move_id_user_id", ["move_id", "user_id"])
+    .index("by_couple_id", ["couple_id"]),
+
+  // FK: game_id -> games cascade. Words already shown to the couple.
+  game_used_words: defineTable({
+    game_id: uuid,
+    couple_id: uuid,
+    language: gameLanguage,
+    difficulty: wordDifficulty,
+    word_id: v.string(),
+    created_at: ts,
+  })
+    .index("by_game_id_language_difficulty", ["game_id", "language", "difficulty"])
+    .index("by_couple_id", ["couple_id"]),
+
+  // The open game screen. (couple_id, kind, user_id) is unique. A cron deletes rows nobody refreshed.
+  game_presence: defineTable({
+    couple_id: uuid,
+    kind: v.literal("draw_and_guess"),
+    user_id: uuid,
+    last_seen_at: ts,
+  })
+    .index("by_couple_id_kind_user_id", ["couple_id", "kind", "user_id"])
+    .index("by_last_seen_at", ["last_seen_at"]),
+
+  // The last invite each partner sent. (couple_id, kind, sender_user_id) is unique.
+  game_invites: defineTable({
+    couple_id: uuid,
+    kind: v.literal("draw_and_guess"),
+    sender_user_id: uuid,
+    sent_at: ts,
+  }).index("by_couple_id_kind_sender_user_id", ["couple_id", "kind", "sender_user_id"]),
 
   // FK: user_id -> users cascade. (widget_push_token_hash, apns_environment, widget_kind) is unique while disabled_at is null.
   widget_push_devices: defineTable({

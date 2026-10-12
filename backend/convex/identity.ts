@@ -240,6 +240,7 @@ const NOTIFICATION_COLUMNS = [
   "messages_enabled",
   "widget_updates_enabled",
   "memories_enabled",
+  "games_enabled",
 ] as const;
 
 async function findNotificationPreferences(ctx: ReaderCtx, userId: string) {
@@ -263,6 +264,7 @@ function notificationPreferencesRow(row: NonNullable<Awaited<ReturnType<typeof f
     updated_at: row.updated_at,
     memories_enabled: row.memories_enabled,
     messages_enabled: row.messages_enabled,
+    games_enabled: row.games_enabled,
   };
 }
 

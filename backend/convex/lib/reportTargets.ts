@@ -410,7 +410,7 @@ export async function enqueueReportSnapshotAssets(
       id,
       report_id: reportId,
       source_media_asset_id: asset.id,
-      source_bucket: asset.bucket as "profile-photos" | "couple-media" | "widget-drawings",
+      source_bucket: asset.bucket as "profile-photos" | "couple-media" | "widget-drawings" | "game-drawings",
       source_storage_path: asset.storage_path,
       bucket: "report-snapshots",
       storage_path: `${reportId}/${id}${extension}`,

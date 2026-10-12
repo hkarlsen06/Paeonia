@@ -9,6 +9,7 @@
     @State private var dailyChallengeViewModel: DailyChallengeViewModel
     @State private var milestoneViewModel: RelationshipMilestoneViewModel
     @State private var memoriesViewModel: MemoriesViewModel
+    @State private var gamesViewModel: GamesViewModel
     private let locationViewModel: LocationMapViewModel
     private let scenario: DeveloperScenario
 
@@ -50,6 +51,7 @@
       _memoriesViewModel = State(
         initialValue: Self.makeMemoriesViewModel(scenario: scenario, operationProvider: operationProvider)
       )
+      _gamesViewModel = State(initialValue: DeveloperGamesScenarioFactory.gamesViewModel(for: scenario))
       locationViewModel = Self.makeLocationViewModel(operationProvider: operationProvider)
     }
 
@@ -74,6 +76,9 @@
         .questions
       case .memoriesEmpty, .memoriesPopulated:
         .memories
+      case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting,
+        .gamesHubPartnerHere:
+        .games
       default:
         .home
       }
@@ -107,7 +112,7 @@
           }
       } else {
         MainTabView(
-          tabs: [.home, .questions, .memories],
+          tabs: [.home, .questions, .games, .memories],
           identity: MainTabIdentity(
             currentUserID: DeveloperScenarioFixture.currentUserID,
             currentDisplayName: "Alex",
@@ -125,7 +130,8 @@
           dependencies: RootFeatureDependencies(
             dailyChallengeViewModel: dailyChallengeViewModel,
             milestoneViewModel: milestoneViewModel,
-            memoriesViewModel: memoriesViewModel
+            memoriesViewModel: memoriesViewModel,
+            gamesViewModel: gamesViewModel
           )
         )
       }

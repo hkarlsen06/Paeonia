@@ -3,6 +3,9 @@
 
   struct DeveloperScenarioMenu: View {
     let runProductionApp: () -> Void
+    // Scenarios open full screen, not pushed. Several screens own a NavigationStack, and
+    // one nested inside the menu's stack can cancel the push (the Games tab binds a path).
+    @State private var openScenario: DeveloperScenario?
 
     var body: some View {
       NavigationStack {
@@ -10,11 +13,19 @@
           ForEach(DeveloperScenario.Category.allCases) { category in
             Section(category.rawValue) {
               ForEach(scenarios(in: category)) { scenario in
-                NavigationLink {
-                  DeveloperScenarioNavigationDestination(scenario: scenario)
+                Button {
+                  openScenario = scenario
                 } label: {
-                  scenarioLabel(scenario)
+                  HStack {
+                    scenarioLabel(scenario)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                      .font(.footnote.weight(.semibold))
+                      .foregroundStyle(.paeoniaTextTertiary)
+                  }
+                  .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .accessibilityIdentifier("developer.scenario.\(scenario.rawValue)")
               }
             }
@@ -30,6 +41,11 @@
         .scrollContentBackground(.hidden)
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle("Developer Scenarios")
+      }
+      .fullScreenCover(item: $openScenario) { scenario in
+        DeveloperScenarioHost(scenario: scenario) {
+          openScenario = nil
+        }
       }
       .preferredColorScheme(.dark)
       .accessibilityIdentifier("developer.scenario.menu")
@@ -51,18 +67,6 @@
 
     private func scenarios(in category: DeveloperScenario.Category) -> [DeveloperScenario] {
       DeveloperScenario.allCases.filter { $0.category == category }
-    }
-  }
-
-  private struct DeveloperScenarioNavigationDestination: View {
-    let scenario: DeveloperScenario
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-      DeveloperScenarioHost(scenario: scenario) {
-        dismiss()
-      }
-      .toolbar(.hidden, for: .navigationBar)
     }
   }
 
@@ -148,6 +152,13 @@
       case .countdownMissing, .countdownUpcoming, .countdownToday, .locationNotSharing,
         .locationCurrentMissing, .locationLive, .locationStale:
         DeveloperRelationshipScenarioView(scenario: scenario)
+      case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting,
+        .gamesHubPartnerHere:
+        DeveloperPairedScenarioHost(scenario: scenario)
+      case .drawChooseWord, .drawWaitingForWord, .drawDrawing, .drawSavedOffline,
+        .drawWaitingForGuess, .drawWaitingForDrawing, .drawWatchingLive, .drawGuessingReplay,
+        .drawRevealSolved, .drawSavePrompt, .drawRevealMissed, .drawRevealAsDrawer:
+        DeveloperGamesScenarioView(scenario: scenario)
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         DeveloperWidgetScenarioView(scenario: scenario)
       case .notificationPrimer, .settings, .settingsNotificationsDenied, .privacySafety,

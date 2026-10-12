@@ -36,7 +36,7 @@ final class WidgetLiveDrawing {
     /// SwiftUI update.
     @ObservationIgnored var currentDrawing: (() -> PKDrawing)?
 
-    @ObservationIgnored let role: WidgetLivePresence.Role
+    @ObservationIgnored private(set) var role: WidgetLivePresence.Role
     @ObservationIgnored private let connection: WidgetLiveConnection
     @ObservationIgnored private var presence = WidgetLivePresence()
     @ObservationIgnored private var room = WidgetLiveRoom()
@@ -87,6 +87,23 @@ final class WidgetLiveDrawing {
         connection.stop()
         retryTask?.cancel()
         handleDisconnect()
+    }
+
+    /// Draw & Guess swaps the roles between rounds on one open connection. The
+    /// partner is told with a new `hello`, and what the old role was showing goes.
+    func switchRole(to newRole: WidgetLivePresence.Role) {
+        guard newRole != role else {
+            return
+        }
+        role = newRole
+        room.clear()
+        playback.removeAll()
+        pendingRemote = []
+        isAwaitingRoomState = false
+        updatePresence()
+        if isConnected {
+            sendHello(needsCanvas: newRole == .watching && presence.peerCount > 0)
+        }
     }
 
     func attach(to canvasView: PKCanvasView) {
@@ -148,6 +165,8 @@ final class WidgetLiveDrawing {
 
     /// Changes when the partner's canvas changes (watching only).
     var roomVersion: Int { room.version }
+    /// Watching only: the partner's whole canvas so far, at `WidgetLiveRoom.side`.
+    var partnerCanvasDrawing: PKDrawing? { room.drawing }
     /// The partner is in the middle of a stroke, or one is still fading out.
     var hasLiveStrokes: Bool { !playback.isEmpty }
 

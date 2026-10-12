@@ -24,6 +24,10 @@ const NOTIFICATION_KINDS = [
   "subscription_trial_reminder",
   "memory_created",
   "thread_message_sent",
+  "game_turn_ready",
+  "game_guessed",
+  "game_invite",
+  "game_turn_reminder",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -144,6 +148,11 @@ function preferenceAllows(
       return preference.memories_enabled;
     case "thread_message_sent":
       return preference.messages_enabled;
+    case "game_turn_ready":
+    case "game_guessed":
+    case "game_invite":
+    case "game_turn_reminder":
+      return preference.games_enabled;
     default:
       return true;
   }

@@ -32,6 +32,7 @@ export const ACTIVITY_KINDS = [
   "memory_created",
   "memory_updated",
   "thread_message_sent",
+  "game_turn_completed",
 ] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 

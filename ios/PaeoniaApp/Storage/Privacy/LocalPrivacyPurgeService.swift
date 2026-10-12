@@ -189,6 +189,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let dailyAnswerMediaDraftStore: any DailyAnswerMediaDraftStoring
     private let dailyChallengeSnapshotCache: any DailyChallengeSnapshotCaching
     private let dailyQuestionChatCache: any DailyQuestionChatCaching
+    private let gamesCache: any GamesCaching
+    private let gameDrawingStore: any GameDrawingStoring
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
     private let temporaryDirectory: URL
 
@@ -202,6 +204,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         dailyAnswerMediaDraftStore: any DailyAnswerMediaDraftStoring = FileDailyAnswerMediaDraftStore.live(),
         dailyChallengeSnapshotCache: any DailyChallengeSnapshotCaching = FileDailyChallengeSnapshotCache.live(),
         dailyQuestionChatCache: any DailyQuestionChatCaching = FileDailyQuestionChatCache.shared,
+        gamesCache: any GamesCaching = FileGamesCache.shared,
+        gameDrawingStore: any GameDrawingStoring = FileGameDrawingStore.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
         temporaryDirectory: URL = FileManager.default.temporaryDirectory
     ) {
@@ -214,6 +218,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.dailyAnswerMediaDraftStore = dailyAnswerMediaDraftStore
         self.dailyChallengeSnapshotCache = dailyChallengeSnapshotCache
         self.dailyQuestionChatCache = dailyQuestionChatCache
+        self.gamesCache = gamesCache
+        self.gameDrawingStore = gameDrawingStore
         self.profilePhotoDiskCache = profilePhotoDiskCache
         self.temporaryDirectory = temporaryDirectory
     }
@@ -233,6 +239,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
 
         dailyChallengeSnapshotCache.clearAll()
         await dailyQuestionChatCache.clearAll()
+        await gamesCache.clearAll()
+        gameDrawingStore.purge(for: scope)
         try? await profilePhotoDiskCache.removeAllProfilePhotoData()
         removeDirectoryIfPresent(DailyAnswerMediaImageService.defaultDirectoryURL())
         removeDirectoryIfPresent(MemoryMediaImageService.defaultDirectoryURL())

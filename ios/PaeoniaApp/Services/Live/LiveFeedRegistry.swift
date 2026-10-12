@@ -22,6 +22,7 @@ nonisolated enum LiveFeedRegistry {
             MemoryLiveFeed(memoryStore: stores.memoryStore, stateStore: stores.stateStore),
             DailyChallengeLiveFeed(cache: FileDailyChallengeSnapshotCache.live()),
             DailyQuestionChatLiveFeed(cache: FileDailyQuestionChatCache.shared),
+            DrawAndGuessLiveFeed(cache: FileGamesCache.shared),
         ]
     }
 }

@@ -61,6 +61,8 @@ final class MainTabModels {
         dependencies.milestoneViewModel ?? RelationshipMilestoneViewModel()
     lazy var memories: MemoriesViewModel =
         dependencies.memoriesViewModel ?? MemoriesViewModel()
+    lazy var games: GamesViewModel =
+        dependencies.gamesViewModel ?? GamesViewModel(dependencies: .live())
     private var settingsModel: SettingsViewModel?
 
     /// Built for the first signed-in user it is asked for, like the
@@ -116,6 +118,8 @@ struct MainTabView: View {
     /// Question to scroll to and briefly highlight after a notification deep link.
     @State var focusedDailyQuestionID: UUID?
     @State var dailyChatQuestion: DailyChallengeQuestion?
+    /// What the Games tab has open. A notification about a game sets it.
+    @State var gamesPath: [GamesDestination] = []
     /// The signed-in user's photo, cropped to a circle for the You tab icon.
     @State var youTabIcon: UIImage?
     @Namespace var zoomNamespace
@@ -153,6 +157,7 @@ struct MainTabView: View {
     var dailyChallengeViewModel: DailyChallengeViewModel { models.dailyChallenge }
     var milestoneViewModel: RelationshipMilestoneViewModel { models.milestone }
     var memoriesViewModel: MemoriesViewModel { models.memories }
+    var gamesViewModel: GamesViewModel { models.games }
 
     var body: some View {
         presentingDailyFlows(on: tabContent)
@@ -192,6 +197,9 @@ struct MainTabView: View {
         }
         .onChange(of: dailyChallengeParticipants) { _, participants in
             dailyChallengeViewModel.refreshParticipants(participants)
+        }
+        .task(id: identity.currentUserID) {
+            gamesViewModel.setLocalChangeSyncHandler(actions.syncAfterLocalChange)
         }
         .task(id: identity.currentUserID) {
             milestoneViewModel.setSyncAfterLocalChange(actions.syncAfterLocalChange)
@@ -242,11 +250,32 @@ struct MainTabView: View {
             homeTab
         case .questions:
             questionsTab
+        case .games:
+            gamesTab
         case .you:
             youTab
         case .memories:
             memoriesTab
         }
+    }
+
+    private var gamesTab: some View {
+        GamesRootView(
+            viewModel: gamesViewModel,
+            path: $gamesPath,
+            participants: gamesParticipants
+        )
+    }
+
+    var gamesParticipants: DrawAndGuessParticipants {
+        DrawAndGuessParticipants(
+            currentUserID: identity.currentUserID,
+            coupleID: identity.coupleID,
+            partnerName: dailyChallengeParticipants.partnerName,
+            currentName: identity.currentDisplayName ?? String(localized: .dailyChallengeChoiceYou),
+            currentPhotoAssetID: identity.currentProfilePhotoAssetID,
+            partnerPhotoAssetID: identity.partnerProfilePhotoAssetID
+        )
     }
 
     private var memoriesTab: some View {

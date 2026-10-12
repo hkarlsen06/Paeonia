@@ -11,12 +11,13 @@ import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
-import { hmacSha256Hex, sha256Hex } from "./lib/crypto";
+import { sha256Hex } from "./lib/crypto";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { getByUuid, orNull, withTouch } from "./lib/db";
 import { checkViolation, fail } from "./lib/errors";
 import { newUuid, optionalTimestampArg, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
 import { isJsonObject, jsonbByteLength } from "./lib/json";
+import { signLiveTicket } from "./lib/liveTicket";
 import { enqueuePartnerNotification, enqueueWidgetPushForUser, enqueueWidgetUpdateAlert } from "./lib/notifications";
 import { applyCoupleActivity } from "./lib/streaks";
 import { btrim, btrimToNull, charLength } from "./lib/text";
@@ -217,32 +218,16 @@ export const get_or_create_widget_canvas = mutation({
 
 // --- Live drawing relay -----------------------------------------------------
 
-const LIVE_TICKET_TTL_MS = 60_000;
-
 /**
- * Signs a short ticket for the live drawing relay (`relay/` at the repository
- * root). The relay checks the HMAC with the same secret and puts the socket in
- * the couple's room. The ticket only has to last until the socket connects.
- * Returns null when the relay is not configured, so the app draws without it.
+ * Signs a short ticket for the live drawing relay (`lib/liveTicket.ts`) for the
+ * couple's widget canvas room. Returns null when the relay is not configured.
  */
 export const create_widget_live_ticket = mutation({
   args: { p_couple_id: v.optional(v.union(v.null(), v.string())) },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const coupleId = await resolveCoupleId(ctx, userId, args.p_couple_id);
-    const url = process.env.PAEONIA_LIVE_RELAY_URL;
-    const secret = process.env.PAEONIA_LIVE_RELAY_SECRET;
-    if (!url || !secret) return null;
-    const expiresAt = Date.now() + LIVE_TICKET_TTL_MS;
-    const payload = btoa(JSON.stringify({ c: coupleId, u: userId, e: expiresAt }))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-    return {
-      url,
-      ticket: `${payload}.${await hmacSha256Hex(secret, payload)}`,
-      expires_at: new Date(expiresAt).toISOString(),
-    };
+    return await signLiveTicket({ coupleId, userId });
   },
 });
 

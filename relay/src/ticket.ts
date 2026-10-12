@@ -1,9 +1,19 @@
 /**
- * Tickets come from `widget:create_widget_live_ticket` in Convex:
- * `base64url(JSON {c: coupleId, u: userId, e: expiresAtMs}).hex(hmacSha256(payload))`.
+ * Tickets come from `widget:create_widget_live_ticket` and `games:create_game_live_ticket` in Convex:
+ * `base64url(JSON {c: coupleId, u: userId, e: expiresAtMs, ch?: channel}).hex(hmacSha256(payload))`.
  * Convex already checked that the user may draw with this couple.
+ * Without `ch` the socket joins the couple's widget canvas room. With `ch` it joins the
+ * couple's room for that channel, so a game does not share the canvas room's socket cap.
  */
-export type Ticket = { coupleId: string; userId: string; expiresAt: number };
+export type Ticket = { coupleId: string; userId: string; expiresAt: number; channel?: string };
+
+/** The channels a ticket may name. Add a game here when Convex starts issuing tickets for it. */
+export const ALLOWED_CHANNELS: readonly string[] = ["draw_and_guess"];
+
+/** The Durable Object name for a ticket's room. */
+export function roomName(ticket: Ticket): string {
+  return ticket.channel === undefined ? ticket.coupleId : `${ticket.coupleId}:${ticket.channel}`;
+}
 
 const encoder = new TextEncoder();
 
@@ -18,7 +28,9 @@ export async function verifyTicket(raw: string, secret: string, now: number): Pr
     const claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
     if (typeof claims.c !== "string" || typeof claims.u !== "string" || typeof claims.e !== "number") return null;
     if (claims.e <= now) return null;
-    return { coupleId: claims.c, userId: claims.u, expiresAt: claims.e };
+    if (claims.ch === undefined) return { coupleId: claims.c, userId: claims.u, expiresAt: claims.e };
+    if (typeof claims.ch !== "string" || !ALLOWED_CHANNELS.includes(claims.ch)) return null;
+    return { coupleId: claims.c, userId: claims.u, expiresAt: claims.e, channel: claims.ch };
   } catch {
     return null;
   }

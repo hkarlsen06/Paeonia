@@ -1,6 +1,6 @@
 # Games plan
 
-Plan and decisions for the Games tab. Nothing is built yet. Sections marked "Decided" were agreed with the developer. Everything else is the current proposal and can change.
+Plan and decisions for the Games tab. The Draw & Guess backend and the relay channel are built (`backend/convex/games.ts`, `relay/src/ticket.ts`). The Games tab foundation is built on iOS (tab, setup, hub, data layer, live room, Draw & Guess view model, developer scenarios). The polished Draw & Guess screens are built. Sections marked "Decided" were agreed with the developer. Everything else is the current proposal and can change.
 
 Keep this file current. When a games decision changes, or games code lands, update the matching section in the same change. Move items from "Open questions" to "Decisions" once the developer settles them, and replace proposals with what was actually built.
 
@@ -18,8 +18,12 @@ Decided on 2026-10-12.
 - **Play style.** The couple chooses whether they like to play against each other or together as a team. "Against each other" gives each partner their own score and a winner. "Together" gives one shared score. Each game's design doc says how the game plays in each style. A game where scores make no sense, such as Touch, can ignore the setting.
 - **Game language.** The couple picks a language they both understand. Word lists, decoy letters and other game content use it, whatever language each partner's app is in. The choices are the app's languages, English and Norwegian Bokmal. When both partners already use the same app language, setup preselects it.
 - **No game streaks.** Games never get a streak of their own. A game turn counts toward the couple's existing streak through a new activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Each game's design doc says which action counts.
+- **Tab order.** Home, Questions, Games, Memories, You. Games sits in the middle.
+- **Save prompt details.** The partner who says yes first is recorded as the memory's creator. The prompt waits until each partner answers. "Not now" closes it for that partner only. Once the drawing is saved, the other partner's prompt turns into "Saved to Memories".
+- **One ongoing game per kind.** A couple has at most one active game of each kind.
+- **Turn reminder.** When a move has waited 72 hours, the partner whose turn it is gets one reminder. There is never a second one for the same move.
 - **Live is not deferred.** When a game's design includes live play, live ships in the game's first version.
-- **Invite to play.** Every game with live play has a "Tell [Name] you want to play" button. It shows when the partner doesn't have the game open. Tapping it sends the partner a push, "[Name] wants to play [game] with you", and opening the push goes straight into the game.
+- **Invite to play.** Every game with live play has a "Tell [Name] you want to play" button. It shows when the partner doesn't have the game open. Tapping it sends the partner a push, "[Name] wants to play [game] with you", and opening the push goes straight into the game. A partner can send one invite every 15 minutes. Until then the button shows "Sent".
 - **Scores grow forever.** Scores never reset. There are no seasons or weekly matches.
 
 Decided on 2026-10-11.
@@ -55,15 +59,15 @@ Convex owns the state of every game. The relay carries only movement that never 
 
 ### Relay changes
 
-- Today every socket for a couple joins one room, capped at `MAX_SOCKETS_PER_ROOM = 4` (Home and the canvas on two phones). Games would hit the cap. Add a channel to the relay ticket and route with ``getByName(`${coupleId}:${channel}`)`` so each game gets its own room.
+- Today every socket for a couple joins one room, capped at `MAX_SOCKETS_PER_ROOM = 4` (Home and the canvas on two phones). Games would hit the cap. Built: the relay ticket has an optional channel claim `ch`, and the Worker routes with ``getByName(`${coupleId}:${channel}`)``, so each game gets its own room. A ticket without a channel still joins the couple's canvas room. The Worker accepts only the channels in `ALLOWED_CHANNELS` (`relay/src/ticket.ts`), and `games:create_game_live_ticket` issues the game tickets.
 - Sockets close after `SESSION_MS` (10 minutes). A live game must reconnect with a fresh ticket and fetch the current state again from Convex or from the phone that owns it.
 - The relay reads nothing it forwards. The app defines the message format, as `WidgetDrawing/Live/WidgetLiveMessage.swift` does for drawing.
 
 ### Convex model
 
-- A `games` table: `id`, `couple_id`, `kind`, `state`, `turn_user_id`, `version`, `status`, `created_at`, `updated_at`. Follow the snake_case and uuid conventions in `backend/convex/schema.ts`.
+- A `games` table: `id`, `couple_id`, `kind`, `state`, `turn_user_id`, `version`, `created_at`, `updated_at`. Follow the snake_case and uuid conventions in `backend/convex/schema.ts`. Built for Draw & Guess without a `status` column, because the game never ends. Couple settings are in `game_settings`.
 - A `game_moves` table holding each move in order, for replays and reveals.
-- One `make_move({ game_id, expected_version, move })` mutation. It checks couple access, whose turn it is, and the version, then runs a pure rules function for that `kind`. A stale version fails instead of overwriting.
+- Draw & Guess has one mutation per action (`pick_draw_word`, `submit_drawing`, `submit_guess`, `give_up_round`), each checking access, turn ownership, and round state. Proposal for board games: one `make_move({ game_id, expected_version, move })` mutation. It checks couple access, whose turn it is, and the version, then runs a pure rules function for that `kind`. A stale version fails instead of overwriting.
 - A `view_for(state, user_id)` function per kind. Queries return only that projection, so hidden information (Battleship boards, unrevealed answers, the drawing under the fold) never reaches the other phone.
 - Game data joins relationship end and account deletion cleanup (`lib/relationshipCleanup.ts`, `lib/accountDeletion.ts`).
 - A saved game becomes an ordinary `memories` row with its media, so the existing moderation and report flow covers it.
@@ -131,9 +135,4 @@ Draw & Guess comes first. It builds the turn engine, the drawing replay and the 
 ## Open questions
 
 - Which game comes after Draw & Guess.
-- Where Games sits in the tab order.
-- How often a partner can send an invite to play, so it never turns into spam.
-- How the save-to-Memories prompt works in detail: who is recorded as the memory's creator, how long the prompt waits for an answer, and whether either partner can dismiss it.
-- Whether a couple can have more than one active game of the same kind.
-- When the single turn reminder goes out.
 - How precise the location in Guess my spot is, and whether the sender can blur it to a neighborhood.

@@ -13,6 +13,7 @@ import Foundation
 enum MainTab: String, CaseIterable, Identifiable {
     case home
     case questions
+    case games
     case memories
     case you
 
@@ -22,6 +23,7 @@ enum MainTab: String, CaseIterable, Identifiable {
         switch self {
         case .home: .mainTabHomeUs
         case .questions: .mainTabQuestions
+        case .games: .mainTabGames
         case .memories: .mainTabMemories
         case .you: .mainTabYou
         }
@@ -31,6 +33,7 @@ enum MainTab: String, CaseIterable, Identifiable {
         switch self {
         case .home: "heart.fill"
         case .questions: "bubble.left.and.bubble.right.fill"
+        case .games: "gamecontroller.fill"
         case .memories: "memories"
         case .you: "person.crop.circle"
         }

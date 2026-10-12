@@ -102,6 +102,21 @@ enum PaeoniaHaptics {
         impact(.soft)
     }
 
+    /// A full word that is not the answer. Two soft taps, because a wrong guess
+    /// in a game is not an error.
+    static func gameWrongGuess() {
+        impact(.soft)
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(60))
+            guard !Task.isCancelled else {
+                return
+            }
+
+            impact(.soft)
+        }
+    }
+
     static func selection() {
         selectionGenerator.selectionChanged()
         selectionGenerator.prepare()

@@ -50,14 +50,15 @@ export async function storeBlob(t: TestConvex, bytes: Uint8Array, contentType: s
 }
 
 export type UploadSpec = {
-  kind: "memory_media" | "thread_message_media" | "daily_answer_media" | "widget_drawing_revision" | "profile_photo";
-  purpose: "memory_photo" | "voice_note" | "thread_media" | "daily_answer_media" | "widget_drawing_payload" | "profile_photo";
+  kind: "memory_media" | "thread_message_media" | "daily_answer_media" | "widget_drawing_revision" | "game_move" | "profile_photo";
+  purpose: "memory_photo" | "voice_note" | "thread_media" | "daily_answer_media" | "widget_drawing_payload" | "game_drawing_payload" | "profile_photo";
   mediaType: "image" | "voice" | "drawing_payload";
   extension: string;
   mime: string;
   parentId?: string;
   coupleId?: string;
   canvasId?: string;
+  gameId?: string;
   bytes?: Uint8Array;
 };
 
@@ -95,6 +96,7 @@ export async function uploadAsset(t: TestConvex, user: TestUser, spec: UploadSpe
     p_file_extension: spec.extension,
     ...(spec.coupleId ? { p_couple_id: spec.coupleId } : {}),
     ...(spec.canvasId ? { p_path_context: { canvas_id: spec.canvasId } } : {}),
+    ...(spec.gameId ? { p_path_context: { game_id: spec.gameId } } : {}),
   });
   const storageId = await storeBlob(t, bytes, spec.mime);
   const sha256 = await sha256Hex(bytes);

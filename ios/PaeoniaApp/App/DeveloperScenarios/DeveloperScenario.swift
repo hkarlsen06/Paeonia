@@ -64,6 +64,24 @@
     case widgetHistoryEmpty = "widget-history-empty"
     case widgetHistoryPopulated = "widget-history-populated"
 
+    case gamesSetup = "games-setup"
+    case gamesPartnerPicked = "games-partner-picked"
+    case gamesHubYourTurn = "games-hub-your-turn"
+    case gamesHubWaiting = "games-hub-waiting"
+    case gamesHubPartnerHere = "games-hub-partner-here"
+    case drawChooseWord = "draw-choose-word"
+    case drawWaitingForWord = "draw-waiting-for-word"
+    case drawDrawing = "draw-drawing"
+    case drawSavedOffline = "draw-saved-offline"
+    case drawWaitingForGuess = "draw-waiting-for-guess"
+    case drawWaitingForDrawing = "draw-waiting-for-drawing"
+    case drawWatchingLive = "draw-watching-live"
+    case drawGuessingReplay = "draw-guessing-replay"
+    case drawRevealSolved = "draw-reveal-solved"
+    case drawSavePrompt = "draw-save-prompt"
+    case drawRevealMissed = "draw-reveal-missed"
+    case drawRevealAsDrawer = "draw-reveal-as-drawer"
+
     case notificationPrimer = "notification-primer"
     case settings
     case settingsNotificationsDenied = "settings-notifications-denied"
@@ -85,6 +103,7 @@
       case streak = "State · Streak"
       case memories = "State · Memories"
       case relationship = "State · Countdown & location"
+      case games = "State · Games"
       case widget = "State · Widget"
       case settings = "State · Settings & privacy"
       case deepLinks = "State · Deep links & notifications"
@@ -145,6 +164,23 @@
       case .widgetDrawing: "Widget · drawing canvas"
       case .widgetHistoryEmpty: "Widget · empty history"
       case .widgetHistoryPopulated: "Widget · populated history"
+      case .gamesSetup: "Games · first-time setup"
+      case .gamesPartnerPicked: "Games · partner already set up"
+      case .gamesHubYourTurn: "Games · hub, your turn"
+      case .gamesHubWaiting: "Games · hub, waiting for partner"
+      case .gamesHubPartnerHere: "Games · hub, partner is here"
+      case .drawChooseWord: "Draw & Guess · choose a word"
+      case .drawWaitingForWord: "Draw & Guess · partner picks a word"
+      case .drawDrawing: "Draw & Guess · drawing"
+      case .drawSavedOffline: "Draw & Guess · drawing sent offline"
+      case .drawWaitingForGuess: "Draw & Guess · partner is guessing"
+      case .drawWaitingForDrawing: "Draw & Guess · waiting for a drawing"
+      case .drawWatchingLive: "Draw & Guess · watching live"
+      case .drawGuessingReplay: "Draw & Guess · guessing a replay"
+      case .drawRevealSolved: "Draw & Guess · reveal, solved"
+      case .drawSavePrompt: "Draw & Guess · reveal with save prompt"
+      case .drawRevealMissed: "Draw & Guess · reveal, missed"
+      case .drawRevealAsDrawer: "Draw & Guess · reveal as the drawer"
       case .notificationPrimer: "Notifications · primer"
       case .settings: "Settings"
       case .settingsNotificationsDenied: "Settings · notifications denied"
@@ -258,6 +294,40 @@
         "Drawing history empty state"
       case .widgetHistoryPopulated:
         "Drawing history with both partners' revisions"
+      case .gamesSetup:
+        "Games tab before the couple chose a play style and language"
+      case .gamesPartnerPicked:
+        "The one-time moment that shows what the partner picked"
+      case .gamesHubYourTurn:
+        "Hub with Draw & Guess waiting for your word"
+      case .gamesHubWaiting:
+        "Hub while Robin has the next move"
+      case .gamesHubPartnerHere:
+        "Hub with Robin's drawing waiting and Robin in the game"
+      case .drawChooseWord:
+        "Three words and the draw-your-own field"
+      case .drawWaitingForWord:
+        "Robin is choosing what to draw"
+      case .drawDrawing:
+        "The canvas with Robin watching live"
+      case .drawSavedOffline:
+        "A drawing queued on the phone: saved on this phone, sent later"
+      case .drawWaitingForGuess:
+        "The sent drawing and Robin's wrong guesses"
+      case .drawWaitingForDrawing:
+        "Tiles shown while the drawing has not arrived"
+      case .drawWatchingLive:
+        "Robin's umbrella appears live, with tiles to guess"
+      case .drawGuessingReplay:
+        "The saved umbrella plays back at the drawn pace"
+      case .drawRevealSolved:
+        "You solved it: time, speed bonus, points"
+      case .drawSavePrompt:
+        "The same reveal with the save-to-Memories question"
+      case .drawRevealMissed:
+        "You pressed Show me: the word and the drawing"
+      case .drawRevealAsDrawer:
+        "Robin solved your drawing: the guesses in order"
       case .notificationPrimer:
         "Pre-permission notification explanation"
       case .settings:
@@ -305,6 +375,11 @@
       case .countdownMissing, .countdownUpcoming, .countdownToday, .locationNotSharing,
         .locationCurrentMissing, .locationLive, .locationStale:
         .relationship
+      case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting,
+        .gamesHubPartnerHere, .drawChooseWord, .drawWaitingForWord, .drawDrawing, .drawSavedOffline,
+        .drawWaitingForGuess, .drawWaitingForDrawing, .drawWatchingLive, .drawGuessingReplay,
+        .drawRevealSolved, .drawSavePrompt, .drawRevealMissed, .drawRevealAsDrawer:
+        .games
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         .widget
       case .notificationPrimer, .settings, .settingsNotificationsDenied, .privacySafety,

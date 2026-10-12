@@ -12905,6 +12905,2772 @@
         }
       },
       "comment" : "Title of the streak milestone celebration at each full year after the first, such as 730 days in a row. The flame above it already shows the number of days, so this names the milestone in words."
+    },
+    "mainTab.games" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Games"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill"
+          }
+        }
+      },
+      "comment" : "Title for the Games tab in the main tab bar"
+    },
+    "games.notice.settingsFailed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save your choices"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre valgene dine"
+          }
+        }
+      },
+      "comment" : "Banner title when saving the couple's game choices failed"
+    },
+    "games.notice.settingsFailed.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettforbindelsen og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Banner message when saving the couple's game choices failed"
+    },
+    "games.notice.startFailed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't start the game"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke starte spillet"
+          }
+        }
+      },
+      "comment" : "Banner title when the game could not be started"
+    },
+    "games.notice.startFailed.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettforbindelsen og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Banner message when the game could not be started"
+    },
+    "games.notice.wordRejected.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That word isn't available anymore"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det ordet er ikke tilgjengelig lenger"
+          }
+        }
+      },
+      "comment" : "Banner title when the word the player picked is no longer available"
+    },
+    "games.notice.wordRejected.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Look at the words again and pick one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se på ordene igjen og velg ett."
+          }
+        }
+      },
+      "comment" : "Banner message when the picked word is no longer available. The player sees the words again."
+    },
+    "games.notice.drawingRejected.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawing wasn't sent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen din ble ikke sendt"
+          }
+        }
+      },
+      "comment" : "Banner title when a finished drawing could not be sent to the partner"
+    },
+    "games.notice.drawingRejected.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's back on the canvas. Tap Done to try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den er tilbake på tegnebrettet. Trykk Ferdig for å prøve igjen."
+          }
+        }
+      },
+      "comment" : "Banner message when a drawing could not be sent. The drawing is back on the canvas."
+    },
+    "games.notice.drawingUnavailable.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't load the drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kan ikke laste tegningen"
+          }
+        }
+      },
+      "comment" : "Banner title when the partner's drawing could not be loaded"
+    },
+    "games.notice.drawingUnavailable.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettforbindelsen og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Banner message when the partner's drawing could not be loaded"
+    },
+    "games.notice.drawingTooBig.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That drawing is too big to send"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen er for stor til å sendes"
+          }
+        }
+      },
+      "comment" : "Banner title when a drawing is too big to send"
+    },
+    "games.notice.drawingTooBig.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove a few lines and tap Done again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern noen streker og trykk Ferdig igjen."
+          }
+        }
+      },
+      "comment" : "Banner message when a drawing is too big to send"
+    },
+    "games.notice.saveRejected.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save to Memories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre i Minner"
+          }
+        }
+      },
+      "comment" : "Banner title when saving a drawing to Memories failed"
+    },
+    "games.notice.saveRejected.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can try saving it again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan prøve å lagre den igjen."
+          }
+        }
+      },
+      "comment" : "Banner message when saving a drawing to Memories failed"
+    },
+    "games.notice.moveFailed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save your move"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre trekket ditt"
+          }
+        }
+      },
+      "comment" : "Banner title when a game move could not be saved on the phone"
+    },
+    "games.notice.moveFailed.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen."
+          }
+        }
+      },
+      "comment" : "Banner message when a game move could not be saved on the phone"
+    },
+    "games.notice.inviteFailed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't send the invite"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke sende invitasjonen"
+          }
+        }
+      },
+      "comment" : "Banner title when the invite to play could not be sent"
+    },
+    "games.notice.inviteFailed.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettforbindelsen og prøv igjen."
+          }
+        }
+      },
+      "comment" : "Banner message when the invite to play could not be sent"
+    },
+    "games.drawAndGuess.name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw & Guess"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn og gjett"
+          }
+        }
+      },
+      "comment" : "Name of the Draw and Guess game. Norwegian push notifications call it Tegn og gjett."
+    },
+    "games.drawAndGuess.choose.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a word to draw"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et ord å tegne"
+          }
+        }
+      },
+      "comment" : "Title of the screen where the player picks the word they will draw."
+    },
+    "games.drawAndGuess.choose.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will guess it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ skal gjette det."
+          }
+        }
+      },
+      "comment" : "Line under the title. %@ is the partner's name."
+    },
+    "games.drawAndGuess.difficulty.easy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Easy"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lett"
+          }
+        }
+      },
+      "comment" : "Difficulty of a word to draw."
+    },
+    "games.drawAndGuess.difficulty.medium" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Middels"
+          }
+        }
+      },
+      "comment" : "Difficulty of a word to draw."
+    },
+    "games.drawAndGuess.difficulty.hard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hard"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vanskelig"
+          }
+        }
+      },
+      "comment" : "Difficulty of a word to draw."
+    },
+    "games.drawAndGuess.difficulty.custom" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your own word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ditt eget ord"
+          }
+        }
+      },
+      "comment" : "Difficulty label of a word the player typed."
+    },
+    "games.drawAndGuess.showMe" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show me"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis meg"
+          }
+        }
+      },
+      "comment" : "Quiet button that shows the answer and ends the round."
+    },
+    "games.drawAndGuess.showMe.confirm.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the answer?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vise svaret?"
+          }
+        }
+      },
+      "comment" : "Title of the alert that asks before showing the answer."
+    },
+    "games.drawAndGuess.showMe.confirm.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This round won't give any points. You can still save the drawing."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne runden gir ingen poeng. Du kan fortsatt lagre tegningen."
+          }
+        }
+      },
+      "comment" : "Message of the show-the-answer alert."
+    },
+    "games.drawAndGuess.keepGuessing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep guessing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett å gjette"
+          }
+        }
+      },
+      "comment" : "Button that closes the show-the-answer alert."
+    },
+    "games.drawAndGuess.tileLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letter %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bokstaven %@"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of a letter tile. %@ is the letter."
+    },
+    "games.drawAndGuess.slotEmpty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letter %lld, empty"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bokstav %lld, tom"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of an empty answer slot. %lld is the position."
+    },
+    "games.drawAndGuess.slotFilled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letter %1$lld, %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bokstav %1$lld, %2$@"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of a filled answer slot. %1$lld is the position and %2$@ the letter."
+    },
+    "games.drawAndGuess.needsSetup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose how you play in the Games tab first."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg hvordan dere spiller i Spill-fanen først."
+          }
+        }
+      },
+      "comment" : "Shown if the game opens before the couple chose how they play"
+    },
+    "games.drawAndGuess.save.notNow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke nå"
+          }
+        }
+      },
+      "comment" : "Button that declines saving the drawing."
+    },
+    "games.pending.savedOnPhone" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved on this phone. We'll send it when you're online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret på telefonen. Vi sender det når du er på nett."
+          }
+        }
+      },
+      "comment" : "Shown when a game move is saved on the phone and will be sent later"
+    },
+    "games.invite.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell %@ you want to play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si fra til %@ at du vil spille"
+          }
+        }
+      },
+      "comment" : "Button that sends the partner a notification asking them to play. %@ is the partner's name."
+    },
+    "games.invite.sent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sendt"
+          }
+        }
+      },
+      "comment" : "Label of the invite button after an invite was sent"
+    },
+    "games.partnerHereNow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is here now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er her nå"
+          }
+        }
+      },
+      "comment" : "Shows that the partner has the game open. %@ is the partner's name."
+    },
+    "games.hub.status.notStarted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready when you are"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klar når dere er det"
+          }
+        }
+      },
+      "comment" : "Hub status before the couple has played Draw and Guess"
+    },
+    "games.hub.status.yourTurnToDraw" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn to draw"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur til å tegne"
+          }
+        }
+      },
+      "comment" : "Hub status when it is the player's turn to draw"
+    },
+    "games.hub.status.yourTurnToGuess" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn to guess"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur til å gjette"
+          }
+        }
+      },
+      "comment" : "Hub status when it is the player's turn to guess"
+    },
+    "games.hub.status.partnerDrawing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is drawing for you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tegner for deg"
+          }
+        }
+      },
+      "comment" : "Hub status when the partner is drawing for the player. %@ is the partner's name."
+    },
+    "games.hub.status.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@"
+          }
+        }
+      },
+      "comment" : "Hub status when the partner has the next move. %@ is the partner's name."
+    },
+    "games.hub.action.start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start playing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begynn å spille"
+          }
+        }
+      },
+      "comment" : "Hub button that starts the first round"
+    },
+    "games.hub.action.draw" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn nå"
+          }
+        }
+      },
+      "comment" : "Hub button that opens the game when it is time to draw"
+    },
+    "games.hub.action.guess" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start guessing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begynn å gjette"
+          }
+        }
+      },
+      "comment" : "Hub button that opens the game when it is time to guess"
+    },
+    "games.hub.action.watch" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch and guess"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se på og gjett"
+          }
+        }
+      },
+      "comment" : "Hub button that opens the game while the partner draws"
+    },
+    "games.hub.action.open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open game"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne spillet"
+          }
+        }
+      },
+      "comment" : "Hub button that opens the game while the partner has the next move"
+    },
+    "games.setup.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set up your games"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør klar spillene"
+          }
+        }
+      },
+      "comment" : "Heading of the first-time setup for Games"
+    },
+    "games.setup.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick how you like to play. You can change it later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg hvordan dere vil spille. Dere kan endre det senere."
+          }
+        }
+      },
+      "comment" : "Text under the heading of the first-time setup for Games"
+    },
+    "games.setup.playStyle.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How do you want to play?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvordan vil dere spille?"
+          }
+        }
+      },
+      "comment" : "Heading above the choice between playing against each other and together"
+    },
+    "games.setup.language.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Game language"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spillspråk"
+          }
+        }
+      },
+      "comment" : "Heading above the choice of game language"
+    },
+    "games.setup.language.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a language you both understand."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et språk dere begge forstår."
+          }
+        }
+      },
+      "comment" : "Text under the game language heading"
+    },
+    "games.setup.continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start playing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begynn å spille"
+          }
+        }
+      },
+      "comment" : "Button that finishes the Games setup"
+    },
+    "games.playStyle.against.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Against each other"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mot hverandre"
+          }
+        }
+      },
+      "comment" : "Play style where each partner has their own score"
+    },
+    "games.playStyle.against.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You each get a score, and one of you is ahead."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere får hver deres poengsum, og én av dere ligger foran."
+          }
+        }
+      },
+      "comment" : "Explains the against each other play style"
+    },
+    "games.playStyle.together.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen"
+          }
+        }
+      },
+      "comment" : "Play style where the couple has one shared score"
+    },
+    "games.playStyle.together.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You build one score as a team."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere bygger opp én poengsum som et lag."
+          }
+        }
+      },
+      "comment" : "Explains the together play style"
+    },
+    "games.language.english" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "English"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "English"
+          }
+        }
+      },
+      "comment" : "Name of the English game language, written in English so both partners can read it"
+    },
+    "games.language.norwegian" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Norsk"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Norsk"
+          }
+        }
+      },
+      "comment" : "Name of the Norwegian game language, written in Norwegian so both partners can read it"
+    },
+    "games.partnerPicked.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Here's what %@ picked"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette valgte %@"
+          }
+        }
+      },
+      "comment" : "Heading that shows what the partner chose in the Games setup. %@ is the partner's name."
+    },
+    "games.partnerPicked.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can change this any time."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan endre dette når som helst."
+          }
+        }
+      },
+      "comment" : "Text under the heading that shows the partner's choices"
+    },
+    "games.partnerPicked.continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sounds good"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Høres bra ut"
+          }
+        }
+      },
+      "comment" : "Button that accepts the partner's Games choices"
+    },
+    "games.partnerPicked.change" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre"
+          }
+        }
+      },
+      "comment" : "Button that opens the Games settings from the partner's choices"
+    },
+    "games.settings.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Game settings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spillinnstillinger"
+          }
+        }
+      },
+      "comment" : "Title of the Games settings and the row that opens it"
+    },
+    "games.settings.save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        }
+      },
+      "comment" : "Button that saves the Games settings"
+    },
+    "games.settings.languageNote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A new language also changes the words for the turn that's open."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et nytt språk endrer også ordene for runden som er åpen."
+          }
+        }
+      },
+      "comment" : "Note under the Games settings about changing the language"
+    },
+    "games.unavailable.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Games need a connection"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill trenger nettforbindelse"
+          }
+        }
+      },
+      "comment" : "Heading when Games cannot load the first time"
+    },
+    "games.unavailable.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to set up your games."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å gjøre klar spillene."
+          }
+        }
+      },
+      "comment" : "Text when Games cannot load the first time"
+    },
+    "settings.notifications.games.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Games"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill"
+          }
+        }
+      },
+      "comment" : "Title of the notification switch for games"
+    },
+    "settings.notifications.games.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a notification when it's your turn or %@ wants to play."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få et varsel når det er din tur eller %@ vil spille."
+          }
+        }
+      },
+      "comment" : "Explains the games notification switch. %@ is the partner's name."
+    },
+    "games.drawAndGuess.choose.subtitleFirst" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ guesses it, then you swap."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gjetter, så bytter dere."
+          }
+        }
+      },
+      "comment" : "Line under the title on the very first turn. %@ is the partner's name. Then the two players swap roles."
+    },
+    "games.drawAndGuess.choose.row.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      },
+      "comment" : "Under a word to draw. %1$@ is the difficulty (Easy, Medium or Hard) and %2$@ is the points, for example \"Easy, 1 point\"."
+    },
+    "games.drawAndGuess.choose.row.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@, %3$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@, %3$@"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of a word to draw. %1$@ is the word, %2$@ the difficulty and %3$@ the points, for example \"Cat, easy, 1 point\"."
+    },
+    "games.drawAndGuess.choose.own.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw your own"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn noe eget"
+          }
+        }
+      },
+      "comment" : "Row where the player types their own word to draw."
+    },
+    "games.drawAndGuess.choose.own.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An inside joke or a place only you two know. 2 points."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En intern vits eller et sted bare dere to kjenner. 2 poeng."
+          }
+        }
+      },
+      "comment" : "Explains the \"Draw your own\" row. Own words are worth 2 points."
+    },
+    "games.drawAndGuess.choose.own.placeholder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type a word or a short phrase"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv et ord eller en kort frase"
+          }
+        }
+      },
+      "comment" : "Placeholder in the field where the player types their own word."
+    },
+    "games.drawAndGuess.choose.start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begynn å tegne"
+          }
+        }
+      },
+      "comment" : "Button that starts the round with the picked word."
+    },
+    "games.drawAndGuess.choose.error.tooShort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use at least 2 letters."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk minst 2 bokstaver."
+          }
+        }
+      },
+      "comment" : "Shown under the own-word field when the word is too short."
+    },
+    "games.drawAndGuess.choose.error.tooLong" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That is a bit long. Use 20 letters at most."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det er litt langt. Bruk høyst 20 bokstaver."
+          }
+        }
+      },
+      "comment" : "Shown under the own-word field when the word is too long."
+    },
+    "games.drawAndGuess.choose.error.tooManyWords" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use 3 words at most."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk høyst 3 ord."
+          }
+        }
+      },
+      "comment" : "Shown under the own-word field when it has more than three words."
+    },
+    "games.drawAndGuess.choose.error.character" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use letters only. Numbers and symbols don't fit in the puzzle."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk bare bokstaver. Tall og tegn passer ikke i gjettingen."
+          }
+        }
+      },
+      "comment" : "Shown under the own-word field when it has a number or symbol."
+    },
+    "games.drawAndGuess.choose.letterCount" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      },
+      "comment" : "Letter counter under the own-word field. %1$lld is the letters typed and %2$lld the most allowed."
+    },
+    "games.drawAndGuess.choose.letterCount.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld letters"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld av %2$lld bokstaver"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the letter counter. %1$lld is the letters typed and %2$lld the most allowed."
+    },
+    "games.drawAndGuess.choose.offline.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett"
+          }
+        }
+      },
+      "comment" : "Title when the words for the round are not on the phone and there is no connection."
+    },
+    "games.drawAndGuess.choose.offline.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to get your words."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å få ordene dine."
+          }
+        }
+      },
+      "comment" : "Message under the offline title on the pick-a-word screen."
+    },
+    "games.drawAndGuess.draw.wordLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn"
+          }
+        }
+      },
+      "comment" : "Small label before the word the player has to draw."
+    },
+    "games.drawAndGuess.draw.watching" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is watching"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser på"
+          }
+        }
+      },
+      "comment" : "Shown while the partner has the drawing open. %@ is the partner's name."
+    },
+    "games.drawAndGuess.draw.later" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will see it later"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser den senere"
+          }
+        }
+      },
+      "comment" : "Shown while the partner is not in the game. %@ is the partner's name."
+    },
+    "games.drawAndGuess.draw.tried" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ tried %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ prøvde %2$@"
+          }
+        }
+      },
+      "comment" : "A wrong guess. %1$@ is the partner's name and %2$@ is the word they guessed."
+    },
+    "games.drawAndGuess.draw.doneA11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done, send to %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig, send til %@"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the Done button under the drawing. %@ is the partner's name."
+    },
+    "games.drawAndGuess.draw.clear.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear the drawing?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tømme tegningen?"
+          }
+        }
+      },
+      "comment" : "Title of the alert that asks before clearing the drawing."
+    },
+    "games.drawAndGuess.draw.clear.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This removes everything you've drawn so far."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette fjerner alt du har tegnet så langt."
+          }
+        }
+      },
+      "comment" : "Message of the clear drawing alert."
+    },
+    "games.drawAndGuess.draw.clear.action" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tøm"
+          }
+        }
+      },
+      "comment" : "Button that clears the drawing."
+    },
+    "games.drawAndGuess.draw.clear.cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett å tegne"
+          }
+        }
+      },
+      "comment" : "Button that closes the clear drawing alert."
+    },
+    "games.drawAndGuess.wait.choosing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is picking a word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ velger et ord"
+          }
+        }
+      },
+      "comment" : "Shown while the partner picks a word. %@ is the partner's name."
+    },
+    "games.drawAndGuess.wait.drawing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is drawing for you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tegner for deg"
+          }
+        }
+      },
+      "comment" : "Shown while the partner draws. %@ is the partner's name."
+    },
+    "games.drawAndGuess.wait.hintLive" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll watch it happen."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du ser det skje."
+          }
+        }
+      },
+      "comment" : "Hint while waiting when the partner is in the game."
+    },
+    "games.drawAndGuess.wait.hintLater" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The drawing will show up here. We'll tell you when it's ready."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen dukker opp her. Vi sier fra når den er klar."
+          }
+        }
+      },
+      "comment" : "Hint while waiting when the partner is not in the game."
+    },
+    "games.drawAndGuess.waitingToSync.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Then you can draw back."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Så kan du tegne tilbake."
+          }
+        }
+      },
+      "comment" : "Second line when the player's last move waits on the phone to be sent."
+    },
+    "games.drawAndGuess.guess.drawnBy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ drew this for you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tegnet dette til deg"
+          }
+        }
+      },
+      "comment" : "Line above the drawing the player is about to guess. %@ is the partner's name."
+    },
+    "games.drawAndGuess.guess.speedBonus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speed bonus +1"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fartsbonus +1"
+          }
+        }
+      },
+      "comment" : "Gold label while a fast guess still earns one extra point."
+    },
+    "games.drawAndGuess.guess.speedBonus.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guess within 30 seconds for 1 extra point."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjett innen 30 sekunder for ett ekstra poeng."
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the speed bonus."
+    },
+    "games.drawAndGuess.guess.holdHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold to speed up"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold for å spole fremover"
+          }
+        }
+      },
+      "comment" : "Hint shown once over the drawing. Holding a finger on it plays the drawing faster."
+    },
+    "games.drawAndGuess.guess.replay.label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing by %@, playing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegning av %@, spilles av"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the drawing being played back. %@ is the partner's name."
+    },
+    "games.drawAndGuess.guess.replay.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It can't be described before you guess."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den kan ikke beskrives før du har gjettet."
+          }
+        }
+      },
+      "comment" : "VoiceOver hint of the drawing. The drawing cannot be read out before the player guesses the word."
+    },
+    "games.drawAndGuess.guess.replay.faster" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play faster"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill raskere"
+          }
+        }
+      },
+      "comment" : "VoiceOver action that plays the drawing faster."
+    },
+    "games.drawAndGuess.guess.replay.skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the whole drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis hele tegningen"
+          }
+        }
+      },
+      "comment" : "VoiceOver action that shows the finished drawing at once."
+    },
+    "games.drawAndGuess.guess.answer.oneWord" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer, %lld letters"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar, %lld bokstaver"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the answer slots for a one-word answer. %lld is the number of letters."
+    },
+    "games.drawAndGuess.guess.answer.words" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer, %1$lld words, %2$@ letters"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar, %1$lld ord, %2$@ bokstaver"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the answer slots. %1$lld is the number of words and %2$@ lists their lengths, for example \"3 and 5\"."
+    },
+    "games.drawAndGuess.guess.placed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ in letter %2$lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ i bokstav %2$lld"
+          }
+        }
+      },
+      "comment" : "VoiceOver announcement after a tile is placed. %1$@ is the letter and %2$lld the position."
+    },
+    "games.drawAndGuess.guess.wrong" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not it. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke riktig. Prøv igjen."
+          }
+        }
+      },
+      "comment" : "VoiceOver announcement after a full wrong word."
+    },
+    "games.drawAndGuess.guess.emptyLetters" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty letters"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tomme bokstaver"
+          }
+        }
+      },
+      "comment" : "Name of the VoiceOver rotor that jumps between empty answer slots."
+    },
+    "games.drawAndGuess.slot.removeHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Double tap to remove"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dobbelttrykk for å fjerne"
+          }
+        }
+      },
+      "comment" : "VoiceOver hint of a filled answer slot."
+    },
+    "games.drawAndGuess.reveal.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Got it!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riktig!"
+          }
+        }
+      },
+      "comment" : "Title when the player guessed the word."
+    },
+    "games.drawAndGuess.reveal.solveTime" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You solved it in %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du løste den på %@"
+          }
+        }
+      },
+      "comment" : "How long the guess took. %@ is a duration such as 24 seconds."
+    },
+    "games.drawAndGuess.reveal.pointsTogether" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "points together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "poeng sammen"
+          }
+        }
+      },
+      "comment" : "Under the couple's total score on the result."
+    },
+    "games.drawAndGuess.reveal.you" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du"
+          }
+        }
+      },
+      "comment" : "Name of the signed-in player above their score."
+    },
+    "games.drawAndGuess.reveal.line.word" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The word +%lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordet +%lld"
+          }
+        }
+      },
+      "comment" : "Points for the word. %lld is the points."
+    },
+    "games.drawAndGuess.reveal.line.speed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speed bonus +%lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fartsbonus +%lld"
+          }
+        }
+      },
+      "comment" : "Points for a fast guess. %lld is the points."
+    },
+    "games.drawAndGuess.reveal.line.drawing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For the drawing +%lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For tegningen +%lld"
+          }
+        }
+      },
+      "comment" : "Points the drawer gets. %lld is the points."
+    },
+    "games.drawAndGuess.reveal.offlineScore" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your score updates when you're online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poengene oppdateres når du er på nett."
+          }
+        }
+      },
+      "comment" : "Shown when the result is only on the phone so far."
+    },
+    "games.drawAndGuess.reveal.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Correct. It was %1$@. %2$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riktig. Det var %1$@. %2$@."
+          }
+        }
+      },
+      "comment" : "VoiceOver announcement when the guess is right. %1$@ is the word and %2$@ the points, for example \"2 points\"."
+    },
+    "games.drawAndGuess.handoff.draw" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn to draw"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur til å tegne"
+          }
+        }
+      },
+      "comment" : "Button that leaves the result and goes on to picking a word."
+    },
+    "games.drawAndGuess.handoff.continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      },
+      "comment" : "Button that leaves the drawer's result."
+    },
+    "games.drawAndGuess.save.prompt" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save this drawing to Memories?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre tegningen i Minner?"
+          }
+        }
+      },
+      "comment" : "Question on the result of a round."
+    },
+    "games.drawAndGuess.save.save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save to Memories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre i Minner"
+          }
+        }
+      },
+      "comment" : "Button that saves the drawing to Memories."
+    },
+    "games.drawAndGuess.save.saved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Memories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret i Minner"
+          }
+        }
+      },
+      "comment" : "Shown after the drawing was saved to Memories."
+    },
+    "games.drawAndGuess.save.savedBy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ saved this to Memories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ lagret dette i Minner"
+          }
+        }
+      },
+      "comment" : "Shown when the partner saved the drawing first. %@ is the partner's name."
+    },
+    "games.drawAndGuess.save.pendingRow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save %@ to Memories?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre %@ i Minner?"
+          }
+        }
+      },
+      "comment" : "Question about the last drawing, shown on top of the next screen. %@ is the word that was drawn."
+    },
+    "games.drawAndGuess.missed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not this time"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke denne gangen"
+          }
+        }
+      },
+      "comment" : "Title when the player asked for the answer."
+    },
+    "games.drawAndGuess.missed.line" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No points this round. Ready to draw one back?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen poeng denne runden. Klar for å tegne en tilbake?"
+          }
+        }
+      },
+      "comment" : "Line under the missed title."
+    },
+    "games.drawAndGuess.result.sent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sent to %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sendt til %@"
+          }
+        }
+      },
+      "comment" : "Drawer's status after sending. %@ is the partner's name."
+    },
+    "games.drawAndGuess.result.notSeen" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hasn't seen it yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har ikke sett den ennå"
+          }
+        }
+      },
+      "comment" : "Under the sent status. %@ is the partner's name."
+    },
+    "games.drawAndGuess.result.looking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is looking at it"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser på den nå"
+          }
+        }
+      },
+      "comment" : "Under the sent status when the partner has it open. %@ is the partner's name."
+    },
+    "games.drawAndGuess.result.tried" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tried"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ prøvde"
+          }
+        }
+      },
+      "comment" : "Label before the partner's guesses. %@ is the partner's name."
+    },
+    "games.drawAndGuess.result.noTries" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No guesses yet. We'll tell you when %@ tries."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen gjetninger ennå. Vi sier fra når %@ prøver."
+          }
+        }
+      },
+      "comment" : "Shown before the partner has guessed. %@ is the partner's name."
+    },
+    "games.drawAndGuess.result.gotIt" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ got it!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ fikk den!"
+          }
+        }
+      },
+      "comment" : "Title when the partner guessed the drawing. %@ is the partner's name."
+    },
+    "games.drawAndGuess.result.missed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ asked for the answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ba om å få se svaret"
+          }
+        }
+      },
+      "comment" : "Title when the partner asked for the answer. %@ is the partner's name."
+    },
+    "games.drawAndGuess.result.noPoints" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No points this round."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen poeng denne runden."
+          }
+        }
+      },
+      "comment" : "Line when nobody got points."
+    },
+    "games.drawAndGuess.result.then" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", then "
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", så "
+          }
+        }
+      },
+      "comment" : "Joins guesses when read out, for example \"CAT, then HAT, then DOG\". Keep the spaces."
+    },
+    "games.drawAndGuess.score.together.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together, %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen, %@"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the shared score. %@ is the points, for example \"12 points\"."
+    },
+    "games.drawAndGuess.score.against.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You %1$@, %2$@ %3$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du %1$@, %2$@ %3$@"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of both scores. %1$@ is my points, %2$@ the partner's name and %3$@ their points."
+    },
+    "games.drawAndGuess.points" : {
+      "comment" : "A number of points. %lld is the count.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld point"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld points"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld poeng"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld poeng"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.wait.letters" : {
+      "comment" : "Number of letters in the word the partner draws. %lld is the count.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld letter"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld letters"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld bokstav"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld bokstaver"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.result.solvedTimedFirstTry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ got it in %2$@, on the first try."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ klarte det på %2$@, på første forsøk."
+          }
+        }
+      },
+      "comment" : "Drawer's result line when the partner got it right on the first guess. %1$@ is the partner's name, %2$@ a duration such as 18 seconds."
+    },
+    "games.drawAndGuess.result.solvedTimedTries" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ got it in %2$@ and %3$lld tries."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ klarte det på %2$@ og %3$lld forsøk."
+          }
+        }
+      },
+      "comment" : "Drawer's result line when the partner needed several guesses. %1$@ is the partner's name, %2$@ a duration such as 18 seconds, %3$lld the number of guesses, always 2 or more."
+    },
+    "games.drawAndGuess.result.solvedFirstTry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ got it on the first try."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ klarte det på første forsøk."
+          }
+        }
+      },
+      "comment" : "Drawer's result line when the partner got it right on the first guess and the time is not shown. %@ is the partner's name."
+    },
+    "games.drawAndGuess.result.solvedTries" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ got it in %2$lld tries."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ klarte det på %2$lld forsøk."
+          }
+        }
+      },
+      "comment" : "Drawer's result line when the partner needed several guesses and the time is not shown. %1$@ is the partner's name, %2$lld the number of guesses, always 2 or more."
+    },
+    "games.notice.wordRejectedKeptDrawing.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawing is saved. Pick a new word and it will be on your canvas."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen din er lagret. Velg et nytt ord, så ligger den på tegnebrettet."
+          }
+        }
+      },
+      "comment" : "Banner text when the word the drawer picked was refused after they had already drawn it. The drawing is kept."
     }
   },
   "version" : "1.0"

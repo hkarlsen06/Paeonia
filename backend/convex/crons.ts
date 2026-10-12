@@ -8,6 +8,11 @@ const crons = cronJobs();
 // New in Convex: removes typing rows left behind by an app that closed mid-typing. See chatPresence.ts.
 crons.interval("cleanup-stale-daily-chat-typing", { minutes: 10 }, internal.chatPresence.cleanup_stale_daily_chat_typing, {});
 
+// New in Convex: removes game presence rows an app stopped refreshing. See games.ts.
+crons.interval("cleanup-stale-game-presence", { minutes: 5 }, internal.games.cleanup_stale_game_presence, {});
+// New in Convex: the single reminder for a game turn that waited 72 hours. See games.ts.
+crons.interval("send-due-game-turn-reminders", { minutes: 15 }, internal.games.send_due_game_turn_reminders, {});
+
 // pg_cron 'paeonia-push-notification-drain' (internal.run_scheduled_push_notification_jobs).
 crons.interval(
   "paeonia-push-notification-drain",

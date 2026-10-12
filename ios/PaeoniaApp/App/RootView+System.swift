@@ -65,6 +65,8 @@ extension RootView {
             selectTabForDeepLink(.questions)
         case .memories:
             selectTabForDeepLink(.memories)
+        case .drawAndGuess:
+            selectTabForDeepLink(.games)
         case .streak:
             selectTabForDeepLink(.home)
         case .subscription:

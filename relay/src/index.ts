@@ -1,8 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
-import { verifyTicket } from "./ticket.ts";
+import { roomName, verifyTicket } from "./ticket.ts";
 
 /**
- * Live drawing relay. Each couple gets one room (a Durable Object). The room
+ * Live drawing relay. Each couple gets one room per channel (a Durable Object): the
+ * widget canvas room, and one room for each game channel in the ticket. The room
  * forwards every message from one socket to the other person's sockets as is,
  * and never stores or reads the drawing. The app owns the message format.
  * Sockets of the same user (the Home tab and the canvas on one phone) never
@@ -31,7 +32,7 @@ export default {
     // The room trusts this header because only this Worker can reach the room.
     const headers = new Headers(request.headers);
     headers.set("X-Paeonia-User", ticket.userId);
-    return env.ROOMS.getByName(ticket.coupleId).fetch(new Request(request, { headers }));
+    return env.ROOMS.getByName(roomName(ticket)).fetch(new Request(request, { headers }));
   },
 };
 

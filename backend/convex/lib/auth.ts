@@ -160,6 +160,7 @@ export async function ensureCurrentUser(ctx: MutationCtx): Promise<string> {
     updated_at: now,
     memories_enabled: true,
     messages_enabled: true,
+    games_enabled: true,
   });
   return userId;
 }

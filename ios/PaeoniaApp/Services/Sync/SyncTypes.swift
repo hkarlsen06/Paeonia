@@ -140,6 +140,11 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case removeMemoryMedia = "remove_memory_media"
     case updateLatestPartnerLocation = "update_latest_partner_location"
     case updateLocationSharingPreference = "update_location_sharing_preference"
+    case pickDrawWord = "pick_draw_word"
+    case submitGameDrawing = "submit_game_drawing"
+    case submitGameGuess = "submit_game_guess"
+    case giveUpGameRound = "give_up_game_round"
+    case saveGameRoundToMemories = "save_game_round_to_memories"
 }
 
 nonisolated enum SyncPendingOperationStatus: String, Codable, CaseIterable, Sendable {

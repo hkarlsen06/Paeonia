@@ -68,6 +68,14 @@ export function notificationAlertBody(
       return nb ? "Åpne Paeonia for å se det." : "Open Paeonia to see it.";
     case "thread_message_sent":
       return nb ? "Åpne Paeonia for å lese og svare." : "Open Paeonia to read it and reply.";
+    case "game_turn_ready":
+      return nb ? "Åpne Paeonia for å gjette." : "Open Paeonia to guess it.";
+    case "game_guessed":
+      return nb ? "Åpne Paeonia for å se hvordan det gikk." : "Open Paeonia to see how it went.";
+    case "game_invite":
+      return nb ? "Åpne Paeonia for å bli med." : "Open Paeonia to join in.";
+    case "game_turn_reminder":
+      return nb ? "Åpne Paeonia for å ta turen din." : "Open Paeonia to take your turn.";
     case "streak_reminder":
       return nb
         ? "En rask tegning holder. Rekken fortsetter når dere begge har sjekket inn."
@@ -101,6 +109,13 @@ export async function notificationAlertTitle(
       return nb ? `${name} la til et nytt minne` : `${name} added a new memory`;
     case "thread_message_sent":
       return nb ? `${name} sendte deg en melding` : `${name} sent you a message`;
+    case "game_turn_ready":
+    case "game_turn_reminder":
+      return nb ? "Din tur i Tegn og gjett" : "Your turn in Draw & Guess";
+    case "game_guessed":
+      return nb ? `${name} gjettet tegningen din` : `${name} guessed your drawing`;
+    case "game_invite":
+      return nb ? `${name} vil spille Tegn og gjett med deg` : `${name} wants to play Draw & Guess with you`;
     case "streak_reminder":
       return nb ? "Tid for å sjekke inn" : "Time for a quick check-in";
     case "subscription_trial_reminder":

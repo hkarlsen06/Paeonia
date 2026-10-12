@@ -22,6 +22,7 @@ export const mediaBucket = literals(
   "profile-photos",
   "couple-media",
   "widget-drawings",
+  "game-drawings",
   "report-snapshots",
 );
 export const mediaType = literals("image", "voice", "drawing_payload", "report_snapshot");
@@ -39,6 +40,7 @@ export const activityKind = literals(
   "memory_created",
   "memory_updated",
   "thread_message_sent",
+  "game_turn_completed",
 );
 export const notificationKind = literals(
   "streak_reminder",
@@ -49,7 +51,14 @@ export const notificationKind = literals(
   "subscription_trial_reminder",
   "memory_created",
   "thread_message_sent",
+  "game_turn_ready",
+  "game_guessed",
+  "game_invite",
+  "game_turn_reminder",
 );
+export const gamePlayStyle = literals("together", "against");
+export const gameLanguage = literals("en", "nb");
+export const wordDifficulty = literals("easy", "medium", "hard");
 export const reviewScenario = literals(
   "pre_paired_entitled",
   "purchase_flow_unentitled",

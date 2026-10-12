@@ -6,6 +6,7 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case dailyChat(instanceID: UUID)
     case dailyToday(coupleDayID: UUID?)
     case memories
+    case drawAndGuess
     case streak
     case subscription
 
@@ -87,6 +88,19 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         return url
     }
 
+    static var drawAndGuessURL: URL {
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = "games"
+        components.path = "/draw-and-guess"
+
+        guard let url = components.url else {
+            preconditionFailure("Invalid Paeonia Draw & Guess URL")
+        }
+
+        return url
+    }
+
     static var subscriptionURL: URL {
         var components = URLComponents()
         components.scheme = scheme
@@ -141,6 +155,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             self = .dailyChat(instanceID: instanceID)
         case ("memories", []):
             self = .memories
+        case ("games", ["draw-and-guess"]):
+            self = .drawAndGuess
         case ("streak", []):
             self = .streak
         case ("settings", ["subscription"]):

@@ -27,7 +27,7 @@ struct PaeoniaAppTests {
     }
 
     @Test func mainTabsRemainInVisibleOrder() {
-        #expect(MainTab.allCases == [.home, .questions, .memories, .you])
+        #expect(MainTab.allCases == [.home, .questions, .games, .memories, .you])
     }
 
     @MainActor

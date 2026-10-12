@@ -1,0 +1,179 @@
+import Foundation
+
+/// One of the three words offered to the drawer.
+nonisolated struct DrawAndGuessWordChoice: Identifiable, Equatable, Sendable {
+    let difficulty: DrawAndGuessDifficulty
+    let wordID: String
+    /// Lowercase.
+    let word: String
+    let points: Int
+
+    var id: DrawAndGuessDifficulty { difficulty }
+
+    init(_ choice: RemoteDrawAndGuessChoice) {
+        difficulty = choice.difficulty
+        wordID = choice.wordID
+        word = choice.word
+        points = choice.points
+    }
+
+    init(difficulty: DrawAndGuessDifficulty, wordID: String, word: String, points: Int) {
+        self.difficulty = difficulty
+        self.wordID = wordID
+        self.word = word
+        self.points = points
+    }
+}
+
+/// How the typed "Draw your own" word reads.
+nonisolated enum DrawAndGuessCustomWordValidation: Equatable, Sendable {
+    case empty
+    /// A word that can be sent, trimmed and with single spaces.
+    case valid(String)
+    case invalid(DrawAndGuessCustomWord.Failure)
+
+    init(_ text: String) {
+        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            self = .empty
+            return
+        }
+        switch DrawAndGuessCustomWord.validate(text) {
+        case let .success(word):
+            self = .valid(word)
+        case let .failure(failure):
+            self = .invalid(failure)
+        }
+    }
+
+    var word: String? {
+        if case let .valid(word) = self { word } else { nil }
+    }
+}
+
+/// Where the partner is, for the line under the game's title.
+nonisolated enum DrawAndGuessPartnerPresence: Equatable, Sendable {
+    case away
+    /// Has the game screen open.
+    case here
+    /// In the live room, watching the drawing.
+    case watching
+    /// In the live room, drawing.
+    case drawing
+
+    var isHere: Bool {
+        self != .away
+    }
+}
+
+/// What the guesser looks at while guessing.
+nonisolated enum DrawAndGuessGuessSource: Equatable, Sendable {
+    /// The drawing played back from the saved file.
+    case replay
+    /// The live room's canvas, because the guesser watched the drawing happen.
+    case live
+}
+
+/// The save-to-Memories prompt on the reveal.
+nonisolated enum DrawAndGuessSavePrompt: Equatable, Sendable {
+    case hidden
+    /// "Save this to Memories?" with Save and Not now.
+    case ask
+    /// A save is queued on this phone.
+    case saving
+    /// This person's save went through.
+    case saved
+    /// The partner saved it first.
+    case savedByPartner
+
+    /// - Parameters:
+    ///   - hasSaveQueued: This person's save waits to be sent.
+    ///   - hasDrawing: The drawing is on the phone or can be fetched, so it can be rendered.
+    static func make(
+        round: DrawAndGuessRoundView,
+        userID: UUID,
+        hasSaveQueued: Bool,
+        hasDrawing: Bool
+    ) -> DrawAndGuessSavePrompt {
+        guard round.isFinished else {
+            return .hidden
+        }
+        if round.memoryID != nil {
+            return round.savedByUserID == userID ? .saved : .savedByPartner
+        }
+        if hasSaveQueued {
+            return .saving
+        }
+        if round.mySaveResponse == .notNow || !hasDrawing {
+            return .hidden
+        }
+        return .ask
+    }
+}
+
+/// The result of a finished round.
+nonisolated struct DrawAndGuessReveal: Equatable, Sendable {
+    enum Outcome: Equatable, Sendable {
+        case iSolvedIt
+        case partnerSolvedIt
+        /// This person pressed "Show me".
+        case iGaveUp
+        case partnerGaveUp
+    }
+
+    let outcome: Outcome
+    /// Lowercase.
+    let word: String
+    let difficulty: DrawAndGuessDifficulty
+    /// What the word is worth.
+    let wordPoints: Int
+    /// The speed bonus, or nil while the server has not confirmed it yet.
+    let speedBonus: Int?
+    /// How long the guess took, counted from the first look at the drawing.
+    let solveDuration: TimeInterval?
+    /// What this person earned. The drawer gets the word's points. The guesser also
+    /// gets the speed bonus.
+    let pointsForMe: Int
+    /// What the couple's shared score grew by.
+    let pointsForCouple: Int
+    let attempts: [DrawAndGuessAttemptView]
+    /// The server has confirmed the result, so the points and the time are final.
+    let isConfirmed: Bool
+
+    var isSolved: Bool {
+        outcome == .iSolvedIt || outcome == .partnerSolvedIt
+    }
+
+    /// Past this, the time says more about the day than about the guess.
+    static let longestShownSolveTime: TimeInterval = 600
+
+    /// The solve time worth showing, or nil when it is missing or too long.
+    var shownSolveDuration: TimeInterval? {
+        guard let solveDuration, solveDuration <= Self.longestShownSolveTime else { return nil }
+        return solveDuration
+    }
+
+    /// How many guesses it took, the right one included.
+    var tries: Int {
+        attempts.filter { !$0.isCorrect }.count + 1
+    }
+
+    /// One sentence for the drawer: "Robin got it in 18 seconds, on the first try."
+    /// The time is left out when it is missing or too long to mean anything.
+    func solvedLine(partnerName: String) -> LocalizedStringResource {
+        switch (shownSolveDuration, tries) {
+        case (let duration?, 1):
+            .gamesDrawAndGuessResultSolvedTimedFirstTry(partnerName, Self.spokenDuration(duration))
+        case (let duration?, let tries):
+            .gamesDrawAndGuessResultSolvedTimedTries(partnerName, Self.spokenDuration(duration), tries)
+        case (nil, 1):
+            .gamesDrawAndGuessResultSolvedFirstTry(partnerName)
+        case (nil, let tries):
+            .gamesDrawAndGuessResultSolvedTries(partnerName, tries)
+        }
+    }
+
+    /// "24 seconds" or "1 minute, 5 seconds".
+    static func spokenDuration(_ duration: TimeInterval) -> String {
+        Duration.seconds(Int(duration.rounded())).formatted(.units(allowed: [.minutes, .seconds], width: .wide))
+    }
+}

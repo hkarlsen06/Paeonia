@@ -11,6 +11,7 @@ Paeonia's backend is a self-hosted Convex deployment. This folder replaced the S
 - `convex/crons.ts`: every scheduled job.
 - `convex/*.test.ts`: `convex-test` + `vitest` tests next to the module they cover.
 - `questions/`: source-controlled question catalog markdown, uploaded with `scripts/sync-question-catalog` (see `questions/README.md`).
+- `games/words/en.json` and `nb.json`: the Draw & Guess word lists. `convex/lib/gameWords.ts` imports them into the bundle, so a list change needs a deploy. `lib/gameWords.test.ts` checks both files against the rules in `docs/games/draw-and-guess.md`.
 - `seed/subscription_products.json`: subscription product reference data, loaded by `internal.catalog.seed_subscription_products`.
 
 ## iOS contract
@@ -92,6 +93,8 @@ Import these instead of re-porting the SQL.
 | `notifications.ts`, `notificationCopy.ts` | outbox inserts, enqueue helpers, notification copy |
 | `reports.ts` | `tombstoneReportTargets` |
 | `mediaOrphans.ts` | live-reference check and orphan queueing |
+| `games.ts`, `gameWords.ts` | game tables: turn start, word choices, scoring, presence, game pushes, and cleanup (`deleteCoupleGameRows`). Word lists, custom word and guess normalization |
+| `liveTicket.ts` | `signLiveTicket`, the relay ticket for the widget canvas and for game channels |
 
 Rules that come with them:
 
@@ -142,6 +145,7 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `threads` | `get_conversation_threads`, `get_thread_messages`, `send_thread_message`, `create_daily_question_thread_with_message`, `create_memory_thread_with_message` |
 | `memories` | `create_memory`, `update_memory`, `hide_memory`, `get_memories`, `upsert_memory_note`, `attach_memory_media`, `remove_memory_media` |
 | `media` | `create_pending_media_upload`, `finalize_media_upload`, `get_media_signed_url`, `mark_media_for_deletion` |
+| `games` | `get_game_settings`, `set_game_settings`, `ensure_draw_and_guess_game`, `get_draw_and_guess`, `pick_draw_word`, `submit_drawing`, `mark_round_seen`, `submit_guess`, `give_up_round`, `respond_save_prompt`, `save_round_to_memories`, `send_game_invite`, `set_game_presence`, `create_game_live_ticket` |
 | `widget` | `get_or_create_widget_canvas`, `get_widget_canvas`, `get_widget_drawing_revisions`, `submit_widget_drawing_revision`, `register_widget_push_device`, `create_widget_live_ticket` |
 | `location` | `update_latest_partner_location`, `update_location_sharing_preference`, `get_partner_location_visibility` |
 | `reports` | `submit_leave_and_report` |
@@ -149,7 +153,7 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 These functions replace direct PostgREST table access from iOS. They return full rows with SQL column names and apply the old RLS rules:
 
 - `identity:complete_profile_onboarding` `{p_time_zone_id, p_profile_photo_asset_id?}` sets `time_zone_id`, `time_zone_updated_at`, `onboarding_completed_at`, and optionally `profile_photo_asset_id`, then returns the profile row.
-- `identity:get_notification_preferences` `{}` returns the caller's `notification_preferences` row. `identity:set_notification_preference` `{p_column, p_enabled}` updates one boolean column (`streak_reminders_enabled`, `daily_challenge_enabled`, `partner_answered_enabled`, `messages_enabled`, `widget_updates_enabled`, `memories_enabled`).
+- `identity:get_notification_preferences` `{}` returns the caller's `notification_preferences` row. `identity:set_notification_preference` `{p_column, p_enabled}` updates one boolean column (`streak_reminders_enabled`, `daily_challenge_enabled`, `partner_answered_enabled`, `messages_enabled`, `widget_updates_enabled`, `memories_enabled`, `games_enabled`).
 - `identity:get_privacy_requests` `{}` returns the caller's `privacy_requests`, newest `requested_at` first, at most 100. `identity:create_privacy_request` `{p_id, p_kind, p_requester_note?}` inserts one and returns the row.
 - `relationship:get_relationship_sync_events` `{p_after_created_at?, p_after_id?, p_limit}` returns the caller's events ordered by `created_at`, then `id`, strictly after the cursor.
 
@@ -206,10 +210,25 @@ Use Node 20, 22, or 24 for `convex dev` and `convex deploy`, because Convex Node
 
 Keep server access to what the task needs. Do not change the docker stack, Caddy, or the server itself unless the task asks for it.
 
+## Games
+
+Draw & Guess is the only game. The design is in `docs/games/draw-and-guess.md` and `docs/games-plan.md`. Function arguments and results are documented in the comments of `convex/games.ts`.
+
+- Every game function needs an active, entitled couple member (`canAccessCoupleContent`). Writes also refuse a user whose account deletion is pending.
+- Game tables: `game_settings` (one row per couple, shared by all games), `games` (one per couple and kind), `game_moves` (one row per round), `game_guesses`, `game_save_responses` (only "Not now"), `game_used_words`, `game_presence`, and `game_invites`. Each has a `couple_id` index, and `deleteCoupleGameRows` deletes them when the relationship content is cleaned up or purged. `endRelationshipForPair` deletes the presence rows at once.
+- `pick_draw_word`, `submit_drawing`, `submit_guess`, and `give_up_round` use `runClientOperation`, because the app may retry them offline. The client supplies the round id in `pick_draw_word`, so a queued drawing upload can name its round before the server has seen it. `pick_draw_word` also takes the `word_id` of the offered choice the drawer saw, and refuses it once the choices changed. Only the round's drawer can reserve its drawing upload, and the round must already exist, so the app sends `pick_draw_word` before the upload.
+- The drawing is a `pkdrawing` asset in the `game-drawings` bucket (purpose `game_drawing_payload`, parent kind `game_move`, parent id = the round id, path context `{ game_id }`). Only members of the couple can read it, through `get_media_signed_url`, once a round holds it.
+- Scores are always kept three ways. A solve adds the word points to `games.shared_points`, adds the word points to the drawer, and adds the word points plus the speed bonus to the guesser. The play style in `game_settings` only decides which numbers the app shows.
+- A sent drawing counts as the `game_turn_completed` streak activity (dedupe key `game_turn_completed:<round id>`).
+- Pushes use the kinds `game_turn_ready`, `game_guessed`, `game_invite`, and `game_turn_reminder`. All four follow `games_enabled`. The payload carries `type`, `game_kind`, `couple_id`, `game_id`, `round_id` (not on invites), `actor_user_id`, `route: "games"`, and `deeplink: "paeonia://games/draw-and-guess"`. It never carries the word or the drawing. The turn and guessed pushes are skipped while the recipient's `game_presence` row is under 60 seconds old.
+- Crons: `cleanup-stale-game-presence` (rows older than 2 minutes) and `send-due-game-turn-reminders` (one reminder per turn after 72 hours).
+
 ## Live drawing relay
 
 `relay/` at the repository root is a Cloudflare Worker at `wss://relay.paeonia.no/canvas`. It forwards drawing messages between the two partners of one couple and stores nothing. Sockets of the same user, such as the Home tab and the canvas on one phone, never hear each other. The app gets a 60-second ticket from `widget:create_widget_live_ticket`, which runs the usual couple access checks, and sends it as `Authorization: Bearer <ticket>`. The relay checks the HMAC and puts the socket in the couple's Durable Object room. Sockets close after 10 minutes and reconnect with a new ticket.
 
-The mutation returns null while `PAEONIA_LIVE_RELAY_URL` or `PAEONIA_LIVE_RELAY_SECRET` is unset, and the app then draws without the relay. The Worker secret `RELAY_TICKET_SECRET` must equal `PAEONIA_LIVE_RELAY_SECRET`. To rotate it, generate one value and set it in both places (`npx wrangler secret put RELAY_TICKET_SECRET` from `relay/`, and `npx convex env set`).
+Game sockets use their own room. `games:create_game_live_ticket` adds a channel claim `ch` (`draw_and_guess`) to the ticket, and the Worker puts the socket in the room `<couple id>:<channel>`. A ticket without `ch` still joins the couple's widget canvas room. The Worker rejects a channel that is not in `ALLOWED_CHANNELS` in `relay/src/ticket.ts`, so a new game adds its channel there and in `GAME_RELAY_CHANNELS` in `convex/lib/games.ts`. `lib/liveTicket.ts` signs both kinds of ticket.
+
+The ticket mutations return null while `PAEONIA_LIVE_RELAY_URL` or `PAEONIA_LIVE_RELAY_SECRET` is unset, and the app then draws without the relay. The Worker secret `RELAY_TICKET_SECRET` must equal `PAEONIA_LIVE_RELAY_SECRET`. To rotate it, generate one value and set it in both places (`npx wrangler secret put RELAY_TICKET_SECRET` from `relay/`, and `npx convex env set`).
 
 From `relay/`: `npm test`, `npm run typecheck`, and `npx wrangler deploy`.

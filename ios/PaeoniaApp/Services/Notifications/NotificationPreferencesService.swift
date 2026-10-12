@@ -10,6 +10,7 @@ nonisolated struct NotificationPreferences: Equatable, Sendable {
     var messagesEnabled = true
     var widgetUpdatesEnabled = true
     var memoriesEnabled = true
+    var gamesEnabled = true
 }
 
 nonisolated extension NotificationPreferences {
@@ -22,6 +23,7 @@ nonisolated extension NotificationPreferences {
             case .messages: messagesEnabled
             case .widgetUpdates: widgetUpdatesEnabled
             case .memories: memoriesEnabled
+            case .games: gamesEnabled
             }
         }
         set {
@@ -32,6 +34,7 @@ nonisolated extension NotificationPreferences {
             case .messages: messagesEnabled = newValue
             case .widgetUpdates: widgetUpdatesEnabled = newValue
             case .memories: memoriesEnabled = newValue
+            case .games: gamesEnabled = newValue
             }
         }
     }
@@ -44,6 +47,7 @@ nonisolated enum NotificationPreferenceKind: CaseIterable, Hashable, Sendable {
     case messages
     case widgetUpdates
     case memories
+    case games
 
     var columnName: String {
         switch self {
@@ -59,6 +63,8 @@ nonisolated enum NotificationPreferenceKind: CaseIterable, Hashable, Sendable {
             "widget_updates_enabled"
         case .memories:
             "memories_enabled"
+        case .games:
+            "games_enabled"
         }
     }
 }
@@ -135,6 +141,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
     let messagesEnabled: Bool
     let widgetUpdatesEnabled: Bool
     let memoriesEnabled: Bool
+    let gamesEnabled: Bool
 
     var preferences: NotificationPreferences {
         NotificationPreferences(
@@ -143,7 +150,8 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
             partnerAnsweredEnabled: partnerAnsweredEnabled,
             messagesEnabled: messagesEnabled,
             widgetUpdatesEnabled: widgetUpdatesEnabled,
-            memoriesEnabled: memoriesEnabled
+            memoriesEnabled: memoriesEnabled,
+            gamesEnabled: gamesEnabled
         )
     }
 
@@ -154,6 +162,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
         case messagesEnabled = "messages_enabled"
         case widgetUpdatesEnabled = "widget_updates_enabled"
         case memoriesEnabled = "memories_enabled"
+        case gamesEnabled = "games_enabled"
     }
 }
 

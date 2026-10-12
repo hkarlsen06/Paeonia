@@ -1,0 +1,177 @@
+import Observation
+import PencilKit
+import SwiftUI
+
+/// The drawer's canvas state: the drawing, the tool, and undo. The game view
+/// model owns one. `PencilKitCanvasView` binds to it, and it reports each change
+/// the person makes so the view model can stream it to the partner and keep a
+/// draft on the phone.
+@MainActor
+@Observable
+final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
+    var drawing = PKDrawing()
+    /// Changes only when the drawing was replaced from code (a restored draft or a
+    /// new round), so strokes drawn on the canvas are never pushed back into it.
+    private(set) var drawingRevision = 0
+    private(set) var selectedTool: WidgetDrawingTool = .pen
+    private(set) var selectedColorChoiceID: String? = WidgetDrawingColorChoice.palette[0].id
+    private(set) var selectedCGColor: CGColor = WidgetDrawingColorChoice.palette[0].uiColor.cgColor
+    private(set) var toolWidthFraction: CGFloat = 0.4
+    private(set) var toolConfigurationRevision = 0
+    /// The side of the square canvas on screen, in points. Zero until laid out.
+    private(set) var canvasSide: CGFloat = 0
+    private(set) var canUndoDrawing = false
+    private(set) var canRedoDrawing = false
+    /// A stroke is being drawn right now.
+    private(set) var isStrokeInProgress = false
+
+    /// The person drew, erased, undid or cleared. Not called for changes from code.
+    @ObservationIgnored var onUserChange: ((PKDrawing) -> Void)?
+
+    @ObservationIgnored private weak var canvasView: PKCanvasView?
+    @ObservationIgnored private var selectedUIColor = WidgetDrawingColorChoice.palette[0].uiColor
+    /// The tool before the current one, for Apple Pencil's "last used" double tap.
+    @ObservationIgnored private var previousTool: WidgetDrawingTool?
+    /// The pen or pencil to go back to after the eraser.
+    @ObservationIgnored private var lastDrawingTool: WidgetDrawingTool = .pen
+
+    var isEmpty: Bool {
+        drawing.strokes.isEmpty
+    }
+
+    var pencilKitTool: any PKTool {
+        selectedTool.pencilKitTool(color: selectedUIColor, width: selectedTool.width(forFraction: toolWidthFraction))
+    }
+
+    /// The drawing at the size every phone exchanges.
+    var canonicalDrawing: PKDrawing {
+        DrawAndGuessCanvas.canonical(drawing, fromSide: canvasSide)
+    }
+
+    // MARK: Tools
+
+    let colorChoices = WidgetDrawingColorChoice.palette
+
+    var isColorSelectionEnabled: Bool {
+        !selectedTool.isEraser
+    }
+
+    func selectTool(_ tool: WidgetDrawingTool) {
+        guard selectedTool != tool else { return }
+        previousTool = selectedTool
+        if !selectedTool.isEraser {
+            lastDrawingTool = selectedTool
+        }
+        selectedTool = tool
+        toolConfigurationRevision += 1
+    }
+
+    func selectColorChoice(_ choice: WidgetDrawingColorChoice) {
+        guard isColorSelectionEnabled else { return }
+        selectedCGColor = choice.uiColor.cgColor
+        selectedUIColor = choice.uiColor
+        selectedColorChoiceID = choice.id
+        toolConfigurationRevision += 1
+    }
+
+    func selectCustomColor(_ color: CGColor) {
+        guard isColorSelectionEnabled else { return }
+        let uiColor = UIColor.paeoniaDrawingColor(from: color)
+        selectedCGColor = uiColor.cgColor
+        selectedUIColor = uiColor
+        selectedColorChoiceID = nil
+        toolConfigurationRevision += 1
+    }
+
+    func updateToolWidthFraction(_ fraction: CGFloat) {
+        let clamped = min(max(0, fraction), 1)
+        guard toolWidthFraction != clamped else { return }
+        toolWidthFraction = clamped
+        toolConfigurationRevision += 1
+    }
+
+    /// Apple Pencil double tap. It switches between the drawing tool and the
+    /// eraser, or back to the last tool, following the Settings choice.
+    func handlePencilDoubleTap(_ action: PencilPreferredAction) {
+        if action == .ignore { return }
+        if action == .switchPrevious, let previousTool {
+            selectTool(previousTool)
+            return
+        }
+        selectTool(selectedTool.isEraser ? lastDrawingTool : .eraser)
+    }
+
+    func setStrokeInProgress(_ isInProgress: Bool) {
+        isStrokeInProgress = isInProgress
+    }
+
+    // MARK: Canvas wiring
+
+    func bindCanvasView(_ canvasView: PKCanvasView) {
+        self.canvasView = canvasView
+        refreshUndoRedo()
+    }
+
+    /// The canvas was laid out at `side` points. A drawing made at another size is
+    /// scaled with it, so it is never mistaken for an edit.
+    func canvasDidLayout(side: CGFloat) {
+        guard side > 0, abs(side - canvasSide) >= 0.5 else { return }
+        // A drawing restored before the first layout is at the canonical size.
+        let previous = canvasSide > 0 ? canvasSide : DrawAndGuessCanvas.canonicalSide
+        canvasSide = side
+        if !drawing.strokes.isEmpty {
+            replace(with: drawing.scaled(fromSide: previous, toSide: side))
+        }
+    }
+
+    func updateDrawing(_ newDrawing: PKDrawing, undoManager _: UndoManager?) {
+        drawing = newDrawing
+        refreshUndoRedo()
+        onUserChange?(newDrawing)
+    }
+
+    // MARK: Changes from code
+
+    /// Puts a drawing on the canvas without telling the partner, for a restored
+    /// draft or a new round.
+    func replace(with newDrawing: PKDrawing) {
+        drawing = newDrawing
+        drawingRevision += 1
+        refreshUndoRedo()
+    }
+
+    func reset() {
+        replace(with: PKDrawing())
+    }
+
+    // MARK: Undo and clear
+
+    func undoDrawing() {
+        canvasView?.undoManager?.undo()
+        drawingChangedByUndo()
+    }
+
+    func redoDrawing() {
+        canvasView?.undoManager?.redo()
+        drawingChangedByUndo()
+    }
+
+    private func drawingChangedByUndo() {
+        if let canvasView {
+            drawing = canvasView.drawing
+            onUserChange?(drawing)
+        }
+        refreshUndoRedo()
+    }
+
+    func clear() {
+        guard !isEmpty else { return }
+        replace(with: PKDrawing())
+        onUserChange?(PKDrawing())
+    }
+
+    func refreshUndoRedo() {
+        canUndoDrawing = canvasView?.undoManager?.canUndo ?? false
+        canRedoDrawing = canvasView?.undoManager?.canRedo ?? false
+    }
+}

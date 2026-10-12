@@ -140,6 +140,29 @@ export const create_pending_media_upload = mutation({
           bucket = "widget-drawings";
           coupleId = coupleArg;
           storagePath = `${coupleArg}/${canvasId}/revisions/${parentId}/drawing.${extension}`;
+        } else if (purpose === "game_drawing_payload") {
+          if (kind !== "game_move" || mediaType !== "drawing_payload" || coupleArg === undefined) {
+            fail("23514", "game drawing upload contract is invalid");
+          }
+          if (!(await canAccessCoupleContent(ctx, userId, coupleArg))) {
+            fail("42501", "active entitled couple access is required");
+          }
+          const rawGameId = pathContext.game_id;
+          if (rawGameId === undefined || rawGameId === null || rawGameId === "") {
+            fail("23514", "game drawing uploads require a game id");
+          }
+          const gameId = uuidArg(rawGameId);
+          const game = await getByUuid(ctx, "games", gameId);
+          if (!game || game.couple_id !== coupleArg) fail("42501", "active entitled game access is required");
+          // Only the round's drawer uploads its drawing. Each attempt gets its own path, so a
+          // failed or expired upload never blocks the next one.
+          const round = await getByUuid(ctx, "game_moves", parentId);
+          if (!round || round.game_id !== gameId || round.drawer_user_id !== userId) {
+            fail("42501", "only the drawer can upload this drawing");
+          }
+          bucket = "game-drawings";
+          coupleId = coupleArg;
+          storagePath = `${coupleArg}/${gameId}/rounds/${parentId}/${assetId}.${extension}`;
         } else if (purpose === "report_snapshot") {
           return fail("42501", "report snapshot uploads require a trusted service path");
         } else {

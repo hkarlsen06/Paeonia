@@ -1,9 +1,35 @@
+import PencilKit
 import SwiftUI
+
+/// What the tool, color, and size controls need from a canvas. The widget
+/// canvas and the Draw & Guess canvas both provide it, so they share the
+/// controls.
+@MainActor
+protocol WidgetDrawingToolControlling: AnyObject {
+    var colorChoices: [WidgetDrawingColorChoice] { get }
+    var selectedTool: WidgetDrawingTool { get }
+    var selectedColorChoiceID: String? { get }
+    var selectedCGColor: CGColor { get }
+    var isColorSelectionEnabled: Bool { get }
+    var toolWidthFraction: CGFloat { get }
+    var canUndoDrawing: Bool { get }
+    var canRedoDrawing: Bool { get }
+
+    func selectTool(_ tool: WidgetDrawingTool)
+    func selectColorChoice(_ choice: WidgetDrawingColorChoice)
+    func selectCustomColor(_ color: CGColor)
+    func updateToolWidthFraction(_ fraction: CGFloat)
+    func undoDrawing()
+    func redoDrawing()
+    func handlePencilDoubleTap(_ action: PencilPreferredAction)
+}
+
+extension WidgetDrawingViewModel: WidgetDrawingToolControlling {}
 
 /// Color swatches and the custom color well. Every swatch keeps a 44 point
 /// tap target even though the visible dot is smaller.
 struct WidgetDrawingColorControlsView: View {
-    let viewModel: WidgetDrawingViewModel
+    let viewModel: any WidgetDrawingToolControlling
 
     private static let swatchSize: CGFloat = 30
     private static let hitTarget: CGFloat = 44
@@ -71,7 +97,7 @@ struct WidgetDrawingColorControlsView: View {
 }
 
 struct WidgetDrawingSizeControlsView: View {
-    let viewModel: WidgetDrawingViewModel
+    let viewModel: any WidgetDrawingToolControlling
 
     var body: some View {
         Slider(
@@ -102,7 +128,7 @@ struct WidgetDrawingSizeControlsView: View {
 
 /// Pen, pencil, and eraser, then undo and redo. All buttons are 44 points.
 struct WidgetDrawingToolControlsView: View {
-    let viewModel: WidgetDrawingViewModel
+    let viewModel: any WidgetDrawingToolControlling
 
     private static let buttonSize: CGFloat = 44
 

@@ -1,4 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
+import { deleteCoupleGameRows } from "./games";
 import { deleteLatestLocationsForCouple } from "./relationshipEnd";
 import { withTouch, withUpdatedAt, type WriterCtx } from "./db";
 import { tombstoneReportTargets } from "./reports";
@@ -155,6 +156,9 @@ export async function cleanupCoupleContent(
     }
   }
 
+  // Game rows have no soft delete. Their drawing media is queued with the couple's other media below.
+  await deleteCoupleGameRows(ctx, couple.id);
+
   let queued = 0;
   for (const asset of await coupleAssets(ctx, couple.id)) {
     if (asset.bucket === "report-snapshots" || asset.storage_delete_status === "deleted") continue;
@@ -309,6 +313,9 @@ export async function purgeCoupleContent(
     }
     await remove(canvas);
   }
+
+  // Normally gone since cleanup. This covers a purge that runs without it.
+  contentDeleted += await deleteCoupleGameRows(ctx, couple.id);
 
   for (const day of days) {
     for (const event of await ctx.db

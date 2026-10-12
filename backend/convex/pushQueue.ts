@@ -62,6 +62,11 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
       return preference?.memories_enabled ?? false;
     case "thread_message_sent":
       return preference?.messages_enabled ?? false;
+    case "game_turn_ready":
+    case "game_guessed":
+    case "game_invite":
+    case "game_turn_reminder":
+      return preference?.games_enabled ?? false;
     default:
       return true;
   }

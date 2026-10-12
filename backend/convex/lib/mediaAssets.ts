@@ -183,6 +183,15 @@ async function canReadWidgetPayload(ctx: ReaderCtx, userId: string, asset: Doc<"
   return false;
 }
 
+async function canReadGameDrawing(ctx: ReaderCtx, userId: string, asset: Doc<"media_assets">): Promise<boolean> {
+  const moves = await ctx.db
+    .query("game_moves")
+    .withIndex("by_drawing_media_asset_id", (q) => q.eq("drawing_media_asset_id", asset.id))
+    .collect();
+  return moves.some((move) => move.id === asset.reserved_parent_id && move.couple_id === asset.couple_id) &&
+    (await canAccessCoupleContent(ctx, userId, asset.couple_id!));
+}
+
 /**
  * Port of `internal.can_read_media_object`, which backed both the
  * `storage.objects` select policy and `get_media_signed_url`.
@@ -211,6 +220,8 @@ export async function canReadMediaAsset(ctx: ReaderCtx, userId: string, asset: D
       return await canReadMemoryMedia(ctx, userId, asset);
     case "widget_drawing_revision":
       return asset.bucket === "widget-drawings" && (await canReadWidgetPayload(ctx, userId, asset));
+    case "game_move":
+      return asset.bucket === "game-drawings" && (await canReadGameDrawing(ctx, userId, asset));
     default:
       return false;
   }

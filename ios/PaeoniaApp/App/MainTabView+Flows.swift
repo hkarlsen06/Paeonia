@@ -253,6 +253,8 @@ extension MainTabView {
             await memoriesViewModel.refresh()
             guard isCurrent(deepLink) else { return }
             self.deepLink.wrappedValue = nil
+        case .drawAndGuess:
+            await openDrawAndGuess(for: deepLink)
         case .streak:
             selection.wrappedValue = .home
             // The streak may have advanced, broken, or passed its restore deadline
@@ -262,6 +264,20 @@ extension MainTabView {
             openStreakDetails()
             self.deepLink.wrappedValue = nil
         }
+    }
+
+    /// Opens Draw & Guess from a notification or an invite. A couple that has not
+    /// set up Games yet lands on the setup instead, because the game needs their
+    /// choices.
+    private func openDrawAndGuess(for deepLink: PaeoniaDeepLink) async {
+        selection.wrappedValue = .games
+        gamesViewModel.configure(participants: gamesParticipants)
+        await gamesViewModel.load()
+        guard isCurrent(deepLink) else { return }
+        if gamesViewModel.screen == .hub {
+            gamesPath = [.drawAndGuess]
+        }
+        self.deepLink.wrappedValue = nil
     }
 
     /// Links into the Questions tab refresh first, so a partner's answer or a

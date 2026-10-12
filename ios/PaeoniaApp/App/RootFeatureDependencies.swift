@@ -13,6 +13,7 @@ struct RootFeatureDependencies {
     var dailyChallengeViewModel: DailyChallengeViewModel?
     var milestoneViewModel: RelationshipMilestoneViewModel?
     var memoriesViewModel: MemoriesViewModel?
+    var gamesViewModel: GamesViewModel?
     var settingsViewModel: SettingsViewModel?
     var settingsPrivacyService: (any PrivacySafetyServicing)?
     var settingsPrivacyOperationProvider: (any SyncClientOperationProviding)?
@@ -27,6 +28,7 @@ struct RootFeatureDependencies {
         dailyChallengeViewModel: DailyChallengeViewModel? = nil,
         milestoneViewModel: RelationshipMilestoneViewModel? = nil,
         memoriesViewModel: MemoriesViewModel? = nil,
+        gamesViewModel: GamesViewModel? = nil,
         settingsViewModel: SettingsViewModel? = nil,
         settingsPrivacyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
         settingsPrivacyOperationProvider: (any SyncClientOperationProviding)? = nil,
@@ -40,6 +42,7 @@ struct RootFeatureDependencies {
         self.dailyChallengeViewModel = dailyChallengeViewModel
         self.milestoneViewModel = milestoneViewModel
         self.memoriesViewModel = memoriesViewModel
+        self.gamesViewModel = gamesViewModel
         self.settingsViewModel = settingsViewModel
         self.settingsPrivacyService = settingsPrivacyService
         self.settingsPrivacyOperationProvider = settingsPrivacyOperationProvider

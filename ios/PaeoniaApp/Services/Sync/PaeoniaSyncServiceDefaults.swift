@@ -47,6 +47,7 @@ nonisolated enum PaeoniaSyncServiceDefaults {
             client: client,
             reservedParentKind: "thread_message_media"
         )
+        let gamesGateway = LiveGamesGateway(client: client)
         let locationHandlers: [any PendingSyncOperationHandling] = [
             LocationSharingPreferencePendingOperationHandler(
                 gateway: locationGateway,
@@ -104,6 +105,24 @@ nonisolated enum PaeoniaSyncServiceDefaults {
             CreateMemoryThreadMessagePendingOperationHandler(
                 gateway: memoryGateway,
                 memoryStore: memoryStore
+            ),
+            PickDrawWordPendingOperationHandler(
+                gateway: gamesGateway,
+                cache: FileGamesCache.shared,
+                drawingStore: FileGameDrawingStore.shared
+            ),
+            SubmitGameDrawingPendingOperationHandler(
+                gateway: gamesGateway,
+                transfer: LiveGameDrawingTransfer(client: client),
+                cache: FileGamesCache.shared,
+                drawingStore: FileGameDrawingStore.shared
+            ),
+            SubmitGameGuessPendingOperationHandler(gateway: gamesGateway),
+            GiveUpGameRoundPendingOperationHandler(gateway: gamesGateway),
+            SaveGameRoundPendingOperationHandler(
+                gateway: gamesGateway,
+                mediaUploader: LiveMemoryMediaUploadService(client: client),
+                cache: FileGamesCache.shared
             ),
         ]
 
