@@ -45,7 +45,7 @@ final class FileDailyChallengeSnapshotCache: @unchecked Sendable, DailyChallenge
     // gain a non-optional field (which would cause `JSONDecoder` to throw on
     // old cached files). Incrementing causes stale files to be treated as
     // cache misses rather than decoding errors.
-    private static let currentSchemaVersion = 1
+    private static let currentSchemaVersion = 2
 
     private let directoryURL: URL
 

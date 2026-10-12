@@ -307,12 +307,6 @@
   background: hsl(var(--surface-secondary));
 }
 
-.join-install-note {
-  margin-top: 20px !important;
-  color: hsl(var(--text-muted)) !important;
-  font-size: 0.9rem !important;
-}
-
 .join-help {
   min-height: 44px;
   margin-top: 16px;

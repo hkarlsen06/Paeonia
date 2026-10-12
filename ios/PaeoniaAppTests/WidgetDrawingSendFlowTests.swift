@@ -250,7 +250,7 @@ struct WidgetDrawingSendFlowTests {
         #expect(draftStore.draft(for: WidgetDrawingDraftKey(ownerUserID: ownerUserID, coupleID: UUID())) == nil)
     }
 
-    @Test func fileDraftStoreKeepsOneDraftPerCoupleAndThePurgeRemovesAll() throws {
+    @Test func fileDraftStoreKeepsOneDraftPerCoupleAndThePurgeRemovesAll() {
         let directoryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("WidgetDrawingSendFlowTests", isDirectory: true)
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -259,10 +259,6 @@ struct WidgetDrawingSendFlowTests {
         let ownerUserID = UUID()
         let firstKey = WidgetDrawingDraftKey(ownerUserID: ownerUserID, coupleID: UUID())
         let secondKey = WidgetDrawingDraftKey(ownerUserID: ownerUserID, coupleID: UUID())
-        // A draft from a build that kept one file per person.
-        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        let legacyURL = directoryURL.appendingPathComponent("\(ownerUserID.uuidString.lowercased()).drawing")
-        try Data([0x09]).write(to: legacyURL)
 
         store.setDraft(Data([0x01]), for: firstKey)
         store.setDraft(Data([0x02]), for: secondKey)
@@ -274,39 +270,7 @@ struct WidgetDrawingSendFlowTests {
 
         #expect(store.draft(for: firstKey) == nil)
         #expect(store.draft(for: secondKey) == nil)
-        #expect(!FileManager.default.fileExists(atPath: legacyURL.path))
         #expect(store.purgeGeneration(for: ownerUserID) == generation + 1)
-    }
-
-    /// An unsent drawing saved by a build that kept one draft per person is
-    /// moved to the current couple when the drawing screen opens, not dropped.
-    @Test func legacyDraftMovesToTheCurrentCouple() async throws {
-        let directoryURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("WidgetDrawingSendFlowTests", isDirectory: true)
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: directoryURL) }
-        let store = FileWidgetDrawingDraftStore(directoryURL: directoryURL)
-        let ownerUserID = UUID()
-        let coupleID = UUID()
-        let legacyDrawing = flowDrawing(at: 70)
-        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        let legacyURL = directoryURL.appendingPathComponent("\(ownerUserID.uuidString.lowercased()).drawing")
-        try legacyDrawing.dataRepresentation().write(to: legacyURL)
-        let viewModel = WidgetDrawingViewModel(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            service: GatedLoadCanvasService(),
-            uploader: FlowUploadSpy(),
-            draftStore: store
-        )
-
-        await viewModel.loadSavedDrawingIfNeeded()
-
-        #expect(viewModel.drawing.paeoniaContentSignature == legacyDrawing.paeoniaContentSignature)
-        #expect(!FileManager.default.fileExists(atPath: legacyURL.path))
-        let key = WidgetDrawingDraftKey(ownerUserID: ownerUserID, coupleID: coupleID)
-        let movedDraft = try #require(store.draft(for: key))
-        #expect(try PKDrawing(data: movedDraft).paeoniaContentSignature == legacyDrawing.paeoniaContentSignature)
     }
 
     @Test func drawingLimitsMatchTheServer() {

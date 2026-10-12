@@ -240,6 +240,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
 
         WidgetSyncIdentityStore.shared.clear()
         WidgetCanvasSyncService.clearPersistedState()
+        // Delivered alerts name the partner and point into this relationship.
+        DeliveredNotifications.clearAll()
 
         let shouldPurgeOwnedContent = scope != .relationshipAccessHidden
         if shouldPurgeOwnedContent {

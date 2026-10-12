@@ -43,7 +43,7 @@ struct LocalStoreTests {
         let pendingOperation = LocalPendingSyncOperation(
             ownerUserID: ownerUserID,
             operation: operation,
-            operationKind: .createPendingMediaUpload,
+            operationKind: .createMemory,
             idempotencyScope: "profile-photo:\(operationID.uuidString)"
         )
 

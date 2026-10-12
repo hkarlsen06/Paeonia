@@ -240,12 +240,6 @@ export async function requestAccountDeletion(
       }),
     );
   }
-  for (const session of await ctx.db
-    .query("review_access_sessions")
-    .withIndex("by_user_id_redeemed_at", (q) => q.eq("user_id", userId))
-    .collect()) {
-    await ctx.db.patch(session._id, { completed_at: session.completed_at ?? now });
-  }
 
   const profile = await findProfile(ctx, userId);
   if (profile) {
@@ -667,10 +661,8 @@ export const request_account_deletion_drain = internalAction({
   },
 });
 
-/** The `delete_account` action body. Returns the Edge Function's 202 response body. */
+/** The `delete_account` action result. */
 export type DeleteAccountResponse = {
-  ok: true;
-  accepted: true;
   requestId: string;
   authDeleteStatus: "completed" | "queued";
   appleRevocation: string;
@@ -678,10 +670,13 @@ export type DeleteAccountResponse = {
   revocationErrorCode?: string;
 };
 
-export async function runDeleteAccount(ctx: ActionCtx, appleAuthorizationCode: unknown): Promise<DeleteAccountResponse> {
+export async function runDeleteAccount(
+  ctx: ActionCtx,
+  appleAuthorizationCode: string | null | undefined,
+): Promise<DeleteAccountResponse> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
-    return fail("http_401", "Invalid session");
+    return fail("not_signed_in", "Invalid session");
   }
 
   // Clerk session tokens carry no provider claim by default, so ask Clerk which
@@ -694,17 +689,15 @@ export async function runDeleteAccount(ctx: ActionCtx, appleAuthorizationCode: u
       provider_hint: appleSubjects.size > 0 ? "apple" : authProviderFromIdentity(identity),
     });
   } catch {
-    return fail("http_500", "Could not start account deletion");
+    return fail("account_deletion_failed", "Could not start account deletion");
   }
   if (!start?.deletion_job_id) {
-    return fail("http_500", "Could not start account deletion");
+    return fail("account_deletion_failed", "Could not start account deletion");
   }
 
   // A retry after the identity was already deleted only repeats the stored result.
   if (start.auth_delete_status === "completed") {
     return {
-      ok: true,
-      accepted: true,
       requestId: start.id,
       authDeleteStatus: "completed",
       appleRevocation: start.auth_provider === "apple" ? start.provider_revocation_status : "not_required",
@@ -770,8 +763,6 @@ export async function runDeleteAccount(ctx: ActionCtx, appleAuthorizationCode: u
   }
 
   return {
-    ok: true,
-    accepted: true,
     requestId: start.id,
     authDeleteStatus,
     appleRevocation: start.auth_provider === "apple" ? revocationStatus : "not_required",

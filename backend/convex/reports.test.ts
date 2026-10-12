@@ -25,7 +25,7 @@ function reportArgs(overrides: Record<string, unknown> = {}) {
   };
 }
 
-describe("submit_content_report", () => {
+describe("report storage", () => {
   test("stores the report, target, snapshot, snapshot assets, and a pair warning", async () => {
     const t = newTest();
     const couple = await createCouple(t);
@@ -33,7 +33,7 @@ describe("submit_content_report", () => {
     const memory = await makeMemory(t, couple, [asset.id]);
 
     const reportId = await couple.second.as.mutation(
-      api.reports.submit_content_report,
+      api.reports.submit_leave_and_report,
       reportArgs({ p_target_id: memory.id.toUpperCase(), p_reason: " Harassment " }),
     );
     expect(reportId).toMatch(/^[0-9a-f-]{36}$/);
@@ -56,7 +56,7 @@ describe("submit_content_report", () => {
       note: "they keep sending this",
       status: "submitted",
       block_requested: false,
-      leave_requested: false,
+      leave_requested: true,
     });
     expect(state.targets[0]).toMatchObject({ report_id: reportId, target_kind: "memory", memory_id: memory.id });
     expect(state.snapshots[0].delete_after).toBeUndefined();
@@ -80,9 +80,6 @@ describe("submit_content_report", () => {
     expect(state.flags).toHaveLength(1);
     expect(state.flags[0]).toMatchObject({ pair_id: couple.pairId, source_report_id: reportId });
 
-    // Reporting alone does not end the relationship.
-    const couples = await t.run((ctx) => ctx.db.query("couples").collect());
-    expect(couples[0].status).toBe("active");
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -91,11 +88,11 @@ describe("submit_content_report", () => {
     const couple = await createCouple(t);
     const memory = await makeMemory(t, couple);
     const args = reportArgs({ p_target_id: memory.id });
-    const first = await couple.second.as.mutation(api.reports.submit_content_report, args);
-    expect(await couple.second.as.mutation(api.reports.submit_content_report, args)).toBe(first);
+    const first = await couple.second.as.mutation(api.reports.submit_leave_and_report, args);
+    expect(await couple.second.as.mutation(api.reports.submit_leave_and_report, args)).toBe(first);
     expect(await t.run((ctx) => ctx.db.query("content_reports").collect())).toHaveLength(1);
     await expect(
-      couple.second.as.mutation(api.reports.submit_content_report, { ...args, p_reason: "spam" }),
+      couple.second.as.mutation(api.reports.submit_leave_and_report, { ...args, p_reason: "spam" }),
     ).rejects.toThrow(/23505.*client operation replay hash mismatch/);
   });
 
@@ -103,11 +100,11 @@ describe("submit_content_report", () => {
     const t = newTest();
     const couple = await createCouple(t);
     const profileReport = await couple.second.as.mutation(
-      api.reports.submit_content_report,
+      api.reports.submit_leave_and_report,
       reportArgs({ p_target_kind: "profile", p_target_id: couple.first.userId }),
     );
     const conductReport = await couple.second.as.mutation(
-      api.reports.submit_content_report,
+      api.reports.submit_leave_and_report,
       reportArgs({ p_target_kind: "conduct", p_target_id: couple.first.userId, p_reason: "threat" }),
     );
     const snapshots = await t.run((ctx) => ctx.db.query("report_snapshots").collect());
@@ -133,7 +130,7 @@ describe("submit_content_report", () => {
       await ctx.db.patch(row!._id, { created_by_user_id: couple.second.userId, last_edited_by_user_id: couple.second.userId });
     });
     const call = (overrides: Record<string, unknown>, user = couple.second) =>
-      user.as.mutation(api.reports.submit_content_report, reportArgs({ p_target_id: memory.id, ...overrides }));
+      user.as.mutation(api.reports.submit_leave_and_report, reportArgs({ p_target_id: memory.id, ...overrides }));
 
     await expect(call({ p_reason: "boring" })).rejects.toThrow(/23514.*report reason is not supported/);
     await expect(call({ p_note: "x".repeat(4001) })).rejects.toThrow(/23514.*report note is too long/);
@@ -144,7 +141,7 @@ describe("submit_content_report", () => {
     );
     await expect(call({ p_target_id: own.id })).rejects.toThrow(/23514.*users cannot report themselves/);
     await expect(call({ p_target_id: "nope" })).rejects.toThrow(/22P02/);
-    await expect(t.mutation(api.reports.submit_content_report, reportArgs())).rejects.toThrow(
+    await expect(t.mutation(api.reports.submit_leave_and_report, reportArgs())).rejects.toThrow(
       /42501.*authenticated user required/,
     );
 
@@ -205,7 +202,7 @@ describe("submit_leave_and_report", () => {
 
     // The ended couple stays reportable until its retention window closes.
     const second = await couple.second.as.mutation(
-      api.reports.submit_content_report,
+      api.reports.submit_leave_and_report,
       reportArgs({ p_target_kind: "conduct", p_target_id: couple.first.userId }),
     );
     expect(second).not.toBe(reportId);

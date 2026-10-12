@@ -116,12 +116,7 @@ nonisolated struct PaeoniaStoreKitUploadRequest: Encodable, Equatable {
 }
 
 nonisolated struct PaeoniaStoreKitUploadResponse: Decodable, Equatable {
-    let ok: Bool?
-    let error: String?
-
-    var isConfirmed: Bool {
-        ok == true && error == nil
-    }
+    let entitled: Bool
 }
 
 nonisolated struct PaeoniaStreakRestoreUploadRequest: Encodable, Equatable {
@@ -133,11 +128,5 @@ nonisolated struct PaeoniaStreakRestoreUploadRequest: Encodable, Equatable {
 }
 
 nonisolated struct PaeoniaStreakRestoreUploadResponse: Decodable, Equatable {
-    let ok: Bool?
-    let error: String?
-    let restoredCount: Int?
-
-    var isConfirmed: Bool {
-        ok == true && error == nil
-    }
+    let restoredCount: Int
 }

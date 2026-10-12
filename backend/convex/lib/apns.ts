@@ -85,13 +85,30 @@ export function buildAppApsPayload(notification: ClaimedNotification): Record<st
   };
 }
 
+/**
+ * When a reminder stops being true: a streak reminder at its deadline, a trial
+ * reminder when the trial ends. The claim drops a row past this time, and APNs
+ * drops it on a phone that stays offline past it. Null for everything else.
+ */
+export function notificationStaleAt(payload: Record<string, unknown>): string | null {
+  const value =
+    payload.type === "streak_reminder"
+      ? payload.next_activity_deadline_at
+      : payload.type === "subscription_trial_reminder"
+        ? payload.trial_ends_at
+        : null;
+  return typeof value === "string" && !Number.isNaN(Date.parse(value)) ? value : null;
+}
+
 export function buildAppRequest(notification: ClaimedNotification, bundleId: string): ApnsSendRequest {
+  const staleAt = notificationStaleAt(notification.payload);
   return {
     token: notification.push_token,
     preferredEnvironment: notification.apns_environment,
     topic: bundleId,
     pushType: notification.apns_push_type,
     priority: notification.apns_push_type === "background" ? "5" : "10",
+    expiration: staleAt === null ? undefined : String(Math.floor(Date.parse(staleAt) / 1000)),
     collapseId: notification.apns_collapse_id,
     body: JSON.stringify(buildAppApsPayload(notification)),
   };

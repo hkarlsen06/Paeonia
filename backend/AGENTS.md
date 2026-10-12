@@ -17,7 +17,7 @@ Paeonia's backend is a self-hosted Convex deployment. This folder replaced the S
 
 The iOS app subscribes to reads over the ConvexMobile WebSocket client and writes the results into its local store, so partner changes show up live. Writes and one-shot reads go over the HTTP API (`POST /api/mutation`, `/api/query`, `/api/action` with `{"path","args","format":"json"}`) through the app's offline outbox. Both use the Clerk session token. The widget extension uses HTTP only.
 
-Every Convex function ported from a Supabase RPC keeps that RPC's contract:
+Functions ported from Supabase kept their RPC shapes, which gives the conventions below. Follow them for new functions so the code stays consistent. They are not a compatibility promise. No shipped app depends on them, so rename a function, change its arguments, or reshape its result when that helps, and update the iOS caller in the same change.
 
 - The export name is the Supabase function name, unchanged (`create_memory`). The path is `<module>:<name>`, for example `memories:create_memory`.
 - Argument names are the SQL parameter names, unchanged, including the `p_` prefix. Optional SQL parameters with defaults become `v.optional(...)`; `null` must also be accepted where SQL accepted NULL (`v.optional(v.union(v.null(), ...))`).
@@ -118,7 +118,7 @@ Local-first writes from iOS carry `p_client_operation_id`, `p_client_id`, `p_cli
 - Files live in Convex file storage. `media_assets` keeps its SQL columns, and `storage_id` holds the `Id<"_storage">` once the upload finishes.
 - `create_pending_media_upload` returns the SQL reservation fields plus `upload_url` from `ctx.storage.generateUploadUrl()`. The app POSTs the bytes there and passes the returned `storageId` to `finalize_media_upload` as `p_storage_id`. Finalize checks size and content type against `ctx.db.system.get(storageId)` before accepting.
 - Convex storage URLs never expire, so do not hand them out. `get_media_signed_url` returns the SQL function's rows, each with an added `signed_url` string. The SQL version returned only the authorized bucket and path, and the app then asked Supabase Storage to sign it. `signed_url` points to the `GET /media` HTTP action with `asset`, `exp`, and an HMAC-SHA256 `sig` signed with the `PAEONIA_MEDIA_URL_SECRET` environment variable. The action verifies the signature and expiry, then streams the blob. Use the expiry the app asked for (`p_expires_in_seconds` or the SQL equivalent), capped at the old limit.
-- Production origins: client API `https://api.paeonia.no` (`CONVEX_CLOUD_URL`), HTTP actions `https://actions.paeonia.no` (`CONVEX_SITE_URL`). Build signed URLs from `process.env.CONVEX_SITE_URL`.
+- Hosted origins: client API `https://api.paeonia.no` (`CONVEX_CLOUD_URL`), HTTP actions `https://actions.paeonia.no` (`CONVEX_SITE_URL`). Build signed URLs from `process.env.CONVEX_SITE_URL`.
 
 ## Scheduling and push
 
@@ -133,28 +133,33 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 
 | Module | App-callable functions |
 |---|---|
-| `identity` | `ensure_current_user`, `get_own_profile`, `complete_profile_onboarding`, `update_own_profile`, `set_own_provider_profile_photo`, `register_user_device`, `disable_user_device`, `get_notification_preferences`, `set_notification_preference`, `get_privacy_requests`, `create_privacy_request`, `request_account_deletion`, `delete_account` (action) |
+| `identity` | `ensure_current_user`, `complete_profile_onboarding`, `update_own_profile`, `set_own_provider_profile_photo`, `register_user_device`, `disable_user_device`, `get_notification_preferences`, `set_notification_preference`, `get_privacy_requests`, `create_privacy_request`, `request_account_deletion`, `delete_account` (action) |
 | `pairing` | `create_pairing_invite`, `preview_pairing_invite`, `validate_my_pairing_invite`, `accept_pairing_invite`, `revoke_pairing_invite`, `rotate_pairing_invite` |
-| `relationship` | `get_current_relationship_state`, `get_relationship_sync_events`, `leave_relationship`, `block_relationship`, `unblock_pair`, `mark_relationship_ended_notice_seen`, `set_couple_started_on` |
-| `access` | `get_access_snapshot`, `get_my_entitlement`, `get_my_couple_entitlement`, `get_or_create_app_account_token`, `complete_review_access_session`, `verify_purchase` (action), `redeem_streak_restore` (action) |
-| `daily` | `get_active_question_catalog`, `start_daily_challenge`, `start_daily_challenge_snapshot`, `get_today_daily_challenge_snapshot`, `get_daily_challenge_snapshot` (query by `p_couple_day_id`; subscribe to this one, since its rows do not depend on the clock), `get_today_daily_questions`, `shuffle_daily_question`, `shuffle_daily_question_snapshot`, `submit_daily_answer`, `update_daily_answer_text`, `update_daily_answer_partner_choice`, `get_daily_answer_details`, `get_daily_answer_details_for_couple_days`, `get_daily_answer_reveal_state`, `get_daily_questions_history`, `get_daily_answer_history_details`, `get_question_answer_history` |
+| `relationship` | `get_relationship_sync_events`, `leave_relationship`, `mark_relationship_ended_notice_seen`, `set_couple_started_on` |
+| `access` | `get_access_snapshot`, `get_or_create_app_account_token`, `verify_purchase` (action), `redeem_streak_restore` (action) |
+| `daily` | `start_daily_challenge_snapshot`, `get_today_daily_challenge_snapshot`, `get_daily_challenge_snapshot` (query by `p_couple_day_id`; subscribe to this one, since its rows do not depend on the clock), `shuffle_daily_question_snapshot`, `submit_daily_answer`, `update_daily_answer_text`, `update_daily_answer_partner_choice`, `get_daily_answer_details`, `get_daily_questions_history`, `get_daily_answer_history_details` |
 | `streaks` | `get_couple_streak` |
 | `threads` | `get_conversation_threads`, `get_thread_messages`, `send_thread_message`, `create_daily_question_thread_with_message`, `create_memory_thread_with_message` |
 | `memories` | `create_memory`, `update_memory`, `hide_memory`, `get_memories`, `upsert_memory_note`, `attach_memory_media`, `remove_memory_media` |
 | `media` | `create_pending_media_upload`, `finalize_media_upload`, `get_media_signed_url`, `mark_media_for_deletion` |
 | `widget` | `get_or_create_widget_canvas`, `get_widget_canvas`, `get_widget_drawing_revisions`, `submit_widget_drawing_revision`, `register_widget_push_device`, `create_widget_live_ticket` |
 | `location` | `update_latest_partner_location`, `update_location_sharing_preference`, `get_partner_location_visibility` |
-| `reports` | `submit_content_report`, `submit_leave_and_report` |
+| `reports` | `submit_leave_and_report` |
 
 These functions replace direct PostgREST table access from iOS. They return full rows with SQL column names and apply the old RLS rules:
 
-- `identity:get_own_profile` `{}` returns the caller's `profiles` row.
 - `identity:complete_profile_onboarding` `{p_time_zone_id, p_profile_photo_asset_id?}` sets `time_zone_id`, `time_zone_updated_at`, `onboarding_completed_at`, and optionally `profile_photo_asset_id`, then returns the profile row.
 - `identity:get_notification_preferences` `{}` returns the caller's `notification_preferences` row. `identity:set_notification_preference` `{p_column, p_enabled}` updates one boolean column (`streak_reminders_enabled`, `daily_challenge_enabled`, `partner_answered_enabled`, `messages_enabled`, `widget_updates_enabled`, `memories_enabled`).
 - `identity:get_privacy_requests` `{}` returns the caller's `privacy_requests`, newest `requested_at` first, at most 100. `identity:create_privacy_request` `{p_id, p_kind, p_requester_note?}` inserts one and returns the row.
 - `relationship:get_relationship_sync_events` `{p_after_created_at?, p_after_id?, p_limit}` returns the caller's events ordered by `created_at`, then `id`, strictly after the cursor.
 
-The three Supabase Edge Functions the app called become public actions: `apple-verify-purchase` is `access:verify_purchase`, `apple-redeem-streak-restore` is `access:redeem_streak_restore`, and `delete-account` is `identity:delete_account`. iOS calls them with `POST /api/action`. Their arguments are the Edge Function's JSON request body keys, unchanged. A 2xx Edge Function response body becomes the return value. A non-2xx response becomes `fail("http_<status>", <the body's error string>)`, so the app still sees the same reason text. The Apple server notification webhook is `POST /apple/server-notifications` on the HTTP actions origin.
+Three public actions replace the old Supabase Edge Functions. They are not SQL ports, so they use camelCase keys, typed `v` validators, and no `http_<status>` codes. iOS calls them with `POST /api/action`. Each returns its result object directly and fails with `fail(code, message)`. The code names the reason, and the message is the text the app shows or logs.
+
+- `access:verify_purchase` takes `{ jws, transactionId, originalTransactionId, productId, environment, priceDisplay? }`. `environment` is `xcode`, `sandbox`, or `production`. It checks the transaction with Apple, records it, and returns `{ entitled, subscription: { status, productId, expiresAt, environment, originalTransactionId, transactionId } }`.
+- `access:redeem_streak_restore` takes the same arguments without `priceDisplay`. It returns `{ restoredCount }`.
+- `identity:delete_account` takes `{ appleAuthorizationCode? }` and returns `{ requestId, authDeleteStatus, appleRevocation, requiresManualAppleRevocation, revocationErrorCode? }`. `authDeleteStatus` is `completed` or `queued`. A queued deletion finishes in the background.
+
+Error codes for the two purchase actions: `not_signed_in`, `invalid_request` (bad or local-only transaction), `transaction_mismatch` (the upload differs from what Apple returned, or the bundle is wrong), `invalid_transaction` (unsupported product or type), `app_account_token_missing`, `purchase_linked_to_another_account` (the purchase belongs to another account), `apple_verification_failed`, `service_not_ready`, `purchase_not_saved`, `unexpected`. Streak restore adds `no_entitled_couple` and `no_streak_to_restore`. The iOS app matches `purchase_linked_to_another_account` and `no_streak_to_restore` and treats every other failure as a payment that Apple took but the server has not confirmed yet. `delete_account` fails with `not_signed_in` or `account_deletion_failed`. The Apple server notification webhook is `POST /apple/server-notifications` on the HTTP actions origin.
 
 ## Commands
 
@@ -165,11 +170,13 @@ Run from `backend/`:
 - `npx convex dev`: pushes to the deployment in `.env.local`. Without one, `CONVEX_AGENT_MODE=anonymous npx convex dev` starts a local backend on `127.0.0.1:3210` (HTTP actions on `3211`).
 - `npx convex run <module>:<function> '<json args>'`
 
-Production deploys need `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_KEY` in the shell environment, never in a committed file.
+Deploys to `api.paeonia.no` need `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_KEY` in the shell environment, never in a committed file.
 
-## Production
+## Hosted deployment
 
-Production Convex is self-hosted on the `one-s` server (`ssh one-s`). The stack lives in `/srv/paeonia/convex` and runs with docker compose: the Convex backend and the dashboard. Data is SQLite in `./data`. Both containers bind to localhost, and Caddy terminates TLS.
+There is no production yet. The hosted deployment at `api.paeonia.no` holds only the developer's two test accounts. Deploying to it and editing its data for testing are pre-approved, so deploy after tests pass and say so in your summary. Schema changes do not need migrations or backfills. If old test rows block a deploy or no longer fit, delete or edit them.
+
+The hosted Convex is self-hosted on the `one-s` server (`ssh one-s`). The stack lives in `/srv/paeonia/convex` and runs with docker compose: the Convex backend and the dashboard. Data is SQLite in `./data`. Both containers bind to localhost, and Caddy terminates TLS.
 
 Agents have docker access on `one-s` through passwordless `sudo`. The `administrator` user is not in the `docker` group, so plain `docker` fails with "permission denied". Use `sudo -n docker ...`. The containers are `convex-backend-1` and `convex-dashboard-1`. To read backend logs, for example to find the cause of a `Server Error` with a request id, run `ssh one-s 'sudo -n docker logs --since 30m convex-backend-1'`.
 
@@ -193,11 +200,11 @@ npx convex deploy
 
 Operator functions (`internalMutation`/`internalQuery`/`internalAction`) run with the same two variables and `npx convex run <module>:<function> '<json args>'`. The App Review scripts `ios/Scripts/mint-review-codes.mjs` and `revoke-review-codes.mjs` use this path.
 
-To hand-edit production rows for testing, export the table with `npx convex data <table> --format jsonLines`, keep that file as a backup, edit the rows, and load them back with `npx convex import --table <table> --replace -y <file>.jsonl`. The import keeps `_id` and `_creationTime`. `--replace` swaps out the whole table, so the file must hold every row. `npx convex run _system/frontend/patchDocumentsFields` fails with a server error on this deployment.
+To hand-edit hosted rows for testing, export the table with `npx convex data <table> --format jsonLines`, keep that file as a backup, edit the rows, and load them back with `npx convex import --table <table> --replace -y <file>.jsonl`. The import keeps `_id` and `_creationTime`. `--replace` swaps out the whole table, so the file must hold every row. `npx convex run _system/frontend/patchDocumentsFields` fails with a server error on this deployment.
 
 Use Node 20, 22, or 24 for `convex dev` and `convex deploy`, because Convex Node actions fail on Node 26. On macOS, Homebrew's `node@22` is at `/opt/homebrew/opt/node@22/bin`. The `mdr` server no longer hosts Paeonia, so ignore older notes that mention `mdr`, `api.paeonia.no/auth/v1/callback`, or Supabase publishable keys.
 
-Limit production access to the operation the task authorizes.
+Keep server access to what the task needs. Do not change the docker stack, Caddy, or the server itself unless the task asks for it.
 
 ## Live drawing relay
 

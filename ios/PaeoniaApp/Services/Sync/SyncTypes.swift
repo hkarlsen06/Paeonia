@@ -127,15 +127,8 @@ nonisolated enum SyncRecordStatus: String, Codable, CaseIterable, Sendable {
 }
 
 nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendable {
-    case createPairingInvite = "create_pairing_invite"
-    case acceptPairingInvite = "accept_pairing_invite"
     case setRelationshipStartedOn = "set_relationship_started_on"
-    case leaveRelationship = "leave_relationship"
-    case submitLeaveAndReport = "submit_leave_and_report"
-    case createPendingMediaUpload = "create_pending_media_upload"
-    case startDailyChallenge = "start_daily_challenge"
     case submitDailyAnswer = "submit_daily_answer"
-    case shuffleDailyQuestion = "shuffle_daily_question"
     case createDailyQuestionThreadWithMessage = "create_daily_question_thread_with_message"
     case createMemoryThreadWithMessage = "create_memory_thread_with_message"
     case sendThreadMessage = "send_thread_message"
@@ -145,11 +138,8 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case upsertMemoryNote = "upsert_memory_note"
     case attachMemoryMedia = "attach_memory_media"
     case removeMemoryMedia = "remove_memory_media"
-    case finalizeMediaUpload = "finalize_media_upload"
-    case submitWidgetDrawingRevision = "submit_widget_drawing_revision"
     case updateLatestPartnerLocation = "update_latest_partner_location"
     case updateLocationSharingPreference = "update_location_sharing_preference"
-    case submitContentReport = "submit_content_report"
 }
 
 nonisolated enum SyncPendingOperationStatus: String, Codable, CaseIterable, Sendable {

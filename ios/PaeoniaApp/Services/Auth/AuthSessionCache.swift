@@ -149,7 +149,5 @@ actor UserDefaultsAuthSessionCache: AuthSessionCaching {
 
     func clear() {
         defaults.removeObject(forKey: key)
-        // The Supabase-era cache holds a user id that no longer exists.
-        defaults.removeObject(forKey: "auth.cachedSession.v1")
     }
 }

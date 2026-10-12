@@ -2,12 +2,7 @@ import Foundation
 
 /// File housekeeping for the widget files in the App Group container.
 nonisolated enum WidgetPreviewFiles {
-    /// Older widget builds wrote refreshed previews to `Widget/Previews`. On the
-    /// case-sensitive device file system that is a separate folder from
-    /// `Widget/previews`, so a privacy purge must remove it as well.
-    static let legacyPreviewsDirectory = "Widget/Previews"
-
-    /// Removes the payload and every preview folder. Returns true when something
+    /// Removes the payload and the preview folder. Returns true when something
     /// was removed.
     static func removeWidgetVisibleFiles(in containerURL: URL, fileManager: FileManager) -> Bool {
         var didRemoveSomething = false
@@ -17,12 +12,13 @@ nonisolated enum WidgetPreviewFiles {
             didRemoveSomething = true
         }
 
-        for directory in [PaeoniaAppGroup.widgetPreviewsDirectory, legacyPreviewsDirectory] {
-            let previewsURL = containerURL.appendingPathComponent(directory, isDirectory: true)
-            if fileManager.fileExists(atPath: previewsURL.path) {
-                try? fileManager.removeItem(at: previewsURL)
-                didRemoveSomething = true
-            }
+        let previewsURL = containerURL.appendingPathComponent(
+            PaeoniaAppGroup.widgetPreviewsDirectory,
+            isDirectory: true
+        )
+        if fileManager.fileExists(atPath: previewsURL.path) {
+            try? fileManager.removeItem(at: previewsURL)
+            didRemoveSomething = true
         }
         return didRemoveSomething
     }

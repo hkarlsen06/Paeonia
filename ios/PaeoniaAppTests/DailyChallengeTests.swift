@@ -1374,27 +1374,6 @@ struct DailyChallengeMappingTests {
     }
 
     @MainActor
-    @Test func legacyTextDraftsMigrateToVersionedStore() throws {
-        let suiteName = "test.dailyChallenge.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-
-        let userID = TestDailyChallengeIDs.currentUser
-        let instanceID = UUID()
-        let legacyKey = "paeonia.dailyChallenge.drafts.\(userID.uuidString)"
-        defaults.set([instanceID.uuidString: "Half-written in the old format"], forKey: legacyKey)
-
-        let store = UserDefaultsDailyChallengeDraftStore(defaults: defaults)
-        #expect(store.drafts(for: userID)[instanceID]?.text == "Half-written in the old format")
-        // The old key is cleared so the one-time migration never runs twice.
-        #expect(defaults.dictionary(forKey: legacyKey) == nil)
-
-        // A fresh store reads the migrated drafts back from the new versioned blob.
-        let reopened = UserDefaultsDailyChallengeDraftStore(defaults: defaults)
-        #expect(reopened.drafts(for: userID)[instanceID]?.text == "Half-written in the old format")
-    }
-
-    @MainActor
     @Test func submitAnswerQueuesPartnerChoiceForBackgroundSend() async throws {
         let snapshot = makeSnapshot(rows: [
             questionRow(
@@ -2487,7 +2466,7 @@ private func questionRow(
     partnerAnswerID: UUID? = nil,
     partnerAnsweredAt: Date? = nil,
     canViewPartnerAnswer: Bool = false,
-    isCurrentDay: Bool? = nil
+    isCurrentDay: Bool = true
 ) -> DailyQuestionRow {
     DailyQuestionRow(
         coupleDayID: coupleDayID,

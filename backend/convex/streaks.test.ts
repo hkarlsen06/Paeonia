@@ -41,7 +41,7 @@ async function streakCouple() {
   const t = newTest();
   await seedCatalog(t, textQuestions(12));
   const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
-  await couple.first.as.mutation(api.daily.start_daily_challenge, op());
+  await couple.first.as.mutation(api.daily.start_daily_challenge_snapshot, op());
   return { t, a: couple.first, b: couple.second, couple };
 }
 
@@ -136,13 +136,12 @@ describe("streak break without a write", () => {
       freeze_ready_at: "2026-10-30T22:00:00.000Z",
     });
     // The query wrote nothing.
-    expect(await state()).toMatchObject({ current_count: 3, restorable_count: 0, restore_available: false });
+    expect(await state()).toMatchObject({ current_count: 3, restorable_count: 0 });
 
     await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
     expect(await state()).toMatchObject({
       current_count: 3,
       restorable_count: 3,
-      restore_available: true,
       restore_deadline: "2026-10-12T22:00:00.000Z",
     });
     expect(await a.as.query(api.streaks.get_couple_streak, {})).toEqual(virtual);
@@ -189,7 +188,6 @@ describe("streak break without a write", () => {
           couple_id: crypto.randomUUID(),
           current_count: 3,
           longest_count: 3,
-          restore_available: false,
           restorable_count: 0,
           next_activity_deadline_at: "2026-10-11T01:00:00.000Z",
           updated_at: "2026-10-11T01:00:00.000Z",
@@ -200,7 +198,6 @@ describe("streak break without a write", () => {
           couple_id: crypto.randomUUID(),
           current_count: 3,
           longest_count: 3,
-          restore_available: true,
           restorable_count: 3,
           next_activity_deadline_at: "2026-10-11T01:00:00.000Z",
           updated_at: "2026-10-11T01:00:00.000Z",
@@ -208,7 +205,7 @@ describe("streak break without a write", () => {
       }
     });
     await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
-    expect(await state()).toMatchObject({ restorable_count: 3, restore_available: true });
+    expect(await state()).toMatchObject({ restorable_count: 3 });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -237,7 +234,7 @@ describe("streak break without a write", () => {
       }),
     );
     expect(result).toEqual({ ok: true, restoredCount: 3, replayed: false });
-    expect(await state()).toMatchObject({ current_count: 3, restorable_count: 0, restore_available: false });
+    expect(await state()).toMatchObject({ current_count: 3, restorable_count: 0 });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -295,7 +292,6 @@ describe("streak freeze", () => {
     await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
     expect(await state()).toMatchObject({
       restorable_count: 3,
-      restore_available: true,
       restore_deadline: "2026-10-13T22:00:00.000Z",
       freeze_used_at: "2026-10-11T22:00:00.000Z",
     });
@@ -305,7 +301,7 @@ describe("streak freeze", () => {
   test("both partners showing up after the frozen day carry the streak on", async () => {
     const { t, a, b, state } = await bothQualified({ freezeReady: true });
     vi.setSystemTime(new Date("2026-10-12T10:00:00.000Z"));
-    await a.as.mutation(api.daily.start_daily_challenge, op());
+    await a.as.mutation(api.daily.start_daily_challenge_snapshot, op());
     await answerAll(t, a);
     await answerAll(t, b);
     expect(await state()).toMatchObject({
@@ -342,7 +338,7 @@ describe("enqueue_due_streak_reminders", () => {
 
     // Within the hour, only the partner who has not contributed today is reminded.
     vi.setSystemTime(new Date("2026-10-11T21:30:00.000Z"));
-    await a.as.mutation(api.daily.start_daily_challenge, op());
+    await a.as.mutation(api.daily.start_daily_challenge_snapshot, op());
     await answerAll(t, a);
     await t.run(async (ctx) => {
       for (const row of await ctx.db.query("notification_outbox").collect()) await ctx.db.delete(row._id);
@@ -392,6 +388,24 @@ describe("enqueue_due_streak_reminders", () => {
 
     await clearOutbox();
     expect(await t.mutation(internal.streaks.enqueue_due_streak_reminders, { p_now: "2026-10-11T21:30:00Z" })).toBe(2);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("the last-hour reminder skips a partner for whom it is night", async () => {
+    const { t, a, b } = await streakCouple();
+    await addDevice(t, a.userId);
+    await addDevice(t, b.userId);
+    await answerAll(t, a);
+    await answerAll(t, b);
+    await t.run(async (ctx) => {
+      for (const row of await ctx.db.query("notification_outbox").collect()) await ctx.db.delete(row._id);
+    });
+    // The deadline stays 2026-10-11T22:00Z. Seen in Tokyo, 21:30Z is 06:30 the next morning.
+    await addDevice(t, b.userId, { timeZone: "Asia/Tokyo", lastSeenAt: "2026-10-11T00:00:00.000Z" });
+
+    expect(await t.mutation(internal.streaks.enqueue_due_streak_reminders, { p_now: "2026-10-11T21:30:00Z" })).toBe(1);
+    const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
+    expect(outbox.map((row) => row.recipient_user_id)).toEqual([a.userId]);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

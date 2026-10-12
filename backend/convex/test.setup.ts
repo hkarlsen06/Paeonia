@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 // Shared test helpers. The two dots in the file name keep Convex from bundling this file.
 import { convexTest } from "convex-test";
+import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { ensureCurrentUser } from "./lib/auth";
 import { newUuid } from "./lib/ids";
@@ -20,6 +21,12 @@ export type TestUser = {
   /** A handle that runs `run`, `mutation`, and `query` as this signed-in user. */
   as: ReturnType<TestConvex["withIdentity"]>;
 };
+
+/** The `relationship_state` part of `get_access_snapshot`, or null when the user has no current relationship. */
+export async function relationshipStateOf(user: TestUser) {
+  const [row] = await user.as.query(api.access.get_access_snapshot, {});
+  return row.relationship_state;
+}
 
 /**
  * Signs in a user through Clerk-style identity claims and provisions them with

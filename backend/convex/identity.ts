@@ -37,14 +37,6 @@ export const ensure_current_user = mutation({
   },
 });
 
-export const get_own_profile = query({
-  args: {},
-  handler: async (ctx) => {
-    const profile = await findProfile(ctx, await requireUserId(ctx));
-    return profile ? profileRow(profile) : null;
-  },
-});
-
 export const complete_profile_onboarding = mutation({
   args: { p_time_zone_id: v.string(), p_profile_photo_asset_id: v.optional(v.union(v.null(), v.string())) },
   handler: async (ctx, args) => {
@@ -400,7 +392,15 @@ export const request_account_deletion = mutation({
   },
 });
 
-/** Port of the `delete-account` Edge Function. Arguments are the old JSON body. */
+/**
+ * Deletes the caller's account: tombstones the data, revokes Sign in with Apple when the account
+ * uses it, and deletes the Clerk user. `appleAuthorizationCode` is a fresh code from Sign in with
+ * Apple, needed to revoke the token.
+ *
+ * Returns `{ requestId, authDeleteStatus, appleRevocation, requiresManualAppleRevocation,
+ * revocationErrorCode? }`. `authDeleteStatus` is `completed` or `queued` (a background job
+ * finishes the Clerk deletion). Fails with `not_signed_in` or `account_deletion_failed`.
+ */
 export const delete_account = action({
   args: { appleAuthorizationCode: v.optional(v.union(v.null(), v.string())) },
   handler: async (ctx, args) => await runDeleteAccount(ctx, args.appleAuthorizationCode),

@@ -72,32 +72,6 @@ struct RootSessionLifecycleTests {
         #expect(viewModel.state == .paired)
     }
 
-    /// Installs from before the owner marker have none. The widget's saved identity
-    /// still names the last paired person, so someone else signing in first clears it.
-    @Test func firstSignInAfterTheUpdateFindsThePreviousOwnerFromTheWidget() async {
-        let previousOwner = UUID()
-        let ownerStore = ownerStoreWithoutMarker(widgetUserID: previousOwner)
-        let syncService = TestPaeoniaSyncService()
-        let viewModel = makeViewModel(syncService: syncService, ownerStore: ownerStore)
-
-        await viewModel.start()
-
-        #expect(await syncService.resetCallCount == 1)
-        let purgedSession = await syncService.configuredSessions.first.flatMap { $0 }
-        #expect(purgedSession?.userID == previousOwner)
-        #expect(ownerStore.ownerUserID == userID.uuidString)
-    }
-
-    @Test func samePersonSigningInAfterTheUpdateKeepsTheirData() async {
-        let syncService = TestPaeoniaSyncService()
-        let ownerStore = ownerStoreWithoutMarker(widgetUserID: userID)
-        let viewModel = makeViewModel(syncService: syncService, ownerStore: ownerStore)
-
-        await viewModel.start()
-
-        #expect(await syncService.resetCallCount == 0)
-    }
-
     /// A join code belongs to the person who was signed in. It used to carry into
     /// the next account when a session ended on its own.
     @Test func joinCodeIsKeptOnlyWhileTheSamePersonIsSignedIn() {
@@ -191,17 +165,6 @@ struct RootSessionLifecycleTests {
         #expect(saved)
         #expect(viewModel.currentSession?.displayName == "Mina")
         await syncService.releaseRun()
-    }
-
-    private func ownerStoreWithoutMarker(widgetUserID: UUID) -> UserDefaultsRootDeviceOwnerStore {
-        let widgetIdentity = WidgetSyncIdentityStore(defaults: UserDefaults(suiteName: UUID().uuidString))
-        widgetIdentity.save(
-            WidgetSyncIdentity(currentUserID: widgetUserID, currentDisplayName: nil, partnerDisplayName: nil)
-        )
-        return UserDefaultsRootDeviceOwnerStore(
-            defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
-            widgetIdentityStore: widgetIdentity
-        )
     }
 
     private func makeViewModel(

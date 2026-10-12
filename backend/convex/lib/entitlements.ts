@@ -30,7 +30,7 @@ function storekitRow(tx: Doc<"storekit_transactions">): EntitlementRow {
     status: tx.status,
     product_id: tx.product_id,
     current_period_end: tx.expires_at ?? null,
-    updated_at: tx.last_reconciled_at ?? tx.updated_at ?? tx.created_at,
+    updated_at: tx.updated_at,
   };
 }
 

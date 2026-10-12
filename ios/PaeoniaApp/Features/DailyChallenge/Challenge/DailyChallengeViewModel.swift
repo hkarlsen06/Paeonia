@@ -279,6 +279,7 @@ final class DailyChallengeViewModel {
     /// The answer flow showed the partner's answer. Saved on this phone first, which
     /// sends it to the server through `uploadSeenPartnerAnswers`.
     func markPartnerAnswerSeen(_ question: DailyChallengeQuestion) {
+        Task { await DeliveredNotifications.clearQuestion(instanceID: question.id) }
         guard let currentUserID, question.isChatAvailable, question.partnerAnswerSeenAt == nil else { return }
         let chatService = chatService
         Task { await chatService.markPartnerAnswerSeen(ownerUserID: currentUserID, instanceID: question.id) }

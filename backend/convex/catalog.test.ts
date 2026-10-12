@@ -1,7 +1,7 @@
 import type { FunctionArgs } from "convex/server";
 import { describe, expect, test } from "vitest";
-import { api, internal } from "./_generated/api";
-import { createSignedInUser, newTest } from "./test.setup";
+import { internal } from "./_generated/api";
+import { newTest } from "./test.setup";
 
 type Question = FunctionArgs<typeof internal.catalog.sync_catalog>["questions"][number];
 
@@ -53,13 +53,12 @@ describe("sync_catalog", () => {
     expect(result.errors).toEqual([]);
     expect(result.changes).toEqual(["new question system/memory_that_stayed", "new question system/quiet_draft"]);
 
-    const user = await createSignedInUser(t);
-    const catalog = await user.as.query(api.daily.get_active_question_catalog, {});
-    expect(catalog.map((row) => [row.question_key, row.locale])).toEqual([
-      ["memory_that_stayed", "en"],
-      ["memory_that_stayed", "nb"],
+    const stored = await t.run((ctx) => ctx.db.query("questions").collect());
+    expect(stored.map((row) => [row.key, row.status]).sort()).toEqual([
+      ["memory_that_stayed", "active"],
+      ["quiet_draft", "draft"],
     ]);
-    expect(catalog[0]).toMatchObject({ resurface_after_months: 3, answer_kinds: ["text"] });
+    expect(stored.find((row) => row.key === "memory_that_stayed")).toMatchObject({ resurface_after_months: 3 });
 
     const collections = await t.run((ctx) => ctx.db.query("question_collections").collect());
     expect(collections).toHaveLength(1);
@@ -122,9 +121,13 @@ describe("sync_catalog", () => {
     expect(byNumber[1].retired_at).toBeTruthy();
     expect(byNumber[2]).toMatchObject({ status: "active" });
     expect(byNumber[2].retired_at).toBeUndefined();
-    const user = await createSignedInUser(t);
-    const catalog = await user.as.query(api.daily.get_active_question_catalog, { p_locale: "en" });
-    expect(catalog.map((row) => [row.version_number, row.prompt])).toEqual([[2, "A fresher memory"]]);
+    const prompts = await t.run((ctx) =>
+      ctx.db
+        .query("question_version_localizations")
+        .withIndex("by_question_version_id_locale", (q) => q.eq("question_version_id", byNumber[2].id))
+        .collect(),
+    );
+    expect(prompts.map((row) => row.prompt).sort()).toEqual(["A fresher memory", "A fresher memory (nb)"]);
   });
 
   test("a new version can activate while the old one is still active", async () => {
@@ -154,8 +157,7 @@ describe("sync_catalog", () => {
     const t = newTest();
     const draft = question("not_ready", { status: "draft", versions: [version(1, "Work in progress", { status: "draft", answer_kinds: [] })] });
     expect((await sync(t, [draft], true)).applied).toBe(true);
-    const user = await createSignedInUser(t);
-    expect(await user.as.query(api.daily.get_active_question_catalog, {})).toEqual([]);
+    expect((await t.run((ctx) => ctx.db.query("questions").collect())).map((row) => row.status)).toEqual(["draft"]);
   });
 
   test("reports resurfacing and status changes without touching the prompts", async () => {

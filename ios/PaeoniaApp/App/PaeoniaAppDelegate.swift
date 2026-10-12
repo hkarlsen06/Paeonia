@@ -69,7 +69,8 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
     /// While the app is open, suppress the system banner for a partner's widget
     /// update and surface it as an in-app top banner instead (like the rest of
     /// the app's notices). Question chat messages show no banner at all. Other
-    /// notifications present normally. The sender name
+    /// notifications show a banner but stay out of Notification Center, since the
+    /// person already saw it in the app. The sender name
     /// and localized body are read off the content before crossing to the main
     /// actor, since `userInfo` is not `Sendable`.
     nonisolated func userNotificationCenter(
@@ -102,7 +103,7 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         }
 
         guard isWidgetUpdate else {
-            completionHandler([.banner, .sound, .list])
+            completionHandler([.banner, .sound])
             return
         }
 
@@ -133,9 +134,7 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
     ) {
         let content = response.notification.request.content
         let userInfo = content.userInfo
-        let deepLink = PaeoniaDeepLink(notificationUserInfo: userInfo)
-            ?? PaeoniaDeepLink(notificationThreadIdentifier: content.threadIdentifier)
-        if let deepLink {
+        if let deepLink = PaeoniaDeepLink(notificationUserInfo: userInfo) {
             Task { @MainActor in
                 PaeoniaNotificationRouter.shared.route(deepLink)
             }

@@ -6,17 +6,23 @@ import SwiftUI
 /// It is presented as a full-screen cover that zooms out of the tapped card, so the
 /// card appears to grow into the screen. It reuses the daily challenge's prompt and
 /// composer, but without the multi-question chrome (no eyebrow, step bar, or skip).
-/// Sending your answer unlocks your partner's reply, which is then revealed right here
-/// — the payoff for answering — so the moment doesn't depend on finding the card again
-/// in the list afterward. When the send is slow or offline, the reveal screen waits
-/// with the user's answer on it and fills in the reply once it arrives. Done closes
-/// the flow at any point.
+/// Sending your answer unlocks your partner's reply, and the flow turns into the
+/// question's chat with their answer lit up, so the user can read it and reply
+/// without finding the card again. When the send is slow or offline, the chat's
+/// waiting page shows the user's answer and opens up once the reply arrives. Close
+/// ends the flow at any point.
 struct DailyPartnerAnswerFlow: View {
     let question: DailyChallengeQuestion
     let viewModel: DailyChallengeViewModel
+    var privacySafetyService: (any PrivacySafetyServicing)?
+    var privacyOperationProvider: (any SyncClientOperationProviding)?
+    var onReportedAndLeft: () -> Void = {}
     var onClose: () -> Void = {}
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    /// The question's chat, made when the answer is sent.
+    @State private var chat: DailyQuestionChatViewModel?
+    @State private var reportTarget: PrivacyReportTarget?
     /// The single source of truth for what's on screen. The flow moves strictly forward
     /// through these phases and the view switches on this value *alone* — never on the
     /// incidental order in which `isSending` / snapshot signals arrive — so no
@@ -25,8 +31,8 @@ struct DailyPartnerAnswerFlow: View {
     @FocusState private var isComposerFocused: Bool
 
     /// `.sending` holds the compose screen while the answer syncs and the partner's reply
-    /// loads; the screen then turns straight over to `.revealed`. There is intentionally
-    /// no separate "answered" phase here — the reveal is the one and only answered surface.
+    /// loads; the screen then turns straight over to `.revealed`, the chat. There is
+    /// intentionally no separate "answered" phase here.
     private enum Phase {
         case composing
         case sending
@@ -34,22 +40,14 @@ struct DailyPartnerAnswerFlow: View {
     }
 
     var body: some View {
-        ZStack {
-            switch phase {
-            case .composing:
-                composing
-            case .sending:
-                sending
-            case .revealed:
-                revealed
+        Group {
+            if phase == .revealed, let chat {
+                revealed(chat)
                     .transition(.opacity)
+            } else {
+                answering
             }
         }
-        .paeoniaReadableWidth()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Let the plum bleed under the keyboard's safe-area region too, so the window's
-        // black doesn't show through the keyboard's rounded top corners.
-        .background { PaeoniaGlowBackground() }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
         .onChange(of: wasAnswerReturned) { _, returned in
             if returned {
@@ -66,6 +64,21 @@ struct DailyPartnerAnswerFlow: View {
             && !viewModel.isSending(question.id)
             && revealedQuestion?.hasOwnAnswer != true
             && viewModel.hasDraftContent(for: question.id)
+    }
+
+    private var answering: some View {
+        ZStack {
+            if phase == .composing {
+                composing
+            } else {
+                sending
+            }
+        }
+        .paeoniaReadableWidth()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Let the plum bleed under the keyboard's safe-area region too, so the window's
+        // black doesn't show through the keyboard's rounded top corners.
+        .background { PaeoniaGlowBackground() }
     }
 
     // MARK: - Composing
@@ -171,18 +184,43 @@ struct DailyPartnerAnswerFlow: View {
 
     // MARK: - Reveal
 
-    /// The unlocked exchange: the question, both people's status, and both answers with
-    /// the partner on top — so answering pays off with their reply right here. Reads
-    /// from the live question, so a reply that loads a beat later fills in on its own.
-    private var revealed: some View {
-        DailyPartnerAnswerRevealView(
-            question: question,
-            revealedQuestion: revealedQuestion,
-            participants: viewModel.participants,
-            sending: viewModel.sendingPreview(for: liveQuestion),
-            onRevealed: viewModel.markPartnerAnswerSeen,
-            onDone: dismiss
-        )
+    /// The question's chat: the question, both answers with the partner's lit up, and
+    /// the composer. The keyboard stays down so the answer can be read first. Until
+    /// the reply unlocks, the chat's waiting page shows the user's answer. After the
+    /// couple's day ends, today's snapshot can drop the exchange, so the chat keeps
+    /// its own copy of the question instead of going back to the unanswered one.
+    private func revealed(_ chat: DailyQuestionChatViewModel) -> some View {
+        NavigationStack {
+            DailyQuestionChatView(
+                viewModel: chat,
+                question: revealedQuestion ?? chat.question,
+                participants: viewModel.participants,
+                onReport: { reportTarget = $0 },
+                sendingAnswer: viewModel.sendingPreview(for: liveQuestion),
+                revealsPartnerAnswer: true,
+                onClose: dismiss
+            )
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(action: dismiss) {
+                        Image(systemName: "xmark")
+                    }
+                    .accessibilityLabel(Text(.dailyChallengeFlowClose))
+                }
+            }
+            .navigationDestination(item: $reportTarget) { reportTarget in
+                if let partnerUserID = viewModel.participants.partnerUserID {
+                    ReportAndLeaveView(
+                        partnerUserID: partnerUserID,
+                        partnerName: viewModel.participants.partnerName,
+                        reportTarget: reportTarget,
+                        service: privacySafetyService,
+                        operationProvider: privacyOperationProvider,
+                        onReportedAndLeft: onReportedAndLeft
+                    )
+                }
+            }
+        }
     }
 
     // MARK: - State
@@ -225,13 +263,13 @@ struct DailyPartnerAnswerFlow: View {
         // Hold on the compose screen (Send still busy) for a moment, so a quick reply
         // turns over in one step. Capped, so a slow connection never holds it here.
         phase = .sending
-        let didReveal = await viewModel.awaitAnswerReveal(for: question.id)
-        if didReveal, revealedQuestion?.canViewPartnerAnswer == true {
-            PaeoniaHaptics.answerRevealed()
-        }
-        // Slow or offline: the reveal screen still opens, shows the answer as saved,
-        // and fills in their reply when it arrives. Closing here used to send the
-        // user off to find the card again.
+        _ = await viewModel.awaitAnswerReveal(for: question.id)
+        // Reads the chat from this phone first, so it opens complete. The chat plays
+        // the reveal haptic when the partner's answer shows.
+        await viewModel.prepareChat(for: liveQuestion)
+        chat = viewModel.makeChatViewModel(question: liveQuestion)
+        // Slow or offline: the chat still opens, on its waiting page with the answer
+        // as saved, and opens up when their reply arrives.
         withAnimation(PaeoniaMotion.meaningfulMoment) { phase = .revealed }
     }
 
@@ -252,10 +290,10 @@ struct DailyPartnerAnswerFlow: View {
     }
 }
 
-/// The revealed exchange shared by the focused partner-answer cover and the main
-/// challenge flow. It receives the originally presented question separately from the
-/// live snapshot so reloads may reorder the question list without changing the prompt
-/// or invalidating the presentation that is already on screen.
+/// The revealed exchange in the main challenge flow. It receives the originally
+/// presented question separately from the live snapshot so reloads may reorder the
+/// question list without changing the prompt or invalidating the presentation that is
+/// already on screen.
 ///
 /// Until the partner's answer can be shown (the user's answer is still sending, or
 /// the reply hasn't loaded), it shows a waiting block for the partner and the user's

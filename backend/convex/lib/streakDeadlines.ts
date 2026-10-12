@@ -8,6 +8,7 @@ import {
   isValidTimeZone,
   localDateOf,
   localMidnightAfter,
+  localWallClockMs,
   zonedLocalToUtcMs,
 } from "./time";
 
@@ -19,6 +20,11 @@ export const FREEZE_COOLDOWN_DAYS = 30;
 const EVENING_REMINDER_HOUR = 19;
 /** The evening reminder comes at least this long before the deadline, ahead of the last-hour reminder. */
 export const EVENING_REMINDER_LEAD_HOURS = 2;
+/**
+ * No last-hour reminder before this local hour. When partners live in different zones, the deadline can
+ * fall in one partner's night; that partner already had the evening reminder the day before.
+ */
+const LAST_HOUR_REMINDER_EARLIEST_HOUR = 8;
 
 /**
  * When to send one partner the evening streak reminder: the latest 19:00 in their
@@ -33,6 +39,11 @@ export function eveningReminderAt(deadline: string, timeZone: string): string {
     return sameDay;
   }
   return new Date(zonedLocalToUtcMs(addDaysToDate(date, -1), timeZone, EVENING_REMINDER_HOUR)).toISOString();
+}
+
+/** True when the last-hour streak reminder may reach someone in `timeZone` at `now`. */
+export function lastHourReminderAllowed(now: string, timeZone: string): boolean {
+  return new Date(localWallClockMs(Date.parse(now), timeZone)).getUTCHours() >= LAST_HOUR_REMINDER_EARLIEST_HOUR;
 }
 
 /**

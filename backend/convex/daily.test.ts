@@ -26,8 +26,12 @@ function op(at: string = new Date().toISOString()) {
   };
 }
 
-const start = (user: TestUser) => user.as.mutation(api.daily.start_daily_challenge, op());
-const today = (user: TestUser) => user.as.query(api.daily.get_today_daily_questions, {});
+const start = (user: TestUser, args = op()) =>
+  user.as.mutation(api.daily.start_daily_challenge_snapshot, args).then(([snapshot]) => snapshot.questions);
+const shuffle = (user: TestUser, slot: number, args = op()) =>
+  user.as.mutation(api.daily.shuffle_daily_question_snapshot, { p_slot_number: slot, ...args }).then(([snapshot]) => snapshot.questions);
+const today = (user: TestUser) =>
+  user.as.query(api.daily.get_today_daily_challenge_snapshot, {}).then(([snapshot]) => snapshot.questions);
 
 function submit(user: TestUser, instanceId: string, payload: Record<string, unknown>, at?: string) {
   return user.as.mutation(api.daily.submit_daily_answer, { p_instance_id: instanceId, p_payload: payload, ...op(at) });
@@ -48,42 +52,7 @@ async function completeDay(t: TestConvex, user: TestUser, text = "done") {
   }
 }
 
-describe("question catalog", () => {
-  test("lists active ready questions per locale, sorted, and filters by locale", async () => {
-    const t = newTest();
-    await seedCatalog(t, [{ key: "zeta", kinds: ["text", "photo"] }, { key: "alpha", months: 3 }]);
-    await t.run(async (ctx) => {
-      const collection = (await ctx.db.query("question_collections").first())!;
-      const now = new Date().toISOString();
-      await ctx.db.insert("questions", {
-        id: newUuid(),
-        collection_id: collection.id,
-        key: "draft_one",
-        status: "draft",
-        resurfaceable: true,
-        created_at: now,
-        updated_at: now,
-      });
-    });
-    const user = await createSignedInUser(t);
-    const all = await user.as.query(api.daily.get_active_question_catalog, {});
-    expect(all.map((row) => `${row.question_key}/${row.locale}`)).toEqual(["alpha/en", "alpha/nb", "zeta/en", "zeta/nb"]);
-    expect(all[0]).toMatchObject({
-      version_number: 1,
-      prompt: "alpha prompt en",
-      short_prompt: "alpha short en",
-      answer_kinds: ["text"],
-      resurfaceable: true,
-      resurface_after_months: 3,
-    });
-    expect(all[2].answer_kinds).toEqual(["photo", "text"]);
-    const nb = await user.as.query(api.daily.get_active_question_catalog, { p_locale: "nb" });
-    expect(nb.map((row) => row.locale)).toEqual(["nb", "nb"]);
-    await expect(t.query(api.daily.get_active_question_catalog, {})).rejects.toThrow(/42501.*authenticated user required/);
-  });
-});
-
-describe("start_daily_challenge", () => {
+describe("start_daily_challenge_snapshot", () => {
   test("seeds three slots per partner and shows each partner only their own questions", async () => {
     const { t, a, b } = await readyCouple();
     const aRows = await today(a);
@@ -115,14 +84,14 @@ describe("start_daily_challenge", () => {
   test("a replay of the same client operation returns the same day and adds nothing", async () => {
     const { t, a } = await readyCouple();
     const args = op();
-    const first = await a.as.mutation(api.daily.start_daily_challenge, args);
-    const second = await a.as.mutation(api.daily.start_daily_challenge, args);
+    const first = await start(a, args);
+    const second = await start(a, args);
     expect(second.map((row) => row.instance_id)).toEqual(first.map((row) => row.instance_id));
     expect(await t.run((ctx) => ctx.db.query("daily_question_instances").collect())).toHaveLength(6);
-    await a.as.mutation(api.daily.start_daily_challenge, op());
+    await start(a, op());
     expect(await t.run((ctx) => ctx.db.query("daily_question_instances").collect())).toHaveLength(6);
     await expect(
-      a.as.mutation(api.daily.start_daily_challenge, { ...args, p_local_created_at: "2026-10-10T10:05:00.000Z" }),
+      start(a, { ...args, p_local_created_at: "2026-10-10T10:05:00.000Z" }),
     ).rejects.toThrow(/23505.*client operation replay hash mismatch/);
   });
 
@@ -152,7 +121,7 @@ describe("start_daily_challenge", () => {
   test("needs a signed-in user in an entitled couple", async () => {
     const t = newTest();
     await seedCatalog(t, textQuestions(6));
-    await expect(t.mutation(api.daily.start_daily_challenge, op())).rejects.toThrow(/42501.*authenticated user required/);
+    await expect(t.mutation(api.daily.start_daily_challenge_snapshot, op())).rejects.toThrow(/42501.*authenticated user required/);
     const lonely = await createSignedInUser(t);
     await expect(start(lonely)).rejects.toThrow(/42501.*active entitled couple access is required/);
     const unpaid = await createCouple(t, { entitled: false });
@@ -182,28 +151,20 @@ describe("answers and the reveal rule", () => {
     const dayId = row.couple_day_id;
     const reads = [
       await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId }),
-      await b.as.query(api.daily.get_daily_answer_reveal_state, { p_couple_day_id: dayId }),
-      await b.as.query(api.daily.get_daily_answer_details_for_couple_days, { p_couple_day_ids: [dayId] }),
       await b.as.query(api.daily.get_daily_answer_history_details, {}),
       await b.as.query(api.daily.get_daily_questions_history, {}),
       await b.as.query(api.daily.get_today_daily_challenge_snapshot, {}),
-      await b.as.query(api.daily.get_question_answer_history, { p_question_id: row.question_id }),
     ];
     expect(JSON.stringify(reads)).not.toContain(secret);
     expect(reads[0]).toEqual([expect.objectContaining({ answer_id: answerId, can_view_answer: false, text_body: null, media_asset_ids: [] })]);
-    expect(reads[1]).toEqual([expect.objectContaining({ answer_id: answerId, can_view_answer: false, is_own_answer: false })]);
-    expect(reads[1][0]).not.toHaveProperty("text_body");
-    expect(reads[3]).toEqual([]);
-    expect(reads[4]).toEqual([]);
-    expect(reads[6]).toEqual([expect.objectContaining({ answer_id: answerId, can_view_answer: false, text_body: null })]);
+    expect(reads[1]).toEqual([]);
+    expect(reads[2]).toEqual([]);
 
     // The author sees their own text, the outsider sees nothing at all.
     const own = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId });
     expect(own[0]).toMatchObject({ can_view_answer: true, is_own_answer: true, text_body: secret });
     const outsider = await createCouple(t);
     expect(await outsider.first.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId })).toEqual([]);
-    expect(await outsider.first.as.query(api.daily.get_daily_answer_reveal_state, { p_couple_day_id: dayId })).toEqual([]);
-    expect(await outsider.first.as.query(api.daily.get_question_answer_history, { p_question_id: row.question_id })).toEqual([]);
 
     // The partner answers, and now both sides see both answers.
     await submit(b, aFirst.id, { text: "reply" });
@@ -212,8 +173,6 @@ describe("answers and the reveal rule", () => {
       [secret, true],
       ["reply", true],
     ]);
-    const afterA = await a.as.query(api.daily.get_daily_answer_details_for_couple_days, { p_couple_day_ids: [dayId] });
-    expect(afterA.map((item) => item.text_body).sort()).toEqual(["reply", secret].sort());
     const history = await b.as.query(api.daily.get_daily_answer_history_details, {});
     expect(history).toHaveLength(2);
     const [bView] = (await b.as.query(api.daily.get_today_daily_challenge_snapshot, {}));
@@ -410,7 +369,7 @@ describe("shuffle", () => {
     const { t, a } = await readyCouple({ questions: textQuestions(12) });
     const before = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
     const oldVersions = new Set(before.map((row) => row.question_version_id));
-    const rows = await a.as.mutation(api.daily.shuffle_daily_question, { p_slot_number: 2, ...op() });
+    const rows = await shuffle(a, 2);
     expect(rows).toHaveLength(3);
     const replaced = rows.find((row) => row.slot_number === 2)!;
     expect(replaced.instance_id).not.toBe(before[1].id);
@@ -438,10 +397,10 @@ describe("shuffle", () => {
 
     await submit(a, before[0].id, { text: "answered" });
     // Answering moves the slot to 'answered', so it no longer counts as an active slot.
-    await expect(a.as.mutation(api.daily.shuffle_daily_question, { p_slot_number: 1, ...op() })).rejects.toThrow(
+    await expect(shuffle(a, 1)).rejects.toThrow(
       /22023.*active daily question slot was not found/,
     );
-    await expect(a.as.mutation(api.daily.shuffle_daily_question, { p_slot_number: 4, ...op() })).rejects.toThrow(
+    await expect(shuffle(a, 4)).rejects.toThrow(
       /23514.*slot number is out of range/,
     );
     const [snapshot] = await a.as.mutation(api.daily.shuffle_daily_question_snapshot, { p_slot_number: 3, ...op() });
@@ -450,9 +409,9 @@ describe("shuffle", () => {
 
   test("a replayed shuffle changes nothing the second time", async () => {
     const { t, a } = await readyCouple();
-    const args = { p_slot_number: 1, ...op() };
-    const first = await a.as.mutation(api.daily.shuffle_daily_question, args);
-    const second = await a.as.mutation(api.daily.shuffle_daily_question, args);
+    const args = op();
+    const first = await shuffle(a, 1, args);
+    const second = await shuffle(a, 1, args);
     expect(second.map((row) => row.instance_id)).toEqual(first.map((row) => row.instance_id));
     expect(await t.run((ctx) => ctx.db.query("daily_question_shuffles").collect())).toHaveLength(1);
   });
@@ -460,9 +419,9 @@ describe("shuffle", () => {
   test("allows 30 shuffles a day and refuses the 31st", async () => {
     const { t, a } = await readyCouple({ questions: textQuestions(45) });
     for (let index = 0; index < 30; index += 1) {
-      await a.as.mutation(api.daily.shuffle_daily_question, { p_slot_number: (index % 3) + 1, ...op() });
+      await shuffle(a, (index % 3) + 1);
     }
-    await expect(a.as.mutation(api.daily.shuffle_daily_question, { p_slot_number: 1, ...op() })).rejects.toThrow(
+    await expect(shuffle(a, 1)).rejects.toThrow(
       /23514.*daily shuffle limit reached/,
     );
     expect(await t.run((ctx) => ctx.db.query("daily_question_shuffles").collect())).toHaveLength(30);
@@ -472,9 +431,9 @@ describe("shuffle", () => {
     const { t, a } = await readyCouple({ questions: textQuestions(5) });
     const original = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
     // Five questions: three live plus two spare. Two shuffles use up the spares and a third has nothing left.
-    await a.as.mutation(api.daily.shuffle_daily_question, { p_slot_number: 1, ...op() });
-    await a.as.mutation(api.daily.shuffle_daily_question, { p_slot_number: 1, ...op() });
-    await expect(a.as.mutation(api.daily.shuffle_daily_question, { p_slot_number: 1, ...op() })).rejects.toThrow(
+    await shuffle(a, 1);
+    await shuffle(a, 1);
+    await expect(shuffle(a, 1)).rejects.toThrow(
       /22023.*no eligible daily questions are available/,
     );
     expect(original).toHaveLength(3);
@@ -488,7 +447,7 @@ describe("time zones and day boundaries", () => {
     const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "America/Los_Angeles"] });
     const at = "2026-10-10T23:30:00.000Z";
     vi.setSystemTime(new Date(at));
-    const rows = await couple.first.as.mutation(api.daily.start_daily_challenge, op(at));
+    const rows = await start(couple.first, op(at));
     expect(rows[0]).toMatchObject({ local_date: "2026-10-10", starts_at: "2026-10-10T07:00:00.000Z", ends_at: "2026-10-11T07:00:00.000Z" });
     const [mine] = (await liveInstancesFor(t, couple.first.userId)).filter((row) => row.seeded_for_user_id === couple.first.userId);
     await expect(submit(couple.first, mine.id, { text: "x" }, "2026-10-11T07:00:00.000Z")).rejects.toThrow(
@@ -507,8 +466,8 @@ describe("time zones and day boundaries", () => {
     const auckland = await createCouple(t, { timeZones: ["Pacific/Auckland", "Pacific/Auckland"] });
     const at = "2026-10-10T20:00:00.000Z";
     vi.setSystemTime(new Date(at));
-    const [osloRow] = await oslo.first.as.mutation(api.daily.start_daily_challenge, op(at));
-    const [aucklandRow] = await auckland.first.as.mutation(api.daily.start_daily_challenge, op(at));
+    const [osloRow] = await start(oslo.first, op(at));
+    const [aucklandRow] = await start(auckland.first, op(at));
     expect(osloRow.local_date).toBe("2026-10-10");
     expect(aucklandRow.local_date).toBe("2026-10-11");
   });
@@ -568,35 +527,6 @@ describe("history", () => {
     expect(await history()).toEqual(["2026-10-11"]);
   });
 
-  test("question answer history lists resurfaceable questions only", async () => {
-    const { t, a, b } = await readyCouple({
-      questions: [
-        ...textQuestions(11),
-        { key: "one_time", resurfaceable: false },
-      ],
-    });
-    const mine = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    const rows = await today(a);
-    for (const instance of mine) {
-      await submit(a, instance.id, { text: `a-${instance.slot_number}` });
-    }
-    const resurfaceable = rows.find((row) => row.question_key !== "one_time")!;
-    const history = await a.as.query(api.daily.get_question_answer_history, { p_question_id: resurfaceable.question_id });
-    expect(history).toHaveLength(1);
-    expect(history[0]).toMatchObject({
-      question_id: resurfaceable.question_id,
-      question_version_id: resurfaceable.question_version_id,
-      can_view_answer: true,
-      answer_user_id: a.userId,
-    });
-    const oneTime = rows.find((row) => row.question_key === "one_time");
-    if (oneTime) {
-      expect(await a.as.query(api.daily.get_question_answer_history, { p_question_id: oneTime.question_id })).toEqual([]);
-    }
-    expect(await b.as.query(api.daily.get_question_answer_history, { p_question_id: resurfaceable.question_id })).toEqual([
-      expect.objectContaining({ answer_user_id: a.userId, can_view_answer: false, text_body: null }),
-    ]);
-  });
 });
 
 describe("questions already answered", () => {
@@ -790,7 +720,7 @@ describe("reset_daily_challenge_for_testing", () => {
   test("clears today's answers, skips, and completion, then seeds fresh slots", async () => {
     const { t, couple, a, b } = await readyCouple();
     const before = await liveInstancesFor(t, a.userId);
-    await a.as.mutation(api.daily.shuffle_daily_question, { p_slot_number: 1, ...op() });
+    await shuffle(a, 1);
     await completeDay(t, a);
     const [answered] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
     await submit(b, answered.id, { text: "reply" });

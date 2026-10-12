@@ -90,6 +90,17 @@ describe("request builders", () => {
     expect(JSON.parse(request.body).aps.alert.title).toBe("Alex");
   });
 
+  test("a reminder expires at its deadline, other alerts keep the APNs default", () => {
+    expect(buildAppRequest(alert, "no.paeonia.app").expiration).toBeUndefined();
+    const reminder = {
+      ...alert,
+      payload: { type: "streak_reminder", next_activity_deadline_at: "2026-10-11T22:00:00.000Z" },
+    };
+    expect(buildAppRequest(reminder, "no.paeonia.app").expiration).toBe(String(Date.parse("2026-10-11T22:00:00Z") / 1000));
+    const trial = { ...alert, payload: { type: "subscription_trial_reminder", trial_ends_at: "not a date" } };
+    expect(buildAppRequest(trial, "no.paeonia.app").expiration).toBeUndefined();
+  });
+
   test("background requests use priority 5", () => {
     expect(buildAppRequest({ ...alert, apns_push_type: "background" }, "no.paeonia.app")).toMatchObject({
       pushType: "background",

@@ -69,7 +69,7 @@ struct SyncRepositoryTests {
             PendingSyncOperationRequest(
                 ownerUserID: ownerUserID,
                 operation: secondOperation,
-                operationKind: .createPendingMediaUpload,
+                operationKind: .createMemory,
                 idempotencyScope: "media:\(secondOperation.id)"
             )
         )

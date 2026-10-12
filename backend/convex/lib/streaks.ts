@@ -124,7 +124,6 @@ export async function applyCoupleActivity(
       longest_count: 1,
       last_qualified_date: coupleDay.local_date,
       last_qualified_couple_day_id: coupleDay.id,
-      restore_available: false,
       next_activity_deadline_at: resolvedDeadline,
       updated_at: nowIso(),
       restorable_count: 0,
@@ -132,24 +131,11 @@ export async function applyCoupleActivity(
     return eventId;
   }
 
-  let previousObservedAt = await getCoupleDayStreakQualifiedAt(
+  const previousObservedAt = await getCoupleDayStreakQualifiedAt(
     ctx,
     coupleId,
     existing.last_qualified_couple_day_id,
   );
-  if (previousObservedAt === null && existing.last_qualified_couple_day_id) {
-    // A legacy streak may point at a day that only one partner completed. Its
-    // latest event still gives a stable ordering and deadline anchor.
-    const dayEvents = await ctx.db
-      .query("couple_activity_events")
-      .withIndex("by_couple_day_id", (q) => q.eq("couple_day_id", existing.last_qualified_couple_day_id!))
-      .collect();
-    for (const event of dayEvents) {
-      if (event.couple_id === coupleId && (previousObservedAt === null || event.occurred_at > previousObservedAt)) {
-        previousObservedAt = event.occurred_at;
-      }
-    }
-  }
   const previousDeadline =
     previousObservedAt !== null
       ? await resolveNextActivityDeadlineAt(ctx, coupleId, previousObservedAt)
@@ -208,8 +194,6 @@ export async function applyCoupleActivity(
       longest_count: Math.max(existing.longest_count, nextCurrentCount),
       last_qualified_date: coupleDay.local_date,
       last_qualified_couple_day_id: coupleDay.id,
-      restore_available:
-        nextRestorableCount > 0 && nextRestoreDeadline !== undefined && nextRestoreDeadline > nowIso(),
       next_activity_deadline_at: resolvedDeadline,
       restorable_count: nextRestorableCount,
       restorable_through_date: nextRestorableThroughDate,
@@ -286,20 +270,7 @@ async function liveStreakDeadline(
   if (!state || state.current_count <= 0 || state.restorable_count > 0) {
     return { deadline: state?.next_activity_deadline_at ?? null, frozen: false };
   }
-  let qualifiedAt = await getCoupleDayStreakQualifiedAt(ctx, coupleId, state.last_qualified_couple_day_id);
-  if (qualifiedAt === null && state.last_qualified_couple_day_id) {
-    // Rows from before mutual participation may have counted a one-person day.
-    // Anchor them to their latest event.
-    const dayEvents = await ctx.db
-      .query("couple_activity_events")
-      .withIndex("by_couple_day_id", (q) => q.eq("couple_day_id", state.last_qualified_couple_day_id!))
-      .collect();
-    for (const event of dayEvents) {
-      if (event.couple_id === coupleId && (qualifiedAt === null || event.occurred_at > qualifiedAt)) {
-        qualifiedAt = event.occurred_at;
-      }
-    }
-  }
+  const qualifiedAt = await getCoupleDayStreakQualifiedAt(ctx, coupleId, state.last_qualified_couple_day_id);
   if (qualifiedAt === null) {
     return { deadline: state.next_activity_deadline_at ?? null, frozen: false };
   }
@@ -335,7 +306,6 @@ type StreakBreakChange = Partial<
     | "restorable_count"
     | "restorable_through_date"
     | "restore_deadline"
-    | "restore_available"
   >
 >;
 
@@ -369,7 +339,6 @@ async function streakBreakChange(
     restorable_count: state.current_count,
     restorable_through_date: state.last_qualified_date,
     restore_deadline: restoreDeadline,
-    restore_available: restoreDeadline > now,
   };
 }
 
@@ -633,7 +602,6 @@ export async function applyStreakRestore(
       last_qualified_date: resolvedLastDate,
       last_qualified_couple_day_id: resolvedLastDayId,
       next_activity_deadline_at: resolvedDeadline,
-      restore_available: false,
       restorable_count: 0,
       restorable_through_date: undefined,
       restore_deadline: undefined,

@@ -794,42 +794,6 @@
         }
       }
     },
-    "auth.signIn.development.button" : {
-      "comment" : "Debug-only button for local development sign-in.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continue with test account"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fortsett med testkonto"
-          }
-        }
-      }
-    },
-    "auth.signIn.development.hint" : {
-      "comment" : "Debug-only hint explaining local development sign-in.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No private data leaves this phone."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingen private data forlater denne telefonen."
-          }
-        }
-      }
-    },
     "auth.signIn.google.button" : {
       "comment" : "Button that starts Google Sign-In.",
       "extractionState" : "manual",
@@ -884,24 +848,6 @@
         }
       }
     },
-    "auth.signIn.secure.hint" : {
-      "comment" : "Short reassurance text near the sign-in buttons.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your sign-in is stored securely on this phone."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Innloggingen din lagres trygt på denne telefonen."
-          }
-        }
-      }
-    },
     "auth.signIn.support" : {
       "comment" : "Footer link label for support on sign-in screens.",
       "extractionState" : "manual",
@@ -934,24 +880,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Logg ut"
-          }
-        }
-      }
-    },
-    "auth.start.title" : {
-      "comment" : "Title on the sign-in screen.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sign in to Paeonia"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Logg inn i Paeonia"
           }
         }
       }
@@ -1060,96 +988,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prøv igjen"
-          }
-        }
-      }
-    },
-    "dailyChallenge.answerKind.choice" : {
-      "comment" : "Short label for a daily challenge answer kind where the answer is a choice between partners",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choice"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Valg"
-          }
-        }
-      }
-    },
-    "dailyChallenge.answerKind.other" : {
-      "comment" : "Short fallback label for an unknown daily challenge answer kind",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Other"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Annet"
-          }
-        }
-      }
-    },
-    "dailyChallenge.answerKind.photo" : {
-      "comment" : "Short label for a daily challenge photo answer kind",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photo"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bilde"
-          }
-        }
-      }
-    },
-    "dailyChallenge.answerKind.text" : {
-      "comment" : "Short label for a daily challenge text answer kind",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Words"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tekst"
-          }
-        }
-      }
-    },
-    "dailyChallenge.answerKind.voice" : {
-      "comment" : "Short label for a daily challenge voice note answer kind",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Voice"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stemme"
           }
         }
       }
@@ -1312,42 +1150,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Allerede delt"
-          }
-        }
-      }
-    },
-    "dailyChallenge.empty.message" : {
-      "comment" : "Message shown when the daily challenge has not been started yet",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer three small questions. Your partner can answer theirs too."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar på tre små spørsmål. Partneren din kan svare på sine også."
-          }
-        }
-      }
-    },
-    "dailyChallenge.empty.title" : {
-      "comment" : "Title shown when the daily challenge has not been started yet",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start questions for today"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start dagens spørsmål"
           }
         }
       }
@@ -1910,24 +1712,6 @@
         }
       }
     },
-    "dailyChallenge.mediaAnswer.summary" : {
-      "comment" : "Summary shown for a revealed daily challenge answer that contains media instead of text",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A photo or voice answer was sent."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Et bilde- eller stemmesvar ble sendt."
-          }
-        }
-      }
-    },
     "dailyChallenge.needsPhoto.message" : {
       "comment" : "Message shown if a daily challenge question only accepts photo answers",
       "extractionState" : "manual",
@@ -2000,24 +1784,6 @@
         }
       }
     },
-    "dailyChallenge.ownSection.title" : {
-      "comment" : "Section title for the current user seeded daily questions",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your three"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dine tre"
-          }
-        }
-      }
-    },
     "dailyChallenge.partner.lockedCta" : {
       "comment" : "Disabled button on a partner-answered question, shown until the user has finished their own three daily questions",
       "extractionState" : "manual",
@@ -2032,24 +1798,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fullfør dine tre først"
-          }
-        }
-      }
-    },
-    "dailyChallenge.partnerAnswer.title" : {
-      "comment" : "Title above the partner revealed daily challenge answer",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partner answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partnerens svar"
           }
         }
       }
@@ -2342,42 +2090,6 @@
         }
       }
     },
-    "dailyChallenge.progress.completeMessage" : {
-      "comment" : "Message shown when the current user has answered their three seeded daily questions",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your part is done for today."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Din del er ferdig for i dag."
-          }
-        }
-      }
-    },
-    "dailyChallenge.progress.message" : {
-      "comment" : "Message shown above the daily challenge question list",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer your three questions for today."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar på de tre spørsmålene dine for i dag."
-          }
-        }
-      }
-    },
     "dailyChallenge.progress.pillAccessibility" : {
       "comment" : "VoiceOver label for the small progress pill on the daily card. First number is answered questions, second is the total.",
       "extractionState" : "manual",
@@ -2392,42 +2104,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld av %lld besvart"
-          }
-        }
-      }
-    },
-    "dailyChallenge.progress.title" : {
-      "comment" : "Title for the daily challenge progress header",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Daily challenge"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dagens spørsmål"
-          }
-        }
-      }
-    },
-    "dailyChallenge.reportPartnerAnswer" : {
-      "comment" : "Context-menu action for reporting a visible partner answer",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Report this answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rapporter dette svaret"
           }
         }
       }
@@ -3584,24 +3260,6 @@
         }
       }
     },
-    "home.dailyPrompt.answer" : {
-      "comment" : "Button that opens today's shared question to answer it",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar"
-          }
-        }
-      }
-    },
     "home.dailyPrompt.eyebrow" : {
       "comment" : "Small overline above today's shared questions on the Us tab; the couple answers three each day",
       "extractionState" : "manual",
@@ -3616,24 +3274,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dagens spørsmål"
-          }
-        }
-      }
-    },
-    "home.dailyPrompt.progress" : {
-      "comment" : "Accessibility label for the three-step progress bar on today's questions, showing which question is current. Count is placeholder until data is wired.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Question 1 of 3"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spørsmål 1 av 3"
           }
         }
       }
@@ -3832,24 +3472,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ fra hverandre"
-          }
-        }
-      }
-    },
-    "home.map.eyebrow" : {
-      "comment" : "Small overline above the globe on the Us tab showing the couple across distance",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Across the distance"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Over avstanden"
           }
         }
       }
@@ -4826,24 +4448,6 @@
         }
       }
     },
-    "location.permission.whenInUse" : {
-      "comment" : "iOS permission prompt text explaining why Paeonia asks for location.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paeonia uses your location only when you turn on sharing, so your partner can see your latest location."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paeonia bruker posisjonen din bare når du slår på deling, slik at partneren din kan se den nyeste posisjonen din."
-          }
-        }
-      }
-    },
     "location.permissionPrimer.message" : {
       "comment" : "Privacy explanation shown before iOS asks for location access. %@ is the partner name.",
       "extractionState" : "manual",
@@ -4948,24 +4552,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Minner"
-          }
-        }
-      }
-    },
-    "mainTab.placeholder.message" : {
-      "comment" : "Fallback message shown if a tab cannot be opened.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This tab is unavailable right now."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Denne fanen er ikke tilgjengelig akkurat nå."
           }
         }
       }
@@ -5132,24 +4718,6 @@
         }
       }
     },
-    "memories.detail.addPhotos" : {
-      "comment" : "Menu action to add more photos to an existing memory.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add photos"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legg til bilder"
-          }
-        }
-      }
-    },
     "memories.detail.delete" : {
       "comment" : "Menu action to delete a memory.",
       "extractionState" : "manual",
@@ -5168,24 +4736,6 @@
         }
       }
     },
-    "memories.detail.editDetails" : {
-      "comment" : "Menu action to edit a memory's title and date.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit details"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rediger detaljer"
-          }
-        }
-      }
-    },
     "memories.detail.editMemory" : {
       "comment" : "Menu action that opens the sheet for editing an existing memory",
       "extractionState" : "manual",
@@ -5200,24 +4750,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rediger minne"
-          }
-        }
-      }
-    },
-    "memories.detail.editNote" : {
-      "comment" : "Button to edit the current user's existing note on a memory.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit your note"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rediger notatet ditt"
           }
         }
       }
@@ -5272,42 +4804,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Notatet ditt"
-          }
-        }
-      }
-    },
-    "memories.editDetails.save" : {
-      "comment" : "Button that saves edits to a memory's title and date.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre"
-          }
-        }
-      }
-    },
-    "memories.editDetails.title" : {
-      "comment" : "Navigation title for the sheet that edits a memory's title and date.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit memory"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rediger minne"
           }
         }
       }
@@ -5762,42 +5258,6 @@
         }
       }
     },
-    "memories.note.save" : {
-      "comment" : "Button that saves the user's note on a memory.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre"
-          }
-        }
-      }
-    },
-    "memories.note.title" : {
-      "comment" : "Navigation title for the sheet where the user writes their note on a memory.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your note"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Notatet ditt"
-          }
-        }
-      }
-    },
     "memories.notice.createFailed.title" : {
       "comment" : "Error banner title shown when saving a new memory failed.",
       "extractionState" : "manual",
@@ -6086,42 +5546,6 @@
         }
       }
     },
-    "memories.photo.removeAction" : {
-      "comment" : "Destructive confirm button that removes a photo from a memory.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fjern"
-          }
-        }
-      }
-    },
-    "memories.photo.removeTitle" : {
-      "comment" : "Title of the confirmation alert before removing a photo from a memory.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove this photo?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fjerne dette bildet?"
-          }
-        }
-      }
-    },
     "memories.photo.retryHint" : {
       "comment" : "VoiceOver hint on a memory photo that failed to load",
       "extractionState" : "manual",
@@ -6262,24 +5686,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La oss komme i gang"
-          }
-        }
-      }
-    },
-    "pairing.celebration.pairedHeaderLabel" : {
-      "comment" : "VoiceOver label for the avatars at the top of the Home tab. %@ is the partner's display name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You and %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du og %@"
           }
         }
       }
@@ -9250,78 +8656,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du er allerede koblet sammen"
-          }
-        }
-      }
-    },
-    "root.palette.message" : {
-      "comment" : "Message for an early brand palette placeholder state.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Colors will be adjusted when the app icon and peony reference are ready."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fargene justeres når appikonet og peonreferansen er klare."
-          }
-        }
-      }
-    },
-    "root.palette.title" : {
-      "comment" : "Title for an early brand palette placeholder state.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Colors"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Farger"
-          }
-        }
-      }
-    },
-    "root.primaryAction" : {
-      "comment" : "Primary action label in the early root placeholder screen.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invite your partner"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inviter partneren din"
-          }
-        }
-      }
-    },
-    "root.primaryAction.hint" : {
-      "comment" : "Hint below the early root placeholder primary action.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This will turn on when pairing is ready."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Denne skrus på når sammenkobling er klar."
           }
         }
       }

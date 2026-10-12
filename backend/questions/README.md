@@ -63,8 +63,8 @@ scripts/sync-question-catalog --apply
 scripts/sync-question-catalog --emit-json
 ```
 
-The target deployment comes from `backend/.env.local` for dev. For production,
-export `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_KEY` in the shell
+The target deployment comes from `backend/.env.local` for dev. For the hosted
+deployment at `api.paeonia.no`, export `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_KEY` in the shell
 first. Never commit either value.
 
 The default mode is a dry run. It reads the deployment and reports new question

@@ -6,7 +6,7 @@ nonisolated struct DailyChallengeRemoteSnapshotRow: Codable, Equatable, Sendable
     let streak: CoupleStreakRow?
     let generatedAt: Date
     /// The couple day this snapshot is for, and when it ends. Both are nil when
-    /// today has no couple day yet, and absent in snapshots cached by older builds.
+    /// today has no couple day yet.
     var coupleDayID: UUID?
     var endsAt: Date?
 
@@ -48,12 +48,9 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
     let partnerAnswerID: UUID?
     let partnerAnsweredAt: Date?
     let canViewPartnerAnswer: Bool
-    /// Present only on the "today" read model once it includes carried-over
-    /// unresolved exchanges. Older backend responses omit it; those rows are
-    /// treated as current-day rows for compatibility.
-    let isCurrentDay: Bool?
-    /// When this user first saw the partner's answer, on any device. Older backend
-    /// responses omit it.
+    /// False for carried-over unresolved exchanges from earlier days.
+    let isCurrentDay: Bool
+    /// When this user first saw the partner's answer, on any device. Nil until seen.
     var partnerAnswerSeenAt: Date?
     /// When the partner first saw this user's answer, for the read receipt on it.
     var ownAnswerSeenByPartnerAt: Date?
@@ -152,28 +149,6 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
         case freezeAvailable = "freeze_available"
         case freezeReadyAt = "freeze_ready_at"
         case freezeSavedStreak = "freeze_saved_streak"
-    }
-
-    init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        currentCount = try container.decode(Int.self, forKey: .currentCount)
-        longestCount = try container.decode(Int.self, forKey: .longestCount)
-        lastQualifiedDate = try container.decodeIfPresent(String.self, forKey: .lastQualifiedDate)
-        restoreAvailable = try container.decode(Bool.self, forKey: .restoreAvailable)
-        restorableCount = try container.decode(Int.self, forKey: .restorableCount)
-        restoreDeadline = try container.decodeIfPresent(Date.self, forKey: .restoreDeadline)
-        currentUserContributedToday = try container.decodeIfPresent(
-            Bool.self,
-            forKey: .currentUserContributedToday
-        ) ?? false
-        partnerContributedToday = try container.decodeIfPresent(
-            Bool.self,
-            forKey: .partnerContributedToday
-        ) ?? false
-        // Rows cached before streak freezes existed have no freeze keys.
-        freezeAvailable = try container.decodeIfPresent(Bool.self, forKey: .freezeAvailable) ?? false
-        freezeReadyAt = try container.decodeIfPresent(Date.self, forKey: .freezeReadyAt)
-        freezeSavedStreak = try container.decodeIfPresent(Bool.self, forKey: .freezeSavedStreak) ?? false
     }
 
     var streak: CoupleStreak {

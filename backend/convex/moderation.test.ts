@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 async function report(t: TestConvex, couple: TestCouple, kind: string, targetId: string, extra: Record<string, unknown> = {}) {
-  return await couple.second.as.mutation(api.reports.submit_content_report, {
+  return await couple.second.as.mutation(api.reports.submit_leave_and_report, {
     p_reason: "privacy",
     p_note: null,
     p_target_kind: kind,
@@ -30,7 +30,6 @@ const act = (t: TestConvex, reportId: string, action: string, extra: Record<stri
   t.mutation(internal.moderation.apply_report_moderation_action, {
     p_report_id: reportId,
     p_action_kind: action,
-    p_operator_kind: "sql_runbook",
     p_operator_identifier: "ops@paeonia.no",
     ...extra,
   });
@@ -84,7 +83,7 @@ describe("apply_report_moderation_action", () => {
       previous_moderation_status: "visible",
       new_moderation_status: "hidden",
       storage_action: "none",
-      operator_kind: "sql_runbook",
+      operator_kind: "operator",
       operator_identifier: "ops@paeonia.no",
       reason: "privacy",
       notes: "checked",
@@ -159,11 +158,8 @@ describe("apply_report_moderation_action", () => {
     const { t, couple, reportId } = await memorySetup();
     await expect(act(t, newUuid(), "hide")).rejects.toThrow(/22023.*content report was not found/);
     await expect(act(t, reportId, "explode")).rejects.toThrow(/23514.*moderation action is not supported/);
-    await expect(act(t, reportId, "hide", { p_operator_kind: "intern" })).rejects.toThrow(
-      /23514.*moderation operator metadata is required/,
-    );
     await expect(act(t, reportId, "hide", { p_operator_identifier: "   " })).rejects.toThrow(
-      /moderation operator metadata is required/,
+      /moderation operator identifier is required/,
     );
     const conduct = await report(t, couple, "conduct", couple.first.userId);
     await expect(act(t, conduct, "hide")).rejects.toThrow(/23514.*moderation action cannot change this target kind/);
@@ -191,6 +187,12 @@ describe("apply_report_moderation_action", () => {
     await act(t, reportId, "clear_pair_warning");
     expect(await t.run((ctx) => ctx.db.query("pair_safety_warning_flags").collect())).toHaveLength(0);
 
+    // Submitting the report ended the relationship. Reopen it so the block has one to end.
+    await t.run(async (ctx) => {
+      for (const couple of await ctx.db.query("couples").collect()) await ctx.db.patch(couple._id, { status: "active" });
+      for (const member of await ctx.db.query("couple_members").collect()) await ctx.db.patch(member._id, { status: "active" });
+      for (const event of await ctx.db.query("relationship_sync_events").collect()) await ctx.db.delete(event._id);
+    });
     await act(t, reportId, "block_pair");
     const blocks = await t.run((ctx) => ctx.db.query("relationship_blocks").collect());
     expect(blocks[0]).toMatchObject({

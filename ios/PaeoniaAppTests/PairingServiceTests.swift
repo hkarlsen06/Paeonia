@@ -109,19 +109,15 @@ struct PairingInviteCodeTests {
         #expect(defaults.string(forKey: "paeonia.pairing.pendingJoinInviteCode") == nil)
     }
 
-    @Test func pendingJoinInviteStoreStartsTheClockForCodesSavedWithoutADate() throws {
+    @Test func pendingJoinInviteStoreDropsCodesSavedWithoutADate() throws {
         let suiteName = "PaeoniaAppTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
         defaults.set(canonicalCode, forKey: "paeonia.pairing.pendingJoinInviteCode")
-        let firstLoad = Date(timeIntervalSince1970: 1_000_000)
-        var currentDate = firstLoad
-        let store = UserDefaultsPairingJoinInviteStore(defaults: defaults, now: { currentDate })
+        let store = UserDefaultsPairingJoinInviteStore(defaults: defaults)
 
-        #expect(store.loadInviteCode() == canonicalCode)
-
-        currentDate = firstLoad.addingTimeInterval(UserDefaultsPairingJoinInviteStore.maximumAge + 1)
         #expect(store.loadInviteCode() == nil)
+        #expect(defaults.string(forKey: "paeonia.pairing.pendingJoinInviteCode") == nil)
     }
 
     @Test func pendingJoinInviteStorePersistsNormalizedCode() throws {

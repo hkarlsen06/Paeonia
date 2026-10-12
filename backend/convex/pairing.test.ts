@@ -3,7 +3,7 @@ import { api, internal } from "./_generated/api";
 import { sha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
 import { hashPairingInviteCode } from "./pairing";
-import { createCouple, createSignedInUser, grantLifetime, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { createCouple, createSignedInUser, grantLifetime, newTest, relationshipStateOf, type TestConvex, type TestUser } from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
 
@@ -293,8 +293,8 @@ describe("accept_pairing_invite", () => {
     });
     expect(rows.attempts).toEqual([expect.objectContaining({ success: true, matched_invite_id: inviteId })]);
 
-    const state = await guest.as.query(api.relationship.get_current_relationship_state, {});
-    expect(state[0]).toMatchObject({ couple_id: coupleId, partner_user_id: owner.userId, started_on: "2024-02-29" });
+    const state = await relationshipStateOf(guest);
+    expect(state).toMatchObject({ couple_id: coupleId, partner_user_id: owner.userId, started_on: "2024-02-29" });
   });
 
   test("the started date defaults to unset", async () => {
@@ -388,8 +388,10 @@ describe("accept_pairing_invite", () => {
       "42501",
       "pairing is blocked for this pair",
     );
-    const pairId = (await t.run((ctx) => ctx.db.query("relationship_pairs").first()))!.id;
-    expect(await owner.as.mutation(api.relationship.unblock_pair, { p_pair_id: pairId })).toBe(true);
+    await t.run(async (ctx) => {
+      const block = (await ctx.db.query("relationship_blocks").first())!;
+      await ctx.db.patch(block._id, { revoked_at: NOW, revoked_by_user_id: owner.userId, revoke_reason: "user_unblocked" });
+    });
     const coupleId = await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() });
     expect(coupleId).toBeDefined();
   });

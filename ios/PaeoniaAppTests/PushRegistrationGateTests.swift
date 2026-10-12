@@ -27,20 +27,20 @@ struct PushRegistrationGateTests {
     @Test func skipsWhenFingerprintUnchangedWithinHeartbeatWindow() {
         let stored = fingerprint()
         let now = Date(timeIntervalSince1970: 1_000_000)
-        let last = PushRegistrationRecord(fingerprint: stored, sentAt: now.addingTimeInterval(-60 * 60))
+        let last = PushRegistrationRecord(fingerprint: stored, sentAt: now.addingTimeInterval(-60 * 60), deviceID: UUID())
         #expect(!PushRegistrationGate.shouldSend(current: stored, lastSent: last, now: now))
     }
 
     @Test func resendsWhenTokenChanges() {
         let now = Date(timeIntervalSince1970: 1_000_000)
-        let last = PushRegistrationRecord(fingerprint: fingerprint(token: "token-a"), sentAt: now)
+        let last = PushRegistrationRecord(fingerprint: fingerprint(token: "token-a"), sentAt: now, deviceID: UUID())
         #expect(PushRegistrationGate.shouldSend(current: fingerprint(token: "token-b"), lastSent: last, now: now))
     }
 
     @Test func resendsAfterHeartbeatIntervalEvenWhenUnchanged() {
         let stored = fingerprint()
         let sentAt = Date(timeIntervalSince1970: 1_000_000)
-        let last = PushRegistrationRecord(fingerprint: stored, sentAt: sentAt)
+        let last = PushRegistrationRecord(fingerprint: stored, sentAt: sentAt, deviceID: UUID())
         let now = sentAt.addingTimeInterval(PushRegistrationGate.heartbeatInterval)
         #expect(PushRegistrationGate.shouldSend(current: stored, lastSent: last, now: now))
     }
@@ -59,10 +59,11 @@ struct PushRegistrationGateTests {
         let store = PushRegistrationFingerprintStore(channel: .device, defaults: defaults)
         let stored = fingerprint()
         let now = Date(timeIntervalSince1970: 1_000_000)
+        let deviceID = UUID()
         #expect(store.lastSent() == nil)
 
-        store.recordSent(PushRegistrationRecord(fingerprint: stored, sentAt: now))
-        #expect(store.lastSent() == PushRegistrationRecord(fingerprint: stored, sentAt: now))
+        store.recordSent(PushRegistrationRecord(fingerprint: stored, sentAt: now, deviceID: deviceID))
+        #expect(store.lastSent() == PushRegistrationRecord(fingerprint: stored, sentAt: now, deviceID: deviceID))
         #expect(!PushRegistrationGate.shouldSend(current: stored, lastSent: store.lastSent(), now: now))
 
         // Signing out clears the record, so the next sign-in re-registers.
@@ -78,7 +79,7 @@ struct PushRegistrationGateTests {
 
         let device = PushRegistrationFingerprintStore(channel: .device, defaults: defaults)
         let widget = PushRegistrationFingerprintStore(channel: .widget, defaults: defaults)
-        let record = PushRegistrationRecord(fingerprint: fingerprint(), sentAt: Date(timeIntervalSince1970: 1))
+        let record = PushRegistrationRecord(fingerprint: fingerprint(), sentAt: Date(timeIntervalSince1970: 1), deviceID: UUID())
         device.recordSent(record)
         widget.recordSent(record)
 

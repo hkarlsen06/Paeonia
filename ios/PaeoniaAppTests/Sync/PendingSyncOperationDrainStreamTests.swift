@@ -214,7 +214,7 @@ struct PendingSyncOperationDrainRunTests {
         let pendingStore = InMemoryPendingSyncOperationRepository()
         let unsupported = try await enqueue(
             1,
-            kind: .shuffleDailyQuestion,
+            kind: .createMemory,
             owner: ownerUserID,
             in: pendingStore
         )
@@ -222,7 +222,7 @@ struct PendingSyncOperationDrainRunTests {
         let handler = RecordingPendingOperationHandler(operationKind: .submitDailyAnswer)
         let stream = PendingSyncOperationDrainStream(handlers: [handler])
 
-        await #expect(throws: PendingSyncOperationDrainError.unsupportedOperationKind("shuffle_daily_question")) {
+        await #expect(throws: PendingSyncOperationDrainError.unsupportedOperationKind("create_memory")) {
             try await stream.push(context: Self.context(owner: ownerUserID, store: pendingStore))
         }
 

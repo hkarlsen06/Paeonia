@@ -18,6 +18,14 @@ struct DailyQuestionChatView: View {
     let question: DailyChallengeQuestion
     let participants: DailyChallengeParticipants
     var onReport: ((PrivacyReportTarget) -> Void)?
+    /// The user's answer while it is still sending, shown on the waiting page until
+    /// this phone has it.
+    var sendingAnswer: DailySendingPreview?
+    /// Set when the page opens right after answering. The partner's answer lights up
+    /// with a haptic when it shows, once.
+    var revealsPartnerAnswer = false
+    /// Swiping right calls this instead of `dismiss`, for a page that owns its cover.
+    var onClose: (() -> Void)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -30,17 +38,24 @@ struct DailyQuestionChatView: View {
     /// Where the list scrolls next. Nil keeps the list where it is.
     @State private var scrollTarget: ScrollToParams?
     @State private var didApplyOpeningScroll = false
+    @State private var didRevealPartnerAnswer = false
 
     init(
         viewModel: DailyQuestionChatViewModel,
         question: DailyChallengeQuestion,
         participants: DailyChallengeParticipants,
-        onReport: ((PrivacyReportTarget) -> Void)? = nil
+        onReport: ((PrivacyReportTarget) -> Void)? = nil,
+        sendingAnswer: DailySendingPreview? = nil,
+        revealsPartnerAnswer: Bool = false,
+        onClose: (() -> Void)? = nil
     ) {
         _viewModel = State(initialValue: viewModel)
         self.question = question
         self.participants = participants
         self.onReport = onReport
+        self.sendingAnswer = sendingAnswer
+        self.revealsPartnerAnswer = revealsPartnerAnswer
+        self.onClose = onClose
     }
 
     var body: some View {
@@ -88,6 +103,7 @@ struct DailyQuestionChatView: View {
         }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
         .onChange(of: viewModel.hasReadStore) { applyOpeningScroll() }
+        .onChange(of: revealedPartnerAnswerRowID, initial: true) { revealPartnerAnswer() }
         .paeoniaImageViewer(selection: $photoViewer)
     }
 
@@ -155,7 +171,7 @@ struct DailyQuestionChatView: View {
         .chatTheme(chatTheme)
         .overlay {
             ZStack {
-                DailyChatNavigationGestureBridge { dismiss() }
+                DailyChatNavigationGestureBridge { close() }
                 DailyChatTimestampRevealGestureBridge(
                     isEnabled: true,
                     onChanged: handleBackgroundTimestampRevealChanged,
@@ -222,6 +238,9 @@ struct DailyQuestionChatView: View {
                     if let row = projection.rowsByID[message.id] {
                         messageRow(row, messageFrame: nil)
                     }
+                }
+                if viewModel.question.ownAnswerDetail == nil, let sendingAnswer {
+                    DailyChatSendingAnswerRow(answer: sendingAnswer)
                 }
                 if let waitingMessage = viewModel.waitingMessage {
                     Text(waitingMessage)
@@ -375,6 +394,31 @@ extension DailyQuestionChatView {
         scrollTarget = nil
         Task { @MainActor in
             scrollTarget = ScrollToParams(messageID: rowID, position: .middle)
+            highlightedRowID = rowID
+            try? await Task.sleep(for: Self.highlightDuration)
+            if highlightedRowID == rowID { highlightedRowID = nil }
+        }
+    }
+
+    private func close() {
+        if let onClose { onClose() } else { dismiss() }
+    }
+
+    /// The partner's answer row once the chat shows it.
+    private var revealedPartnerAnswerRowID: String? {
+        guard viewModel.isChatAvailable,
+              let answer = viewModel.answers.first(where: { !$0.isOwnAnswer })
+        else { return nil }
+        return DailyChatProjection.answerRowPrefix + answer.answerID.uuidString
+    }
+
+    /// Right after answering, the partner's answer is the payoff, so it lights up
+    /// like a jumped-to message, with the reveal haptic.
+    private func revealPartnerAnswer() {
+        guard revealsPartnerAnswer, !didRevealPartnerAnswer, let rowID = revealedPartnerAnswerRowID else { return }
+        didRevealPartnerAnswer = true
+        PaeoniaHaptics.answerRevealed()
+        Task { @MainActor in
             highlightedRowID = rowID
             try? await Task.sleep(for: Self.highlightDuration)
             if highlightedRowID == rowID { highlightedRowID = nil }

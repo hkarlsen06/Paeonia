@@ -105,7 +105,7 @@ describe("claim_notification_batch", () => {
     await queue(t, user, device, { kind: "memory_created", dedupe: "memory" });
     await queue(t, user, device, { kind: "thread_message_sent", dedupe: "message" });
     await queue(t, user, second, { kind: "memory_created", dedupe: "disabled-device" });
-    await queue(t, user, device, { kind: "entitlement_changed", pushType: "background", dedupe: "always" });
+    await queue(t, user, device, { kind: "subscription_trial_reminder", pushType: "background", dedupe: "always" });
     await t.run(async (ctx) => {
       const preference = await ctx.db.query("notification_preferences").first();
       await ctx.db.patch(preference!._id, { memories_enabled: false });
@@ -126,6 +126,33 @@ describe("claim_notification_batch", () => {
       });
     }
     expect(state("message").failed_at).toBeUndefined();
+  });
+
+  test("fails reminders that are out of date instead of sending them", async () => {
+    const { t, user, device } = await setup();
+    const reminder = (dedupe: string, deadline: string) =>
+      t.run((ctx) =>
+        insertNotificationOutbox(ctx, {
+          recipient_user_id: user.userId,
+          target_device_id: device.id,
+          push_token_hash: device.push_token_hash,
+          apns_environment: "sandbox",
+          kind: "streak_reminder",
+          payload: { type: "streak_reminder", next_activity_deadline_at: deadline },
+          dedupe_key: dedupe,
+          title: "Time for a quick check-in",
+          body: "A quick drawing is enough.",
+          scheduled_for: EARLIER,
+        }),
+      );
+    await reminder("passed", "2026-10-10T11:59:00.000Z");
+    await reminder("upcoming", "2026-10-10T12:30:00.000Z");
+
+    const batch = await claim(t);
+    const rows = await outboxRows(t);
+    const byDedupe = (key: string) => rows.find((row) => row.dedupe_key === key)!;
+    expect(batch.map((item) => item.outbox_id)).toEqual([byDedupe("upcoming").id]);
+    expect(byDedupe("passed")).toMatchObject({ failed_at: NOW, last_error: "notification is out of date" });
   });
 
   test("silent widget updates do not need the widget alert preference", async () => {
@@ -177,37 +204,6 @@ describe("claim_notification_batch", () => {
   });
 });
 
-describe("claim_due_notifications", () => {
-  test("claims without a lease or attempt budget and gates widget alerts and silent pushes alike", async () => {
-    const { t, user, device } = await setup();
-    await queue(t, user, device, { dedupe: "plain" });
-    await queue(t, user, device, { kind: "widget_updated", pushType: "background", dedupe: "silent" });
-    await t.run(async (ctx) => {
-      const preference = await ctx.db.query("notification_preferences").first();
-      await ctx.db.patch(preference!._id, { widget_updates_enabled: false });
-      const row = (await ctx.db.query("notification_outbox").collect()).find((item) => item.dedupe_key === "plain")!;
-      await ctx.db.patch(row._id, { attempt_count: 7 });
-    });
-    const claimed = await t.mutation(internal.pushQueue.claim_due_notifications, {});
-    expect(claimed).toHaveLength(1);
-    expect(claimed[0]).toMatchObject({
-      recipient_user_id: user.userId,
-      push_token: device.push_token,
-      push_token_hash: device.push_token_hash,
-      kind: "memory_created",
-      payload_version: 1,
-      redaction_level: "private",
-      attempt_count: 8,
-    });
-    const rows = await outboxRows(t);
-    expect(rows.find((row) => row.dedupe_key === "plain")?.scheduled_for).toBe(EARLIER);
-    expect(rows.find((row) => row.dedupe_key === "silent")?.failed_at).toBe(NOW);
-    await expect(t.mutation(internal.pushQueue.claim_due_notifications, { p_limit: 501 })).rejects.toThrow(
-      /23514.*notification claim limit is out of range/,
-    );
-  });
-});
-
 describe("notification results", () => {
   async function claimed() {
     const { t, user, device } = await setup();
@@ -256,20 +252,6 @@ describe("notification results", () => {
     const result = await row(t);
     expect(result.failed_at).toBe(NOW);
     expect(result.last_error).toHaveLength(2000);
-  });
-
-  test("mark_notification_sent and mark_notification_failed", async () => {
-    const { t, outboxId } = await claimed();
-    expect(await t.mutation(internal.pushQueue.mark_notification_failed, { p_outbox_id: outboxId, p_error: " boom ", p_terminal: true })).toBe(true);
-    expect(await row(t)).toMatchObject({ failed_at: NOW, last_error: "boom" });
-    expect(await t.mutation(internal.pushQueue.mark_notification_failed, { p_outbox_id: outboxId, p_error: "retry" })).toBe(true);
-    expect((await row(t)).failed_at).toBeUndefined();
-    expect(await t.mutation(internal.pushQueue.mark_notification_sent, { p_outbox_id: outboxId, p_provider_message_id: "id" })).toBe(true);
-    expect(await row(t)).toMatchObject({ sent_at: NOW, provider_message_id: "id" });
-    expect((await row(t)).last_error).toBeUndefined();
-    expect(await t.mutation(internal.pushQueue.mark_notification_sent, { p_outbox_id: outboxId })).toBe(false);
-    expect(await t.mutation(internal.pushQueue.mark_notification_failed, { p_outbox_id: outboxId })).toBe(false);
-    expect(await t.mutation(internal.pushQueue.mark_notification_sent, { p_outbox_id: newUuid() })).toBe(false);
   });
 });
 

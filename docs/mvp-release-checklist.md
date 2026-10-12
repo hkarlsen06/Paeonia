@@ -22,7 +22,7 @@ Paeonia is ready for MVP when:
 ## Source Documents
 
 - Implementation owners: `docs/implementation-map.md`
-- Backend rules, contracts, and production access: `backend/AGENTS.md`
+- Backend rules, contracts, and server access: `backend/AGENTS.md`
 - Current data model: `backend/convex/schema.ts`
 - Original product/data decisions (retired Supabase schema): `docs/phase-3-data-contract.md`
 - Marketing/app contract: `docs/marketing-app-contract.md`

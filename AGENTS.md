@@ -2,6 +2,17 @@
 
 This file provides guidance to coding agents when working in the Paeonia repository.
 
+## Project stage
+
+Paeonia is in active development and has not launched. There are no users and no production environment. The hosted Convex backend at `api.paeonia.no` holds only the developer's two test accounts, and the only installed builds are the developer's own.
+
+- Breaking changes are fine. Rename or remove backend functions, arguments, return fields, tables, and local storage formats when that makes the code better. Update every caller in the same change.
+- Do not write backward compatibility code. That means no support for older app builds, no deprecated aliases, no dual-read or dual-write paths, no data backfills or migrations, and no fallbacks for old data shapes. If test data no longer fits, wipe or edit it.
+- Deploying the backend to `api.paeonia.no` and editing its data for testing are pre-approved. Mention it in your summary.
+- Where docs say "production" or "release", they describe the setup for the future App Store launch. They do not mean live users exist. `docs/mvp-release-checklist.md` tracks what must be true before launch.
+
+The data-safety rules in this file are about how the app treats a user's content at runtime. They do not ask you to preserve today's test data.
+
 ## Project Overview
 
 Paeonia is an iOS-first private relationship app for couples who want to feel close through distance. The product should prioritize reliability, polish, privacy, local-first behavior, and small daily rituals.
@@ -42,14 +53,14 @@ paeonia/
 ```
 
 Use `paeonia.no` as the canonical public domain for marketing, support, legal pages, and universal links.
-The backend is a self-hosted Convex deployment on the `one-s` server, with Clerk for auth. Production origins:
+The backend is a self-hosted Convex deployment on the `one-s` server, with Clerk for auth. It is the only hosted deployment, and it holds test data. Hosted origins:
 
-- `https://api.paeonia.no` is the Convex client API origin. Use it for all production client configuration.
+- `https://api.paeonia.no` is the Convex client API origin. Use it for all hosted client configuration.
 - `https://actions.paeonia.no` is the Convex HTTP actions origin. It serves signed media URLs (`GET /media`) and Apple App Store server notifications (`POST /apple/server-notifications`).
 - `https://convex.paeonia.no` is the Convex dashboard. It is reachable on the tailnet only.
 - `wss://relay.paeonia.no/canvas` is the live drawing relay (`relay/`), a Cloudflare Worker with one Durable Object per couple.
 
-Production deploy and access details are in [backend/AGENTS.md](backend/AGENTS.md).
+Deploy and server access details are in [backend/AGENTS.md](backend/AGENTS.md).
 
 Do not create placeholder directories or files unless they are needed for the current task.
 
@@ -68,7 +79,7 @@ Keep `AGENTS.md` for durable rules and constraints. Put feature ownership maps, 
 - `docs/couple-question-guidelines.md`: required reading before writing, seeding, localizing, or versioning couple questions.
 - `docs/marketing-app-contract.md`: public routes, Universal Links, Cloudflare static files, and marketing app structure.
 - `docs/games-plan.md`: Games tab decisions and build plan. Read it before any games work, and update it in the same change when a games decision or design changes.
-- `backend/AGENTS.md`: backend working rules, local commands, production access, and deploy steps.
+- `backend/AGENTS.md`: backend working rules, local commands, server access, and deploy steps.
 - `backend/questions/README.md`: question catalog source files and sync notes.
 
 ## Agent Behavior Guidelines
@@ -150,7 +161,7 @@ The developer may run multiple agents in parallel in the same worktree.
 Read only guidance relevant to the change. Commands and source paths in these documents use the repository root unless stated otherwise.
 
 - Native iOS work: [ios/AGENTS.md](ios/AGENTS.md).
-- Backend, Clerk auth, or iOS auth/RPC integration: [backend/AGENTS.md](backend/AGENTS.md). Preserve the function contracts, explicit authorization checks, and the exact production targets. Production access is limited to the task-authorized operation.
+- Backend, Clerk auth, or iOS auth/RPC integration: [backend/AGENTS.md](backend/AGENTS.md). Keep the explicit authorization checks. Change function contracts freely, and update the iOS callers in the same change.
 - Marketing routes or deployment: [marketing/AGENTS.md](marketing/AGENTS.md).
 
 ## Product-Specific Quality Bar
@@ -158,7 +169,7 @@ Read only guidance relevant to the change. Commands and source paths in these do
 Paeonia handles private relationship content. Treat reliability and privacy as core product requirements.
 
 - Never silently drop user content.
-- Avoid destructive local data changes unless explicitly requested or protected by backup/migration logic.
+- The app must not destroy a user's local data except through an explicit user action, such as deleting content, leaving the relationship, or signing out. This rule is about runtime behavior. It does not require migration code for storage format changes during development.
 - Make delete/export/privacy flows explicit and testable.
 - Be careful with notification content; avoid exposing sensitive relationship content on locked screens without a clear setting.
 - Prefer forgiving streak rules over punitive engagement mechanics.

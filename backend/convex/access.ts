@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { type ObjectType, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action, internalQuery, mutation, query, type ActionCtx } from "./_generated/server";
 import { resolveCurrentCoupleEntitlement, resolveUserEntitlement } from "./lib/access";
@@ -7,24 +7,21 @@ import {
   type AppleTransactionInfo,
   appleBundleId,
   assertAppleEnvironmentConfigured,
-  clientSafeErrorMessage,
   decodeAppleJWS,
   determineSubscriptionStatus,
+  failWithClientSafeError,
   millisToIsoOrNull,
-  normalizeClientEnvironment,
-  requireString,
   revocationReason,
   stringOrNull,
   toDatabaseEnvironment,
-  unwrapAppleResponse,
   verifyTransactionWithApple,
-  type AppleResponse,
 } from "./lib/appleStoreKit";
 import { activeUserIdForSubject, getCurrentUserId, requireUserId } from "./lib/auth";
 import { fail } from "./lib/errors";
 import { newUuid, uuidArg } from "./lib/ids";
 import { getCurrentRelationshipState } from "./lib/relationshipState";
 import { nowIso } from "./lib/time";
+import { storekitEnvironment } from "./lib/validators";
 
 // ---- App-callable reads and token handling ----
 
@@ -40,21 +37,6 @@ export const get_access_snapshot = query({
         relationship_state: await getCurrentRelationshipState(ctx, userId),
       },
     ];
-  },
-});
-
-/** Port of `get_my_entitlement`. */
-export const get_my_entitlement = query({
-  args: {},
-  handler: async (ctx) => [await resolveUserEntitlement(ctx, await requireUserId(ctx))],
-});
-
-/** Port of `get_my_couple_entitlement`. Empty when the caller has no active couple. */
-export const get_my_couple_entitlement = query({
-  args: {},
-  handler: async (ctx) => {
-    const entitlement = await resolveCurrentCoupleEntitlement(ctx, await requireUserId(ctx));
-    return entitlement ? [entitlement] : [];
   },
 });
 
@@ -80,63 +62,58 @@ export const get_or_create_app_account_token = mutation({
   },
 });
 
-/** Port of `complete_review_access_session`. True when the caller owns the session. */
-export const complete_review_access_session = mutation({
-  args: { p_review_session_id: v.string() },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    const session = await ctx.db
-      .query("review_access_sessions")
-      .withIndex("by_uuid", (q) => q.eq("id", uuidArg(args.p_review_session_id)))
-      .unique();
-    if (!session || session.user_id !== userId) {
-      return false;
-    }
-    if (session.completed_at === undefined) {
-      await ctx.db.patch(session._id, { completed_at: nowIso() });
-    }
-    return true;
-  },
-});
-
 /** Maps a Clerk subject to the Paeonia user id for the actions below. */
 export const user_id_for_subject = internalQuery({
   args: { subject: v.string() },
   handler: async (ctx, args) => await activeUserIdForSubject(ctx, args.subject),
 });
 
-// ---- Purchase actions (ports of the apple-verify-purchase and apple-redeem-streak-restore Edge Functions) ----
+// ---- Purchase actions ----
 
 const STREAK_RESTORE_PRODUCT_ID = "no.paeonia.streak.restore";
 const ALLOWED_SUBSCRIPTION_PRODUCTS = new Set(["no.paeonia.couple", "no.paeonia.couple.year"]);
 
-const purchaseBodyArgs = {
-  jws: v.optional(v.any()),
-  transactionId: v.optional(v.any()),
-  originalTransactionId: v.optional(v.any()),
-  productId: v.optional(v.any()),
-  environment: v.optional(v.any()),
-  priceDisplay: v.optional(v.any()),
+const purchaseArgs = {
+  jws: v.string(),
+  transactionId: v.string(),
+  originalTransactionId: v.string(),
+  productId: v.string(),
+  environment: storekitEnvironment,
 };
 
-type PurchaseBody = {
-  jws?: unknown;
-  transactionId?: unknown;
-  originalTransactionId?: unknown;
-  productId?: unknown;
-  environment?: unknown;
-  priceDisplay?: unknown;
+type PurchaseArgs = ObjectType<typeof purchaseArgs> & { priceDisplay?: string };
+
+type SubscriptionResult = {
+  entitled: boolean;
+  subscription: {
+    status: string;
+    productId: string;
+    expiresAt: string | null;
+    environment: "sandbox" | "production";
+    originalTransactionId: string;
+    transactionId: string;
+  };
 };
 
-type Validation = { ok: true } | { ok: false; error: string; status: number };
-
-function failure(status: number, error: string): AppleResponse {
-  return { status, body: { ok: false, error } };
-}
+/** Error codes for text the record mutations return. Anything else is `purchase_not_saved`. */
+const RECORD_FAILURE_CODES: Record<string, string> = {
+  "Invalid user": "not_signed_in",
+  "Apple transaction is missing appAccountToken": "app_account_token_missing",
+  "Apple appAccountToken is not registered": "purchase_linked_to_another_account",
+  "Apple transaction belongs to a different user": "purchase_linked_to_another_account",
+  "Apple product is not active in Paeonia": "invalid_transaction",
+  "No entitled couple for this user": "no_entitled_couple",
+  "No streak is available to restore": "no_streak_to_restore",
+};
 
 /** The Convex values accepted by mutations have no `undefined` fields, so round-trip through JSON. */
 function plain<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function failRecord(result: Record<string, unknown>, fallback: string): never {
+  const message = typeof result.error === "string" ? result.error : fallback;
+  return fail(RECORD_FAILURE_CODES[message] ?? "purchase_not_saved", message);
 }
 
 async function signedInUserId(ctx: ActionCtx): Promise<string | null> {
@@ -148,223 +125,194 @@ async function signedInUserId(ctx: ActionCtx): Promise<string | null> {
 }
 
 /** Everything the two purchase flows share up to the point where Apple has confirmed the transaction. */
-async function verifyUploadedTransaction(
-  ctx: ActionCtx,
-  body: PurchaseBody,
-): Promise<
-  | { response: AppleResponse }
-  | { userId: string; uploaded: Partial<AppleTransactionInfo>; verified: Awaited<ReturnType<typeof verifyTransactionWithApple>> }
-> {
+async function verifyUploadedTransaction(ctx: ActionCtx, args: PurchaseArgs) {
   assertAppleEnvironmentConfigured();
   const userId = await signedInUserId(ctx);
   if (!userId) {
-    return { response: failure(401, "Invalid session") };
+    return fail("not_signed_in", "Invalid session");
   }
-  const uploadedJws = requireString(body.jws, "jws");
-  const uploaded = decodeAppleJWS(uploadedJws) as Partial<AppleTransactionInfo>;
-  const transactionId = stringOrNull(body.transactionId) ?? uploaded.transactionId;
-  const requestedEnvironment = normalizeClientEnvironment(body.environment);
-
-  if (!transactionId) {
-    return { response: failure(400, "Missing transactionId") };
+  const uploaded = decodeAppleJWS(args.jws) as Partial<AppleTransactionInfo>;
+  if (!stringOrNull(args.transactionId)) {
+    return fail("invalid_request", "Missing transactionId");
   }
-  if (requestedEnvironment === "xcode") {
-    return { response: failure(400, "Local StoreKit transactions cannot be verified by Apple") };
+  if (args.environment === "xcode") {
+    return fail("invalid_request", "Local StoreKit transactions cannot be verified by Apple");
   }
   const verified = await verifyTransactionWithApple(
-    transactionId,
-    requestedEnvironment === "sandbox" ? "Sandbox" : "Production",
+    args.transactionId,
+    args.environment === "sandbox" ? "Sandbox" : "Production",
   );
   return { userId, uploaded, verified };
 }
 
-function validateSubscription(
+function assertValidSubscription(
   transactionInfo: AppleTransactionInfo,
   renewalInfo: AppleRenewalInfo | undefined,
   uploaded: Partial<AppleTransactionInfo>,
-  body: PurchaseBody,
-): Validation {
+  args: PurchaseArgs,
+): void {
   const comparedFields = ["transactionId", "originalTransactionId", "bundleId", "productId", "environment"] as const;
   for (const field of comparedFields) {
     const uploadedValue = uploaded[field];
     if (uploadedValue !== undefined && uploadedValue !== transactionInfo[field]) {
-      return { ok: false, error: "Uploaded transaction does not match Apple verification", status: 400 };
+      fail("transaction_mismatch", "Uploaded transaction does not match Apple verification");
     }
   }
-  const requestedOriginal = stringOrNull(body.originalTransactionId);
-  if (requestedOriginal && requestedOriginal !== transactionInfo.originalTransactionId) {
-    return { ok: false, error: "Original transaction does not match Apple verification", status: 400 };
+  if (args.originalTransactionId && args.originalTransactionId !== transactionInfo.originalTransactionId) {
+    fail("transaction_mismatch", "Original transaction does not match Apple verification");
   }
-  const requestedProduct = stringOrNull(body.productId);
-  if (requestedProduct && requestedProduct !== transactionInfo.productId) {
-    return { ok: false, error: "Product does not match Apple verification", status: 400 };
+  if (args.productId && args.productId !== transactionInfo.productId) {
+    fail("transaction_mismatch", "Product does not match Apple verification");
   }
   if (transactionInfo.bundleId !== appleBundleId()) {
-    return { ok: false, error: "Apple transaction bundle does not match Paeonia", status: 403 };
+    fail("transaction_mismatch", "Apple transaction bundle does not match Paeonia");
   }
   if (!ALLOWED_SUBSCRIPTION_PRODUCTS.has(transactionInfo.productId)) {
-    return { ok: false, error: "Apple product is not supported", status: 400 };
+    fail("invalid_transaction", "Apple product is not supported");
   }
   if (transactionInfo.type !== "Auto-Renewable Subscription") {
-    return { ok: false, error: "Apple transaction is not a subscription", status: 400 };
+    fail("invalid_transaction", "Apple transaction is not a subscription");
   }
   const status = determineSubscriptionStatus(transactionInfo, renewalInfo);
   if ((status === "active" || status === "grace") && !transactionInfo.expiresDate) {
-    return { ok: false, error: "Apple subscription is missing an expiry date", status: 400 };
+    fail("invalid_transaction", "Apple subscription is missing an expiry date");
   }
-  return { ok: true };
 }
 
-function validateStreakRestore(transactionInfo: AppleTransactionInfo, body: PurchaseBody): Validation {
-  const requestedProduct = stringOrNull(body.productId);
-  if (requestedProduct && requestedProduct !== transactionInfo.productId) {
-    return { ok: false, error: "Product does not match Apple verification", status: 400 };
+function assertValidStreakRestore(transactionInfo: AppleTransactionInfo, args: PurchaseArgs): void {
+  if (args.productId && args.productId !== transactionInfo.productId) {
+    fail("transaction_mismatch", "Product does not match Apple verification");
   }
   if (transactionInfo.bundleId !== appleBundleId()) {
-    return { ok: false, error: "Apple transaction bundle does not match Paeonia", status: 403 };
+    fail("transaction_mismatch", "Apple transaction bundle does not match Paeonia");
   }
   if (transactionInfo.productId !== STREAK_RESTORE_PRODUCT_ID) {
-    return { ok: false, error: "Apple product is not supported", status: 400 };
+    fail("invalid_transaction", "Apple product is not supported");
   }
   if (transactionInfo.type !== "Consumable") {
-    return { ok: false, error: "Apple transaction is not a streak restore", status: 400 };
+    fail("invalid_transaction", "Apple transaction is not a streak restore");
   }
   if (!transactionInfo.appAccountToken) {
-    return { ok: false, error: "Apple transaction is missing appAccountToken", status: 403 };
-  }
-  return { ok: true };
-}
-
-async function runVerifyPurchase(ctx: ActionCtx, body: PurchaseBody): Promise<AppleResponse> {
-  try {
-    const step = await verifyUploadedTransaction(ctx, body);
-    if ("response" in step) {
-      return step.response;
-    }
-    const { userId, uploaded, verified } = step;
-    const { transactionInfo, renewalInfo } = verified;
-
-    const validation = validateSubscription(transactionInfo, renewalInfo, uploaded, body);
-    if (!validation.ok) {
-      return failure(validation.status, validation.error);
-    }
-
-    const status = determineSubscriptionStatus(transactionInfo, renewalInfo);
-    let result: Record<string, unknown>;
-    try {
-      result = await ctx.runMutation(internal.storekit.record_verified_storekit_transaction, {
-        p_user_id: userId,
-        p_app_account_token: transactionInfo.appAccountToken ?? null,
-        p_apple_product_id: transactionInfo.productId,
-        p_environment: toDatabaseEnvironment(transactionInfo.environment),
-        p_original_transaction_id: transactionInfo.originalTransactionId,
-        p_transaction_id: transactionInfo.transactionId,
-        p_web_order_line_item_id: transactionInfo.webOrderLineItemId ?? null,
-        p_status: status,
-        p_purchased_at: millisToIsoOrNull(transactionInfo.purchaseDate),
-        p_expires_at: millisToIsoOrNull(transactionInfo.expiresDate),
-        p_revoked_at: millisToIsoOrNull(transactionInfo.revocationDate),
-        p_revocation_reason: revocationReason(transactionInfo),
-        p_signed_payload: verified.signedTransactionInfo,
-        p_payload_json: plain({
-          transactionInfo,
-          renewalInfo: renewalInfo ?? null,
-          uploadedTransactionInfo: uploaded,
-          signedRenewalInfo: verified.signedRenewalInfo ?? null,
-          priceDisplay: stringOrNull(body.priceDisplay),
-          verifiedAt: nowIso(),
-        }),
-      });
-    } catch (error) {
-      console.error("[apple-verify-purchase] transaction record failed", error);
-      return failure(500, "Could not save subscription");
-    }
-    if (result.ok !== true) {
-      return failure(
-        typeof result.status === "number" ? result.status : 500,
-        typeof result.error === "string" ? result.error : "Could not save subscription",
-      );
-    }
-
-    return {
-      status: 200,
-      body: {
-        ok: true,
-        entitled: status === "active" || status === "grace",
-        subscription: {
-          status,
-          productId: transactionInfo.productId,
-          expiresAt: millisToIsoOrNull(transactionInfo.expiresDate),
-          environment: toDatabaseEnvironment(transactionInfo.environment),
-          originalTransactionId: transactionInfo.originalTransactionId,
-          transactionId: transactionInfo.transactionId,
-        },
-      },
-    };
-  } catch (error) {
-    console.error("[apple-verify-purchase]", error);
-    return failure(500, clientSafeErrorMessage(error));
+    fail("app_account_token_missing", "Apple transaction is missing appAccountToken");
   }
 }
 
-async function runRedeemStreakRestore(ctx: ActionCtx, body: PurchaseBody): Promise<AppleResponse> {
+async function runVerifyPurchase(ctx: ActionCtx, args: PurchaseArgs): Promise<SubscriptionResult> {
+  const { userId, uploaded, verified } = await verifyUploadedTransaction(ctx, args);
+  const { transactionInfo, renewalInfo } = verified;
+  assertValidSubscription(transactionInfo, renewalInfo, uploaded, args);
+
+  const status = determineSubscriptionStatus(transactionInfo, renewalInfo);
+  let result: Record<string, unknown>;
   try {
-    const step = await verifyUploadedTransaction(ctx, body);
-    if ("response" in step) {
-      return step.response;
-    }
-    const { userId, uploaded, verified } = step;
-    const { transactionInfo } = verified;
-
-    const validation = validateStreakRestore(transactionInfo, body);
-    if (!validation.ok) {
-      return failure(validation.status, validation.error);
-    }
-
-    let result: Record<string, unknown>;
-    try {
-      result = await ctx.runMutation(internal.storekit.record_verified_streak_restore, {
-        p_user_id: userId,
-        p_app_account_token: transactionInfo.appAccountToken ?? null,
-        p_apple_product_id: transactionInfo.productId,
-        p_environment: toDatabaseEnvironment(transactionInfo.environment),
-        p_original_transaction_id: transactionInfo.originalTransactionId,
-        p_transaction_id: transactionInfo.transactionId,
-        p_purchased_at: millisToIsoOrNull(transactionInfo.purchaseDate),
-        p_signed_payload: verified.signedTransactionInfo,
-        p_payload_json: plain({ transactionInfo, uploadedTransactionInfo: uploaded, verifiedAt: nowIso() }),
-      });
-    } catch (error) {
-      console.error("[apple-redeem-streak-restore] restore record failed", error);
-      return failure(500, "Could not restore your streak");
-    }
-    if (result.ok !== true) {
-      return failure(
-        typeof result.status === "number" ? result.status : 500,
-        typeof result.error === "string" ? result.error : "Could not restore your streak",
-      );
-    }
-    return {
-      status: 200,
-      body: { ok: true, entitled: false, restoredCount: typeof result.restoredCount === "number" ? result.restoredCount : null },
-    };
+    result = await ctx.runMutation(internal.storekit.record_verified_storekit_transaction, {
+      p_user_id: userId,
+      p_app_account_token: transactionInfo.appAccountToken ?? null,
+      p_apple_product_id: transactionInfo.productId,
+      p_environment: toDatabaseEnvironment(transactionInfo.environment),
+      p_original_transaction_id: transactionInfo.originalTransactionId,
+      p_transaction_id: transactionInfo.transactionId,
+      p_web_order_line_item_id: transactionInfo.webOrderLineItemId ?? null,
+      p_status: status,
+      p_purchased_at: millisToIsoOrNull(transactionInfo.purchaseDate),
+      p_expires_at: millisToIsoOrNull(transactionInfo.expiresDate),
+      p_revoked_at: millisToIsoOrNull(transactionInfo.revocationDate),
+      p_revocation_reason: revocationReason(transactionInfo),
+      p_signed_payload: verified.signedTransactionInfo,
+      p_payload_json: plain({
+        transactionInfo,
+        renewalInfo: renewalInfo ?? null,
+        uploadedTransactionInfo: uploaded,
+        signedRenewalInfo: verified.signedRenewalInfo ?? null,
+        priceDisplay: stringOrNull(args.priceDisplay),
+        verifiedAt: nowIso(),
+      }),
+    });
   } catch (error) {
-    console.error("[apple-redeem-streak-restore]", error);
-    return failure(500, clientSafeErrorMessage(error));
+    console.error("[verify_purchase] transaction record failed", error);
+    return fail("purchase_not_saved", "Could not save subscription");
   }
+  if (result.ok !== true) {
+    return failRecord(result, "Could not save subscription");
+  }
+
+  return {
+    entitled: status === "active" || status === "grace",
+    subscription: {
+      status,
+      productId: transactionInfo.productId,
+      expiresAt: millisToIsoOrNull(transactionInfo.expiresDate),
+      environment: toDatabaseEnvironment(transactionInfo.environment),
+      originalTransactionId: transactionInfo.originalTransactionId,
+      transactionId: transactionInfo.transactionId,
+    },
+  };
+}
+
+async function runRedeemStreakRestore(ctx: ActionCtx, args: PurchaseArgs): Promise<{ restoredCount: number }> {
+  const { userId, uploaded, verified } = await verifyUploadedTransaction(ctx, args);
+  const { transactionInfo } = verified;
+  assertValidStreakRestore(transactionInfo, args);
+
+  let result: Record<string, unknown>;
+  try {
+    result = await ctx.runMutation(internal.storekit.record_verified_streak_restore, {
+      p_user_id: userId,
+      p_app_account_token: transactionInfo.appAccountToken ?? null,
+      p_apple_product_id: transactionInfo.productId,
+      p_environment: toDatabaseEnvironment(transactionInfo.environment),
+      p_original_transaction_id: transactionInfo.originalTransactionId,
+      p_transaction_id: transactionInfo.transactionId,
+      p_purchased_at: millisToIsoOrNull(transactionInfo.purchaseDate),
+      p_signed_payload: verified.signedTransactionInfo,
+      p_payload_json: plain({ transactionInfo, uploadedTransactionInfo: uploaded, verifiedAt: nowIso() }),
+    });
+  } catch (error) {
+    console.error("[redeem_streak_restore] restore record failed", error);
+    return fail("purchase_not_saved", "Could not restore your streak");
+  }
+  if (result.ok !== true) {
+    return failRecord(result, "Could not restore your streak");
+  }
+  return { restoredCount: typeof result.restoredCount === "number" ? result.restoredCount : 0 };
 }
 
 /**
- * Port of the apple-verify-purchase Edge Function. Arguments are its JSON body.
- * A failure becomes `http_<status>` with the body's error text.
+ * Checks a StoreKit subscription purchase with Apple and records it. The caller
+ * is the signed-in user. `jws` is the signed transaction from StoreKit, and the
+ * other transaction fields must match what Apple returns for `transactionId`.
+ *
+ * Returns `{ entitled, subscription }`. Fails with `not_signed_in`,
+ * `invalid_request`, `transaction_mismatch`, `invalid_transaction`,
+ * `app_account_token_missing`, `purchase_linked_to_another_account`,
+ * `apple_verification_failed`, `service_not_ready`, `purchase_not_saved`, or
+ * `unexpected`. The message is written for the app to show or log.
  */
 export const verify_purchase = action({
-  args: purchaseBodyArgs,
-  handler: async (ctx, args) => unwrapAppleResponse(await runVerifyPurchase(ctx, args)),
+  args: { ...purchaseArgs, priceDisplay: v.optional(v.string()) },
+  handler: async (ctx, args): Promise<SubscriptionResult> => {
+    try {
+      return await runVerifyPurchase(ctx, args);
+    } catch (error) {
+      return failWithClientSafeError("verify_purchase", error);
+    }
+  },
 });
 
-/** Port of the apple-redeem-streak-restore Edge Function. Same contract as `verify_purchase`. */
+/**
+ * Checks a streak restore purchase with Apple and applies it to the caller's
+ * couple. Takes the same arguments as `verify_purchase` without `priceDisplay`.
+ *
+ * Returns `{ restoredCount }`. Fails with the codes of `verify_purchase`, plus
+ * `no_entitled_couple` and `no_streak_to_restore`.
+ */
 export const redeem_streak_restore = action({
-  args: purchaseBodyArgs,
-  handler: async (ctx, args) => unwrapAppleResponse(await runRedeemStreakRestore(ctx, args)),
+  args: purchaseArgs,
+  handler: async (ctx, args): Promise<{ restoredCount: number }> => {
+    try {
+      return await runRedeemStreakRestore(ctx, args);
+    } catch (error) {
+      return failWithClientSafeError("redeem_streak_restore", error);
+    }
+  },
 });

@@ -179,9 +179,9 @@ Before writing a question, check `backend/questions/system/` for existing questi
 3. Set `status: active` on the question and its version, and run the script again.
 4. Run `scripts/sync-question-catalog --apply`.
 
-The sync rejects an active version that lacks an `en` or `nb` localization, or that has no answer kinds or more than two. After applying, the app-facing catalog is readable through `daily:get_active_question_catalog`.
+The sync rejects an active version that lacks an `en` or `nb` localization, or that has no answer kinds or more than two. After applying, `npx convex data questions` lists the stored questions.
 
-To point the script at production, export `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_KEY` in the shell first.
+To point the script at the hosted deployment (`api.paeonia.no`), export `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_KEY` in the shell first.
 
 ## Versioning
 

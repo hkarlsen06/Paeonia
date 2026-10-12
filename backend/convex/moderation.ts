@@ -26,8 +26,6 @@ const ACTIONS = [
   "unblock_pair",
 ] as const;
 type ActionKind = (typeof ACTIONS)[number];
-const OPERATOR_KINDS = ["service_role", "sql_runbook", "edge_function", "admin_user"] as const;
-type OperatorKind = (typeof OPERATOR_KINDS)[number];
 type ModerationStatus = Doc<"profiles">["moderation_status"];
 
 /** Port of `internal.infer_report_target_for_moderation`. Null when the report has no target row. */
@@ -211,7 +209,6 @@ export const apply_report_moderation_action = internalMutation({
   args: {
     p_report_id: v.string(),
     p_action_kind: v.string(),
-    p_operator_kind: v.string(),
     p_operator_identifier: v.string(),
     p_reason: v.optional(v.union(v.null(), v.string())),
     p_notes: v.optional(v.union(v.null(), v.string())),
@@ -227,13 +224,12 @@ export const apply_report_moderation_action = internalMutation({
     }
 
     const action = args.p_action_kind.trim().toLowerCase();
-    const operatorKind = args.p_operator_kind.trim().toLowerCase();
     const operatorIdentifier = args.p_operator_identifier.trim() || undefined;
     if (!(ACTIONS as readonly string[]).includes(action)) {
       fail("23514", "moderation action is not supported");
     }
-    if (!(OPERATOR_KINDS as readonly string[]).includes(operatorKind) || operatorIdentifier === undefined) {
-      fail("23514", "moderation operator metadata is required");
+    if (operatorIdentifier === undefined) {
+      fail("23514", "moderation operator identifier is required");
     }
     const actionKind = action as ActionKind;
 
@@ -326,7 +322,7 @@ export const apply_report_moderation_action = internalMutation({
       previous_moderation_status: previousStatus,
       new_moderation_status: newStatus,
       storage_action: storageAction,
-      operator_kind: operatorKind as OperatorKind,
+      operator_kind: "operator",
       operator_identifier: operatorIdentifier,
       reason: args.p_reason ?? undefined,
       notes: args.p_notes ?? undefined,

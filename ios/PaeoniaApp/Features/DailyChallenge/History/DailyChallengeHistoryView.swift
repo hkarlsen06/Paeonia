@@ -141,6 +141,9 @@ struct DailyChallengeHistoryView: View {
             DailyPartnerAnswerFlow(
                 question: question,
                 viewModel: dailyChallengeViewModel,
+                privacySafetyService: privacySafetyService,
+                privacyOperationProvider: privacyOperationProvider,
+                onReportedAndLeft: onReportedAndLeft,
                 onClose: closeAnswerFlow
             )
             .zoomTransition(question.id, in: zoomNamespace, enabled: !reduceMotion)

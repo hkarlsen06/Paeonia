@@ -27,28 +27,19 @@ final class UserDefaultsDailyChallengeDraftStore: DailyChallengeDraftStoring {
         self.defaults = defaults
     }
 
-    /// Current home for the Codable drafts (one JSON blob per user).
+    /// One JSON blob of Codable drafts per user.
     private func key(for userID: UUID) -> String {
         "paeonia.dailyChallenge.drafts.v2.\(userID.uuidString)"
     }
 
-    /// The original text-only store: a plain `[instanceID: text]` dictionary.
-    /// Read once and folded into the new format the first time a user's drafts load.
-    private func legacyTextKey(for userID: UUID) -> String {
-        "paeonia.dailyChallenge.drafts.\(userID.uuidString)"
-    }
-
     func drafts(for userID: UUID) -> [UUID: DailyAnswerDraft] {
-        if let data = defaults.data(forKey: key(for: userID)),
-           let envelope = try? decoder.decode(DraftEnvelope.self, from: data) {
-            return map(envelope.drafts)
+        guard let data = defaults.data(forKey: key(for: userID)),
+              let envelope = try? decoder.decode(DraftEnvelope.self, from: data)
+        else {
+            return [:]
         }
 
-        if let migrated = migrateLegacyTextDrafts(for: userID) {
-            return migrated
-        }
-
-        return [:]
+        return map(envelope.drafts)
     }
 
     func setDraft(_ draft: DailyAnswerDraft, for instanceID: UUID, userID: UUID) {
@@ -69,25 +60,6 @@ final class UserDefaultsDailyChallengeDraftStore: DailyChallengeDraftStoring {
 
     func clearDrafts(for userID: UUID) {
         defaults.removeObject(forKey: key(for: userID))
-        defaults.removeObject(forKey: legacyTextKey(for: userID))
-    }
-
-    /// Folds any old text-only drafts into the new format, then removes the old key
-    /// so the migration only runs once. Returns nil when there was nothing to migrate.
-    private func migrateLegacyTextDrafts(for userID: UUID) -> [UUID: DailyAnswerDraft]? {
-        guard let legacy = defaults.dictionary(forKey: legacyTextKey(for: userID)) as? [String: String] else {
-            return nil
-        }
-
-        let drafts = legacy.reduce(into: [UUID: DailyAnswerDraft]()) { result, entry in
-            if let instanceID = UUID(uuidString: entry.key), !entry.value.isEmpty {
-                result[instanceID] = DailyAnswerDraft(text: entry.value)
-            }
-        }
-
-        persist(drafts, for: userID)
-        defaults.removeObject(forKey: legacyTextKey(for: userID))
-        return drafts
     }
 
     private func persist(_ drafts: [UUID: DailyAnswerDraft], for userID: UUID) {

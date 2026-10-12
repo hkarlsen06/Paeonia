@@ -49,13 +49,14 @@ struct WidgetDrawingSetAsideTests {
         #expect(viewModel.setAsideDrawing == nil)
     }
 
-    @Test func draftFromAnOlderBuildIsJudgedByItsStrokes() async {
+    @Test func draftWithNoRecordedBaseIsSetAside() async {
         let store = InMemoryWidgetDrawingDraftStore()
         let key = WidgetDrawingDraftKey(ownerUserID: owner, coupleID: couple)
         let draft = setAsideDrawing(at: 60)
         store.setDraft(draft.dataRepresentation(), for: key)
 
-        // No record of the base, and the draft lacks the widget's strokes.
+        // The base write failed, so nobody can tell what the draft builds on.
+        // Setting it aside keeps it without piling it on the widget's drawing.
         let viewModel = makeViewModel(store: store, widget: setAsideDrawing(at: 120))
         await viewModel.loadSavedDrawingIfNeeded()
 

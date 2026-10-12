@@ -219,7 +219,9 @@ struct MemoryPendingOperationHandlerTests {
             memoryID: memoryID,
             expectedRevision: 2,
             title: "Holiday",
-            memoryDate: "2026-06-30"
+            memoryDate: "2026-06-30",
+            baseTitle: nil,
+            baseMemoryDate: "2026-06-01"
         )
         let newer = SyncClientOperation(
             clientID: clientID,
@@ -320,7 +322,9 @@ extension MemoryPendingOperationHandlerTests {
             memoryID: memoryID,
             expectedRevision: 1,
             title: title,
-            memoryDate: "2026-06-30"
+            memoryDate: "2026-06-30",
+            baseTitle: nil,
+            baseMemoryDate: "2026-06-01"
         )
         try await pendingStore.enqueue(
             PendingSyncOperationRequest(

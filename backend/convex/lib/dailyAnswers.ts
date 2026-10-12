@@ -34,8 +34,6 @@ export type DailyAnswerDetailRow = {
   media_asset_ids: string[];
 };
 
-export type DailyAnswerRevealRow = Omit<DailyAnswerDetailRow, "text_body" | "selected_user_id" | "media_asset_ids">;
-
 /** Remembers `can_access_couple_content` for one viewer during a read. */
 export class CoupleAccessCache {
   private cache = new Map<string, boolean>();
@@ -166,32 +164,6 @@ export async function getDailyAnswerDetails(
   return rows.sort((a, b) => a.slot_number - b.slot_number || compareStrings(a.answered_at, b.answered_at));
 }
 
-/** Port of `internal.get_daily_answer_reveal_state`: the same rows without the answer content. */
-export async function getDailyAnswerRevealState(
-  ctx: ReaderCtx,
-  userId: string,
-  coupleDayId: string,
-): Promise<DailyAnswerRevealRow[]> {
-  const day = await getByUuid(ctx, "couple_days", coupleDayId);
-  const access = new CoupleAccessCache(ctx, userId);
-  if (!day || !(await access.canAccess(day.couple_id))) return [];
-  const rows: DailyAnswerRevealRow[] = [];
-  for (const instance of await instancesOfDay(ctx, day.id)) {
-    for (const answer of await visibleAnswersOf(ctx, instance.id)) {
-      const { text_body: _text, selected_user_id: _selected, media_asset_ids: _media, ...reveal } = await detailRow(
-        ctx,
-        userId,
-        day,
-        instance,
-        answer,
-        await canViewDailyAnswer(ctx, access, answer, day),
-      );
-      rows.push(reveal);
-    }
-  }
-  return rows.sort((a, b) => a.slot_number - b.slot_number || compareStrings(a.answered_at, b.answered_at));
-}
-
 /**
  * Port of `internal.get_daily_answer_details_for_context`. Rows come from the given
  * couple only. Content shows when the answer is the viewer's own or the viewer has
@@ -271,88 +243,6 @@ export async function getDailyAnswerHistoryDetails(
         compareStrings(a.row.answered_at, b.row.answered_at),
     )
     .map((item) => item.row);
-}
-
-export type QuestionAnswerHistoryRow = {
-  question_id: string;
-  question_version_id: string;
-  couple_day_id: string;
-  local_date: string;
-  instance_id: string;
-  seeded_for_user_id: string;
-  slot_number: number;
-  answer_user_id: string;
-  answer_id: string;
-  answered_at: string;
-  can_view_answer: boolean;
-  text_body: string | null;
-  selected_user_id: string | null;
-  media_asset_ids: string[];
-};
-
-/**
- * Port of `internal.get_question_answer_history`: past answers to one resurfaceable
- * question in the viewer's couple, newest first.
- */
-export async function getQuestionAnswerHistory(
-  ctx: ReaderCtx,
-  userId: string,
-  coupleId: string,
-  questionId: string,
-): Promise<QuestionAnswerHistoryRow[]> {
-  const question = await getByUuid(ctx, "questions", questionId);
-  if (!question || !question.resurfaceable) return [];
-  const access = new CoupleAccessCache(ctx, userId);
-  if (!(await access.canAccess(coupleId))) return [];
-  const members = await ctx.db
-    .query("couple_members")
-    .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId))
-    .collect();
-  const rows: QuestionAnswerHistoryRow[] = [];
-  const versionQuestion = new Map<string, string | null>();
-  // ponytail: walks both partners' answers. Add an index on instances by question if couples get thousands of answers.
-  for (const member of members) {
-    const answers = await ctx.db
-      .query("daily_question_answers")
-      .withIndex("by_user_id_created_at", (q) => q.eq("user_id", member.user_id))
-      .collect();
-    for (const answer of answers) {
-      if (!isVisibleAnswer(answer)) continue;
-      const instance = await getByUuid(ctx, "daily_question_instances", answer.instance_id);
-      const day = instance ? await getByUuid(ctx, "couple_days", instance.couple_day_id) : null;
-      if (!instance || !day || day.couple_id !== coupleId) continue;
-      let owner = versionQuestion.get(instance.question_version_id);
-      if (owner === undefined) {
-        owner = (await getByUuid(ctx, "question_versions", instance.question_version_id))?.question_id ?? null;
-        versionQuestion.set(instance.question_version_id, owner);
-      }
-      if (owner !== questionId) continue;
-      const detail = await detailRow(ctx, userId, day, instance, answer, await canViewDailyAnswer(ctx, access, answer, day));
-      rows.push({
-        question_id: questionId,
-        question_version_id: instance.question_version_id,
-        couple_day_id: day.id,
-        local_date: day.local_date,
-        instance_id: instance.id,
-        seeded_for_user_id: instance.seeded_for_user_id,
-        slot_number: instance.slot_number,
-        answer_user_id: answer.user_id,
-        answer_id: answer.id,
-        answered_at: answer.created_at,
-        can_view_answer: detail.can_view_answer,
-        text_body: detail.text_body,
-        selected_user_id: detail.selected_user_id,
-        media_asset_ids: detail.media_asset_ids,
-      });
-    }
-  }
-  const dates = new Map(rows.map((row) => [row.answer_id, row.local_date]));
-  return rows.sort(
-    (a, b) =>
-      compareStrings(dates.get(b.answer_id)!, dates.get(a.answer_id)!) ||
-      compareStrings(b.answered_at, a.answered_at) ||
-      compareStrings(a.answer_id, b.answer_id),
-  );
 }
 
 // ---- writes ----

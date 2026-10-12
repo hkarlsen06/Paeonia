@@ -173,8 +173,6 @@ export const marketingEn = {
     code: 'Invite code',
     open: 'Open Paeonia',
     install: 'Get Paeonia on the App Store',
-    beta:
-      'Don’t have Paeonia yet? Install it from the beta invitation you received, then open this link again. Keep this link until you’re connected.',
     help: 'Need help?',
     opening: 'Opening your invite…',
   },

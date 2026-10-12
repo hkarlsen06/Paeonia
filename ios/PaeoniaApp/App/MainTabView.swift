@@ -306,9 +306,7 @@ struct MainTabView: View {
                     preview: summary.lastMessagePreview
                 )
             },
-            onOpenChat: { instanceID in
-                Task { await openDailyChat(instanceID: instanceID) }
-            },
+            onOpenChat: startOpeningDailyChat,
             onTapStreak: openStreakDetails,
             onOpenDailyChallenge: openDailyChallengeFromHome,
             onOpenWidgetDrawing: actions.openWidgetDrawing,
@@ -332,6 +330,7 @@ struct MainTabView: View {
                     await refreshDailyChallenge()
                 },
                 onAnswerPartnerQuestion: openPartnerAnswerFlow,
+                onOpenUnreadChat: startOpeningDailyChat,
                 privacySafetyService: dependencies.settingsPrivacyService,
                 privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
                 onReportedAndLeft: actions.leftRelationship

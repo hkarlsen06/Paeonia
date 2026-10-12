@@ -46,8 +46,6 @@ export const notificationKind = literals(
   "partner_answered",
   "widget_updated",
   "location_updated",
-  "relationship_ended",
-  "entitlement_changed",
   "subscription_trial_reminder",
   "memory_created",
   "thread_message_sent",

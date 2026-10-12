@@ -97,25 +97,12 @@ struct CoupleStreakTests {
         #expect(count == 9)
     }
 
-    @Test func legacyCachedStreakDefaultsParticipationToIncomplete() throws {
-        let data = Data(
-            #"{"current_count":4,"longest_count":8,"last_qualified_date":"2026-06-27","restore_available":false,"restorable_count":0,"restore_deadline":null}"#.utf8
-        )
-
-        let row = try JSONDecoder().decode(CoupleStreakRow.self, from: data)
-
-        #expect(!row.currentUserContributedToday)
-        #expect(!row.partnerContributedToday)
-        #expect(!row.freezeAvailable)
-        #expect(row.freezeReadyAt == nil)
-        #expect(!row.freezeSavedStreak)
-    }
-
     @Test func decodesStreakFreezeFields() throws {
         let data = Data(
             """
             {"current_count":6,"longest_count":8,"last_qualified_date":"2026-10-10",
             "restore_available":false,"restorable_count":0,"restore_deadline":null,
+            "current_user_contributed_today":true,"partner_contributed_today":false,
             "freeze_available":false,"freeze_ready_at":"2026-11-10T22:00:00.000Z","freeze_saved_streak":true}
             """.utf8
         )

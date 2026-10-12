@@ -7,7 +7,12 @@ import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import { getByUuid } from "./lib/db";
 import { optionalTimestampArg } from "./lib/ids";
 import { enqueueNotificationForUser } from "./lib/notifications";
-import { EVENING_REMINDER_LEAD_HOURS, eveningReminderAt, resolveMemberStreakTimeZone } from "./lib/streakDeadlines";
+import {
+  EVENING_REMINDER_LEAD_HOURS,
+  eveningReminderAt,
+  lastHourReminderAllowed,
+  resolveMemberStreakTimeZone,
+} from "./lib/streakDeadlines";
 import { detectStreakBreak, getCoupleStreakParticipationForUser, readCoupleStreak } from "./lib/streaks";
 import { addHours, nowIso } from "./lib/time";
 
@@ -35,7 +40,8 @@ const BREAK_BATCH_LIMIT = 500;
 /**
  * Port of `internal.enqueue_due_streak_reminders`. Queues a check-in reminder for
  * each partner who has not contributed today, for streaks whose deadline falls
- * within the next hour. Returns how many notifications were queued.
+ * within the next hour, unless it is night where that partner is
+ * (`lastHourReminderAllowed`). Returns how many notifications were queued.
  *
  * It also stores what happened to streaks whose deadline just passed: a used
  * freeze, a restarted short streak, or an open restore offer. `get_couple_streak`
@@ -72,7 +78,9 @@ export const enqueue_due_streak_reminders = internalMutation({
       .collect();
     let queued = 0;
     for (const state of due) {
-      queued += await remindPartners(ctx, state, now, "last_hour", async () => true);
+      queued += await remindPartners(ctx, state, now, "last_hour", async (userId) =>
+        lastHourReminderAllowed(now, await resolveMemberStreakTimeZone(ctx, userId)),
+      );
     }
     return queued;
   },

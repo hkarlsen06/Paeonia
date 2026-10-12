@@ -418,16 +418,12 @@ extension PaeoniaStoreKitService {
                 priceDisplay: priceDisplay
             )
 
-            let response: PaeoniaStoreKitUploadResponse = try await client.action(
+            let _: PaeoniaStoreKitUploadResponse = try await client.action(
                 "access:verify_purchase",
                 args: request
             )
-
-            guard response.isConfirmed else {
-                throw purchaseError(fromConfirmationReason: response.error)
-            }
         } catch let error as PaeoniaConvexError {
-            throw purchaseError(fromConfirmationReason: Self.confirmationFailureReason(from: error))
+            throw Self.purchaseError(from: error)
         }
     }
 
@@ -450,11 +446,7 @@ extension PaeoniaStoreKitService {
                 args: request
             )
 
-            guard response.isConfirmed else {
-                throw Self.streakRestoreError(fromConfirmationReason: response.error)
-            }
-
-            return response.restoredCount ?? 0
+            return response.restoredCount
         } catch {
             throw Self.streakRestoreConfirmationError(from: error)
         }
@@ -467,29 +459,23 @@ extension PaeoniaStoreKitService {
     static func streakRestoreConfirmationError(from error: any Error) -> PaeoniaPurchaseError {
         if let error = error as? PaeoniaPurchaseError { return error }
         guard let error = error as? PaeoniaConvexError else { return .serverConfirmationFailed(nil) }
-        return streakRestoreError(fromConfirmationReason: confirmationFailureReason(from: error))
+        return streakRestoreError(from: error)
     }
 
-    private static func streakRestoreError(fromConfirmationReason reason: String?) -> PaeoniaPurchaseError {
-        if reason == "Apple appAccountToken is not registered"
-            || reason == "Apple transaction belongs to a different user" {
-            return .purchaseLinkedToAnotherAccount
-        }
-
-        if reason == "No streak is available to restore" {
+    private static func streakRestoreError(from error: PaeoniaConvexError) -> PaeoniaPurchaseError {
+        if case let .server(code, _) = error, code == ErrorCode.noStreakToRestore {
             return .streakNotRestorable
         }
 
-        return .serverConfirmationFailed(reason)
+        return purchaseError(from: error)
     }
 
-    private func purchaseError(fromConfirmationReason reason: String?) -> PaeoniaPurchaseError {
-        if reason == "Apple appAccountToken is not registered"
-            || reason == "Apple transaction belongs to a different user" {
+    private static func purchaseError(from error: PaeoniaConvexError) -> PaeoniaPurchaseError {
+        if case let .server(code, _) = error, code == ErrorCode.purchaseLinkedToAnotherAccount {
             return .purchaseLinkedToAnotherAccount
         }
 
-        return .serverConfirmationFailed(reason)
+        return .serverConfirmationFailed(confirmationFailureReason(from: error))
     }
 
     private func environmentName(for transaction: Transaction) -> String {
@@ -502,8 +488,14 @@ extension PaeoniaStoreKitService {
         }
     }
 
-    /// The backend turns a failed purchase check into `server(code: "http_<status>",
-    /// message: <reason>)`, where the message is the verifier's own reason text.
+    /// Codes the `access:verify_purchase` and `access:redeem_streak_restore`
+    /// actions fail with. The message is the verifier's own reason text, kept
+    /// only for diagnostics.
+    private enum ErrorCode {
+        static let purchaseLinkedToAnotherAccount = "purchase_linked_to_another_account"
+        static let noStreakToRestore = "no_streak_to_restore"
+    }
+
     private static func confirmationFailureReason(from error: PaeoniaConvexError) -> String {
         switch error {
         case let .server(code, message):

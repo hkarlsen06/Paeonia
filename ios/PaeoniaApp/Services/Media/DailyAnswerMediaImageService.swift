@@ -38,13 +38,7 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
     }
 
     nonisolated static func live() throws -> DailyAnswerMediaImageService {
-        let service = DailyAnswerMediaImageService(client: try PaeoniaConvexClientProvider.shared.client())
-        // Earlier builds kept these files in Application Support, which iCloud backs
-        // up. Remove that copy; the cache now lives in Caches.
-        Task.detached(priority: .utility) {
-            try? FileManager.default.removeItem(at: legacyDirectoryURL())
-        }
-        return service
+        DailyAnswerMediaImageService(client: try PaeoniaConvexClientProvider.shared.client())
     }
 
     func imageData(for mediaAssetID: UUID?) async -> Data? {
@@ -74,13 +68,12 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
         store(data, for: mediaAssetID)
     }
 
-    func clearAll() async {
+    func clearAll() {
         PaeoniaImageMemoryCache.removeAll()
         inFlightDownloads.values.forEach { $0.cancel() }
         inFlightDownloads.removeAll()
 
         try? FileManager.default.removeItem(at: directoryURL)
-        try? FileManager.default.removeItem(at: Self.legacyDirectoryURL())
     }
 
     private func fetchAndCache(mediaAssetID: UUID) async -> Data? {
@@ -124,12 +117,6 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
     nonisolated static func defaultDirectoryURL() -> URL {
         FileManager.default
             .urls(for: .cachesDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("DailyAnswerMedia", isDirectory: true)
-    }
-
-    nonisolated static func legacyDirectoryURL() -> URL {
-        FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("DailyAnswerMedia", isDirectory: true)
     }
 }

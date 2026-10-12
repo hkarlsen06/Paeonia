@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { httpAction, internalMutation, internalQuery } from "./_generated/server";
+import { httpAction, internalMutation } from "./_generated/server";
 import { listActiveMembers, userHasDirectEntitlement } from "./lib/access";
 import {
   type AppleRenewalInfo,
@@ -15,24 +15,23 @@ import {
 } from "./lib/appleStoreKit";
 import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
-import { timestampArg, uuidArg } from "./lib/ids";
+import { timestampArg } from "./lib/ids";
 import { isJsonObject } from "./lib/json";
 import { enqueueNotificationForUser } from "./lib/notifications";
 import { createRelationshipSyncEvent } from "./lib/syncEvents";
 import {
-  findAppAccountTokenOwner,
   patchStorekitTransaction,
   recordStorekitServerNotification,
   recordVerifiedStorekitTransaction,
   recordVerifiedStreakRestore,
 } from "./lib/storekit";
-import { addHours, addMs, nowIso } from "./lib/time";
+import { addMs, nowIso } from "./lib/time";
 
 const STREAK_RESTORE_PRODUCT_ID = "no.paeonia.streak.restore";
 
 const nullableString = v.optional(v.union(v.null(), v.string()));
 
-// ---- StoreKit recording (Edge Functions call these through the actions in access.ts and the webhook below) ----
+// ---- StoreKit recording (the actions in access.ts and the webhook below call these) ----
 
 export const record_verified_storekit_transaction = internalMutation({
   args: {
@@ -110,13 +109,7 @@ export const mark_streak_restore_refunded = internalMutation({
   },
 });
 
-/** Port of `internal.get_user_id_by_app_account_token`. */
-export const get_user_id_by_app_account_token = internalQuery({
-  args: { p_token: v.string() },
-  handler: async (ctx, args) => await findAppAccountTokenOwner(ctx, uuidArg(args.p_token)),
-});
-
-// ---- Reconciliation queue ----
+// ---- Expiry ----
 
 const ACTIVE_STATUSES = ["active", "grace", "billing_retry"] as const;
 
@@ -126,120 +119,6 @@ function compareNullsFirst(a: string | undefined, b: string | undefined): number
   if (b === undefined) return 1;
   return a < b ? -1 : 1;
 }
-
-/**
- * Port of `internal.claim_storekit_transactions_for_reconciliation`. The SQL
- * took intervals; here they are seconds (`p_reconcile_after_seconds` default
- * 21600, `p_retry_after_seconds` default 900). Nothing in the SQL schedule
- * called it, so this is an operator tool.
- */
-export const claim_storekit_transactions_for_reconciliation = internalMutation({
-  args: {
-    p_now: nullableString,
-    p_limit: v.optional(v.number()),
-    p_reconcile_after_seconds: v.optional(v.union(v.null(), v.number())),
-    p_retry_after_seconds: v.optional(v.union(v.null(), v.number())),
-    p_max_attempts: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    const now = args.p_now === undefined ? nowIso() : args.p_now === null ? null : timestampArg(args.p_now);
-    const reconcileAfter = args.p_reconcile_after_seconds === undefined ? 21_600 : args.p_reconcile_after_seconds;
-    const retryAfter = args.p_retry_after_seconds === undefined ? 900 : args.p_retry_after_seconds;
-    if (now === null || reconcileAfter === null || retryAfter === null) {
-      return fail("23514", "StoreKit reconciliation timestamps are required");
-    }
-    const limit = args.p_limit ?? 100;
-    if (limit < 1 || limit > 500) {
-      return fail("23514", "StoreKit reconciliation claim limit is out of range");
-    }
-    const maxAttempts = args.p_max_attempts ?? 10;
-    if (maxAttempts < 1 || maxAttempts > 100) {
-      return fail("23514", "StoreKit reconciliation max attempts is out of range");
-    }
-
-    const reconcileBefore = addMs(now, -reconcileAfter * 1000);
-    const retryBefore = addMs(now, -retryAfter * 1000);
-    const expiryHorizon = addHours(now, 24);
-
-    const candidates: Doc<"storekit_transactions">[] = [];
-    for (const status of ACTIVE_STATUSES) {
-      const rows = await ctx.db
-        .query("storekit_transactions")
-        .withIndex("by_status_expires_at_last_reconciled_at_claimed_at", (q) => q.eq("status", status))
-        .collect();
-      for (const tx of rows) {
-        const due =
-          tx.last_reconciled_at === undefined ||
-          tx.last_reconciled_at <= reconcileBefore ||
-          (tx.expires_at !== undefined && tx.expires_at <= expiryHorizon);
-        const unclaimed = tx.reconciliation_claimed_at === undefined || tx.reconciliation_claimed_at <= retryBefore;
-        if (tx.reconciliation_attempts < maxAttempts && due && unclaimed) {
-          candidates.push(tx);
-        }
-      }
-    }
-    candidates.sort(
-      (a, b) =>
-        compareNullsFirst(a.expires_at, b.expires_at) ||
-        compareNullsFirst(a.last_reconciled_at, b.last_reconciled_at) ||
-        compareNullsFirst(a.id, b.id),
-    );
-
-    const claimed = [];
-    for (const tx of candidates.slice(0, limit)) {
-      const attempts = tx.reconciliation_attempts + 1;
-      await patchStorekitTransaction(ctx, tx, {
-        reconciliation_claimed_at: now,
-        reconciliation_attempts: attempts,
-        last_reconciliation_error: undefined,
-      });
-      claimed.push({
-        transaction_id: tx.id,
-        user_id: tx.user_id,
-        product_id: tx.product_id,
-        environment: tx.environment,
-        app_account_token: tx.app_account_token ?? null,
-        original_transaction_id: tx.original_transaction_id,
-        storekit_transaction_id: tx.transaction_id,
-        status: tx.status,
-        expires_at: tx.expires_at ?? null,
-        reconciliation_attempts: attempts,
-      });
-    }
-    return claimed;
-  },
-});
-
-export const mark_storekit_transaction_reconciled = internalMutation({
-  args: { p_transaction_id: v.string() },
-  handler: async (ctx, args) => {
-    const tx = await getByUuid(ctx, "storekit_transactions", uuidArg(args.p_transaction_id));
-    if (!tx) return false;
-    await patchStorekitTransaction(ctx, tx, {
-      last_reconciled_at: nowIso(),
-      reconciliation_claimed_at: undefined,
-      reconciliation_attempts: 0,
-      last_reconciliation_error: undefined,
-    });
-    return true;
-  },
-});
-
-export const mark_storekit_transaction_reconciliation_failed = internalMutation({
-  args: { p_transaction_id: v.string(), p_error: nullableString },
-  handler: async (ctx, args) => {
-    const tx = await getByUuid(ctx, "storekit_transactions", uuidArg(args.p_transaction_id));
-    if (!tx) return false;
-    const message = (args.p_error ?? "").trim();
-    await patchStorekitTransaction(ctx, tx, {
-      reconciliation_claimed_at: nowIso(),
-      last_reconciliation_error: message === "" ? undefined : message.slice(0, 4000),
-    });
-    return true;
-  },
-});
-
-// ---- Expiry ----
 
 /**
  * Port of `internal.expire_stale_entitlements`. Marks lapsed StoreKit
@@ -267,7 +146,7 @@ export const expire_stale_entitlements = internalMutation({
       expiredTransactions.push(
         ...(await ctx.db
           .query("storekit_transactions")
-          .withIndex("by_status_expires_at_last_reconciled_at_claimed_at", (q) =>
+          .withIndex("by_status_expires_at", (q) =>
             q.eq("status", status).gt("expires_at", "").lte("expires_at", now),
           )
           .take(limit)),
@@ -368,7 +247,7 @@ export const queue_subscription_trial_reminders = internalMutation({
       candidates.push(
         ...(await ctx.db
           .query("storekit_transactions")
-          .withIndex("by_status_expires_at_last_reconciled_at_claimed_at", (q) =>
+          .withIndex("by_status_expires_at", (q) =>
             q.eq("status", status).gt("expires_at", now).lte("expires_at", horizon),
           )
           .collect()),
@@ -416,7 +295,10 @@ export const queue_subscription_trial_reminders = internalMutation({
       if (!hasUnqueuedDevice) continue;
 
       picked += 1;
-      const deliverAt = addMs(tx.expires_at, -reminderMs);
+      const reminderAt = addMs(tx.expires_at, -reminderMs);
+      const deliverAt = reminderAt > now ? reminderAt : now;
+      // A trial found late (shorter than two days, or a missed run) says how much time is really left.
+      const daysLeft = Math.max(1, Math.ceil((Date.parse(tx.expires_at) - Date.parse(deliverAt)) / 86_400_000));
       queued += await enqueueNotificationForUser(ctx, {
         recipient_user_id: tx.user_id,
         kind: "subscription_trial_reminder",
@@ -426,13 +308,13 @@ export const queue_subscription_trial_reminders = internalMutation({
           deeplink: "paeonia://settings/subscription",
           subscription_id: tx.id,
           trial_ends_at: tx.expires_at,
-          days_left: TRIAL_REMINDER_DAYS_BEFORE_END,
+          days_left: daysLeft,
         },
         dedupe_key: `subscription_trial_reminder:${tx.id}`,
         redaction_level: "private",
         apns_push_type: "alert",
         apns_collapse_id: "subscription-trial",
-        scheduled_for: deliverAt > now ? deliverAt : now,
+        scheduled_for: deliverAt,
       });
     }
     return queued;

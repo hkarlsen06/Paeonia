@@ -45,9 +45,7 @@ describe("record_verified_storekit_transaction", () => {
       app_account_token: token,
       status: "active",
       environment: "sandbox",
-      reconciliation_attempts: 0,
     });
-    expect(rows[0].last_reconciled_at).toBe(NOW.toISOString());
     expect(result).toMatchObject({ productId: rows[0].product_id, transactionId: rows[0].id, payloadId: rows[0].raw_payload_id });
 
     const snapshot = await user.as.query(api.access.get_access_snapshot, {});
@@ -154,22 +152,20 @@ describe("record_verified_storekit_transaction", () => {
     const outsider = await createSignedInUser(t);
     const [first, second] = [couple.first, couple.second];
 
-    expect((await second.as.query(api.access.get_my_couple_entitlement, {}))[0]).toMatchObject({ is_entitled: false });
+    expect((await second.as.query(api.access.get_access_snapshot, {}))[0].couple_entitlement).toMatchObject({ is_entitled: false });
 
     await t.mutation(
       internal.storekit.record_verified_storekit_transaction,
       storekitArgs({ userId: first.userId, token: await tokenFor(first), expiresAt: hoursFromNow(72) }),
     );
 
-    const [secondUser] = await second.as.query(api.access.get_my_entitlement, {});
-    expect(secondUser.is_entitled).toBe(false);
-    const [secondCouple] = await second.as.query(api.access.get_my_couple_entitlement, {});
-    expect(secondCouple).toMatchObject({ couple_id: couple.coupleId, is_entitled: true, covering_user_id: first.userId });
     const [snapshot] = await second.as.query(api.access.get_access_snapshot, {});
+    expect(snapshot.user_entitlement.is_entitled).toBe(false);
+    expect(snapshot.couple_entitlement).toMatchObject({ couple_id: couple.coupleId, is_entitled: true, covering_user_id: first.userId });
     expect(snapshot.relationship_state).toMatchObject({ couple_id: couple.coupleId, partner_user_id: first.userId });
 
-    expect(await outsider.as.query(api.access.get_my_couple_entitlement, {})).toEqual([]);
-    expect((await outsider.as.query(api.access.get_my_entitlement, {}))[0]).toMatchObject({ is_entitled: false });
+    expect((await outsider.as.query(api.access.get_access_snapshot, {}))[0].couple_entitlement).toBeNull();
+    expect((await outsider.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement).toMatchObject({ is_entitled: false });
   });
 });
 
@@ -310,7 +306,7 @@ describe("record_storekit_server_notification", () => {
     );
     const [row] = await transactions(t);
     expect(row).toMatchObject({ status: "refunded", revocation_reason: "customer_refund" });
-    expect((await user.as.query(api.access.get_my_entitlement, {}))[0].is_entitled).toBe(false);
+    expect((await user.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement.is_entitled).toBe(false);
   });
 });
 
@@ -324,7 +320,6 @@ describe("streak restore recording", () => {
         couple_id: couple.coupleId,
         current_count: 0,
         longest_count: 5,
-        restore_available: true,
         restorable_count: 5,
         restorable_through_date: "2026-10-08",
         restore_deadline: hoursFromNow(24),
@@ -414,83 +409,6 @@ describe("streak restore recording", () => {
   });
 });
 
-describe("reconciliation queue", () => {
-  async function recordedTransaction(t: TestConvex, expiresInHours: number) {
-    await seedProducts(t);
-    const user = await createSignedInUser(t);
-    await t.mutation(
-      internal.storekit.record_verified_storekit_transaction,
-      storekitArgs({ userId: user.userId, token: await tokenFor(user), expiresAt: hoursFromNow(expiresInHours) }),
-    );
-    return (await transactions(t))[0];
-  }
-
-  test("claims transactions that are due and counts the attempt", async () => {
-    const t = newTest();
-    // Expires within 24 hours, so it is due even though it was just reconciled.
-    const tx = await recordedTransaction(t, 12);
-    const claimed = await t.mutation(internal.storekit.claim_storekit_transactions_for_reconciliation, {});
-    expect(claimed).toEqual([
-      {
-        transaction_id: tx.id,
-        user_id: tx.user_id,
-        product_id: tx.product_id,
-        environment: "sandbox",
-        app_account_token: tx.app_account_token,
-        original_transaction_id: tx.original_transaction_id,
-        storekit_transaction_id: tx.transaction_id,
-        status: "active",
-        expires_at: tx.expires_at,
-        reconciliation_attempts: 1,
-      },
-    ]);
-    // Claimed rows wait out the retry window.
-    expect(await t.mutation(internal.storekit.claim_storekit_transactions_for_reconciliation, {})).toEqual([]);
-    vi.setSystemTime(new Date(NOW.getTime() + 16 * 60_000));
-    expect(await t.mutation(internal.storekit.claim_storekit_transactions_for_reconciliation, {})).toHaveLength(1);
-  });
-
-  test("skips transactions that were reconciled recently and expire later", async () => {
-    const t = newTest();
-    await recordedTransaction(t, 24 * 10);
-    expect(await t.mutation(internal.storekit.claim_storekit_transactions_for_reconciliation, {})).toEqual([]);
-    vi.setSystemTime(new Date(NOW.getTime() + 7 * 3_600_000));
-    expect(await t.mutation(internal.storekit.claim_storekit_transactions_for_reconciliation, {})).toHaveLength(1);
-  });
-
-  test("validates its limits", async () => {
-    const t = newTest();
-    await expect(t.mutation(internal.storekit.claim_storekit_transactions_for_reconciliation, { p_limit: 0 })).rejects.toThrow(
-      /claim limit is out of range/,
-    );
-    await expect(
-      t.mutation(internal.storekit.claim_storekit_transactions_for_reconciliation, { p_max_attempts: 101 }),
-    ).rejects.toThrow(/max attempts is out of range/);
-  });
-
-  test("marks success and failure", async () => {
-    const t = newTest();
-    const tx = await recordedTransaction(t, 12);
-    await t.mutation(internal.storekit.claim_storekit_transactions_for_reconciliation, {});
-    expect(
-      await t.mutation(internal.storekit.mark_storekit_transaction_reconciliation_failed, {
-        p_transaction_id: tx.id,
-        p_error: `  ${"x".repeat(5000)}  `,
-      }),
-    ).toBe(true);
-    let [row] = await transactions(t);
-    expect(row.last_reconciliation_error).toHaveLength(4000);
-    expect(row.reconciliation_claimed_at).toBe(NOW.toISOString());
-
-    expect(await t.mutation(internal.storekit.mark_storekit_transaction_reconciled, { p_transaction_id: tx.id })).toBe(true);
-    [row] = await transactions(t);
-    expect(row).toMatchObject({ reconciliation_attempts: 0 });
-    expect(row.reconciliation_claimed_at).toBeUndefined();
-    expect(row.last_reconciliation_error).toBeUndefined();
-    expect(await t.mutation(internal.storekit.mark_storekit_transaction_reconciled, { p_transaction_id: newUuid() })).toBe(false);
-  });
-});
-
 describe("expire_stale_entitlements", () => {
   test("expires lapsed transactions and grants and tells a couple that lost its last entitlement", async () => {
     const t = newTest();
@@ -561,7 +479,7 @@ describe("expire_stale_entitlements", () => {
       storekitArgs({ userId: couple.first.userId, token: await tokenFor(couple.first), expiresAt: hoursFromNow(1) }),
     );
     vi.setSystemTime(new Date(NOW.getTime() + 2 * 3_600_000));
-    expect((await couple.first.as.query(api.access.get_my_entitlement, {}))[0].is_entitled).toBe(false);
+    expect((await couple.first.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement.is_entitled).toBe(false);
     expect((await transactions(t))[0].status).not.toBe("expired");
     await t.mutation(internal.storekit.expire_stale_entitlements, {});
     expect((await transactions(t))[0].status).toBe("expired");
@@ -575,16 +493,6 @@ describe("expire_stale_entitlements", () => {
     await expect(t.mutation(internal.storekit.expire_stale_entitlements, { p_now: null })).rejects.toThrow(
       /entitlement expiry timestamp is required/,
     );
-  });
-});
-
-describe("get_user_id_by_app_account_token", () => {
-  test("maps a token to its user", async () => {
-    const t = newTest();
-    const user = await createSignedInUser(t);
-    const token = await tokenFor(user);
-    expect(await t.query(internal.storekit.get_user_id_by_app_account_token, { p_token: token.toUpperCase() })).toBe(user.userId);
-    expect(await t.query(internal.storekit.get_user_id_by_app_account_token, { p_token: newUuid() })).toBeNull();
   });
 });
 
@@ -634,7 +542,6 @@ describe("queue_subscription_trial_reminders", () => {
         purchased_at: hoursFromNow(-12 * 24),
         expires_at: hoursFromNow(options.expiresInHours),
         raw_payload_id: payload.id,
-        reconciliation_attempts: 0,
         created_at: now,
         updated_at: now,
       });
@@ -700,6 +607,18 @@ describe("queue_subscription_trial_reminders", () => {
     });
     expect(await reminders(t)).toHaveLength(0);
     expect(await t.mutation(internal.storekit.queue_subscription_trial_reminders, {})).toBe(0);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a trial found with less than a day left says one day, and goes out now", async () => {
+    const t = newTest();
+    await seedProducts(t);
+    await trial(t, "late-trial", { expiresInHours: 10 });
+    expect(await t.mutation(internal.storekit.queue_subscription_trial_reminders, {})).toBe(1);
+    const [row] = await reminders(t);
+    expect(row.body).toBe("1 day left. Review your subscription in the App Store.");
+    expect(row.payload).toMatchObject({ days_left: 1 });
+    expect(row.scheduled_for).toBe(NOW.toISOString());
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

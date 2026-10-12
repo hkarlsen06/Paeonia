@@ -100,21 +100,6 @@ struct WidgetCanvasSyncServiceTests {
         #expect(env.uploadSpy.uploadedPayloads.isEmpty)
     }
 
-    @Test func syncSkipsRemoteRevisionForLegacyPendingUploadMarker() async {
-        let env = SyncEnvironment()
-        env.gateway.state = Self.state(authorUserID: UUID(), canvasSide: 280)
-        env.gateway.signedURL = URL(string: "https://example.com/payload")
-        env.pendingDefaults.set(
-            "legacy-local-work-hash",
-            forKey: "paeonia.widgetCanvas.pendingUploadHash"
-        )
-
-        await env.service.sync(identity: Self.identity(partnerID: UUID()))
-
-        #expect(env.localStore.savedCalls.isEmpty)
-        #expect(env.uploadSpy.uploadedPayloads.isEmpty)
-    }
-
     @Test func syncRetriesStalePendingUploadBeforePullingRemoteRevision() async {
         let env = SyncEnvironment()
         let contentHash = WidgetCanvasUploadService.sha256Hex(of: env.downloadedData)
@@ -265,9 +250,6 @@ private final class SyncEnvironment {
     let localStore = SyncLocalStoreSpy()
     let uploadSpy: SyncUploadSpy
     let pendingStore: WidgetPendingUploadStore
-    /// The defaults backing `pendingStore`, exposed so tests can seed legacy markers
-    /// without reaching into the store's private storage.
-    let pendingDefaults: UserDefaults
     let downloadedData: Data
     let service: WidgetCanvasSyncService
 
@@ -278,7 +260,6 @@ private final class SyncEnvironment {
         let drawingData = downloadedData ?? Self.makeDrawing().dataRepresentation()
         self.downloadedData = drawingData
         let pendingDefaults = UserDefaults(suiteName: UUID().uuidString) ?? .standard
-        self.pendingDefaults = pendingDefaults
         pendingStore = WidgetPendingUploadStore(defaults: pendingDefaults)
         uploadSpy = SyncUploadSpy(pendingStore: pendingStore)
         service = WidgetCanvasSyncService(

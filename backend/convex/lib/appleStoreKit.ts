@@ -1,15 +1,15 @@
 // App Store Server API primitives shared by access.ts (verify_purchase,
-// redeem_streak_restore) and storekit.ts (server notifications). Port of
-// supabase/functions/_shared/appleStoreKit.ts. Uses only fetch and WebCrypto,
-// so it runs in the default Convex runtime. Verifying Apple's signed
-// notification payloads needs Node's X.509 support and lives in storekitNode.ts.
+// redeem_streak_restore) and storekit.ts (server notifications). Uses only
+// fetch and WebCrypto, so it runs in the default Convex runtime. Verifying
+// Apple's signed notification payloads needs Node's X.509 support and lives
+// in storekitNode.ts.
 import { ConvexError } from "convex/values";
+import { fail } from "./errors";
 
 export const APPLE_PRODUCTION_URL = "https://api.storekit.itunes.apple.com";
 export const APPLE_SANDBOX_URL = "https://api.storekit-sandbox.itunes.apple.com";
 export const APPLE_API_TIMEOUT_MS = 15_000;
 
-export type StoreKitEnvironment = "xcode" | "sandbox" | "production";
 export type AppleEnvironment = "Sandbox" | "Production";
 export type StoreKitStatus = "active" | "grace" | "billing_retry" | "expired" | "revoked" | "refunded";
 
@@ -50,15 +50,17 @@ export class PurchaseVerifierConfigurationError extends Error {
   override name = "PurchaseVerifierConfigurationError";
 }
 
-/** An error whose message is written for the app user and safe to return in a response body. */
+/** An error whose message is safe to return to the app. `code` is the `ConvexError` code the purchase actions use. */
 export class ClientFacingError extends Error {
   override name = "ClientFacingError";
+  readonly code: string;
+  constructor(message: string, code = "invalid_request") {
+    super(message);
+    this.code = code;
+  }
 }
 
-/** The shape every Edge Function response had: an HTTP status and a JSON body. */
-export type AppleResponse = { status: number; body: Record<string, unknown> };
-
-/** Bundle id of the app. Replaces `APPLE_APP_BUNDLE_ID` of the Edge Functions. */
+/** Bundle id of the app. */
 export function appleBundleId(): string {
   return process.env.APPLE_BUNDLE_ID || "no.paeonia.app";
 }
@@ -73,23 +75,22 @@ export function assertAppleEnvironmentConfigured(): void {
   }
 }
 
-export function clientSafeErrorMessage(error: unknown): string {
+/**
+ * Turns an error from a purchase action into a `ConvexError` whose text is safe to show the app.
+ * Errors thrown with `fail` pass through. `name` labels the log line for anything else.
+ */
+export function failWithClientSafeError(name: string, error: unknown): never {
+  if (error instanceof ConvexError) {
+    throw error;
+  }
+  console.error(`[${name}]`, error);
   if (error instanceof PurchaseVerifierConfigurationError) {
-    return "Purchase verification is not ready yet.";
+    return fail("service_not_ready", "Purchase verification is not ready yet.");
   }
   if (error instanceof ClientFacingError) {
-    return error.message;
+    return fail(error.code, error.message);
   }
-  return "Unexpected error";
-}
-
-/** Converts an Edge Function style response into the action result: 2xx returns the body, anything else fails. */
-export function unwrapAppleResponse(response: AppleResponse): Record<string, unknown> {
-  if (response.status >= 200 && response.status < 300) {
-    return response.body;
-  }
-  const message = typeof response.body.error === "string" ? response.body.error : "";
-  throw new ConvexError({ code: `http_${response.status}`, message });
+  return fail("unexpected", "Unexpected error");
 }
 
 export function stringOrNull(value: unknown): string | null {
@@ -106,12 +107,6 @@ export function requireString(value: unknown, name: string): string {
 
 export function millisToIsoOrNull(value: number | undefined | null): string | null {
   return typeof value === "number" ? new Date(value).toISOString() : null;
-}
-
-export function normalizeClientEnvironment(value: unknown): StoreKitEnvironment {
-  if (value === "production") return "production";
-  if (value === "xcode") return "xcode";
-  return "sandbox";
 }
 
 export function toDatabaseEnvironment(environment: AppleEnvironment | undefined): "sandbox" | "production" {
@@ -273,7 +268,7 @@ export async function verifyTransactionWithApple(
 
   // Apple's error bodies can include request detail clients should not see.
   console.error("[appleStoreKit] transaction verification failed", lastError);
-  throw new ClientFacingError("Apple could not verify this purchase");
+  throw new ClientFacingError("Apple could not verify this purchase", "apple_verification_failed");
 }
 
 /** Subscription status from the transaction and renewal info. `notificationType` REFUND and REVOKE win. */

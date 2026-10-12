@@ -6,7 +6,7 @@ import { marketingEn } from '@/lib/i18n/dictionaries/marketing.en';
 import { marketingNo } from '@/lib/i18n/dictionaries/marketing.no';
 
 interface JoinFallbackProps {
-  appStoreURL: string | null;
+  appStoreURL: string;
 }
 
 const copy = {
@@ -96,14 +96,10 @@ export function JoinFallback({ appStoreURL }: JoinFallbackProps) {
               {text.open}
             </a>
           ) : null}
-          {appStoreURL ? (
-            <a className="join-secondary" href={appStoreURL}>
-              {text.install}
-            </a>
-          ) : null}
+          <a className="join-secondary" href={appStoreURL}>
+            {text.install}
+          </a>
         </div>
-
-        {!appStoreURL && inviteCode ? <p className="join-install-note">{text.beta}</p> : null}
 
         <Link className="join-help" href={language === 'nb' ? '/no/support/' : '/en/support/'}>
           {text.help}

@@ -33,6 +33,7 @@ struct PairedHomeView: View {
     /// Width of the right-hand tile column in the wide layout. At this width the two
     /// stacked square tiles end close to where the left column's cards end.
     private static let wideTileColumnWidth: CGFloat = 300
+    private static let alertTypesSeenOnHome: Set<String> = ["widget_updated", "streak_reminder"]
 
     init(
         currentUserID: UUID? = nil,
@@ -107,15 +108,15 @@ struct PairedHomeView: View {
         .refreshable {
             await onRefresh()
         }
-        // The home screen shows the couple's current widget, so seeing it means
-        // the user has noticed any update — clear lingering partner alerts.
+        // Home shows the couple's current drawing and the streak, so seeing it
+        // means the user has noticed a new drawing or a check-in reminder.
         .task {
-            await WidgetUpdateNotifications.clearDelivered()
+            await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task {
-                    await WidgetUpdateNotifications.clearDelivered()
+                    await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
                 }
             }
         }

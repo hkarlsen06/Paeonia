@@ -208,7 +208,6 @@ export async function redeemReviewAccess(
     couple_id: coupleId,
     current_count: 0,
     longest_count: DEMO_RESTORABLE_COUNT,
-    restore_available: true,
     restorable_count: DEMO_RESTORABLE_COUNT,
     restorable_through_date: addDaysToDate(today, -2),
     restore_deadline: addDaysToInstant(now, 30),
@@ -234,7 +233,6 @@ export async function redeemReviewAccess(
       status: "expired",
       purchased_at: addDaysToInstant(now, -60),
       expires_at: addDaysToInstant(now, -30),
-      reconciliation_attempts: 0,
       created_at: now,
       updated_at: now,
     });

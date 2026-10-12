@@ -403,7 +403,7 @@ final class WidgetDrawingViewModel {
         // example the partner sent a new one since. Showing both at once would
         // pile one drawing on the other, so the new one goes on the canvas and
         // the draft is kept aside.
-        if widgetsChanged(since: draftKey, draft: draftDrawing) {
+        if widgetsChanged(since: draftKey) {
             setAside(draftDrawing)
             draftStore.removeDraft(for: draftKey)
             replaceDrawing(with: savedBaseline ?? PKDrawing())
@@ -730,16 +730,12 @@ final class WidgetDrawingViewModel {
         }
     }
 
-    /// The widgets show a different drawing than when the draft was made.
-    private func widgetsChanged(since draftKey: WidgetDrawingDraftKey, draft: PKDrawing) -> Bool {
+    /// The widgets show a different drawing than when the draft was made. A
+    /// draft with no recorded base (the best-effort write failed) counts as
+    /// changed. It goes aside, where the person can bring it back.
+    private func widgetsChanged(since draftKey: WidgetDrawingDraftKey) -> Bool {
         let current = savedBaseline ?? PKDrawing()
-        if let base = draftStore.draftBase(for: draftKey) {
-            return base != current.paeoniaStrokeFingerprint
-        }
-        // Drafts from older builds have no record. One that continues the
-        // drawing on the widgets still holds all of its strokes.
-        let draftKeys = Set(draft.strokes.map(WidgetLiveStrokeSync.key(for:)))
-        return !current.strokes.allSatisfy { draftKeys.contains(WidgetLiveStrokeSync.key(for: $0)) }
+        return draftStore.draftBase(for: draftKey) != current.paeoniaStrokeFingerprint
     }
 
     /// Keeps `drawing` for later. An earlier set-aside drawing is kept too, so

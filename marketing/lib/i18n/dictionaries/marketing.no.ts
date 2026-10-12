@@ -173,8 +173,6 @@ export const marketingNo = {
     code: 'Invitasjonskode',
     open: 'Åpne Paeonia',
     install: 'Last ned Paeonia fra App Store',
-    beta:
-      'Har du ikke Paeonia ennå? Installer appen fra betainvitasjonen du fikk, og åpne denne lenken på nytt. Behold lenken til dere er koblet sammen.',
     help: 'Trenger du hjelp?',
     opening: 'Åpner invitasjonen din …',
   },

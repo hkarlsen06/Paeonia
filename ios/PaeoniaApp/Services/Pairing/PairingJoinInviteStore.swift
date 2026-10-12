@@ -27,13 +27,9 @@ final class UserDefaultsPairingJoinInviteStore: PairingJoinInviteStoring {
             return nil
         }
 
-        // A code saved before the date was recorded starts its 7 days now.
-        guard let savedAt = defaults.object(forKey: savedAtKey) as? Date else {
-            defaults.set(now(), forKey: savedAtKey)
-            return try? PairingInviteCode.normalized(code)
-        }
-
-        guard now().timeIntervalSince(savedAt) <= Self.maximumAge else {
+        guard let savedAt = defaults.object(forKey: savedAtKey) as? Date,
+              now().timeIntervalSince(savedAt) <= Self.maximumAge
+        else {
             clearInviteCode()
             return nil
         }

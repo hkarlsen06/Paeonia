@@ -11,6 +11,7 @@ import {
   recordCoupleActivity,
   refreshStreakAfterDeviceTimeZoneChange,
   refreshStreakAfterProfileTimeZoneChange,
+  refreshStreakDeadline,
   resolveNextActivityDeadlineAt,
   resolveStreakDeadlineAt,
 } from "./streaks";
@@ -241,7 +242,7 @@ describe("mutual participation", () => {
     await activity(couple.first.userId, late, "memory_created", "2026-10-12T09:00:00.000Z", "a3");
     await activity(couple.second.userId, late, "memory_created", "2026-10-12T10:00:00.000Z", "b3");
     const state = await streakState(t, couple.coupleId);
-    expect(state).toMatchObject({ current_count: 1, longest_count: 1, restorable_count: 0, restore_available: false });
+    expect(state).toMatchObject({ current_count: 1, longest_count: 1, restorable_count: 0 });
     expect(state!.restore_deadline).toBeUndefined();
   });
 
@@ -364,7 +365,6 @@ describe("mutual participation", () => {
         current_count: 1,
         longest_count: 9,
         next_activity_deadline_at: "2026-10-10T11:00:00.000Z",
-        restore_available: true,
         restorable_count: 9,
         restorable_through_date: "2026-10-09",
         restore_deadline: "2026-10-10T13:00:00.000Z",
@@ -385,13 +385,56 @@ describe("mutual participation", () => {
       longest_count: 9,
       last_qualified_date: "2026-10-09",
       restorable_count: 0,
-      restore_available: false,
       last_restore_transaction_id: "restore-tx",
     });
     expect(await t.run((ctx) => applyStreakRestore(ctx, restore))).toEqual({ ok: true, restoredCount: 9, replayed: true });
     expect(
       await t.run((ctx) => applyStreakRestore(ctx, { ...restore, transaction_id: "another-tx" })),
     ).toEqual({ ok: false, error: "No streak is available to restore", status: 409 });
+  });
+
+  test("a restore to a day only one partner contributed on keeps the stored deadline", async () => {
+    const { t, couple, yesterday, today, activity } = await setup();
+    await activity(couple.first.userId, yesterday, "memory_created", "2026-10-09T10:00:00.000Z", "a1");
+    await t.run((ctx) =>
+      ctx.db.insert("streak_states", {
+        couple_id: couple.coupleId,
+        current_count: 0,
+        longest_count: 9,
+        restorable_count: 9,
+        restorable_through_date: "2026-10-08",
+        restore_deadline: "2026-10-10T13:00:00.000Z",
+        updated_at: "2026-10-10T00:00:00.000Z",
+      }),
+    );
+    const result = await t.run((ctx) =>
+      applyStreakRestore(ctx, {
+        couple_id: couple.coupleId,
+        purchaser_user_id: couple.first.userId,
+        product_id: newUuid(),
+        environment: "sandbox",
+        transaction_id: "restore-one-partner",
+      }),
+    );
+    expect(result).toEqual({ ok: true, restoredCount: 9, replayed: false });
+    // The deadline comes from the start of yesterday: midnight after the next UTC day.
+    const restored = {
+      current_count: 9,
+      last_qualified_date: "2026-10-09",
+      last_qualified_couple_day_id: yesterday,
+      next_activity_deadline_at: "2026-10-11T00:00:00.000Z",
+    };
+    expect(await streakState(t, couple.coupleId)).toMatchObject(restored);
+
+    // Reading and recomputing the deadline keep it, and the streak stays whole.
+    expect(await t.run((ctx) => getCoupleStreakForCouple(ctx, couple.coupleId))).toMatchObject({ current_count: 9 });
+    expect(await t.run((ctx) => refreshStreakDeadline(ctx, couple.coupleId))).toBe("2026-10-11T00:00:00.000Z");
+    expect(await streakState(t, couple.coupleId)).toMatchObject(restored);
+
+    // Both partners check in today before that deadline, so the streak carries on.
+    await activity(couple.first.userId, today, "memory_created", "2026-10-10T09:00:00.000Z", "a2");
+    await activity(couple.second.userId, today, "memory_created", "2026-10-10T10:00:00.000Z", "b2");
+    expect(await streakState(t, couple.coupleId)).toMatchObject({ current_count: 10, last_qualified_date: "2026-10-10" });
   });
 
   test("a restore adds today when both partners contributed", async () => {
@@ -432,7 +475,6 @@ describe("restore around daylight saving", () => {
         couple_id: couple.coupleId,
         current_count: 0,
         longest_count: 6,
-        restore_available: true,
         restorable_count: 6,
         restorable_through_date: "2026-01-01",
         restore_deadline: new Date(Date.parse(now) + 3_600_000).toISOString(),
@@ -470,24 +512,37 @@ describe("streak read model", () => {
         longest_count: 8,
         last_qualified_date: "2026-10-09",
         last_qualified_couple_day_id: dayId,
-        restore_available: false,
         next_activity_deadline_at: "2026-10-10T13:00:00.000Z",
         updated_at: "2026-10-10T00:00:00.000Z",
         restorable_count: 0,
       });
-      await ctx.db.insert("couple_activity_events", {
-        id: newUuid(),
-        couple_id: couple.coupleId,
-        user_id: couple.first.userId,
-        couple_day_id: dayId,
-        activity_kind: "widget_drawing_saved",
-        occurred_at: "2026-10-10T11:00:00.000Z",
-        dedupe_key: "streak-read-model:latest-activity",
-        metadata: {},
-        created_at: "2026-10-10T11:00:00.000Z",
-      });
+      for (const [user, key] of [
+        [couple.first, "latest-activity"],
+        [couple.second, "partner-activity"],
+      ] as const) {
+        await ctx.db.insert("couple_activity_events", {
+          id: newUuid(),
+          couple_id: couple.coupleId,
+          user_id: user.userId,
+          couple_day_id: dayId,
+          activity_kind: "widget_drawing_saved",
+          occurred_at: "2026-10-10T11:00:00.000Z",
+          dedupe_key: `streak-read-model:${key}`,
+          metadata: {},
+          created_at: "2026-10-10T11:00:00.000Z",
+        });
+      }
     });
     return { t, couple };
+  }
+
+  /** Moves both partners' activity on the last qualified day, which moves the day's qualified time. */
+  async function moveActivity(t: TestConvex, occurredAt: string) {
+    await t.run(async (ctx) => {
+      for (const event of await ctx.db.query("couple_activity_events").collect()) {
+        await ctx.db.patch(event._id, { occurred_at: occurredAt });
+      }
+    });
   }
 
   test("an active streak exposes its stored count", async () => {
@@ -498,10 +553,7 @@ describe("streak read model", () => {
 
   test("a broken streak shows zero while its restore offer is open, then stops offering it", async () => {
     const { t, couple } = await setup();
-    await t.run(async (ctx) => {
-      const event = await ctx.db.query("couple_activity_events").first();
-      await ctx.db.patch(event!._id, { occurred_at: "2026-10-07T11:00:00.000Z" });
-    });
+    await moveActivity(t, "2026-10-07T11:00:00.000Z");
     // Latest event 2026-10-07 gives a deadline of 2026-10-09T00:00Z, so the restore offer runs to 2026-10-10T00:00Z... already past.
     const state = await streakState(t, couple.coupleId);
     await t.run((ctx) => ctx.db.patch(state!._id, { next_activity_deadline_at: "2026-10-08T00:00:00.000Z" }));
@@ -512,10 +564,9 @@ describe("streak read model", () => {
 
   test("a recent break keeps the restore offer open", async () => {
     const { t, couple } = await setup();
+    // Deadline = 2026-10-10T00:00Z (events on 2026-10-08, +2 local days), restore until 2026-10-11T00:00Z.
+    await moveActivity(t, "2026-10-08T11:00:00.000Z");
     await t.run(async (ctx) => {
-      const event = await ctx.db.query("couple_activity_events").first();
-      // Deadline = 2026-10-10T00:00Z (event on 2026-10-08, +2 local days), restore until 2026-10-11T00:00Z.
-      await ctx.db.patch(event!._id, { occurred_at: "2026-10-08T11:00:00.000Z" });
       const row = await ctx.db.query("streak_states").first();
       await ctx.db.patch(row!._id, { freeze_used_at: "2026-10-01T00:00:00.000Z" });
     });
@@ -526,10 +577,7 @@ describe("streak read model", () => {
 
   test("a ready freeze keeps a recently missed streak alive and is stored once", async () => {
     const { t, couple } = await setup();
-    await t.run(async (ctx) => {
-      const event = await ctx.db.query("couple_activity_events").first();
-      await ctx.db.patch(event!._id, { occurred_at: "2026-10-08T11:00:00.000Z" });
-    });
+    await moveActivity(t, "2026-10-08T11:00:00.000Z");
     const streak = await t.run((ctx) => getCoupleStreakForCouple(ctx, couple.coupleId));
     expect(streak).toMatchObject({
       current_count: 5,
@@ -547,9 +595,8 @@ describe("streak read model", () => {
 
   test("a short streak that misses its deadline reads and stores zero", async () => {
     const { t, couple } = await setup();
+    await moveActivity(t, "2026-10-08T11:00:00.000Z");
     await t.run(async (ctx) => {
-      const event = await ctx.db.query("couple_activity_events").first();
-      await ctx.db.patch(event!._id, { occurred_at: "2026-10-08T11:00:00.000Z" });
       const row = await ctx.db.query("streak_states").first();
       await ctx.db.patch(row!._id, { current_count: 2 });
     });

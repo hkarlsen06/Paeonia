@@ -15,7 +15,6 @@ enum PaeoniaWidgetRefreshService {
     // privacy) the lowercase directory.
     private static let previewsDirectory = "Widget/previews"
     private static let pendingUploadKey = "paeonia.widgetCanvas.pendingUpload"
-    private static let legacyPendingUploadHashKey = "paeonia.widgetCanvas.pendingUploadHash"
     // The app bumps this integer before it deletes the widget files, so a
     // refresh that started earlier can tell that it must not publish.
     private static let privacyEpochKey = "paeonia.widget.privacyEpoch"
@@ -306,16 +305,6 @@ extension PaeoniaWidgetRefreshService {
             return true
         }
 
-        if let legacyHash = defaults?.string(
-            forKey: legacyPendingUploadHashKey
-        ) {
-            guard remoteContentHash == "sha256-\(legacyHash)" else {
-                return false
-            }
-            clearPendingUploadIfMatching(legacyHash, defaults: defaults)
-            return true
-        }
-
         // With no unsent local save, the server read is authoritative. Avoid
         // client/server timestamp comparisons: clock skew previously made a
         // real partner revision look older indefinitely.
@@ -330,9 +319,6 @@ extension PaeoniaWidgetRefreshService {
            let pending = try? JSONDecoder().decode(PendingUpload.self, from: pendingData),
            pending.contentHash == contentHash {
             defaults?.removeObject(forKey: pendingUploadKey)
-        }
-        if defaults?.string(forKey: legacyPendingUploadHashKey) == contentHash {
-            defaults?.removeObject(forKey: legacyPendingUploadHashKey)
         }
     }
 }

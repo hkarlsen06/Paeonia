@@ -81,7 +81,7 @@ number or replace this with a static `CURRENT_PROJECT_VERSION`.
 
 Use the `Scenarios` scheme to open a production screen with deterministic local
 state, without creating accounts, pairing, purchasing access, or contacting the
-production backend.
+hosted backend.
 
 To browse the catalog in Xcode:
 

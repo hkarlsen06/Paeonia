@@ -281,8 +281,21 @@ struct StreakRestoreViewModelTests {
         )
         #expect(
             PaeoniaStoreKitService.streakRestoreConfirmationError(
-                from: PaeoniaConvexError.server(code: "http_409", message: "No streak is available to restore")
+                from: PaeoniaConvexError.server(code: "no_streak_to_restore", message: "No streak is available to restore")
             ) == .streakNotRestorable
+        )
+        #expect(
+            PaeoniaStoreKitService.streakRestoreConfirmationError(
+                from: PaeoniaConvexError.server(
+                    code: "purchase_linked_to_another_account",
+                    message: "Apple transaction belongs to a different user"
+                )
+            ) == .purchaseLinkedToAnotherAccount
+        )
+        #expect(
+            PaeoniaStoreKitService.streakRestoreConfirmationError(
+                from: PaeoniaConvexError.server(code: "purchase_not_saved", message: "Could not restore your streak")
+            ) == .serverConfirmationFailed("Could not restore your streak")
         )
     }
 

@@ -33,9 +33,10 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
     var isRedacted = true
     let contentHash: String
     let previews: [String: String]
-    /// Side of the square canvas the drawing was made on. Optional so payloads
-    /// from older builds still decode; the widget ignores it.
-    var canvasSide: Double?
+    /// Side of the square canvas the drawing was made on. The app reads it to
+    /// scale the drawing on a phone with a different screen size. The widget
+    /// ignores it.
+    let canvasSide: Double
 
     enum CodingKeys: String, CodingKey {
         case schemaVersion

@@ -88,9 +88,9 @@ struct CoupleMapSnapshot: View {
     /// Bumped each time a sweep starts; the deferred start and completion only act while
     /// it still matches, so a superseding sweep wins and silent swaps don't disturb one.
     @State private var revealToken = 0
-    /// A sweep that's mounted but waiting for the cold-launch intro to finish before it
-    /// runs (holds its `revealToken`), so the first map sweeps in where it can be seen.
-    @State private var pendingLaunchReveal: Int?
+    /// A sweep that's mounted but not started yet (holds its `revealToken`). It starts
+    /// once the cold-launch intro has opened far enough for the map to be seen.
+    @State private var pendingSweep: Int?
     /// The positions the on-screen map was last *swept* for. The next sweep is measured
     /// from here (not the last silent swap), so a series of tiny drifts accumulates toward
     /// the threshold instead of resetting each time.
@@ -128,11 +128,10 @@ struct CoupleMapSnapshot: View {
                 .task(id: snapshotRequest(size: size)) {
                     await loadSnapshot(size: size)
                 }
-                .onChange(of: launchSidesUncovered) { _, uncovered in
-                    guard uncovered, let token = pendingLaunchReveal else { return }
-                    pendingLaunchReveal = nil
-                    startSweep(token: token)
-                }
+                // Both the render finishing and the intro opening can come first, so
+                // whichever lands second starts the sweep.
+                .onChange(of: pendingSweep) { startPendingSweepIfReady() }
+                .onChange(of: launchSidesUncovered) { startPendingSweepIfReady() }
         }
     }
 
@@ -528,13 +527,19 @@ extension CoupleMapSnapshot {
             isRevealing = true
         }
 
-        // Hold the sweep until the cold-launch intro's opening hole reaches the screen's
-        // sides, so it plays where the user can see it rather than behind the overlay.
-        // Then `onChange(launchSidesUncovered)` runs this token.
-        guard launchSidesUncovered else {
-            pendingLaunchReveal = token
-            return
-        }
+        // Don't read `launchSidesUncovered` here. This runs at the end of the render
+        // task, whose copy of the view holds the environment from when the task began,
+        // so a flip during the render would be missed and the cover never burned away.
+        // `onChange(of: pendingSweep)` reads the current value instead.
+        pendingSweep = token
+    }
+
+    /// Starts the pending sweep once the cold-launch intro's opening hole reaches the
+    /// screen's sides, so it plays where the user can see it rather than behind the
+    /// overlay. Outside the cold launch it starts right away.
+    private func startPendingSweepIfReady() {
+        guard launchSidesUncovered, let token = pendingSweep else { return }
+        pendingSweep = nil
         startSweep(token: token)
     }
 

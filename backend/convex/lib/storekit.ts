@@ -285,10 +285,6 @@ export async function recordVerifiedStorekitTransaction(
     revoked_at: optionalTimestampArg(input.p_revoked_at),
     revocation_reason: input.p_revocation_reason ?? undefined,
     raw_payload_id: payloadId,
-    last_reconciled_at: nowIso(),
-    reconciliation_claimed_at: undefined,
-    reconciliation_attempts: 0,
-    last_reconciliation_error: undefined,
   });
 
   return { ok: true, productId: product.id, payloadId, transactionId };

@@ -533,7 +533,7 @@ extension DailyChallengeQuestion {
                     ownAnswerDetail: row.ownAnswerID.flatMap { detailsByAnswerID[$0] },
                     partnerAnswerDetail: row.partnerAnswerID.flatMap { detailsByAnswerID[$0] },
                     origin: row.seededForUserID == currentUserID ? .own : .partner,
-                    isCurrentDay: row.isCurrentDay ?? true,
+                    isCurrentDay: row.isCurrentDay,
                     partnerAnswerSeenAt: row.partnerAnswerSeenAt,
                     ownAnswerSeenByPartnerAt: row.ownAnswerSeenByPartnerAt
                 )
@@ -865,12 +865,7 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
             locale: locale
         )
 
-        let currentCoupleDayID: UUID?
-        if rows.contains(where: { $0.isCurrentDay != nil }) {
-            currentCoupleDayID = rows.first(where: { $0.isCurrentDay == true })?.coupleDayID
-        } else {
-            currentCoupleDayID = rows.first?.coupleDayID
-        }
+        let currentCoupleDayID = rows.first(where: \.isCurrentDay)?.coupleDayID
 
         return DailyChallengeSnapshot(
             currentUserID: currentUserID,

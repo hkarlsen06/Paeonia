@@ -17,26 +17,9 @@ nonisolated struct UpdateMemoryOperationPayload: Codable, Equatable, Sendable {
     let memoryDate: String
     /// The title and date this edit started from. When the partner changed the memory
     /// in the meantime, the sync handler keeps their change for any field this edit
-    /// left alone. Nil in operations queued before these fields existed; those resend
-    /// both fields as they are.
-    var baseTitle: String?
-    var baseMemoryDate: String?
-
-    init(
-        memoryID: UUID,
-        expectedRevision: Int,
-        title: String,
-        memoryDate: String,
-        baseTitle: String? = nil,
-        baseMemoryDate: String? = nil
-    ) {
-        self.memoryID = memoryID
-        self.expectedRevision = expectedRevision
-        self.title = title
-        self.memoryDate = memoryDate
-        self.baseTitle = baseTitle
-        self.baseMemoryDate = baseMemoryDate
-    }
+    /// left alone. A nil title means the memory had none.
+    let baseTitle: String?
+    let baseMemoryDate: String
 }
 
 nonisolated struct HideMemoryOperationPayload: Codable, Equatable, Sendable {

@@ -159,12 +159,6 @@ async function submitContentReport(ctx: MutationCtx, args: ReportArgs, leaveRela
   return stored.report_id;
 }
 
-/** Port of the public `submit_content_report` wrapper (no leave flag). */
-export const submit_content_report = mutation({
-  args: reportArgs,
-  handler: (ctx, args) => submitContentReport(ctx, args, false),
-});
-
 /** Port of the public `submit_leave_and_report` wrapper. */
 export const submit_leave_and_report = mutation({
   args: reportArgs,

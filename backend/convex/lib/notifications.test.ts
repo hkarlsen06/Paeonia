@@ -36,18 +36,17 @@ describe("notification copy", () => {
     expect(notificationLocaleLanguage("  ")).toBe("en");
   });
 
-  test("bodies are copied verbatim from the SQL", () => {
+  test("alert bodies", () => {
     expect(notificationAlertBody("streak_reminder", {}, "en")).toBe(
-      "Do one small thing today. Your streak continues once both of you have checked in.",
+      "A quick drawing is enough. Your streak continues once you've both checked in.",
     );
     expect(notificationAlertBody("streak_reminder", {}, "nb")).toBe(
-      "Gjør én liten ting i dag. Rekken fortsetter når dere begge har sjekket inn.",
+      "En rask tegning holder. Rekken fortsetter når dere begge har sjekket inn.",
     );
-    expect(notificationAlertBody("partner_answered", {}, "nb")).toBe("Åpne Paeonia for å se hva partneren din skrev.");
-    expect(notificationAlertBody("thread_message_sent", {}, "en")).toBe("Open Paeonia to see what's new.");
-    expect(notificationAlertBody("thread_message_sent", { lock_screen_detail_level: "descriptive" }, "en")).toBe(
-      "Open Paeonia to reply.",
+    expect(notificationAlertBody("partner_answered", {}, "nb")).toBe(
+      "Dere har svart på samme spørsmål. Åpne Paeonia for å se svaret.",
     );
+    expect(notificationAlertBody("thread_message_sent", {}, "en")).toBe("Open Paeonia to read it and reply.");
     expect(notificationAlertBody("subscription_trial_reminder", { days_left: 1 }, "en")).toBe(
       "1 day left. Review your subscription in the App Store.",
     );
@@ -156,17 +155,13 @@ describe("enqueueNotificationForUser", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("uses the descriptive lock screen setting for message copy", async () => {
+  test("message copy names the sender, or says 'Your partner' without a name", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     await addDevice(t, couple.second.userId, { locale: "en" });
-    await t.run(async (ctx) => {
-      const preference = await ctx.db
-        .query("notification_preferences")
-        .withIndex("by_user_id", (q) => q.eq("user_id", couple.second.userId))
-        .unique();
-      await ctx.db.patch(preference!._id, { lock_screen_detail_level: "descriptive" });
-    });
+    expect(
+      await t.run((ctx) => notificationAlertTitle(ctx, "thread_message_sent", { sender_user_id: newUuid() }, "en")),
+    ).toBe("Your partner sent you a message");
     await t.run((ctx) =>
       enqueueNotificationForUser(ctx, {
         recipient_user_id: couple.second.userId,
@@ -176,8 +171,7 @@ describe("enqueueNotificationForUser", () => {
     );
     const [row] = await outbox(t);
     expect(row.title).toBe("First Partner sent you a message");
-    expect(row.body).toBe("Open Paeonia to reply.");
-    expect(row.payload).not.toHaveProperty("lock_screen_detail_level");
+    expect(row.body).toBe("Open Paeonia to read it and reply.");
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -298,7 +292,7 @@ describe("trigger helpers", () => {
     expect(rows[0]).toMatchObject({
       recipient_user_id: couple.first.userId,
       kind: "partner_answered",
-      title: "Second Partner answered the same question!",
+      title: "Second Partner answered too",
       apns_collapse_id: `daily:${couple.coupleId}`,
     });
     expect(rows[0].payload.deeplink).toBe(`paeonia://daily/reveal?instanceId=${instanceId}&coupleDayId=${dayId}`);

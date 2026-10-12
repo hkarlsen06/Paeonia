@@ -142,7 +142,8 @@ private struct TestEnvironment {
             createdAt: Date(),
             renderedAt: Date(),
             contentHash: "sha256-test",
-            previews: previews
+            previews: previews,
+            canvasSide: 300
         )
         payload.privacyMode = privacyMode
         payload.isRedacted = isRedacted

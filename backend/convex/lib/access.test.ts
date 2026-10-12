@@ -41,7 +41,6 @@ async function insertStorekit(
       expires_at: expiresAt,
       created_at: now,
       updated_at: now,
-      reconciliation_attempts: 0,
     });
   });
 }

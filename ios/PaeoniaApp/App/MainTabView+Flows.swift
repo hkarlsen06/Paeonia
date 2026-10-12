@@ -36,16 +36,7 @@ extension MainTabView {
                 .paeoniaTopBanner(bannerCenter)
             }
             // The single-question partner-answer flow zooms out of the tapped card.
-            .fullScreenCover(item: $partnerAnswerQuestion) { question in
-                DailyPartnerAnswerFlow(
-                    question: question,
-                    viewModel: dailyChallengeViewModel,
-                    onClose: closePartnerAnswerFlow
-                )
-                .zoomTransition(question.id, in: zoomNamespace, enabled: !reduceMotion)
-                .environment(bannerCenter)
-                .paeoniaTopBanner(bannerCenter)
-            }
+            .fullScreenCover(item: $partnerAnswerQuestion, content: partnerAnswerFlow)
             // The streak badge opens the restore offer (broken) from outside the answer flow.
             .sheet(isPresented: $showStreakRestore) {
                 StreakRestoreView(
@@ -65,6 +56,22 @@ extension MainTabView {
                 .presentationDetents([.large])
                 .presentationBackground(.paeoniaSurfacePrimary)
             }
+    }
+
+    /// Answering a question the partner already answered. Sending it turns the
+    /// cover into the question's chat.
+    private func partnerAnswerFlow(for question: DailyChallengeQuestion) -> some View {
+        DailyPartnerAnswerFlow(
+            question: question,
+            viewModel: dailyChallengeViewModel,
+            privacySafetyService: dependencies.settingsPrivacyService,
+            privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
+            onReportedAndLeft: actions.leftRelationship,
+            onClose: closePartnerAnswerFlow
+        )
+        .zoomTransition(question.id, in: zoomNamespace, enabled: !reduceMotion)
+        .environment(bannerCenter)
+        .paeoniaTopBanner(bannerCenter)
     }
 
     /// The milestone moment sheet, and the check that opens it.
@@ -298,6 +305,10 @@ extension MainTabView {
                 )
             )
         }
+    }
+
+    func startOpeningDailyChat(instanceID: UUID) {
+        Task { await openDailyChat(instanceID: instanceID) }
     }
 
     private func refreshStillCurrent(for deepLink: PaeoniaDeepLink) async -> Bool {

@@ -128,7 +128,7 @@ describe("memory threads", () => {
     });
     expect(row.dedupe_key).toBe(`thread_message_sent:${result.message_id}:${device.id}`);
     expect(row.apns_collapse_id).toBe(`thread:${result.thread_id}`);
-    expect([row.title, row.body]).toEqual(["Paeonia", "Open Paeonia to see what's new."]);
+    expect([row.title, row.body]).toEqual(["First Partner sent you a message", "Open Paeonia to read it and reply."]);
     expect(JSON.stringify(rows)).not.toContain("Secret message");
 
     const events = await t.run((ctx) => ctx.db.query("couple_activity_events").collect());
@@ -156,18 +156,15 @@ describe("memory threads", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("descriptive lock screen detail names the sender but not the text", async () => {
+  test("the alert names the sender but not the text, in the device language", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     await addDevice(t, couple.second.userId, { locale: "nb-NO" });
-    await t.run(async (ctx) => {
-      const preference = await ctx.db.query("notification_preferences").withIndex("by_user_id", (q) => q.eq("user_id", couple.second.userId)).unique();
-      await ctx.db.patch(preference!._id, { lock_screen_detail_level: "descriptive" });
-    });
     const memoryId = await createMemory(couple.first);
     await memoryThread(couple.first, memoryId);
     const row = (await outbox(t)).find((item) => item.kind === "thread_message_sent")!;
-    expect([row.title, row.body]).toEqual(["First Partner sendte deg en melding", "Åpne Paeonia for å svare."]);
+    expect([row.title, row.body]).toEqual(["First Partner sendte deg en melding", "Åpne Paeonia for å lese og svare."]);
+    expect(JSON.stringify(row)).not.toContain("Secret message");
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

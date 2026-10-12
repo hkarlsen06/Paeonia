@@ -87,14 +87,14 @@ struct WidgetDrawingView: View {
         .task {
             // The person is now looking at the drawing, so drop any lingering
             // "partner updated the widget" alerts from Notification Center.
-            await WidgetUpdateNotifications.clearDelivered()
+            await DeliveredNotifications.clear(types: ["widget_updated"])
         }
         // A partner's drawing synced in while this screen was open. With unsent
         // changes on the canvas, the header says so instead of replacing them.
         .onReceive(NotificationCenter.default.publisher(for: .paeoniaWidgetCanvasDidUpdate)) { _ in
             Task {
                 await viewModel.reloadSavedDrawingFromSyncIfSafe()
-                await WidgetUpdateNotifications.clearDelivered()
+                await DeliveredNotifications.clear(types: ["widget_updated"])
             }
         }
         // A drawing that was waiting for the network went out in the background.

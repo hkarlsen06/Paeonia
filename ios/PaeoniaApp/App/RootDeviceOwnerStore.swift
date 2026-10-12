@@ -12,20 +12,14 @@ protocol RootDeviceOwnerStoring: AnyObject {
 @MainActor
 final class UserDefaultsRootDeviceOwnerStore: RootDeviceOwnerStoring {
     private let defaults: UserDefaults
-    private let widgetIdentityStore: WidgetSyncIdentityStore
     private let key = "paeonia.root.deviceOwnerUserID"
 
-    init(defaults: UserDefaults = .standard, widgetIdentityStore: WidgetSyncIdentityStore = .shared) {
+    init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        self.widgetIdentityStore = widgetIdentityStore
     }
 
-    /// Installs from before this marker existed have none. The widget's saved
-    /// identity names the last paired person whose drawing and partner details
-    /// are on the phone, so a different person signing in first still clears
-    /// them. A purge clears that identity, so a signed-out phone has no owner.
     var ownerUserID: String? {
-        get { defaults.string(forKey: key) ?? widgetIdentityStore.load().currentUserID?.uuidString }
+        get { defaults.string(forKey: key) }
         set { defaults.set(newValue, forKey: key) }
     }
 }

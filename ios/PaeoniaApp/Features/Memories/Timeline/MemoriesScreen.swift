@@ -71,12 +71,20 @@ struct MemoriesScreen: View {
             .task(id: currentUserID) {
                 await viewModel.observeStoreChanges()
             }
+            // New-memory alerts are seen once their memory is on the timeline.
+            .task(id: shownMemoryIDs) {
+                await DeliveredNotifications.clearMemories(shownMemoryIDs: shownMemoryIDs)
+            }
             .onChange(of: coupleID) { _, newCoupleID in
                 viewModel.updateContext(coupleID: newCoupleID)
             }
             .onChange(of: viewModel.notice) { _, notice in
                 showBanner(for: notice)
             }
+    }
+
+    private var shownMemoryIDs: Set<UUID> {
+        Set(viewModel.timeline.flatMap(\.memories).map(\.snapshot.memoryID))
     }
 
     private var content: some View {

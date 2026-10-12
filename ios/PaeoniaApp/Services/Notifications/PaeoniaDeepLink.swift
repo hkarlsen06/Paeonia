@@ -157,74 +157,15 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         }
     }
 
+    /// Every backend push carries a `deeplink` URL. The notification service
+    /// extension keeps it when it rewrites a widget alert.
     init?(notificationUserInfo userInfo: [AnyHashable: Any]) {
-        let type = userInfo.nonEmptyString(for: "type")
-        let route = userInfo.nonEmptyString(for: "route")
-        let coupleDayID = userInfo.uuidValue(for: "couple_day_id")
-        let deeplink = userInfo.deepLink
-
-        switch type {
-        case "widget_updated":
-            self = .widgetDrawing
-        case "partner_answered":
-            if case let .some(.dailyReveal(instanceID, deeplinkCoupleDayID)) = deeplink {
-                self = .dailyReveal(instanceID: instanceID, coupleDayID: deeplinkCoupleDayID)
-                return
-            }
-            guard let instanceID = userInfo.uuidValue(for: "instance_id") else {
-                self = .dailyToday(coupleDayID: coupleDayID)
-                return
-            }
-            self = .dailyReveal(instanceID: instanceID, coupleDayID: coupleDayID)
-        case "thread_message_sent":
-            if case let .some(.dailyChat(instanceID)) = deeplink {
-                self = .dailyChat(instanceID: instanceID)
-                return
-            }
-            guard let instanceID = userInfo.uuidValue(for: "instance_id") else { return nil }
-            self = .dailyChat(instanceID: instanceID)
-        case "daily_challenge_completed":
-            if case let .some(.dailyToday(deeplinkCoupleDayID)) = deeplink {
-                self = .dailyToday(coupleDayID: deeplinkCoupleDayID)
-                return
-            }
-            self = .dailyToday(coupleDayID: coupleDayID)
-        case "memory_created":
-            self = .memories
-        case "streak_reminder":
-            self = .streak
-        case "subscription_trial_reminder":
-            self = .subscription
-        default:
-            if let deeplink {
-                self = deeplink
-                return
-            }
-
-            switch route {
-            case "widget":
-                self = .widgetDrawing
-            case "daily":
-                self = .dailyToday(coupleDayID: coupleDayID)
-            case "memories":
-                self = .memories
-            case "streak":
-                self = .streak
-            case "subscription":
-                self = .subscription
-            default:
-                return nil
-            }
-        }
-    }
-
-    init?(notificationThreadIdentifier threadIdentifier: String) {
-        let trimmed = threadIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.hasPrefix("widget:") else {
+        guard let deeplink = userInfo["deeplink"] as? String,
+              let url = URL(string: deeplink.trimmingCharacters(in: .whitespacesAndNewlines))
+        else {
             return nil
         }
-
-        self = .widgetDrawing
+        self.init(url)
     }
 
     static func handles(_ url: URL) -> Bool {
@@ -235,45 +176,6 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
 private extension Array where Element == URLQueryItem {
     nonisolated func uuidValue(named name: String) -> UUID? {
         guard let value = first(where: { $0.name == name })?.value else {
-            return nil
-        }
-        return UUID(uuidString: value)
-    }
-}
-
-private extension Dictionary where Key == AnyHashable, Value == Any {
-    nonisolated var deepLink: PaeoniaDeepLink? {
-        guard let deeplink = nonEmptyString(for: "deeplink"),
-              let url = URL(string: deeplink)
-        else {
-            return nil
-        }
-        return PaeoniaDeepLink(url)
-    }
-
-    nonisolated func nonEmptyString(for key: String) -> String? {
-        guard let raw = self[key] else {
-            return nil
-        }
-
-        if let string = raw as? String {
-            let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
-            return trimmed.isEmpty ? nil : trimmed
-        }
-
-        if let uuid = raw as? UUID {
-            return uuid.uuidString
-        }
-
-        return nil
-    }
-
-    nonisolated func uuidValue(for key: String) -> UUID? {
-        if let uuid = self[key] as? UUID {
-            return uuid
-        }
-
-        guard let value = nonEmptyString(for: key) else {
             return nil
         }
         return UUID(uuidString: value)

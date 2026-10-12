@@ -241,7 +241,10 @@ describe("request_account_deletion", () => {
     const t = newTest();
     const { first, second } = await appleCoupleWithData(t);
     await first.as.mutation(api.identity.request_account_deletion, {});
-    expect(await second.as.query(api.identity.get_own_profile, {})).toMatchObject({ deleted_at: null });
+    const secondProfile = await t.run((ctx) =>
+      ctx.db.query("profiles").withIndex("by_user_id", (q) => q.eq("user_id", second.userId)).unique(),
+    );
+    expect(secondProfile?.deleted_at).toBeUndefined();
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
@@ -297,7 +300,7 @@ describe("job state machine", () => {
       "42501",
       "not authorized",
     );
-    await expectFail(first.as.query(api.identity.get_own_profile, {}), "42501", "authenticated user required");
+    await expectFail(first.as.query(api.identity.get_notification_preferences, {}), "42501", "authenticated user required");
     expect(await t.run((ctx) => ctx.db.query("app_account_tokens").collect())).toHaveLength(0);
 
     const done = await t.run(async (ctx) => ({
@@ -430,8 +433,6 @@ describe("delete_account action", () => {
 
     const response = await first.as.action(api.identity.delete_account, { appleAuthorizationCode: "auth-code" });
     expect(response).toMatchObject({
-      ok: true,
-      accepted: true,
       authDeleteStatus: "completed",
       appleRevocation: "succeeded",
       requiresManualAppleRevocation: false,
@@ -519,7 +520,7 @@ describe("delete_account action", () => {
   test("rejects a signed out caller, and repeats the stored result for a second call", async () => {
     const t = newTest();
     stubNetwork();
-    await expectFail(t.action(api.identity.delete_account, {}), "http_401", "Invalid session");
+    await expectFail(t.action(api.identity.delete_account, {}), "not_signed_in", "Invalid session");
     const { first } = await createCouple(t);
     const firstResponse = await first.as.action(api.identity.delete_account, {});
     expect(firstResponse.authDeleteStatus).toBe("completed");

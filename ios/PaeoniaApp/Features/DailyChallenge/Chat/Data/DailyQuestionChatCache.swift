@@ -82,7 +82,7 @@ extension DailyQuestionChatCaching {
 actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     static let shared = FileDailyQuestionChatCache()
 
-    private static let schemaVersion = 2
+    private static let schemaVersion = 3
     private let directoryURL: URL
     private var generation = 0
 
@@ -392,25 +392,4 @@ nonisolated private struct CacheDocument: Codable {
     var messagesByInstanceID: [String: [DailyQuestionChatMessage]] = [:]
     var readThroughByThreadID: [String: Date] = [:]
     var seenPartnerAnswerInstanceIDs: [String] = []
-
-    init() {}
-
-    // Files written before read marks or seen answers existed lack those keys and
-    // keep their messages.
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        summaries = try container.decode([DailyQuestionThreadSummary].self, forKey: .summaries)
-        messagesByInstanceID = try container.decode(
-            [String: [DailyQuestionChatMessage]].self,
-            forKey: .messagesByInstanceID
-        )
-        readThroughByThreadID = try container.decodeIfPresent(
-            [String: Date].self,
-            forKey: .readThroughByThreadID
-        ) ?? [:]
-        seenPartnerAnswerInstanceIDs = try container.decodeIfPresent(
-            [String].self,
-            forKey: .seenPartnerAnswerInstanceIDs
-        ) ?? []
-    }
 }

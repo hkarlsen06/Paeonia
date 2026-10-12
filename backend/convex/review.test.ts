@@ -62,7 +62,6 @@ describe("redeem_review_access", () => {
       current_count: 0,
       restorable_count: 12,
       longest_count: 12,
-      restore_available: true,
       restorable_through_date: "2026-10-08",
       restore_deadline: "2026-11-09T12:00:00.000Z",
     });
@@ -313,28 +312,5 @@ describe("reset_review_demo", () => {
     });
     expect(await redeem(t, next, reviewer.userId)).not.toBe(demoCoupleId);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
-  });
-});
-
-describe("complete_review_access_session", () => {
-  test("marks only the caller's own session as completed", async () => {
-    const t = newTest();
-    const { reviewer, codeId } = await demoSetup(t);
-    await redeem(t, codeId, reviewer.userId);
-    const session = await t.run((ctx) => ctx.db.query("review_access_sessions").first());
-    const stranger = await createSignedInUser(t);
-
-    expect(await stranger.as.mutation(api.access.complete_review_access_session, { p_review_session_id: session!.id })).toBe(false);
-    expect(await reviewer.as.mutation(api.access.complete_review_access_session, { p_review_session_id: session!.id.toUpperCase() })).toBe(true);
-    const completed = await t.run((ctx) => ctx.db.query("review_access_sessions").first());
-    expect(completed!.completed_at).toBe(NOW.toISOString());
-
-    vi.setSystemTime(new Date(NOW.getTime() + 60_000));
-    expect(await reviewer.as.mutation(api.access.complete_review_access_session, { p_review_session_id: session!.id })).toBe(true);
-    expect((await t.run((ctx) => ctx.db.query("review_access_sessions").first()))!.completed_at).toBe(NOW.toISOString());
-    expect(await reviewer.as.mutation(api.access.complete_review_access_session, { p_review_session_id: newUuid() })).toBe(false);
-    await expect(t.mutation(api.access.complete_review_access_session, { p_review_session_id: session!.id })).rejects.toThrow(
-      /42501.*authenticated user required/,
-    );
   });
 });

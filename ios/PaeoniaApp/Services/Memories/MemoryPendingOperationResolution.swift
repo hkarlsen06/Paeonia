@@ -3,11 +3,10 @@ import Foundation
 extension UpdateMemoryOperationPayload {
     /// This edit replayed on top of the server's current memory. A field the edit
     /// changed keeps the edit's value; a field it left alone takes the server's value,
-    /// so the partner's change to it survives. Without a recorded base (older queued
-    /// operations), both fields count as changed.
+    /// so the partner's change to it survives.
     nonisolated func rebased(onto row: MemoryRemoteRow) -> UpdateMemoryOperationPayload {
-        let changedTitle = baseTitle == nil || title != baseTitle
-        let changedDate = baseMemoryDate == nil || memoryDate != baseMemoryDate
+        let changedTitle = title != baseTitle
+        let changedDate = memoryDate != baseMemoryDate
         return UpdateMemoryOperationPayload(
             memoryID: memoryID,
             expectedRevision: row.revision,

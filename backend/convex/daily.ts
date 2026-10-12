@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
-import { canAccessCoupleContent, getCurrentEntitledCoupleId, getEntitledCoupleIdForUser } from "./lib/access";
+import { canAccessCoupleContent, getCurrentEntitledCoupleId } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { runClientOperation } from "./lib/clientOperations";
 import { findCoupleDayAt, getOrCreateCoupleDayAt } from "./lib/coupleDays";
@@ -10,8 +10,6 @@ import {
   getDailyAnswerDetails,
   getDailyAnswerDetailsForContext,
   getDailyAnswerHistoryDetails,
-  getDailyAnswerRevealState,
-  getQuestionAnswerHistory,
   resetDailyChallengeForCouple,
   submitDailyAnswer,
   updateDailyAnswerPartnerChoice,
@@ -25,7 +23,6 @@ import {
   getTodayDailyQuestionsForContext,
   insertDailyQuestionInstance,
   pickDailyQuestionVersion,
-  type DailyQuestionRow,
 } from "./lib/dailyQuestions";
 import { fail } from "./lib/errors";
 import { newUuid, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
@@ -74,65 +71,6 @@ function operationFrom(args: OperationArgs): ClientOperationArgs {
   };
 }
 
-// ---- catalog ----
-
-export const get_active_question_catalog = query({
-  args: { p_locale: nullableString },
-  handler: async (ctx, args) => {
-    await requireUserId(ctx);
-    const collection = await ctx.db
-      .query("question_collections")
-      .withIndex("by_kind_status", (q) => q.eq("kind", "system").eq("status", "active"))
-      .first();
-    if (!collection) return [];
-    const questions = await ctx.db
-      .query("questions")
-      .withIndex("by_collection_id_status", (q) => q.eq("collection_id", collection.id).eq("status", "active"))
-      .collect();
-    const rows: Record<string, unknown>[] = [];
-    for (const question of questions) {
-      const version = await ctx.db
-        .query("question_versions")
-        .withIndex("by_question_id_status", (q) => q.eq("question_id", question.id).eq("status", "active"))
-        .first();
-      if (!version) continue;
-      const localizations = await ctx.db
-        .query("question_version_localizations")
-        .withIndex("by_question_version_id_locale", (q) => q.eq("question_version_id", version.id))
-        .collect();
-      if (!localizations.some((row) => row.locale === "en") || !localizations.some((row) => row.locale === "nb")) continue;
-      const kinds = (
-        await ctx.db
-          .query("question_answer_kinds")
-          .withIndex("by_question_version_id_answer_kind", (q) => q.eq("question_version_id", version.id))
-          .collect()
-      )
-        .map((row) => row.answer_kind)
-        .sort();
-      if (kinds.length < 1 || kinds.length > 2) continue;
-      for (const localization of localizations) {
-        if (args.p_locale !== null && args.p_locale !== undefined && localization.locale !== args.p_locale) continue;
-        rows.push({
-          collection_id: collection.id,
-          question_id: question.id,
-          question_key: question.key,
-          question_version_id: version.id,
-          version_number: version.version_number,
-          locale: localization.locale,
-          prompt: localization.prompt,
-          short_prompt: localization.short_prompt,
-          answer_kinds: kinds,
-          resurfaceable: question.resurfaceable,
-          resurface_after_months: question.resurface_after_months ?? null,
-        });
-      }
-    }
-    return rows.sort(
-      (a, b) => byString(a.question_key as string, b.question_key as string) || byString(a.locale as string, b.locale as string),
-    );
-  },
-});
-
 // ---- today's challenge ----
 
 async function startChallenge(ctx: MutationCtx, userId: string, args: OperationArgs): Promise<string> {
@@ -163,7 +101,7 @@ async function shuffleQuestion(
   ctx: MutationCtx,
   userId: string,
   args: OperationArgs & { p_slot_number: number },
-): Promise<string | null> {
+): Promise<string> {
   const slot = args.p_slot_number;
   if (!Number.isInteger(slot) || slot < 1 || slot > 3) {
     fail("23514", "slot number is out of range");
@@ -246,13 +184,7 @@ async function shuffleQuestion(
       return { replacement_instance_id: replacementId, couple_day_id: coupleDayId };
     },
   );
-  // Responses stored before this field existed have no day.
-  return (stored as { couple_day_id?: string }).couple_day_id ?? null;
-}
-
-async function todayQuestions(ctx: ReaderCtx, userId: string): Promise<DailyQuestionRow[]> {
-  const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-  return await getTodayDailyQuestionsForContext(ctx, userId, coupleId);
+  return stored.couple_day_id;
 }
 
 function byString(a: string, b: string): number {
@@ -333,15 +265,6 @@ async function snapshotAfterOperation(ctx: MutationCtx, userId: string, coupleDa
   return await snapshotRow(ctx, userId, coupleId, source, streak);
 }
 
-export const start_daily_challenge = mutation({
-  args: clientOperationArgs,
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    await startChallenge(ctx, userId, args);
-    return await todayQuestions(ctx, userId);
-  },
-});
-
 export const start_daily_challenge_snapshot = mutation({
   args: clientOperationArgs,
   handler: async (ctx, args) => {
@@ -382,20 +305,6 @@ export const get_daily_challenge_snapshot = query({
       return fail("42501", "active entitled couple access is required");
     }
     return await snapshotRow(ctx, userId, day.couple_id, { kind: "day", day }, await readCoupleStreak(ctx, day.couple_id));
-  },
-});
-
-export const get_today_daily_questions = query({
-  args: {},
-  handler: async (ctx) => await todayQuestions(ctx, await requireUserId(ctx)),
-});
-
-export const shuffle_daily_question = mutation({
-  args: { p_slot_number: v.number(), ...clientOperationArgs },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    await shuffleQuestion(ctx, userId, args);
-    return await todayQuestions(ctx, userId);
   },
 });
 
@@ -451,22 +360,6 @@ export const get_daily_answer_details = query({
     await getDailyAnswerDetails(ctx, await requireUserId(ctx), uuidArg(args.p_couple_day_id)),
 });
 
-export const get_daily_answer_details_for_couple_days = query({
-  args: { p_couple_day_ids: v.optional(v.union(v.null(), v.array(v.string()))) },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-    const dayIds = (args.p_couple_day_ids ?? []).map(uuidArg);
-    return await getDailyAnswerDetailsForContext(ctx, dayIds, userId, coupleId);
-  },
-});
-
-export const get_daily_answer_reveal_state = query({
-  args: { p_couple_day_id: v.string() },
-  handler: async (ctx, args) =>
-    await getDailyAnswerRevealState(ctx, await requireUserId(ctx), uuidArg(args.p_couple_day_id)),
-});
-
 export const get_daily_questions_history = query({
   args: {},
   handler: async (ctx) => {
@@ -480,17 +373,6 @@ export const get_daily_answer_history_details = query({
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
     return await getDailyAnswerHistoryDetails(ctx, userId, await getCurrentEntitledCoupleId(ctx, userId));
-  },
-});
-
-export const get_question_answer_history = query({
-  args: { p_question_id: v.string() },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    const questionId = uuidArg(args.p_question_id);
-    // can_access_couple_content only passes for the viewer's active entitled couple, so only that couple's answers can show.
-    const coupleId = await getEntitledCoupleIdForUser(ctx, userId);
-    return coupleId ? await getQuestionAnswerHistory(ctx, userId, coupleId, questionId) : [];
   },
 });
 

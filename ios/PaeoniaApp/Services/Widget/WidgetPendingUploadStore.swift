@@ -13,7 +13,7 @@ nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
     let boundsWidth: Double
     let boundsHeight: Double
     /// Where the upload got to, so a retry reuses its IDs. Nil until the
-    /// first attempt starts, and for markers saved by older builds.
+    /// first attempt starts.
     var progress: WidgetUploadProgress?
 
     init(
@@ -61,7 +61,6 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
 
     private let defaults: UserDefaults
     private let key = "paeonia.widgetCanvas.pendingUpload"
-    private let legacyHashKey = "paeonia.widgetCanvas.pendingUploadHash"
     private let retryDelay: TimeInterval
 
     init(
@@ -69,31 +68,14 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
         // Short enough that a reconnect soon after a failed send retries it.
         retryDelay: TimeInterval = 20
     ) {
-        let resolvedDefaults = defaults
+        self.defaults = defaults
             ?? UserDefaults(suiteName: PaeoniaAppGroup.identifier)
             ?? .standard
-        self.defaults = resolvedDefaults
         self.retryDelay = retryDelay
-
-        // Older builds kept this guard in app-only defaults. Move it once so
-        // the widget extension can protect the same pending local save during
-        // an interactive refresh.
-        if defaults == nil, resolvedDefaults !== UserDefaults.standard {
-            if resolvedDefaults.data(forKey: key) == nil,
-               let legacyData = UserDefaults.standard.data(forKey: key) {
-                resolvedDefaults.set(legacyData, forKey: key)
-            }
-            if resolvedDefaults.string(forKey: legacyHashKey) == nil,
-               let legacyHash = UserDefaults.standard.string(forKey: legacyHashKey) {
-                resolvedDefaults.set(legacyHash, forKey: legacyHashKey)
-            }
-            UserDefaults.standard.removeObject(forKey: key)
-            UserDefaults.standard.removeObject(forKey: legacyHashKey)
-        }
     }
 
     var hasPending: Bool {
-        defaults.data(forKey: key) != nil || defaults.string(forKey: legacyHashKey) != nil
+        defaults.data(forKey: key) != nil
     }
 
     var pendingSnapshot: WidgetPendingUploadSnapshot? {
@@ -117,7 +99,6 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
         )
         if let data = try? JSONEncoder().encode(snapshot) {
             defaults.set(data, forKey: key)
-            defaults.removeObject(forKey: legacyHashKey)
         }
     }
 
@@ -156,9 +137,6 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
         if pendingSnapshot?.contentHash == contentHash {
             defaults.removeObject(forKey: key)
         }
-        if defaults.string(forKey: legacyHashKey) == contentHash {
-            defaults.removeObject(forKey: legacyHashKey)
-        }
     }
 
     /// Puts back `previous` (or clears the marker when there was none), but only
@@ -176,6 +154,5 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
 
     func clearAll() {
         defaults.removeObject(forKey: key)
-        defaults.removeObject(forKey: legacyHashKey)
     }
 }

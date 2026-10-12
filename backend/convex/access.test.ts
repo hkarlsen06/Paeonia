@@ -72,7 +72,16 @@ function appleReturns(info: Record<string, unknown>, renewal?: Record<string, un
   });
 }
 
-function uploadBody(info: Record<string, unknown>, overrides: Record<string, unknown> = {}) {
+type UploadBody = {
+  jws: string;
+  transactionId: string;
+  originalTransactionId: string;
+  productId: string;
+  environment: "xcode" | "sandbox" | "production";
+  priceDisplay?: string;
+};
+
+function uploadBody(info: Record<string, unknown>, overrides: Partial<UploadBody> = {}): UploadBody {
   return {
     jws: jws(info),
     transactionId: String(info.transactionId),
@@ -82,6 +91,12 @@ function uploadBody(info: Record<string, unknown>, overrides: Record<string, unk
     priceDisplay: "kr 49,00",
     ...overrides,
   };
+}
+
+/** The streak restore action takes the upload without `priceDisplay`. */
+function restoreBody(info: Record<string, unknown>) {
+  const { priceDisplay: _priceDisplay, ...body } = uploadBody(info);
+  return body;
 }
 
 async function tokenFor(user: TestUser): Promise<string> {
@@ -169,7 +184,6 @@ describe("verify_purchase", () => {
     const result = await user.as.action(api.access.verify_purchase, uploadBody(info));
 
     expect(result).toEqual({
-      ok: true,
       entitled: true,
       subscription: {
         status: "active",
@@ -204,7 +218,7 @@ describe("verify_purchase", () => {
     expect(
       verify("sha256", Buffer.from(`${header}.${claims}`), { key: keys.publicKey, dsaEncoding: "ieee-p1363" }, Buffer.from(signature, "base64url")),
     ).toBe(true);
-    expect(await user.as.query(api.access.get_my_entitlement, {})).toMatchObject([{ is_entitled: true, source: "storekit" }]);
+    expect((await user.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement).toMatchObject({ is_entitled: true, source: "storekit" });
   });
 
   test("tries the other environment when Apple answers 404", async () => {
@@ -218,7 +232,7 @@ describe("verify_purchase", () => {
           : jsonResponse(404, {}),
     );
     const result = await user.as.action(api.access.verify_purchase, uploadBody(info, { environment: "sandbox" }));
-    expect(result).toMatchObject({ ok: true, subscription: { environment: "production" } });
+    expect(result).toMatchObject({ subscription: { environment: "production" } });
     expect(fetchMock.mock.calls[0][0]).toContain("storekit-sandbox");
     expect(fetchMock.mock.calls[1][0]).toContain("api.storekit.itunes");
   });
@@ -228,7 +242,7 @@ describe("verify_purchase", () => {
     const info = transactionInfo(token, { expiresDate: NOW.getTime() - day });
     appleReturns(info, { originalTransactionId: info.originalTransactionId, isInBillingRetryPeriod: true });
     const result = await user.as.action(api.access.verify_purchase, uploadBody(info));
-    expect(result).toMatchObject({ ok: true, entitled: false, subscription: { status: "billing_retry" } });
+    expect(result).toMatchObject({ entitled: false, subscription: { status: "billing_retry" } });
     expect((await transactions(t))[0].status).toBe("billing_retry");
   });
 
@@ -236,7 +250,7 @@ describe("verify_purchase", () => {
     await expect(promise).rejects.toMatchObject({ data: { code, message } });
   }
 
-  test("fails with the messages the app matches on", async () => {
+  test("fails with the codes the app matches on", async () => {
     const { t, user, token } = await setup();
     const info = transactionInfo(token);
     appleReturns(info);
@@ -244,7 +258,7 @@ describe("verify_purchase", () => {
     const stranger = await createSignedInUser(t);
     await expectFailure(
       stranger.as.action(api.access.verify_purchase, uploadBody(info)),
-      "http_403",
+      "purchase_linked_to_another_account",
       "Apple transaction belongs to a different user",
     );
 
@@ -252,7 +266,7 @@ describe("verify_purchase", () => {
     appleReturns(unregistered);
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody(unregistered)),
-      "http_403",
+      "purchase_linked_to_another_account",
       "Apple appAccountToken is not registered",
     );
 
@@ -260,7 +274,7 @@ describe("verify_purchase", () => {
     appleReturns(missingToken);
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody(missingToken)),
-      "http_403",
+      "app_account_token_missing",
       "Apple transaction is missing appAccountToken",
     );
     expect(await transactions(t)).toHaveLength(0);
@@ -271,45 +285,48 @@ describe("verify_purchase", () => {
     const info = transactionInfo(token);
 
     appleReturns(info);
-    await expectFailure(user.as.action(api.access.verify_purchase, {}), "http_500", "Missing jws");
-    await expectFailure(user.as.action(api.access.verify_purchase, { jws: "nope" }), "http_500", "Invalid Apple JWS format");
+    await expectFailure(user.as.action(api.access.verify_purchase, uploadBody(info, { jws: "" })), "invalid_request", "Invalid Apple JWS format");
+    await expectFailure(user.as.action(api.access.verify_purchase, uploadBody(info, { jws: "nope" })), "invalid_request", "Invalid Apple JWS format");
+    await expectFailure(user.as.action(api.access.verify_purchase, uploadBody(info, { transactionId: " " })), "invalid_request", "Missing transactionId");
+    // Arguments that are missing or have the wrong type never reach the handler.
+    await expect(user.as.action(api.access.verify_purchase, { jws: info as never } as never)).rejects.toThrow(/Validator error/);
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody(info, { environment: "xcode" })),
-      "http_400",
+      "invalid_request",
       "Local StoreKit transactions cannot be verified by Apple",
     );
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody(info, { productId: "no.paeonia.other" })),
-      "http_400",
+      "transaction_mismatch",
       "Product does not match Apple verification",
     );
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody(info, { originalTransactionId: "other" })),
-      "http_400",
+      "transaction_mismatch",
       "Original transaction does not match Apple verification",
     );
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody({ ...info, bundleId: "someone.else" })),
-      "http_400",
+      "transaction_mismatch",
       "Uploaded transaction does not match Apple verification",
     );
 
     appleReturns(transactionInfo(token, { bundleId: "someone.else" }));
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody(info)),
-      "http_400",
+      "transaction_mismatch",
       "Uploaded transaction does not match Apple verification",
     );
     appleReturns(transactionInfo(token, { productId: "no.paeonia.streak.restore", type: "Consumable" }));
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody(transactionInfo(token, { productId: "no.paeonia.streak.restore" }), { productId: "no.paeonia.streak.restore" })),
-      "http_400",
+      "invalid_transaction",
       "Apple product is not supported",
     );
     appleReturns(transactionInfo(token, { type: "Consumable" }));
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody(info)),
-      "http_400",
+      "invalid_transaction",
       "Apple transaction is not a subscription",
     );
     appleReturns(transactionInfo(token, { expiresDate: undefined }), {
@@ -318,7 +335,7 @@ describe("verify_purchase", () => {
     });
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody(info)),
-      "http_400",
+      "invalid_transaction",
       "Apple subscription is missing an expiry date",
     );
   });
@@ -327,18 +344,18 @@ describe("verify_purchase", () => {
     const { t, user, token } = await setup();
     const info = transactionInfo(token);
     fetchMock.mockResolvedValue(jsonResponse(500, { secret: "detail" }));
-    await expectFailure(user.as.action(api.access.verify_purchase, uploadBody(info)), "http_500", "Apple could not verify this purchase");
+    await expectFailure(user.as.action(api.access.verify_purchase, uploadBody(info)), "apple_verification_failed", "Apple could not verify this purchase");
 
     await expectFailure(
       t.action(api.access.verify_purchase, uploadBody(info)),
-      "http_401",
+      "not_signed_in",
       "Invalid session",
     );
 
     vi.stubEnv("APPLE_IAP_PRIVATE_KEY", "");
     await expectFailure(
       user.as.action(api.access.verify_purchase, uploadBody(info)),
-      "http_500",
+      "service_not_ready",
       "Purchase verification is not ready yet.",
     );
   });
@@ -350,7 +367,7 @@ describe("verify_purchase", () => {
     appleReturns(info);
     await expect(
       t.withIdentity({ subject: "user_unprovisioned", issuer: "https://clerk.test" }).action(api.access.verify_purchase, uploadBody(info)),
-    ).rejects.toMatchObject({ data: { code: "http_401", message: "Invalid session" } });
+    ).rejects.toMatchObject({ data: { code: "not_signed_in", message: "Invalid session" } });
   });
 });
 
@@ -364,7 +381,6 @@ describe("redeem_streak_restore", () => {
         couple_id: couple.coupleId,
         current_count: 0,
         longest_count: 7,
-        restore_available: true,
         restorable_count: 7,
         restorable_through_date: "2026-10-08",
         restore_deadline: new Date(NOW.getTime() + day).toISOString(),
@@ -388,51 +404,47 @@ describe("redeem_streak_restore", () => {
     const info = consumable(token);
     appleReturns(info);
 
-    const result = await couple.second.as.action(api.access.redeem_streak_restore, uploadBody(info, { priceDisplay: undefined }));
-    expect(result).toEqual({ ok: true, entitled: false, restoredCount: 7 });
+    const result = await couple.second.as.action(api.access.redeem_streak_restore, restoreBody(info));
+    expect(result).toEqual({ restoredCount: 7 });
     const [restoration] = await t.run((ctx) => ctx.db.query("streak_restorations").collect());
     expect(restoration).toMatchObject({ couple_id: couple.coupleId, purchaser_user_id: couple.second.userId, restored_count: 7 });
     const state = await t.run((ctx) => ctx.db.query("streak_states").first());
-    expect(state).toMatchObject({ current_count: 7, restorable_count: 0, restore_available: false });
+    expect(state).toMatchObject({ current_count: 7, restorable_count: 0 });
 
     // Redeeming the same purchase again reports the same count.
-    expect(await couple.second.as.action(api.access.redeem_streak_restore, uploadBody(info))).toEqual({
-      ok: true,
-      entitled: false,
-      restoredCount: 7,
-    });
+    expect(await couple.second.as.action(api.access.redeem_streak_restore, restoreBody(info))).toEqual({ restoredCount: 7 });
   });
 
-  test("fails with the messages the app matches on", async () => {
+  test("fails with the codes the app matches on", async () => {
     const { t, couple, token } = await restoreSetup();
     const info = consumable(token);
     appleReturns(info);
 
     await expect(
-      couple.first.as.action(api.access.redeem_streak_restore, uploadBody(info)),
-    ).rejects.toMatchObject({ data: { code: "http_403", message: "Apple transaction belongs to a different user" } });
+      couple.first.as.action(api.access.redeem_streak_restore, restoreBody(info)),
+    ).rejects.toMatchObject({ data: { code: "purchase_linked_to_another_account", message: "Apple transaction belongs to a different user" } });
 
     await t.run(async (ctx) => {
       const state = await ctx.db.query("streak_states").first();
       await ctx.db.patch(state!._id, { restorable_count: 0 });
     });
     await expect(
-      couple.second.as.action(api.access.redeem_streak_restore, uploadBody(info)),
-    ).rejects.toMatchObject({ data: { code: "http_409", message: "No streak is available to restore" } });
+      couple.second.as.action(api.access.redeem_streak_restore, restoreBody(info)),
+    ).rejects.toMatchObject({ data: { code: "no_streak_to_restore", message: "No streak is available to restore" } });
 
     appleReturns(consumable(undefined));
     await expect(
-      couple.second.as.action(api.access.redeem_streak_restore, uploadBody(consumable(undefined))),
-    ).rejects.toMatchObject({ data: { code: "http_403", message: "Apple transaction is missing appAccountToken" } });
+      couple.second.as.action(api.access.redeem_streak_restore, restoreBody(consumable(undefined))),
+    ).rejects.toMatchObject({ data: { code: "app_account_token_missing", message: "Apple transaction is missing appAccountToken" } });
 
     appleReturns(transactionInfo(token));
     await expect(
-      couple.second.as.action(api.access.redeem_streak_restore, uploadBody(transactionInfo(token))),
-    ).rejects.toMatchObject({ data: { code: "http_400", message: "Apple product is not supported" } });
+      couple.second.as.action(api.access.redeem_streak_restore, restoreBody(transactionInfo(token))),
+    ).rejects.toMatchObject({ data: { code: "invalid_transaction", message: "Apple product is not supported" } });
 
     appleReturns(consumable(token, { type: "Non-Consumable" }));
     await expect(
-      couple.second.as.action(api.access.redeem_streak_restore, uploadBody(consumable(token))),
-    ).rejects.toMatchObject({ data: { code: "http_400", message: "Apple transaction is not a streak restore" } });
+      couple.second.as.action(api.access.redeem_streak_restore, restoreBody(consumable(token))),
+    ).rejects.toMatchObject({ data: { code: "invalid_transaction", message: "Apple transaction is not a streak restore" } });
   });
 });

@@ -21,8 +21,6 @@ const NOTIFICATION_KINDS = [
   "partner_answered",
   "widget_updated",
   "location_updated",
-  "relationship_ended",
-  "entitlement_changed",
   "subscription_trial_reminder",
   "memory_created",
   "thread_message_sent",
@@ -211,7 +209,6 @@ export async function enqueueNotificationForUser(
     if (!preferenceAllows(kind, pushType, preference)) {
       continue;
     }
-    const copyPayload = { ...args.payload, lock_screen_detail_level: preference.lock_screen_detail_level };
     const inserted = await insertNotificationOutbox(ctx, {
       recipient_user_id: device.user_id,
       target_device_id: device.id,
@@ -223,8 +220,8 @@ export async function enqueueNotificationForUser(
       dedupe_key: dedupeBase === "" ? null : `${dedupeBase}:${device.id}`,
       apns_push_type: pushType,
       apns_collapse_id: collapseId === "" ? null : collapseId,
-      title: pushType === "alert" ? await notificationAlertTitle(ctx, kind, copyPayload, device.locale) : null,
-      body: pushType === "alert" ? notificationAlertBody(kind, copyPayload, device.locale) : null,
+      title: pushType === "alert" ? await notificationAlertTitle(ctx, kind, args.payload, device.locale) : null,
+      body: pushType === "alert" ? notificationAlertBody(kind, args.payload, device.locale) : null,
       scheduled_for: args.scheduled_for ?? null,
     });
     if (inserted) queued += 1;

@@ -168,6 +168,11 @@ final class DailyQuestionChatViewModel {
         // The screen is open, so everything it shows counts as seen, the partner's
         // answer included.
         await service.markPartnerAnswerSeen(ownerUserID: ownerUserID, instanceID: question.id)
+        // Notification Center can be slow to answer, so the chat doesn't wait on it.
+        let shownMessageIDs = Set(messages.map(\.id))
+        Task { [instanceID = question.id] in
+            await DeliveredNotifications.clearQuestion(instanceID: instanceID, shownMessageIDs: shownMessageIDs)
+        }
         let newestDelivered = messages.filter { !$0.isSending && !$0.sendFailed }.map(\.createdAt).max()
         if let threadID, let newestDelivered {
             await service.markThreadRead(ownerUserID: ownerUserID, threadID: threadID, through: newestDelivered)

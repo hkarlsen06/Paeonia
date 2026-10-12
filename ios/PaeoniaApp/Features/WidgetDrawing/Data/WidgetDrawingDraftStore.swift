@@ -31,14 +31,9 @@ protocol WidgetDrawingDraftStoring: AnyObject {
     /// screen that was open before a purge compares it and stops saving drafts.
     func purgeGeneration(for ownerUserID: UUID) -> Int
     /// Names the drawing that was on the widgets when the draft was made
-    /// (`PKDrawing.paeoniaStrokeFingerprint`). Nil for drafts from older builds.
+    /// (`PKDrawing.paeoniaStrokeFingerprint`). Nil when the best-effort write failed.
     func draftBase(for key: WidgetDrawingDraftKey) -> String?
     func setDraftBase(_ fingerprint: String, for key: WidgetDrawingDraftKey)
-}
-
-extension WidgetDrawingDraftStoring {
-    func draftBase(for _: WidgetDrawingDraftKey) -> String? { nil }
-    func setDraftBase(_: String, for _: WidgetDrawingDraftKey) {}
 }
 
 @MainActor
@@ -53,28 +48,7 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
     }
 
     func draft(for key: WidgetDrawingDraftKey) -> Data? {
-        if let data = try? Data(contentsOf: fileURL(for: key)) {
-            return data
-        }
-        return key.slot == .canvas ? moveLegacyDraft(to: key) : nil
-    }
-
-    /// Builds before drafts were kept per relationship stored one file per
-    /// person. The privacy purge deletes that file on unpair, so one that still
-    /// exists belongs to the current couple. Move it there instead of dropping
-    /// the unsent drawing. If the move fails the file stays and is read again.
-    private func moveLegacyDraft(to key: WidgetDrawingDraftKey) -> Data? {
-        let legacyURL = legacyFileURL(for: key.ownerUserID)
-        guard let data = try? Data(contentsOf: legacyURL) else {
-            return nil
-        }
-        let fileManager = FileManager.default
-        try? fileManager.createDirectory(
-            at: ownerDirectoryURL(for: key.ownerUserID),
-            withIntermediateDirectories: true
-        )
-        try? fileManager.moveItem(at: legacyURL, to: fileURL(for: key))
-        return data
+        try? Data(contentsOf: fileURL(for: key))
     }
 
     func setDraft(_ data: Data, for key: WidgetDrawingDraftKey) {
@@ -109,12 +83,7 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
 
     func clearDraft(for ownerUserID: UUID) {
         purgeGenerations[ownerUserID, default: 0] += 1
-        let fileManager = FileManager.default
-        try? fileManager.removeItem(at: ownerDirectoryURL(for: ownerUserID))
-        // The one-file-per-person draft from older builds goes too. Because of
-        // this, a legacy file that still exists belongs to the current couple,
-        // which is what makes `moveLegacyDraft` safe.
-        try? fileManager.removeItem(at: legacyFileURL(for: ownerUserID))
+        try? FileManager.default.removeItem(at: ownerDirectoryURL(for: ownerUserID))
     }
 
     func purgeGeneration(for ownerUserID: UUID) -> Int {
@@ -129,13 +98,6 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
         let suffix = key.slot == .setAside ? "-set-aside" : ""
         return ownerDirectoryURL(for: key.ownerUserID).appendingPathComponent(
             "\(key.coupleID.uuidString.lowercased())\(suffix).drawing",
-            isDirectory: false
-        )
-    }
-
-    private func legacyFileURL(for ownerUserID: UUID) -> URL {
-        directoryURL.appendingPathComponent(
-            "\(ownerUserID.uuidString.lowercased()).drawing",
             isDirectory: false
         )
     }

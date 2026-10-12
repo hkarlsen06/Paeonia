@@ -197,7 +197,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
             drawingData: data,
             authorName: metadata?.authorName,
             createdAt: metadata?.createdAt,
-            canvasSide: metadata?.canvasSide.map { CGFloat($0) }
+            canvasSide: metadata.map { CGFloat($0.canvasSide) }
         )
     }
 
@@ -468,7 +468,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
             isRedacted: false,
             contentHash: Self.contentHash(for: drawingData),
             previews: previews,
-            canvasSide: canvasSize.width > 0 ? Double(canvasSize.width) : nil
+            canvasSide: Double(canvasSize.width)
         )
 
         // Write the metadata last so it never references previews that do not

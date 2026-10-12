@@ -4,15 +4,42 @@ Plan and decisions for the Games tab. Nothing is built yet. Sections marked "Dec
 
 Keep this file current. When a games decision changes, or games code lands, update the matching section in the same change. Move items from "Open questions" to "Decisions" once the developer settles them, and replace proposals with what was actually built.
 
+Each game gets its own design doc in `docs/games/` once the developer picks it. That doc owns the game's rules, scoring and content. This file owns what all games share.
+
+- `docs/games/draw-and-guess.md`: the first game.
+
 ## Decisions
+
+Decided on 2026-10-12.
+
+- **Draw & Guess is the first game.** Design in `docs/games/draw-and-guess.md`.
+- **Every game is crafted.** A game ships only when it passes the quality bar below. It is better to ship fewer games than to ship thin ones.
+- **First-time setup.** The first time a couple opens Games, they choose two couple settings: play style and game language. The partner who opens Games first completes setup. The other partner sees what was picked on their first visit and skips setup. There is no step where both must agree. Either partner can change a setting later, and the last change wins.
+- **Play style.** The couple chooses whether they like to play against each other or together as a team. "Against each other" gives each partner their own score and a winner. "Together" gives one shared score. Each game's design doc says how the game plays in each style. A game where scores make no sense, such as Touch, can ignore the setting.
+- **Game language.** The couple picks a language they both understand. Word lists, decoy letters and other game content use it, whatever language each partner's app is in. The choices are the app's languages, English and Norwegian Bokmal. When both partners already use the same app language, setup preselects it.
+- **No game streaks.** Games never get a streak of their own. A game turn counts toward the couple's existing streak through a new activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Each game's design doc says which action counts.
+- **Live is not deferred.** When a game's design includes live play, live ships in the game's first version.
+- **Invite to play.** Every game with live play has a "Tell [Name] you want to play" button. It shows when the partner doesn't have the game open. Tapping it sends the partner a push, "[Name] wants to play [game] with you", and opening the push goes straight into the game.
+- **Scores grow forever.** Scores never reset. There are no seasons or weekly matches.
 
 Decided on 2026-10-11.
 
 - **Games is the fifth tab.** It becomes a new `MainTab` case. Its position among the tabs is still open.
 - **Overflow plan.** If the tab bar ever needs a sixth entry, the You tab becomes a More tab. Memories keeps its own tab.
 - **Included in the subscription.** Games are part of the subscription the couple already has. There is no separate purchase and no per-game unlock. Use the same couple entitlement check as other paid features.
-- **Saving to Memories is opt-in.** Only creative games offer it, such as Exquisite corpse and Draw & Guess drawings. Board games and quick duels never offer it. When a creative game ends, both partners are asked whether to save it. If either one says yes, it is saved. Nothing is saved without a yes.
+- **Saving to Memories is opt-in.** Only creative games offer it, such as Exquisite corpse and Draw & Guess drawings. Board games and quick duels never offer it. When a creative game or round ends, both partners are asked whether to save it. If either one says yes, it is saved. Nothing is saved without a yes.
 - **No forfeits on a timer.** An async game waits as long as it needs to. This follows the forgiving-streak rule in `AGENTS.md`.
+
+## Quality bar
+
+Check every game design against this list before building it.
+
+1. **Fun within 30 seconds.** The first turn teaches the rules by playing. No tutorial screen.
+2. **Works apart.** Partners are often in different time zones, so every game works async. A game with live play also works when only one partner is online.
+3. **Only in Paeonia.** GamePigeon already offers classic board games inside iMessage. A game earns its place by using what only Paeonia has: the drawing canvas, the couple's shared context, and Memories.
+4. **A designed reveal.** The moment a partner sees the other's move gets the most attention to timing, haptics and animation.
+5. **Hand-written content.** Word lists and prompts are written by hand for each language, never translated filler.
+6. **Ends gently.** No abandoned games, no guilt, no punishment for slow replies.
 
 ## Architecture
 
@@ -56,7 +83,7 @@ For two-phone physics (air hockey), the phone the puck is on runs the physics an
 
 ### Localization
 
-All game copy goes through the String Catalog in English and Norwegian Bokmal. Word lists (Draw & Guess) need both languages. Any dictionary-based game needs licensed word lists for both.
+All game copy goes through the String Catalog in English and Norwegian Bokmal. Game content such as word lists follows the couple's game language, so every list needs both languages. Any dictionary-based game needs licensed word lists for both.
 
 ## Game catalog
 
@@ -72,7 +99,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 | Reaction duel | Relay, Convex for results | No | S |
 | Air hockey | Relay | No | M |
 
-- **Draw & Guess.** One partner draws a word, the other types guesses. Reuses `WidgetDrawing/Live/*`. Partners can write custom words for each other.
+- **Draw & Guess.** The first game. It plays async, with live watching when both are online. Its full design is in `docs/games/draw-and-guess.md`.
 - **Mind Meld.** Both type a word at the same time and the words are revealed together. Each next round, both try to name a word that connects the last two. You win when you say the same word.
 - **Touch.** Both put a finger on the screen and see the partner's finger as a glow. When they overlap, both phones buzz and a flower opens.
 - **Reaction duel.** Tap when the flower opens. Uses the fairness rule above.
@@ -97,14 +124,15 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 - **Battleship with date ideas.** Hide date ideas instead of ships. Sinking one turns it into a plan.
 - **Chess and word games.** Popular but expensive. Chess needs a rules engine. A word game needs licensed English and Norwegian dictionaries. Deferred.
 
-## Proposed first release
+## Order
 
-Draw & Guess, Mind Meld, Connect Four, and Exquisite corpse. Between them they use all three paths (relay real-time, Convex simultaneous reveal, Convex async turns). Most of the work is the shared engine, so later games are mostly UI plus one rules function.
+Draw & Guess comes first. It builds the turn engine, the drawing replay and the save-to-Memories flow. Exquisite corpse reuses all three, so it is the likely second game. Mind Meld is the cheapest game that tests a simultaneous reveal on Convex. Connect Four fails quality bar item 3 unless it gets a Paeonia-specific twist.
 
 ## Open questions
 
-- Which games ship first. The list above is a proposal.
+- Which game comes after Draw & Guess.
 - Where Games sits in the tab order.
+- How often a partner can send an invite to play, so it never turns into spam.
 - How the save-to-Memories prompt works in detail: who is recorded as the memory's creator, how long the prompt waits for an answer, and whether either partner can dismiss it.
 - Whether a couple can have more than one active game of the same kind.
 - When the single turn reminder goes out.

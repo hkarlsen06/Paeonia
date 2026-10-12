@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import { sha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
-import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, relationshipStateOf, type TestConvex } from "./test.setup";
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -62,14 +62,13 @@ describe("profile", () => {
     expect(first).toMatchObject({ display_name: "Ada", revision: 1, moderation_status: "visible", deleted_at: null });
     const second = await as.mutation(api.identity.ensure_current_user, {});
     expect(second?.user_id).toBe(first?.user_id);
-    expect(await as.query(api.identity.get_own_profile, {})).toMatchObject({ user_id: first?.user_id });
     const preferences = await as.query(api.identity.get_notification_preferences, {});
     expect(preferences).toMatchObject({ streak_reminders_enabled: true, location_updates_enabled: true });
   });
 
   test("signed out callers are rejected", async () => {
     const t = newTest();
-    await expectFail(t.query(api.identity.get_own_profile, {}), "42501", "authenticated user required");
+    await expectFail(t.query(api.identity.get_notification_preferences, {}), "42501", "authenticated user required");
     await expectFail(t.mutation(api.identity.ensure_current_user, {}), "42501");
     await expectFail(
       t.mutation(api.identity.register_user_device, {
@@ -192,12 +191,12 @@ describe("profile", () => {
     const provider = await addProfilePhoto(t, first.userId, "provider");
     await first.as.mutation(api.identity.set_own_provider_profile_photo, { p_profile_photo_asset_id: provider, p_source: "google" });
     await first.as.mutation(api.identity.update_own_profile, { p_display_name: "First", p_profile_photo_asset_id: custom });
-    const before = await second.as.query(api.relationship.get_current_relationship_state, {});
-    expect(before[0].partner_profile_photo_asset_id).toBe(custom);
+    const before = await relationshipStateOf(second);
+    expect(before!.partner_profile_photo_asset_id).toBe(custom);
     await first.as.mutation(api.identity.update_own_profile, { p_display_name: "First", p_profile_photo_asset_id: null });
-    const after = await second.as.query(api.relationship.get_current_relationship_state, {});
-    expect(after[0].partner_profile_photo_asset_id).toBe(provider);
-    expect(after[0].partner_display_name).toBe("First");
+    const after = await relationshipStateOf(second);
+    expect(after!.partner_profile_photo_asset_id).toBe(provider);
+    expect(after!.partner_display_name).toBe("First");
   });
 
   test("a paired user can change their time zone during onboarding", async () => {

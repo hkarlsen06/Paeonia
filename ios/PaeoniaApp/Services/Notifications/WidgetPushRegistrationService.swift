@@ -55,7 +55,7 @@ actor ConvexWidgetPushRegistrationService: WidgetPushRegistering {
         }
 
         do {
-            let _: UUID = try await client.mutation(
+            let deviceID: UUID = try await client.mutation(
                 "widget:register_widget_push_device",
                 args: RegisterWidgetPushDeviceRequest(
                     widgetKind: PaeoniaAppGroup.widgetKind,
@@ -66,7 +66,7 @@ actor ConvexWidgetPushRegistrationService: WidgetPushRegistering {
                     appVersion: ConvexPushRegistrationService.appVersion
                 )
             )
-            fingerprintStore.recordSent(PushRegistrationRecord(fingerprint: fingerprint, sentAt: now))
+            fingerprintStore.recordSent(PushRegistrationRecord(fingerprint: fingerprint, sentAt: now, deviceID: deviceID))
         } catch {
             #if DEBUG
             logger.error("Widget push registration failed: \(String(describing: error))")

@@ -148,7 +148,7 @@ export default defineSchema({
     .index("by_status_expires_at", ["status", "expires_at"])
     .index("by_user_id_status_expires_at", ["user_id", "status", "expires_at"]),
 
-  // FK: report_id -> content_reports cascade; reviewer_user_id -> users set null
+  // FK: report_id -> content_reports cascade
   moderation_actions: defineTable({
     id: uuid,
     report_id: optUuid,
@@ -169,18 +169,15 @@ export default defineSchema({
     previous_moderation_status: v.optional(moderationStatus),
     new_moderation_status: v.optional(moderationStatus),
     storage_action: v.optional(literals("none", "queued_delete", "deleted", "failed")),
-    operator_kind: literals("service_role", "sql_runbook", "edge_function", "admin_user"),
+    operator_kind: v.literal("operator"),
     operator_identifier: v.string(),
-    reviewer_user_id: optUuid,
-    runbook_id: optString,
     reason: optString,
     notes: optString,
     created_at: ts,
     updated_at: ts,
   })
     .index("by_uuid", ["id"])
-    .index("by_report_id_created_at", ["report_id", "created_at"])
-    .index("by_reviewer_user_id", ["reviewer_user_id"]),
+    .index("by_report_id_created_at", ["report_id", "created_at"]),
 
   // FK: recipient_user_id -> users cascade; target_device_id -> user_devices cascade
   notification_outbox: defineTable({
@@ -365,7 +362,6 @@ export default defineSchema({
     entitlement_grant_id: optUuid,
     scenario: reviewScenario,
     auth_verified_at: ts,
-    completed_at: optTs,
     redeemed_at: ts,
     user_agent: optString,
     app_version: optString,
@@ -439,24 +435,15 @@ export default defineSchema({
     revoked_at: optTs,
     revocation_reason: optString,
     raw_payload_id: optUuid,
-    last_reconciled_at: optTs,
     created_at: ts,
     updated_at: ts,
-    reconciliation_claimed_at: optTs,
-    reconciliation_attempts: v.number(),
-    last_reconciliation_error: optString,
   })
     .index("by_uuid", ["id"])
     .index("by_environment_transaction_id", ["environment", "transaction_id"])
     .index("by_environment_original_transaction_id", ["environment", "original_transaction_id"])
     .index("by_product_id_user_id", ["product_id", "user_id"])
     .index("by_raw_payload_id", ["raw_payload_id"])
-    .index("by_status_expires_at_last_reconciled_at_claimed_at", [
-      "status",
-      "expires_at",
-      "last_reconciled_at",
-      "reconciliation_claimed_at",
-    ])
+    .index("by_status_expires_at", ["status", "expires_at"])
     .index("by_user_id_status_expires_at", ["user_id", "status", "expires_at"]),
 
   // FK: couple_id -> couples cascade; product_id -> subscription_products restrict
@@ -1167,7 +1154,6 @@ export default defineSchema({
     longest_count: v.number(),
     last_qualified_date: v.optional(date),
     last_qualified_couple_day_id: optUuid,
-    restore_available: v.boolean(),
     next_activity_deadline_at: optTs,
     updated_at: ts,
     restorable_count: v.number(),

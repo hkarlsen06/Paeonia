@@ -183,8 +183,9 @@ final class DailyVoiceRecorder {
         try await DailyVoiceAudioSession.configureForRecording()
     }
 
-    /// Deactivation can block on older OS versions. Fire-and-forget:
-    /// the recorder has already stopped, so nothing waits on session closing.
+    /// Before iOS 27, deactivating the session blocks its caller, so the helper
+    /// runs it on a background task. Nothing waits for it, because the recorder
+    /// has already stopped.
     private func deactivateSession() {
         DailyVoiceAudioSession.deactivate()
     }

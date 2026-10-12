@@ -1,20 +1,21 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
+import { notificationStaleAt } from "./lib/apns";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { getByUuid, withTouch } from "./lib/db";
-import { fail } from "./lib/errors";
 import { optionalTimestampArg, uuidArg } from "./lib/ids";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { addMs, nowIso } from "./lib/time";
 
-/** The outbox tables and the Edge Function share this attempt budget. */
+/** Both outbox tables share this attempt budget. */
 const MAX_ATTEMPTS = 5;
 /** A claimed notification is invisible to other drains for this long. A failed send retries after it. */
 const NOTIFICATION_LEASE_MS = 30_000;
 /** Read cap per call. The 30 second cron picks up whatever is left. */
 const SCAN_CAP = 1000;
 const TARGET_INELIGIBLE = "notification target is no longer eligible";
+const OUT_OF_DATE = "notification is out of date";
 
 const clampLimit = (limit: number | undefined) => Math.max(1, Math.min(limit ?? 50, 200));
 
@@ -42,16 +43,10 @@ function pendingDueWidgetPushes(ctx: ReaderCtx, now: string) {
 }
 
 /**
- * Port of the preference `case` in `claim_notification_batch` and
- * `claim_due_notifications`. A missing preference row blocks the kinds that
- * have a preference and allows the rest. `strictWidget` is the older
- * `claim_due_notifications` rule, which also gates silent widget pushes.
+ * Port of the preference `case` in `claim_notification_batch`. A missing
+ * preference row blocks the kinds that have a preference and allows the rest.
  */
-function kindAllowed(
-  row: Doc<"notification_outbox">,
-  preference: Doc<"notification_preferences"> | null,
-  strictWidget: boolean,
-): boolean {
+function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notification_preferences"> | null): boolean {
   switch (row.kind) {
     case "streak_reminder":
       return preference?.streak_reminders_enabled ?? false;
@@ -60,7 +55,7 @@ function kindAllowed(
     case "partner_answered":
       return preference?.partner_answered_enabled ?? false;
     case "widget_updated":
-      return (!strictWidget && row.apns_push_type !== "alert") || (preference?.widget_updates_enabled ?? false);
+      return row.apns_push_type !== "alert" || (preference?.widget_updates_enabled ?? false);
     case "location_updated":
       return preference?.location_updates_enabled ?? false;
     case "memory_created":
@@ -73,15 +68,14 @@ function kindAllowed(
 }
 
 /**
- * The shared body of both notification claims. Fails every due row whose device
- * is gone or disabled or whose kind the user turned off, then returns up to
- * `limit` of the remaining due rows (oldest first) with their device.
+ * Fails every due row whose device is gone or disabled or whose kind the user
+ * turned off, then returns up to `limit` of the remaining due rows (oldest
+ * first) with their device.
  */
 async function sweepAndPickNotifications(
   ctx: WriterCtx,
   now: string,
   limit: number,
-  options: { strictWidget: boolean; respectAttemptBudget: boolean },
 ): Promise<{ row: Doc<"notification_outbox">; device: Doc<"user_devices"> }[]> {
   const devices = new Map<string, Doc<"user_devices"> | null>();
   const preferences = new Map<string, Doc<"notification_preferences"> | null>();
@@ -105,13 +99,18 @@ async function sweepAndPickNotifications(
             .unique(),
         );
       }
-      eligible = kindAllowed(row, preferences.get(device!.user_id)!, options.strictWidget);
+      eligible = kindAllowed(row, preferences.get(device!.user_id)!);
     }
     if (!eligible) {
       await ctx.db.patch(row._id, { failed_at: now, last_attempt_at: now, last_error: TARGET_INELIGIBLE });
       continue;
     }
-    if (picked.length < limit && (!options.respectAttemptBudget || row.attempt_count < MAX_ATTEMPTS)) {
+    const staleAt = notificationStaleAt(row.payload);
+    if (staleAt !== null && Date.parse(staleAt) <= Date.parse(now)) {
+      await ctx.db.patch(row._id, { failed_at: now, last_attempt_at: now, last_error: OUT_OF_DATE });
+      continue;
+    }
+    if (picked.length < limit && row.attempt_count < MAX_ATTEMPTS) {
       picked.push({ row, device: device! });
     }
   }
@@ -144,22 +143,6 @@ async function failExhaustedWidgetPushes(ctx: WriterCtx, now: string): Promise<n
   return failed;
 }
 
-export const fail_exhausted_notification_claims = internalMutation({
-  args: { p_now: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    await failExhaustedNotifications(ctx, optionalTimestampArg(args.p_now) ?? nowIso());
-    return null;
-  },
-});
-
-export const fail_exhausted_widget_push_claims = internalMutation({
-  args: { p_now: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    await failExhaustedWidgetPushes(ctx, optionalTimestampArg(args.p_now) ?? nowIso());
-    return null;
-  },
-});
-
 /**
  * Port of `internal.claim_notification_batch`, the claim the APNs drain uses.
  * Each claimed row gets a 30 second lease so a second drain skips it.
@@ -169,10 +152,7 @@ export const claim_notification_batch = internalMutation({
   handler: async (ctx, args) => {
     const now = optionalTimestampArg(args.p_now) ?? nowIso();
     await failExhaustedNotifications(ctx, now);
-    const picked = await sweepAndPickNotifications(ctx, now, clampLimit(args.p_limit), {
-      strictWidget: false,
-      respectAttemptBudget: true,
-    });
+    const picked = await sweepAndPickNotifications(ctx, now, clampLimit(args.p_limit));
     const lease = addMs(now, NOTIFICATION_LEASE_MS);
     const claimed = [];
     for (const { row, device } of picked) {
@@ -192,39 +172,6 @@ export const claim_notification_batch = internalMutation({
         title: row.title ?? null,
         body: row.body ?? null,
         payload: row.payload,
-      });
-    }
-    return claimed;
-  },
-});
-
-/** Port of `internal.claim_due_notifications`. No lease and no attempt budget. */
-export const claim_due_notifications = internalMutation({
-  args: { p_limit: v.optional(v.number()), p_now: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    const limit = args.p_limit ?? 100;
-    if (!Number.isInteger(limit) || limit < 1 || limit > 500) {
-      fail("23514", "notification claim limit is out of range");
-    }
-    const now = optionalTimestampArg(args.p_now) ?? nowIso();
-    const picked = await sweepAndPickNotifications(ctx, now, limit, { strictWidget: true, respectAttemptBudget: false });
-    const claimed = [];
-    for (const { row, device } of picked) {
-      await ctx.db.patch(row._id, { attempt_count: row.attempt_count + 1, last_attempt_at: now, last_error: undefined });
-      claimed.push({
-        outbox_id: row.id,
-        recipient_user_id: row.recipient_user_id,
-        target_device_id: row.target_device_id,
-        push_token: device.push_token,
-        push_token_hash: row.push_token_hash,
-        apns_environment: row.apns_environment,
-        kind: row.kind,
-        payload_version: row.payload_version,
-        redaction_level: row.redaction_level,
-        payload: row.payload,
-        apns_push_type: row.apns_push_type,
-        apns_collapse_id: row.apns_collapse_id ?? null,
-        attempt_count: row.attempt_count + 1,
       });
     }
     return claimed;
@@ -257,36 +204,6 @@ export const mark_notification_result = internalMutation({
       });
     }
     return null;
-  },
-});
-
-/** Port of `internal.mark_notification_sent`. */
-export const mark_notification_sent = internalMutation({
-  args: { p_outbox_id: v.string(), p_provider_message_id: v.optional(v.union(v.null(), v.string())) },
-  handler: async (ctx, args) => {
-    const row = await getByUuid(ctx, "notification_outbox", uuidArg(args.p_outbox_id));
-    if (!row || row.sent_at !== undefined) return false;
-    await ctx.db.patch(row._id, {
-      provider_message_id: cleanText(args.p_provider_message_id, Infinity),
-      sent_at: nowIso(),
-      failed_at: undefined,
-      last_error: undefined,
-    });
-    return true;
-  },
-});
-
-/** Port of `internal.mark_notification_failed`. */
-export const mark_notification_failed = internalMutation({
-  args: { p_outbox_id: v.string(), p_error: v.optional(v.union(v.null(), v.string())), p_terminal: v.optional(v.boolean()) },
-  handler: async (ctx, args) => {
-    const row = await getByUuid(ctx, "notification_outbox", uuidArg(args.p_outbox_id));
-    if (!row || row.sent_at !== undefined) return false;
-    await ctx.db.patch(row._id, {
-      last_error: cleanText(args.p_error, 2000),
-      failed_at: args.p_terminal ? nowIso() : undefined,
-    });
-    return true;
   },
 });
 

@@ -58,8 +58,8 @@ export function notificationAlertBody(
       return nb ? "La til en ny tegning" : "Added a new drawing";
     case "partner_answered":
       return nb
-        ? "Åpne Paeonia for å se hva partneren din skrev."
-        : "Open Paeonia to reveal what they wrote.";
+        ? "Dere har svart på samme spørsmål. Åpne Paeonia for å se svaret."
+        : "You both answered the same question. Open Paeonia to see what they said.";
     case "daily_challenge_completed":
       return nb
         ? "Åpne Paeonia for å svare og se hva partneren din skrev."
@@ -67,14 +67,11 @@ export function notificationAlertBody(
     case "memory_created":
       return nb ? "Åpne Paeonia for å se det." : "Open Paeonia to see it.";
     case "thread_message_sent":
-      if (payload.lock_screen_detail_level === "descriptive") {
-        return nb ? "Åpne Paeonia for å svare." : "Open Paeonia to reply.";
-      }
-      return nb ? "Åpne Paeonia for å se hva som er nytt." : "Open Paeonia to see what's new.";
+      return nb ? "Åpne Paeonia for å lese og svare." : "Open Paeonia to read it and reply.";
     case "streak_reminder":
       return nb
-        ? "Gjør én liten ting i dag. Rekken fortsetter når dere begge har sjekket inn."
-        : "Do one small thing today. Your streak continues once both of you have checked in.";
+        ? "En rask tegning holder. Rekken fortsetter når dere begge har sjekket inn."
+        : "A quick drawing is enough. Your streak continues once you've both checked in.";
     case "subscription_trial_reminder":
       return nb
         ? `${daysLeft}${daysLeft === 1 ? " dag igjen. " : " dager igjen. "}Se over abonnementet ditt i App Store.`
@@ -92,24 +89,18 @@ export async function notificationAlertTitle(
   locale: string | null | undefined,
 ): Promise<string> {
   const nb = notificationLocaleLanguage(locale) === "nb";
-  const actorName = await notificationActorDisplayName(ctx, payload);
-  const name = actorName ?? "Paeonia";
+  const name = (await notificationActorDisplayName(ctx, payload)) ?? (nb ? "Partneren din" : "Your partner");
   switch (kind) {
     case "widget_updated":
       return name;
     case "partner_answered":
-      return nb ? `${name} svarte på samme spørsmål!` : `${name} answered the same question!`;
+      return nb ? `${name} svarte også` : `${name} answered too`;
     case "daily_challenge_completed":
       return nb ? `${name} fullførte dagens spørsmål` : `${name} finished today's questions`;
     case "memory_created":
       return nb ? `${name} la til et nytt minne` : `${name} added a new memory`;
     case "thread_message_sent":
-      if (payload.lock_screen_detail_level === "descriptive") {
-        return nb
-          ? `${actorName ?? "Partneren din"} sendte deg en melding`
-          : `${actorName ?? "Your partner"} sent you a message`;
-      }
-      return "Paeonia";
+      return nb ? `${name} sendte deg en melding` : `${name} sent you a message`;
     case "streak_reminder":
       return nb ? "Tid for å sjekke inn" : "Time for a quick check-in";
     case "subscription_trial_reminder":

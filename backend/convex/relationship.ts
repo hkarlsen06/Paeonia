@@ -7,21 +7,11 @@ import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dateArg, optionalTimestampArg, optionalUuidArg } from "./lib/ids";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
-import { blockRelationship } from "./lib/relationshipBlock";
 import { cleanupCoupleContent, isPurgeable, purgeCoupleContent } from "./lib/relationshipCleanup";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
-import { getCurrentRelationshipState } from "./lib/relationshipState";
 import { requireUserId } from "./lib/auth";
 import { createRelationshipSyncEvent } from "./lib/syncEvents";
 import { nowIso } from "./lib/time";
-
-export const get_current_relationship_state = query({
-  args: {},
-  handler: async (ctx) => {
-    const state = await getCurrentRelationshipState(ctx, await requireUserId(ctx));
-    return state ? [state] : [];
-  },
-});
 
 export const get_relationship_sync_events = query({
   args: {
@@ -83,37 +73,6 @@ export const leave_relationship = mutation({
       },
     );
     return outcome.left;
-  },
-});
-
-export const block_relationship = mutation({
-  args: { p_blocked_user_id: v.union(v.null(), v.string()) },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    return await blockRelationship(ctx, userId, optionalUuidArg(args.p_blocked_user_id));
-  },
-});
-
-export const unblock_pair = mutation({
-  args: { p_pair_id: v.union(v.null(), v.string()) },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    const pairId = optionalUuidArg(args.p_pair_id);
-    if (!pairId) return false;
-    const blocks = await ctx.db
-      .query("relationship_blocks")
-      .withIndex("by_pair_id_revoked_at", (q) => q.eq("pair_id", pairId).eq("revoked_at", undefined))
-      .collect();
-    const own = blocks.filter((block) => block.blocked_by_user_id === userId);
-    const revokedAt = nowIso();
-    for (const block of own) {
-      await ctx.db.patch(block._id, {
-        revoked_at: revokedAt,
-        revoked_by_user_id: userId,
-        revoke_reason: "user_unblocked",
-      });
-    }
-    return own.length > 0;
   },
 });
 
