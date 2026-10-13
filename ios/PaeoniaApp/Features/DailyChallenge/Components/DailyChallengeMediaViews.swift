@@ -228,10 +228,11 @@ struct DailySendingAnswerView: View {
     var voiceDurationMs: Int? = nil
     var partnerChoiceName: String? = nil
     var text: String? = nil
-    /// Whether to show the "saved on this phone, sending" line under the answer. On by
-    /// default; the partner-answer reveal flow turns it off so the just-sent answer
-    /// reads as the settled answered state while it holds for the reveal.
-    var showsSendingStatus = true
+    /// Whether to show the "saved on this phone, sending" line under the answer. Pass
+    /// true only once a try to send it failed, so a normal send never flashes the line.
+    /// The partner-answer reveal flow passes false so the just-sent answer reads as
+    /// the settled answered state while it holds for the reveal.
+    let showsSendingStatus: Bool
 
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
 

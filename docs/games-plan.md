@@ -19,6 +19,7 @@ Decided on 2026-10-12.
 - **Game language.** The couple picks a language they both understand. Word lists, decoy letters and other game content use it, whatever language each partner's app is in. The choices are the app's languages, English and Norwegian Bokmal. When both partners already use the same app language, setup preselects it.
 - **No game streaks.** Games never get a streak of their own. A game turn counts toward the couple's existing streak through a new activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Each game's design doc says which action counts.
 - **Tab order.** Home, Questions, Games, Memories, You. Games sits in the middle.
+- **Tab badge.** The Games tab shows a badge of 1 while any game waits for this person to draw or guess. The tab bar loads the game state at launch, so the badge shows before the tab is opened.
 - **Save prompt details.** The partner who says yes first is recorded as the memory's creator. The save option is a single "Save drawing to Memories" button with no question above it. Continuing past the result without tapping it means no, for that partner only. Once the drawing is saved, the other partner's prompt turns into "Saved to Memories".
 - **One ongoing game per kind.** A couple has at most one active game of each kind.
 - **Turn reminder.** When a move has waited 72 hours, the partner whose turn it is gets one reminder. There is never a second one for the same move.

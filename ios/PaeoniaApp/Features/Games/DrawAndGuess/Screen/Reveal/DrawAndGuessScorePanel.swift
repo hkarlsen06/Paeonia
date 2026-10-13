@@ -10,6 +10,9 @@ struct DrawAndGuessScorePanel: View {
     let isCounting: Bool
     let animates: Bool
     let showsSpeedBonus: Bool
+    /// The result failed to send at least once. Only then does the panel say the
+    /// score updates later, so a result on its normal way never flashes that line.
+    let isHeldOnPhone: Bool
 
     /// The server confirmed a result that was only on this phone, with a speed
     /// bonus the reveal did not plan for. The line shows without a second celebration.
@@ -24,7 +27,7 @@ struct DrawAndGuessScorePanel: View {
             case let .against(mine, theirs):
                 against(mine: mine, theirs: theirs)
             }
-            if score.isEstimate {
+            if score.isEstimate, isHeldOnPhone {
                 Text(.gamesDrawAndGuessRevealOfflineScore)
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaSyncPending)

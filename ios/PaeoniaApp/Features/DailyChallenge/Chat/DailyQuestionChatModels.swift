@@ -41,6 +41,8 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
     let createdAt: Date
     let clientOperationID: UUID?
     let isSending: Bool
+    /// A try to send it failed, so it may stay on this phone a while.
+    var isHeldOnPhone = false
     var sendFailed = false
     /// Set when the message is a voice message instead of text.
     var voice: DailyQuestionChatVoice?

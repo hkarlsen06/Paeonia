@@ -402,7 +402,8 @@ struct DailyPartnerAnswerRevealView: View {
                     mediaData: sending.mediaData,
                     voiceDurationMs: sending.voiceDurationMs,
                     partnerChoiceName: sending.partnerChoiceName,
-                    text: sending.text
+                    text: sending.text,
+                    showsSendingStatus: sending.isHeldOnPhone
                 )
             }
             .padding(PaeoniaSpacing.space12)

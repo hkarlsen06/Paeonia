@@ -1275,6 +1275,8 @@ struct DailyChallengeMappingTests {
         // Saved on the device and shown as sending right away — nothing was lost and no
         // error was raised — with the trimmed text queued for the sync engine to send.
         #expect(viewModel.isSending(question.id))
+        // On its first try it is only sending, so no "saved on this phone" line.
+        #expect(!viewModel.isHeldOnPhone(question.id))
         #expect(viewModel.notice == nil)
         #expect(viewModel.draftText(for: question.id).isEmpty)
         #expect(viewModel.sendingText(for: question.id) == "Thinking of you")
@@ -1289,6 +1291,14 @@ struct DailyChallengeMappingTests {
         #expect(payload.instanceID == question.id)
         #expect(payload.content == .text("Thinking of you"))
 
+        // The try fails. The answer is now held on this phone, and the screen says so.
+        try await pendingStore.markRetryableFailure(
+            clientOperationID: try #require(queued.first).operation.id,
+            errorDescription: String(describing: URLError(.notConnectedToInternet)),
+            nextRetryAt: nil,
+            at: Date()
+        )
+
         let relaunched = DailyChallengeViewModel(
             service: service,
             operationProvider: FixedDailyChallengeOperationProvider(),
@@ -1297,6 +1307,7 @@ struct DailyChallengeMappingTests {
         )
         await relaunched.configure(currentUserID: TestDailyChallengeIDs.currentUser)
         #expect(relaunched.isSending(question.id))
+        #expect(relaunched.isHeldOnPhone(question.id))
         #expect(relaunched.sendingText(for: question.id) == "Thinking of you")
     }
 

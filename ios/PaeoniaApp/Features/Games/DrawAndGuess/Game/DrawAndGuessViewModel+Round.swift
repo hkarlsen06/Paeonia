@@ -250,6 +250,13 @@ extension DrawAndGuessViewModel {
         return nil
     }
 
+    /// The language to name above the answer while guessing, when it differs
+    /// from the app's language. It follows the couple's setting, as the tiles do.
+    var guessLanguageNotice: GameLanguage? {
+        guard let round, let language = settings?.language else { return nil }
+        return GameLanguage.guessNotice(game: language, app: .app, difficulty: round.difficulty)
+    }
+
     /// The drawing the drawer sent or queued, which can no longer change: the
     /// downloaded file or the drawing queued on this phone. A live room can miss
     /// a stroke still on its way, and the canvas can still change, so Memories

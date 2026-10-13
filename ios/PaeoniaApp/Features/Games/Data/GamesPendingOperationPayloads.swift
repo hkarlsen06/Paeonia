@@ -85,6 +85,10 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
     /// than having no connection, such as the server refusing it. The waiting
     /// screen then says so instead of "saved on this phone".
     var lastSendFailedWhileOnline = false
+    /// A waiting move has had a try that did not get through, for any reason.
+    /// Until then the move is on its first send, and the screen says nothing
+    /// about it being on this phone, so a normal send never flashes that line.
+    var hasFailedMoveAttempt = false
 
     static let none = DrawAndGuessPendingWork()
 
@@ -128,6 +132,9 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
             let operations = try await store.inFlightOperations(ownerUserID: ownerUserID, kind: kind)
             if isMove, operations.contains(where: \.failedWhileOnline) {
                 work.lastSendFailedWhileOnline = true
+            }
+            if isMove, operations.contains(where: \.hasFailedAttempt) {
+                work.hasFailedMoveAttempt = true
             }
             return operations.compactMap { operation in
                 operation.requestData.flatMap { try? decoder.decode(Payload.self, from: $0) }

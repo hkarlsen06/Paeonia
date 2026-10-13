@@ -9,6 +9,7 @@ struct DailySendingPreview {
     var voiceDurationMs: Int?
     var partnerChoiceName: String?
     var text: String?
+    var isHeldOnPhone = false
 }
 
 /// A short row for one question in a list: the question, who has answered, and what
@@ -99,7 +100,8 @@ struct DailyChallengeReadCard: View {
                         mediaData: sending.mediaData,
                         voiceDurationMs: sending.voiceDurationMs,
                         partnerChoiceName: sending.partnerChoiceName,
-                        text: sending.text
+                        text: sending.text,
+                        showsSendingStatus: sending.isHeldOnPhone
                     )
                 } else {
                     statusRow

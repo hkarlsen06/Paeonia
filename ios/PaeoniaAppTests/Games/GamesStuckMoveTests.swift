@@ -181,6 +181,16 @@ struct GamesStuckMoveTests {
         #expect(!snapshotWithError(nil).failedWhileOnline)
     }
 
+    /// Every move waits in the queue for a moment, also online. The screen only
+    /// says it is saved on this phone once a try has failed, so a normal send
+    /// never flashes that line.
+    @Test func aMoveIsHeldOnThePhoneOnlyAfterATryFailed() {
+        #expect(!snapshotWithError(nil).hasFailedAttempt)
+        #expect(snapshotWithError("Retry later").hasFailedAttempt)
+        // The next try clears the error while it runs.
+        #expect(snapshotWithError(nil, attemptCount: 2).hasFailedAttempt)
+    }
+
     @Test func theWaitingScreenSaysItCouldNotSendAndTheMoveDropsAfterTheLastTry() async throws {
         environment.gateway.setGuessError(serverError, whenClaiming: true)
         let viewModel = environment.viewModel()
@@ -192,12 +202,16 @@ struct GamesStuckMoveTests {
         await viewModel.reload()
         await environment.cache.acknowledgeRound(GameFixture.roundID, ownerUserID: GameFixture.me)
         try await queueWrongThenCorrectGuess()
+        await viewModel.reload()
+        #expect(viewModel.phase == .waitingToSync)
+        #expect(!viewModel.isHeldOnPhone)
 
         // The live feed and the queue changes make the screen read again. Here the test does.
         await viewModel.retrySending()
         await viewModel.reload()
         #expect(viewModel.phase == .waitingToSync)
         #expect(viewModel.isSendFailing)
+        #expect(viewModel.isHeldOnPhone)
 
         for _ in 0..<2 {
             await viewModel.retrySending()
@@ -249,7 +263,7 @@ struct GamesStuckMoveTests {
         #expect(await environment.queued(.submitGameGuess).isEmpty)
     }
 
-    private func snapshotWithError(_ error: String?) -> PendingSyncOperationSnapshot {
+    private func snapshotWithError(_ error: String?, attemptCount: Int = 1) -> PendingSyncOperationSnapshot {
         PendingSyncOperationSnapshot(
             ownerUserID: GameFixture.me,
             operation: SyncClientOperation(clientID: clientID, clientSequence: 1),
@@ -258,7 +272,7 @@ struct GamesStuckMoveTests {
             requestHash: nil,
             requestData: nil,
             status: .failedRetryable,
-            attemptCount: 1,
+            attemptCount: attemptCount,
             lastAttemptAt: nil,
             nextRetryAt: nil,
             lastError: error,

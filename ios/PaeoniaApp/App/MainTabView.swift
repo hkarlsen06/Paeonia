@@ -168,7 +168,7 @@ struct MainTabView: View {
             ForEach(tabs) { tab in
                 content(for: tab)
                     .tag(tab)
-                    .badge(tab == .questions ? dailyChallengeViewModel.unreadChats.count : 0)
+                    .badge(badgeCount(for: tab))
                     .tabItem {
                         Label {
                             Text(tab.title)
@@ -198,6 +198,17 @@ struct MainTabView: View {
         .onChange(of: dailyChallengeParticipants) { _, participants in
             dailyChallengeViewModel.refreshParticipants(participants)
         }
+        // The Games tab's badge needs the game state before the tab is opened, so
+        // the tab bar loads and follows it.
+        .task(id: identity.currentUserID) {
+            gamesViewModel.configure(participants: gamesParticipants)
+            await gamesViewModel.load()
+        }
+        .task(id: identity.currentUserID) {
+            await gamesViewModel.observeStoreChanges()
+        }
+        // Names, photos and the couple arrive after launch. They never reload the games.
+        .onChange(of: gamesParticipants) { _, participants in gamesViewModel.configure(participants: participants) }
         .task(id: identity.currentUserID) {
             // A closure literal, because the stored value read out of the non-Sendable
             // MainTabActions counts as non-Sendable here.
@@ -261,12 +272,16 @@ struct MainTabView: View {
         }
     }
 
+    private func badgeCount(for tab: MainTab) -> Int {
+        switch tab {
+        case .questions: dailyChallengeViewModel.unreadChats.count
+        case .games: gamesViewModel.isYourTurn ? 1 : 0
+        case .home, .you, .memories: 0
+        }
+    }
+
     private var gamesTab: some View {
-        GamesRootView(
-            viewModel: gamesViewModel,
-            path: $gamesPath,
-            participants: gamesParticipants
-        )
+        GamesRootView(viewModel: gamesViewModel, path: $gamesPath)
     }
 
     var gamesParticipants: DrawAndGuessParticipants {

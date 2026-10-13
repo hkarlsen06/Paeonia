@@ -99,9 +99,11 @@ final class DrawAndGuessViewModel {
     /// The result screen is open and the partner has started drawing the next
     /// round. The bottom button then reads "Watch [Name] draw".
     var partnerStartedDrawing = false
-    /// A move is saved on this phone and not sent yet. Show
-    /// `.gamesPendingSavedOnPhone`.
+    /// A move is saved on this phone and not sent yet. It may be on its way.
     var isWaitingToSend = false
+    /// A waiting move has failed to send at least once, so it really is held on
+    /// this phone. Show `.gamesPendingSavedOnPhone`.
+    var isHeldOnPhone = false
     /// A move that waits could not be sent although the phone is online. The
     /// waiting screen then says so and offers `retrySending()`.
     var isSendFailing = false
@@ -323,6 +325,7 @@ final class DrawAndGuessViewModel {
         phase = resolution.phase
         round = resolution.round
         isWaitingToSend = resolution.isWaitingToSend
+        isHeldOnPhone = isWaitingToSend && pending.hasFailedMoveAttempt
         isSendFailing = pending.lastSendFailedWhileOnline
         settings = state?.settings
         score = state?.game.flatMap { game in

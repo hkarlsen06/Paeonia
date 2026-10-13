@@ -1048,7 +1048,8 @@ struct DailyQuestionChatLiveTests {
         try await Task.sleep(for: .milliseconds(50))
 
         #expect(viewModel.messages.map(\.body) == ["On my way", "Hello"])
-        #expect(!viewModel.hasSendingMessages)
+        let isStillSending = viewModel.messages.contains(where: \.isSending)
+        #expect(!isStillSending)
         observing.cancel()
         await observing.value
     }
@@ -1326,6 +1327,46 @@ private final class ChatTestOperationProvider: SyncClientOperationProviding {
 
 @MainActor
 struct DailyQuestionChatVoiceTests {
+    /// A message on its first try is only sending. It counts as held on this phone,
+    /// and the screen says so, once a try failed.
+    @Test func aQueuedMessageIsHeldOnThePhoneOnlyAfterATryFailed() async throws {
+        let fixture = ChatTestFixture()
+        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
+        let service = fixture.makeService()
+        _ = try await service.queueVoiceMessage(
+            ownerUserID: fixture.ownerUserID,
+            coupleID: fixture.question.coupleID,
+            instanceID: fixture.question.id,
+            threadID: fixture.threadID,
+            voice: DailyQuestionChatVoicePayload(
+                messageID: fixture.messageID,
+                data: Data([1, 2, 3]),
+                durationMs: 1_500,
+                reserveOperation: fixture.operationProvider.makeOperation(),
+                finalizeOperation: fixture.operationProvider.makeOperation()
+            ),
+            createThread: false,
+            replyToMessageID: nil,
+            operation: fixture.operationProvider.makeOperation()
+        )
+        let firstTry = await service.pendingMessages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        #expect(firstTry.first?.isHeldOnPhone == false)
+
+        let queued = try #require(
+            try await fixture.pendingStore
+                .inFlightOperations(ownerUserID: fixture.ownerUserID, kind: .sendThreadMessage)
+                .first
+        )
+        try await fixture.pendingStore.markRetryableFailure(
+            clientOperationID: queued.operation.id,
+            errorDescription: String(describing: URLError(.notConnectedToInternet)),
+            nextRetryAt: nil,
+            at: Date()
+        )
+        let failed = await service.pendingMessages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        #expect(failed.first?.isHeldOnPhone == true)
+    }
+
     @Test func aQueuedVoiceMessageUploadsItsRecordingAndSendsTheUpload() async throws {
         let fixture = ChatTestFixture()
         await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)

@@ -95,6 +95,11 @@ struct DrawAndGuessPhaseLayout<Header: View, Square: View, Footer: View, Bottom:
     @State private var scrollTask: Task<Void, Never>?
     /// The height of the bottom cluster in the wide layout.
     @State private var wideBottomHeight: CGFloat = 0
+    /// The height of the scrolling rows in the wide layout.
+    @State private var wideContentHeight: CGFloat = 0
+    /// The square's height as drawn in the wide layout. A result shows it smaller
+    /// than `side`, and the column matches what is on screen.
+    @State private var wideSquareHeight: CGFloat?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -208,8 +213,13 @@ struct DrawAndGuessPhaseLayout<Header: View, Square: View, Footer: View, Bottom:
         // A tall cluster, such as four rows of tiles on a landscape phone, would
         // leave the rows above it no room. It then scrolls with them.
         let scrollsBottom = wideBottomHeight > height * 0.55
+        // The column is as tall as the square, so its rows line up with the square's
+        // edges. It grows toward the full height only when the rows need more room.
+        let rowsHeight = wideContentHeight + (scrollsBottom ? 0 : wideBottomHeight)
+        let columnHeight = min(height, max(wideSquareHeight ?? side, rowsHeight))
         return HStack(alignment: .center, spacing: PaeoniaSpacing.space32) {
             square(side)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { wideSquareHeight = $0 }
                 .frame(width: side, height: side)
             VStack(spacing: 0) {
                 ScrollView {
@@ -221,13 +231,16 @@ struct DrawAndGuessPhaseLayout<Header: View, Square: View, Footer: View, Bottom:
                         }
                     }
                     .padding(.vertical, PaeoniaSpacing.space8)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { wideContentHeight = $0 }
                 }
                 .scrollBounceBehavior(.basedOnSize)
                 if !scrollsBottom {
                     measuredWideBottom
                 }
             }
-            .frame(width: DrawAndGuessMetrics.sideColumnWidth)
+            .frame(width: DrawAndGuessMetrics.sideColumnWidth, height: columnHeight)
+            // Moves with the square when a result shrinks it.
+            .animation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment, value: columnHeight)
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

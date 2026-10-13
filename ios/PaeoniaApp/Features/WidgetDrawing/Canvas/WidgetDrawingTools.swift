@@ -105,7 +105,10 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
 
         return switch self {
         case .pen:
-            PKInkingTool(.pen, color: color, width: clampedWidth)
+            // PencilKit's `.pen` ink sizes finger strokes by speed and mostly
+            // ignores the width, so the size slider barely changed it. Monoline
+            // draws exactly the width it is given.
+            PKInkingTool(.monoline, color: color, width: clampedWidth)
         case .pencil:
             PKInkingTool(.pencil, color: color, width: clampedWidth)
         case .eraser:
@@ -125,12 +128,13 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
         return range.lowerBound + (range.upperBound - range.lowerBound) * clampedFraction
     }
 
-    /// Each tool reports its own valid width range; the eraser's differs from the
-    /// inking tools, which is why a single fixed slider range cannot be shared.
+    /// Each tool has its own width range, which is why a single fixed slider
+    /// range cannot be shared. Monoline reports `0.5...4`, too thin to be
+    /// useful, but it draws wider widths correctly, so the pen sets its own.
     var validWidthRange: ClosedRange<CGFloat> {
         switch self {
         case .pen:
-            PKInkingTool.InkType.pen.validWidthRange
+            1...12
         case .pencil:
             PKInkingTool.InkType.pencil.validWidthRange
         case .eraser:

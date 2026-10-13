@@ -93,6 +93,20 @@ struct GamesViewModelTests {
         #expect(viewModel.hubSummary?.status == .yourTurnToDraw)
         #expect(viewModel.hubSummary?.partnerIsHere == true)
         #expect(viewModel.hubSummary?.score == .against(mine: 8, partner: 5))
+        #expect(viewModel.isYourTurn)
+    }
+
+    @Test func thePartnersTurnShowsNoTabBadge() async {
+        let state = GameFixture.state(
+            settings: GameFixture.settings(),
+            game: GameFixture.game(state: .choosingWord, turn: GameFixture.partner, roundID: nil)
+        )
+        let viewModel = viewModel(GamesTestEnvironment(state: state))
+
+        await viewModel.load()
+
+        #expect(viewModel.hubSummary?.status == .waitingForPartner)
+        #expect(!viewModel.isYourTurn)
     }
 
     @Test func changingTheSettingsLaterKeepsTheHubAndAFailureShowsANotice() async {

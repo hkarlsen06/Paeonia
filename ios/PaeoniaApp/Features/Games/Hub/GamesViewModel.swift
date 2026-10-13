@@ -51,6 +51,11 @@ final class GamesViewModel {
         self.drawAndGuess = drawAndGuess ?? DrawAndGuessViewModel(dependencies: dependencies)
     }
 
+    /// A game waits for this person to draw or guess. The Games tab shows a badge.
+    var isYourTurn: Bool {
+        hubSummary?.status == .yourTurnToDraw || hubSummary?.status == .yourTurnToGuess
+    }
+
     private var currentUserID: UUID? {
         participants.currentUserID
     }

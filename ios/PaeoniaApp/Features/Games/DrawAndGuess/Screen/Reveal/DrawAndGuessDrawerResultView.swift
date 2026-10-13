@@ -144,7 +144,7 @@ struct DrawAndGuessDrawerResultView: View {
 
     private var footer: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
-            if viewModel.isWaitingToSend, !isRevealed {
+            if viewModel.isHeldOnPhone, !isRevealed {
                 DrawAndGuessOfflineLine()
             }
             guessArea
@@ -206,11 +206,12 @@ struct DrawAndGuessDrawerResultView: View {
                     partner: viewModel.partner,
                     isCounting: timeline.scoreCounting,
                     animates: !timeline.wasSkipped,
-                    showsSpeedBonus: timeline.speedBonusShown
+                    showsSpeedBonus: timeline.speedBonusShown,
+                    isHeldOnPhone: viewModel.isHeldOnPhone
                 )
                 .transition(transition)
             }
-            if timeline.saveShown, viewModel.savePrompt == .saving, viewModel.isWaitingToSend {
+            if timeline.saveShown, viewModel.savePrompt == .saving, viewModel.isHeldOnPhone {
                 DrawAndGuessOfflineLine()
                     .transition(transition)
             }

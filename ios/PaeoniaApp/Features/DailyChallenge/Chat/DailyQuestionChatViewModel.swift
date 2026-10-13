@@ -73,8 +73,10 @@ final class DailyQuestionChatViewModel {
         question.isChatAvailable && participants.currentUserID != nil
     }
 
-    var hasSendingMessages: Bool {
-        messages.contains(where: \.isSending)
+    /// A message failed to send at least once. Only then does the screen say it is
+    /// saved on this phone, so a normal send never flashes that line.
+    var hasHeldMessages: Bool {
+        messages.contains { $0.isSending && $0.isHeldOnPhone }
     }
 
     /// The answers that open the conversation, oldest first. The partner's shows only
@@ -200,7 +202,8 @@ final class DailyQuestionChatViewModel {
         var messageUpdates: Task<Void, Never>?
         defer { messageUpdates?.cancel() }
 
-        let changes = LocalStoreChanges.changes(in: .dailyChat)
+        // The queue changes too, so a message that failed to send says so.
+        let changes = LocalStoreChanges.changes(in: .dailyChat, .pendingOperations)
         // Check once before waiting, in case the thread arrived before this started.
         var shouldRead = true
         var iterator = changes.makeAsyncIterator()

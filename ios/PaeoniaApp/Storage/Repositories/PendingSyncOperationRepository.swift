@@ -47,6 +47,18 @@ nonisolated struct PendingSyncOperationSnapshot: Equatable, Sendable {
     let completedAt: Date?
 }
 
+extension PendingSyncOperationSnapshot {
+    /// A try has ended without success. `lastError` covers the time after it,
+    /// and the attempt count covers the next try, which clears `lastError`.
+    ///
+    /// Every write waits in the queue for a moment, also online. Show "Saved on
+    /// this phone. We'll send it when you're online." only when this is true, so
+    /// a normal send never flashes that line.
+    nonisolated var hasFailedAttempt: Bool {
+        lastError != nil || attemptCount > 1
+    }
+}
+
 protocol PendingSyncOperationPersisting: Actor {
     func enqueue(_ request: PendingSyncOperationRequest) async throws
 

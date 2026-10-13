@@ -140,6 +140,19 @@ struct DrawAndGuessGuessView: View {
 
     private var footer: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
+            if let language = viewModel.guessLanguageNotice {
+                // Fades out with the live row, keeping its space.
+                Label {
+                    Text(language.guessNoticeTitle)
+                } icon: {
+                    Image(systemName: "globe")
+                }
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .opacity(isRevealed ? 0 : 1)
+                .animation(PaeoniaMotion.stateChange, value: isRevealed)
+                .accessibilityHidden(isRevealed)
+            }
             if !pinsSlots {
                 slots
             }
@@ -194,11 +207,12 @@ struct DrawAndGuessGuessView: View {
                         partner: viewModel.partner,
                         isCounting: timeline.scoreCounting,
                         animates: !timeline.wasSkipped,
-                        showsSpeedBonus: timeline.speedBonusShown
+                        showsSpeedBonus: timeline.speedBonusShown,
+                        isHeldOnPhone: viewModel.isHeldOnPhone
                     )
                     .transition(transition)
                 }
-                if timeline.saveShown, viewModel.savePrompt == .saving, viewModel.isWaitingToSend {
+                if timeline.saveShown, viewModel.savePrompt == .saving, viewModel.isHeldOnPhone {
                     DrawAndGuessOfflineLine()
                         .transition(transition)
                 }

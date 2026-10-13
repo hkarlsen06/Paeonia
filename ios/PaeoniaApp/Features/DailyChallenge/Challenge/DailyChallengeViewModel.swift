@@ -14,6 +14,8 @@ final class DailyChallengeViewModel {
         var text: String? = nil
         var partnerChoiceUserID: UUID? = nil
         var media: Media? = nil
+        /// A try to send it failed, so it may stay on this phone a while.
+        var isHeldOnPhone = false
 
         struct Media: Equatable {
             let draft: DailyAnswerMediaDraft
@@ -1108,8 +1110,15 @@ final class DailyChallengeViewModel {
             mediaData: sendingMediaData(for: question.id),
             voiceDurationMs: sendingVoiceDurationMs(for: question.id),
             partnerChoiceName: sendingPartnerChoiceName(for: question.id),
-            text: sendingText(for: question.id)
+            text: sendingText(for: question.id),
+            isHeldOnPhone: isHeldOnPhone(question.id)
         )
+    }
+
+    /// A still-sending answer failed to send at least once. Only then does the
+    /// screen say it is saved on this phone, so a normal send never flashes that line.
+    func isHeldOnPhone(_ instanceID: UUID) -> Bool {
+        isSending(instanceID) && sendingAnswers[instanceID]?.isHeldOnPhone == true
     }
 
     /// The recorded length of a still-sending voice note, so its playback scrubber
@@ -1144,7 +1153,9 @@ final class DailyChallengeViewModel {
                 guard let data = operation.requestData,
                       let payload = try? JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
                 else { return nil }
-                return (payload.instanceID, Self.sendingAnswer(from: payload.content))
+                var answer = Self.sendingAnswer(from: payload.content)
+                answer.isHeldOnPhone = operation.hasFailedAttempt
+                return (payload.instanceID, answer)
             },
             uniquingKeysWith: { first, _ in first }
         )

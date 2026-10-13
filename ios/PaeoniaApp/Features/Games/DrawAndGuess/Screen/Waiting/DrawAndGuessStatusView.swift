@@ -39,7 +39,7 @@ struct DrawAndGuessStatusView: View {
                 }
                 .buttonStyle(PaeoniaSecondaryButtonStyle())
             }
-        case .waitingToSync:
+        case .waitingToSync where viewModel.isHeldOnPhone:
             PaeoniaEmptyStateView(
                 title: viewModel.isSendFailing ? .gamesDrawAndGuessWaitingToSyncFailedTitle : .gamesPendingSavedOnPhone,
                 message: viewModel.isSendFailing

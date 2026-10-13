@@ -140,7 +140,8 @@ struct DailyChallengeAnswerStep: View {
                 mediaData: viewModel.sendingMediaData(for: question.id),
                 voiceDurationMs: viewModel.sendingVoiceDurationMs(for: question.id),
                 partnerChoiceName: viewModel.sendingPartnerChoiceName(for: question.id),
-                text: viewModel.sendingText(for: question.id)
+                text: viewModel.sendingText(for: question.id),
+                showsSendingStatus: viewModel.isHeldOnPhone(question.id)
             )
         } else if let editKind = question.editableAnswerKind {
             editComposer(kind: editKind)

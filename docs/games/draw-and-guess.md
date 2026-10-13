@@ -297,9 +297,10 @@ Purpose. Watch, guess fast, feel clever.
 Layout, top to bottom.
 1. Live row, one fixed line. Leading, "[Name] is drawing for you" while live, or "[Name] drew this for you" in async (avatar 24 pt). Trailing, the speed bonus label in "Against each other" only (see below).
 2. Square replay (`DrawAndGuessReplayTimeline` driven by `DrawAndGuessReplayClock`). A 2 pt progress line runs along its bottom edge in `.paeoniaAccentPrimary` at 0.6 opacity.
-3. Answer slots, centered, one group per word. A group never splits unless one word is wider than the screen at the smallest slot. Then it splits into even pieces on separate lines (`DrawAndGuessSlotSizing`). Slots are 28 to 44 pt wide, the widest that adds no line, and 48 pt tall. An empty slot is `.paeoniaSurfaceSecondary` with a 2 pt underline in `.paeoniaTextTertiary`. A filled slot is `.paeoniaSurfacePrimary` with the letter in `PaeoniaTypography.title`. Hit areas run the full 48 pt height and reach into the gaps.
-4. Tile grid, 6 columns and 2 or 3 rows, tile = (width minus 5 gaps of `space8`) / 6, capped at 56 pt, square, `radius12`, `.paeoniaSurfacePrimary`, letter in `PaeoniaTypography.title`. A used tile becomes an empty `.paeoniaSurfaceSecondary` cell, so the grid never reflows.
-5. Pinned bottom: the grid and slots sit here, in thumb reach, and below them a quiet "Show me" button (`PaeoniaQuietButtonStyle`, 44 pt).
+3. Language line, only when the word's language differs from the app's: `globe` and "The word is in English" in `caption`, `.paeoniaTextSecondary`, centered above the slots. It follows the couple's game language, as the decoy tiles do. A custom word gets no line, because the drawer could type it in any language. It fades out with the live row on the reveal.
+4. Answer slots, centered, one group per word. A group never splits unless one word is wider than the screen at the smallest slot. Then it splits into even pieces on separate lines (`DrawAndGuessSlotSizing`). Slots are 28 to 44 pt wide, the widest that adds no line, and 48 pt tall. An empty slot is `.paeoniaSurfaceSecondary` with a 2 pt underline in `.paeoniaTextTertiary`. A filled slot is `.paeoniaSurfacePrimary` with the letter in `PaeoniaTypography.title`. Hit areas run the full 48 pt height and reach into the gaps.
+5. Tile grid, 6 columns and 2 or 3 rows, tile = (width minus 5 gaps of `space8`) / 6, capped at 56 pt, square, `radius12`, `.paeoniaSurfacePrimary`, letter in `PaeoniaTypography.title`. A used tile becomes an empty `.paeoniaSurfaceSecondary` cell, so the grid never reflows.
+6. Pinned bottom: the grid and slots sit here, in thumb reach, and below them a quiet "Show me" button (`PaeoniaQuietButtonStyle`, 44 pt).
 
 Interactions.
 - Replay plays at the drawn pace from the first moment the screen shows the drawing. Press and hold anywhere on the replay for 4x (`DrawAndGuessReplayClock.fastForwardRate`). Release returns to 1x. While held, a `forward.fill` glyph shows at the bottom trailing corner of the canvas in `.paeoniaAccentPrimary`, and `selection()` fires once at press. Holding must not block the tiles, which are outside the replay.
@@ -319,6 +320,8 @@ The speed timer. Only "Against each other" gets one, because only that style has
 | `guess.speedBonus` | Speed bonus +1 | Fartsbonus +1 |
 | `guess.speedBonus.a11y` | Guess within 30 seconds for 1 extra point. | Gjett innen 30 sekunder for ett ekstra poeng. |
 | `guess.holdHint` | Hold to speed up | Hold for å spole fremover |
+| `guess.wordLanguage.english` | The word is in English | Ordet er på engelsk |
+| `guess.wordLanguage.norwegian` | The word is in Norwegian | Ordet er på norsk |
 | `guess.showMe` | Show me | Vis meg |
 | `guess.showMe.title` | Show the answer? | Vise svaret? |
 | `guess.showMe.message` | This round won't give any points. You can still save the drawing. | Denne runden gir ingen poeng. Du kan fortsatt lagre tegningen. |

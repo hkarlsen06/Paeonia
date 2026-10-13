@@ -18,7 +18,7 @@ struct WidgetDrawingViewModelTests {
         #expect(viewModel.selectedColorChoiceID == "blush")
 
         let tool = try #require(viewModel.pencilKitTool as? PKInkingTool)
-        #expect(tool.inkType == .pen)
+        #expect(tool.inkType == .monoline)
         #expect(WidgetDrawingTool.pen.validWidthRange.contains(tool.width))
     }
 

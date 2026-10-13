@@ -29,6 +29,22 @@ nonisolated extension GameLanguage {
         }
         return .en
     }
+
+    /// The language the app's own text is in.
+    static var app: GameLanguage {
+        preferred(from: Bundle.main.preferredLocalizations)
+    }
+
+    /// The language to name above the guesser's answer, or nil when it is the
+    /// app's language anyway. A custom word is in whatever language the drawer
+    /// typed, so it gets no line.
+    static func guessNotice(
+        game: GameLanguage,
+        app: GameLanguage,
+        difficulty: DrawAndGuessDifficulty
+    ) -> GameLanguage? {
+        difficulty == .custom || game == app ? nil : game
+    }
 }
 
 /// `games:get_game_settings`, and the `settings` part of `games:get_draw_and_guess`.

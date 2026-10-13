@@ -126,4 +126,12 @@ extension GameLanguage {
         case .nb: .gamesLanguageNorwegian
         }
     }
+
+    /// The guesser's "The word is in English" line.
+    var guessNoticeTitle: LocalizedStringResource {
+        switch self {
+        case .en: .gamesDrawAndGuessGuessWordLanguageEnglish
+        case .nb: .gamesDrawAndGuessGuessWordLanguageNorwegian
+        }
+    }
 }

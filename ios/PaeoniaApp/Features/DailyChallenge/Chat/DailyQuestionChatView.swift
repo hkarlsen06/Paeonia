@@ -34,7 +34,6 @@ struct DailyQuestionChatView: View {
     @State private var projectionStore = DailyChatProjectionStore()
     @State private var timestampRevealOffset: CGFloat = 0
     @State private var highlightedRowID: String?
-    @State private var showsSendingReassurance = false
     /// Where the list scrolls next. Nil keeps the list where it is.
     @State private var scrollTarget: ScrollToParams?
     @State private var didApplyOpeningScroll = false
@@ -74,13 +73,6 @@ struct DailyQuestionChatView: View {
             guard viewModel.isChatAvailable else { return }
             await viewModel.load()
             await viewModel.observeLiveUpdates()
-        }
-        .task(id: viewModel.hasSendingMessages) {
-            // A send that finishes quickly never shows the note.
-            showsSendingReassurance = false
-            guard viewModel.hasSendingMessages else { return }
-            try? await Task.sleep(for: .seconds(2))
-            showsSendingReassurance = !Task.isCancelled
         }
         .onChange(of: participants) { _, participants in
             viewModel.refreshParticipants(participants)
@@ -207,7 +199,7 @@ struct DailyQuestionChatView: View {
         Color.clear
             .frame(height: 0)
             .overlay(alignment: .bottom) {
-                if viewModel.hasSendingMessages, showsSendingReassurance {
+                if viewModel.hasHeldMessages {
                     Text(.dailyChatSendingReassurance)
                         .font(PaeoniaTypography.caption)
                         .foregroundStyle(.paeoniaTextSecondary)
@@ -218,7 +210,7 @@ struct DailyQuestionChatView: View {
                         .transition(.opacity)
                 }
             }
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: showsSendingReassurance)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: viewModel.hasHeldMessages)
     }
 
     private var replyPreview: DailyChatReplyPreview? {

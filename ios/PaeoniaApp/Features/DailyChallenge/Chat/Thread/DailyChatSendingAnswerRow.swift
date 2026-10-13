@@ -20,7 +20,8 @@ struct DailyChatSendingAnswerRow: View {
                 mediaData: answer.mediaData,
                 voiceDurationMs: answer.voiceDurationMs,
                 partnerChoiceName: answer.partnerChoiceName,
-                text: answer.text
+                text: answer.text,
+                showsSendingStatus: answer.isHeldOnPhone
             )
         }
         .padding(.horizontal, PaeoniaSpacing.space12 + 2)

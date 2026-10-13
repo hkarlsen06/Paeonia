@@ -485,6 +485,7 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
             createdAt: operation.operation.localCreatedAt,
             clientOperationID: operation.operation.id,
             isSending: true,
+            isHeldOnPhone: operation.hasFailedAttempt,
             voice: voice?.pendingVoice,
             photos: photos?.pendingPhotos,
             replyToMessageID: replyToMessageID

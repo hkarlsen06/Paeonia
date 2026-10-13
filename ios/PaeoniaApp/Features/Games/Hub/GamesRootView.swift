@@ -5,7 +5,6 @@ import SwiftUI
 struct GamesRootView: View {
     @Bindable var viewModel: GamesViewModel
     @Binding var path: [GamesDestination]
-    let participants: DrawAndGuessParticipants
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.scenePhase) private var scenePhase
@@ -24,15 +23,6 @@ struct GamesRootView: View {
                     }
                 }
         }
-        .task(id: participants.currentUserID) {
-            viewModel.configure(participants: participants)
-            await viewModel.load()
-        }
-        .task(id: participants.currentUserID) {
-            await viewModel.observeStoreChanges()
-        }
-        // Names, photos and the couple arrive after launch. They never reload the screen.
-        .onChange(of: participants) { _, newValue in viewModel.configure(participants: newValue) }
         .onChange(of: viewModel.notice) { _, notice in
             guard let notice else { return }
             bannerCenter.show(notice.banner)

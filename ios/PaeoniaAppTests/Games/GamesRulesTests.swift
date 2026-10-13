@@ -173,6 +173,14 @@ struct GamesRulesTests {
         #expect(GameLanguage.preferred(from: ["de-DE"]) == .en)
     }
 
+    @Test func theGuesserIsToldTheWordLanguageOnlyWhenItDiffersFromTheApp() {
+        #expect(GameLanguage.guessNotice(game: .en, app: .nb, difficulty: .easy) == .en)
+        #expect(GameLanguage.guessNotice(game: .nb, app: .en, difficulty: .hard) == .nb)
+        #expect(GameLanguage.guessNotice(game: .nb, app: .nb, difficulty: .medium) == nil)
+        // The drawer typed a custom word in any language.
+        #expect(GameLanguage.guessNotice(game: .en, app: .nb, difficulty: .custom) == nil)
+    }
+
     // MARK: Deep link and notification setting
 
     @Test func theGamesLinkOpensDrawAndGuess() {

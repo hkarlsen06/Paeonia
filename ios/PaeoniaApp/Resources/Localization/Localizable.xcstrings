@@ -15833,6 +15833,42 @@
         }
       },
       "comment" : "VoiceOver label of the spinner shown in the square while the drawing is still downloading."
+    },
+    "games.drawAndGuess.guess.wordLanguage.english" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The word is in English"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordet er på engelsk"
+          }
+        }
+      },
+      "comment" : "Line above the answer slots when the word to guess is in English and the app is not. Helps the player think in the right language."
+    },
+    "games.drawAndGuess.guess.wordLanguage.norwegian" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The word is in Norwegian"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordet er på norsk"
+          }
+        }
+      },
+      "comment" : "Line above the answer slots when the word to guess is in Norwegian and the app is not. Helps the player think in the right language."
     }
   },
   "version" : "1.0"
