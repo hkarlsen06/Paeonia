@@ -5,7 +5,8 @@ import { notificationStaleAt } from "./lib/apns";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { isActiveCoupleMember } from "./lib/access";
 import { getByUuid, withTouch } from "./lib/db";
-import { gamePushStillWanted, type GamePushKind } from "./lib/games";
+import { gamePushStillWanted } from "./lib/gameRegistry";
+import type { GamePushKind } from "./lib/games";
 import { optionalTimestampArg, uuidArg } from "./lib/ids";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { addMs, nowIso } from "./lib/time";
@@ -65,7 +66,7 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
     case "thread_message_sent":
       return preference?.messages_enabled ?? false;
     case "game_turn_ready":
-    case "game_guessed":
+    case "game_result":
     case "game_invite":
     case "game_turn_reminder":
       return preference?.games_enabled ?? false;
@@ -74,7 +75,7 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
   }
 }
 
-const GAME_PUSH_KINDS: readonly string[] = ["game_turn_ready", "game_guessed", "game_invite", "game_turn_reminder"];
+const GAME_PUSH_KINDS: readonly string[] = ["game_turn_ready", "game_result", "game_invite", "game_turn_reminder"];
 
 /**
  * Whether the recipient still belongs where the row points. A row whose payload names a couple

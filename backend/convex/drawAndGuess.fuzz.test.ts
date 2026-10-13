@@ -2,8 +2,8 @@
 // sequence of actions by both partners against the real functions, keeps a small reference
 // model of the rules in docs/games/draw-and-guess.md, and checks invariants after every step.
 //
-// Run one seed:      GAMES_FUZZ_SEED=123 npx vitest run convex/games.fuzz.test.ts
-// Run more seeds:    GAMES_FUZZ_RUNS=3000 npx vitest run convex/games.fuzz.test.ts
+// Run one seed:      GAMES_FUZZ_SEED=123 npx vitest run convex/drawAndGuess.fuzz.test.ts
+// Run more seeds:    GAMES_FUZZ_RUNS=3000 npx vitest run convex/drawAndGuess.fuzz.test.ts
 // Start elsewhere:   GAMES_FUZZ_FIRST_SEED=5000 GAMES_FUZZ_RUNS=1000 ...
 //
 // The seed drives the action choices and `Math.random` on the server (the word picks), so a
@@ -34,7 +34,7 @@ const INVITE_GAP_MS = 15 * 60_000;
 const REMINDER_AFTER_MS = 72 * 3_600_000;
 const MAX_SOLVE_MS = 30 * 24 * 3_600_000;
 const POINTS = { easy: 1, medium: 2, hard: 3, custom: 2 } as const;
-const PUSH_KINDS = ["game_turn_ready", "game_guessed", "game_invite", "game_turn_reminder"] as const;
+const PUSH_KINDS = ["game_turn_ready", "game_result", "game_invite", "game_turn_reminder"] as const;
 const PAYLOAD_KEYS = new Set(["type", "game_kind", "couple_id", "game_id", "round_id", "actor_user_id", "route", "deeplink"]);
 const VALID_CUSTOM = ["flying cat", "  Dog At   Mom ", "Brunost", "ab", "Æ Ø Å", "hot dog", "x".repeat(20)];
 const INVALID_CUSTOM = ["", "a", "   ", "cat5", "one two three four", "x".repeat(21), "no!", "tæ.st"];
@@ -72,7 +72,7 @@ type Asset = { id: string; owner: Uid; roundId: string; used: boolean };
 type OpName = "pick" | "submit" | "guess" | "giveUp";
 type Args = Record<string, unknown> & { p_client_operation_id: string };
 type RecordedOp = { name: OpName; user: Uid; args: Args; key: string; result: unknown };
-type View = FunctionReturnType<typeof api.games.get_draw_and_guess>;
+type View = FunctionReturnType<typeof api.drawAndGuess.get_draw_and_guess>;
 type Outcome<T> = { ok: true; value: T } | { ok: false; code: string; message: string };
 type Expect = "ok" | { code: string; message?: RegExp };
 
@@ -249,7 +249,7 @@ class Fuzz {
     const language = this.pick(["en", "nb"] as const);
     const first = this.pick([this.a, this.b]);
     await first.as.mutation(api.games.set_game_settings, { p_play_style: style, p_language: language });
-    const { game_id } = await first.as.mutation(api.games.ensure_draw_and_guess_game, {});
+    const { game_id } = await first.as.mutation(api.drawAndGuess.ensure_draw_and_guess_game, {});
     this.gameId = game_id;
     const empty = () => ({ easy: new Set<string>(), medium: new Set<string>(), hard: new Set<string>() });
     this.m = {
@@ -267,7 +267,7 @@ class Fuzz {
       presence: {},
       lastInvite: {},
       rounds: [],
-      pushes: { game_turn_ready: 0, game_guessed: 0, game_invite: 0, game_turn_reminder: 0 },
+      pushes: { game_turn_ready: 0, game_result: 0, game_invite: 0, game_turn_reminder: 0 },
       drawingsSent: 0,
       assets: [],
       ops: [],
@@ -404,7 +404,7 @@ class Fuzz {
         wordId = offered.word_id;
       }
     }
-    const outcome = await attempt(this.users[user].as.mutation(api.games.pick_draw_word, args as never));
+    const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.pick_draw_word, args as never));
     const result = this.check(`${this.name(user)} pick ${choice} ${JSON.stringify(args.p_custom_word)} ${args.p_word_id} round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok") return outcome;
     this.same("pick result", result, { round_id: roundId, round_number: m.turnNumber, difficulty: choice, word, points: POINTS[choice] });
@@ -513,7 +513,7 @@ class Fuzz {
     else if (round.drawer !== user) expected = { code: "42501", message: /only the drawer/ };
     else if (round.drawing !== undefined) expected = { code: "23505", message: /already sent/ };
     else if (!asset || asset.owner !== user || asset.roundId !== roundId || asset.used) expected = { code: "23514", message: /not usable/ };
-    const outcome = await attempt(this.users[user].as.mutation(api.games.submit_drawing, args as never));
+    const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.submit_drawing, args as never));
     const result = this.check(`${this.name(user)} submit_drawing round=${roundId.slice(0, 8)} asset=${assetId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok" || !round || !asset) return outcome;
     const now = Date.now();
@@ -540,7 +540,7 @@ class Fuzz {
     let expected: Expect = "ok";
     if (!round) expected = { code: "42501" };
     else if (round.guesser !== user) expected = { code: "42501", message: /only the guesser/ };
-    const outcome = await attempt(this.users[user].as.mutation(api.games.mark_round_seen, { p_round_id: roundId }));
+    const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: roundId }));
     const result = this.check(`${this.name(user)} mark_round_seen round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok" || !round) return;
     if (!finished(round) && round.seenAt === undefined) round.seenAt = Date.now();
@@ -623,7 +623,7 @@ class Fuzz {
     else if (round.guesser !== user) expected = { code: "42501", message: /only the guesser/ };
     else if (finished(round)) expected = { code: "23514", message: /already finished/ };
     else if (correct && claimHints !== null && claimHints > [...round.word.replace(/ /g, "")].length - 1) expected = { code: "23514", message: /more than the word allows/ };
-    const outcome = await attempt(this.users[user].as.mutation(api.games.submit_guess, args as never));
+    const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.submit_guess, args as never));
     const claimText = `bonus=${args.p_speed_bonus} ms=${args.p_solve_ms} hints=${args.p_hints_used}`;
     const result = this.check(`${this.name(user)} guess ${JSON.stringify(args.p_guess)} ${claimText} round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok" || !round) return outcome;
@@ -657,7 +657,7 @@ class Fuzz {
     m.points[round.drawer] += round.points;
     m.points[round.guesser] += round.points + bonus + firstTry;
     this.beginTurn(round.guesser);
-    if (!this.present(round.drawer)) m.pushes.game_guessed += 1;
+    if (!this.present(round.drawer)) m.pushes.game_result += 1;
     this.same(
       "correct guess result",
       [value.correct, value.round_state, value.points, value.speed_bonus, value.first_try_bonus, value.hints_used, value.personal_best, value.solve_ms, value.created_at],
@@ -685,7 +685,7 @@ class Fuzz {
     if (!round) expected = { code: "42501" };
     else if (round.guesser !== user) expected = { code: "42501", message: /only the guesser/ };
     else if (finished(round)) expected = { code: "23514", message: /already finished/ };
-    const outcome = await attempt(this.users[user].as.mutation(api.games.give_up_round, args as never));
+    const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.give_up_round, args as never));
     const result = this.check(`${this.name(user)} give_up round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok" || !round) return outcome;
     this.same("give up result", result, { round_id: roundId, round_state: "missed" });
@@ -718,13 +718,13 @@ class Fuzz {
     const as = this.users[user].as;
     switch (name) {
       case "pick":
-        return await attempt(as.mutation(api.games.pick_draw_word, args as never));
+        return await attempt(as.mutation(api.drawAndGuess.pick_draw_word, args as never));
       case "submit":
-        return await attempt(as.mutation(api.games.submit_drawing, args as never));
+        return await attempt(as.mutation(api.drawAndGuess.submit_drawing, args as never));
       case "guess":
-        return await attempt(as.mutation(api.games.submit_guess, args as never));
+        return await attempt(as.mutation(api.drawAndGuess.submit_guess, args as never));
       case "giveUp":
-        return await attempt(as.mutation(api.games.give_up_round, args as never));
+        return await attempt(as.mutation(api.drawAndGuess.give_up_round, args as never));
     }
   }
 
@@ -810,7 +810,7 @@ class Fuzz {
     if (!round) expected = { code: "42501" };
     else if (round.guesser !== user) expected = { code: "42501", message: /only the guesser/ };
     else if (!finished(round)) expected = { code: "23514", message: /not finished/ };
-    const outcome = await attempt(this.users[user].as.mutation(api.games.set_round_reaction, { p_round_id: roundId, p_reaction: reaction }));
+    const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.set_round_reaction, { p_round_id: roundId, p_reaction: reaction }));
     const result = this.check(`${this.name(user)} react ${reaction} round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok") return;
     round!.reaction = reaction ?? undefined;
@@ -824,7 +824,7 @@ class Fuzz {
     let expected: Expect = "ok";
     if (!round) expected = { code: "42501" };
     else if (!finished(round)) expected = { code: "23514", message: /not finished/ };
-    const outcome = await attempt(this.users[user].as.mutation(api.games.set_round_star, { p_round_id: roundId, p_starred: starred }));
+    const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.set_round_star, { p_round_id: roundId, p_starred: starred }));
     const result = this.check(`${this.name(user)} star ${starred} round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok") return;
     if (starred) round!.stars.add(user);
@@ -838,7 +838,7 @@ class Fuzz {
     let expected: Expect = "ok";
     if (!round) expected = { code: "42501" };
     else if (!finished(round)) expected = { code: "23514", message: /not finished/ };
-    const outcome = await attempt(this.users[user].as.mutation(api.games.mark_round_result_seen, { p_round_id: roundId }));
+    const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.mark_round_result_seen, { p_round_id: roundId }));
     const result = this.check(`${this.name(user)} result seen round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok") return;
     const drawer = round!.drawer === user;
@@ -896,7 +896,7 @@ class Fuzz {
   // --- Invariants -------------------------------------------------------------
 
   private async view(user: TestUser): Promise<View> {
-    return await user.as.query(api.games.get_draw_and_guess, {});
+    return await user.as.query(api.drawAndGuess.get_draw_and_guess, {});
   }
 
   private roundJson(round: Round, viewer: Uid) {
@@ -1121,7 +1121,7 @@ class Fuzz {
           rounds: page.map((round) => item(round, me)),
           next_before_round_number: candidates.length > size ? page[page.length - 1].number : null,
         };
-        const got = await this.users[me].as.query(api.games.get_draw_and_guess_history, {
+        const got = await this.users[me].as.query(api.drawAndGuess.get_draw_and_guess_history, {
           p_starred_only: starredOnly,
           p_before_round_number: before,
           p_limit: limit,
@@ -1132,7 +1132,7 @@ class Fuzz {
           expected,
         );
       }
-      const records = await this.users[me].as.query(api.games.get_draw_and_guess_records, {});
+      const records = await this.users[me].as.query(api.drawAndGuess.get_draw_and_guess_records, {});
       this.same(`${who} records`, records, { partners: [me, this.other(me)].map((uid) => this.records(uid)) });
     }
   }
@@ -1201,7 +1201,7 @@ async function runSeed(seed: number): Promise<string | null> {
     const reason = error instanceof FuzzFailure ? error.message : String((error as Error).stack ?? error);
     return [
       `seed ${seed}: ${reason}`,
-      `reproduce: GAMES_FUZZ_SEED=${seed} npx vitest run convex/games.fuzz.test.ts`,
+      `reproduce: GAMES_FUZZ_SEED=${seed} npx vitest run convex/drawAndGuess.fuzz.test.ts`,
       "action log:",
       ...fuzz.log.slice(-80),
     ].join("\n");

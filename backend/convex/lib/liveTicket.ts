@@ -6,8 +6,9 @@ const LIVE_TICKET_TTL_MS = 60_000;
  * Signs a short ticket for the live drawing relay (`relay/` at the repository root).
  * The relay checks the HMAC with the same secret and puts the socket in the couple's
  * room. Without a channel that is the widget canvas room. With one (`ch`), the socket
- * joins the room `<couple>:<channel>`, and the relay only accepts channels on its
- * allowlist. The ticket only has to last until the socket connects.
+ * joins the room `<couple>:<channel>`. A game's channel is its kind (`GAME_KINDS`), and the
+ * relay only accepts channels on its allowlist (`ALLOWED_CHANNELS` in relay/src/ticket.ts).
+ * The ticket only has to last until the socket connects.
  * Returns null when the relay is not configured, so the app works without it.
  */
 export async function signLiveTicket(args: {

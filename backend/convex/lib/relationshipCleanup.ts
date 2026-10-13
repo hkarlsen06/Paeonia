@@ -1,5 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
-import { deleteCoupleGameRows } from "./games";
+import { deleteCoupleGameRows } from "./gameRegistry";
 import { deleteLatestLocationsForCouple } from "./relationshipEnd";
 import { withTouch, withUpdatedAt, type WriterCtx } from "./db";
 import { tombstoneReportTargets } from "./reports";

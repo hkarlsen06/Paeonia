@@ -52,10 +52,21 @@ export const notificationKind = literals(
   "memory_created",
   "thread_message_sent",
   "game_turn_ready",
-  "game_guessed",
+  "game_result",
   "game_invite",
   "game_turn_reminder",
 );
+/** Every game, in catalog order. A new game adds its kind here and an entry in `GAME_BACKENDS` (lib/gameRegistry.ts). */
+export const GAME_KINDS = [
+  "draw_and_guess",
+  "mind_meld",
+  "exquisite_corpse",
+  "story_chain",
+  "connect_four",
+  "dots_and_boxes",
+  "ultimate_tic_tac_toe",
+] as const;
+export const gameKind = literals(...GAME_KINDS);
 export const gamePlayStyle = literals("together", "against");
 export const gameLanguage = literals("en", "nb");
 export const wordDifficulty = literals("easy", "medium", "hard");

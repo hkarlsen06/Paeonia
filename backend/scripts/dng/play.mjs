@@ -28,7 +28,7 @@ const op = () => ({
   p_local_created_at: new Date().toISOString(),
 });
 const [command, ...rest] = process.argv.slice(2);
-const screen = await client.query("games:get_draw_and_guess", {});
+const screen = await client.query("drawAndGuess:get_draw_and_guess", {});
 const game = screen.game;
 const round = screen.current_round;
 
@@ -59,7 +59,7 @@ switch (command) {
   case "pick": {
     const [choice, ...word] = rest;
     const offered = screen.choices?.find((c) => c.difficulty === choice);
-    const result = await client.mutation("games:pick_draw_word", {
+    const result = await client.mutation("drawAndGuess:pick_draw_word", {
       p_game_id: game.id,
       p_round_id: randomUUID(),
       p_choice: choice,
@@ -107,7 +107,7 @@ switch (command) {
       p_duration_ms: null,
       ...op(),
     });
-    const sent = await client.mutation("games:submit_drawing", {
+    const sent = await client.mutation("drawAndGuess:submit_drawing", {
       p_round_id: round.id,
       p_media_asset_id: finalized.media_asset_id,
       ...op(),
@@ -127,17 +127,17 @@ switch (command) {
     break;
   }
   case "seen":
-    console.log(JSON.stringify(await client.mutation("games:mark_round_seen", { p_round_id: round.id })));
+    console.log(JSON.stringify(await client.mutation("drawAndGuess:mark_round_seen", { p_round_id: round.id })));
     break;
   case "guess":
     console.log(
       JSON.stringify(
-        await client.mutation("games:submit_guess", { p_round_id: round.id, p_guess: rest.join(" "), ...op() }),
+        await client.mutation("drawAndGuess:submit_guess", { p_round_id: round.id, p_guess: rest.join(" "), ...op() }),
       ),
     );
     break;
   case "giveup":
-    console.log(JSON.stringify(await client.mutation("games:give_up_round", { p_round_id: round.id, ...op() })));
+    console.log(JSON.stringify(await client.mutation("drawAndGuess:give_up_round", { p_round_id: round.id, ...op() })));
     break;
   default:
     console.log("commands: state | pick <choice> [word] | draw <file> | fetch <out> | seen | guess <text> | giveup");

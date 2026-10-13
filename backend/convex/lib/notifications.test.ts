@@ -12,7 +12,8 @@ import {
   notificationLocaleLanguage,
   notificationPayloadIsSafe,
 } from "./notifications";
-import { notificationAlertTitle } from "./notificationCopy";
+import { enqueueGamePush } from "./games";
+import { GAME_PUSH_COPY, notificationAlertTitle } from "./notificationCopy";
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -57,6 +58,108 @@ describe("notification copy", () => {
       "2 days left. Review your subscription in the App Store.",
     );
     expect(notificationAlertBody("location_updated", {}, "en")).toBeNull();
+  });
+
+  describe("game pushes", () => {
+    const pushKinds = ["game_turn_ready", "game_turn_reminder", "game_result", "game_invite"] as const;
+
+    // Pins the exact lock-screen text of Draw & Guess. "First Partner" is the partner's profile name.
+    const drawAndGuess = {
+      en: {
+        game_turn_ready: ["Your turn in Draw & Guess", "Open Paeonia to guess it."],
+        game_turn_reminder: ["Your turn in Draw & Guess", "Open Paeonia to take your turn."],
+        game_result: ["First Partner guessed your drawing", "Open Paeonia to see how it went."],
+        game_invite: ["First Partner wants to play Draw & Guess with you", "Open Paeonia to join in."],
+      },
+      nb: {
+        game_turn_ready: ["Din tur i Tegn og gjett", "Åpne Paeonia for å gjette."],
+        game_turn_reminder: ["Din tur i Tegn og gjett", "Åpne Paeonia for å ta turen din."],
+        game_result: ["First Partner gjettet tegningen din", "Åpne Paeonia for å se hvordan det gikk."],
+        game_invite: ["First Partner vil spille Tegn og gjett med deg", "Åpne Paeonia for å bli med."],
+      },
+    } as const;
+
+    test("Draw & Guess titles and bodies stay the same in both languages", async () => {
+      const t = newTest();
+      const couple = await createCouple(t);
+      const payload = { game_kind: "draw_and_guess", actor_user_id: couple.first.userId };
+      for (const language of ["en", "nb"] as const) {
+        for (const kind of pushKinds) {
+          const title = await t.run((ctx) => notificationAlertTitle(ctx, kind, payload, language));
+          expect([title, notificationAlertBody(kind, payload, language)]).toEqual(drawAndGuess[language][kind]);
+        }
+      }
+    });
+
+    test("a game without copy gets the app name, and turn and result pushes use the reminder body", async () => {
+      const t = newTest();
+      const couple = await createCouple(t);
+      for (const gameKind of ["mind_meld", "constructor", undefined]) {
+        const payload = { game_kind: gameKind, actor_user_id: couple.first.userId };
+        for (const kind of pushKinds) {
+          expect(await t.run((ctx) => notificationAlertTitle(ctx, kind, payload, "en"))).toBe("Paeonia");
+          expect(await t.run((ctx) => notificationAlertTitle(ctx, kind, payload, "nb"))).toBe("Paeonia");
+        }
+        expect(notificationAlertBody("game_turn_ready", payload, "en")).toBe("Open Paeonia to take your turn.");
+        expect(notificationAlertBody("game_result", payload, "nb")).toBe("Åpne Paeonia for å ta turen din.");
+        expect(notificationAlertBody("game_invite", payload, "en")).toBe("Open Paeonia to join in.");
+      }
+    });
+
+    test("a step picks its own title and body, and any other push keeps the game's copy", async () => {
+      // A stand-in for a game with steps. The table is restored after the test.
+      GAME_PUSH_COPY.story_chain = {
+        en: { name: "Story chain", steps: { last_line: { title: (actor) => `${actor} wrote the last line`, body: "Open Paeonia to name your story." } } },
+        nb: { name: "Historiekjede", steps: { last_line: { title: (actor) => `${actor} skrev siste linje`, body: "Åpne Paeonia for å gi historien et navn." } } },
+      };
+      try {
+        const t = newTest();
+        const couple = await createCouple(t);
+        await addDevice(t, couple.second.userId, { locale: "en-US" });
+        await addDevice(t, couple.second.userId, { locale: "nb-NO" });
+        const push = (step: string | undefined, key: string) =>
+          t.run((ctx) =>
+            enqueueGamePush(ctx, {
+              kind: "game_turn_ready",
+              game_kind: "story_chain",
+              couple_id: couple.coupleId,
+              actor_user_id: couple.first.userId,
+              recipient_user_id: couple.second.userId,
+              dedupe_key: key,
+              step,
+            }),
+          );
+        await push("last_line", "with-step");
+        await push(undefined, "without-step");
+        await push("not_a_step", "unknown-step");
+        const rows = await outbox(t);
+        const copy = (key: string) =>
+          rows
+            .filter((row) => (row.dedupe_key ?? "").startsWith(`${key}:`))
+            .map((row) => [row.title, row.body])
+            .sort();
+        expect(copy("with-step")).toEqual([
+          ["First Partner skrev siste linje", "Åpne Paeonia for å gi historien et navn."],
+          ["First Partner wrote the last line", "Open Paeonia to name your story."],
+        ]);
+        expect(rows.find((row) => (row.dedupe_key ?? "").startsWith("with-step:"))?.payload).toMatchObject({ step: "last_line" });
+        expect(copy("without-step")).toEqual([
+          ["Din tur i Historiekjede", "Åpne Paeonia for å ta turen din."],
+          ["Your turn in Story chain", "Open Paeonia to take your turn."],
+        ]);
+        expect(copy("unknown-step")).toEqual(copy("without-step"));
+        await t.finishAllScheduledFunctions(vi.runAllTimers);
+      } finally {
+        delete GAME_PUSH_COPY.story_chain;
+      }
+    });
+
+    test("without a partner name the result title says 'Your partner'", async () => {
+      const t = newTest();
+      const payload = { game_kind: "draw_and_guess", actor_user_id: newUuid() };
+      expect(await t.run((ctx) => notificationAlertTitle(ctx, "game_result", payload, "en"))).toBe("Your partner guessed your drawing");
+      expect(await t.run((ctx) => notificationAlertTitle(ctx, "game_invite", payload, "nb"))).toBe("Partneren din vil spille Tegn og gjett med deg");
+    });
   });
 
   test("the streak reminder title is calm, without a countdown", async () => {

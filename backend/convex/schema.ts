@@ -4,6 +4,7 @@ import {
   activityKind,
   apnsEnvironment,
   authProvider,
+  gameKind,
   gameLanguage,
   gamePlayStyle,
   literals,
@@ -1341,7 +1342,9 @@ export default defineSchema({
     .index("by_payload_media_asset_id", ["payload_media_asset_id"]),
 
   // ---- games (new in Convex, see games.ts and docs/games/draw-and-guess.md) ----
-  // Every games table has a couple_id index. Relationship cleanup deletes the rows (lib/games.ts).
+  // Every games table has a couple_id index. Relationship cleanup deletes the rows (lib/gameRegistry.ts).
+  // game_settings, game_presence, and game_invites are shared by every game kind. games, game_moves,
+  // game_guesses, game_round_stars, and game_used_words belong to Draw & Guess (lib/drawAndGuess.ts).
 
   // FK: couple_id -> couples cascade. couple_id is unique. Shared by all games.
   game_settings: defineTable({
@@ -1465,7 +1468,7 @@ export default defineSchema({
   // The open game screen. (couple_id, kind, user_id) is unique. A cron deletes rows nobody refreshed.
   game_presence: defineTable({
     couple_id: uuid,
-    kind: v.literal("draw_and_guess"),
+    kind: gameKind,
     user_id: uuid,
     last_seen_at: ts,
   })
@@ -1475,7 +1478,7 @@ export default defineSchema({
   // The last invite each partner sent. (couple_id, kind, sender_user_id) is unique.
   game_invites: defineTable({
     couple_id: uuid,
-    kind: v.literal("draw_and_guess"),
+    kind: gameKind,
     sender_user_id: uuid,
     sent_at: ts,
   }).index("by_couple_id_kind_sender_user_id", ["couple_id", "kind", "sender_user_id"]),

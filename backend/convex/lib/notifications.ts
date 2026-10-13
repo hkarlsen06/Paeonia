@@ -25,7 +25,7 @@ const NOTIFICATION_KINDS = [
   "memory_created",
   "thread_message_sent",
   "game_turn_ready",
-  "game_guessed",
+  "game_result",
   "game_invite",
   "game_turn_reminder",
 ] as const;
@@ -149,7 +149,7 @@ function preferenceAllows(
     case "thread_message_sent":
       return preference.messages_enabled;
     case "game_turn_ready":
-    case "game_guessed":
+    case "game_result":
     case "game_invite":
     case "game_turn_reminder":
       return preference.games_enabled;

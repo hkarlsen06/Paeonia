@@ -7,8 +7,19 @@
  */
 export type Ticket = { coupleId: string; userId: string; expiresAt: number; channel?: string };
 
-/** The channels a ticket may name. Add a game here when Convex starts issuing tickets for it. */
-export const ALLOWED_CHANNELS: readonly string[] = ["draw_and_guess"];
+/**
+ * The channels a ticket may name. The channel is the game kind, and Convex issues tickets for every
+ * kind in `GAME_KINDS` (backend/convex/lib/validators.ts). Keep the two lists the same.
+ */
+export const ALLOWED_CHANNELS: readonly string[] = [
+  "draw_and_guess",
+  "mind_meld",
+  "exquisite_corpse",
+  "story_chain",
+  "connect_four",
+  "dots_and_boxes",
+  "ultimate_tic_tac_toe",
+];
 
 /** The Durable Object name for a ticket's room. */
 export function roomName(ticket: Ticket): string {
