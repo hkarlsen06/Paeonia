@@ -1,0 +1,33 @@
+import Foundation
+
+/// The pending operation handlers of every built game. `PaeoniaSyncServiceDefaults`
+/// adds them to the outbox drain.
+nonisolated enum GamesPendingOperationRegistry {
+    static func handlers(client: PaeoniaConvexClient) -> [any PendingSyncOperationHandling] {
+        let gateway = LiveGamesGateway(client: client)
+        let cache = FileGamesCache.shared
+
+        // Each built game appends its handlers below, built from `gateway` (which
+        // conforms to the game's own gateway protocol) and `cache`. Its
+        // `SyncPendingOperationKind` cases carry the game's Swift prefix.
+        return [
+            // Draw & Guess
+            PickDrawWordPendingOperationHandler(
+                gateway: gateway,
+                cache: cache,
+                drawingStore: FileGameDrawingStore.shared
+            ),
+            SubmitGameDrawingPendingOperationHandler(
+                gateway: gateway,
+                transfer: LiveGameDrawingTransfer(client: client),
+                cache: cache,
+                drawingStore: FileGameDrawingStore.shared
+            ),
+            SubmitGameGuessPendingOperationHandler(gateway: gateway, cache: cache),
+            GiveUpGameRoundPendingOperationHandler(gateway: gateway, cache: cache),
+            SetGameRoundStarPendingOperationHandler(gateway: gateway, cache: cache),
+            GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
+            GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
+        ]
+    }
+}

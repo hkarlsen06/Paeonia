@@ -22,14 +22,7 @@ struct GamesRootView: View {
                 // it from the pushed screen shifts the content and brings the bar back late.
                 .toolbar(hidesTabBarInGame && !path.isEmpty ? .hidden : .automatic, for: .tabBar)
                 .navigationDestination(for: GamesDestination.self) { destination in
-                    switch destination {
-                    case .drawAndGuess:
-                        DrawAndGuessScreen(viewModel: viewModel.drawAndGuess)
-                    case .drawAndGuessHistory:
-                        DrawAndGuessHistoryScreen(viewModel: viewModel.history)
-                    case let .drawAndGuessHistoryDetail(roundID):
-                        DrawAndGuessHistoryDetailHost(history: viewModel.history, roundID: roundID)
-                    }
+                    viewModel.screen(for: destination)
                 }
         }
         .onChange(of: viewModel.notice) { _, notice in

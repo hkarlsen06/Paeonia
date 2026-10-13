@@ -14,7 +14,7 @@ extension DrawAndGuessViewModel {
         let sleep = sleep
         heartbeatTask = Task {
             while !Task.isCancelled {
-                try? await gateway.setPresence(true)
+                try? await gateway.setPresence(.drawAndGuess, isPresent: true)
                 try? await sleep(interval)
             }
         }
@@ -28,7 +28,7 @@ extension DrawAndGuessViewModel {
 
     func sendPresence(_ isPresent: Bool) {
         let gateway = gateway
-        Task { try? await gateway.setPresence(isPresent) }
+        Task { try? await gateway.setPresence(.drawAndGuess, isPresent: isPresent) }
     }
 
     func updatePresenceState() {
@@ -67,7 +67,7 @@ extension DrawAndGuessViewModel {
         localInviteSentAt = sentAt
         recompute()
         do {
-            let result = try await gateway.sendInvite()
+            let result = try await gateway.sendInvite(.drawAndGuess)
             localInviteSentAt = result.sentAt
         } catch let error as PaeoniaConvexError {
             if case .server(code: "53300", message: _) = error {

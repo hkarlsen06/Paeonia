@@ -158,7 +158,7 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
     }
 }
 
-/// `games:get_draw_and_guess`: everything the Draw & Guess screens show. The
+/// `drawAndGuess:get_draw_and_guess`: everything the Draw & Guess screens show. The
 /// server reads no clock, so the presence timestamps are judged on the phone.
 nonisolated struct RemoteDrawAndGuessState: Codable, Equatable, Sendable {
     let userID: UUID

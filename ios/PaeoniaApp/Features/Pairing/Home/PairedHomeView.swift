@@ -18,9 +18,9 @@ struct PairedHomeView: View {
     let onPromptCurrentLocation: () -> Void
     var unreadChats: [UnreadChatRow] = []
     var onOpenChat: (UUID) -> Void = { _ in }
-    /// Shows the game card while the partner has the game open, so an invite is one tap away.
+    /// Shows a game's card while the partner has the game open, so an invite is one tap away.
     var games: GamesViewModel?
-    var onOpenDrawAndGuess: () -> Void = {}
+    var onOpenGame: (GamesDestination) -> Void = { _ in }
     var onTapStreak: (() -> Void)?
     var onOpenDailyChallenge: () -> Void = {}
     var onOpenWidgetDrawing: () -> Void = {}
@@ -60,7 +60,7 @@ struct PairedHomeView: View {
         unreadChats: [UnreadChatRow] = [],
         onOpenChat: @escaping (UUID) -> Void = { _ in },
         games: GamesViewModel? = nil,
-        onOpenDrawAndGuess: @escaping () -> Void = {},
+        onOpenGame: @escaping (GamesDestination) -> Void = { _ in },
         onTapStreak: (() -> Void)? = nil,
         onOpenDailyChallenge: @escaping () -> Void = {},
         onOpenWidgetDrawing: @escaping () -> Void = {},
@@ -83,7 +83,7 @@ struct PairedHomeView: View {
         self.unreadChats = unreadChats
         self.onOpenChat = onOpenChat
         self.games = games
-        self.onOpenDrawAndGuess = onOpenDrawAndGuess
+        self.onOpenGame = onOpenGame
         self.onTapStreak = onTapStreak
         self.onOpenDailyChallenge = onOpenDailyChallenge
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
@@ -109,7 +109,7 @@ struct PairedHomeView: View {
                 isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
             )
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: partnerGameSummary != nil)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
         }
         .paeoniaWideLayout($isWideLayout)
         .scrollIndicators(.hidden)
@@ -183,24 +183,15 @@ struct PairedHomeView: View {
                 )
                 .transition(.opacity)
             }
-            if let games, let summary = partnerGameSummary {
-                DrawAndGuessHubCard(
-                    summary: summary,
-                    partnerName: games.partnerName,
-                    me: games.drawAndGuess.me,
-                    partner: games.drawAndGuess.partner,
-                    open: onOpenDrawAndGuess
-                )
-                .transition(.opacity)
+            // Only the game the partner opened last. Whose turn it is belongs on the Games tab.
+            if let games, let game = games.partnerGame,
+               let card = game.card(games.cardContext(for: game.kind, isOnHub: false), open: onOpenGame) {
+                card
+                    .id(game.kind)
+                    .transition(.opacity)
             }
             dailyPromptCard
         }
-    }
-
-    /// Only a game the partner is in right now. Whose turn it is belongs on the Games tab.
-    private var partnerGameSummary: DrawAndGuessHubSummary? {
-        guard let summary = games?.hubSummary, summary.partnerIsHere else { return nil }
-        return summary
     }
 
     private var dailyPromptCard: some View {

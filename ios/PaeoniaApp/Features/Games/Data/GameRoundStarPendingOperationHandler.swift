@@ -10,10 +10,10 @@ import Foundation
 struct SetGameRoundStarPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .setGameRoundStar
 
-    private let gateway: any GamesGateway
+    private let gateway: any DrawAndGuessGateway
     private let cache: any GamesCaching
 
-    init(gateway: any GamesGateway, cache: any GamesCaching) {
+    init(gateway: any DrawAndGuessGateway, cache: any GamesCaching) {
         self.gateway = gateway
         self.cache = cache
     }

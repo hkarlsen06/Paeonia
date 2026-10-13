@@ -3,34 +3,7 @@ import PencilKit
 import QuartzCore
 import SwiftUI
 
-/// Who is playing, as the game needs it.
-nonisolated struct DrawAndGuessParticipants: Equatable, Sendable {
-    var currentUserID: UUID?
-    var coupleID: UUID?
-    var partnerName: String
-    /// The signed-in person's name and photo, for the avatars. They never reset the game.
-    var currentName: String
-    var currentPhotoAssetID: UUID?
-    var partnerPhotoAssetID: UUID?
-
-    init(
-        currentUserID: UUID? = nil,
-        coupleID: UUID? = nil,
-        partnerName: String = "",
-        currentName: String = "",
-        currentPhotoAssetID: UUID? = nil,
-        partnerPhotoAssetID: UUID? = nil
-    ) {
-        self.currentUserID = currentUserID
-        self.coupleID = coupleID
-        self.partnerName = partnerName
-        self.currentName = currentName
-        self.currentPhotoAssetID = currentPhotoAssetID
-        self.partnerPhotoAssetID = partnerPhotoAssetID
-    }
-}
-
-extension DrawAndGuessParticipants {
+extension GameParticipants {
     /// Both people as the avatars show them.
     var players: (me: DrawAndGuessPlayer, partner: DrawAndGuessPlayer) {
         (
@@ -147,7 +120,7 @@ final class DrawAndGuessViewModel {
     // MARK: - Dependencies
 
     @ObservationIgnored let dependencies: GamesDependencies
-    @ObservationIgnored var gateway: any GamesGateway { dependencies.gateway }
+    @ObservationIgnored var gateway: any DrawAndGuessGateway { dependencies.gateway }
     /// This person's private stars on finished rounds. The result screens and
     /// "Our drawings" share it: `stars.isStarred(roundID)` and `stars.toggle(roundID:)`.
     @ObservationIgnored lazy var stars = DrawAndGuessStars(dependencies: dependencies) { [weak self] in
@@ -163,7 +136,7 @@ final class DrawAndGuessViewModel {
 
     // MARK: - Internal state
 
-    @ObservationIgnored var participants: DrawAndGuessParticipants
+    @ObservationIgnored var participants: GameParticipants
     @ObservationIgnored var state: RemoteDrawAndGuessState?
     @ObservationIgnored var pending = DrawAndGuessPendingWork.none
     /// The answer slots the hints showed, by round. Kept in the Games cache too,
@@ -216,7 +189,7 @@ final class DrawAndGuessViewModel {
 
     init(
         dependencies: GamesDependencies,
-        participants: DrawAndGuessParticipants = DrawAndGuessParticipants(),
+        participants: GameParticipants = GameParticipants(),
         heartbeatInterval: Duration = GamePresence.heartbeatInterval,
         tickInterval: Duration = .seconds(15),
         monotonicNow: @escaping @Sendable () -> TimeInterval = { CACurrentMediaTime() },
@@ -245,7 +218,7 @@ final class DrawAndGuessViewModel {
 
     /// Names who is playing. Safe to call again when the names load. A change of
     /// user or couple resets what was loaded.
-    func configure(participants newParticipants: DrawAndGuessParticipants) {
+    func configure(participants newParticipants: GameParticipants) {
         let identityChanged = participants.currentUserID != newParticipants.currentUserID
             || participants.coupleID != newParticipants.coupleID
         participants = newParticipants

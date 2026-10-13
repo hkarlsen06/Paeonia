@@ -5,7 +5,7 @@ import Foundation
 /// developer scenarios build it from in-memory parts.
 @MainActor
 struct GamesDependencies {
-    var gateway: any GamesGateway
+    var gateway: any DrawAndGuessGateway
     var cache: any GamesCaching
     var pendingOperationStore: any PendingSyncOperationPersisting
     var operationProvider: any SyncClientOperationProviding
@@ -14,6 +14,9 @@ struct GamesDependencies {
     /// Builds the live drawing room for the couple, or nil when there is none.
     var makeLive: @MainActor (UUID) -> WidgetLiveDrawing?
     var now: @Sendable () -> Date = { Date() }
+    // Each built game adds its own dependency fields here, after `now`. Give each
+    // a default that works offline, so a test that builds `GamesDependencies`
+    // memberwise does not change when a game adds a field.
 
     static func live() -> GamesDependencies {
         let client = try? PaeoniaConvexClientProvider.shared.client()
@@ -47,6 +50,21 @@ nonisolated struct UnavailableGamesGateway: GamesGateway {
         throw Unavailable()
     }
 
+    func loadOverview() async throws -> RemoteGamesOverview {
+        throw Unavailable()
+    }
+
+    func setPresence(_: GameKind, isPresent _: Bool) async throws {
+        throw Unavailable()
+    }
+
+    func sendInvite(_: GameKind) async throws -> RemoteInviteResult {
+        throw Unavailable()
+    }
+}
+
+// Each built game adds its own `extension UnavailableGamesGateway` here.
+nonisolated extension UnavailableGamesGateway: DrawAndGuessGateway {
     func ensureDrawAndGuessGame() async throws -> RemoteEnsureGameResult {
         throw Unavailable()
     }
@@ -95,14 +113,6 @@ nonisolated struct UnavailableGamesGateway: GamesGateway {
     }
 
     func markRoundResultSeen(roundID _: UUID) async throws -> RemoteResultSeenResult {
-        throw Unavailable()
-    }
-
-    func sendInvite() async throws -> RemoteInviteResult {
-        throw Unavailable()
-    }
-
-    func setPresence(_: Bool) async throws {
         throw Unavailable()
     }
 

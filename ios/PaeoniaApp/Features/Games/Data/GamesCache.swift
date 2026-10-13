@@ -20,10 +20,15 @@ nonisolated struct GameRoundHints: Codable, Equatable, Sendable {
     var slotIndexes: [Int]
 }
 
-/// What this phone keeps for one signed-in person. `state` is the last result
-/// of `games:get_draw_and_guess`, so the hub and the game show something at
-/// launch and offline. The rest is only ever local.
+/// What this phone keeps for one signed-in person. `overview` is the last result
+/// of `games:get_games_overview`, which every game and the Games tab share. The
+/// rest belongs to Draw & Guess. `state` is the last result of
+/// `drawAndGuess:get_draw_and_guess`, so the game shows something at launch and
+/// offline. The hints, notices, refusals and drawings are only ever local.
 nonisolated struct GamesLocalDocument: Codable, Equatable, Sendable {
+    /// Nil until the first answer arrives. A file written before this field existed
+    /// reads as nil, so the schema version stays.
+    var overview: RemoteGamesOverview?
     var state: RemoteDrawAndGuessState?
     /// The hints of the latest rounds, oldest first.
     var hints: [GameRoundHints] = []
@@ -35,11 +40,21 @@ nonisolated struct GamesLocalDocument: Codable, Equatable, Sendable {
     var drawings: GamesHistoryCache?
 }
 
-/// The Games cache. The live feed writes `state`, and the screens read it.
-/// Every method is keyed by the owner, so another account on this phone never
-/// reads this person's relationship content.
+/// The Games cache. The live feeds write `overview` (shared) and `state`
+/// (Draw & Guess), and the screens read them. Every method is keyed by the owner,
+/// so another account on this phone never reads this person's relationship content.
 protocol GamesCaching: Actor {
     func document(ownerUserID: UUID) -> GamesLocalDocument
+    /// The overview feed's write. It wins over every one-shot overview read that
+    /// started before it. An overview for another person is not saved.
+    func saveOverview(_ overview: RemoteGamesOverview, ownerUserID: UUID)
+    /// Takes a ticket for a one-shot overview read that is about to start.
+    func beginOverviewFetch() -> Int
+    /// Saves a one-shot overview read, unless a live write, a purge, or a read
+    /// that started later was saved after `ticket` was taken. A read with newer
+    /// settings than the kept ones is saved anyway. Returns whether it saved.
+    @discardableResult
+    func saveFetchedOverview(_ overview: RemoteGamesOverview, ownerUserID: UUID, ticket: Int) -> Bool
     /// The live feed's write. It wins over every one-shot read that started
     /// before it, unless it is older than the cached state (see `isOlder(than:)`).
     func saveState(_ state: RemoteDrawAndGuessState, ownerUserID: UUID)
@@ -79,11 +94,21 @@ extension GamesCaching {
     /// Reads the server's state once and caches it, unless the live feed cached
     /// something newer while the request ran. Returns false when the answer is
     /// for another person, which is not cached.
-    nonisolated func fetchState(from gateway: any GamesGateway, ownerUserID: UUID) async throws -> Bool {
+    nonisolated func fetchState(from gateway: any DrawAndGuessGateway, ownerUserID: UUID) async throws -> Bool {
         let ticket = await beginFetch()
         let loaded = try await gateway.loadDrawAndGuess()
         guard loaded.userID == ownerUserID else { return false }
         await saveFetchedState(loaded, ownerUserID: ownerUserID, ticket: ticket)
+        return true
+    }
+
+    /// Reads the shared overview once and caches it. Returns false when the answer
+    /// is for another person, which is not cached.
+    nonisolated func fetchOverview(from gateway: any GamesGateway, ownerUserID: UUID) async throws -> Bool {
+        let ticket = await beginOverviewFetch()
+        let loaded = try await gateway.loadOverview()
+        guard loaded.userID == ownerUserID else { return false }
+        await saveFetchedOverview(loaded, ownerUserID: ownerUserID, ticket: ticket)
         return true
     }
 }
@@ -164,6 +189,7 @@ actor FileGamesCache: GamesCaching {
     private let directoryURL: URL
     private let defaults: UserDefaults
     private var order = GamesStateWriteOrder()
+    private var overviewOrder = GamesStateWriteOrder()
 
     init(directoryURL: URL = FileGamesCache.defaultDirectoryURL(), defaults: UserDefaults = .standard) {
         self.directoryURL = directoryURL
@@ -185,6 +211,24 @@ actor FileGamesCache: GamesCaching {
             return GamesLocalDocument()
         }
         return envelope.document
+    }
+
+    func saveOverview(_ overview: RemoteGamesOverview, ownerUserID: UUID) {
+        guard overview.userID == ownerUserID else { return }
+        overviewOrder.overrideFetches()
+        update(ownerUserID: ownerUserID) { $0.overview = overview }
+    }
+
+    func beginOverviewFetch() -> Int {
+        overviewOrder.ticket()
+    }
+
+    func saveFetchedOverview(_ overview: RemoteGamesOverview, ownerUserID: UUID, ticket: Int) -> Bool {
+        guard overview.userID == ownerUserID else { return false }
+        let kept = document(ownerUserID: ownerUserID).overview
+        guard overviewOrder.acceptFetch(ticket) || overview.hasNewerSettings(than: kept) else { return false }
+        update(ownerUserID: ownerUserID) { $0.overview = overview }
+        return true
     }
 
     func saveState(_ state: RemoteDrawAndGuessState, ownerUserID: UUID) {
@@ -255,6 +299,7 @@ actor FileGamesCache: GamesCaching {
 
     func clearAll() {
         order.overrideFetches()
+        overviewOrder.overrideFetches()
         guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }
         try? FileManager.default.removeItem(at: directoryURL)
     }
@@ -284,18 +329,45 @@ actor InMemoryGamesCache: GamesCaching {
     private var documents: [UUID: GamesLocalDocument] = [:]
     private var seenSettings: Set<[UUID]> = []
     private var order = GamesStateWriteOrder()
+    private var overviewOrder = GamesStateWriteOrder()
 
-    init(state: RemoteDrawAndGuessState? = nil, ownerUserID: UUID? = nil, hasSeenSettings: Bool = false) {
-        if let state, let ownerUserID {
-            documents[ownerUserID] = GamesLocalDocument(state: state)
-            if hasSeenSettings, let coupleID = state.settings?.coupleID {
-                seenSettings.insert([coupleID, ownerUserID])
-            }
+    /// With a `state` and no `overview`, the overview is the one that state implies,
+    /// so a test that passes one Draw & Guess state shows the same hub as before.
+    init(
+        state: RemoteDrawAndGuessState? = nil,
+        overview: RemoteGamesOverview? = nil,
+        ownerUserID: UUID? = nil,
+        hasSeenSettings: Bool = false
+    ) {
+        guard let ownerUserID else { return }
+        let overview = overview ?? state.map { RemoteGamesOverview(drawAndGuess: $0) }
+        guard state != nil || overview != nil else { return }
+        documents[ownerUserID] = GamesLocalDocument(overview: overview, state: state)
+        if hasSeenSettings, let coupleID = overview?.settings?.coupleID {
+            seenSettings.insert([coupleID, ownerUserID])
         }
     }
 
     func document(ownerUserID: UUID) -> GamesLocalDocument {
         documents[ownerUserID] ?? GamesLocalDocument()
+    }
+
+    func saveOverview(_ overview: RemoteGamesOverview, ownerUserID: UUID) {
+        guard overview.userID == ownerUserID else { return }
+        overviewOrder.overrideFetches()
+        documents[ownerUserID, default: GamesLocalDocument()].overview = overview
+    }
+
+    func beginOverviewFetch() -> Int {
+        overviewOrder.ticket()
+    }
+
+    func saveFetchedOverview(_ overview: RemoteGamesOverview, ownerUserID: UUID, ticket: Int) -> Bool {
+        guard overview.userID == ownerUserID else { return false }
+        let kept = documents[ownerUserID]?.overview
+        guard overviewOrder.acceptFetch(ticket) || overview.hasNewerSettings(than: kept) else { return false }
+        documents[ownerUserID, default: GamesLocalDocument()].overview = overview
+        return true
     }
 
     func saveState(_ state: RemoteDrawAndGuessState, ownerUserID: UUID) {
@@ -355,7 +427,39 @@ actor InMemoryGamesCache: GamesCaching {
 
     func clearAll() {
         order.overrideFetches()
+        overviewOrder.overrideFetches()
         documents = [:]
+    }
+}
+
+extension RemoteGamesOverview {
+    /// This overview's settings changed after `kept`'s. The server only moves them
+    /// forward, so a live write that carries older settings must not hide it.
+    /// False when nothing is kept, such as after a purge.
+    nonisolated func hasNewerSettings(than kept: RemoteGamesOverview?) -> Bool {
+        guard let kept, let settings else { return false }
+        guard let keptSettings = kept.settings else { return true }
+        return settings.updatedAt > keptSettings.updatedAt
+    }
+
+    /// The overview a Draw & Guess state implies: the same couple and settings, and
+    /// one `drawAndGuess` entry when the state has a presence time or an invite.
+    nonisolated init(drawAndGuess state: RemoteDrawAndGuessState) {
+        let hasPresence = state.myLastSeenAt != nil || state.partnerLastSeenAt != nil || state.lastInviteAt != nil
+        self.init(
+            userID: state.userID,
+            partnerUserID: state.partnerUserID,
+            coupleID: state.coupleID,
+            settings: state.settings,
+            presence: hasPresence ? [
+                RemoteGamePresence(
+                    kind: .drawAndGuess,
+                    myLastSeenAt: state.myLastSeenAt,
+                    partnerLastSeenAt: state.partnerLastSeenAt,
+                    lastInviteAt: state.lastInviteAt
+                ),
+            ] : []
+        )
     }
 }
 

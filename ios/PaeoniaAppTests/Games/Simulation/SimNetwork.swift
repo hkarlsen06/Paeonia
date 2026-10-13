@@ -154,8 +154,8 @@ final class SimNetwork {
     }
 }
 
-/// `GamesGateway` for one person, through their phone's network.
-final class SimGateway: GamesGateway, @unchecked Sendable {
+/// `DrawAndGuessGateway` for one person, through their phone's network.
+final class SimGateway: DrawAndGuessGateway, @unchecked Sendable {
     private let user: UUID
     private let server: SimServer
     private let network: SimNetwork
@@ -241,7 +241,11 @@ final class SimGateway: GamesGateway, @unchecked Sendable {
         try await call("resultSeen") { try $0.markResultSeen(user: $1, roundID: roundID) }
     }
 
-    func sendInvite() async throws -> RemoteInviteResult {
+    func loadOverview() async throws -> RemoteGamesOverview {
+        try await call("overview") { RemoteGamesOverview(drawAndGuess: $0.view(for: $1)) }
+    }
+
+    func sendInvite(_: GameKind) async throws -> RemoteInviteResult {
         try await call("invite") { try $0.sendInvite(user: $1) }
     }
 
@@ -250,7 +254,7 @@ final class SimGateway: GamesGateway, @unchecked Sendable {
         try await call("ticket") { _, _ in () }
     }
 
-    func setPresence(_ isPresent: Bool) async throws {
+    func setPresence(_: GameKind, isPresent: Bool) async throws {
         try await call("presence") { $0.setPresence(user: $1, present: isPresent) }
     }
 

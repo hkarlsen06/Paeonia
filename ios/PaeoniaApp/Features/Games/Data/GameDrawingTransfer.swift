@@ -10,7 +10,7 @@ nonisolated enum GameDrawingTransferError: Error, Equatable, Sendable {
 /// Sends a finished drawing to the game bucket and fetches the partner's.
 nonisolated protocol GameDrawingTransferring: Sendable {
     /// Reserves, uploads, and finalizes the `.pkdrawing` for a round, and returns
-    /// the media asset id for `games:submit_drawing`. A retry with the same
+    /// the media asset id for `drawAndGuess:submit_drawing`. A retry with the same
     /// operations returns the same asset, so a lost response never uploads twice.
     func uploadDrawing( // swiftlint:disable:this function_parameter_count
         _ data: Data,

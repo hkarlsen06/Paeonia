@@ -128,12 +128,16 @@ struct GamesRulesTests {
 
     // MARK: Deep link and notification setting
 
-    @Test func theGamesLinkOpensDrawAndGuess() {
-        #expect(PaeoniaDeepLink(PaeoniaDeepLink.drawAndGuessURL) == .drawAndGuess)
-        #expect(PaeoniaDeepLink(URL(string: "paeonia://games/draw-and-guess")!) == .drawAndGuess)
+    @Test func everyGameHasALinkThatOpensIt() {
+        for kind in GameKind.allCases {
+            #expect(PaeoniaDeepLink(PaeoniaDeepLink.gameURL(kind)) == .game(kind))
+        }
+        #expect(PaeoniaDeepLink.gameURL(.ultimateTicTacToe).absoluteString == "paeonia://games/ultimate-tic-tac-toe")
+        #expect(PaeoniaDeepLink(URL(string: "paeonia://games/draw-and-guess")!) == .game(.drawAndGuess))
+        #expect(PaeoniaDeepLink(URL(string: "paeonia://games/draw_and_guess")!) == nil)
         #expect(PaeoniaDeepLink(URL(string: "paeonia://games/other")!) == nil)
-        let push: [AnyHashable: Any] = ["deeplink": "paeonia://games/draw-and-guess", "type": "game_turn_ready"]
-        #expect(PaeoniaDeepLink(notificationUserInfo: push) == .drawAndGuess)
+        let push: [AnyHashable: Any] = ["deeplink": "paeonia://games/mind-meld", "type": "game_turn_ready"]
+        #expect(PaeoniaDeepLink(notificationUserInfo: push) == .game(.mindMeld))
     }
 
     @Test func theGamesSwitchUsesTheGamesEnabledColumn() {

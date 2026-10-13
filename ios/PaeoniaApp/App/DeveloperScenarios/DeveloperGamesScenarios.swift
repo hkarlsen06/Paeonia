@@ -171,6 +171,8 @@
         ownerUserID: DeveloperGamesFixture.me,
         hasSeenSettings: scenario != .gamesPartnerPicked
       )
+      // Each built game sets its own dependency fields on this value, so the hub
+      // scenarios show its card next to Draw & Guess.
       return GamesDependencies(
         gateway: DeveloperGamesGateway(historyIsEmpty: scenario == .drawHistoryEmpty),
         cache: cache,
@@ -225,7 +227,7 @@
 
   /// Every call succeeds and changes nothing. The screens already show a move the
   /// moment it is saved in the pending operations.
-  struct DeveloperGamesGateway: GamesGateway {
+  struct DeveloperGamesGateway: DrawAndGuessGateway {
     /// "Our drawings" answers with no rounds and empty records.
     var historyIsEmpty = false
 
@@ -298,11 +300,17 @@
       RemoteResultSeenResult(roundID: roundID, resultSeenAt: DeveloperGamesFixture.now)
     }
 
-    func sendInvite() async throws -> RemoteInviteResult {
+    func sendInvite(_: GameKind) async throws -> RemoteInviteResult {
       RemoteInviteResult(sentAt: DeveloperGamesFixture.now)
     }
 
-    func setPresence(_: Bool) async throws {}
+    func setPresence(_: GameKind, isPresent _: Bool) async throws {}
+
+    // swiftlint:disable:next async_without_await
+    func loadOverview() async throws -> RemoteGamesOverview {
+      // The cache is the scenario's overview. Failing keeps the cache as it is.
+      throw URLError(.notConnectedToInternet)
+    }
 
     func loadDrawAndGuessHistory(
       starredOnly: Bool,

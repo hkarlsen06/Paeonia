@@ -132,10 +132,10 @@
 
     var body: some View {
       NavigationStack(path: $path) {
-        DrawAndGuessHistoryScreen(viewModel: viewModel.history)
+        DrawAndGuessHistoryScreen(viewModel: viewModel.drawAndGuess.history)
           .navigationDestination(for: GamesDestination.self) { destination in
             if case let .drawAndGuessHistoryDetail(roundID) = destination {
-              DrawAndGuessHistoryDetailHost(history: viewModel.history, roundID: roundID)
+              DrawAndGuessHistoryDetailHost(history: viewModel.drawAndGuess.history, roundID: roundID)
             }
           }
       }

@@ -3,7 +3,7 @@ import Foundation
 // What each queued Games write carries. The payloads fix every id and operation
 // up front, so a retry after a lost response replays the same requests.
 
-/// `games:pick_draw_word`. The round id is chosen on this phone, so the drawing
+/// `drawAndGuess:pick_draw_word`. The round id is chosen on this phone, so the drawing
 /// queued after it can name the round before the server has seen it.
 nonisolated struct GamePickWordPayload: Codable, Equatable, Sendable {
     let gameID: UUID
@@ -56,7 +56,7 @@ nonisolated struct GameGiveUpPayload: Codable, Equatable, Sendable {
     let createdAt: Date
 }
 
-/// `games:set_round_star`. The last one queued for a round wins, and sending
+/// `drawAndGuess:set_round_star`. The last one queued for a round wins, and sending
 /// the same one twice changes nothing.
 nonisolated struct GameStarPayload: Codable, Equatable, Sendable {
     let roundID: UUID

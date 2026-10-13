@@ -140,6 +140,7 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case removeMemoryMedia = "remove_memory_media"
     case updateLatestPartnerLocation = "update_latest_partner_location"
     case updateLocationSharingPreference = "update_location_sharing_preference"
+    // Each game adds its cases below, named with its Swift prefix.
     case pickDrawWord = "pick_draw_word"
     case submitGameDrawing = "submit_game_drawing"
     case submitGameGuess = "submit_game_guess"

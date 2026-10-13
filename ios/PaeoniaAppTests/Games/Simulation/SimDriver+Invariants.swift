@@ -301,7 +301,7 @@ extension SimDriver {
             throw fail("\(name) invite is \(viewModel.invite), expected \(expectedInvite)")
         }
         // The hub tells the same story. On a reveal it shows the turn that follows it.
-        if let summary = phone.games?.hubSummary {
+        if let summary = phone.games?.drawAndGuess.summary {
             let expectedStatus: DrawAndGuessHubSummary.Status = switch game.state {
             case .choosingWord: game.turnUser == me ? .yourTurnToDraw : .waitingForPartner
             case .drawing: current?.drawer == me ? .yourTurnToDraw : .partnerIsDrawing

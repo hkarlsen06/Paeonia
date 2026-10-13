@@ -284,7 +284,7 @@ struct DrawAndGuessHistoryTests {
 
         await history.refresh()
 
-        let starred = try #require(rounds.first(where: \.starredByMe))
+        let starred = try #require(rounds.first { $0.starredByMe })
         let unstarredRound = try #require(rounds.first { !$0.starredByMe })
         #expect(history.stars.isStarred(starred.id))
         #expect(!history.stars.isStarred(unstarredRound.id))

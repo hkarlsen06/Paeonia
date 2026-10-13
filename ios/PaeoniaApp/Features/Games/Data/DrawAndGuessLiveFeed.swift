@@ -1,9 +1,10 @@
 import Foundation
 
-/// Keeps the Games cache current while the app is open. One subscription to
-/// `games:get_draw_and_guess` carries the couple's settings, the game, the
+/// Keeps the Draw & Guess part of the Games cache current while the app is open.
+/// One subscription to `drawAndGuess:get_draw_and_guess` carries the game, the
 /// current round with its guesses, the drawer's word choices, and the partner's
-/// presence. Each result goes into the cache, then the hub and the game re-read.
+/// presence. Each result goes into the cache, then the game re-reads. The
+/// couple's settings for the Games tab come from `GamesOverviewLiveFeed`.
 nonisolated struct DrawAndGuessLiveFeed: LiveFeed {
     let name = "draw_and_guess"
 
@@ -18,7 +19,7 @@ nonisolated struct DrawAndGuessLiveFeed: LiveFeed {
             return
         }
 
-        let results = live.subscribe("games:get_draw_and_guess", as: RemoteDrawAndGuessState.self)
+        let results = live.subscribe("drawAndGuess:get_draw_and_guess", as: RemoteDrawAndGuessState.self)
         for await result in results {
             guard !Task.isCancelled else {
                 return

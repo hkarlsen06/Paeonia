@@ -253,8 +253,8 @@ extension MainTabView {
             await memoriesViewModel.refresh()
             guard isCurrent(deepLink) else { return }
             self.deepLink.wrappedValue = nil
-        case .drawAndGuess:
-            await openDrawAndGuess(for: deepLink)
+        case let .game(kind):
+            await openGame(kind, for: deepLink)
         case .streak:
             selection.wrappedValue = .home
             // The streak may have advanced, broken, or passed its restore deadline
@@ -266,26 +266,26 @@ extension MainTabView {
         }
     }
 
-    /// Opens Draw & Guess from a notification or an invite. A couple that has not
-    /// set up Games yet lands on the setup instead, because the game needs their
-    /// choices.
-    private func openDrawAndGuess(for deepLink: PaeoniaDeepLink) async {
+    /// Opens a game from a notification or an invite. A couple that has not set
+    /// up Games yet lands on the setup instead, because every game needs their
+    /// choices. A game this build does not have opens the hub.
+    private func openGame(_ kind: GameKind, for deepLink: PaeoniaDeepLink) async {
         selection.wrappedValue = .games
         gamesViewModel.configure(participants: gamesParticipants)
         await gamesViewModel.load()
         guard isCurrent(deepLink) else { return }
-        if gamesViewModel.screen == .hub {
-            gamesPath = [.drawAndGuess]
+        if gamesViewModel.screen == .hub, gamesViewModel.game(kind) != nil {
+            gamesPath = [.game(kind)]
         }
         self.deepLink.wrappedValue = nil
     }
 
-    /// The game card on Us, shown while the partner is in the game. A partner who
+    /// A game card on Us, shown while the partner is in the game. A partner who
     /// has not seen the couple's settings yet lands on the Games tab to see them first.
-    func openDrawAndGuessFromHome() {
+    func openGameFromHome(_ destination: GamesDestination) {
         selection.wrappedValue = .games
         if gamesViewModel.screen == .hub {
-            gamesPath = [.drawAndGuess]
+            gamesPath = [destination]
         }
     }
 

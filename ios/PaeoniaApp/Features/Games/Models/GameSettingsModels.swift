@@ -47,7 +47,7 @@ nonisolated extension GameLanguage {
     }
 }
 
-/// `games:get_game_settings`, and the `settings` part of `games:get_draw_and_guess`.
+/// The `settings` part of `games:get_games_overview` and `drawAndGuess:get_draw_and_guess`.
 nonisolated struct RemoteGameSettings: Codable, Equatable, Sendable {
     let coupleID: UUID
     let playStyle: GamePlayStyle

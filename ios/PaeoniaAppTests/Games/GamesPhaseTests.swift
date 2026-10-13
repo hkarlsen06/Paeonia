@@ -304,7 +304,7 @@ struct GamesPhaseTests {
     @Test func theHubStatusFollowsWhoseTurnItIs() {
         func status(_ state: RemoteDrawAndGuessState) -> DrawAndGuessHubSummary {
             let resolution = resolver.resolve(state: state, pending: .none, isPartnerDrawingLive: false)
-            return DrawAndGuessHubSummary(state: state, resolution: resolution, now: GameFixture.now)
+            return DrawAndGuessHubSummary(state: state, resolution: resolution)
         }
         let yourDraw = status(state(game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil)))
         let waiting = status(state(
@@ -331,7 +331,7 @@ struct GamesPhaseTests {
     ) -> DrawAndGuessHubSummary.Status {
         let resolution = resolver.resolve(state: state, pending: pending, isPartnerDrawingLive: false)
         #expect(resolution.phase == .reveal)
-        return DrawAndGuessHubSummary(state: state, resolution: resolution, now: GameFixture.now).status
+        return DrawAndGuessHubSummary(state: state, resolution: resolution).status
     }
 
     /// A finished round this phone has not shown, and the round that followed it.
@@ -393,13 +393,9 @@ struct GamesPhaseTests {
             game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil),
             partnerIsHere: true
         )
-        let resolution = resolver.resolve(state: here, pending: .none, isPartnerDrawingLive: false)
+        let overview = RemoteGamesOverview(drawAndGuess: here)
 
-        #expect(DrawAndGuessHubSummary(state: here, resolution: resolution, now: GameFixture.now).partnerIsHere)
-        #expect(!DrawAndGuessHubSummary(
-            state: here,
-            resolution: resolution,
-            now: GameFixture.now.addingTimeInterval(120)
-        ).partnerIsHere)
+        #expect(GamesViewModel.partnerGames(in: overview, now: GameFixture.now) == [.drawAndGuess])
+        #expect(GamesViewModel.partnerGames(in: overview, now: GameFixture.now.addingTimeInterval(120)).isEmpty)
     }
 }

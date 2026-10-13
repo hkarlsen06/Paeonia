@@ -421,7 +421,7 @@ struct DrawAndGuessSimulationRegressionTests {
             try driver.require(drawer, in: .reveal)
             #expect(try driver.require(guesser, in: .reveal).isPartnerWaitingForMe == false)
 
-            await driver.require(drawer, in: .reveal).continueFromReveal()
+            try await driver.require(drawer, in: .reveal).continueFromReveal()
             await driver.settle()
 
             #expect(try driver.require(drawer, in: .waitingForWord).partnerPresence == .result)
@@ -437,7 +437,7 @@ struct DrawAndGuessSimulationRegressionTests {
             let (drawer, guesser) = try await driver.scriptRoundToReveal()
             #expect(try driver.require(drawer, in: .reveal).isPartnerChoosingNextWord == false)
 
-            await driver.require(guesser, in: .reveal).continueFromReveal()
+            try await driver.require(guesser, in: .reveal).continueFromReveal()
             await driver.settle()
 
             try driver.require(guesser, in: .chooseWord)

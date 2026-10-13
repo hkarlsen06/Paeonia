@@ -6,7 +6,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case dailyChat(instanceID: UUID)
     case dailyToday(coupleDayID: UUID?)
     case memories
-    case drawAndGuess
+    /// `paeonia://games/<path>`, for every `GameKind`.
+    case game(GameKind)
     case streak
     case subscription
 
@@ -88,14 +89,14 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         return url
     }
 
-    static var drawAndGuessURL: URL {
+    static func gameURL(_ kind: GameKind) -> URL {
         var components = URLComponents()
         components.scheme = scheme
         components.host = "games"
-        components.path = "/draw-and-guess"
+        components.path = "/\(kind.path)"
 
         guard let url = components.url else {
-            preconditionFailure("Invalid Paeonia Draw & Guess URL")
+            preconditionFailure("Invalid Paeonia game URL")
         }
 
         return url
@@ -155,8 +156,9 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             self = .dailyChat(instanceID: instanceID)
         case ("memories", []):
             self = .memories
-        case ("games", ["draw-and-guess"]):
-            self = .drawAndGuess
+        case ("games", _) where pathComponents.count == 1:
+            guard let kind = GameKind(path: pathComponents[0]) else { return nil }
+            self = .game(kind)
         case ("streak", []):
             self = .streak
         case ("settings", ["subscription"]):

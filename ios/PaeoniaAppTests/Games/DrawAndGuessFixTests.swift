@@ -120,7 +120,7 @@ struct DrawAndGuessFixTests {
         let started = await waitUntil { transfer.startedCount == 1 }
         #expect(started)
 
-        viewModel.configure(participants: DrawAndGuessParticipants(currentUserID: UUID(), coupleID: UUID()))
+        viewModel.configure(participants: GameParticipants(currentUserID: UUID(), coupleID: UUID()))
         transfer.open()
         try? await Task.sleep(for: .milliseconds(100))
 

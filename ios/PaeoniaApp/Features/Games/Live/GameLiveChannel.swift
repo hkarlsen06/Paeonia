@@ -4,12 +4,31 @@ import Foundation
 /// names itself with `game`. The live drawing messages (`WidgetLiveMessage`)
 /// share the socket, and the relay forwards both without reading them.
 ///
-/// To give a new game live messages: declare its message type, add its relay
-/// channel to `ALLOWED_CHANNELS` in `relay/src/ticket.ts`, and open a
-/// `GameLiveChannel` on the game's connection.
+/// To give a new game live messages: declare its message type and open a
+/// `GameLiveChannel` on a connection made with `GameLiveTicket.provider(for:)`.
+/// Every `GameKind` has its relay channel on the allowlist already
+/// (`ALLOWED_CHANNELS` in `relay/src/ticket.ts`).
 nonisolated protocol GameLiveMessage: Codable, Sendable {
     /// Names the game on the wire, such as `draw_and_guess`.
     static var game: String { get }
+}
+
+/// The relay ticket for one game's room.
+nonisolated enum GameLiveTicket {
+    /// Asks Convex for a 60-second relay ticket on every connect, so access is
+    /// checked again after each drop and after the relay's 10-minute session
+    /// limit. The ticket puts the socket in the room `<couple>:<kind.relayChannel>`.
+    /// A nil ticket means the relay is not set up, and the game plays without live
+    /// messages.
+    nonisolated static func provider(for kind: GameKind) -> WidgetLiveConnection.TicketProvider {
+        return { _ in
+            let client = try PaeoniaConvexClientProvider.shared.client()
+            return try await client.mutation(
+                "games:create_game_live_ticket",
+                args: ["p_kind": kind.rawValue]
+            )
+        }
+    }
 }
 
 /// How a game message travels: `{"game": "draw_and_guess", "message": {...}}`.
@@ -30,9 +49,10 @@ nonisolated struct GameLiveEnvelopeTag: Decodable {
 }
 
 /// Sends and receives one game's messages on a live connection. A connection
-/// carries one game, because every game has its own relay room. Messages sent
-/// while offline are dropped, so send whole state that the partner can take as
-/// it is, and send it again when the partner arrives.
+/// carries one game, because every game has its own relay room, which the
+/// connection's ticket names (see `GameLiveTicket`). Messages sent while offline
+/// are dropped, so send whole state that the partner can take as it is, and send
+/// it again when the partner arrives.
 @MainActor
 final class GameLiveChannel<Message: GameLiveMessage> {
     var onMessage: ((Message) -> Void)?

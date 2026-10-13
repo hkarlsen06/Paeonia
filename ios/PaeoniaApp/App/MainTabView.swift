@@ -284,8 +284,8 @@ struct MainTabView: View {
         GamesRootView(viewModel: gamesViewModel, path: $gamesPath)
     }
 
-    var gamesParticipants: DrawAndGuessParticipants {
-        DrawAndGuessParticipants(
+    var gamesParticipants: GameParticipants {
+        GameParticipants(
             currentUserID: identity.currentUserID,
             coupleID: identity.coupleID,
             partnerName: dailyChallengeParticipants.partnerName,
@@ -354,7 +354,7 @@ struct MainTabView: View {
             },
             onOpenChat: startOpeningDailyChat,
             games: gamesViewModel,
-            onOpenDrawAndGuess: openDrawAndGuessFromHome,
+            onOpenGame: openGameFromHome,
             onTapStreak: openStreakDetails,
             onOpenDailyChallenge: openDailyChallengeFromHome,
             onOpenWidgetDrawing: actions.openWidgetDrawing,

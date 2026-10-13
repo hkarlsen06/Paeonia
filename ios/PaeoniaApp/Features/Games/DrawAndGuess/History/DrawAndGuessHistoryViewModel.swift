@@ -34,14 +34,14 @@ final class DrawAndGuessHistoryViewModel {
 
     @ObservationIgnored private let dependencies: GamesDependencies
     @ObservationIgnored private let pageSize: Int
-    @ObservationIgnored private var participants: DrawAndGuessParticipants
+    @ObservationIgnored private var participants: GameParticipants
     @ObservationIgnored private var hasReadCache = false
     private var listings: [Filter: DrawAndGuessHistoryListing] = [:]
 
     init(
         dependencies: GamesDependencies,
         stars: DrawAndGuessStars,
-        participants: DrawAndGuessParticipants = DrawAndGuessParticipants(),
+        participants: GameParticipants = GameParticipants(),
         pageSize: Int = DrawAndGuessHistoryViewModel.defaultPageSize
     ) {
         self.dependencies = dependencies
@@ -62,7 +62,7 @@ final class DrawAndGuessHistoryViewModel {
 
     /// Names who is playing. Safe to call again when the names load. A change of
     /// user or couple clears what was loaded.
-    func configure(participants newParticipants: DrawAndGuessParticipants) {
+    func configure(participants newParticipants: GameParticipants) {
         let identityChanged = participants.currentUserID != newParticipants.currentUserID
             || participants.coupleID != newParticipants.coupleID
         participants = newParticipants

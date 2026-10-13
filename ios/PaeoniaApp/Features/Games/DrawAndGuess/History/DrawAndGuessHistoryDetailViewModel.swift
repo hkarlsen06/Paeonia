@@ -18,7 +18,7 @@ final class DrawAndGuessHistoryDetailViewModel {
     private(set) var drawingState: DrawingState = .loading
     private(set) var isFastForwarding = false
 
-    @ObservationIgnored private let participants: DrawAndGuessParticipants
+    @ObservationIgnored private let participants: GameParticipants
     @ObservationIgnored private let drawings: DrawAndGuessHistoryDrawings
     @ObservationIgnored private let monotonicNow: @Sendable () -> TimeInterval
     @ObservationIgnored private var timeline: DrawAndGuessReplayTimeline?
@@ -26,7 +26,7 @@ final class DrawAndGuessHistoryDetailViewModel {
 
     init(
         round: RemoteDrawAndGuessHistoryRound,
-        participants: DrawAndGuessParticipants,
+        participants: GameParticipants,
         stars: DrawAndGuessStars,
         drawings: DrawAndGuessHistoryDrawings,
         monotonicNow: @escaping @Sendable () -> TimeInterval = { CACurrentMediaTime() }

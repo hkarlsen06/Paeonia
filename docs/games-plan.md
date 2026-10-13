@@ -1,6 +1,6 @@
 # Games plan
 
-Plan and decisions for the Games tab. The Draw & Guess backend and the relay channel are built (`backend/convex/games.ts`, `relay/src/ticket.ts`). The Games tab foundation is built on iOS (tab, setup, hub, data layer, live room, Draw & Guess view model, developer scenarios). The polished Draw & Guess screens are built. Sections marked "Decided" were agreed with the developer. Everything else is the current proposal and can change.
+Plan and decisions for the Games tab. Draw & Guess is built (`backend/convex/drawAndGuess.ts`, `Features/Games/DrawAndGuess/`). The shared Games wiring is kind-based: the backend (`backend/convex/games.ts`, `lib/games.ts`, `lib/gameRegistry.ts`), the relay (`relay/src/ticket.ts`) and Swift (`GameKind`) register all seven kinds below, and each game plugs in at the points in "Adding a game". Sections marked "Decided" were agreed with the developer. Everything else is the current proposal and can change.
 
 Keep this file current. When a games decision changes, or games code lands, update the matching section in the same change. Move items from "Open questions" to "Decisions" once the developer settles them, and replace proposals with what was actually built.
 
@@ -11,6 +11,9 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 ## Decisions
 
 Decided on 2026-10-13.
+
+- **Hub with several games.** Every built game gets a full-width card, stacked. The game the partner is in comes first, then catalog order. All cards share one frame (`GameHubCardFrame`): the game's own artwork, the partner-here chip, an optional badge such as the score, the name, a status line, the main button, and optional extras such as "Our drawings". The card glows while the game waits for this person.
+- **Us tab with several games.** The Us tab shows one card: the game the partner opened most recently, while they have it open. It is the hub card without hub-only links.
 
 - **Games don't save to Memories.** A creative game keeps its own history instead, such as the finished drawings of Draw & Guess. Each partner can star rounds in that history, and stars are private: the partner isn't told and a star doesn't change the game. This replaces the opt-in save prompt from 2026-10-11 and the save prompt details from 2026-10-12. Board games and quick duels keep no history.
 
@@ -64,18 +67,18 @@ Convex owns the state of every game. The relay carries only movement that never 
 
 ### Relay changes
 
-- Today every socket for a couple joins one room, capped at `MAX_SOCKETS_PER_ROOM = 4` (Home and the canvas on two phones). Games would hit the cap. Built: the relay ticket has an optional channel claim `ch`, and the Worker routes with ``getByName(`${coupleId}:${channel}`)``, so each game gets its own room. A ticket without a channel still joins the couple's canvas room. The Worker accepts only the channels in `ALLOWED_CHANNELS` (`relay/src/ticket.ts`), and `games:create_game_live_ticket` issues the game tickets.
+- Today every socket for a couple joins one room, capped at `MAX_SOCKETS_PER_ROOM = 4` (Home and the canvas on two phones). Games would hit the cap. Built: the relay ticket has an optional channel claim `ch`, and the Worker routes with ``getByName(`${coupleId}:${channel}`)``, so each game gets its own room. A ticket without a channel still joins the couple's canvas room. The channel is the game kind. The Worker accepts only the channels in `ALLOWED_CHANNELS` (`relay/src/ticket.ts`), which lists every kind, and `games:create_game_live_ticket` issues the game tickets.
 - Sockets close after `SESSION_MS` (10 minutes). A live game must reconnect with a fresh ticket and fetch the current state again from Convex or from the phone that owns it.
 - The relay reads nothing it forwards. The app defines the message format, as `WidgetDrawing/Live/WidgetLiveMessage.swift` does for drawing.
-- Built: each game has its own message type next to the drawing messages, on the same socket. The type conforms to `GameLiveMessage` and names its game, and `GameLiveChannel` sends and receives it (`Features/Games/Live/GameLiveChannel.swift`). On the wire a game message is `{"game": "<game>", "message": {...}}`, and the connection routes anything with a `game` key to the channel. To add live messages to a new game, declare its message type, add its channel to `ALLOWED_CHANNELS`, and open a `GameLiveChannel` on the game's connection. Messages sent while offline are dropped, so a game sends its whole state each time and sends it again when the partner arrives (`WidgetLiveDrawing.onPartnerArrived`). `DrawAndGuessLiveMessage` is the first one.
+- Built: each game has its own message type next to the drawing messages, on the same socket. The type conforms to `GameLiveMessage` and names its game, and `GameLiveChannel` sends and receives it (`Features/Games/Live/GameLiveChannel.swift`). On the wire a game message is `{"game": "<game>", "message": {...}}`, and the connection routes anything with a `game` key to the channel. To add live messages to a new game, declare its message type and open a `GameLiveChannel` on a connection made with `GameLiveTicket.provider(for:)`. Messages sent while offline are dropped, so a game sends its whole state each time and sends it again when the partner arrives (`WidgetLiveDrawing.onPartnerArrived`). `DrawAndGuessLiveMessage` is the first one.
 
 ### Convex model
 
-- A `games` table: `id`, `couple_id`, `kind`, `state`, `turn_user_id`, `version`, `created_at`, `updated_at`. Follow the snake_case and uuid conventions in `backend/convex/schema.ts`. Built for Draw & Guess without a `status` column, because the game never ends. Couple settings are in `game_settings`.
-- A `game_moves` table holding each move in order, for replays and reveals.
+- Shared tables, keyed by `kind` where it matters: `game_settings` (the couple's play style and language), `game_presence` (who has which game open) and `game_invites` (each partner's last invite per game). `games:get_games_overview` returns all three for the app.
+- Each game has its own tables, named with its kind as a prefix. Draw & Guess came first, so its tables are `games` (one row per couple, without a `status` column because the game never ends), `game_moves` (one row per round), `game_guesses`, `game_round_stars` and `game_used_words`. Follow the snake_case and uuid conventions in `backend/convex/schema.ts`.
 - Draw & Guess has one mutation per action (`pick_draw_word`, `submit_drawing`, `submit_guess`, `give_up_round`), each checking access, turn ownership, and round state. Proposal for board games: one `make_move({ game_id, expected_version, move })` mutation. It checks couple access, whose turn it is, and the version, then runs a pure rules function for that `kind`. A stale version fails instead of overwriting.
 - A `view_for(state, user_id)` function per kind. Queries return only that projection, so hidden information (Battleship boards, unrevealed answers, the drawing under the fold) never reaches the other phone.
-- Game data joins relationship end and account deletion cleanup (`lib/relationshipCleanup.ts`, `lib/accountDeletion.ts`).
+- Game data joins relationship end and account deletion cleanup. `deleteCoupleGameRows` in `lib/gameRegistry.ts` deletes the shared rows and calls each game's `deleteCoupleRows`.
 - A creative game keeps its own history in its own tables, such as the finished rounds and drawings of Draw & Guess. Stars are a per-game table with one row per partner and round. Nothing is copied into `memories`.
 
 ### Real-time fairness
@@ -133,6 +136,66 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 - **Board games.** Short classic turns. Connect Four is the proposed first test of the turn engine.
 - **Battleship with date ideas.** Hide date ideas instead of ships. Sinking one turns it into a plan.
 - **Chess and word games.** Popular but expensive. Chess needs a rules engine. A word game needs licensed English and Norwegian dictionaries. Deferred.
+
+## Adding a game
+
+The checklist for building a game. All seven kinds are already registered on the backend (`GAME_KINDS` in `lib/validators.ts`), in the relay (`ALLOWED_CHANNELS`) and in Swift (`GameKind`). A kind shows nowhere in the app until its hub model is in `GamesViewModel.games`. Add your lines at the points below and leave other games' lines alone. Draw & Guess is the worked example for every point.
+
+### Names
+
+| kind (backend, relay channel) | Swift prefix | URL path `paeonia://games/<path>` | Folder `ios/PaeoniaApp/Features/Games/<Folder>` | Design doc |
+|---|---|---|---|---|
+| draw_and_guess | drawAndGuess / DrawAndGuess | draw-and-guess | DrawAndGuess | docs/games/draw-and-guess.md |
+| mind_meld | mindMeld / MindMeld | mind-meld | MindMeld | docs/games/mind-meld.md |
+| exquisite_corpse | exquisiteCorpse / ExquisiteCorpse | exquisite-corpse | ExquisiteCorpse | docs/games/exquisite-corpse.md |
+| story_chain | storyChain / StoryChain | story-chain | StoryChain | docs/games/story-chain.md |
+| connect_four | connectFour / ConnectFour | connect-four | BoardGames/ConnectFour | docs/games/board-games.md |
+| dots_and_boxes | dotsAndBoxes / DotsAndBoxes | dots-and-boxes | BoardGames/DotsAndBoxes | docs/games/board-games.md |
+| ultimate_tic_tac_toe | ultimateTicTacToe / UltimateTicTacToe | ultimate-tic-tac-toe | BoardGames/UltimateTicTacToe | docs/games/board-games.md |
+
+- Backend: module `backend/convex/<camelKind>.ts` (function paths `<camelKind>:<name>`), helpers in `backend/convex/lib/<camelKind>.ts`, tests next to them. Tables start with the kind, such as `mind_meld_rounds`. The board games share `boardGames.ts`, `lib/boardGames.ts`, `board_games` and `board_game_*`.
+- Swift: every type, file, `GamesDestination` case, `SyncPendingOperationKind` case and `DeveloperScenario` case starts with the Swift prefix, such as `MindMeldHubModel` and `mindMeldReveal`. Tests go in `ios/PaeoniaAppTests/Games/<Folder>/`. Board games share `Features/Games/BoardGames/Shared/`.
+- String Catalog keys start with the Swift prefix, such as `mindMeldRevealTitle`, so each game's keys sit together. Add English and Norwegian Bokmal for every key. Keys that start with `games` belong to the shared tab.
+
+### Backend
+
+1. Tables in `schema.ts`, in your own block after the Draw & Guess tables. Every table gets a `couple_id` index.
+2. Registered functions in your module. Check access with `getCurrentEntitledCoupleId` (`lib/access.ts`) or `requireCoupleAccess`, find the partner with `requirePartnerId`, and read the couple's settings with `requireGameSettings` (these three are in `lib/games.ts`). A turn counts toward the streak through `applyCoupleActivity` with `activity_kind: "game_turn_completed"`.
+3. `lib/gameRegistry.ts`: replace your `null` in `GAME_BACKENDS` with your `GameBackend`. `pushStillWanted` and `deleteCoupleRows` (every table of yours) are required. Add `sendDueTurnReminders` if your game has turns (one reminder after `TURN_REMINDER_AFTER_MS`, never a second for the same move) and `onLanguageChanged` if it offers content in the game language. Media you store is deleted by the couple media sweep in `lib/relationshipCleanup.ts`. A game that uploads files adds its `reserved_parent_kind` and `upload_purpose` next to Draw & Guess's `game_move` and `game_drawing_payload`: the literals in `schema.ts`, the reserve check in `media.ts` (`create_pending_media_upload`), `canReadMediaAsset` in `lib/mediaAssets.ts`, and `mediaAssetHasLiveReference` in `lib/mediaOrphans.ts`.
+4. Pushes: queue them with `enqueueGamePush` (`lib/games.ts`) as `game_turn_ready`, `game_result`, `game_invite` or `game_turn_reminder`. Before your first push, add your entry to `GAME_PUSH_COPY` in `lib/notificationCopy.ts`. Lock-screen copy names the game and whose turn it is, never the move or written content. When one push kind needs different words at different moments, such as the last line of a story, pass `step` to `enqueueGamePush` with a fixed token you choose (`last_line`, never content) and give it a title and body under `steps` in your copy entry. The deep link is filled in from the kind.
+5. Nothing to add for invites, presence, live tickets or settings. `send_game_invite`, `set_game_presence`, `create_game_live_ticket` and `get_games_overview` in `games.ts` take every kind.
+6. Run `npm run typecheck` and `npm test` in `backend/`.
+
+### Relay
+
+Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`.
+
+### iOS
+
+1. Data: your gateway protocol and `Live<Prefix>Gateway`, your models, your cache, and your live feed, all in your folder. Register the feed in `Services/Live/LiveFeedRegistry.swift`, and clear your cache in `Storage/Privacy/LocalPrivacyPurgeService.swift` next to `gamesCache.clearAll()`. The feed posts `LocalStoreChanges.post(.games, ...)` after each write, so the tab re-reads. `GamesCache` holds the shared overview plus Draw & Guess's sections, so keep your data in your own cache.
+2. `Features/Games/Data/GamesDependencies.swift`: add your dependency fields after `now`, each with a default that works offline, and set the live ones in `GamesDependencies.live()`.
+3. A hub model that conforms to `GameHubModel` (`Features/Games/Hub/GameHubModel.swift`), such as `DrawAndGuessHubModel`. Its `card` builds a `GameHubCardFrame` with your artwork, status line, action title, and any badge or extras. Its `screen(for:)` returns your screens. `isYourTurn` drives the tab badge.
+4. `Features/Games/Hub/GamesViewModel.swift`: add `let <camelKind>: <Prefix>HubModel`, its line in `init`, and add it to `games`. From then on the game has its hub card (the partner's game first, then catalog order), its part of the tab badge, the Us tab card while the partner is in it, and deep links and pushes that open `.game(.<kind>)`.
+5. `GamesDestination` (same file): your extra screens, such as a history, get cases with your prefix. Your main screen is `.game(.<kind>)`.
+6. Settings: read play style and language from the overview, `dependencies.cache.document(ownerUserID:).overview?.settings`. Setup is shared, so never ask for them in your game.
+7. Presence and invites: while your screen is open, send `dependencies.gateway.setPresence(.<kind>, isPresent: true)` every `GamePresence.heartbeatInterval`, and `false` when it closes (`DrawAndGuessViewModel+Partner.swift`). Read the partner's heartbeat and your last invite from `overview.presence(for: .<kind>)`, judge them with `GamePresence.isFresh` and `GameInviteState.make`, and send invites with `dependencies.gateway.sendInvite(.<kind>)`.
+8. Live play: a message type that conforms to `GameLiveMessage`, sent through a `GameLiveChannel` on a `WidgetLiveConnection` made with `GameLiveTicket.provider(for: .<kind>)`.
+9. Queued writes: `SyncPendingOperationKind` cases in `Services/Sync/SyncTypes.swift`, and your handlers in `Features/Games/Data/GamesPendingOperationRegistry.swift`.
+10. Developer scenarios: cases in `App/DeveloperScenarios/DeveloperScenario.swift` (title, subtitle, category `.games`), routing in `DeveloperScenarioViews.swift`, and your dependency fields in `DeveloperGamesScenarioFactory.dependencies(for:)` so the hub scenarios show your card.
+
+### Ownership
+
+- Your game owns its iOS folder, its tests, its backend module and helper file, its tables, and its design doc.
+- Do not change Draw & Guess's tables or refactor its code. The one exception is the Exquisite corpse thread, which may move drawing code it reuses (canvas, stroke replay, live stroke messages, stars) into `Features/Games/Shared/` and shared backend helpers, as long as Draw & Guess behaves the same.
+- Shared files take small additions at the points above. If a shared seam needs a real change, ask the developer first.
+- In this file, edit only your own catalog bullet and the "Order" and "Open questions" lines about your game. Everything else goes in your design doc.
+
+### Merging
+
+- Commit on your own branch, signed, at most about three logical commits per game. Never push.
+- Before you hand back, rebase onto local `main`. Conflicts at the registry points and in `Localizable.xcstrings` are two lists growing: keep both sides, and merge the String Catalog JSON by key so it stays valid. If a conflict is anything more, stop and ask.
+- Ask the developer before you fast-forward local `main` to your branch. Whoever merges second rebases again.
+- Every branch deploys the same Convex deployment. Before you deploy, rebase onto local `main` and confirm with the developer that no other thread is mid-test, or your deploy removes another game's functions. Relay deploys need the developer's OK too.
 
 ## Order
 

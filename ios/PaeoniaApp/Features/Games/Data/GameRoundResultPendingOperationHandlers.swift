@@ -11,10 +11,10 @@ import Foundation
 struct GameReactionPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .setGameRoundReaction
 
-    private let gateway: any GamesGateway
+    private let gateway: any DrawAndGuessGateway
     private let cache: any GamesCaching
 
-    init(gateway: any GamesGateway, cache: any GamesCaching) {
+    init(gateway: any DrawAndGuessGateway, cache: any GamesCaching) {
         self.gateway = gateway
         self.cache = cache
     }
@@ -49,10 +49,10 @@ struct GameReactionPendingOperationHandler: PendingSyncOperationHandling {
 struct GameResultSeenPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .markGameRoundResultSeen
 
-    private let gateway: any GamesGateway
+    private let gateway: any DrawAndGuessGateway
     private let cache: any GamesCaching
 
-    init(gateway: any GamesGateway, cache: any GamesCaching) {
+    init(gateway: any DrawAndGuessGateway, cache: any GamesCaching) {
         self.gateway = gateway
         self.cache = cache
     }

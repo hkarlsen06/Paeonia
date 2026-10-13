@@ -90,10 +90,12 @@ struct GamesViewModelTests {
         await viewModel.load()
 
         #expect(viewModel.screen == .hub)
-        #expect(viewModel.hubSummary?.status == .yourTurnToDraw)
-        #expect(viewModel.hubSummary?.partnerIsHere == true)
-        #expect(viewModel.hubSummary?.score == .against(mine: 8, partner: 5))
+        #expect(viewModel.drawAndGuess.summary?.status == .yourTurnToDraw)
+        #expect(viewModel.partnerIsHere(in: .drawAndGuess))
+        #expect(viewModel.drawAndGuess.summary?.score == .against(mine: 8, partner: 5))
         #expect(viewModel.isYourTurn)
+        // The Us tab shows the game the partner is in.
+        #expect(viewModel.partnerGame?.kind == .drawAndGuess)
     }
 
     @Test func thePartnersTurnShowsNoTabBadge() async {
@@ -105,8 +107,71 @@ struct GamesViewModelTests {
 
         await viewModel.load()
 
-        #expect(viewModel.hubSummary?.status == .waitingForPartner)
+        #expect(viewModel.drawAndGuess.summary?.status == .waitingForPartner)
         #expect(!viewModel.isYourTurn)
+        #expect(viewModel.partnerGame == nil)
+    }
+
+    @Test func theSettingsComeFromTheSharedOverviewNotFromAGame() async {
+        // Draw & Guess has no state yet, and the overview already has the settings.
+        let env = GamesTestEnvironment(state: nil)
+        let overview = RemoteGamesOverview(
+            userID: GameFixture.me,
+            partnerUserID: GameFixture.partner,
+            coupleID: DeveloperScenarioFixture.coupleID,
+            settings: GameFixture.settings(),
+            presence: []
+        )
+        await env.cache.saveOverview(overview, ownerUserID: GameFixture.me)
+        let viewModel = viewModel(env)
+
+        await viewModel.load()
+
+        #expect(viewModel.screen == .hub)
+        #expect(viewModel.settings == GameFixture.settings())
+        #expect(viewModel.drawAndGuess.summary == nil)
+    }
+
+    @Test func aLateOverviewReadNeverHidesNewerSettingsOrReturnsAfterAPurge() async {
+        let cache = InMemoryGamesCache()
+        func overview(_ settings: RemoteGameSettings?) -> RemoteGamesOverview {
+            RemoteGamesOverview(
+                userID: GameFixture.me,
+                partnerUserID: GameFixture.partner,
+                coupleID: DeveloperScenarioFixture.coupleID,
+                settings: settings,
+                presence: []
+            )
+        }
+        let beforeSetup = overview(nil)
+        let afterSetup = overview(GameFixture.settings())
+
+        // A read starts, the live feed saves the finished setup, then the read answers from before it.
+        let early = await cache.beginOverviewFetch()
+        await cache.saveOverview(afterSetup, ownerUserID: GameFixture.me)
+        #expect(await cache.saveFetchedOverview(beforeSetup, ownerUserID: GameFixture.me, ticket: early) == false)
+        #expect(await cache.document(ownerUserID: GameFixture.me).overview == afterSetup)
+
+        // A live update sent before the settings changed does not hide a read that has them.
+        await cache.saveOverview(beforeSetup, ownerUserID: GameFixture.me)
+        let late = await cache.beginOverviewFetch()
+        await cache.saveOverview(beforeSetup, ownerUserID: GameFixture.me)
+        #expect(await cache.saveFetchedOverview(afterSetup, ownerUserID: GameFixture.me, ticket: late))
+
+        // A read that started before a purge is not saved after it.
+        let beforePurge = await cache.beginOverviewFetch()
+        await cache.clearAll()
+        #expect(await cache.saveFetchedOverview(afterSetup, ownerUserID: GameFixture.me, ticket: beforePurge) == false)
+        #expect(await cache.document(ownerUserID: GameFixture.me).overview == nil)
+    }
+
+    @Test func theHubListsGamesInCatalogOrderWithThePartnersGameFirst() {
+        let built: [GameKind] = [.storyChain, .drawAndGuess, .mindMeld]
+
+        #expect(GamesViewModel.hubOrder(built, partnerGames: []) == [.drawAndGuess, .mindMeld, .storyChain])
+        #expect(GamesViewModel.hubOrder(built, partnerGames: [.storyChain]) == [.storyChain, .drawAndGuess, .mindMeld])
+        // A game that is not built never shows, even when the partner is in it.
+        #expect(GamesViewModel.hubOrder(built, partnerGames: [.connectFour]) == [.drawAndGuess, .mindMeld, .storyChain])
     }
 
     @Test func changingTheSettingsLaterKeepsTheHubAndAFailureShowsANotice() async {
@@ -129,6 +194,7 @@ struct GamesViewModelTests {
     @Test func withNothingCachedAndNoConnectionTheTabSaysItNeedsOne() async {
         let env = GamesTestEnvironment(state: nil)
         env.gateway.fail("load")
+        env.gateway.fail("overview")
         let viewModel = viewModel(env)
 
         await viewModel.load()

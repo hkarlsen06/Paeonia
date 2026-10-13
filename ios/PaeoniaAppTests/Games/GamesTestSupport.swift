@@ -8,7 +8,7 @@ typealias GameFixture = DeveloperGamesFixture
 
 /// Records every Games call and fails the ones a test lists. A class with a lock,
 /// so tests read its record without `await`.
-final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
+final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
     struct Failure: Error {}
 
     /// What a guess sent along about the speed bonus and the hints.
@@ -27,6 +27,7 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
     private struct Record {
         var calls: [String] = []
         var presence: [Bool] = []
+        var presenceKinds: [GameKind] = []
         var pickedWords: [GamePickWordPayload] = []
         var submittedDrawings: [(roundID: UUID, assetID: UUID)] = []
         var guesses: [String] = []
@@ -35,6 +36,7 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         var reactions: [SentReaction] = []
         var resultSeenRounds: [UUID] = []
         var inviteCount = 0
+        var inviteKinds: [GameKind] = []
         var failing: Set<String> = []
         var pickError: PaeoniaConvexError?
         var submitError: PaeoniaConvexError?
@@ -65,6 +67,8 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
 
     var calls: [String] { read(\.calls) }
     var presence: [Bool] { read(\.presence) }
+    /// The game each `presence` call named.
+    var presenceKinds: [GameKind] { read(\.presenceKinds) }
     var pickedWords: [GamePickWordPayload] { read(\.pickedWords) }
     var submittedDrawings: [(roundID: UUID, assetID: UUID)] { read(\.submittedDrawings) }
     var guesses: [String] { read(\.guesses) }
@@ -73,6 +77,8 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
     var reactions: [SentReaction] { read(\.reactions) }
     var resultSeenRounds: [UUID] { read(\.resultSeenRounds) }
     var inviteCount: Int { read(\.inviteCount) }
+    /// The game each invite named.
+    var inviteKinds: [GameKind] { read(\.inviteKinds) }
 
     func fail(_ name: String) {
         write { $0.failing.insert(name) }
@@ -238,20 +244,6 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         return RemoteResultSeenResult(roundID: roundID, resultSeenAt: GameFixture.now)
     }
 
-    func sendInvite() async throws -> RemoteInviteResult {
-        try begin("invite")
-        if let error = read(\.inviteError) { throw error }
-        write { $0.inviteCount += 1 }
-        return RemoteInviteResult(sentAt: GameFixture.now)
-    }
-
-    func setPresence(_ isPresent: Bool) async throws {
-        write {
-            $0.calls.append("presence")
-            $0.presence.append(isPresent)
-        }
-    }
-
     // MARK: History and stars
 
     var historyRequests: [HistoryRequest] { read(\.historyRequests) }
@@ -297,6 +289,36 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         if let error = read(\.starError) { throw error }
         write { $0.starWrites.append(StarWrite(roundID: roundID, starred: starred)) }
         return RemoteRoundStarResult(roundID: roundID, starred: starred)
+    }
+}
+
+/// The calls every game shares: the overview, invites and presence.
+extension ScriptedGamesGateway {
+    func sendInvite(_ kind: GameKind) async throws -> RemoteInviteResult {
+        try begin("invite")
+        if let error = read(\.inviteError) { throw error }
+        write {
+            $0.inviteCount += 1
+            $0.inviteKinds.append(kind)
+        }
+        return RemoteInviteResult(sentAt: GameFixture.now)
+    }
+
+    // swiftlint:disable:next async_without_await
+    func setPresence(_ kind: GameKind, isPresent: Bool) async throws {
+        write {
+            $0.calls.append("presence")
+            $0.presence.append(isPresent)
+            $0.presenceKinds.append(kind)
+        }
+    }
+
+    // The overview the state to load implies, so a test sets one value for both reads.
+    // swiftlint:disable:next async_without_await
+    func loadOverview() async throws -> RemoteGamesOverview {
+        try begin("overview")
+        guard let state = read(\.stateToLoad) else { throw Failure() }
+        return RemoteGamesOverview(drawAndGuess: state)
     }
 }
 

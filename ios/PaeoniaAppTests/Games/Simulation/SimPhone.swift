@@ -138,8 +138,8 @@ final class SimPhone {
         }
     }
 
-    var participants: DrawAndGuessParticipants {
-        DrawAndGuessParticipants(
+    var participants: GameParticipants {
+        GameParticipants(
             currentUserID: userID,
             coupleID: server.coupleID,
             partnerName: name == "A" ? "Robin" : "Alex",
@@ -333,7 +333,7 @@ final class SimPhone {
     /// The open screen's 30-second heartbeat, which the driver runs as it moves the clock.
     func heartbeat() {
         guard let viewModel = activeViewModel, let gateway else { return }
-        Task { try? await gateway.setPresence(true) }
+        Task { try? await gateway.setPresence(.drawAndGuess, isPresent: true) }
         viewModel.now = clock.now
         viewModel.recompute()
     }
@@ -391,7 +391,8 @@ final class SimPhone {
 
     // MARK: - Live feed
 
-    /// Delivers the server's state as the `games:get_draw_and_guess` subscription would.
+    /// Delivers the server's state as the `drawAndGuess:get_draw_and_guess` and
+    /// `games:get_games_overview` subscriptions would.
     func feedTick() async {
         let isUp = isAlive && isForeground && network.isOnline && !isFeedOutage
         guard isUp else {
@@ -417,6 +418,7 @@ final class SimPhone {
             feedQueue = []
         }
         await cache.saveState(state, ownerUserID: userID)
+        await cache.saveOverview(RemoteGamesOverview(drawAndGuess: state), ownerUserID: userID)
         LocalStoreChanges.post(.games, ownerUserID: userID)
     }
 

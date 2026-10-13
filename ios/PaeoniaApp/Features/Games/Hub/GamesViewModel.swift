@@ -3,7 +3,11 @@ import SwiftUI
 
 /// A screen the Games tab can open.
 nonisolated enum GamesDestination: Hashable, Sendable {
-    case drawAndGuess
+    /// A game's main screen. Hub cards, the Us tab card, deep links and pushes open it.
+    case game(GameKind)
+
+    // Each game adds its other screens below, named with its Swift prefix.
+
     /// "Our drawings".
     case drawAndGuessHistory
     case drawAndGuessHistoryDetail(UUID)
@@ -11,10 +15,9 @@ nonisolated enum GamesDestination: Hashable, Sendable {
 
 /// The Games tab: first-time setup, the hub, and the couple's game settings.
 ///
-/// It reads the Games cache, which the live feed keeps current, so the hub shows
-/// the last state at launch and offline. Draw & Guess itself is
-/// `drawAndGuess`, built once so a notification that opens the game finds it
-/// ready.
+/// It reads the Games cache, which the live feeds keep current, so the hub shows
+/// the last state at launch and offline. The settings and who has which game
+/// open come from the shared overview. Each built game is in `games`.
 @MainActor
 @Observable
 final class GamesViewModel {
@@ -32,57 +35,94 @@ final class GamesViewModel {
 
     var screen: Screen = .loading
     var settings: RemoteGameSettings?
-    var hubSummary: DrawAndGuessHubSummary?
     /// The setup and settings screens edit these.
     var draftPlayStyle: GamePlayStyle = .against
     var draftLanguage: GameLanguage = .preferred()
     var isSavingSettings = false
     var notice: GamesNotice?
     private(set) var partnerName: String
+    /// The built games the partner has open right now, freshest first.
+    private(set) var partnerGameKinds: [GameKind] = []
 
-    let drawAndGuess: DrawAndGuessViewModel
-    /// "Our drawings". It shares the star state of `drawAndGuess.stars`.
-    let history: DrawAndGuessHistoryViewModel
+    // MARK: - Built games
+
+    // Each built game adds its hub model here and to `games`.
+    let drawAndGuess: DrawAndGuessHubModel
+
+    /// The built games, in `GameKind` order. A kind that is not here shows nowhere.
+    var games: [any GameHubModel] {
+        [drawAndGuess]
+    }
 
     private let dependencies: GamesDependencies
-    private var participants: DrawAndGuessParticipants
-    private var state: RemoteDrawAndGuessState?
+    private var participants: GameParticipants
+    private var overview: RemoteGamesOverview?
     private var hasLoaded = false
 
     init(dependencies: GamesDependencies, drawAndGuess: DrawAndGuessViewModel? = nil) {
         self.dependencies = dependencies
-        participants = DrawAndGuessParticipants()
+        participants = GameParticipants()
         partnerName = ""
-        let drawAndGuess = drawAndGuess ?? DrawAndGuessViewModel(dependencies: dependencies)
-        self.drawAndGuess = drawAndGuess
-        history = DrawAndGuessHistoryViewModel(dependencies: dependencies, stars: drawAndGuess.stars)
+        self.drawAndGuess = DrawAndGuessHubModel(dependencies: dependencies, game: drawAndGuess)
     }
 
-    /// A game waits for this person to draw or guess. The Games tab shows a badge.
+    /// A game waits for this person to move. The Games tab shows a badge.
     var isYourTurn: Bool {
-        hubSummary?.status.isYourTurn == true
+        games.contains { $0.isYourTurn }
+    }
+
+    /// The hub's order: the game the partner is in first, then catalog order.
+    var hubGames: [any GameHubModel] {
+        Self.hubOrder(games.map(\.kind), partnerGames: partnerGameKinds).compactMap { game($0) }
+    }
+
+    /// The game the partner opened most recently, while they have it open. The
+    /// Us tab shows its card.
+    var partnerGame: (any GameHubModel)? {
+        partnerGameKinds.first.flatMap { game($0) }
+    }
+
+    func game(_ kind: GameKind) -> (any GameHubModel)? {
+        games.first { $0.kind == kind }
+    }
+
+    func partnerIsHere(in kind: GameKind) -> Bool {
+        partnerGameKinds.contains(kind)
+    }
+
+    /// What a game's card needs from the tab.
+    func cardContext(for kind: GameKind, isOnHub: Bool) -> GameHubCardContext {
+        GameHubCardContext(partnerName: partnerName, partnerIsHere: partnerIsHere(in: kind), isOnHub: isOnHub)
+    }
+
+    /// The screen for a destination, from the game that owns it.
+    func screen(for destination: GamesDestination) -> AnyView? {
+        games.lazy.compactMap { $0.screen(for: destination) }.first
     }
 
     private var currentUserID: UUID? {
         participants.currentUserID
     }
 
-    func configure(participants newParticipants: DrawAndGuessParticipants) {
+    func configure(participants newParticipants: GameParticipants) {
         let userChanged = participants.currentUserID != newParticipants.currentUserID
         participants = newParticipants
         partnerName = newParticipants.partnerName
-        drawAndGuess.configure(participants: newParticipants)
-        history.configure(participants: newParticipants)
+        for game in games {
+            game.configure(participants: newParticipants)
+        }
         if userChanged {
             hasLoaded = false
-            state = nil
+            overview = nil
+            partnerGameKinds = []
             screen = .loading
         }
     }
 
     func setLocalChangeSyncHandler(_ handler: (@MainActor @Sendable () async -> Void)?) {
-        drawAndGuess.setLocalChangeSyncHandler(handler)
-        drawAndGuess.stars.setLocalChangeSyncHandler(handler)
+        for game in games {
+            game.setLocalChangeSyncHandler(handler)
+        }
     }
 
     // MARK: - Reading
@@ -90,7 +130,7 @@ final class GamesViewModel {
     /// Reads the cache, and the server when the cache is empty.
     func load() async {
         await reload()
-        if state == nil {
+        if overview == nil {
             await refresh()
         }
     }
@@ -108,43 +148,39 @@ final class GamesViewModel {
         guard let userID = currentUserID else { return }
         let document = await dependencies.cache.document(ownerUserID: userID)
         guard currentUserID == userID else { return }
-        let pending = await DrawAndGuessPendingWork.load(
-            from: dependencies.pendingOperationStore,
-            ownerUserID: userID
-        ) ?? .none
-        state = document.state
+        overview = document.overview
         hasLoaded = true
-        // Stars follow the same writes as the rest of the Games cache.
-        await drawAndGuess.stars.reload()
-        settings = document.state?.settings
+        partnerGameKinds = Self.partnerGames(in: overview, now: dependencies.now())
+            .filter { game($0) != nil }
+        settings = overview?.settings
         if let settings {
             draftPlayStyle = settings.playStyle
             draftLanguage = settings.language
         }
-        if let stored = await dependencies.cache.takeNotices(ownerUserID: userID).last, notice == nil {
-            notice = GamesNotice(stored)
-        }
-        hubSummary = document.state.map { state in
-            let resolution = DrawAndGuessResolver(userID: userID).resolve(
-                state: state,
-                pending: pending,
-                isPartnerDrawingLive: false
-            )
-            return DrawAndGuessHubSummary(state: state, resolution: resolution, now: dependencies.now())
+        for game in games {
+            await game.reload()
+            let gameNotice = await game.takeNotice()
+            if notice == nil, let gameNotice {
+                notice = gameNotice
+            }
         }
         await updateScreen(userID: userID)
     }
 
-    /// Reads the server's state once and caches it.
+    /// Reads the server's overview and every game's state once and caches them.
     func refresh() async {
         guard let userID = currentUserID else { return }
+        for game in games {
+            await game.refresh()
+        }
         do {
             let gateway = dependencies.gateway
-            guard try await dependencies.cache.fetchState(from: gateway, ownerUserID: userID) else { return }
+            guard try await dependencies.cache.fetchOverview(from: gateway, ownerUserID: userID) else { return }
             await reload()
         } catch {
+            await reload()
             // A read that was cancelled (the tab changed under it) says nothing about the network.
-            if state == nil, hasLoaded, !Task.isCancelled, !(error is CancellationError),
+            if overview == nil, hasLoaded, !Task.isCancelled, !(error is CancellationError),
                (error as? URLError)?.code != .cancelled {
                 screen = .unavailable
             }
@@ -157,7 +193,7 @@ final class GamesViewModel {
             return
         }
         guard let settings else {
-            screen = state == nil ? .loading : .setup
+            screen = overview == nil ? .loading : .setup
             return
         }
         if await dependencies.cache.hasSeenSettings(coupleID: settings.coupleID, ownerUserID: userID) {
@@ -192,7 +228,7 @@ final class GamesViewModel {
             return false
         }
         await dependencies.cache.markSettingsSeen(coupleID: saved.coupleID, ownerUserID: userID)
-        // The settings come back with the state, so the hub and the game agree.
+        // Read the overview and the games again, so the hub and every game agree.
         await refresh()
         return true
     }
@@ -206,5 +242,21 @@ final class GamesViewModel {
 
     func clearNotice() {
         notice = nil
+    }
+}
+
+extension GamesViewModel {
+    /// The games the partner has open, the most recent heartbeat first.
+    nonisolated static func partnerGames(in overview: RemoteGamesOverview?, now: Date) -> [GameKind] {
+        (overview?.presence ?? [])
+            .filter { GamePresence.isFresh($0.partnerLastSeenAt, now: now) }
+            .sorted { ($0.partnerLastSeenAt ?? .distantPast) > ($1.partnerLastSeenAt ?? .distantPast) }
+            .map(\.kind)
+    }
+
+    /// Catalog order, with the games the partner is in moved to the front.
+    nonisolated static func hubOrder(_ kinds: [GameKind], partnerGames: [GameKind]) -> [GameKind] {
+        let catalog = GameKind.allCases.filter(kinds.contains)
+        return partnerGames.filter(catalog.contains) + catalog.filter { !partnerGames.contains($0) }
     }
 }

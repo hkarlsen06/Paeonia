@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The list of games. Draw & Guess is the only one so far.
+/// The list of built games, one card each. The game the partner is in comes
+/// first, then catalog order.
 struct GamesHubView: View {
     let viewModel: GamesViewModel
     let open: (GamesDestination) -> Void
@@ -9,15 +10,8 @@ struct GamesHubView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                if let summary = viewModel.hubSummary {
-                    DrawAndGuessHubCard(
-                        summary: summary,
-                        partnerName: viewModel.partnerName,
-                        me: viewModel.drawAndGuess.me,
-                        partner: viewModel.drawAndGuess.partner,
-                        open: { open(.drawAndGuess) },
-                        openHistory: { open(.drawAndGuessHistory) }
-                    )
+                ForEach(viewModel.hubGames, id: \.kind) { game in
+                    game.card(viewModel.cardContext(for: game.kind, isOnHub: true), open: open)
                 }
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)

@@ -2,8 +2,8 @@ import Foundation
 
 // What "Our drawings" reads: the couple's finished rounds, the records of both
 // partners, and the private star on a round. Backend functions are
-// `games:get_draw_and_guess_history`, `games:get_draw_and_guess_records` and
-// `games:set_round_star`.
+// `drawAndGuess:get_draw_and_guess_history`, `drawAndGuess:get_draw_and_guess_records` and
+// `drawAndGuess:set_round_star`.
 
 /// One finished round that holds a drawing. The partner's star is not read,
 /// because stars are private and the screens never show it.
@@ -116,7 +116,7 @@ nonisolated struct RemoteDrawAndGuessPlayerRecords: Codable, Equatable, Sendable
     }
 }
 
-/// `games:get_draw_and_guess_records`. The server lists the caller first.
+/// `drawAndGuess:get_draw_and_guess_records`. The server lists the caller first.
 nonisolated struct RemoteDrawAndGuessRecords: Codable, Equatable, Sendable {
     let partners: [RemoteDrawAndGuessPlayerRecords]
 
@@ -132,7 +132,7 @@ nonisolated struct RemoteDrawAndGuessRecords: Codable, Equatable, Sendable {
     }
 }
 
-/// `games:set_round_star`.
+/// `drawAndGuess:set_round_star`.
 nonisolated struct RemoteRoundStarResult: Decodable, Equatable, Sendable {
     let roundID: UUID
     let starred: Bool

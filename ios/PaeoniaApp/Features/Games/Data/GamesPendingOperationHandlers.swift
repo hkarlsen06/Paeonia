@@ -91,7 +91,7 @@ nonisolated enum GameServerRejection {
 /// itself, which then waits the usual time, so this never loops fast offline.
 func readStateAfterAcceptedMove(
     _ operation: PendingSyncOperationSnapshot,
-    gateway: any GamesGateway,
+    gateway: any DrawAndGuessGateway,
     cache: any GamesCaching
 ) async -> PendingSyncOperationSendResult {
     do {
@@ -119,11 +119,11 @@ nonisolated let readAfterMoveRetryPolicy = PendingSyncOperationRetryPolicy(baseD
 struct PickDrawWordPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .pickDrawWord
 
-    private let gateway: any GamesGateway
+    private let gateway: any DrawAndGuessGateway
     private let cache: any GamesCaching
     private let drawingStore: any GameDrawingStoring
 
-    init(gateway: any GamesGateway, cache: any GamesCaching, drawingStore: any GameDrawingStoring) {
+    init(gateway: any DrawAndGuessGateway, cache: any GamesCaching, drawingStore: any GameDrawingStoring) {
         self.gateway = gateway
         self.cache = cache
         self.drawingStore = drawingStore
@@ -213,13 +213,13 @@ struct PickDrawWordPendingOperationHandler: PendingSyncOperationHandling {
 struct SubmitGameDrawingPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .submitGameDrawing
 
-    private let gateway: any GamesGateway
+    private let gateway: any DrawAndGuessGateway
     private let transfer: any GameDrawingTransferring
     private let cache: any GamesCaching
     private let drawingStore: any GameDrawingStoring
 
     init(
-        gateway: any GamesGateway,
+        gateway: any DrawAndGuessGateway,
         transfer: any GameDrawingTransferring,
         cache: any GamesCaching,
         drawingStore: any GameDrawingStoring
@@ -375,10 +375,10 @@ private func tellAboutRefusal(
 struct SubmitGameGuessPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .submitGameGuess
 
-    private let gateway: any GamesGateway
+    private let gateway: any DrawAndGuessGateway
     private let cache: any GamesCaching
 
-    init(gateway: any GamesGateway, cache: any GamesCaching) {
+    init(gateway: any DrawAndGuessGateway, cache: any GamesCaching) {
         self.gateway = gateway
         self.cache = cache
     }
@@ -419,10 +419,10 @@ struct SubmitGameGuessPendingOperationHandler: PendingSyncOperationHandling {
 struct GiveUpGameRoundPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .giveUpGameRound
 
-    private let gateway: any GamesGateway
+    private let gateway: any DrawAndGuessGateway
     private let cache: any GamesCaching
 
-    init(gateway: any GamesGateway, cache: any GamesCaching) {
+    init(gateway: any DrawAndGuessGateway, cache: any GamesCaching) {
         self.gateway = gateway
         self.cache = cache
     }

@@ -15,7 +15,7 @@
     nonisolated static let partner = DeveloperScenarioFixture.partnerUserID
     nonisolated static let now = DeveloperScenarioFixture.now
 
-    static let participants = DrawAndGuessParticipants(
+    static let participants = GameParticipants(
       currentUserID: me,
       coupleID: DeveloperScenarioFixture.coupleID,
       partnerName: "Robin",
