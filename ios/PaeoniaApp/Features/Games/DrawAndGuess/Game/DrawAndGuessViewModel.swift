@@ -102,6 +102,9 @@ final class DrawAndGuessViewModel {
     /// A move is saved on this phone and not sent yet. Show
     /// `.gamesPendingSavedOnPhone`.
     var isWaitingToSend = false
+    /// A move that waits could not be sent although the phone is online. The
+    /// waiting screen then says so and offers `retrySending()`.
+    var isSendFailing = false
     var reveal: DrawAndGuessReveal?
     var savePrompt: DrawAndGuessSavePrompt = .hidden
     /// Show it through the banner center, then call `clearNotice()`.
@@ -138,7 +141,7 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored let sleep: @Sendable (Duration) async throws -> Void
     /// The square's side from the drawing screen, for the result screen that follows it.
     @ObservationIgnored let squareMemory = DrawAndGuessSideMemory()
-    @ObservationIgnored var syncAfterLocalChange: (@MainActor () async -> Void)?
+    @ObservationIgnored var syncAfterLocalChange: (@MainActor @Sendable () async -> Void)?
 
     // MARK: - Internal state
 
@@ -151,6 +154,9 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var now: Date
     @ObservationIgnored var localInviteSentAt: Date?
     @ObservationIgnored var isRunning = false
+    /// The screen was open and went away. A stopped view model starts no
+    /// downloads, replays or server calls until it starts again.
+    @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGeneration = 0
 
@@ -162,11 +168,18 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var draftTask: Task<Void, Never>?
     @ObservationIgnored var startTask: Task<Void, Never>?
     @ObservationIgnored var drawingLoadTask: Task<Void, Never>?
+    @ObservationIgnored var refreshTask: Task<Void, Never>?
 
     // Per round bookkeeping.
     @ObservationIgnored var tilesRoundID: UUID?
     @ObservationIgnored var tilesLanguage: GameLanguage?
     @ObservationIgnored var boardRoundID: UUID?
+    /// The board's round while its drawing is sent or queued. When the round
+    /// comes back to drawing, a refused drawing goes back on the board.
+    @ObservationIgnored var boardSentRoundID: UUID?
+    /// A correct guess of this round is being saved to the queue, so its full
+    /// slots are not a refused guess.
+    @ObservationIgnored var queuingCorrectGuessRoundID: UUID?
     @ObservationIgnored var markedSeenRoundIDs: Set<UUID> = []
     @ObservationIgnored var localFirstSeenAt: [UUID: Date] = [:]
     @ObservationIgnored var watchedLiveRoundIDs: Set<UUID> = []
@@ -229,7 +242,7 @@ final class DrawAndGuessViewModel {
         }
     }
 
-    func setLocalChangeSyncHandler(_ handler: (@MainActor () async -> Void)?) {
+    func setLocalChangeSyncHandler(_ handler: (@MainActor @Sendable () async -> Void)?) {
         syncAfterLocalChange = handler
     }
 
@@ -255,6 +268,7 @@ final class DrawAndGuessViewModel {
 
         state = document.state
         acknowledgedRoundIDs = Set(document.acknowledgedRoundIDs)
+        declinedSaveRoundIDs.formUnion(document.declinedSaveRoundIDs)
         if let work {
             pending = work
         }
@@ -268,7 +282,9 @@ final class DrawAndGuessViewModel {
     /// Reads the server's state once and caches it.
     func refresh() async {
         guard let userID = currentUserID else { return }
-        guard (try? await dependencies.cache.fetchState(from: gateway, ownerUserID: userID)) == true else { return }
+        guard (try? await dependencies.cache.fetchState(from: gateway, ownerUserID: userID)) == true,
+              !Task.isCancelled
+        else { return }
         await reload()
     }
 
@@ -307,6 +323,7 @@ final class DrawAndGuessViewModel {
         phase = resolution.phase
         round = resolution.round
         isWaitingToSend = resolution.isWaitingToSend
+        isSendFailing = pending.lastSendFailedWhileOnline
         settings = state?.settings
         score = state?.game.flatMap { game in
             settings.map { DrawAndGuessScore(game: game, playStyle: $0.playStyle) }
@@ -332,11 +349,13 @@ final class DrawAndGuessViewModel {
         if phase == .watchingLive, live?.partnerActivity == .drawing, let round {
             watchedLiveRoundIDs.insert(round.id)
         }
+        // The drawer's own drawing still goes out after the screen closed.
+        sendLiveDrawingIfSolved()
+        guard !isStopped else { return }
         startReplayIfNeeded()
         loadDrawingIfNeeded()
         finishReplayIfNeeded()
         markSeenIfNeeded()
-        sendLiveDrawingIfSolved()
         if phase == .preparing, !startFailed, startTask == nil {
             startTask = Task { [weak self] in
                 await self?.startGameIfNeeded()

@@ -132,12 +132,14 @@ struct DrawAndGuessWaitingView: View {
         }
     }
 
+    /// Letters per group. A word longer than 10 letters splits into even groups,
+    /// so the slots fit the narrowest phone.
     private var wordLengths: [Int] {
         var lengths = [0]
         for slot in viewModel.slots.slots {
             if slot.isGap { lengths.append(0) } else { lengths[lengths.count - 1] += 1 }
         }
-        return lengths.filter { $0 > 0 }
+        return lengths.filter { $0 > 0 }.flatMap { DrawAndGuessSlotSizing.split($0, maxCount: 10) }
     }
 }
 

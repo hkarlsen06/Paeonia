@@ -11,6 +11,7 @@ extension DrawAndGuessViewModel {
     func start() async {
         guard !isRunning else { return }
         isRunning = true
+        isStopped = false
         isActive = true
         await reload()
         // The screen may have gone away, or the app to the background, while the
@@ -31,6 +32,7 @@ extension DrawAndGuessViewModel {
     func stop() {
         guard isRunning else { return }
         isRunning = false
+        isStopped = true
         cancelTasks()
         endHeartbeat()
         stopLive()
@@ -44,7 +46,10 @@ extension DrawAndGuessViewModel {
         if newValue {
             beginHeartbeat()
             startLive()
-            Task { await refresh() }
+            // A replay or a first look that waited for the screen starts now.
+            recompute()
+            refreshTask?.cancel()
+            refreshTask = Task { [weak self] in await self?.refresh() }
         } else {
             heartbeatTask?.cancel()
             heartbeatTask = nil
@@ -55,7 +60,7 @@ extension DrawAndGuessViewModel {
     }
 
     func cancelTasks() {
-        for task in [observationTask, tickTask, wrongGuessTask, draftTask, startTask] {
+        for task in [observationTask, tickTask, wrongGuessTask, draftTask, startTask, refreshTask] {
             task?.cancel()
         }
         cancelDrawingLoad()
@@ -64,6 +69,13 @@ extension DrawAndGuessViewModel {
         wrongGuessTask = nil
         draftTask = nil
         startTask = nil
+        refreshTask = nil
+        // The wrong word's animation stopped halfway. The slots open again, so
+        // the same round can be guessed when the screen comes back.
+        if isShowingWrongGuess {
+            slots.clear()
+            isShowingWrongGuess = false
+        }
     }
 
     func beginObserving() {
@@ -95,13 +107,16 @@ extension DrawAndGuessViewModel {
         state = nil
         pending = .none
         acknowledgedRoundIDs = []
+        declinedSaveRoundIDs = []
         phase = .loading
         round = nil
         live?.stop()
         live = nil
         tilesRoundID = nil
         boardRoundID = nil
+        boardSentRoundID = nil
         board.reset()
         resetReplay()
+        liveSnapshots = [:]
     }
 }

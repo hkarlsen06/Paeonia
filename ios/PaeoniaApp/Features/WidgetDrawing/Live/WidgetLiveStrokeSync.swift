@@ -64,16 +64,19 @@ nonisolated enum WidgetLiveStrokeSync {
 
     /// Joining a canvas someone already has open: take their strokes, and add
     /// the ones drawn here (`drawnHereKeys`) that they do not have.
+    /// `roomRemovals` are strokes the partner removed. They had them, so they
+    /// are not unsent strokes from here, and they stay removed.
     static func join(
         room: [PKStroke],
         local: PKDrawing,
         savedKeys: Set<String>,
-        drawnHereKeys: Set<String>
+        drawnHereKeys: Set<String>,
+        roomRemovals: Set<String> = []
     ) -> JoinResult {
         let roomKeys = Set(room.map(key(for:)))
         let unsent = local.strokes.filter { stroke in
             let strokeKey = key(for: stroke)
-            return !savedKeys.contains(strokeKey) && !roomKeys.contains(strokeKey)
+            return !savedKeys.contains(strokeKey) && !roomKeys.contains(strokeKey) && !roomRemovals.contains(strokeKey)
         }
         let ownUnsent = unsent.filter { drawnHereKeys.contains(key(for: $0)) }
         return JoinResult(

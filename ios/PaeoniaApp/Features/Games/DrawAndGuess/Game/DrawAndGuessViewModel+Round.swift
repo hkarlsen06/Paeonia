@@ -12,6 +12,7 @@ extension DrawAndGuessViewModel {
         if round?.id != replayRoundID {
             resetReplay()
             replayRoundID = round?.id
+            restoreLiveSnapshot(userID: userID)
         }
 
         if let round, !round.isDrawer(userID), let language = settings?.language {
@@ -34,25 +35,50 @@ extension DrawAndGuessViewModel {
             tilesRoundID = nil
             tilesLanguage = nil
         }
+        unlockRefusedCorrectGuess()
 
-        if let round, round.isDrawer(userID), !round.isFinished, boardRoundID != round.id {
-            boardRoundID = round.id
-            board.reset()
-            if let draft = startingDrawing(for: round, userID: userID) {
-                // The draft is at the canonical size. The board scales it at layout.
-                board.replace(with: draft)
-            }
-            live?.drawingReplacedFromCode(board.drawing)
+        if let round, round.isDrawer(userID), !round.isFinished {
+            syncBoard(for: round, userID: userID)
         }
     }
 
-    /// What the canvas starts with: this round's draft, or the drawing made for a
-    /// word the server refused. The refused drawing becomes this round's draft
-    /// first, so closing the app now does not lose it.
+    /// A correct guess that the server refused for good left the round open with
+    /// the right word in the slots, which then take no tile. They empty, so the
+    /// person can guess again.
+    func unlockRefusedCorrectGuess() {
+        guard let round, phase.allowsGuessing, tilesRoundID == round.id, slots.status == .correct,
+              queuingCorrectGuessRoundID != round.id
+        else { return }
+        slots.clear()
+    }
+
+    /// Fills the canvas when the drawer's round starts, and again when a refused
+    /// drawing comes back to it. The refusal saves the drawing as the draft.
+    private func syncBoard(for round: DrawAndGuessRoundView, userID: UUID) {
+        let isBackFromSending = boardSentRoundID == round.id && !round.isDrawingSent
+            && dependencies.drawingStore.draft(ownerUserID: userID, roundID: round.id) != nil
+        if boardRoundID != round.id || isBackFromSending {
+            boardRoundID = round.id
+            board.reset()
+            if let saved = startingDrawing(for: round, userID: userID) {
+                board.restore(canonical: saved)
+            }
+            live?.drawingReplacedFromCode(board.drawing)
+        }
+        boardSentRoundID = round.isDrawingSent ? round.id : nil
+    }
+
+    /// What the canvas starts with: this round's draft, the drawing queued for
+    /// it, or the drawing made for a word the server refused. The refused drawing
+    /// becomes this round's draft first, so closing the app now does not lose it.
     private func startingDrawing(for round: DrawAndGuessRoundView, userID: UUID) -> PKDrawing? {
         let store = dependencies.drawingStore
         if let data = store.draft(ownerUserID: userID, roundID: round.id), let draft = try? PKDrawing(data: data) {
             return draft
+        }
+        if let queued = pending.drawings.last(where: { $0.roundID == round.id }),
+           let drawing = try? PKDrawing(data: queued.drawingData) {
+            return drawing
         }
         guard let data = store.rescuedDrawing(ownerUserID: userID), let rescued = try? PKDrawing(data: data) else {
             return nil
@@ -60,6 +86,16 @@ extension DrawAndGuessViewModel {
         store.saveDraft(data, ownerUserID: userID, roundID: round.id)
         store.removeRescuedDrawing(ownerUserID: userID)
         return rescued
+    }
+
+    /// A live snapshot kept on disk from before a relaunch, for the reveal while
+    /// the drawer's sent drawing is not on this phone.
+    private func restoreLiveSnapshot(userID: UUID) {
+        guard let round, !round.isDrawer(userID), liveSnapshots[round.id] == nil,
+              let data = dependencies.drawingStore.liveSnapshot(ownerUserID: userID, roundID: round.id),
+              let snapshot = try? PKDrawing(data: data)
+        else { return }
+        liveSnapshots[round.id] = snapshot
     }
 
     /// Forgets the drawing of the round that ended, so the next one starts clean.
@@ -196,26 +232,38 @@ extension DrawAndGuessViewModel {
     }
 
     /// The finished drawing at the canonical size, from whichever source this phone
-    /// has: the downloaded file, the drawer's own canvas, or the live room.
+    /// has: the drawer's final drawing, or what the live room showed.
     var finalDrawing: DrawAndGuessFinalDrawing? {
-        _ = loadedDrawingVersion
         guard let userID = currentUserID, let round else { return nil }
-        if let downloadedDrawing, loadedAssetID != nil, loadedAssetID == round.drawingMediaAssetID {
-            return DrawAndGuessFinalDrawing(drawing: downloadedDrawing)
+        if let submitted = submittedDrawing {
+            return submitted
         }
         if round.isDrawer(userID), boardRoundID == round.id, !board.isEmpty, board.canvasSide > 0 {
             return DrawAndGuessFinalDrawing(drawing: board.canonicalDrawing)
-        }
-        // A drawing queued on this phone, for a drawer who reopens the game offline.
-        if let queued = pending.drawings.first(where: { $0.roundID == round.id }),
-           let drawing = try? PKDrawing(data: queued.drawingData), !drawing.strokes.isEmpty {
-            return DrawAndGuessFinalDrawing(drawing: drawing)
         }
         if let snapshot = liveSnapshots[round.id], !snapshot.strokes.isEmpty {
             return DrawAndGuessFinalDrawing(drawing: snapshot)
         }
         if !round.isDrawer(userID), let partnerCanvas = live?.partnerCanvasDrawing, !partnerCanvas.strokes.isEmpty {
             return DrawAndGuessFinalDrawing(drawing: partnerCanvas)
+        }
+        return nil
+    }
+
+    /// The drawing the drawer sent or queued, which can no longer change: the
+    /// downloaded file or the drawing queued on this phone. A live room can miss
+    /// a stroke still on its way, and the canvas can still change, so Memories
+    /// only ever gets this one.
+    var submittedDrawing: DrawAndGuessFinalDrawing? {
+        _ = loadedDrawingVersion
+        guard let round else { return nil }
+        if let downloadedDrawing, loadedAssetID != nil, loadedAssetID == round.drawingMediaAssetID {
+            return DrawAndGuessFinalDrawing(drawing: downloadedDrawing)
+        }
+        // A drawing queued on this phone, for a drawer who reopens the game offline.
+        if let queued = pending.drawings.first(where: { $0.roundID == round.id }),
+           let drawing = try? PKDrawing(data: queued.drawingData), !drawing.strokes.isEmpty {
+            return DrawAndGuessFinalDrawing(drawing: drawing)
         }
         return nil
     }

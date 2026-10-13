@@ -30,8 +30,12 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         var failing: Set<String> = []
         var pickError: PaeoniaConvexError?
         var submitError: PaeoniaConvexError?
+        var guessError: PaeoniaConvexError?
+        var guessErrorOnlyWithClaim = false
+        var giveUpError: PaeoniaConvexError?
         var inviteError: (any Error)?
         var stateToLoad: RemoteDrawAndGuessState?
+        var roundsToLoad: [UUID: RemoteDrawAndGuessRound] = [:]
     }
 
     private let lock = NSLock()
@@ -59,6 +63,10 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         write { $0.failing.insert(name) }
     }
 
+    func unfail(_ name: String) {
+        write { $0.failing.remove(name) }
+    }
+
     func setPickError(_ error: PaeoniaConvexError?) {
         write { $0.pickError = error }
     }
@@ -67,12 +75,30 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         write { $0.submitError = error }
     }
 
+    /// Refuses guesses. With `whenClaiming`, only the ones that carry a speed
+    /// bonus claim are refused, like a server that does not know those fields.
+    func setGuessError(_ error: PaeoniaConvexError?, whenClaiming: Bool = false) {
+        write {
+            $0.guessError = error
+            $0.guessErrorOnlyWithClaim = whenClaiming
+        }
+    }
+
+    func setGiveUpError(_ error: PaeoniaConvexError?) {
+        write { $0.giveUpError = error }
+    }
+
     func setInviteError(_ error: (any Error)?) {
         write { $0.inviteError = error }
     }
 
     func setStateToLoad(_ state: RemoteDrawAndGuessState?) {
         write { $0.stateToLoad = state }
+    }
+
+    /// What `loadDrawAndGuessRound` finds. A round not set here does not exist.
+    func setRoundToLoad(_ round: RemoteDrawAndGuessRound) {
+        write { $0.roundsToLoad[round.id] = round }
     }
 
     private func begin(_ name: String) throws {
@@ -106,6 +132,11 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         try begin("load")
         guard let state = read(\.stateToLoad) else { throw Failure() }
         return state
+    }
+
+    func loadDrawAndGuessRound(roundID: UUID) async throws -> RemoteDrawAndGuessRound? {
+        try begin("loadRound")
+        return read { $0.roundsToLoad[roundID] }
     }
 
     func pickWord(_ pick: GamePickWordPayload, operation _: SyncClientOperation) async throws -> RemotePickedWord {
@@ -146,6 +177,9 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         operation _: SyncClientOperation
     ) async throws -> RemoteGuessResult {
         try begin("guess")
+        if let error = read(\.guessError), !read(\.guessErrorOnlyWithClaim) || speedBonus != nil || solveMs != nil {
+            throw error
+        }
         write {
             $0.guesses.append(guess)
             $0.guessClaims.append(GuessClaim(speedBonus: speedBonus, solveMs: solveMs))
@@ -163,6 +197,7 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
 
     func giveUp(roundID: UUID, operation _: SyncClientOperation) async throws -> RemoteGiveUpResult {
         try begin("giveUp")
+        if let error = read(\.giveUpError) { throw error }
         return RemoteGiveUpResult(roundID: roundID, roundState: .missed)
     }
 

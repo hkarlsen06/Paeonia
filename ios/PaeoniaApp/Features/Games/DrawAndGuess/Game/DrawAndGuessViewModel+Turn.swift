@@ -57,6 +57,8 @@ extension DrawAndGuessViewModel {
     /// phone is online.
     func finishDrawing() async {
         guard canFinishDrawing, let round else { return }
+        // A late eraser change is read from the canvas first, so it goes out too.
+        board.refreshDrawingFromCanvas()
         await queueDrawing(for: round, drawing: board.canonicalDrawing)
     }
 
@@ -88,16 +90,31 @@ extension DrawAndGuessViewModel {
         }
     }
 
-    /// The partner solved the round while this person was still drawing. The
-    /// drawing goes out as it is, so the reveal and Memories have it.
+    /// The partner solved the round while this person was still drawing, or the
+    /// round ended while they were away from it. The drawing goes out as it is,
+    /// so the reveal and Memories have it. It comes from the canvas when the
+    /// canvas holds the round, with a stroke in progress finished first, and
+    /// otherwise from the draft saved on the phone.
     func sendLiveDrawingIfSolved() {
         guard let userID = currentUserID, let round, round.isFinished, round.isDrawer(userID),
-              !round.isDrawingSent, boardRoundID == round.id, !board.isEmpty, board.canvasSide > 0,
-              !autoSentRoundIDs.contains(round.id)
+              !round.isDrawingSent, !autoSentRoundIDs.contains(round.id)
         else { return }
+        let isOnBoard = boardRoundID == round.id && !board.isEmpty && board.canvasSide > 0
+        let draft = isOnBoard ? nil : dependencies.drawingStore.draft(ownerUserID: userID, roundID: round.id)
+            .flatMap { try? PKDrawing(data: $0) }
+            .flatMap { $0.strokes.isEmpty ? nil : $0 }
+        guard isOnBoard || draft != nil else { return }
         autoSentRoundIDs.insert(round.id)
-        let drawing = board.canonicalDrawing
-        Task { await queueDrawing(for: round, drawing: drawing) }
+        let board = board
+        Task {
+            let drawing: PKDrawing
+            if let draft {
+                drawing = draft
+            } else {
+                drawing = await board.finishedCanonicalDrawing()
+            }
+            await queueDrawing(for: round, drawing: drawing)
+        }
     }
 
     func drawingChangedByUser(_ drawing: PKDrawing) {
@@ -151,11 +168,9 @@ extension DrawAndGuessViewModel {
         let guess = slots.filledWord
         let isCorrect = slots.status == .correct
         if isCorrect {
+            queuingCorrectGuessRoundID = round.id
             solvedCount += 1
-            if let snapshot = live?.partnerCanvasDrawing, !snapshot.strokes.isEmpty {
-                // The live room clears when the drawer leaves. Keep what was drawn.
-                liveSnapshots[round.id] = snapshot
-            }
+            keepLiveSnapshot(of: round.id)
         } else {
             wrongGuessCount += 1
             isShowingWrongGuess = true
@@ -177,7 +192,22 @@ extension DrawAndGuessViewModel {
         )
         Task {
             await enqueue(.submitGameGuess, scope: "game-guess:\(round.id.uuidString.lowercased())", payload: payload)
+            if isCorrect, queuingCorrectGuessRoundID == round.id {
+                queuingCorrectGuessRoundID = nil
+                // A guess that could not be saved leaves the round open.
+                unlockRefusedCorrectGuess()
+            }
         }
+    }
+
+    /// The live room clears when the drawer leaves. Keeps what was drawn, on
+    /// disk too, so a relaunch before the sent drawing arrives still shows it
+    /// on the reveal.
+    private func keepLiveSnapshot(of roundID: UUID) {
+        guard let userID = currentUserID, let snapshot = live?.partnerCanvasDrawing, !snapshot.strokes.isEmpty
+        else { return }
+        liveSnapshots[roundID] = snapshot
+        dependencies.drawingStore.saveLiveSnapshot(snapshot.dataRepresentation(), ownerUserID: userID, roundID: roundID)
     }
 
     /// How long the wrong word stays in the slots while they shake.
@@ -210,6 +240,13 @@ extension DrawAndGuessViewModel {
     }
 
     // MARK: - Queueing
+
+    /// "Try again" on the waiting screen: sends what waits now, then reads the
+    /// server's state.
+    func retrySending() async {
+        await syncAfterLocalChange?()
+        await refresh()
+    }
 
     /// Saves a move in the pending operations, shows its effect, and nudges the
     /// sync to send it now.

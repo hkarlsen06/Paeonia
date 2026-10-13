@@ -85,29 +85,37 @@
         // cascades onto every descendant element, replacing the production
         // identifiers (auth.signIn.apple, legal.privacy, …) UI tests query.
         .overlay(alignment: .topTrailing) {
-          HStack(spacing: PaeoniaSpacing.space8) {
-            Button {
-              reloadID = UUID()
-            } label: {
-              Image(systemName: "arrow.counterclockwise")
-                .frame(width: 44, height: 44)
-                .background(.paeoniaSurfacePrimary.opacity(0.92), in: Circle())
-            }
-            .accessibilityLabel("Reset scenario")
-            .accessibilityIdentifier("developer.scenario.reset")
-
-            Button(action: returnToMenu) {
-              Image(systemName: "wrench.and.screwdriver.fill")
-                .frame(width: 44, height: 44)
-                .background(.paeoniaSurfacePrimary.opacity(0.92), in: Circle())
-            }
-            .accessibilityLabel("Return to developer scenarios")
-            .accessibilityIdentifier("developer.scenario.return")
+          // `-paeonia-scenario-hide-controls YES` hides these buttons for screenshots
+          // of the toolbar they cover.
+          if !UserDefaults.standard.bool(forKey: "paeonia-scenario-hide-controls") {
+            scenarioControls
           }
-          .foregroundStyle(.paeoniaTextPrimary)
-          .padding(.top, PaeoniaSpacing.space8)
-          .padding(.trailing, PaeoniaSpacing.space8)
         }
+    }
+
+    private var scenarioControls: some View {
+      HStack(spacing: PaeoniaSpacing.space8) {
+        Button {
+          reloadID = UUID()
+        } label: {
+          Image(systemName: "arrow.counterclockwise")
+            .frame(width: 44, height: 44)
+            .background(.paeoniaSurfacePrimary.opacity(0.92), in: Circle())
+        }
+        .accessibilityLabel("Reset scenario")
+        .accessibilityIdentifier("developer.scenario.reset")
+
+        Button(action: returnToMenu) {
+          Image(systemName: "wrench.and.screwdriver.fill")
+            .frame(width: 44, height: 44)
+            .background(.paeoniaSurfacePrimary.opacity(0.92), in: Circle())
+        }
+        .accessibilityLabel("Return to developer scenarios")
+        .accessibilityIdentifier("developer.scenario.return")
+      }
+      .foregroundStyle(.paeoniaTextPrimary)
+      .padding(.top, PaeoniaSpacing.space8)
+      .padding(.trailing, PaeoniaSpacing.space8)
     }
 
     @ViewBuilder
@@ -157,7 +165,8 @@
         DeveloperPairedScenarioHost(scenario: scenario)
       case .drawChooseWord, .drawWaitingForWord, .drawDrawing, .drawSavedOffline,
         .drawWaitingForGuess, .drawWaitingForDrawing, .drawWatchingLive, .drawGuessingReplay,
-        .drawRevealSolved, .drawSavePrompt, .drawRevealMissed, .drawRevealAsDrawer, .drawRevealPartnerDrawing:
+        .drawGuessingLongWord, .drawRevealSolved, .drawSavePrompt, .drawRevealMissed, .drawRevealAsDrawer,
+        .drawRevealPartnerDrawing, .drawRevealLoading:
         DeveloperGamesScenarioView(scenario: scenario)
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         DeveloperWidgetScenarioView(scenario: scenario)

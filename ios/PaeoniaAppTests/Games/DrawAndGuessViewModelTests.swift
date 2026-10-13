@@ -383,6 +383,8 @@ struct DrawAndGuessViewModelTests {
 
         await viewModel.continueFromReveal()
 
+        // The answer goes out in the background, so Continue never waits for it.
+        _ = await waitUntil { env.gateway.savePromptAnswers == [GameFixture.roundID] }
         #expect(env.gateway.savePromptAnswers == [GameFixture.roundID])
         #expect(viewModel.phase == .chooseWord)
         #expect(viewModel.savePrompt == .hidden)
@@ -403,7 +405,7 @@ struct DrawAndGuessViewModelTests {
             from: try #require(await env.queued(.saveGameRoundToMemories).first?.requestData)
         )
         #expect(payload.roundID == GameFixture.roundID)
-        #expect(!payload.imageData.isEmpty)
+        #expect(payload.imageData?.isEmpty == false)
         #expect(payload.memoryDate == MemoryTimeline.localDateString(for: GameFixture.now))
     }
 

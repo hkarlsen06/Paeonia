@@ -26,6 +26,8 @@ nonisolated struct GameSubmitDrawingPayload: Codable, Equatable, Sendable {
     let drawingData: Data
     let reserveOperation: SyncClientOperation
     let finalizeOperation: SyncClientOperation
+    /// When the drawing was queued again because its first upload was gone.
+    var renewedAt: Date?
 }
 
 nonisolated struct GameGuessPayload: Codable, Equatable, Sendable {
@@ -57,11 +59,15 @@ nonisolated struct GameSaveRoundPayload: Codable, Equatable, Sendable {
     let coupleID: UUID
     let memoryID: UUID
     let memoryMediaID: UUID
-    let imageData: Data
+    /// Nil when the drawer's final drawing was not on the phone yet. The send
+    /// then renders it once the drawer's drawing is on the server.
+    let imageData: Data?
     /// `yyyy-MM-dd`, the day the person said yes.
     let memoryDate: String
     let reserveOperation: SyncClientOperation
     let finalizeOperation: SyncClientOperation
+    /// When the save was queued again because its first photo upload was gone.
+    var renewedAt: Date?
 }
 
 /// The queued Games writes of one person that have not reached the server, as
@@ -75,6 +81,10 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
     var guesses: [GameGuessPayload] = []
     var giveUps: [GameGiveUpPayload] = []
     var saves: [GameSaveRoundPayload] = []
+    /// A waiting move was tried again and the attempt failed for a reason other
+    /// than having no connection, such as the server refusing it. The waiting
+    /// screen then says so instead of "saved on this phone".
+    var lastSendFailedWhileOnline = false
 
     static let none = DrawAndGuessPendingWork()
 
@@ -111,8 +121,15 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
         var work = DrawAndGuessPendingWork()
         let decoder = JSONDecoder()
         /// The payloads of one kind that are still in flight, oldest first.
-        func read<Payload: Decodable>(_ kind: SyncPendingOperationKind) async throws -> [Payload] {
-            try await store.inFlightOperations(ownerUserID: ownerUserID, kind: kind).compactMap { operation in
+        func read<Payload: Decodable>(
+            _ kind: SyncPendingOperationKind,
+            isMove: Bool = true
+        ) async throws -> [Payload] {
+            let operations = try await store.inFlightOperations(ownerUserID: ownerUserID, kind: kind)
+            if isMove, operations.contains(where: \.failedWhileOnline) {
+                work.lastSendFailedWhileOnline = true
+            }
+            return operations.compactMap { operation in
                 operation.requestData.flatMap { try? decoder.decode(Payload.self, from: $0) }
             }
         }
@@ -121,12 +138,22 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
             work.drawings = try await read(.submitGameDrawing)
             work.guesses = try await read(.submitGameGuess)
             work.giveUps = try await read(.giveUpGameRound)
-            work.saves = try await read(.saveGameRoundToMemories)
+            work.saves = try await read(.saveGameRoundToMemories, isMove: false)
         } catch {
             // A failed read keeps the screen as it is. Treating it as an empty
             // queue would make a queued move look lost.
             return nil
         }
         return work
+    }
+}
+
+extension PendingSyncOperationSnapshot {
+    /// The last attempt reached the server or the sign-in and failed there. A
+    /// move that waits behind an earlier one and a lost connection do not count.
+    /// The drain keeps `String(describing:)` of the error in `lastError`.
+    nonisolated var failedWhileOnline: Bool {
+        guard let lastError else { return false }
+        return lastError != "Retry later" && !lastError.contains("NSURLErrorDomain")
     }
 }

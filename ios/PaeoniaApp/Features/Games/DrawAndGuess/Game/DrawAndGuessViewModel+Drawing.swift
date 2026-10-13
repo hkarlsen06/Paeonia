@@ -8,9 +8,10 @@ extension DrawAndGuessViewModel {
     // MARK: - Loading
 
     /// Fetches the sent drawing file, for the guesser to replay and for the drawer's
-    /// own screen after a relaunch.
+    /// own screen after a relaunch. It waits while the screen is closed or the
+    /// app is in the background.
     func loadDrawingIfNeeded() {
-        guard let userID = currentUserID, let round, let assetID = round.drawingMediaAssetID,
+        guard isActive, !isStopped, let userID = currentUserID, let round, let assetID = round.drawingMediaAssetID,
               loadedAssetID != assetID, loadingAssetID != assetID
         else { return }
         // A guesser who watched the drawing live already has it until the round ends
@@ -18,24 +19,28 @@ extension DrawAndGuessViewModel {
         if !round.isDrawer(userID), !round.isFinished, isWatchingLiveCanvas(of: round) { return }
 
         loadingAssetID = assetID
-        isLoadingDrawing = true
         drawingLoadFailed = false
         let store = dependencies.drawingStore
+        // A drawing already on the phone shows in the same update, so a reveal
+        // that opens directly never starts on an empty square.
+        if let cached = store.downloadedDrawing(mediaAssetID: assetID) {
+            finishLoading(assetID: assetID, ownerUserID: userID, data: cached, isDownloaded: false)
+            return
+        }
+        isLoadingDrawing = true
         let transfer = dependencies.drawingTransfer
         drawingLoadTask = Task { [weak self] in
-            let cached = store.downloadedDrawing(mediaAssetID: assetID)
-            var data = cached
-            if data == nil {
-                data = try? await transfer.downloadDrawing(mediaAssetID: assetID)
-            }
+            let data = try? await transfer.downloadDrawing(mediaAssetID: assetID)
             guard !Task.isCancelled else { return }
-            self?.finishLoading(assetID: assetID, ownerUserID: userID, data: data, isDownloaded: cached == nil)
+            self?.finishLoading(assetID: assetID, ownerUserID: userID, data: data, isDownloaded: true)
         }
     }
 
     /// The guesser watched this round live, the drawer is still in the live room,
-    /// and the room holds the drawer's strokes. The live room clears the canvas
-    /// when the drawer leaves, and the guesser then needs the sent drawing.
+    /// and the room holds all of the drawer's strokes. The live room clears the
+    /// canvas when the drawer leaves, and the guesser then needs the sent drawing.
+    /// A canvas left over from before a drop can miss strokes, so it counts only
+    /// once a snapshot caught it up.
     ///
     /// The drawer stays in the room as `drawing` after tapping Done, but no
     /// longer has a canvas to answer a snapshot request. A guesser who comes
@@ -47,6 +52,7 @@ extension DrawAndGuessViewModel {
         watchedLiveRoundIDs.contains(round.id)
             && !isReplayReady
             && live?.partnerActivity == .drawing
+            && live?.isPartnerCanvasCaughtUp == true
             && live?.partnerCanvasDrawing?.strokes.isEmpty == false
     }
 
@@ -75,6 +81,11 @@ extension DrawAndGuessViewModel {
         drawingLoadFailed = false
         downloadedDrawing = decoded
         loadedAssetID = assetID
+        // The drawer's final drawing replaces what the live room showed.
+        if let round, round.drawingMediaAssetID == assetID {
+            liveSnapshots[round.id] = nil
+            dependencies.drawingStore.removeLiveSnapshot(ownerUserID: ownerUserID, roundID: round.id)
+        }
         loadedDrawingVersion += 1
         replayTimeline = DrawAndGuessReplayTimeline(drawing: decoded)
         startReplayIfNeeded()
@@ -86,8 +97,9 @@ extension DrawAndGuessViewModel {
 
     /// Starts the replay the first time the guesser can see it. When the guesser
     /// watched the drawing live, the live canvas stays and there is no replay.
+    /// It waits while the screen is closed or the app is in the background.
     func startReplayIfNeeded() {
-        guard phase == .guessing, let round else { return }
+        guard isActive, !isStopped, phase == .guessing, let round else { return }
         if isWatchingLiveCanvas(of: round) {
             guessSource = .live
             isReplayReady = false
@@ -153,9 +165,11 @@ extension DrawAndGuessViewModel {
     // MARK: - First look
 
     /// Tells the server when the guesser first saw the drawing. The 30-second
-    /// speed bonus counts from it. The first call wins on the server.
+    /// speed bonus counts from it. The first call wins on the server. Nothing is
+    /// seen while the screen is closed or the app is in the background.
     func markSeenIfNeeded() {
-        guard let userID = currentUserID, let round, !round.isFinished, round.guesserUserID == userID,
+        guard isActive, !isStopped,
+              let userID = currentUserID, let round, !round.isFinished, round.guesserUserID == userID,
               round.guesserFirstSeenAt == nil, !markedSeenRoundIDs.contains(round.id)
         else { return }
         switch phase {
@@ -168,7 +182,10 @@ extension DrawAndGuessViewModel {
             return
         }
         markedSeenRoundIDs.insert(round.id)
-        localFirstSeenAt[round.id] = dependencies.now()
+        // A retry after a failed call keeps the first look, so the bonus window closes on time.
+        if localFirstSeenAt[round.id] == nil {
+            localFirstSeenAt[round.id] = dependencies.now()
+        }
         updateSpeedBonus()
         let gateway = gateway
         let roundID = round.id

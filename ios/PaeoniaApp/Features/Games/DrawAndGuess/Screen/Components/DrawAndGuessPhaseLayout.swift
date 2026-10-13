@@ -88,11 +88,19 @@ struct DrawAndGuessPhaseLayout<Header: View, Square: View, Footer: View, Bottom:
     @State private var measuredBottom: CGFloat?
     /// The live height of the pinned cluster, unlike `measuredBottom`, which a frozen side stops updating.
     @State private var pinnedHeight: CGFloat = 0
+    /// The live height of the scrolling rows. A result row can get its height a few
+    /// layout passes after it appears, so the layout scrolls again when it grows.
+    @State private var contentHeight: CGFloat = 0
+    @State private var scrollPosition = ScrollPosition(edge: .top)
+    @State private var scrollTask: Task<Void, Never>?
+    /// The height of the bottom cluster in the wide layout.
+    @State private var wideBottomHeight: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         GeometryReader { proxy in
             if DrawAndGuessMetrics.isWide(proxy.size) {
-                wide(side: DrawAndGuessMetrics.squareSide(in: proxy.size))
+                wide(side: DrawAndGuessMetrics.squareSide(in: proxy.size), height: proxy.size.height)
             } else {
                 narrow(size: proxy.size)
             }
@@ -130,34 +138,59 @@ struct DrawAndGuessPhaseLayout<Header: View, Square: View, Footer: View, Bottom:
         }
     }
 
+    /// Scrolls to the last row one layout pass later, because a row that appears in
+    /// the same update has no height yet. It scrolls again once the row's entrance
+    /// has settled, because the scroll view can drop a scroll asked for while a
+    /// spring in its content still runs. The second scroll does nothing when the
+    /// first one landed.
+    private func scrollToEnd() {
+        scrollTask?.cancel()
+        scrollTask = Task { @MainActor in
+            await Task.yield()
+            scrollToBottom()
+            try? await Task.sleep(for: .seconds(PaeoniaMotion.motionCelebration))
+            guard !Task.isCancelled else { return }
+            scrollToBottom()
+        }
+    }
+
+    private func scrollToBottom() {
+        if reduceMotion {
+            scrollPosition.scrollTo(edge: .bottom)
+        } else {
+            withAnimation(PaeoniaMotion.meaningfulMoment) { scrollPosition.scrollTo(edge: .bottom) }
+        }
+    }
+
     private func narrow(size: CGSize) -> some View {
         let side = narrowSide(in: size)
-        return ScrollViewReader { reader in
-            ScrollView {
-                VStack(spacing: PaeoniaSpacing.space12) {
-                    header
-                    square(side)
-                    footer
-                    Color.clear.frame(height: 1).id("end")
-                }
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                    take(contentHeight: height, side: side)
-                }
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.space8)
-                .padding(.bottom, PaeoniaSpacing.space16)
-                .paeoniaReadableWidth()
+        return ScrollView {
+            VStack(spacing: PaeoniaSpacing.space12) {
+                header
+                square(side)
+                footer
             }
-            .scrollBounceBehavior(.basedOnSize)
-            .onChange(of: scrollTrigger) {
-                withAnimation(PaeoniaMotion.meaningfulMoment) { reader.scrollTo("end", anchor: .bottom) }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                contentHeight = height
+                take(contentHeight: height, side: side)
             }
-            // A result row can grow the pinned cluster after the scroll above ran
-            // (the save button joins it), which would hide the last rows again.
-            .onChange(of: pinnedHeight) {
-                guard scrollTrigger > 0 else { return }
-                withAnimation(PaeoniaMotion.meaningfulMoment) { reader.scrollTo("end", anchor: .bottom) }
-            }
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.space8)
+            .padding(.bottom, PaeoniaSpacing.space16)
+            .paeoniaReadableWidth()
+        }
+        .scrollPosition($scrollPosition)
+        .scrollBounceBehavior(.basedOnSize)
+        .onChange(of: scrollTrigger) { scrollToEnd() }
+        .onChange(of: contentHeight) {
+            guard scrollTrigger > 0 else { return }
+            scrollToEnd()
+        }
+        // The main button joins the pinned cluster after the last result row,
+        // which would cover that row again.
+        .onChange(of: pinnedHeight) {
+            guard scrollTrigger > 0 else { return }
+            scrollToEnd()
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             pinnedBottom
@@ -171,8 +204,11 @@ struct DrawAndGuessPhaseLayout<Header: View, Square: View, Footer: View, Bottom:
         }
     }
 
-    private func wide(side: CGFloat) -> some View {
-        HStack(alignment: .center, spacing: PaeoniaSpacing.space32) {
+    private func wide(side: CGFloat, height: CGFloat) -> some View {
+        // A tall cluster, such as four rows of tiles on a landscape phone, would
+        // leave the rows above it no room. It then scrolls with them.
+        let scrollsBottom = wideBottomHeight > height * 0.55
+        return HStack(alignment: .center, spacing: PaeoniaSpacing.space32) {
             square(side)
                 .frame(width: side, height: side)
             VStack(spacing: 0) {
@@ -180,17 +216,27 @@ struct DrawAndGuessPhaseLayout<Header: View, Square: View, Footer: View, Bottom:
                     VStack(spacing: PaeoniaSpacing.space12) {
                         header
                         footer
+                        if scrollsBottom {
+                            measuredWideBottom
+                        }
                     }
                     .padding(.vertical, PaeoniaSpacing.space8)
                 }
                 .scrollBounceBehavior(.basedOnSize)
-                pinnedBottomContent
-                    .padding(.vertical, PaeoniaSpacing.space12)
+                if !scrollsBottom {
+                    measuredWideBottom
+                }
             }
             .frame(width: DrawAndGuessMetrics.sideColumnWidth)
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var measuredWideBottom: some View {
+        pinnedBottomContent
+            .padding(.vertical, PaeoniaSpacing.space12)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { wideBottomHeight = $0 }
     }
 
     private var pinnedBottom: some View {

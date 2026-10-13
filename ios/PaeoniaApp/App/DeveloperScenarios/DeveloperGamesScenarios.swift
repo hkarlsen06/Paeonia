@@ -46,6 +46,17 @@
           round: Fixture.round(state: .guessing, drawer: Fixture.partner, hasDrawing: true),
           partnerIsHere: scenario == .gamesHubPartnerHere
         )
+      case .drawGuessingLongWord:
+        return Fixture.state(
+          settings: mine,
+          game: Fixture.game(state: .guessing, turn: Fixture.me),
+          round: Fixture.round(
+            state: .guessing,
+            drawer: Fixture.partner,
+            word: "counterrevolutionary",
+            hasDrawing: true
+          )
+        )
       case .drawWaitingForWord:
         return Fixture.state(
           settings: mine,
@@ -65,11 +76,11 @@
           round: Fixture.round(state: .drawing, drawer: Fixture.partner),
           partnerIsHere: true
         )
-      case .drawRevealSolved, .drawSavePrompt:
+      case .drawRevealSolved, .drawSavePrompt, .drawRevealLoading:
         return revealState(
           .solved,
           drawer: Fixture.partner,
-          saveResponse: scenario == .drawRevealSolved ? .notNow : nil
+          saveResponse: scenario == .drawSavePrompt ? nil : .notNow
         )
       case .drawRevealMissed:
         return revealState(.missed, drawer: Fixture.partner, saveResponse: .notNow)
@@ -128,6 +139,16 @@
 
     /// The dependencies for one scenario. The cache starts with its state.
     static func dependencies(for scenario: DeveloperScenario) -> GamesDependencies {
+      // The partner's drawing is already on the phone, so a reveal shows it from the first
+      // frame. The loading scenario has to download it, and the download never finishes.
+      let isLoading = scenario == .drawRevealLoading
+      let drawingStore = InMemoryGameDrawingStore()
+      if !isLoading {
+        drawingStore.saveDownloadedDrawing(
+          DeveloperGamesFixture.umbrella().dataRepresentation(),
+          mediaAssetID: DeveloperGamesFixture.assetID
+        )
+      }
       let cache = InMemoryGamesCache(
         state: state(for: scenario),
         ownerUserID: DeveloperGamesFixture.me,
@@ -138,8 +159,8 @@
         cache: cache,
         pendingOperationStore: InMemoryPendingSyncOperationRepository(),
         operationProvider: DeveloperScenarioOperationProvider(),
-        drawingStore: InMemoryGameDrawingStore(),
-        drawingTransfer: DeveloperGameDrawingTransfer(),
+        drawingStore: drawingStore,
+        drawingTransfer: DeveloperGameDrawingTransfer(stallsDownloads: isLoading),
         makeLive: { coupleID in makeLive(for: scenario, coupleID: coupleID) },
         now: { DeveloperGamesFixture.now }
       )
@@ -208,6 +229,10 @@
       throw URLError(.notConnectedToInternet)
     }
 
+    func loadDrawAndGuessRound(roundID _: UUID) async throws -> RemoteDrawAndGuessRound? {
+      throw URLError(.notConnectedToInternet)
+    }
+
     func pickWord(_ pick: GamePickWordPayload, operation _: SyncClientOperation) async throws -> RemotePickedWord {
       RemotePickedWord(
         roundID: pick.roundID,
@@ -262,8 +287,11 @@
     func setPresence(_: Bool) async throws {}
   }
 
-  /// The partner's drawing for every download: the fixture umbrella.
+  /// The partner's drawing for every download: the fixture umbrella. A stalled
+  /// download waits until the screen goes away.
   struct DeveloperGameDrawingTransfer: GameDrawingTransferring {
+    var stallsDownloads = false
+
     func uploadDrawing(
       _: Data,
       gameID _: UUID,
@@ -276,7 +304,10 @@
     }
 
     func downloadDrawing(mediaAssetID _: UUID) async throws -> Data {
-      await MainActor.run { DeveloperGamesFixture.umbrella().dataRepresentation() }
+      if stallsDownloads {
+        try await Task.sleep(for: .seconds(86_400))
+      }
+      return await MainActor.run { DeveloperGamesFixture.umbrella().dataRepresentation() }
     }
   }
 

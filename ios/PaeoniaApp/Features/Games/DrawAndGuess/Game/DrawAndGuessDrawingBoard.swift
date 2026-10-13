@@ -29,6 +29,10 @@ final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
     @ObservationIgnored var onUserChange: ((PKDrawing) -> Void)?
 
     @ObservationIgnored private weak var canvasView: PKCanvasView?
+    /// The `drawingRevision` the canvas view shows. Until it catches up, the
+    /// canvas holds an older drawing and is not read back.
+    @ObservationIgnored private var canvasDrawingRevision = 0
+    @ObservationIgnored private var canvasRefreshTask: Task<Void, Never>?
     @ObservationIgnored private var selectedUIColor = WidgetDrawingColorChoice.palette[0].uiColor
     /// The tool before the current one, for Apple Pencil's "last used" double tap.
     @ObservationIgnored private var previousTool: WidgetDrawingTool?
@@ -103,6 +107,9 @@ final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
 
     func setStrokeInProgress(_ isInProgress: Bool) {
         isStrokeInProgress = isInProgress
+        if !isInProgress {
+            scheduleCanvasRefreshes()
+        }
     }
 
     // MARK: Canvas wiring
@@ -130,6 +137,50 @@ final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
         onUserChange?(newDrawing)
     }
 
+    func canvasDidApplyDrawing(revision: Int) {
+        canvasDrawingRevision = revision
+    }
+
+    func canvasDidFinishRendering() {
+        refreshUndoRedo()
+        refreshDrawingFromCanvas()
+    }
+
+    /// The pixel eraser can finish changing the drawing after the last
+    /// `canvasViewDrawingDidChange`. This reads the canvas again, so the partner,
+    /// the draft and Done get the erase too.
+    func refreshDrawingFromCanvas() {
+        guard let canvasView, !isStrokeInProgress, canvasDrawingRevision == drawingRevision else { return }
+        let canvasDrawing = canvasView.drawing
+        guard canvasDrawing != drawing else { return }
+        updateDrawing(canvasDrawing, undoManager: canvasView.undoManager)
+    }
+
+    /// The drawing at the canonical size, with a late eraser change and the
+    /// stroke being drawn right now included. It waits up to `strokeWait` for
+    /// that stroke to end, then reads the canvas.
+    func finishedCanonicalDrawing(strokeWait: Duration = .seconds(2)) async -> PKDrawing {
+        let deadline = ContinuousClock.now + strokeWait
+        while isStrokeInProgress, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        refreshDrawingFromCanvas()
+        return canonicalDrawing
+    }
+
+    /// Rendering callbacks usually catch the late eraser change. These reads
+    /// make sure of it.
+    private func scheduleCanvasRefreshes() {
+        canvasRefreshTask?.cancel()
+        canvasRefreshTask = Task { [weak self] in
+            for delay in [Duration.milliseconds(100), .milliseconds(500)] {
+                try? await Task.sleep(for: delay)
+                guard !Task.isCancelled else { return }
+                self?.refreshDrawingFromCanvas()
+            }
+        }
+    }
+
     // MARK: Changes from code
 
     /// Puts a drawing on the canvas without telling the partner, for a restored
@@ -142,6 +193,13 @@ final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
 
     func reset() {
         replace(with: PKDrawing())
+    }
+
+    /// Puts a drawing kept at the canonical size on the canvas, scaled to the
+    /// canvas when it is already laid out.
+    func restore(canonical saved: PKDrawing) {
+        let side = canvasSide > 0 ? canvasSide : DrawAndGuessCanvas.canonicalSide
+        replace(with: saved.scaled(fromSide: DrawAndGuessCanvas.canonicalSide, toSide: side))
     }
 
     // MARK: Undo and clear

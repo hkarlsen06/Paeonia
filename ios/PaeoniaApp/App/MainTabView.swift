@@ -199,7 +199,9 @@ struct MainTabView: View {
             dailyChallengeViewModel.refreshParticipants(participants)
         }
         .task(id: identity.currentUserID) {
-            gamesViewModel.setLocalChangeSyncHandler(actions.syncAfterLocalChange)
+            // A closure literal, because the stored value read out of the non-Sendable
+            // MainTabActions counts as non-Sendable here.
+            gamesViewModel.setLocalChangeSyncHandler { await actions.syncAfterLocalChange() }
         }
         .task(id: identity.currentUserID) {
             milestoneViewModel.setSyncAfterLocalChange(actions.syncAfterLocalChange)

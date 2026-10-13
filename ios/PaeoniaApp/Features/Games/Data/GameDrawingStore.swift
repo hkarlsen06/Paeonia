@@ -4,6 +4,9 @@ import Foundation
 /// drawing, so closing the app mid-drawing loses nothing. A rescued drawing is
 /// one whose word was refused by the server. It waits for the drawer's next
 /// round. A downloaded drawing is the partner's, kept so a replay works offline.
+/// A live snapshot is the partner's canvas as this person saw it when they
+/// guessed it live. It fills the reveal after a relaunch until the partner's
+/// sent drawing is downloaded, and it never goes to Memories.
 nonisolated protocol GameDrawingStoring: Sendable {
     func draft(ownerUserID: UUID, roundID: UUID) -> Data?
     func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID)
@@ -13,7 +16,12 @@ nonisolated protocol GameDrawingStoring: Sendable {
     func removeRescuedDrawing(ownerUserID: UUID)
     func downloadedDrawing(mediaAssetID: UUID) -> Data?
     func saveDownloadedDrawing(_ data: Data, mediaAssetID: UUID)
-    /// Removes the partner's drawings and keeps this person's own unsent ones.
+    func liveSnapshot(ownerUserID: UUID, roundID: UUID) -> Data?
+    /// Keeps one snapshot per person. A new one replaces the one before.
+    func saveLiveSnapshot(_ data: Data, ownerUserID: UUID, roundID: UUID)
+    func removeLiveSnapshot(ownerUserID: UUID, roundID: UUID)
+    /// Removes the partner's drawings, live snapshots included, and keeps this
+    /// person's own unsent ones.
     func clearDownloads()
     /// Removes everything, the person's own unsent drawings included.
     func clearAll()
@@ -80,9 +88,29 @@ nonisolated final class FileGameDrawingStore: GameDrawingStoring, @unchecked Sen
         lock.withLock { write(data, to: downloadURL(mediaAssetID: mediaAssetID)) }
     }
 
+    func liveSnapshot(ownerUserID: UUID, roundID: UUID) -> Data? {
+        lock.withLock { try? Data(contentsOf: snapshotURL(ownerUserID: ownerUserID, roundID: roundID)) }
+    }
+
+    func saveLiveSnapshot(_ data: Data, ownerUserID: UUID, roundID: UUID) {
+        lock.withLock {
+            let url = snapshotURL(ownerUserID: ownerUserID, roundID: roundID)
+            try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+            write(data, to: url)
+        }
+    }
+
+    func removeLiveSnapshot(ownerUserID: UUID, roundID: UUID) {
+        lock.withLock {
+            try? FileManager.default.removeItem(at: snapshotURL(ownerUserID: ownerUserID, roundID: roundID))
+        }
+    }
+
     func clearDownloads() {
         lock.withLock {
-            try? FileManager.default.removeItem(at: directoryURL.appendingPathComponent("downloads", isDirectory: true))
+            for folder in ["downloads", "snapshots"] {
+                try? FileManager.default.removeItem(at: directoryURL.appendingPathComponent(folder, isDirectory: true))
+            }
         }
     }
 
@@ -114,6 +142,13 @@ nonisolated final class FileGameDrawingStore: GameDrawingStoring, @unchecked Sen
             .appendingPathComponent(ownerUserID.uuidString.lowercased() + ".pkdrawing", isDirectory: false)
     }
 
+    private func snapshotURL(ownerUserID: UUID, roundID: UUID) -> URL {
+        directoryURL
+            .appendingPathComponent("snapshots", isDirectory: true)
+            .appendingPathComponent(ownerUserID.uuidString.lowercased(), isDirectory: true)
+            .appendingPathComponent(roundID.uuidString.lowercased() + ".pkdrawing", isDirectory: false)
+    }
+
     private func downloadURL(mediaAssetID: UUID) -> URL {
         directoryURL
             .appendingPathComponent("downloads", isDirectory: true)
@@ -127,6 +162,7 @@ nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked
     private var drafts: [String: Data] = [:]
     private var rescued: [UUID: Data] = [:]
     private var downloads: [UUID: Data] = [:]
+    private var snapshots: [UUID: (roundID: UUID, data: Data)] = [:]
 
     init() {}
 
@@ -162,8 +198,27 @@ nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked
         lock.withLock { downloads[mediaAssetID] = data }
     }
 
+    func liveSnapshot(ownerUserID: UUID, roundID: UUID) -> Data? {
+        lock.withLock { snapshots[ownerUserID].flatMap { $0.roundID == roundID ? $0.data : nil } }
+    }
+
+    func saveLiveSnapshot(_ data: Data, ownerUserID: UUID, roundID: UUID) {
+        lock.withLock { snapshots[ownerUserID] = (roundID, data) }
+    }
+
+    func removeLiveSnapshot(ownerUserID: UUID, roundID: UUID) {
+        lock.withLock {
+            if snapshots[ownerUserID]?.roundID == roundID {
+                snapshots[ownerUserID] = nil
+            }
+        }
+    }
+
     func clearDownloads() {
-        lock.withLock { downloads = [:] }
+        lock.withLock {
+            downloads = [:]
+            snapshots = [:]
+        }
     }
 
     func clearAll() {
@@ -171,6 +226,7 @@ nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked
             drafts = [:]
             rescued = [:]
             downloads = [:]
+            snapshots = [:]
         }
     }
 }

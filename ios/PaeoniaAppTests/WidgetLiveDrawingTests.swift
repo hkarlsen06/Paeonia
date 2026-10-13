@@ -80,6 +80,25 @@ struct WidgetLiveStrokeSyncTests {
         #expect(!result.hasOtherUnsentStrokes)
     }
 
+    @Test func aStrokeThePartnerErasedWhileThisPhoneWasAwayIsNotSentBack() {
+        let roomStroke = makeStroke(x: 110, createdAt: Date(timeIntervalSinceReferenceDate: 3))
+        let erasedThere = makeStroke(x: 60, createdAt: Date(timeIntervalSinceReferenceDate: 2))
+        let unsentHere = makeStroke(x: 160, createdAt: Date(timeIntervalSinceReferenceDate: 4))
+
+        let result = WidgetLiveStrokeSync.join(
+            room: [roomStroke],
+            local: PKDrawing(strokes: [erasedThere, roomStroke, unsentHere]),
+            savedKeys: [],
+            drawnHereKeys: Set([erasedThere, unsentHere].map(WidgetLiveStrokeSync.key(for:))),
+            roomRemovals: [WidgetLiveStrokeSync.key(for: erasedThere)]
+        )
+
+        #expect(result.drawing.strokes.map(WidgetLiveStrokeSync.key(for:))
+            == [roomStroke, unsentHere].map(WidgetLiveStrokeSync.key(for:)))
+        #expect(result.ownUnsent.map(WidgetLiveStrokeSync.key(for:)) == [WidgetLiveStrokeSync.key(for: unsentHere)])
+        #expect(!result.hasOtherUnsentStrokes)
+    }
+
     @Test func anOldDraftDoesNotJoinTheSharedCanvas() {
         let roomStroke = makeStroke(x: 110, createdAt: Date(timeIntervalSinceReferenceDate: 3))
         let oldDraftStroke = makeStroke(x: 160, createdAt: Date(timeIntervalSinceReferenceDate: 4))

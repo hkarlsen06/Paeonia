@@ -40,7 +40,12 @@ struct DrawAndGuessGuessView: View {
             if timeline.titleShown { timeline.skip() }
         })
         .onChange(of: viewModel.phase, initial: true) { _, phase in
-            if phase == .reveal { beginReveal() }
+            if phase == .reveal {
+                beginReveal()
+            } else if timeline.hasBegun {
+                // A refused correct guess sends the same round back to guessing.
+                timeline.reset()
+            }
         }
         .onChange(of: timeline.titleShown) { _, shown in
             if shown, UIAccessibility.isVoiceOverRunning { isTitleFocused = true }
@@ -95,21 +100,13 @@ struct DrawAndGuessGuessView: View {
                     if !timeline.isSettled {
                         DrawAndGuessReplayCanvas(viewModel: viewModel, side: side)
                     }
-                    if timeline.finalDrawingShown {
-                        DrawAndGuessFinalDrawingView(drawing: viewModel.finalDrawing, side: side)
+                    if showsRevealDrawing {
+                        DrawAndGuessRevealDrawing(viewModel: viewModel, side: side)
                             .transition(.opacity)
                     }
                 }
             }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(.gamesDrawAndGuessGuessReplayLabel(viewModel.partnerName)))
-            .accessibilityHint(Text(.gamesDrawAndGuessGuessReplayHint))
-            .accessibilityAction(named: Text(.gamesDrawAndGuessGuessReplayFaster)) {
-                viewModel.setFastForward(!viewModel.isFastForwarding)
-            }
-            .accessibilityAction(named: Text(.gamesDrawAndGuessGuessReplaySkip)) {
-                viewModel.showWholeDrawing()
-            }
+            .modifier(DrawAndGuessReplayAccessibility(viewModel: viewModel, isDrawingShown: !showsPlaceholder))
             if viewModel.settings?.playStyle == .against, !reduceMotion {
                 if viewModel.speedBonus != .hidden {
                     DrawAndGuessSpeedBonusLine(viewModel: viewModel, width: side)
@@ -118,6 +115,24 @@ struct DrawAndGuessGuessView: View {
                 }
             }
         }
+    }
+
+    /// The live canvas or the replay is on screen, as `DrawAndGuessReplayCanvas` decides.
+    private var showsReplay: Bool {
+        let showsLive = (viewModel.guessSource == .live || isLive) && viewModel.live != nil
+        return showsLive || viewModel.isReplayReady
+    }
+
+    /// The reveal shows the whole drawing over the replay. With no replay to show,
+    /// such as a reveal opened after a relaunch, it takes over right away.
+    private var showsRevealDrawing: Bool {
+        timeline.finalDrawingShown || (isRevealed && !showsReplay)
+    }
+
+    /// The square shows the spinner, or the load error and its retry button,
+    /// instead of a drawing.
+    private var showsPlaceholder: Bool {
+        showsRevealDrawing ? viewModel.finalDrawing == nil : !showsReplay
     }
 
     // MARK: Footer
@@ -182,6 +197,10 @@ struct DrawAndGuessGuessView: View {
                     )
                     .transition(transition)
                 }
+                if timeline.saveShown {
+                    DrawAndGuessSaveRow(viewModel: viewModel)
+                        .transition(transition)
+                }
             }
         }
     }
@@ -216,12 +235,6 @@ struct DrawAndGuessGuessView: View {
             }
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
-        // The save button sits in the pinned cluster above the main button, so a tall
-        // result never hides it under the button.
-        if isRevealed, timeline.saveShown {
-            DrawAndGuessSaveRow(viewModel: viewModel)
-                .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 12)))
-        }
         if isRevealed, timeline.buttonShown {
             Button {
                 Task { await viewModel.continueFromReveal() }
@@ -255,6 +268,36 @@ struct DrawAndGuessGuessView: View {
                 String(localized: .gamesDrawAndGuessRevealA11Y(DrawAndGuessAnswer.display(reveal.word), points))
             ).post()
         }
+    }
+}
+
+/// The drawing is one VoiceOver element with its replay actions. While it loads
+/// or cannot load, the spinner, or the error and its retry button, are reachable instead.
+private struct DrawAndGuessReplayAccessibility: ViewModifier {
+    let viewModel: DrawAndGuessViewModel
+    let isDrawingShown: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .drawAndGuessDrawingAccessibility(
+                label: Text(.gamesDrawAndGuessGuessReplayLabel(viewModel.partnerName)),
+                hint: Text(.gamesDrawAndGuessGuessReplayHint),
+                isDrawingShown: isDrawingShown
+            )
+            .accessibilityActions {
+                if isDrawingShown {
+                    Button {
+                        viewModel.setFastForward(!viewModel.isFastForwarding)
+                    } label: {
+                        Text(.gamesDrawAndGuessGuessReplayFaster)
+                    }
+                    Button {
+                        viewModel.showWholeDrawing()
+                    } label: {
+                        Text(.gamesDrawAndGuessGuessReplaySkip)
+                    }
+                }
+            }
     }
 }
 

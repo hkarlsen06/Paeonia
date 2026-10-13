@@ -68,7 +68,7 @@ final class GamesViewModel {
         }
     }
 
-    func setLocalChangeSyncHandler(_ handler: (@MainActor () async -> Void)?) {
+    func setLocalChangeSyncHandler(_ handler: (@MainActor @Sendable () async -> Void)?) {
         drawAndGuess.setLocalChangeSyncHandler(handler)
     }
 

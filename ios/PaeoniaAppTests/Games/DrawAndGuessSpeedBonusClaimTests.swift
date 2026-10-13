@@ -198,7 +198,7 @@ struct DrawAndGuessSpeedBonusClaimTests {
             isCorrect: false,
             createdAt: GameFixture.now
         )
-        let handler = SubmitGameGuessPendingOperationHandler(gateway: env.gateway)
+        let handler = SubmitGameGuessPendingOperationHandler(gateway: env.gateway, cache: env.cache)
 
         _ = try await handler.send(try snapshot(.submitGameGuess, wrong), context: syncContext(env.pending))
         _ = try await handler.send(try snapshot(.submitGameGuess, payload), context: syncContext(env.pending))

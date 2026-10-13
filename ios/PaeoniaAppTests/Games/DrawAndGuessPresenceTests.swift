@@ -1,4 +1,5 @@
 import Foundation
+import PencilKit
 import Testing
 @testable import PaeoniaApp
 
@@ -135,9 +136,49 @@ struct DrawAndGuessPresenceTests {
         #expect(DrawAndGuessSentStatus.make(partner: .away, guesserFirstSeenAt: seen) == .seen)
         #expect(DrawAndGuessSentStatus.make(partner: .result, guesserFirstSeenAt: seen) == .seen)
         #expect(DrawAndGuessSentStatus.make(partner: .away, guesserFirstSeenAt: nil) == .notSeen)
+        // A drawing still on this phone has not reached the partner, whatever their phone says.
+        let queued = DrawAndGuessSentStatus.make(partner: .watching, guesserFirstSeenAt: nil, isWaitingToSend: true)
+        #expect(queued == .notSeen)
+        // A first look on the server or live watching wins over the drawing still being on this phone.
+        let watchedLive = DrawAndGuessSentStatus.make(
+            partner: .watching,
+            guesserFirstSeenAt: nil,
+            isPartnerWatchingLive: true,
+            isWaitingToSend: true
+        )
+        #expect(watchedLive == .looking)
+        let status = { (partner: DrawAndGuessPartnerPresence) in
+            DrawAndGuessSentStatus.make(partner: partner, guesserFirstSeenAt: seen, isWaitingToSend: true)
+        }
+        #expect(status(.watching) == .looking)
+        #expect(status(.away) == .seen)
         // Still on the last result, or just in the game: the drawing has not been seen.
         #expect(DrawAndGuessSentStatus.make(partner: .result, guesserFirstSeenAt: nil) == .notSeen)
         #expect(DrawAndGuessSentStatus.make(partner: .here, guesserFirstSeenAt: nil) == .notSeen)
+    }
+
+    @Test func theDrawerKnowsThePartnerWatchesLiveOnlyAfterSendingThemTheWholeCanvas() {
+        let connection = WidgetLiveConnection(coupleID: DeveloperScenarioFixture.coupleID, ticketProvider: { _ in nil })
+        let room = WidgetLiveDrawing(connection: connection, role: .drawing)
+        let canvas = PKCanvasView()
+        room.attach(to: canvas)
+        room.currentDrawing = { GameFixture.umbrella() }
+        let askForCanvas = WidgetLiveMessage(type: .hello, needsCanvas: true, from: "partner", role: "watching")
+
+        connection.onMessage?(WidgetLiveMessage(type: .welcome, id: "me", peers: 1))
+        connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: "watching"))
+        #expect(room.partnerActivity == .watching)
+        #expect(!room.hasSentCanvasToPartner)
+
+        connection.onMessage?(askForCanvas)
+        #expect(room.hasSentCanvasToPartner)
+
+        // The partner comes back on a new socket and has to ask again.
+        connection.onMessage?(WidgetLiveMessage(type: .joined))
+        #expect(!room.hasSentCanvasToPartner)
+        connection.onMessage?(askForCanvas)
+        connection.onMessage?(WidgetLiveMessage(type: .left, id: "partner"))
+        #expect(!room.hasSentCanvasToPartner)
     }
 
     @Test func theDrawerSeesLookingThenSeenWhenThePartnerLeavesTheGuessScreen() async {

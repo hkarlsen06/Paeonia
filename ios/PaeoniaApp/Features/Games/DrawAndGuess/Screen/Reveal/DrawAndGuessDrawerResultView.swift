@@ -46,19 +46,15 @@ struct DrawAndGuessDrawerResultView: View {
             }
         } square: { side in
             DrawAndGuessSquare(side: side, scale: 0.8, glow: timeline.glow) {
-                DrawAndGuessFinalDrawingView(drawing: viewModel.finalDrawing, side: side)
+                DrawAndGuessRevealDrawing(viewModel: viewModel, side: side)
             }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(.gamesDrawAndGuessGuessReplayLabel(viewModel.me.name)))
+            .drawAndGuessDrawingAccessibility(
+                label: Text(.gamesDrawAndGuessGuessReplayLabel(viewModel.me.name)),
+                isDrawingShown: viewModel.finalDrawing != nil
+            )
         } footer: {
             footer
         } bottom: {
-            // The save button sits in the pinned cluster above the main button, so a tall
-            // result never hides it under the button.
-            if isRevealed, timeline.saveShown {
-                DrawAndGuessSaveRow(viewModel: viewModel)
-                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 12)))
-            }
             if isRevealed, timeline.buttonShown {
                 Button {
                     Task { await viewModel.continueFromReveal() }
@@ -76,8 +72,16 @@ struct DrawAndGuessDrawerResultView: View {
         }
         .simultaneousGesture(TapGesture().onEnded { finishNow() })
         .onChange(of: viewModel.phase, initial: true) { _, phase in
-            if phase == .reveal, playbackTask == nil, !timeline.hasBegun {
-                playbackTask = Task { await playResult() }
+            if phase == .reveal {
+                if playbackTask == nil, !timeline.hasBegun {
+                    playbackTask = Task { await playResult() }
+                }
+            } else if playbackTask != nil || timeline.hasBegun {
+                // The round is playable again, such as after a refused correct guess.
+                playbackTask?.cancel()
+                playbackTask = nil
+                timeline.reset()
+                shownWrongCount = wrongAttempts.count
             }
         }
         .onChange(of: wrongAttempts.count) { old, new in
@@ -204,6 +208,10 @@ struct DrawAndGuessDrawerResultView: View {
                     showsSpeedBonus: timeline.speedBonusShown
                 )
                 .transition(transition)
+            }
+            if timeline.saveShown {
+                DrawAndGuessSaveRow(viewModel: viewModel)
+                    .transition(transition)
             }
         }
     }

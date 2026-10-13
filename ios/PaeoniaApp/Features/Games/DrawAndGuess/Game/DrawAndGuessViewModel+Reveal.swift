@@ -11,24 +11,28 @@ extension DrawAndGuessViewModel {
         await reload()
     }
 
-    /// Closes the save question for this person only.
+    /// Closes the save question for this person only. It never waits for the
+    /// network, so "Continue" moves on at once on a slow connection. The answer
+    /// is kept on the phone too, so it stays closed after a relaunch while the
+    /// server has not heard it.
     func skipSaving() async {
-        guard savePrompt == .ask, let round else { return }
-        // Hidden at once. The server records it for the next time this person opens the game.
+        guard savePrompt == .ask, let round, let userID = currentUserID else { return }
         savePrompt = .hidden
         declinedSaveRoundIDs.insert(round.id)
-        try? await gateway.respondSavePrompt(roundID: round.id)
+        await dependencies.cache.declineSave(round.id, ownerUserID: userID)
+        let gateway = gateway
+        let roundID = round.id
+        Task { try? await gateway.respondSavePrompt(roundID: roundID) }
     }
 
-    /// Renders the drawing to an image and queues it for Memories.
+    /// Queues the save for Memories at once. The image is the drawer's final
+    /// drawing. When it is already on this phone, it is rendered now. Otherwise
+    /// the queued save renders it once the drawer's drawing is sent, so a live
+    /// canvas that missed a stroke, or a canvas still being drawn on, never
+    /// becomes the memory.
     func saveToMemories() async {
         guard savePrompt == .ask, let round, let coupleID = participants.coupleID else { return }
-        guard let final = finalDrawing, let image = DrawAndGuessImageRenderer.render(final.drawing) else {
-            // The partner's drawing has not arrived yet.
-            loadDrawingIfNeeded()
-            notice = .drawingUnavailable
-            return
-        }
+        let image = submittedDrawing.flatMap { DrawAndGuessImageRenderer.render($0.drawing) }
         let payload = GameSaveRoundPayload(
             roundID: round.id,
             coupleID: coupleID,

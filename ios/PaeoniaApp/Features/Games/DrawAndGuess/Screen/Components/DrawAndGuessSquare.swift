@@ -70,6 +70,7 @@ struct DrawAndGuessThumbnail: View {
     let drawing: DrawAndGuessFinalDrawing?
     var side: CGFloat = 48
     @State private var image: UIImage?
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         ZStack {
@@ -85,16 +86,16 @@ struct DrawAndGuessThumbnail: View {
         .accessibilityHidden(true)
         .task(id: drawing?.drawing.strokes.count) {
             guard let drawing else { return }
-            image = Self.render(drawing.drawing, side: side)
+            image = Self.render(drawing.drawing, side: side, displayScale: displayScale)
         }
     }
 
-    private static func render(_ drawing: PKDrawing, side: CGFloat) -> UIImage {
+    private static func render(_ drawing: PKDrawing, side: CGFloat, displayScale: CGFloat) -> UIImage {
         let canonical = DrawAndGuessCanvas.canonicalSide
         let bounds = CGRect(x: 0, y: 0, width: canonical, height: canonical)
         var image = UIImage()
         UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-            image = drawing.image(from: bounds, scale: UIScreen.main.scale * side / canonical)
+            image = drawing.image(from: bounds, scale: displayScale * side / canonical)
         }
         return image
     }

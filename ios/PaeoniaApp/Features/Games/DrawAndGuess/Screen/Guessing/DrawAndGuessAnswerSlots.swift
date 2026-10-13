@@ -21,11 +21,12 @@ struct DrawAndGuessAnswerSlots: View {
     }
 
     var body: some View {
+        let sizing = sizing
         DrawAndGuessFlowLayout(spacing: PaeoniaSpacing.space16, lineSpacing: PaeoniaSpacing.space12) {
-            ForEach(words) { word in
+            ForEach(pieces(sizing)) { piece in
                 HStack(spacing: Self.slotGap) {
-                    ForEach(word.slots) { slot in
-                        slotView(slot)
+                    ForEach(piece.slots) { slot in
+                        slotView(slot, width: sizing.slotWidth)
                     }
                 }
             }
@@ -68,19 +69,38 @@ struct DrawAndGuessAnswerSlots: View {
         viewModel.slots.slots.count { !$0.isGap }
     }
 
-    /// Wide enough to fill the row, but never smaller than 24 or bigger than 44.
-    private var slotWidth: CGFloat {
-        let wordCount = max(words.count, 1)
-        let gaps = Self.slotGap * CGFloat(letterCount - wordCount) + PaeoniaSpacing.space16 * CGFloat(wordCount - 1)
-        let width = (availableWidth - gaps) / CGFloat(max(letterCount, 1))
-        return min(44, max(24, width.rounded(.down)))
+    /// Between 28 and 44 points wide, with a long word split over lines so no slot
+    /// leaves the screen.
+    private var sizing: DrawAndGuessSlotSizing.Layout {
+        DrawAndGuessSlotSizing.layout(
+            wordLengths: words.map(\.slots.count),
+            availableWidth: availableWidth,
+            gap: Self.slotGap,
+            wordSpacing: PaeoniaSpacing.space16
+        )
+    }
+
+    /// The words cut into the pieces the sizing chose.
+    private func pieces(_ sizing: DrawAndGuessSlotSizing.Layout) -> [Word] {
+        var remaining = sizing.pieces[...]
+        return words.flatMap { word in
+            var slots = word.slots[...]
+            var result: [Word] = []
+            while !slots.isEmpty, let count = remaining.popFirst() {
+                let piece = Array(slots.prefix(count))
+                result.append(Word(id: piece[0].id, slots: piece))
+                slots = slots.dropFirst(count)
+            }
+            return result
+        }
     }
 
     // MARK: Slots
 
-    private func slotView(_ slot: DrawAndGuessSlots.Slot) -> some View {
+    private func slotView(_ slot: DrawAndGuessSlots.Slot, width slotWidth: CGFloat) -> some View {
         let number = number(of: slot)
         let isLit = isRevealed && timeline.litLetters >= number
+        let letter = viewModel.slots.shownLetter(at: slot.id, isRevealed: isRevealed, isLit: isLit)
         let fill: Color = isLit && litsGreen ? .paeoniaSuccess : .paeoniaSurfacePrimary
         let textColor: Color = isLit && litsGreen ? .paeoniaTextInverse : .paeoniaTextPrimary
         return Button {
@@ -89,11 +109,11 @@ struct DrawAndGuessAnswerSlots: View {
             viewModel.removeTile(atSlot: slot.id)
         } label: {
             ZStack {
-                if let tile = slot.tile {
-                    DrawAndGuessTileFace(letter: tile.letter, fill: fill, textColor: textColor)
+                if let tile = slot.tile, let letter {
+                    DrawAndGuessTileFace(letter: letter, fill: fill, textColor: textColor)
                         .frame(width: slotWidth, height: Self.slotHeight)
                         .modifier(DrawAndGuessTileFlight(id: tile.id, namespace: namespace))
-                } else if isLit, let letter = answerLetter(slot) {
+                } else if let letter {
                     DrawAndGuessTileFace(letter: letter, fill: fill, textColor: textColor)
                         .frame(width: slotWidth, height: Self.slotHeight)
                 } else {
@@ -112,7 +132,7 @@ struct DrawAndGuessAnswerSlots: View {
         }
         .buttonStyle(.plain)
         .allowsHitTesting(!isRevealed)
-        .accessibilityLabel(Text(slotLabel(slot, number: number)))
+        .accessibilityLabel(Text(slotLabel(letter: letter, number: number)))
         .accessibilityHint(slot.tile == nil || isRevealed ? Text(verbatim: "") : Text(.gamesDrawAndGuessSlotRemoveHint))
         .accessibilityRotorEntry(id: slot.id, in: rotorNamespace)
     }
@@ -138,19 +158,9 @@ struct DrawAndGuessAnswerSlots: View {
         viewModel.slots.slots.prefix(slot.id + 1).count { !$0.isGap }
     }
 
-    private func answerLetter(_ slot: DrawAndGuessSlots.Slot) -> Character? {
-        let answer = Array(viewModel.slots.answer)
-        return answer.indices.contains(slot.id) ? answer[slot.id] : nil
-    }
-
-    private func slotLabel(_ slot: DrawAndGuessSlots.Slot, number: Int) -> LocalizedStringResource {
-        if let tile = slot.tile {
-            return .gamesDrawAndGuessSlotFilled(number, String(tile.letter))
-        }
-        if isRevealed, let letter = answerLetter(slot) {
-            return .gamesDrawAndGuessSlotFilled(number, String(letter))
-        }
-        return .gamesDrawAndGuessSlotEmpty(number)
+    private func slotLabel(letter: Character?, number: Int) -> LocalizedStringResource {
+        guard let letter else { return .gamesDrawAndGuessSlotEmpty(number) }
+        return .gamesDrawAndGuessSlotFilled(number, String(letter))
     }
 
     /// "Answer, 2 words, 3 and 5 letters".

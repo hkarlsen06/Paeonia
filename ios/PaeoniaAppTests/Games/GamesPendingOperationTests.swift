@@ -8,6 +8,13 @@ import Testing
 struct GamesPendingOperationTests {
     private let environment = GamesTestEnvironment(state: nil)
 
+    init() {
+        // The server answers the read that follows each move it takes.
+        environment.gateway.setStateToLoad(
+            GameFixture.state(settings: GameFixture.settings(), game: GameFixture.game(state: .guessing, turn: GameFixture.me))
+        )
+    }
+
     private func pick(roundID: UUID = GameFixture.roundID) -> GamePickWordPayload {
         GamePickWordPayload(
             gameID: GameFixture.gameID,
@@ -157,7 +164,7 @@ struct GamesPendingOperationTests {
     }
 
     @Test func aRefusedDrawingGoesBackOnTheCanvasAsADraft() async throws {
-        environment.gateway.setSubmitError(.server(code: "23514", message: "game drawing asset is not usable"))
+        environment.gateway.setSubmitError(.server(code: "42501", message: "only the drawer can send the drawing"))
 
         let result = try await drawingHandler().send(
             try snapshot(.submitGameDrawing, drawing()),

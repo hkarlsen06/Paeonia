@@ -18,12 +18,95 @@ nonisolated enum GameServerRejection {
         }
     }
 
+    /// How many times the server may refuse a write for a reason this phone does
+    /// not know before the write is dropped. Such a refusal can be a server
+    /// that has not learned the request yet, so a few tries come first.
+    static let unexplainedRefusalLimit = 3
+
+    /// The server answered, and the answer is not one a retry can change.
+    /// Offline and sign-in problems are not in this group: they come back as
+    /// other errors or as `42501` and `55P03`, which keep retrying.
+    static func isUnexplained(_ error: PaeoniaConvexError) -> Bool {
+        guard case let .server(code, _) = error else { return false }
+        return code != "42501" && code != "55P03" && !isPermanent(error) && !isAlreadyDone(error)
+    }
+
+    /// Whether to drop the write now: a permanent refusal, or the
+    /// `unexplainedRefusalLimit`th unexplained one. Only unexplained refusals
+    /// count, kept in `cache`, so offline tries and waits behind an earlier move
+    /// never use up the tries.
+    static func shouldDrop(
+        _ error: PaeoniaConvexError,
+        of operation: PendingSyncOperationSnapshot,
+        cache: any GamesCaching
+    ) async -> Bool {
+        if isPermanent(error) { return true }
+        guard isUnexplained(error) else { return false }
+        let refusals = await cache.recordUnexplainedRefusal(
+            operationID: operation.operation.id,
+            ownerUserID: operation.ownerUserID
+        )
+        return refusals >= unexplainedRefusalLimit
+    }
+
     /// `23505`: the server already has this exact write.
     static func isAlreadyDone(_ error: PaeoniaConvexError) -> Bool {
         guard case let .server(code, _) = error else { return false }
         return code == "23505"
     }
+
+    /// The upload reserved for a drawing or a memory photo is gone, so replaying
+    /// its reservation can never work. The server deletes an upload nothing used
+    /// within a week, which happens when the phone stays offline that long after
+    /// uploading.
+    static func isUploadGone(_ error: PaeoniaConvexError) -> Bool {
+        guard case let .server(code, message) = error else { return false }
+        return (code == "42501" && message.contains("media upload reservation is not available"))
+            || (code == "23514" && message.contains("game drawing asset is not usable"))
+            || (code == "23514" && message.contains("memory media asset is not usable"))
+    }
+
+    /// A fresh upload is a week from being deleted, so an upload renewed this
+    /// recently that is gone again points at another problem. It is not renewed
+    /// again, which keeps a loop of new uploads from starting.
+    static let renewalCooldown: TimeInterval = 24 * 60 * 60
+
+    static func mayRenewUpload(renewedAt: Date?) -> Bool {
+        guard let renewedAt else { return true }
+        return Date().timeIntervalSince(renewedAt) > renewalCooldown
+    }
 }
+
+/// The server took a move. Reads the server's state before the move leaves the
+/// queue, so the screen keeps showing the move while the live feed catches up
+/// instead of falling back to the state from before it. When the read fails,
+/// the move stays in the queue: leaving it would put the old state back on
+/// screen, such as the word choice again after a pick, and invite the same move
+/// twice. The next try replays the move, which the server answers from its
+/// record of the operation, and reads again.
+///
+/// That next try comes after a few seconds instead of the usual minute, so the
+/// screen stops saying "Saved on this phone" soon after the network is fine.
+/// The wait grows with each try. A phone that went offline fails on the replay
+/// itself, which then waits the usual time, so this never loops fast offline.
+func readStateAfterAcceptedMove(
+    _ operation: PendingSyncOperationSnapshot,
+    gateway: any GamesGateway,
+    cache: any GamesCaching
+) async -> PendingSyncOperationSendResult {
+    do {
+        _ = try await cache.fetchState(from: gateway, ownerUserID: operation.ownerUserID)
+        return .succeeded
+    } catch {
+        return .retry(after: readAfterMoveRetryPolicy.nextRetryDate(
+            attemptNumber: operation.attemptCount + 1,
+            now: Date()
+        ))
+    }
+}
+
+/// 2, 4, 8, then 15 seconds between reads after a move the server took.
+nonisolated let readAfterMoveRetryPolicy = PendingSyncOperationRetryPolicy(baseDelaySeconds: 2, maximumDelaySeconds: 15)
 
 // MARK: - Pick a word
 
@@ -62,10 +145,12 @@ struct PickDrawWordPendingOperationHandler: PendingSyncOperationHandling {
 
         do {
             _ = try await gateway.pickWord(payload, operation: operation.operation)
-            return .succeeded
-        } catch let error as PaeoniaConvexError where GameServerRejection.isAlreadyDone(error) {
-            return .succeeded
-        } catch let error as PaeoniaConvexError where GameServerRejection.isPermanent(error) {
+            return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
+        } catch let error as PaeoniaConvexError {
+            if GameServerRejection.isAlreadyDone(error) {
+                return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
+            }
+            guard await GameServerRejection.shouldDrop(error, of: operation, cache: cache) else { throw error }
             let keptDrawing = try await keepDrawing(of: payload.roundID, owner: operation.ownerUserID, context: context)
             await cache.recordNotice(
                 keptDrawing ? .wordRejectedDrawingKept : .wordRejected,
@@ -168,22 +253,67 @@ struct SubmitGameDrawingPendingOperationHandler: PendingSyncOperationHandling {
                 reserveOperation: payload.reserveOperation,
                 finalizeOperation: payload.finalizeOperation
             )
+            // Kept as the server's copy, so the drawer's own result never has to
+            // download it, also after a relaunch while offline.
+            drawingStore.saveDownloadedDrawing(payload.drawingData, mediaAssetID: assetID)
             _ = try await gateway.submitDrawing(
                 roundID: payload.roundID,
                 mediaAssetID: assetID,
                 operation: operation.operation
             )
-            return .succeeded
-        } catch let error as PaeoniaConvexError where GameServerRejection.isAlreadyDone(error) {
-            // The server already has a drawing for this round.
-            return .succeeded
-        } catch let error as PaeoniaConvexError where GameServerRejection.isPermanent(error) {
+            return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
+        } catch let error as PaeoniaConvexError {
+            if GameServerRejection.isAlreadyDone(error) {
+                // The server already has a drawing for this round.
+                return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
+            }
+            if GameServerRejection.isUploadGone(error), GameServerRejection.mayRenewUpload(renewedAt: payload.renewedAt) {
+                return try await sendWithNewUpload(payload, replacing: operation, context: context)
+            }
+            guard await GameServerRejection.shouldDrop(error, of: operation, cache: cache) else { throw error }
             // Nothing the person drew is lost: it goes back on the canvas.
             drawingStore.saveDraft(payload.drawingData, ownerUserID: operation.ownerUserID, roundID: payload.roundID)
             await cache.recordNotice(.drawingRejected, ownerUserID: operation.ownerUserID)
             LocalStoreChanges.post(.games, ownerUserID: operation.ownerUserID)
             return .terminalFailure(error.description)
         }
+    }
+
+    /// Queues the same drawing with new upload operations, so the kept bytes
+    /// upload again, and retires this write. The new one is saved first, so the
+    /// drawing is never only in a write that stopped.
+    private func sendWithNewUpload(
+        _ payload: GameSubmitDrawingPayload,
+        replacing operation: PendingSyncOperationSnapshot,
+        context: SyncContext
+    ) async throws -> PendingSyncOperationSendResult {
+        func renewed(_ old: SyncClientOperation) -> SyncClientOperation {
+            SyncClientOperation(clientID: old.clientID, clientSequence: old.clientSequence)
+        }
+        var renewedPayload = GameSubmitDrawingPayload(
+            gameID: payload.gameID,
+            roundID: payload.roundID,
+            coupleID: payload.coupleID,
+            drawingData: payload.drawingData,
+            reserveOperation: renewed(payload.reserveOperation),
+            finalizeOperation: renewed(payload.finalizeOperation)
+        )
+        renewedPayload.renewedAt = Date()
+        try await context.pendingOperationStore.enqueue(
+            PendingSyncOperationRequest(
+                ownerUserID: operation.ownerUserID,
+                // Same place in the order as the write it replaces.
+                operation: SyncClientOperation(
+                    clientID: operation.operation.clientID,
+                    clientSequence: operation.operation.clientSequence,
+                    localCreatedAt: operation.operation.localCreatedAt
+                ),
+                operationKind: .submitGameDrawing,
+                idempotencyScope: operation.idempotencyScope,
+                requestData: try JSONEncoder().encode(renewedPayload)
+            )
+        )
+        return .terminalFailure("The upload expired. The drawing was queued again with a new upload.")
     }
 
     private func isWaitingForPick(of roundID: UUID, owner: UUID, context: SyncContext) async throws -> Bool {
@@ -202,7 +332,7 @@ struct SubmitGameDrawingPendingOperationHandler: PendingSyncOperationHandling {
 /// Guesses and give ups of one round go in the order they were made. A wrong
 /// guess that has not landed yet would otherwise be refused after the correct
 /// one ended the round, and the drawer would never see it.
-private func hasEarlierMove(
+func hasEarlierGameMove(
     in roundID: UUID,
     before operation: PendingSyncOperationSnapshot,
     context: SyncContext
@@ -228,13 +358,28 @@ private func hasEarlierMove(
     return false
 }
 
+/// A refusal because the round already ended needs no notice, because the
+/// reveal shows how it ended. Any other refusal drops the move, so the person
+/// hears about it and can guess or give up again.
+private func tellAboutRefusal(
+    _ error: PaeoniaConvexError,
+    of operation: PendingSyncOperationSnapshot,
+    in cache: any GamesCaching
+) async {
+    guard !GameServerRejection.isPermanent(error) else { return }
+    await cache.recordNotice(.moveRejected, ownerUserID: operation.ownerUserID)
+    LocalStoreChanges.post(.games, ownerUserID: operation.ownerUserID)
+}
+
 struct SubmitGameGuessPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .submitGameGuess
 
     private let gateway: any GamesGateway
+    private let cache: any GamesCaching
 
-    init(gateway: any GamesGateway) {
+    init(gateway: any GamesGateway, cache: any GamesCaching) {
         self.gateway = gateway
+        self.cache = cache
     }
 
     func send(
@@ -246,7 +391,7 @@ struct SubmitGameGuessPendingOperationHandler: PendingSyncOperationHandling {
         else {
             return .terminalFailure("Missing guess payload")
         }
-        if try await hasEarlierMove(in: payload.roundID, before: operation, context: context) {
+        if try await hasEarlierGameMove(in: payload.roundID, before: operation, context: context) {
             return .retry(after: nil)
         }
         do {
@@ -257,11 +402,13 @@ struct SubmitGameGuessPendingOperationHandler: PendingSyncOperationHandling {
                 solveMs: payload.solveMs,
                 operation: operation.operation
             )
-            return .succeeded
-        } catch let error as PaeoniaConvexError where GameServerRejection.isAlreadyDone(error) {
-            return .succeeded
-        } catch let error as PaeoniaConvexError where GameServerRejection.isPermanent(error) {
-            // The round ended before this guess arrived. The reveal shows how it ended.
+            return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
+        } catch let error as PaeoniaConvexError {
+            if GameServerRejection.isAlreadyDone(error) {
+                return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
+            }
+            guard await GameServerRejection.shouldDrop(error, of: operation, cache: cache) else { throw error }
+            await tellAboutRefusal(error, of: operation, in: cache)
             return .terminalFailure(error.description)
         }
     }
@@ -271,9 +418,11 @@ struct GiveUpGameRoundPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .giveUpGameRound
 
     private let gateway: any GamesGateway
+    private let cache: any GamesCaching
 
-    init(gateway: any GamesGateway) {
+    init(gateway: any GamesGateway, cache: any GamesCaching) {
         self.gateway = gateway
+        self.cache = cache
     }
 
     func send(
@@ -285,78 +434,18 @@ struct GiveUpGameRoundPendingOperationHandler: PendingSyncOperationHandling {
         else {
             return .terminalFailure("Missing give up payload")
         }
-        if try await hasEarlierMove(in: payload.roundID, before: operation, context: context) {
+        if try await hasEarlierGameMove(in: payload.roundID, before: operation, context: context) {
             return .retry(after: nil)
         }
         do {
             _ = try await gateway.giveUp(roundID: payload.roundID, operation: operation.operation)
-            return .succeeded
-        } catch let error as PaeoniaConvexError where GameServerRejection.isAlreadyDone(error) {
-            return .succeeded
-        } catch let error as PaeoniaConvexError where GameServerRejection.isPermanent(error) {
-            return .terminalFailure(error.description)
-        }
-    }
-}
-
-// MARK: - Save to Memories
-
-/// Uploads the rendered drawing as memory media, then asks the server to save
-/// the round. When the partner saved first, the server returns their memory and
-/// queues this image for deletion.
-struct SaveGameRoundPendingOperationHandler: PendingSyncOperationHandling {
-    nonisolated let operationKind: SyncPendingOperationKind = .saveGameRoundToMemories
-
-    private let gateway: any GamesGateway
-    private let mediaUploader: any MemoryMediaUploading
-    private let cache: any GamesCaching
-
-    init(gateway: any GamesGateway, mediaUploader: any MemoryMediaUploading, cache: any GamesCaching) {
-        self.gateway = gateway
-        self.mediaUploader = mediaUploader
-        self.cache = cache
-    }
-
-    func send(
-        _ operation: PendingSyncOperationSnapshot,
-        context _: SyncContext
-    ) async throws -> PendingSyncOperationSendResult {
-        guard let data = operation.requestData,
-              let payload = try? JSONDecoder().decode(GameSaveRoundPayload.self, from: data)
-        else {
-            return .terminalFailure("Missing save payload")
-        }
-        // The server refuses an image without its size.
-        guard let size = DrawAndGuessImageRenderer.pixelSize(of: payload.imageData) else {
-            await cache.recordNotice(.saveRejected, ownerUserID: operation.ownerUserID)
-            LocalStoreChanges.post(.games, ownerUserID: operation.ownerUserID)
-            return .terminalFailure("The image could not be read")
-        }
-        do {
-            let upload = try await mediaUploader.uploadMedia(
-                MemoryUploadMedia(
-                    data: payload.imageData,
-                    purpose: .photo,
-                    mimeType: DrawAndGuessImageRenderer.mimeType,
-                    fileExtension: DrawAndGuessImageRenderer.fileExtension,
-                    width: size.width,
-                    height: size.height
-                ),
-                memoryMediaID: payload.memoryMediaID,
-                coupleID: payload.coupleID,
-                reserveOperation: payload.reserveOperation,
-                finalizeOperation: payload.finalizeOperation
-            )
-            _ = try await gateway.saveRoundToMemories(
-                roundID: payload.roundID,
-                memoryID: payload.memoryID,
-                mediaAssetID: upload.mediaAssetID,
-                memoryDate: payload.memoryDate
-            )
-            return .succeeded
-        } catch let error as PaeoniaConvexError where GameServerRejection.isPermanent(error) {
-            await cache.recordNotice(.saveRejected, ownerUserID: operation.ownerUserID)
-            LocalStoreChanges.post(.games, ownerUserID: operation.ownerUserID)
+            return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
+        } catch let error as PaeoniaConvexError {
+            if GameServerRejection.isAlreadyDone(error) {
+                return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
+            }
+            guard await GameServerRejection.shouldDrop(error, of: operation, cache: cache) else { throw error }
+            await tellAboutRefusal(error, of: operation, in: cache)
             return .terminalFailure(error.description)
         }
     }

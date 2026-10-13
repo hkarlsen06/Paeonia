@@ -25,6 +25,13 @@ struct GamesHandlerFixTests {
     private let environment = GamesTestEnvironment(state: nil)
     private let clientID = UUID()
 
+    init() {
+        // The server answers the read that follows each move it takes.
+        environment.gateway.setStateToLoad(
+            GameFixture.state(settings: GameFixture.settings(), game: GameFixture.game(state: .guessing, turn: GameFixture.me))
+        )
+    }
+
     private func operation(_ sequence: Int64) -> SyncClientOperation {
         SyncClientOperation(clientID: clientID, clientSequence: sequence, localCreatedAt: GameFixture.now)
     }
@@ -97,7 +104,9 @@ struct GamesHandlerFixTests {
         let handler = SaveGameRoundPendingOperationHandler(
             gateway: environment.gateway,
             mediaUploader: uploader,
-            cache: environment.cache
+            cache: environment.cache,
+            transfer: environment.transfer,
+            drawingStore: environment.drawingStore
         )
 
         let result = try await handler.send(
@@ -133,14 +142,20 @@ struct GamesHandlerFixTests {
             store.saveDraft(Data([1]), ownerUserID: GameFixture.me, roundID: GameFixture.roundID)
             store.saveRescuedDrawing(Data([2]), ownerUserID: GameFixture.me)
             store.saveDownloadedDrawing(Data([3]), mediaAssetID: asset)
+            store.saveLiveSnapshot(Data([4]), ownerUserID: GameFixture.me, roundID: GameFixture.roundID)
         }
 
+        // A person keeps one live snapshot. A newer round's replaces it.
+        store.saveLiveSnapshot(Data([5]), ownerUserID: GameFixture.me, roundID: GameFixture.nextRoundID)
         fill()
+        #expect(store.liveSnapshot(ownerUserID: GameFixture.me, roundID: GameFixture.nextRoundID) == nil)
+        #expect(store.liveSnapshot(ownerUserID: GameFixture.me, roundID: GameFixture.roundID) == Data([4]))
         store.purge(for: .relationshipAccessHidden)
 
         #expect(store.draft(ownerUserID: GameFixture.me, roundID: GameFixture.roundID) == Data([1]))
         #expect(store.rescuedDrawing(ownerUserID: GameFixture.me) == Data([2]))
         #expect(store.downloadedDrawing(mediaAssetID: asset) == nil)
+        #expect(store.liveSnapshot(ownerUserID: GameFixture.me, roundID: GameFixture.roundID) == nil)
 
         // Signing out and a permanent loss remove everything.
         for scope in [LocalPrivacyPurgeScope.departingUser, .relationshipContentPurged(clearAccessSnapshot: true)] {
@@ -149,6 +164,7 @@ struct GamesHandlerFixTests {
             #expect(store.draft(ownerUserID: GameFixture.me, roundID: GameFixture.roundID) == nil)
             #expect(store.rescuedDrawing(ownerUserID: GameFixture.me) == nil)
             #expect(store.downloadedDrawing(mediaAssetID: asset) == nil)
+            #expect(store.liveSnapshot(ownerUserID: GameFixture.me, roundID: GameFixture.roundID) == nil)
         }
     }
 
@@ -199,7 +215,7 @@ struct GamesHandlerFixTests {
     // MARK: Guess order
 
     private func guessHandler() -> SubmitGameGuessPendingOperationHandler {
-        SubmitGameGuessPendingOperationHandler(gateway: environment.gateway)
+        SubmitGameGuessPendingOperationHandler(gateway: environment.gateway, cache: environment.cache)
     }
 
     @Test func aGuessWaitsForTheEarlierGuessOfTheSameRound() async throws {
@@ -228,7 +244,7 @@ struct GamesHandlerFixTests {
         let earlier = guess("cat")
         try await enqueue(.submitGameGuess, earlier, operation(1))
         let giveUp = GameGiveUpPayload(roundID: GameFixture.roundID, createdAt: GameFixture.now)
-        let giveUpHandler = GiveUpGameRoundPendingOperationHandler(gateway: environment.gateway)
+        let giveUpHandler = GiveUpGameRoundPendingOperationHandler(gateway: environment.gateway, cache: environment.cache)
         let context = syncContext(environment.pending)
 
         let waiting = try await giveUpHandler.send(
@@ -259,10 +275,10 @@ struct GamesHandlerFixTests {
             game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil)
         )
 
-        let revision = await cache.stateRevision(ownerUserID: GameFixture.me)
+        let ticket = await cache.beginFetch()
         // The live feed writes while the one-shot read is on its way.
         await cache.saveState(newer, ownerUserID: GameFixture.me)
-        let saved = await cache.saveFetchedState(older, ownerUserID: GameFixture.me, ifRevision: revision)
+        let saved = await cache.saveFetchedState(older, ownerUserID: GameFixture.me, ticket: ticket)
 
         #expect(!saved)
         #expect(await cache.document(ownerUserID: GameFixture.me).state == newer)

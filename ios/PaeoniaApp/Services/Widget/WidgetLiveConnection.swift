@@ -8,9 +8,10 @@ nonisolated struct WidgetLiveTicket: Decodable, Sendable {
 
 /// Keeps one socket open to the live drawing relay while the canvas is on
 /// screen. After a drop it waits (1 s doubling to 30 s) and connects again with
-/// a fresh ticket, so Convex checks access on every connect.
+/// a fresh ticket, so Convex checks access on every connect. Not final, so the
+/// two-phone simulation tests can stand in a fake relay for the socket.
 @MainActor
-final class WidgetLiveConnection {
+class WidgetLiveConnection {
     typealias TicketProvider = @Sendable (UUID) async throws -> WidgetLiveTicket?
 
     nonisolated static let defaultTicketProvider: TicketProvider = { coupleID in

@@ -260,6 +260,7 @@ final class PaeoniaAppUITests: XCTestCase {
         "draw-reveal-missed",
         "draw-reveal-as-drawer",
         "draw-reveal-partner-drawing",
+        "draw-reveal-loading",
         "widget-drawing",
         "widget-history-empty",
         "widget-history-populated",

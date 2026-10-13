@@ -78,6 +78,17 @@ nonisolated struct DrawAndGuessSlots: Equatable, Sendable {
         return tile
     }
 
+    /// The letter a slot shows. Once the round has ended it is the answer's letter,
+    /// also in a slot that holds a wrong tile, so "Show me" never shows a wrong word.
+    /// - Parameter isLit: The reveal reached this slot, so an empty slot fills in.
+    func shownLetter(at index: Int, isRevealed: Bool, isLit: Bool) -> Character? {
+        guard slots.indices.contains(index), !slots[index].isGap else { return nil }
+        guard isRevealed else { return slots[index].tile?.letter }
+        guard slots[index].tile != nil || isLit else { return nil }
+        let letters = Array(answer)
+        return letters.indices.contains(index) ? letters[index] : nil
+    }
+
     /// Returns every tile.
     mutating func clear() {
         for index in slots.indices {

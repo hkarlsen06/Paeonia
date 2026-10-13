@@ -132,4 +132,15 @@ struct DrawAndGuessSlotsTests {
         #expect(slots.status == .correct)
         #expect(slots.filledWord == "AB CD")
     }
+
+    @Test func aRevealedSlotShowsTheAnswerNotAWrongTile() {
+        var slots = DrawAndGuessSlots(answer: "cat")
+        slots.place(tile(0, "T"))
+
+        #expect(slots.shownLetter(at: 0, isRevealed: false, isLit: false) == "T")
+        #expect(slots.shownLetter(at: 0, isRevealed: true, isLit: false) == "C")
+        // An empty slot fills in only when the reveal reaches it.
+        #expect(slots.shownLetter(at: 1, isRevealed: true, isLit: false) == nil)
+        #expect(slots.shownLetter(at: 1, isRevealed: true, isLit: true) == "A")
+    }
 }

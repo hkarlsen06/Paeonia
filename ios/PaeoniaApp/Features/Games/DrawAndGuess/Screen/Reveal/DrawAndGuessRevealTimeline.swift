@@ -107,6 +107,29 @@ final class DrawAndGuessRevealTimeline {
         applySettledState(plan)
     }
 
+    /// Clears the reveal and stops its run, so the same round can be played
+    /// again. The round goes back to guessing when the server refused the
+    /// correct guess three times, and the tiles and buttons have to come back.
+    func reset() {
+        cancelRun()
+        plan = nil
+        finalDrawingShown = false
+        litLetters = 0
+        rippleIndex = nil
+        bloomStart = nil
+        glow = 0
+        gridCollapsed = false
+        canvasShrunk = false
+        titleShown = false
+        buttonShown = false
+        panelShown = false
+        scoreCounting = false
+        speedBonusShown = false
+        saveShown = false
+        isSettled = false
+        wasSkipped = false
+    }
+
     // MARK: Script
 
     /// The beats of a reveal in order. Pure, so tests read the script itself.

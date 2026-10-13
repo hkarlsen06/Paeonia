@@ -93,9 +93,22 @@ nonisolated enum DrawAndGuessSentStatus: Equatable, Sendable {
     case seen
     case notSeen
 
-    /// - Parameter guesserFirstSeenAt: The server's record of the partner's first look.
-    static func make(partner: DrawAndGuessPartnerPresence, guesserFirstSeenAt: Date?) -> DrawAndGuessSentStatus {
-        if partner == .watching {
+    /// Whether the partner has the drawing is separate from whether it has left
+    /// this phone. A first look on the server or live watching shows they have it.
+    ///
+    /// - Parameters:
+    ///   - guesserFirstSeenAt: The server's record of the partner's first look.
+    ///   - isPartnerWatchingLive: The partner has this phone's whole canvas through the live room.
+    ///   - isWaitingToSend: The drawing is still on this phone, so without a first look
+    ///     or live watching the partner can't have it.
+    static func make(
+        partner: DrawAndGuessPartnerPresence,
+        guesserFirstSeenAt: Date?,
+        isPartnerWatchingLive: Bool = false,
+        isWaitingToSend: Bool = false
+    ) -> DrawAndGuessSentStatus {
+        let partnerHasIt = guesserFirstSeenAt != nil || isPartnerWatchingLive || !isWaitingToSend
+        if partner == .watching, partnerHasIt {
             return .looking
         }
         return guesserFirstSeenAt == nil ? .notSeen : .seen

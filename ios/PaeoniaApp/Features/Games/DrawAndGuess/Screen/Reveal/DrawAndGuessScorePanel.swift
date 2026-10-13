@@ -11,6 +11,9 @@ struct DrawAndGuessScorePanel: View {
     let animates: Bool
     let showsSpeedBonus: Bool
 
+    /// The server confirmed a result that was only on this phone, with a speed
+    /// bonus the reveal did not plan for. The line shows without a second celebration.
+    @State private var bonusArrivedLate = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
@@ -29,6 +32,9 @@ struct DrawAndGuessScorePanel: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .onChange(of: score) { _, _ in
+            if isCounting { bonusArrivedLate = true }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(spokenSummary))
         .accessibilityIdentifier("draw.reveal.score")
@@ -119,8 +125,8 @@ struct DrawAndGuessScorePanel: View {
         case .speedBonus:
             Text(.gamesDrawAndGuessRevealLineSpeed(line.points))
                 .foregroundStyle(Color.paeoniaInkGold)
-                .opacity(showsSpeedBonus ? 1 : 0)
-                .scaleEffect(showsSpeedBonus || !animates ? 1 : 0.8)
+                .opacity(showsSpeedBonus || bonusArrivedLate ? 1 : 0)
+                .scaleEffect(showsSpeedBonus || bonusArrivedLate || !animates ? 1 : 0.8)
         }
     }
 
@@ -165,6 +171,10 @@ struct DrawAndGuessCountingNumber: View {
                 } else {
                     shown = to
                 }
+            }
+            // The server's total replaces the one this phone guessed, without counting again.
+            .onChange(of: to) { _, newTotal in
+                if isCounting { shown = newTotal }
             }
     }
 }

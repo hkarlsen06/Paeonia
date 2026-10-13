@@ -21,7 +21,6 @@ struct DrawAndGuessScreen: View {
         .background(.paeoniaBackgroundSecondary)
         .navigationTitle(Text(.gamesDrawAndGuessName))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .tabBar)
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
@@ -70,27 +69,41 @@ struct DrawAndGuessScreen: View {
         return round.isDrawer(userID)
     }
 
+    /// The view a phase shows. The guesser's screen and the drawer's result each
+    /// keep one case across their playing and revealed phases, so SwiftUI keeps
+    /// the same view, with its measured square and scroll position, when the
+    /// result arrives.
+    private enum Screen {
+        case status, chooseWord, waiting, drawing, drawerResult, guess
+    }
+
+    private var screen: Screen {
+        switch viewModel.phase {
+        case .loading, .needsSetup, .preparing, .waitingToSync: .status
+        case .chooseWord: .chooseWord
+        case .waitingForWord, .waitingForDrawing: .waiting
+        case .drawing: .drawing
+        case .waitingForGuess: .drawerResult
+        case .watchingLive, .guessing: .guess
+        case .reveal: isDrawerOfRound ? .drawerResult : .guess
+        }
+    }
+
     @ViewBuilder
     private var phaseContent: some View {
-        switch viewModel.phase {
-        case .loading, .needsSetup, .preparing, .waitingToSync:
+        switch screen {
+        case .status:
             DrawAndGuessStatusView(viewModel: viewModel)
         case .chooseWord:
             DrawAndGuessChooseWordView(viewModel: viewModel)
-        case .waitingForWord, .waitingForDrawing:
+        case .waiting:
             DrawAndGuessWaitingView(viewModel: viewModel)
         case .drawing:
             DrawAndGuessDrawingView(viewModel: viewModel)
-        case .waitingForGuess:
+        case .drawerResult:
             DrawAndGuessDrawerResultView(viewModel: viewModel)
-        case .watchingLive, .guessing:
+        case .guess:
             DrawAndGuessGuessView(viewModel: viewModel)
-        case .reveal:
-            if isDrawerOfRound {
-                DrawAndGuessDrawerResultView(viewModel: viewModel)
-            } else {
-                DrawAndGuessGuessView(viewModel: viewModel)
-            }
         }
     }
 }

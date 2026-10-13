@@ -14370,17 +14370,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use letters only. Numbers and symbols don't fit in the puzzle."
+            "value" : "Use only the letters A to Z, Æ, Ø and Å."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bruk bare bokstaver. Tall og tegn passer ikke i gjettingen."
+            "value" : "Bruk bare bokstavene A til Z, Æ, Ø og Å."
           }
         }
       },
-      "comment" : "Shown under the own-word field when it has a number or symbol."
+      "comment" : "Shown under the own-word field when it has anything other than the letters A to Z, Æ, Ø and Å, such as a number, a symbol or an accented letter like é."
     },
     "games.drawAndGuess.choose.letterCount" : {
       "extractionState" : "manual",
@@ -15342,17 +15342,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No guesses yet. We'll tell you when %@ tries."
+            "value" : "No guesses yet. We'll tell you when %@ guesses it."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingen gjetninger ennå. Vi sier fra når %@ prøver."
+            "value" : "Ingen gjetninger ennå. Vi sier fra når %@ gjetter riktig."
           }
         }
       },
-      "comment" : "Shown before the partner has guessed. %@ is the partner's name."
+      "comment" : "Shown to the drawer before the partner has guessed. A notification comes only for the right guess. %@ is the partner's name."
     },
     "games.drawAndGuess.result.gotIt" : {
       "extractionState" : "manual",
@@ -15366,7 +15366,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ fikk den!"
+            "value" : "%@ gjettet riktig!"
           }
         }
       },
@@ -15743,6 +15743,96 @@
         }
       },
       "comment" : "Button on the result screen once the partner has started drawing the next round"
+    },
+    "games.notice.moveRejected.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your move wasn't sent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trekket ditt ble ikke sendt"
+          }
+        }
+      },
+      "comment" : "Banner title when a guess or give up was refused for good and dropped"
+    },
+    "games.notice.moveRejected.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong on our end. Your round is still open, so try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt hos oss. Runden din er fortsatt åpen, så prøv igjen."
+          }
+        }
+      },
+      "comment" : "Banner message when a guess or give up was refused for good. The round is still open."
+    },
+    "games.drawAndGuess.waitingToSync.failedTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't send your move yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke sendt trekket ditt ennå"
+          }
+        }
+      },
+      "comment" : "Title when the player's last move cannot be sent yet and the phone is online"
+    },
+    "games.drawAndGuess.waitingToSync.failedMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll keep trying. You can also try again now."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi prøver på nytt. Du kan også prøve igjen nå."
+          }
+        }
+      },
+      "comment" : "Second line under the title when the last move could not be sent for a reason other than being offline"
+    },
+    "games.drawAndGuess.drawingLoading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading the drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laster inn tegningen"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the spinner shown in the square while the drawing is still downloading."
     }
   },
   "version" : "1.0"

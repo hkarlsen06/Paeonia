@@ -7,6 +7,9 @@ nonisolated protocol GamesGateway: Sendable {
     func ensureDrawAndGuessGame() async throws -> RemoteEnsureGameResult
     /// One-shot read of what the live feed follows.
     func loadDrawAndGuess() async throws -> RemoteDrawAndGuessState
+    /// One round by id, also one that is no longer among the recent rounds. Nil
+    /// when the couple has no such round.
+    func loadDrawAndGuessRound(roundID: UUID) async throws -> RemoteDrawAndGuessRound?
 
     func pickWord(_ pick: GamePickWordPayload, operation: SyncClientOperation) async throws -> RemotePickedWord
     func submitDrawing(
@@ -58,6 +61,10 @@ nonisolated struct LiveGamesGateway: GamesGateway {
 
     func loadDrawAndGuess() async throws -> RemoteDrawAndGuessState {
         try await client.query("games:get_draw_and_guess")
+    }
+
+    func loadDrawAndGuessRound(roundID: UUID) async throws -> RemoteDrawAndGuessRound? {
+        try await client.query("games:get_draw_and_guess_round", args: RoundRequest(roundID: roundID))
     }
 
     func pickWord(_ pick: GamePickWordPayload, operation: SyncClientOperation) async throws -> RemotePickedWord {

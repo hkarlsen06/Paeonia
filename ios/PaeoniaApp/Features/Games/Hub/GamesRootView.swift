@@ -14,6 +14,9 @@ struct GamesRootView: View {
         NavigationStack(path: $path) {
             content
                 .background(.paeoniaBackgroundPrimary)
+                // Hide the tab bar from the stack root, in the same update as the push. Hiding
+                // it from the pushed screen shifts the content and brings the bar back late.
+                .toolbar(path.isEmpty ? .automatic : .hidden, for: .tabBar)
                 .navigationDestination(for: GamesDestination.self) { destination in
                     switch destination {
                     case .drawAndGuess:

@@ -91,7 +91,12 @@ nonisolated struct DrawAndGuessResolver: Sendable {
         if let round, !round.isFinished {
             // The partner may have solved the last round and started the next one while
             // this person was away. That result comes first.
-            if let unseen = unseenResult(state: state, newerRoundID: round.id, acknowledged: acknowledgedRoundIDs) {
+            if let unseen = unseenResult(
+                state: state,
+                newerRoundID: round.id,
+                acknowledged: acknowledgedRoundIDs,
+                pending: pending
+            ) {
                 return DrawAndGuessResolution(phase: .reveal, round: unseen, isWaitingToSend: waiting)
             }
             let phase = activePhase(round: round, isPartnerDrawingLive: isPartnerDrawingLive)
@@ -106,11 +111,13 @@ nonisolated struct DrawAndGuessResolver: Sendable {
 
     /// The latest finished round before `newerRoundID`, when this phone has not
     /// shown its result. Only the latest counts, so a fresh install shows one
-    /// result and not the whole history.
+    /// result and not the whole history. A drawing still queued for it counts as
+    /// sent, as on the current round, so the drawer's phone never sends it twice.
     private func unseenResult(
         state: RemoteDrawAndGuessState,
         newerRoundID: UUID,
-        acknowledged: Set<UUID>
+        acknowledged: Set<UUID>,
+        pending: DrawAndGuessPendingWork
     ) -> DrawAndGuessRoundView? {
         let rounds = (state.currentRound.map { [$0] } ?? []) + state.recentRounds
         guard let latest = rounds.first(where: { $0.id != newerRoundID && $0.state.isFinished }),
@@ -118,7 +125,11 @@ nonisolated struct DrawAndGuessResolver: Sendable {
         else {
             return nil
         }
-        return DrawAndGuessRoundView(latest)
+        var round = DrawAndGuessRoundView(latest)
+        if pending.hasDrawing(roundID: round.id) {
+            round.isDrawingSent = true
+        }
+        return round
     }
 
     private func phaseBetweenRounds(_ game: RemoteDrawAndGuessGame) -> DrawAndGuessPhase {

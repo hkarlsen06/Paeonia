@@ -41,10 +41,19 @@ struct DrawAndGuessStatusView: View {
             }
         case .waitingToSync:
             PaeoniaEmptyStateView(
-                title: .gamesPendingSavedOnPhone,
-                message: .gamesDrawAndGuessWaitingToSyncMessage,
-                systemImage: "clock"
-            )
+                title: viewModel.isSendFailing ? .gamesDrawAndGuessWaitingToSyncFailedTitle : .gamesPendingSavedOnPhone,
+                message: viewModel.isSendFailing
+                    ? .gamesDrawAndGuessWaitingToSyncFailedMessage
+                    : .gamesDrawAndGuessWaitingToSyncMessage,
+                systemImage: viewModel.isSendFailing ? "exclamationmark.triangle" : "clock"
+            ) {
+                Button {
+                    Task { await viewModel.retrySending() }
+                } label: {
+                    Text(.commonTryAgain)
+                }
+                .buttonStyle(PaeoniaSecondaryButtonStyle())
+            }
         default:
             ProgressView()
                 .tint(.paeoniaAccentPrimary)

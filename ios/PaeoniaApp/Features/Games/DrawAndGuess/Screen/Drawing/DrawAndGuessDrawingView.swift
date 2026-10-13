@@ -96,7 +96,8 @@ struct DrawAndGuessDrawingView: View {
                 onCanvasReady: viewModel.canvasReady,
                 onDrawingChange: board.updateDrawing,
                 onStrokeInProgressChange: board.setStrokeInProgress,
-                onFinishRendering: board.refreshUndoRedo
+                onDrawingApplied: board.canvasDidApplyDrawing,
+                onFinishRendering: board.canvasDidFinishRendering
             )
             .task { board.canvasDidLayout(side: side) }
             .onChange(of: side) { _, newSide in board.canvasDidLayout(side: newSide) }

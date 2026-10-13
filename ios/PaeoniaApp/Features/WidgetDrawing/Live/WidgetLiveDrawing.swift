@@ -22,6 +22,13 @@ final class WidgetLiveDrawing {
     private(set) var partnerActivity: WidgetLivePresence.PartnerActivity = .away
     /// Watching only: the partner's canvas has arrived and is on screen.
     private(set) var isShowingPartnerCanvas = false
+    /// Watching only: the partner's whole canvas arrived as a snapshot since this
+    /// phone or the partner last connected, so it holds every stroke. A canvas
+    /// left over from before a drop can miss strokes even when it is not empty.
+    private(set) var isPartnerCanvasCaughtUp = false
+    /// Drawing only: the watching partner asked for this whole canvas and got it
+    /// since either phone last joined, so they see the strokes as they are drawn.
+    private(set) var hasSentCanvasToPartner = false
 
     /// Called with the canvas drawing plus the partner's latest strokes. The view
     /// model puts it on the canvas.
@@ -46,6 +53,9 @@ final class WidgetLiveDrawing {
     @ObservationIgnored private var isConnected = false
     /// Joined a room someone was already in, and waiting for their canvas.
     @ObservationIgnored private var isAwaitingRoomState = false
+    /// The partner asked for this canvas before it was on screen, such as right
+    /// after a relaunch. It goes out once the canvas is attached.
+    @ObservationIgnored private var isSnapshotOwed = false
     @ObservationIgnored private var pendingRemote: [WidgetLiveMessage] = []
     @ObservationIgnored private var retryTask: Task<Void, Never>?
     @ObservationIgnored private var outgoing: WidgetLiveOutgoingStroke?
@@ -62,6 +72,10 @@ final class WidgetLiveDrawing {
     @ObservationIgnored private var receivedKeys: Set<String> = []
     /// Strokes drawn on this phone while this screen is open.
     @ObservationIgnored private var drawnHereKeys: Set<String> = []
+    /// Strokes removed on this phone while this screen is open. A snapshot lists
+    /// them, so a partner who missed the removal while away does not send the
+    /// stroke back as their own unsent one.
+    @ObservationIgnored private var removedHereKeys: Set<String> = []
 
     init(connection: WidgetLiveConnection, role: WidgetLivePresence.Role = .drawing) {
         self.connection = connection
@@ -97,6 +111,9 @@ final class WidgetLiveDrawing {
         }
         role = newRole
         room.clear()
+        isPartnerCanvasCaughtUp = false
+        hasSentCanvasToPartner = false
+        isSnapshotOwed = false
         playback.removeAll()
         pendingRemote = []
         isAwaitingRoomState = false
@@ -122,6 +139,9 @@ final class WidgetLiveDrawing {
             self?.touchEnded(cancelled: cancelled)
         }
         canvasView.addGestureRecognizer(recognizer)
+        if isSnapshotOwed, role == .drawing, isConnected, presence.peerCount > 0 {
+            sendSnapshot()
+        }
     }
 
     // MARK: - Local changes
@@ -129,7 +149,10 @@ final class WidgetLiveDrawing {
     /// A person changed the drawing here (a stroke, the eraser, undo, or clear).
     func localDrawingDidChange(_ drawing: PKDrawing, side: CGFloat) {
         let changes = tracker.changes(to: drawing)
-        drawnHereKeys.formUnion(changes.upserts.map(WidgetLiveStrokeSync.key(for:)))
+        let upsertKeys = changes.upserts.map(WidgetLiveStrokeSync.key(for:))
+        drawnHereKeys.formUnion(upsertKeys)
+        removedHereKeys.subtract(upsertKeys)
+        removedHereKeys.formUnion(changes.removals)
         calibrate(from: changes.upserts)
         guard isConnected, presence.peerCount > 0, !changes.isEmpty else {
             return
@@ -195,6 +218,9 @@ final class WidgetLiveDrawing {
             }
         case .ops where role != .drawing:
             room.apply(message, upserts: Self.upserts(in: message, side: WidgetLiveRoom.side))
+            if message.snapshot == true {
+                isPartnerCanvasCaughtUp = true
+            }
             playback.remove(message.ended ?? [])
         case .ops:
             pendingRemote.append(message)
@@ -207,15 +233,25 @@ final class WidgetLiveDrawing {
         switch message.type {
         case .welcome:
             isConnected = true
+            isPartnerCanvasCaughtUp = false
+            hasSentCanvasToPartner = false
             presence.welcome(id: message.id, peers: message.peers ?? 0)
             isAwaitingRoomState = role == .drawing && presence.peerCount > 0
             sendHello(needsCanvas: presence.peerCount > 0)
         case .joined:
+            // The partner may be back after a drop the relay never saw, with
+            // strokes drawn while away. Their whole canvas is asked for again.
             presence.joined()
-            sendHello(needsCanvas: role == .watching && room.drawing == nil)
+            isPartnerCanvasCaughtUp = false
+            hasSentCanvasToPartner = false
+            sendHello(needsCanvas: role == .watching)
         case .hello:
             if let from = message.from, let peerRole = message.role.flatMap(WidgetLivePresence.Role.init) {
                 presence.hello(from: from, role: peerRole)
+                // The partner started drawing on a connection that was already open.
+                if role == .watching, peerRole == .drawing, !isPartnerCanvasCaughtUp {
+                    sendHello(needsCanvas: true)
+                }
             }
             if role == .drawing, message.needsCanvas == true {
                 sendSnapshot()
@@ -229,6 +265,9 @@ final class WidgetLiveDrawing {
 
     private func handleDisconnect() {
         isConnected = false
+        isSnapshotOwed = false
+        isPartnerCanvasCaughtUp = false
+        hasSentCanvasToPartner = false
         presence.reset()
         outgoing = nil
         endedLiveIDs = []
@@ -237,6 +276,9 @@ final class WidgetLiveDrawing {
 
     private func updatePresence() {
         partnerActivity = presence.partnerActivity
+        if partnerActivity != .watching {
+            hasSentCanvasToPartner = false
+        }
         if presence.peerCount == 0 {
             playback.removeAll()
             isAwaitingRoomState = false
@@ -244,6 +286,7 @@ final class WidgetLiveDrawing {
         // The partner left the canvas. The Home tab shows the widget again.
         if partnerActivity != .drawing {
             room.clear()
+            isPartnerCanvasCaughtUp = false
         }
         isShowingPartnerCanvas = room.drawing != nil
     }
@@ -257,13 +300,27 @@ final class WidgetLiveDrawing {
         ))
     }
 
+}
+
+// MARK: - Sending and applying strokes
+
+extension WidgetLiveDrawing {
     /// Someone asked for this canvas. They take it as it is, also when it is
     /// empty, so strokes erased here do not come back from their phone.
     private func sendSnapshot() {
         guard let canvasView, let currentDrawing else {
+            isSnapshotOwed = true
             return
         }
-        send(ops: currentDrawing().strokes, removals: [], side: Self.side(of: canvasView), ended: [], snapshot: true)
+        isSnapshotOwed = false
+        send(
+            ops: currentDrawing().strokes,
+            removals: removedHereKeys.sorted(),
+            side: Self.side(of: canvasView),
+            ended: [],
+            snapshot: true
+        )
+        hasSentCanvasToPartner = true
     }
 
     private func send(
@@ -304,20 +361,11 @@ final class WidgetLiveDrawing {
         var ownUnsent: [PKStroke] = []
         for message in pendingRemote {
             let upserts = Self.upserts(in: message, side: side)
-            receivedKeys.formUnion(upserts.map(WidgetLiveStrokeSync.key(for:)))
+            let upsertKeys = upserts.map(WidgetLiveStrokeSync.key(for:))
+            receivedKeys.formUnion(upsertKeys)
+            removedHereKeys.subtract(upsertKeys)
             if message.snapshot == true, isAwaitingRoomState {
-                isAwaitingRoomState = false
-                let joined = WidgetLiveStrokeSync.join(
-                    room: upserts,
-                    local: merged,
-                    savedKeys: (savedStrokeKeys?() ?? []).union(receivedKeys),
-                    drawnHereKeys: drawnHereKeys
-                )
-                if joined.hasOtherUnsentStrokes {
-                    setAsideDrawing?(merged)
-                }
-                merged = joined.drawing
-                ownUnsent = joined.ownUnsent
+                (merged, ownUnsent) = join(message, upserts: upserts, into: merged)
             } else {
                 merged = WidgetLiveStrokeSync.apply(upserts: upserts, removals: message.removals ?? [], to: merged)
             }
@@ -328,6 +376,27 @@ final class WidgetLiveDrawing {
         if !ownUnsent.isEmpty {
             send(ops: ownUnsent, removals: [], side: side, ended: [])
         }
+    }
+
+    /// Takes the canvas of the room this phone joined, plus the strokes drawn
+    /// here that it lacks.
+    private func join(
+        _ message: WidgetLiveMessage,
+        upserts: [PKStroke],
+        into local: PKDrawing
+    ) -> (drawing: PKDrawing, ownUnsent: [PKStroke]) {
+        isAwaitingRoomState = false
+        let joined = WidgetLiveStrokeSync.join(
+            room: upserts,
+            local: local,
+            savedKeys: (savedStrokeKeys?() ?? []).union(receivedKeys),
+            drawnHereKeys: drawnHereKeys,
+            roomRemovals: Set(message.removals ?? [])
+        )
+        if joined.hasOtherUnsentStrokes {
+            setAsideDrawing?(local)
+        }
+        return (joined.drawing, joined.ownUnsent)
     }
 
     /// PencilKit may commit a lifted stroke a moment after the touch ends, and

@@ -2,7 +2,7 @@ import PencilKit
 import SwiftUI
 
 /// What the guesser looks at inside the square: the live canvas, the replay, or a
-/// spinner and a retry while the drawing loads. Pressing anywhere holds the
+/// spinner or a retry while the drawing loads. Pressing anywhere holds the
 /// replay at 4x.
 struct DrawAndGuessReplayCanvas: View {
     let viewModel: DrawAndGuessViewModel
@@ -48,23 +48,9 @@ struct DrawAndGuessReplayCanvas: View {
         } else if viewModel.isReplayReady {
             DrawAndGuessReplaySurface(viewModel: viewModel, side: side)
                 .allowsHitTesting(false)
-        } else if viewModel.drawingLoadFailed {
-            PaeoniaEmptyStateView(
-                title: .gamesNoticeDrawingUnavailableTitle,
-                message: .gamesNoticeDrawingUnavailableMessage,
-                systemImage: "wifi.slash"
-            ) {
-                Button {
-                    viewModel.retryLoadingDrawing()
-                } label: {
-                    Text(.commonTryAgain)
-                }
-                .buttonStyle(PaeoniaSecondaryButtonStyle())
-            }
-            .padding(PaeoniaSpacing.space16)
         } else if viewModel.phase != .reveal {
-            ProgressView()
-                .tint(.paeoniaAccentPrimary)
+            // On the reveal, `DrawAndGuessRevealDrawing` shows the spinner or the error.
+            DrawAndGuessDrawingPlaceholder(viewModel: viewModel)
         }
     }
 

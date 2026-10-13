@@ -115,8 +115,10 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
     let savedByUserID: UUID?
     let mySaveResponse: DrawAndGuessSaveResponse?
     let partnerSaveResponse: DrawAndGuessSaveResponse?
-    /// Oldest first.
+    /// Oldest first. The newest 200 when there are more.
     let attempts: [RemoteDrawAndGuessAttempt]
+    /// Every attempt of the round, also those past the 200 in `attempts`.
+    var attemptCount: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -139,6 +141,7 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
         case mySaveResponse = "my_save_response"
         case partnerSaveResponse = "partner_save_response"
         case attempts
+        case attemptCount = "attempt_count"
     }
 }
 

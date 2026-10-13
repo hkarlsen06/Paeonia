@@ -135,7 +135,12 @@ extension DrawAndGuessViewModel {
 
     /// What the drawer's result screen says about the sent drawing.
     var sentStatus: DrawAndGuessSentStatus {
-        .make(partner: partnerPresence, guesserFirstSeenAt: round?.guesserFirstSeenAt)
+        .make(
+            partner: partnerPresence,
+            guesserFirstSeenAt: round?.guesserFirstSeenAt,
+            isPartnerWatchingLive: live?.hasSentCanvasToPartner == true,
+            isWaitingToSend: isWaitingToSend
+        )
     }
 
     /// This phone looks at an old result, and the partner already draws the next

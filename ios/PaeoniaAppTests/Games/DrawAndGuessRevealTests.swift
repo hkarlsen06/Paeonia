@@ -157,6 +157,34 @@ struct DrawAndGuessRevealTests {
         #expect(timeline.litLetters == 3)
     }
 
+    @Test func aResetStopsTheRunAndShowsTheTilesAgain() async {
+        let log = HapticLog()
+        let gate = AsyncGate()
+        let timeline = Timeline(haptics: log.haptics, sleep: { _ in await gate.wait() })
+        timeline.begin(plan(), reduceMotion: false)
+        _ = await waitUntil { log.events == ["selection"] }
+
+        timeline.reset()
+        await gate.open()
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(!timeline.hasBegun)
+        #expect(!timeline.gridCollapsed && !timeline.canvasShrunk)
+        #expect(!timeline.buttonShown && !timeline.titleShown && !timeline.isSettled)
+        #expect(timeline.litLetters == 0 && !timeline.finalDrawingShown)
+        #expect(log.events == ["selection"])
+    }
+
+    @Test func aSettledRevealCanPlayAgainAfterAReset() {
+        let timeline = Timeline(haptics: HapticLog().haptics)
+        timeline.begin(plan(letters: 3), reduceMotion: true)
+        timeline.reset()
+        #expect(!timeline.gridCollapsed && !timeline.wasSkipped)
+
+        timeline.begin(plan(letters: 9), reduceMotion: true)
+        #expect(timeline.litLetters == 9 && timeline.gridCollapsed && timeline.buttonShown)
+    }
+
     // MARK: Score
 
     private func reveal(
