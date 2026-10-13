@@ -1,7 +1,7 @@
 ---
 collection: system
 key: sensory_weather_detail
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

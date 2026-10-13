@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  What is one short line your partner could read later that would make the space between you feel kinder?
+  What would you write on a sticky note for your partner to find on a rough day?
 short_prompt: >-
-  A kind line apart
+  A note for a rough day
 ---

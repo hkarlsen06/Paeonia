@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv en liten spilleliste med tre sanger som passer til savnet etter partneren din i dag.
+  Hvilke tre sanger ville blitt en spilleliste for hvordan dagen føles? Skriv titlene eller del et skjermbilde.
 short_prompt: >-
-  En liten savne-spilleliste
+  Dagens tre sanger
 ---

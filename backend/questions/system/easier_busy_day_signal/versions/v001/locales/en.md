@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say one simple signal that could tell your partner a day is busy, without needing a long explanation.
+  Which word, emoji or sound could mean "busy day, still thinking of you" between the two of you?
 short_prompt: >-
   A busy-day signal
 ---

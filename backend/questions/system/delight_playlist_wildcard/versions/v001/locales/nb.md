@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvem er mest tilbøyelig til å legge til den uventede sangen som likevel passer? Legg til sangen eller stemningen hvis du kommer på det.
+  Hvem legger til sangen ingen så komme, men som likevel passer? Nevn sangen hvis du har en i tankene.
 short_prompt: >-
   Den uventede sangen
 ---

@@ -1,7 +1,7 @@
 ---
 collection: system
 key: make_week_lighter
-status: active
+status: retired
 resurfaceable: true
 resurface_after_months: 6
 ---

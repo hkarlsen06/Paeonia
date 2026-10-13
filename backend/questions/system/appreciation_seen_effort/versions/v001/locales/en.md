@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one effort your partner made recently that you appreciated.
+  What has your partner put real effort into lately that deserves some credit?
 short_prompt: >-
-  An effort you appreciated
+  Credit for the effort
 ---

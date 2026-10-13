@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one small thing in a kitchen, shop, or bag your partner would probably pick first.
+  Show or describe something in a shop or kitchen near you that your partner would grab first.
 short_prompt: >-
-  What they would pick first
+  What they would grab first
 ---

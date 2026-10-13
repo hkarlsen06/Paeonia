@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Pick who is better at making a hard day feel less lonely, and add one small example if you want.
+  Who is better at making a hard day feel less lonely, and what do they do?
 short_prompt: >-
-  Less lonely on a hard day
+  Makes a hard day less lonely
 ---

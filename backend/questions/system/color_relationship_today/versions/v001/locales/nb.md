@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Nevn én farge som passer til hvor nært forholdet føltes i dag, og hvorfor.
+  Hvis forholdet deres hadde en farge i dag, hvilken ville det vært, og hva fra dagen din passer til den?
 short_prompt: >-
-  En farge for dagen
+  Dagens farge
 ---

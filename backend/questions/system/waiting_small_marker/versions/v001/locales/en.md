@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one small marker that makes the next time together feel a little closer.
+  Show or describe how you mark the wait until you meet again, like a calendar circle, a ticket or a countdown.
 short_prompt: >-
-  A marker while waiting
+  Marking the wait
 ---

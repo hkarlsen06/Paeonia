@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Name one color that fits how close your relationship felt today, and why.
+  If your relationship had a color today, which would it be, and what from your day matches it?
 short_prompt: >-
   A color for today
 ---

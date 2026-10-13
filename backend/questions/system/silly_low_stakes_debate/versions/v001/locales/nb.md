@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hva er en ufarlig småting dere to kunne vært uenige om bare for gøy?
+  Hva kunne dere diskutert for moro skyld, som ananas på pizza eller om en pølse i brød er en sandwich?
 short_prompt: >-
-  En liten gøyal diskusjon
+  En morsom diskusjon
 ---

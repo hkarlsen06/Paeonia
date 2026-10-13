@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Si én rolig ting partneren din kan høre når neste hei nærmer seg.
+  Si i en lydmelding hva du kommer til å si først når dere ses igjen.
 short_prompt: >-
-  Når neste hei nærmer seg
+  Den første hilsenen
 ---

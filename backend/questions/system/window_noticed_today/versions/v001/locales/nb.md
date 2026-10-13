@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv én ting du la merke til fra et vindu i dag.
+  Hva så du gjennom et vindu i dag, som været, en nabo eller et tog som kjørte forbi? Vis eller beskriv det.
 short_prompt: >-
-  Fra et vindu
+  Gjennom et vindu
 ---

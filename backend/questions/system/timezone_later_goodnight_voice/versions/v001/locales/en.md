@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say one goodnight or good-morning sentence that would still feel close if your partner hears it later.
+  Leave your partner a good morning or goodnight they can open whenever the time is right for them. Write it or say it.
 short_prompt: >-
-  For later in the day
+  Good morning or goodnight
 ---

@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvilken liten rutine hos partneren din kjenner du bedre enn de fleste?
+  Hvilken rutine hos partneren din kjenner du bedre enn de fleste, som kaffen, veien til jobben eller leggetiden?
 short_prompt: >-
-  En liten rutine du kjenner
+  En rutine du kjenner
 ---

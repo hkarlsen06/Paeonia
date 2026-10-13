@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say one small phrase your partner would recognize from you right away.
+  Which phrase does your partner say all the time? Write it or say it the way they do.
 short_prompt: >-
-  A phrase they know
+  Their favorite phrase
 ---

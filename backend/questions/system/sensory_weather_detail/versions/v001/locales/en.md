@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one small weather detail your partner would notice if they were beside you.
+  Show or describe what the weather is doing where you are, and what it smells or sounds like.
 short_prompt: >-
-  A weather detail
+  The weather where you are
 ---

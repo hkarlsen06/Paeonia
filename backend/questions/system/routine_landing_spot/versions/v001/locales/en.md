@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe the place where you landed after the busiest part of your day.
+  Where did you land after the busiest part of today? Show or describe the spot.
 short_prompt: >-
   After the busy part
 ---

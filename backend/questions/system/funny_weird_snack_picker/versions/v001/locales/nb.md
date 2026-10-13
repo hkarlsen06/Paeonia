@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvem er mest tilbøyelig til å velge snacksen som høres rar ut, men funker? Legg til snacken hvis du kommer på den.
+  Hvem velger matkombinasjonen som høres rar ut, men som funker? Nevn den hvis du har en i tankene.
 short_prompt: >-
-  Den rare snacken
+  Rar, men god kombinasjon
 ---

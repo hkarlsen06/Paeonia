@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Who is more likely to remember the small errand before it becomes urgent, and why?
+  Who is more likely to come home from the shop without the one thing they went for? Add what was missing if you remember.
 short_prompt: >-
-  Remembers the errand
+  Forgets the one thing
 ---

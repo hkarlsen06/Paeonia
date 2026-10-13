@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Who would probably pick the comfort show for a low-energy evening, and what would make it the right choice?
+  Who would pick the feel-good show for a tired evening, and which one would it be?
 short_prompt: >-
-  Picks the comfort show
+  The feel-good show
 ---

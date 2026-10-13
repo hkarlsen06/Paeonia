@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one texture from today that your partner would enjoy imagining.
+  Show or describe something you touched today that felt especially soft, rough or cold.
 short_prompt: >-
-  A texture from today
+  Something you felt today
 ---

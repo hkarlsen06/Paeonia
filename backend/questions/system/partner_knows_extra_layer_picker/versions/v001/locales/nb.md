@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvem er mest tilbøyelig til å vite når den andre trenger et ekstra lag klær, og hva er tegnet?
+  Hvem pakker mest sannsynlig en ekstra genser for sikkerhets skyld? Skriv gjerne hva annet de alltid har med.
 short_prompt: >-
-  Vet om ekstra lag
+  Har alltid en ekstra genser
 ---

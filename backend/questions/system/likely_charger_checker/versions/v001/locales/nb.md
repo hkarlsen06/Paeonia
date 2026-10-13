@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvem er mest tilbøyelig til å sjekke etter lader før de går, og hvorfor passer det dem?
+  Hvem har oftest forlatt huset med to prosent batteri? Skriv gjerne den mest dramatiske gangen du husker.
 short_prompt: >-
-  Sjekker etter lader
+  Nesten tomt for strøm
 ---

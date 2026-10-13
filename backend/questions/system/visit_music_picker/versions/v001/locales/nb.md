@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvem av dere ville trolig valgt lyden eller sangen for neste tur mot hverandre, og hvorfor?
+  Hvem ville valgt sangen på reisen for å møtes, og hvilken sang ville det vært?
 short_prompt: >-
-  En sang til neste tur
+  Sangen på reisen
 ---

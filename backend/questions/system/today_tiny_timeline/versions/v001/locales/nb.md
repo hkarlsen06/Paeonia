@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hva er tre vanlige stopp eller øyeblikk fra dagen din, i riktig rekkefølge?
+  List opp tre steder eller øyeblikk fra dagen din i rekkefølge, som et busstopp, en forelesning og en sen matbit.
 short_prompt: >-
-  En liten tidslinje
+  Dagen i tre stopp
 ---

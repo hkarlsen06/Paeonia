@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe the first small task that shaped your day.
+  What was the first thing you did after waking up today? Show or describe it.
 short_prompt: >-
-  First small task
+  The first thing today
 ---

@@ -1,7 +1,7 @@
 ---
 collection: system
 key: note_small_scribble
-status: draft
+status: archived
 resurfaceable: true
 resurface_after_months: 6
 ---

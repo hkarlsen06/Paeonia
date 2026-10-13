@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  What small favorite would your partner probably guess for you without asking?
+  Which favorite of yours would your partner guess without asking, like a snack, a song or a color?
 short_prompt: >-
   A favorite they know
 ---

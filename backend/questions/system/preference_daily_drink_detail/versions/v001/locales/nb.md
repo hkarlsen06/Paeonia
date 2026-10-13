@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv en drikke, snacks eller liten detalj partneren din ville kjent igjen som veldig deg.
+  Vis eller beskriv den vanlige drikken eller matbiten din, den partneren din ville kalt veldig deg.
 short_prompt: >-
-  En veldig deg-detalj
+  Det vanlige for deg
 ---

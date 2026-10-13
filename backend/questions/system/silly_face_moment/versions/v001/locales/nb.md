@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvem er mest tilbøyelig til å lage akkurat riktig tøysefjes på riktig tidspunkt? Legg til øyeblikket hvis du kommer på det.
+  Hvem lager den perfekte grimasen på det perfekte tidspunktet? Skriv gjerne øyeblikket hvis du husker et.
 short_prompt: >-
-  Riktig tøysefjes
+  Den perfekte grimasen
 ---

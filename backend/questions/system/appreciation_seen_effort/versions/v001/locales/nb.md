@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv én innsats partneren din gjorde nylig som du satte pris på.
+  Hva har partneren din lagt ned skikkelig innsats i nylig som fortjener litt honnør?
 short_prompt: >-
-  En innsats du satte pris på
+  Honnør for innsatsen
 ---

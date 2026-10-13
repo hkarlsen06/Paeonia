@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvem er mest tilbøyelig til å spare den beste biten til slutt, og hvilken mat dukker opp?
+  Hvem sparer mest sannsynlig den beste biten til sist, og hva slags mat ville det vært?
 short_prompt: >-
   Sparer den beste biten
 ---

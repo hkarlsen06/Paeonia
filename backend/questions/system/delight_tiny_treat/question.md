@@ -1,7 +1,7 @@
 ---
 collection: system
 key: delight_tiny_treat
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Pick who is more likely to send a gentle check-in while the other person is asleep, and add what makes it feel kind if you want.
+  Who is more likely to send a message while the other one is asleep, and what do they write?
 short_prompt: >-
-  An asleep check-in
+  A message while you sleep
 ---

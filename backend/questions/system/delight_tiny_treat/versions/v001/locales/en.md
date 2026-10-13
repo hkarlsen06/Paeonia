@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one tiny treat from today that your partner would probably approve of.
+  Show or describe a treat you had today that your partner would have approved of.
 short_prompt: >-
-  A tiny treat
+  A treat they would approve
 ---

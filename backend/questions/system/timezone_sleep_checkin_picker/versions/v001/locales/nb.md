@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Velg hvem som mest sannsynlig sender en mild innsjekk mens den andre sover, og legg gjerne til hva som gjør den god.
+  Hvem sender mest sannsynlig en melding mens den andre sover, og hva skriver de?
 short_prompt: >-
-  En innsjekk mens en sover
+  Melding mens den andre sover
 ---

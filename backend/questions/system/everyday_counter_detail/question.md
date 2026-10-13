@@ -1,7 +1,7 @@
 ---
 collection: system
 key: everyday_counter_detail
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

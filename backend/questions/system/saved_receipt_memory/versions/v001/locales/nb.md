@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv én kvittering, billett eller et lite spor fra dagen som kunne blitt et minne for dere to senere.
+  Vis eller beskriv en billett, kvittering eller lapp fra i dag som kan bli et minne senere.
 short_prompt: >-
-  Et lite spor fra dagen
+  Et spor fra i dag
 ---

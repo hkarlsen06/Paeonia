@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Skriv eller si én måte partneren din får vanlige dager til å føles mildere på.
+  Hva gjør partneren din som får en vanlig dag til å føles mykere, som en melding i lunsjen eller et morsomt bilde?
 short_prompt: >-
-  En mildere vanlig dag
+  Gjør dagen mykere
 ---

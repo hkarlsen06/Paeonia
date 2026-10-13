@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Who is more likely to add the unexpected song that somehow fits? Add the song or vibe if it comes to mind.
+  Who adds the song nobody saw coming that somehow fits? Name the song if you have one in mind.
 short_prompt: >-
   The unexpected song
 ---

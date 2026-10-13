@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Skriv eller si én bakgrunnslyd fra akkurat nå som kan hjelpe partneren din å føle seg nærmere der du er.
+  Skriv ned eller spill inn lydene du hører akkurat nå, så partneren din kan se for seg at de er der.
 short_prompt: >-
-  En lyd akkurat nå
+  Lydene akkurat nå
 ---

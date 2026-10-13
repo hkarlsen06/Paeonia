@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  What are three ordinary stops or moments from your day, in order?
+  List three places or moments from your day in order, like a bus stop, a lecture and a late snack.
 short_prompt: >-
-  A tiny timeline
+  Your day in three stops
 ---

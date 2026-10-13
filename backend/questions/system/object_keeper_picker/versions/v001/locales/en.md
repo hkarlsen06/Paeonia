@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Pick or describe who is more likely to keep a random object because it reminds them of the relationship.
+  Who is more likely to keep a ticket, a receipt or a stone because it reminds them of a day together?
 short_prompt: >-
-  Who keeps the random object?
+  Keeps the keepsakes
 ---

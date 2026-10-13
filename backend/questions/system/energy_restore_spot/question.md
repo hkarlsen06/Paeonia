@@ -1,7 +1,7 @@
 ---
 collection: system
 key: energy_restore_spot
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

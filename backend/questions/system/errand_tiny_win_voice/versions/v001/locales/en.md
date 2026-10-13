@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say the short story behind one errand, delay, or tiny win from today.
+  Tell the story behind one errand, delay or lucky break from today.
 short_prompt: >-
-  A tiny win today
+  An errand story
 ---

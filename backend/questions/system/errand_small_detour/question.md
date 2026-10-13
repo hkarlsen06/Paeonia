@@ -1,7 +1,7 @@
 ---
 collection: system
 key: errand_small_detour
-status: draft
+status: archived
 resurfaceable: true
 resurface_after_months: 6
 ---

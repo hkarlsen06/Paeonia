@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  What is one ordinary part of your day that happened almost automatically?
+  Which part of your day did you do on autopilot today, like your morning route or your coffee order?
 short_prompt: >-
-  Almost automatic
+  Done on autopilot
 ---

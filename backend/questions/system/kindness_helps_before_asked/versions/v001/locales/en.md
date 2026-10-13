@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Pick or describe who is more likely to quietly help before being asked.
+  Who tends to quietly help before anyone asks, like refilling water or fixing a plan?
 short_prompt: >-
   Helps before being asked
 ---

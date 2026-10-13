@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Si en mild liten omstart etter et ubesvart anrop, sent svar eller en liten misforståelse.
+  Si hva du ville fortalt partneren din etter en ubesvart samtale for at det skal kjennes lett igjen.
 short_prompt: >-
-  En mild omstart
+  Etter en ubesvart samtale
 ---

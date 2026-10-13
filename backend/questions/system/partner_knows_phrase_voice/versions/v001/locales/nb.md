@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Skriv eller si en liten frase partneren din ville kjent igjen fra deg med en gang.
+  Hvilken frase sier partneren din hele tiden? Skriv den eller si den slik de sier den.
 short_prompt: >-
-  En frase de kjenner
+  Frasen de alltid sier
 ---

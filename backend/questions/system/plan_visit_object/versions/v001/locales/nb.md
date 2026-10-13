@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv én liten ting som hadde vært fin å ha klar til neste besøk.
+  Vis eller beskriv noe du har lagt til side til neste gang dere møtes, som en matbit, en spilleliste eller billetter.
 short_prompt: >-
-  Noe til neste besøk
+  Lagt til side til neste gang
 ---

@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv stedet der du landet etter den travleste delen av dagen.
+  Hvor endte du opp etter den travleste delen av dagen? Vis eller beskriv stedet.
 short_prompt: >-
-  Etter den travle delen
+  Etter det travle
 ---

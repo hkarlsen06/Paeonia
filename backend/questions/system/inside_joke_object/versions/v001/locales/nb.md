@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv en ting i nærheten som henger sammen med en intern spøk eller felles referanse.
+  Vis eller beskriv noe nær deg som henger sammen med en intern spøk dere deler.
 short_prompt: >-
-  En intern referanse
+  Noe fra en intern spøk
 ---

@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Velg eller beskriv hvem som har hjulpet den andre med å føle seg litt mer selvsikker i det siste.
+  Hvem heier raskest på den andre før noe stort, som en eksamen eller et intervju?
 short_prompt: >-
-  Gir mer selvtillit
+  Hvem heier mest
 ---

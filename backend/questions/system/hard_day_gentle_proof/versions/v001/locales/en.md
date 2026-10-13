@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one small proof that a hard day still had a gentle moment.
+  Show or describe what has softened your day so far, like a text, a warm drink or a bit of sun.
 short_prompt: >-
-  A gentle moment
+  What softened the day
 ---

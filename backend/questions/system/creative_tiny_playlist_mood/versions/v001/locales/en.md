@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe a tiny three-song playlist that would fit the mood of missing your partner today.
+  Which three songs would make a playlist for how today feels? Write the titles or share a screenshot.
 short_prompt: >-
-  A tiny missing-them playlist
+  Today's three songs
 ---

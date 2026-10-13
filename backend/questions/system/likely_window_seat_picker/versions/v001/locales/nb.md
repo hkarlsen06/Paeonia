@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvem er mest tilbøyelig til å velge vindusplassen på en tur, og hvorfor passer det dem?
+  Hvem tar mest sannsynlig vindusplassen på en reise, og hva gjør de med den?
 short_prompt: >-
-  Velger vindusplassen
+  Vindusplassen
 ---

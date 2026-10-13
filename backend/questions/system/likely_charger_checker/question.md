@@ -1,7 +1,7 @@
 ---
 collection: system
 key: likely_charger_checker
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

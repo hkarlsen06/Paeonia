@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one small thing that would be nice to have ready for the next visit.
+  Show or describe something you have set aside for the next time you meet, like a snack, a playlist or tickets.
 short_prompt: >-
-  Something for the next visit
+  Set aside for next time
 ---

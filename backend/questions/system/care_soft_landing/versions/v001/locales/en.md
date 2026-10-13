@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say one way your partner makes ordinary days feel gentler.
+  What does your partner do that makes an ordinary day feel softer, like a lunchtime message or a funny photo?
 short_prompt: >-
-  A gentler ordinary day
+  Makes the day softer
 ---

@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hva er ett lite øyeblikk der partneren din fikk deg til å føle deg valgt?
+  Når fikk partneren din deg sist til å føle deg valgt, selv i noe så vanlig som en melding eller en plan?
 short_prompt: >-
-  Et øyeblikk av å føle seg valgt
+  Å føle seg valgt
 ---

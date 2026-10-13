@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hva er én snill ting partneren din gjorde nylig som du ikke har sagt så mye om ennå?
+  Hva snilt har partneren din gjort nylig som du ennå ikke har takket for?
 short_prompt: >-
-  En snill ting du la merke til
+  En takk som venter
 ---

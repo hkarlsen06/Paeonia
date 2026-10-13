@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one thing on your desk, table, or counter that says something about today.
+  Show or describe what is on your desk or table right now and what it says about your day.
 short_prompt: >-
-  A detail on the table
+  What is on your table
 ---

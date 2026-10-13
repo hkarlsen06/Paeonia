@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Say one calm thing your partner could hear when the next hello is getting close.
+  In a voice note, tell your partner what you will say first when you see each other again.
 short_prompt: >-
-  When hello gets close
+  The first hello
 ---

@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  What is one harmless low-stakes thing the two of you could disagree about for fun?
+  Which harmless question could the two of you debate for fun, like pineapple on pizza or whether a hot dog is a sandwich?
 short_prompt: >-
-  A tiny fun debate
+  A fun debate
 ---

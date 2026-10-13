@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Who is more likely to choose the snack that sounds weird but works? Add the snack if it comes to mind.
+  Who picks the food combination that sounds weird but works? Name it if you have one in mind.
 short_prompt: >-
-  The weird snack pick
+  The weird combo that works
 ---

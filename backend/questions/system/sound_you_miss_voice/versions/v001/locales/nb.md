@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  I et kort lydsvar, hvilken hverdagslyd fra partneren din savner du å høre?
+  Si i en kort lydmelding hvilken hverdagslyd fra partneren din du savner å høre, som latteren, nøklene eller nynningen.
 short_prompt: >-
   En lyd du savner
 ---

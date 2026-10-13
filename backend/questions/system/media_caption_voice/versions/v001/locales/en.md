@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say a caption for one photo or video from today that your partner would understand.
+  If today were a photo, what would the caption be? Write it or say it.
 short_prompt: >-
-  A caption they would get
+  Today's caption
 ---

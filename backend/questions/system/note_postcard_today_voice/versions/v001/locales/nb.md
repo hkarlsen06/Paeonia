@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Skriv eller si et postkort på to setninger fra dagen til partneren din.
+  Send partneren din et postkort fra i dag på to setninger, skrevet eller sagt.
 short_prompt: >-
-  Et postkort fra dagen
+  Postkort fra i dag
 ---

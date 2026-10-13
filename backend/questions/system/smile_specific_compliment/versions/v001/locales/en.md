@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say one oddly specific compliment your partner would enjoy today.
+  Give your partner an oddly specific compliment, like their handwriting or how they hold a cup. Write it or say it.
 short_prompt: >-
   A specific compliment
 ---

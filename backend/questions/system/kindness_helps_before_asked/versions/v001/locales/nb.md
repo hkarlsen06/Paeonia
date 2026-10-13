@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Velg eller beskriv hvem som mest sannsynlig hjelper stille før noen spør.
+  Hvem pleier å hjelpe stille før noen ber om det, som å fylle på vann eller fikse en plan?
 short_prompt: >-
-  Hjelper før noen spør
+  Hjelper uten å bli spurt
 ---

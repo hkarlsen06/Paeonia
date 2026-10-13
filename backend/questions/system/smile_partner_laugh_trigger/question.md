@@ -1,7 +1,7 @@
 ---
 collection: system
 key: smile_partner_laugh_trigger
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

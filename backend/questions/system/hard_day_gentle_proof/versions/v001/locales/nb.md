@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv et lite tegn på at en hard dag likevel hadde et mykt øyeblikk.
+  Vis eller beskriv hva som har gjort dagen din litt mykere så langt, som en melding, en varm drikke eller litt sol.
 short_prompt: >-
-  Et mykt øyeblikk
+  Noe som mildnet dagen
 ---

@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Who would probably choose the sound or song for the next trip toward each other, and why?
+  Who would pick the song for the trip to see each other, and which song would it be?
 short_prompt: >-
-  A song for the next trip
+  The song for the trip
 ---

@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Pick or describe who is more likely to say thank you for the small things.
+  Which of you says thank you more often for the little things, like a cup of tea or a favor?
 short_prompt: >-
   Says thank you
 ---

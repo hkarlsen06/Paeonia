@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one receipt, ticket, or small proof from today that could become a memory for the two of you later.
+  Show or describe a ticket, receipt or note from today that could become a memory later.
 short_prompt: >-
-  A small proof from today
+  A trace from today
 ---

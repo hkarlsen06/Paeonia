@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say one background sound from right now that could make your partner feel closer to where you are.
+  Write down or record what you can hear right now, so your partner can imagine being there.
 short_prompt: >-
-  A sound right now
+  The sounds right now
 ---

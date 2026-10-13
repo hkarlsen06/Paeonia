@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one thing nearby that connects to an inside joke or shared reference.
+  Show or describe something near you that connects to an inside joke the two of you share.
 short_prompt: >-
-  An inside-reference object
+  An inside-joke object
 ---

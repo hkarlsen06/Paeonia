@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one corner, seat, or place you would like your partner to share with you someday.
+  Show or describe a seat, a corner or a café near you that you want to share with your partner someday.
 short_prompt: >-
-  A future place to share
+  A place to share someday
 ---

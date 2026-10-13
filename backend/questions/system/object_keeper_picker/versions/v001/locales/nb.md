@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Velg eller beskriv hvem som mest sannsynlig ville beholdt en tilfeldig ting fordi den minner om forholdet.
+  Hvem beholder mest sannsynlig en billett, en kvittering eller en stein fordi den minner om en dag sammen?
 short_prompt: >-
-  Hvem beholder den tilfeldige tingen?
+  Beholder minner
 ---

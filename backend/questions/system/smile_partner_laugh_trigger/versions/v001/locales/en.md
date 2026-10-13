@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  What is one tiny, harmless thing that almost always makes your partner laugh?
+  What almost always makes your partner laugh, like a certain video, a word or a type of joke?
 short_prompt: >-
-  A tiny laugh trigger
+  What makes them laugh
 ---

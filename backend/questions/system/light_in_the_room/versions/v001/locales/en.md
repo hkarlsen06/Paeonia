@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one bit of light around you that would help your partner picture the room.
+  Show or describe the light where you are right now, like a lamp, a window or the glow of a screen.
 short_prompt: >-
-  A bit of light
+  The light where you are
 ---

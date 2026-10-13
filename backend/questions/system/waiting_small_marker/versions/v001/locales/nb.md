@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv et lite tegn som får neste gang sammen til å føles litt nærmere.
+  Vis eller beskriv hvordan du markerer ventetiden til dere ses igjen, som en ring i kalenderen, en billett eller en nedtelling.
 short_prompt: >-
-  Et tegn mens dere venter
+  Å markere ventetiden
 ---

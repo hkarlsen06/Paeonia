@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one small sign of the time where you are, so your partner can picture your part of the day.
+  Show or describe a sign of what time it is where you are, like the light, a clock or the street outside.
 short_prompt: >-
-  Your part of the day
+  What time it feels like
 ---

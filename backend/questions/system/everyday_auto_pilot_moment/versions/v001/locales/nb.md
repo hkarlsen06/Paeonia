@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hva er én vanlig del av dagen din som nesten gikk av seg selv?
+  Hvilken del av dagen gjorde du på autopilot i dag, som morgenrutinen eller kaffebestillingen?
 short_prompt: >-
-  Nesten av seg selv
+  Det du gjør på autopilot
 ---

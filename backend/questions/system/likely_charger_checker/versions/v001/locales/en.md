@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Who is more likely to check for a charger before leaving, and why does that fit them?
+  Who has left the house with two percent battery more often? Add the closest call you remember.
 short_prompt: >-
-  Checks for a charger
+  Almost out of battery
 ---

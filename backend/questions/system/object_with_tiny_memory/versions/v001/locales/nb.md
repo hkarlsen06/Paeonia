@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv én ting som bærer på et lite minne fra tid med partneren din.
+  Vis eller beskriv en ting du eier som rommer et minne fra tid med partneren din.
 short_prompt: >-
   En ting med et minne
 ---

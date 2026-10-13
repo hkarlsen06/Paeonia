@@ -1,7 +1,7 @@
 ---
 collection: system
 key: noticed_caring_habit
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

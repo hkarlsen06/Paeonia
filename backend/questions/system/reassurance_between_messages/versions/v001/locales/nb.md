@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Skriv eller si en liten trygg påminnelse for det stille rommet mellom meldinger.
+  Legg igjen en kort beskjed til partneren din for timene du ikke kan svare, skriftlig eller muntlig.
 short_prompt: >-
-  Mellom meldingene
+  Når du ikke kan svare
 ---

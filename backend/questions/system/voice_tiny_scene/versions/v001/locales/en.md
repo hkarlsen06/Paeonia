@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say one tiny detail your partner would hear, smell, or see if they stepped into your moment right now.
+  If your partner walked into your room right now, what would they see, hear and smell first? Write it or say it.
 short_prompt: >-
-  A tiny detail right now
+  If they were here now
 ---

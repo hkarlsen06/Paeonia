@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say one thing about your partner that helps you count on them.
+  What can you always count on your partner for, like picking up the phone, showing up or remembering a date? Write it or say it.
 short_prompt: >-
-  Something you can count on
+  Something you count on
 ---

@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv et enkelt måltid, mellommåltid eller drikke som passet dagen din.
+  Vis eller beskriv noe du spiste eller drakk i dag som virkelig traff.
 short_prompt: >-
-  Det som passet dagen
+  Det som traff
 ---

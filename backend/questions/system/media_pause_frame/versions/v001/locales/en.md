@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one paused screen, thumbnail, or frame from today that your partner would understand.
+  Show or describe the last thing you paused on your screen today, like a video, a game or a podcast.
 short_prompt: >-
-  A paused moment they would get
+  Your last pause
 ---

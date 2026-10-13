@@ -1,7 +1,7 @@
 ---
 collection: system
 key: repair_small_reset_after_miss
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

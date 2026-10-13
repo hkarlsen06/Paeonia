@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Who is more likely to know when the other person needs an extra layer, and what is the clue?
+  Who is more likely to pack a spare sweater just in case? Add what else they always carry if you want.
 short_prompt: >-
-  Knows the extra layer
+  Always has a spare sweater
 ---

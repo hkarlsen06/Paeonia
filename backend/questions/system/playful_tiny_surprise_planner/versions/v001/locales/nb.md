@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvem er mest tilbøyelig til å planlegge en liten overraskelse på en vanlig dag? Legg til typen overraskelse hvis du kommer på noe.
+  Hvem planlegger mest sannsynlig en overraskelse en helt vanlig tirsdag, og hva ville det vært?
 short_prompt: >-
-  Planlegger små overraskelser
+  Tirsdagsoverraskelsen
 ---

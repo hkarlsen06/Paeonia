@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv en liten ting på et kjøkken, i en butikk eller i en veske som partneren din trolig ville valgt først.
+  Vis eller beskriv noe i en butikk eller et kjøkken nær deg som partneren din ville tatt først.
 short_prompt: >-
-  Det de ville valgt først
+  Det de ville tatt først
 ---

@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Who is more likely to plan a tiny surprise for an ordinary day? Add the kind of surprise if it comes to mind.
+  Who is more likely to plan a surprise for an ordinary Tuesday, and what would it be?
 short_prompt: >-
-  Plans tiny surprises
+  The Tuesday surprise
 ---

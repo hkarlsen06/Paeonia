@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  What is one kind thing your partner did recently that you have not said much about yet?
+  What kind thing did your partner do lately that you have not thanked them for yet?
 short_prompt: >-
-  A kindness you noticed
+  A thank-you waiting
 ---

@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  What tiny routine of your partner's do you know better than most people?
+  Which of your partner's routines do you know better than most people, like their coffee, their commute or their bedtime?
 short_prompt: >-
-  A tiny routine you know
+  A routine you know
 ---

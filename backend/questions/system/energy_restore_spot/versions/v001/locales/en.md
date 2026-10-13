@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one place or object that helps energy come back a little.
+  What gets your energy back after a long day, like a snack, a shower or a song? Show or describe it.
 short_prompt: >-
-  Something that restores energy
+  What gives you energy
 ---

@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv et sted eller en ting som hjelper energien litt tilbake.
+  Hva får energien tilbake etter en lang dag, som en matbit, en dusj eller en sang? Vis eller beskriv det.
 short_prompt: >-
-  Noe som gir energi tilbake
+  Det som gir energi
 ---

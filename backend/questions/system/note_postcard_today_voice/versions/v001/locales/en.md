@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say a two-sentence postcard from today for your partner.
+  Send your partner a two-sentence postcard from today, written or spoken.
 short_prompt: >-
   A postcard from today
 ---

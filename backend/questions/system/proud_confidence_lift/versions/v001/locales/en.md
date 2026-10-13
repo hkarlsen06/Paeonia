@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Pick or describe who has helped the other person feel a little more confident lately.
+  Who is quicker to cheer the other one on before something big, like an exam or an interview?
 short_prompt: >-
-  Helps confidence grow
+  The biggest cheerleader
 ---

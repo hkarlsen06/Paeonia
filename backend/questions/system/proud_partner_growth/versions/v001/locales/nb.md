@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv én liten måte partneren din har vokst på som gjør deg stolt av dem.
+  Hva har partneren din blitt bedre til i det siste som du er stolt av?
 short_prompt: >-
-  En liten måte de har vokst på
+  Noe du er stolt av
 ---

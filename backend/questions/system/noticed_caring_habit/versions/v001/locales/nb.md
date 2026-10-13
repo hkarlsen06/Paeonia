@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv én liten vane partneren din har som hjelper deg å føle deg ivaretatt.
+  Hvilken vane hos partneren din får deg til å føle deg ivaretatt, som å sjekke inn når du reiser?
 short_prompt: >-
-  En omsorgsfull vane du legger merke til
+  En omsorgsfull vane
 ---

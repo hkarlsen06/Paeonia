@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Who in this relationship is more likely to remember a place by its sounds, and what sound comes to mind?
+  Who is more likely to remember a place by its sounds, like a train, waves or a busy street? Add the sound you think of.
 short_prompt: >-
-  Remembers a place by sound
+  Remembers places by sound
 ---

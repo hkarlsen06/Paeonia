@@ -1,7 +1,7 @@
 ---
 collection: system
 key: care_soft_landing
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

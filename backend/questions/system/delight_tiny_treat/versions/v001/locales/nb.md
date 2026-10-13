@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv en liten godbit fra i dag som partneren din sannsynligvis ville godkjent.
+  Vis eller beskriv noe godt du unnet deg i dag som partneren din ville godkjent.
 short_prompt: >-
-  En liten godbit
+  En godbit de ville godkjent
 ---

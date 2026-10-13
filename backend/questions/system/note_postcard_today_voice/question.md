@@ -1,7 +1,7 @@
 ---
 collection: system
 key: note_postcard_today_voice
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv én liten værdetalj partneren din ville lagt merke til ved siden av deg.
+  Vis eller beskriv hva været gjør der du er, og hvordan det lukter eller høres ut.
 short_prompt: >-
-  En værdetalj
+  Været der du er
 ---

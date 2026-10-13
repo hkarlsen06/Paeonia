@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Who is more likely to make the first few minutes of the next visit feel calm, and what would help?
+  Who is more likely to talk nonstop in the first few minutes after meeting again? Add what they would talk about if you want.
 short_prompt: >-
-  First minutes of a visit
+  The nonstop talker
 ---

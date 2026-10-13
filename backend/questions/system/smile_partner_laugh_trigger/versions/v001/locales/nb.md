@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hva er en liten og ufarlig ting som nesten alltid får partneren din til å le?
+  Hva får nesten alltid partneren din til å le, som en bestemt video, et ord eller en type spøk?
 short_prompt: >-
-  En liten latterutløser
+  Det som får dem til å le
 ---

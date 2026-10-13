@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Skriv eller si bildeteksten til ett bilde eller en video fra dagen som partneren din ville forstå.
+  Hvis dagen i dag var et bilde, hva ville bildeteksten vært? Skriv den eller si den.
 short_prompt: >-
-  En bildetekst de ville forstått
+  Dagens bildetekst
 ---

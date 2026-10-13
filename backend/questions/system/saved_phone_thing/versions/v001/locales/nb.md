@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Nevn én lagret ting på telefonen som sier noe om forholdet.
+  Hvilken lagret ting på telefonen, et bilde, en lydmelding eller et skjermbilde, sier mest om dere to?
 short_prompt: >-
   Noe lagret på telefonen
 ---

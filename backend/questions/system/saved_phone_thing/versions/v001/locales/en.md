@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Name one saved thing on your phone that says something about your relationship.
+  Which saved thing on your phone, a photo, a voice note or a screenshot, says the most about the two of you?
 short_prompt: >-
   A saved thing on your phone
 ---

@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvem i dette forholdet husker oftest et sted på grunn av lydene der, og hvilken lyd dukker opp?
+  Hvem husker mest sannsynlig et sted på lydene, som et tog, bølger eller en travel gate? Skriv gjerne lyden du tenker på.
 short_prompt: >-
-  Husker et sted med lyd
+  Husker steder på lyd
 ---

@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv én skjerm, miniatyr eller videoramme fra dagen som partneren din ville forstå.
+  Vis eller beskriv det siste du satte på pause på skjermen i dag, som en video, et spill eller en podcast.
 short_prompt: >-
-  Et stoppet øyeblikk de ville forstått
+  Det siste du pauset
 ---

@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Skriv eller si én liten detalj partneren din ville hørt, luktet eller sett hvis de gikk inn i øyeblikket ditt nå.
+  Hvis partneren din gikk inn i rommet ditt nå, hva ville de sett, hørt og luktet først? Skriv det eller si det.
 short_prompt: >-
-  En liten detalj akkurat nå
+  Hvis de var her nå
 ---

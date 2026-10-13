@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv den første lille oppgaven som formet dagen din.
+  Hva var det første du gjorde etter at du våknet i dag? Vis eller beskriv det.
 short_prompt: >-
-  Første lille oppgave
+  Det første i dag
 ---

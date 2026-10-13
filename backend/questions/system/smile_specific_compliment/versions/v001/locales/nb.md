@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Skriv eller si ett helt spesifikt kompliment partneren din ville satt pris på i dag.
+  Gi partneren din en merkelig spesifikk kompliment, som håndskriften deres eller måten de holder en kopp på. Skriv den eller si den.
 short_prompt: >-
-  Et spesifikt kompliment
+  En spesifikk kompliment
 ---

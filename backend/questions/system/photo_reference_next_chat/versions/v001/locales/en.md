@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Show or describe one photo reference, meme, or saved thing that could make the next chat with your partner easy to start.
+  Which meme, video or saved post would you send your partner to start the next chat? Add a screenshot or describe it.
 short_prompt: >-
-  A saved chat starter
+  A chat starter
 ---

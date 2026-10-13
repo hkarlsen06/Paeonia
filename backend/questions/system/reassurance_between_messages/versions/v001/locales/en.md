@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Write or say a small reassurance for the quiet space between messages.
+  Leave your partner a short note for the hours when you cannot reply, written or spoken.
 short_prompt: >-
-  Between messages
+  When you cannot reply
 ---

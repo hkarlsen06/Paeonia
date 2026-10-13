@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv ett lite lysglimt rundt deg som kan hjelpe partneren din å se for seg rommet.
+  Vis eller beskriv lyset der du er akkurat nå, som en lampe, et vindu eller skjermens skinn.
 short_prompt: >-
-  Et lite lysglimt
+  Lyset der du er
 ---

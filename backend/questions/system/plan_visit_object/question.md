@@ -1,7 +1,7 @@
 ---
 collection: system
 key: plan_visit_object
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

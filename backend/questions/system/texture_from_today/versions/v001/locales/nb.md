@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv én tekstur fra i dag som partneren din kunne likt å se for seg.
+  Vis eller beskriv noe du tok på i dag som føltes spesielt mykt, ru eller kaldt.
 short_prompt: >-
-  En tekstur fra i dag
+  Noe du kjente i dag
 ---

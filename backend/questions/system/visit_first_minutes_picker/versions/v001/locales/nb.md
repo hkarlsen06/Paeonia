@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hvem av dere får mest sannsynlig de første minuttene av neste besøk til å kjennes rolige, og hva ville hjulpet?
+  Hvem snakker mest sannsynlig i ett kjør de første minuttene etter at dere møtes igjen? Skriv gjerne hva de ville snakket om.
 short_prompt: >-
-  De første minuttene av et besøk
+  Snakker i ett kjør
 ---

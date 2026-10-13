@@ -1,7 +1,7 @@
 ---
 collection: system
 key: today_tiny_timeline
-status: draft
+status: active
 resurfaceable: true
 resurface_after_months: 6
 ---

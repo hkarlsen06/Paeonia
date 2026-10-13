@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Vis eller beskriv en liten seier fra i dag som kan få partneren din til å smile.
+  Vis eller beskriv en seier fra i dag som partneren din ville jublet for, som en ferdig oppgave eller en ledig plass på bussen.
 short_prompt: >-
-  En liten seier
+  En seier å juble for
 ---

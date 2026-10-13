@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Skriv eller si en god natt- eller god morgen-setning som fortsatt føles nær hvis partneren din hører den senere.
+  Legg igjen en god morgen eller god natt som partneren din kan åpne når tiden passer for dem. Skriv den eller si den.
 short_prompt: >-
-  Til senere på dagen
+  God morgen eller god natt
 ---

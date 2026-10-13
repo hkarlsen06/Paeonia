@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Who is more likely to make the right silly face at the right moment? Add the moment if it comes to mind.
+  Who pulls the perfect silly face at the perfect moment? Add the moment if one comes to mind.
 short_prompt: >-
-  The silly-face timing
+  The perfect silly face
 ---

@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Velg hvem som er flinkest til å gjøre en hard dag mindre ensom, og legg gjerne til et lite eksempel.
+  Hvem er best til å få en tung dag til å føles mindre ensom, og hva gjør de?
 short_prompt: >-
-  Mindre ensom på en hard dag
+  Mindre ensom på tunge dager
 ---

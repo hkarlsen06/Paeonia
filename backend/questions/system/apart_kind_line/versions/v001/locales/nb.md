@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Hva er én kort setning partneren din kan lese senere som gjør avstanden mellom dere litt mildere?
+  Hva ville du skrevet på en post-it-lapp som partneren din kunne funnet på en tung dag?
 short_prompt: >-
-  En mild setning på avstand
+  En lapp til en tung dag
 ---

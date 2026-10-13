@@ -1,7 +1,7 @@
 ---
 locale: en
 prompt: >-
-  Say one gentle reset after a missed call, late reply, or small mix-up.
+  Say what you would tell your partner after a missed call to make it feel light again.
 short_prompt: >-
-  A gentle reset
+  After a missed call
 ---

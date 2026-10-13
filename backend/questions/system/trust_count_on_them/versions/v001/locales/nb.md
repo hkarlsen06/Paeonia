@@ -1,7 +1,7 @@
 ---
 locale: nb
 prompt: >-
-  Skriv eller si én ting ved partneren din som gjør det lettere å stole på dem.
+  Hva kan du alltid stole på at partneren din gjør, som å ta telefonen, møte opp eller huske en dato? Skriv det eller si det.
 short_prompt: >-
   Noe du kan stole på
 ---
