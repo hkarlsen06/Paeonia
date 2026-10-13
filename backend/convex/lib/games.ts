@@ -1,7 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import { canAccessCoupleContent, listActiveMembers } from "./access";
 import type { ReaderCtx, WriterCtx } from "./db";
-import { orNull } from "./db";
+import { getByUuid, orNull } from "./db";
 import { fail } from "./errors";
 import { pickWordChoices, WORD_DIFFICULTIES, type GameLanguage, type WordChoice, type WordDifficulty } from "./gameWords";
 import { enqueueNotificationForUser } from "./notifications";
@@ -73,11 +73,16 @@ export async function getMovesByGame(ctx: ReaderCtx, gameId: string, take: numbe
     .take(take);
 }
 
-export async function listGuesses(ctx: ReaderCtx, moveId: string): Promise<Doc<"game_guesses">[]> {
-  return await ctx.db
-    .query("game_guesses")
-    .withIndex("by_move_id_created_at", (q) => q.eq("move_id", moveId))
-    .take(200);
+/** The most attempts a round returns. Attempts are unlimited, so the oldest ones drop off. */
+export const MAX_RETURNED_ATTEMPTS = 200;
+
+/** The newest attempts of a round, oldest first, and the exact number of attempts. */
+export async function listGuesses(ctx: ReaderCtx, moveId: string): Promise<{ guesses: Doc<"game_guesses">[]; count: number }> {
+  const byMove = () => ctx.db.query("game_guesses").withIndex("by_move_id_created_at", (q) => q.eq("move_id", moveId));
+  const newest = await byMove().order("desc").take(MAX_RETURNED_ATTEMPTS + 1);
+  // ponytail: counting past the cap reads every attempt of the round. Keep a counter on the round if that gets slow.
+  const count = newest.length <= MAX_RETURNED_ATTEMPTS ? newest.length : (await byMove().collect()).length;
+  return { guesses: newest.slice(0, MAX_RETURNED_ATTEMPTS).reverse(), count };
 }
 
 // --- Presence ---------------------------------------------------------------
@@ -243,6 +248,38 @@ export async function enqueueGamePush(
   });
 }
 
+/**
+ * Whether a queued game push still has a reason to go out to `recipientUserId`, checked when the
+ * push drain claims it. The recipient must still play in the couple. A turn push needs the round
+ * to still wait for this guesser, a reminder needs the reminded turn to still be theirs, and a
+ * guessed push needs the solved round to still exist.
+ */
+export async function gamePushStillWanted(
+  ctx: ReaderCtx,
+  kind: GamePushKind,
+  payload: Record<string, unknown>,
+  recipientUserId: string,
+): Promise<{ wanted: true } | { wanted: false; reason: "ineligible" | "out_of_date" }> {
+  const coupleId = typeof payload.couple_id === "string" ? payload.couple_id : null;
+  if (!coupleId || !(await canAccessCoupleContent(ctx, recipientUserId, coupleId))) return { wanted: false, reason: "ineligible" };
+  const roundId = typeof payload.round_id === "string" ? payload.round_id : null;
+  const gameId = typeof payload.game_id === "string" ? payload.game_id : null;
+  let current = true;
+  if (kind === "game_turn_ready" || kind === "game_guessed") {
+    const move = roundId ? await getByUuid(ctx, "game_moves", roundId) : null;
+    current =
+      move !== null &&
+      (kind === "game_turn_ready"
+        ? move.state === "guessing" && move.guesser_user_id === recipientUserId
+        : move.state === "solved" && move.drawer_user_id === recipientUserId);
+  } else if (kind === "game_turn_reminder") {
+    const game = gameId ? await getByUuid(ctx, "games", gameId) : null;
+    // A new turn clears turn_reminder_sent_at, so a set value means the reminded turn still waits.
+    current = game !== null && game.turn_user_id === recipientUserId && game.turn_reminder_sent_at !== undefined;
+  }
+  return current ? { wanted: true } : { wanted: false, reason: "out_of_date" };
+}
+
 // --- Reads ------------------------------------------------------------------
 
 export function settingsJson(settings: GameSettings) {
@@ -276,7 +313,7 @@ export function gameJson(game: Game, userId: string, partnerId: string | null) {
 
 /** One round with its attempts and the save-prompt state for `userId`. */
 export async function roundJson(ctx: ReaderCtx, move: GameMove, userId: string) {
-  const guesses = await listGuesses(ctx, move.id);
+  const { guesses, count } = await listGuesses(ctx, move.id);
   const responses = await ctx.db
     .query("game_save_responses")
     .withIndex("by_move_id_user_id", (q) => q.eq("move_id", move.id))
@@ -301,6 +338,8 @@ export async function roundJson(ctx: ReaderCtx, move: GameMove, userId: string) 
     saved_by_user_id: orNull(move.saved_by_user_id),
     my_save_response: responses.find((row) => row.user_id === userId)?.response ?? null,
     partner_save_response: responses.find((row) => row.user_id !== userId)?.response ?? null,
+    /** Every attempt of the round. `attempts` holds the newest 200, oldest first. */
+    attempt_count: count,
     attempts: guesses.map((guess) => ({
       id: guess.id,
       user_id: guess.user_id,

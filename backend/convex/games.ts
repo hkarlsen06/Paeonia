@@ -221,6 +221,22 @@ export const get_draw_and_guess = query({
   },
 });
 
+/**
+ * One round by id, in the same shape as the rounds of `get_draw_and_guess`. A save
+ * queued on the phone uses it to find the drawing of a round that is no longer
+ * among the recent rounds. Null when the couple has no such round.
+ */
+export const get_draw_and_guess_round = query({
+  args: { p_round_id: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+    const move = await getByUuid(ctx, "game_moves", uuidArg(args.p_round_id));
+    if (!move || move.couple_id !== coupleId) return null;
+    return await roundJson(ctx, move, userId);
+  },
+});
+
 // --- Draw & Guess: the turn --------------------------------------------------
 
 /** Picks the word and starts the round. The round exists from this moment, so the partner can start guessing. */
@@ -412,8 +428,8 @@ export const mark_round_seen = mutation({
   },
 });
 
-/** The longest solve time a phone may report: 30 days. */
-const MAX_CLAIMED_SOLVE_MS = 30 * 24 * 60 * 60 * 1000;
+/** The longest solve time the server stores: 30 days. A longer claim is capped, never refused. */
+const MAX_STORED_SOLVE_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * Stores one attempt. A correct guess solves the round: the points are added, the speed
@@ -440,8 +456,10 @@ export const submit_guess = mutation({
     if (guess === "" || charLength(guess) > MAX_GUESS_LENGTH) fail("23514", "guess must be 1 to 40 characters");
     const claimedBonus = args.p_speed_bonus ?? null;
     const claimedSolveMs = args.p_solve_ms ?? null;
-    if (claimedSolveMs !== null && !(Number.isFinite(claimedSolveMs) && claimedSolveMs >= 0 && claimedSolveMs <= MAX_CLAIMED_SOLVE_MS)) {
-      fail("23514", "solve time must be between 0 and 30 days");
+    // A game waits as long as it needs, so a guess after a month away still counts. Only a
+    // value that is not a time is refused.
+    if (claimedSolveMs !== null && !(Number.isFinite(claimedSolveMs) && claimedSolveMs >= 0)) {
+      fail("23514", "solve time must be a number of milliseconds from 0 up");
     }
 
     return await runClientOperation(
@@ -471,7 +489,7 @@ export const submit_guess = mutation({
 
         const scored = scoreSolve(move, now);
         const speedBonus = claimedBonus === null ? scored.speedBonus : claimedBonus ? SPEED_BONUS_POINTS : 0;
-        const solveMs = claimedSolveMs === null ? scored.solveMs : Math.round(claimedSolveMs);
+        const solveMs = claimedSolveMs === null ? scored.solveMs : Math.min(Math.round(claimedSolveMs), MAX_STORED_SOLVE_MS);
         await patchMove(ctx, move, { state: "solved", ended_at: now, solve_ms: solveMs, speed_bonus: speedBonus });
         // The shared total gets the word points. Each partner's total follows the "against each
         // other" rules, so switching the play style later loses nothing.

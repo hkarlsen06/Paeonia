@@ -3,7 +3,9 @@ import type { Doc } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { notificationStaleAt } from "./lib/apns";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
+import { isActiveCoupleMember } from "./lib/access";
 import { getByUuid, withTouch } from "./lib/db";
+import { gamePushStillWanted, type GamePushKind } from "./lib/games";
 import { optionalTimestampArg, uuidArg } from "./lib/ids";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { addMs, nowIso } from "./lib/time";
@@ -72,10 +74,32 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
   }
 }
 
+const GAME_PUSH_KINDS: readonly string[] = ["game_turn_ready", "game_guessed", "game_invite", "game_turn_reminder"];
+
 /**
- * Fails every due row whose device is gone or disabled or whose kind the user
- * turned off, then returns up to `limit` of the remaining due rows (oldest
- * first) with their device.
+ * Whether the recipient still belongs where the row points. A row whose payload names a couple
+ * needs the recipient to be an active member of it, so a push queued before a relationship ended
+ * never goes out after. Game pushes also need game access and a turn that still waits for them.
+ */
+async function rowStillWanted(
+  ctx: WriterCtx,
+  row: Doc<"notification_outbox">,
+  recipientUserId: string,
+): Promise<{ wanted: true } | { wanted: false; reason: "ineligible" | "out_of_date" }> {
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
+  if (GAME_PUSH_KINDS.includes(row.kind)) {
+    return await gamePushStillWanted(ctx, row.kind as GamePushKind, payload, recipientUserId);
+  }
+  if (typeof payload.couple_id === "string" && !(await isActiveCoupleMember(ctx, recipientUserId, payload.couple_id))) {
+    return { wanted: false, reason: "ineligible" };
+  }
+  return { wanted: true };
+}
+
+/**
+ * Fails every due row whose device is gone or disabled, whose kind the user
+ * turned off, or whose couple or game turn no longer needs it, then returns up
+ * to `limit` of the remaining due rows (oldest first) with their device.
  */
 async function sweepAndPickNotifications(
   ctx: WriterCtx,
@@ -108,6 +132,15 @@ async function sweepAndPickNotifications(
     }
     if (!eligible) {
       await ctx.db.patch(row._id, { failed_at: now, last_attempt_at: now, last_error: TARGET_INELIGIBLE });
+      continue;
+    }
+    const still = await rowStillWanted(ctx, row, device!.user_id);
+    if (!still.wanted) {
+      await ctx.db.patch(row._id, {
+        failed_at: now,
+        last_attempt_at: now,
+        last_error: still.reason === "ineligible" ? TARGET_INELIGIBLE : OUT_OF_DATE,
+      });
       continue;
     }
     const staleAt = notificationStaleAt(row.payload);

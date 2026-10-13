@@ -127,6 +127,7 @@ Local-first writes from iOS carry `p_client_operation_id`, `p_client_id`, `p_cli
 
 - pg_cron jobs live in `convex/crons.ts`.
 - APNs delivery runs in Node actions (`"use node"`), because APNs requires HTTP/2. Outbox tables keep their SQL shape. Inserting outbox rows schedules a drain right away, and a cron drains anything left over.
+- `claim_notification_batch` checks each row again before it claims it. A row whose payload has a `couple_id` needs the recipient to still be an active member of that couple. Game pushes go through `gamePushStillWanted` in `lib/games.ts`, which also needs game access and a round or turn that still waits for the recipient. A dropped row is failed with `notification target is no longer eligible` or `notification is out of date`.
 
 ## Environment variables
 
@@ -145,11 +146,11 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `threads` | `get_conversation_threads`, `get_thread_messages`, `send_thread_message`, `create_daily_question_thread_with_message`, `create_memory_thread_with_message` |
 | `memories` | `create_memory`, `update_memory`, `hide_memory`, `get_memories`, `upsert_memory_note`, `attach_memory_media`, `remove_memory_media` |
 | `media` | `create_pending_media_upload`, `finalize_media_upload`, `get_media_signed_url`, `mark_media_for_deletion` |
-| `games` | `get_game_settings`, `set_game_settings`, `ensure_draw_and_guess_game`, `get_draw_and_guess`, `pick_draw_word`, `submit_drawing`, `mark_round_seen`, `submit_guess`, `give_up_round`, `respond_save_prompt`, `save_round_to_memories`, `send_game_invite`, `set_game_presence`, `create_game_live_ticket` |
+| `games` | `get_game_settings`, `set_game_settings`, `ensure_draw_and_guess_game`, `get_draw_and_guess`, `get_draw_and_guess_round`, `pick_draw_word`, `submit_drawing`, `mark_round_seen`, `submit_guess`, `give_up_round`, `respond_save_prompt`, `save_round_to_memories`, `send_game_invite`, `set_game_presence`, `create_game_live_ticket` |
 | `widget` | `get_or_create_widget_canvas`, `get_widget_canvas`, `get_widget_drawing_revisions`, `submit_widget_drawing_revision`, `register_widget_push_device`, `create_widget_live_ticket` |
 | `location` | `update_latest_partner_location`, `update_location_sharing_preference`, `get_partner_location_visibility` |
 
-Games speed bonus. `submit_guess` takes optional `p_speed_bonus` (boolean) and `p_solve_ms` (0 to 30 days). They are what the guesser's phone showed on its own clock, and the server stores them when present, so a guess that waited offline or reached the server before `mark_round_seen` keeps the bonus on screen. `scoreSolve` in `lib/games.ts` decides only when a value is missing. Both values are in the request hash. `mark_round_seen` still records `guesser_first_seen_at` for the live display and the fallback.
+Games speed bonus. `submit_guess` takes optional `p_speed_bonus` (boolean) and `p_solve_ms` (finite and 0 or more, stored capped at 30 days). They are what the guesser's phone showed on its own clock, and the server stores them when present, so a guess that waited offline or reached the server before `mark_round_seen` keeps the bonus on screen. `scoreSolve` in `lib/games.ts` decides only when a value is missing. Both values are in the request hash. `mark_round_seen` still records `guesser_first_seen_at` for the live display and the fallback.
 | `reports` | `submit_leave_and_report` |
 
 These functions replace direct PostgREST table access from iOS. They return full rows with SQL column names and apply the old RLS rules:
@@ -227,7 +228,7 @@ Draw & Guess is the only game. The design is in `docs/games/draw-and-guess.md` a
 
 ## Live drawing relay
 
-`relay/` at the repository root is a Cloudflare Worker at `wss://relay.paeonia.no/canvas`. It forwards drawing messages between the two partners of one couple and stores nothing. Sockets of the same user, such as the Home tab and the canvas on one phone, never hear each other. The app gets a 60-second ticket from `widget:create_widget_live_ticket`, which runs the usual couple access checks, and sends it as `Authorization: Bearer <ticket>`. The relay checks the HMAC and puts the socket in the couple's Durable Object room. Sockets close after 10 minutes and reconnect with a new ticket.
+`relay/` at the repository root is a Cloudflare Worker at `wss://relay.paeonia.no/canvas`. It forwards drawing messages between the two partners of one couple and stores nothing. Sockets of the same user, such as the Home tab and the canvas on one phone, never hear each other. The app gets a 60-second ticket from `widget:create_widget_live_ticket`, which runs the usual couple access checks, and sends it as `Authorization: Bearer <ticket>`. The relay checks the HMAC and puts the socket in the couple's Durable Object room. Sockets close after 10 minutes and reconnect with a new ticket. That holds for a socket that only listens too: the room closes an expired socket instead of forwarding to it, and a Durable Object alarm closes expired sockets in a quiet room. The rule lives in `relay/src/room.ts`.
 
 Game sockets use their own room. `games:create_game_live_ticket` adds a channel claim `ch` (`draw_and_guess`) to the ticket, and the Worker puts the socket in the room `<couple id>:<channel>`. A ticket without `ch` still joins the couple's widget canvas room. The Worker rejects a channel that is not in `ALLOWED_CHANNELS` in `relay/src/ticket.ts`, so a new game adds its channel there and in `GAME_RELAY_CHANNELS` in `convex/lib/games.ts`. `lib/liveTicket.ts` signs both kinds of ticket.
 

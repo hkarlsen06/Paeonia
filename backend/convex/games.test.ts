@@ -673,12 +673,24 @@ describe("scoring", () => {
       await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     });
 
-    test("a claim that is out of range is refused", async () => {
+    test("a claim that is not a time is refused", async () => {
       const s = await startGame();
       const picked = await pick(s.a, s.gameId, "easy");
-      for (const p_solve_ms of [-1, Number.NaN, 31 * 24 * 60 * 60 * 1000]) {
+      for (const p_solve_ms of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
         expect((await failure(claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: true, p_solve_ms }))).code).toBe("23514");
       }
+    });
+
+    test("a guess after more than 30 days still solves the round, with the solve time capped", async () => {
+      const s = await startGame({ playStyle: "against" });
+      const picked = await pick(s.a, s.gameId, "easy");
+      await sendDrawing(s, s.a, picked.round_id);
+      await s.b.as.mutation(api.games.mark_round_seen, { p_round_id: picked.round_id });
+      tick(31 * 24 * 3600);
+      const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: false, p_solve_ms: 31 * 24 * 3600 * 1000 });
+      expect(solved).toMatchObject({ correct: true, round_state: "solved", speed_bonus: 0, solve_ms: 30 * 24 * 3600 * 1000 });
+      expect((await view(s.b)).game).toMatchObject({ state: "choosing_word", turn_user_id: s.b.userId, shared_points: 1 });
+      await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     });
 
     test("a replay with the same claim returns the stored result and a different claim is a hash mismatch", async () => {
@@ -804,6 +816,61 @@ describe("pushes", () => {
     expect(await outbox(s.t)).toHaveLength(0);
     // New accounts start with the switch on.
     expect((await s.a.as.query(api.identity.get_notification_preferences, {})).games_enabled).toBe(true);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("push drain", () => {
+  const claim = (s: Setup) => s.t.mutation(internal.pushQueue.claim_notification_batch, {});
+  const kinds = (rows: { payload: unknown }[]) => rows.map((row) => (row.payload as { type: string }).type).sort();
+  const errorsOf = async (s: Setup, kind: string) =>
+    (await outbox(s.t)).filter((row) => row.kind === kind).map((row) => row.last_error ?? null);
+
+  test("drops a turn push or reminder once the turn moved on, and keeps current ones", async () => {
+    const s = await startGame();
+    // b gives up before the drain runs, so the turn push for that round is out of date.
+    const first = await pick(s.a, s.gameId, "easy");
+    await sendDrawing(s, s.a, first.round_id);
+    await s.b.as.mutation(api.games.give_up_round, { ...op(), p_round_id: first.round_id });
+    expect(await claim(s)).toEqual([]);
+    expect(await errorsOf(s, "game_turn_ready")).toEqual(["notification is out of date"]);
+
+    // A turn push that still waits for its guesser goes out.
+    const second = await pick(s.b, s.gameId, "easy");
+    await sendDrawing(s, s.b, second.round_id);
+    expect(kinds(await claim(s))).toEqual(["game_turn_ready"]);
+
+    // The reminder is out of date once a guesses, and the guessed push still goes to b.
+    tick(73 * 3600);
+    expect(await s.t.mutation(internal.games.send_due_game_turn_reminders, {})).toBe(1);
+    await guess(s.a, second.round_id, second.word);
+    expect(kinds(await claim(s))).toEqual(["game_guessed"]);
+    expect(await errorsOf(s, "game_turn_reminder")).toEqual(["notification is out of date"]);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("drops every couple push queued before the relationship ended", async () => {
+    const s = await startGame();
+    const picked = await pick(s.a, s.gameId, "custom", "flying cat");
+    await sendDrawing(s, s.a, picked.round_id);
+    await s.a.as.mutation(api.games.send_game_invite, { p_kind: "draw_and_guess" });
+    await guess(s.b, picked.round_id, "flying cat");
+    const image = await uploadAsset(s.t, s.b, photo(s.couple.coupleId));
+    await s.b.as.mutation(api.games.save_round_to_memories, {
+      p_round_id: picked.round_id,
+      p_memory_id: newUuid(),
+      p_media_asset_id: image.assetId,
+      p_memory_date: "2026-10-10",
+    });
+    expect(kinds((await outbox(s.t)).filter((row) => row.last_attempt_at === undefined))).toEqual(
+      ["game_guessed", "game_invite", "game_turn_ready", "memory_created"],
+    );
+    await endCouple(s.t, s.couple.coupleId, s.a.userId);
+    expect(await claim(s)).toEqual([]);
+    for (const row of await outbox(s.t)) {
+      expect(row).toMatchObject({ last_error: "notification target is no longer eligible" });
+      expect(row.failed_at).toBeDefined();
+    }
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
@@ -1015,6 +1082,55 @@ describe("recent rounds", () => {
     expect(data.game?.turn_number).toBe(23);
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
+
+  test("get_draw_and_guess_round finds a round past the recent list, for the couple only", async () => {
+    const s = await startGame();
+    const first = await pick(s.a, s.gameId, "easy");
+    await sendDrawing(s, s.a, first.round_id);
+    await guess(s.b, first.round_id, first.word);
+    let drawer = s.b;
+    let guesser = s.a;
+    for (let index = 0; index < 21; index += 1) {
+      const picked = await pick(drawer, s.gameId, "easy");
+      await sendDrawing(s, drawer, picked.round_id);
+      await guess(guesser, picked.round_id, picked.word);
+      [drawer, guesser] = [guesser, drawer];
+    }
+    const listed = await view(s.b);
+    expect([listed.current_round, ...listed.recent_rounds].map((round) => round?.id)).not.toContain(first.round_id);
+
+    const byId = (user: TestUser, roundId: string) => user.as.query(api.games.get_draw_and_guess_round, { p_round_id: roundId });
+    const round = await byId(s.b, first.round_id.toUpperCase());
+    expect(round).toMatchObject({ id: first.round_id, state: "solved", round_number: 1 });
+    expect(round?.drawing_media_asset_id).toEqual(expect.any(String));
+    expect(Object.keys(round ?? {}).sort()).toEqual(Object.keys(listed.recent_rounds[0]).sort());
+    expect(await byId(s.b, newUuid())).toBeNull();
+
+    const other = await createCouple(s.t);
+    expect(await byId(other.first, first.round_id)).toBeNull();
+    const loner = await createSignedInUser(s.t, { name: "Loner" });
+    expect((await failure(byId(loner, first.round_id))).code).toBe("42501");
+    await endCouple(s.t, s.couple.coupleId, s.a.userId);
+    expect((await failure(byId(s.b, first.round_id))).code).toBe("42501");
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+test("a round with more than 200 attempts returns the newest ones and the exact count", async () => {
+  const s = await startGame();
+  const picked = await pick(s.a, s.gameId, "custom", "flying cat");
+  for (let index = 0; index < 205; index += 1) {
+    await guess(s.b, picked.round_id, `wrong ${String.fromCharCode(97 + (index % 26))}`);
+    tick(1);
+  }
+  await guess(s.b, picked.round_id, "flying cat");
+  const round = (await view(s.a)).current_round!;
+  expect(round.attempt_count).toBe(206);
+  expect(round.attempts).toHaveLength(200);
+  // Oldest first, and the latest tries, including the correct one, are there.
+  expect(round.attempts.at(-1)).toMatchObject({ text: "flying cat", correct: true });
+  expect(round.attempts[0].created_at < round.attempts.at(-1)!.created_at).toBe(true);
+  await s.t.finishAllScheduledFunctions(vi.runAllTimers);
 });
 
 describe("live ticket", () => {
