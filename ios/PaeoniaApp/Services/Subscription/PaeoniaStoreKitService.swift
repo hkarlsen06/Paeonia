@@ -79,6 +79,10 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
     private var userID: String?
     private var appAccountToken: UUID?
     @ObservationIgnored private var transactionUpdatesTask: Task<Void, Never>?
+    /// Works through transactions left unfinished since the last launch, such as
+    /// sandbox renewals that arrived while the app was closed. StoreKit shows no
+    /// payment sheet while any are left, so purchases wait for this first.
+    @ObservationIgnored private var unfinishedTransactionsTask: Task<Void, Never>?
 
     init(clientProvider: PaeoniaConvexClientProvider = .shared) {
         self.clientProvider = clientProvider
@@ -95,6 +99,8 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
     }
 
     func stopTransactionListener() {
+        unfinishedTransactionsTask?.cancel()
+        unfinishedTransactionsTask = nil
         transactionUpdatesTask?.cancel()
         transactionUpdatesTask = nil
         userID = nil
@@ -125,7 +131,7 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         let purchaseResult: Product.PurchaseResult
 
         do {
-            purchaseResult = try await product.purchase(options: [.appAccountToken(token)])
+            purchaseResult = try await purchaseAfterUnfinishedTransactions(product, token: token)
         } catch StoreKitError.userCancelled {
             return false
         } catch {
@@ -217,7 +223,7 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         let purchaseResult: Product.PurchaseResult
 
         do {
-            purchaseResult = try await product.purchase(options: [.appAccountToken(token)])
+            purchaseResult = try await purchaseAfterUnfinishedTransactions(product, token: token)
         } catch StoreKitError.userCancelled {
             return nil
         } catch {
@@ -293,16 +299,27 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         return refusedForGood.contains { $0 == error as? PaeoniaPurchaseError } ? count : count ?? 0
     }
 
+    /// Without the wait, a tap while the backlog is still being confirmed comes
+    /// back as cancelled and nothing appears.
+    private func purchaseAfterUnfinishedTransactions(_ product: Product, token: UUID) async throws -> Product.PurchaseResult {
+        await unfinishedTransactionsTask?.value
+        return try await product.purchase(options: [.appAccountToken(token)])
+    }
+
     private func startTransactionListener() {
+        unfinishedTransactionsTask?.cancel()
         transactionUpdatesTask?.cancel()
-        transactionUpdatesTask = Task { [weak self] in
+        let unfinished = Task { [weak self] in
             for await result in Transaction.unfinished {
                 guard let self, !Task.isCancelled else {
                     return
                 }
                 await self.processTransactionUpdate(result)
             }
-
+        }
+        unfinishedTransactionsTask = unfinished
+        transactionUpdatesTask = Task { [weak self] in
+            await unfinished.value
             for await result in Transaction.updates {
                 guard let self, !Task.isCancelled else {
                     return
@@ -314,6 +331,16 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
 
     private func processTransactionUpdate(_ result: VerificationResult<Transaction>) async {
         guard case let .verified(transaction) = result else {
+            return
+        }
+
+        // An expired subscription period grants nothing, and Apple's server
+        // notifications already told the backend about it. Confirming each one
+        // with Apple would hold up the payment sheet for a second per renewal.
+        if PaeoniaSubscriptionProductID(rawValue: transaction.productID) != nil,
+           let expirationDate = transaction.expirationDate,
+           expirationDate < .now {
+            await transaction.finish()
             return
         }
 

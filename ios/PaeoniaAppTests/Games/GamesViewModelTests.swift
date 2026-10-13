@@ -40,7 +40,8 @@ struct GamesViewModelTests {
 
         #expect(env.gateway.calls.contains("setSettings"))
         #expect(viewModel.screen == .hub)
-        #expect(await env.cache.document(ownerUserID: GameFixture.me).hasSeenSettings)
+        let coupleID = DeveloperScenarioFixture.coupleID
+        #expect(await env.cache.hasSeenSettings(coupleID: coupleID, ownerUserID: GameFixture.me))
     }
 
     @Test func thePartnerWhoArrivesLaterSeesWhatWasPickedOnceThenTheHub() async {

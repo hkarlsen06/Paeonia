@@ -1,51 +1,66 @@
 import SwiftUI
 
-/// The "Save drawing to Memories" button on the reveal. It turns into
-/// "Saved to Memories" once a save went through. Continuing without tapping it
-/// means no.
-struct DrawAndGuessSaveRow: View {
-    let viewModel: DrawAndGuessViewModel
-    @State private var isSavingFromHere = false
+extension View {
+    /// The "Save drawing to Memories" button in the trailing toolbar of the
+    /// reveal. It turns into a checkmark once a save went through. Continuing
+    /// without tapping it means no.
+    func drawAndGuessSaveToolbar(_ viewModel: DrawAndGuessViewModel, isShown: Bool) -> some View {
+        modifier(DrawAndGuessSaveToolbar(viewModel: viewModel, isShown: isShown))
+    }
+}
 
-    var body: some View {
-        Group {
-            switch viewModel.savePrompt {
-            case .hidden:
-                EmptyView()
-            case .ask, .saving:
-                VStack(spacing: PaeoniaSpacing.space12) {
-                    DrawAndGuessSaveButton(viewModel: viewModel)
-                    if viewModel.savePrompt == .saving, viewModel.isWaitingToSend {
-                        DrawAndGuessOfflineLine()
+private struct DrawAndGuessSaveToolbar: ViewModifier {
+    let viewModel: DrawAndGuessViewModel
+    let isShown: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .toolbar {
+                if isShown, viewModel.savePrompt != .hidden {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        item
                     }
                 }
-            case .saved:
-                saved(Text(.gamesDrawAndGuessSaveSaved))
-            case .savedByPartner:
-                saved(Text(.gamesDrawAndGuessSaveSavedBy(viewModel.partnerName)))
             }
-        }
-        .frame(maxWidth: .infinity)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.savePrompt)
-        .onChange(of: viewModel.savePrompt) { old, new in
-            if new == .saved, old == .ask || old == .saving {
-                PaeoniaHaptics.memorySaved()
+            .onChange(of: viewModel.savePrompt) { old, new in
+                if new == .saved, old == .ask || old == .saving {
+                    PaeoniaHaptics.memorySaved()
+                }
             }
+    }
+
+    @ViewBuilder
+    private var item: some View {
+        switch viewModel.savePrompt {
+        case .hidden:
+            EmptyView()
+        case .ask:
+            Button {
+                Task { await viewModel.saveToMemories() }
+            } label: {
+                Label {
+                    Text(.gamesDrawAndGuessSaveSave)
+                } icon: {
+                    Image(systemName: "photo.on.rectangle.angled")
+                }
+            }
+            .accessibilityIdentifier("draw.save.yes")
+        case .saving:
+            ProgressView()
+                .accessibilityLabel(Text(.gamesDrawAndGuessSaveSave))
+                .accessibilityIdentifier("draw.save.saving")
+        case .saved:
+            saved(Text(.gamesDrawAndGuessSaveSaved))
+        case .savedByPartner:
+            saved(Text(.gamesDrawAndGuessSaveSavedBy(viewModel.partnerName)))
         }
-        .accessibilityIdentifier("draw.save")
     }
 
     private func saved(_ text: Text) -> some View {
-        Label {
-            text
-        } icon: {
-            Image(systemName: "checkmark.circle.fill")
-                .accessibilityHidden(true)
-        }
-        .font(PaeoniaTypography.bodyEmphasis)
-        .foregroundStyle(.paeoniaSuccess)
-        .transition(.opacity)
-        .accessibilityIdentifier("draw.save.saved")
+        Image(systemName: "checkmark.circle.fill")
+            .foregroundStyle(.paeoniaSuccess)
+            .accessibilityLabel(text)
+            .accessibilityIdentifier("draw.save.saved")
     }
 }
 

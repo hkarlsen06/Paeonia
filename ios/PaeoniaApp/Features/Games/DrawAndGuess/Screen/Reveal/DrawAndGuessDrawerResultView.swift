@@ -25,7 +25,7 @@ struct DrawAndGuessDrawerResultView: View {
     /// The button reads "Watch [Name] draw" and is on screen.
     private var showsWatchCall: Bool { isRevealed && timeline.buttonShown && viewModel.partnerStartedDrawing }
     private var revealProgress: Int {
-        [timeline.titleShown, timeline.panelShown, timeline.saveShown].count { $0 }
+        [timeline.titleShown, timeline.panelShown].count { $0 }
     }
     private var wrongAttempts: [DrawAndGuessAttemptView] { viewModel.round?.attempts.filter { !$0.isCorrect } ?? [] }
     private var visibleWrong: [DrawAndGuessAttemptView] {
@@ -70,6 +70,7 @@ struct DrawAndGuessDrawerResultView: View {
                 .accessibilityIdentifier("draw.reveal.continue")
             }
         }
+        .drawAndGuessSaveToolbar(viewModel, isShown: isRevealed && timeline.saveShown)
         .simultaneousGesture(TapGesture().onEnded { finishNow() })
         .onChange(of: viewModel.phase, initial: true) { _, phase in
             if phase == .reveal {
@@ -209,8 +210,8 @@ struct DrawAndGuessDrawerResultView: View {
                 )
                 .transition(transition)
             }
-            if timeline.saveShown {
-                DrawAndGuessSaveRow(viewModel: viewModel)
+            if timeline.saveShown, viewModel.savePrompt == .saving, viewModel.isWaitingToSend {
+                DrawAndGuessOfflineLine()
                     .transition(transition)
             }
         }

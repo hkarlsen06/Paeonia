@@ -24,9 +24,6 @@ nonisolated struct GamesLocalDocument: Codable, Equatable, Sendable {
     /// Rounds whose save question this person answered with "not now", so it
     /// stays closed while the answer has not reached the server.
     var declinedSaveRoundIDs: [UUID] = []
-    /// This person has seen the settings screen or the "here's what your partner
-    /// picked" moment, so setup never shows again.
-    var hasSeenSettings = false
     var notices: [GameStoredNotice] = []
     /// One entry per unexplained server refusal of a queued write, by operation
     /// id. Offline tries and waits behind an earlier move never land here.
@@ -55,7 +52,11 @@ protocol GamesCaching: Actor {
     func recordUnexplainedRefusal(operationID: UUID, ownerUserID: UUID) -> Int
     func acknowledgeRound(_ roundID: UUID, ownerUserID: UUID)
     func declineSave(_ roundID: UUID, ownerUserID: UUID)
-    func markSettingsSeen(ownerUserID: UUID)
+    /// This person has seen the settings screen or the "here's what your partner
+    /// picked" moment for this couple, so setup never shows again. It is kept
+    /// apart from the document, which a version change or a purge throws away.
+    func hasSeenSettings(coupleID: UUID, ownerUserID: UUID) -> Bool
+    func markSettingsSeen(coupleID: UUID, ownerUserID: UUID)
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID)
     /// Returns the notices and forgets them.
     func takeNotices(ownerUserID: UUID) -> [GameStoredNotice]
@@ -155,10 +156,12 @@ actor FileGamesCache: GamesCaching {
     private static let schemaVersion = 3
 
     private let directoryURL: URL
+    private let defaults: UserDefaults
     private var order = GamesStateWriteOrder()
 
-    init(directoryURL: URL = FileGamesCache.defaultDirectoryURL()) {
+    init(directoryURL: URL = FileGamesCache.defaultDirectoryURL(), defaults: UserDefaults = .standard) {
         self.directoryURL = directoryURL
+        self.defaults = defaults
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {
@@ -211,8 +214,16 @@ actor FileGamesCache: GamesCaching {
         update(ownerUserID: ownerUserID) { $0.declineSave(roundID) }
     }
 
-    func markSettingsSeen(ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.hasSeenSettings = true }
+    func hasSeenSettings(coupleID: UUID, ownerUserID: UUID) -> Bool {
+        defaults.bool(forKey: Self.settingsSeenKey(coupleID: coupleID, ownerUserID: ownerUserID))
+    }
+
+    func markSettingsSeen(coupleID: UUID, ownerUserID: UUID) {
+        defaults.set(true, forKey: Self.settingsSeenKey(coupleID: coupleID, ownerUserID: ownerUserID))
+    }
+
+    private static func settingsSeenKey(coupleID: UUID, ownerUserID: UUID) -> String {
+        "paeonia.games.settingsSeen.\(ownerUserID.uuidString).\(coupleID.uuidString)"
     }
 
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID) {
@@ -257,11 +268,15 @@ actor FileGamesCache: GamesCaching {
 /// For tests and the developer scenarios.
 actor InMemoryGamesCache: GamesCaching {
     private var documents: [UUID: GamesLocalDocument] = [:]
+    private var seenSettings: Set<[UUID]> = []
     private var order = GamesStateWriteOrder()
 
     init(state: RemoteDrawAndGuessState? = nil, ownerUserID: UUID? = nil, hasSeenSettings: Bool = false) {
         if let state, let ownerUserID {
-            documents[ownerUserID] = GamesLocalDocument(state: state, hasSeenSettings: hasSeenSettings)
+            documents[ownerUserID] = GamesLocalDocument(state: state)
+            if hasSeenSettings, let coupleID = state.settings?.coupleID {
+                seenSettings.insert([coupleID, ownerUserID])
+            }
         }
     }
 
@@ -298,8 +313,12 @@ actor InMemoryGamesCache: GamesCaching {
         documents[ownerUserID, default: GamesLocalDocument()].declineSave(roundID)
     }
 
-    func markSettingsSeen(ownerUserID: UUID) {
-        documents[ownerUserID, default: GamesLocalDocument()].hasSeenSettings = true
+    func hasSeenSettings(coupleID: UUID, ownerUserID: UUID) -> Bool {
+        seenSettings.contains([coupleID, ownerUserID])
+    }
+
+    func markSettingsSeen(coupleID: UUID, ownerUserID: UUID) {
+        seenSettings.insert([coupleID, ownerUserID])
     }
 
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID) {

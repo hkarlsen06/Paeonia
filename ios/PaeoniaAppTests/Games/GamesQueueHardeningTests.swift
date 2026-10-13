@@ -315,6 +315,25 @@ struct GamesQueueHardeningTests {
         #expect(await cache.document(ownerUserID: GameFixture.me).state == nil)
     }
 
+    @Test func seenSettingsOutliveAPurgeOfTheFileCache() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "GamesCacheTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let coupleID = DeveloperScenarioFixture.coupleID
+        let cache = FileGamesCache(directoryURL: directory, defaults: defaults)
+
+        await cache.markSettingsSeen(coupleID: coupleID, ownerUserID: GameFixture.me)
+        await cache.clearAll()
+
+        // A new version of the app also starts from an empty document.
+        let next = FileGamesCache(directoryURL: directory, defaults: defaults)
+        #expect(await next.hasSeenSettings(coupleID: coupleID, ownerUserID: GameFixture.me))
+        #expect(await !next.hasSeenSettings(coupleID: UUID(), ownerUserID: GameFixture.me))
+        #expect(await !next.hasSeenSettings(coupleID: coupleID, ownerUserID: GameFixture.partner))
+    }
+
     @Test func anOlderReadThatAnswersLastDoesNotReplaceANewerOne() async {
         let cache = InMemoryGamesCache()
         let older = GameFixture.state(

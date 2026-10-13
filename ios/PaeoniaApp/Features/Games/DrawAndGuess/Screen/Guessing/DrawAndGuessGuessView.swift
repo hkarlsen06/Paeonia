@@ -16,7 +16,7 @@ struct DrawAndGuessGuessView: View {
     private var isRevealed: Bool { viewModel.phase == .reveal }
     private var isLive: Bool { viewModel.phase == .watchingLive }
     private var revealProgress: Int {
-        [timeline.titleShown, timeline.panelShown, timeline.saveShown].count { $0 }
+        [timeline.titleShown, timeline.panelShown].count { $0 }
     }
 
     var body: some View {
@@ -36,6 +36,7 @@ struct DrawAndGuessGuessView: View {
         } bottom: {
             bottom
         }
+        .drawAndGuessSaveToolbar(viewModel, isShown: isRevealed && timeline.saveShown)
         .simultaneousGesture(TapGesture().onEnded {
             if timeline.titleShown { timeline.skip() }
         })
@@ -197,8 +198,8 @@ struct DrawAndGuessGuessView: View {
                     )
                     .transition(transition)
                 }
-                if timeline.saveShown {
-                    DrawAndGuessSaveRow(viewModel: viewModel)
+                if timeline.saveShown, viewModel.savePrompt == .saving, viewModel.isWaitingToSend {
+                    DrawAndGuessOfflineLine()
                         .transition(transition)
                 }
             }

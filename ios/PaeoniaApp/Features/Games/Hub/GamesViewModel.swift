@@ -43,7 +43,6 @@ final class GamesViewModel {
     private var participants: DrawAndGuessParticipants
     private var state: RemoteDrawAndGuessState?
     private var hasLoaded = false
-    private var hasSeenSettings = false
 
     init(dependencies: GamesDependencies, drawAndGuess: DrawAndGuessViewModel? = nil) {
         self.dependencies = dependencies
@@ -100,7 +99,6 @@ final class GamesViewModel {
             ownerUserID: userID
         ) ?? .none
         state = document.state
-        hasSeenSettings = document.hasSeenSettings
         hasLoaded = true
         settings = document.state?.settings
         if let settings {
@@ -147,12 +145,11 @@ final class GamesViewModel {
             screen = state == nil ? .loading : .setup
             return
         }
-        if hasSeenSettings {
+        if await dependencies.cache.hasSeenSettings(coupleID: settings.coupleID, ownerUserID: userID) {
             screen = .hub
         } else if settings.updatedByUserID == userID {
             // This person chose them, so there is nothing new to show.
-            await dependencies.cache.markSettingsSeen(ownerUserID: userID)
-            hasSeenSettings = true
+            await dependencies.cache.markSettingsSeen(coupleID: settings.coupleID, ownerUserID: userID)
             screen = .hub
         } else {
             screen = .partnerPicked(settings)
@@ -172,13 +169,14 @@ final class GamesViewModel {
         guard !isSavingSettings, let userID = currentUserID else { return false }
         isSavingSettings = true
         defer { isSavingSettings = false }
+        let saved: RemoteGameSettings
         do {
-            _ = try await dependencies.gateway.setSettings(playStyle: playStyle, language: language)
+            saved = try await dependencies.gateway.setSettings(playStyle: playStyle, language: language)
         } catch {
             notice = .couldNotSaveSettings
             return false
         }
-        await dependencies.cache.markSettingsSeen(ownerUserID: userID)
+        await dependencies.cache.markSettingsSeen(coupleID: saved.coupleID, ownerUserID: userID)
         // The settings come back with the state, so the hub and the game agree.
         await refresh()
         return true
@@ -186,8 +184,8 @@ final class GamesViewModel {
 
     /// "Sounds good" on the moment that shows what the partner picked.
     func acknowledgePartnerPicked() async {
-        guard let userID = currentUserID else { return }
-        await dependencies.cache.markSettingsSeen(ownerUserID: userID)
+        guard let userID = currentUserID, let settings else { return }
+        await dependencies.cache.markSettingsSeen(coupleID: settings.coupleID, ownerUserID: userID)
         await reload()
     }
 
