@@ -2,12 +2,17 @@ import MapKit
 import SwiftUI
 import UIKit
 
-/// The map tile on the Us tab: a dark-mode map that fills the whole card, framed
-/// to show both partners with their avatars, and the live distance overlaid at the
-/// bottom. The map is rendered with `MKMapSnapshotter` so it has no Apple Maps
-/// attribution overlay and so the camera framing and pin placement are fully under
-/// our control. When there is no map to show, the tile explains why and, where it
-/// helps, offers one action.
+/// The top card on the Us tab. With a map to show it is a 2:1 tile: a dark-mode map
+/// that fills the whole card, framed to show both partners with their avatars, and
+/// the live distance overlaid at the bottom. The map is rendered with
+/// `MKMapSnapshotter` so it has no Apple Maps attribution overlay and so the camera
+/// framing and pin placement are fully under our control.
+///
+/// When there is no map, the card shrinks to a compact row (`MapEmptyState`) that
+/// explains why and, where it helps, offers one action. That keeps the rest of the
+/// Us tab on screen for couples who do not share location. `.loading` keeps the 2:1
+/// shape because it usually resolves to a map, so the card does not shrink and
+/// then grow back. Both shapes share the same corner radius, stroke, and shadow.
 struct CoupleMapCard: View {
     let currentName: String
     let currentProfilePhotoAssetID: UUID?
@@ -16,7 +21,6 @@ struct CoupleMapCard: View {
     let state: CoupleMapState
     var onPromptCurrentLocation: () -> Void = {}
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.openURL) private var openURL
 
     @ViewBuilder
@@ -34,7 +38,7 @@ struct CoupleMapCard: View {
             }
             .accessibilityHidden(true)
         case .currentUnknown:
-            emptyTile(
+            emptyCard(
                 MapEmptyState(
                     title: .homeMapCurrentUnknownTitle,
                     message: .homeMapCurrentUnknownMessage,
@@ -45,7 +49,7 @@ struct CoupleMapCard: View {
                 )
             )
         case .locatingCurrent:
-            emptyTile(
+            emptyCard(
                 MapEmptyState(
                     title: .homeMapLocatingTitle,
                     message: .homeMapLocatingMessage,
@@ -54,7 +58,7 @@ struct CoupleMapCard: View {
                 )
             )
         case .currentLocationMissing:
-            emptyTile(
+            emptyCard(
                 MapEmptyState(
                     title: .homeMapCurrentMissingTitle,
                     message: .homeMapCurrentMissingMessage,
@@ -65,7 +69,7 @@ struct CoupleMapCard: View {
                 )
             )
         case .locationAccessOff:
-            emptyTile(
+            emptyCard(
                 MapEmptyState(
                     title: .homeMapAccessOffTitle,
                     message: .homeMapAccessOffMessage(partnerName),
@@ -76,7 +80,7 @@ struct CoupleMapCard: View {
                 )
             )
         case .waitingForPartnerLocation:
-            emptyTile(
+            emptyCard(
                 MapEmptyState(
                     title: .homeMapPartnerWaitingTitle(partnerName),
                     message: .homeMapPartnerWaitingMessage(partnerName),
@@ -84,7 +88,7 @@ struct CoupleMapCard: View {
                 )
             )
         case let .partnerUnknown(reason):
-            emptyTile(partnerUnknownState(for: reason))
+            emptyCard(partnerUnknownState(for: reason))
         }
     }
 
@@ -213,24 +217,14 @@ struct CoupleMapCard: View {
         )
     }
 
-    /// A tile holding one of the "no map yet" messages. At accessibility text sizes the
-    /// fixed 2:1 shape is dropped so the text has room to grow.
-    private func emptyTile(_ content: MapEmptyState) -> some View {
-        mapTile(preservesAspectRatio: !dynamicTypeSize.isAccessibilitySize) {
-            content
-        }
+    /// The compact card for one of the "no map yet" messages. It has no fixed shape,
+    /// so it is as tall as its text needs.
+    private func emptyCard(_ content: MapEmptyState) -> some View {
+        mapTileSurface(content)
     }
 
-    @ViewBuilder
-    private func mapTile<Content: View>(
-        preservesAspectRatio: Bool = true,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        if preservesAspectRatio {
-            mapTileSurface(content().aspectRatio(2, contentMode: .fit))
-        } else {
-            mapTileSurface(content())
-        }
+    private func mapTile<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        mapTileSurface(content().aspectRatio(2, contentMode: .fit))
     }
 
     private func mapTileSurface<Content: View>(_ content: Content) -> some View {
@@ -272,6 +266,19 @@ private func previewCard(_ state: CoupleMapState) -> some View {
 
 #Preview("Locating") {
     previewCard(.locatingCurrent)
+}
+
+#Preview("Share location") {
+    previewCard(.currentUnknown)
+}
+
+#Preview("Share location, accessibility size") {
+    previewCard(.currentUnknown)
+        .dynamicTypeSize(.accessibility3)
+}
+
+#Preview("Loading") {
+    previewCard(.loading)
 }
 
 #Preview("Location access off") {

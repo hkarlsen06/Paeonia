@@ -1,7 +1,10 @@
 import SwiftUI
 
-/// The content of the map tile when there is no map to show: an icon, a short
-/// explanation, and either one action button or a spinner.
+/// The compact card shown on the Us tab when there is no map: an icon, a short
+/// explanation, and either one action button or a spinner. The icon leads, the text
+/// fills the rest with the action button under it, and a spinner trails. At
+/// accessibility text sizes the icon moves above the text.
+/// `CoupleMapCard` adds the rounded frame, stroke, and shadow around it.
 struct MapEmptyState: View {
     let title: LocalizedStringResource
     let message: LocalizedStringResource
@@ -15,49 +18,50 @@ struct MapEmptyState: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        ZStack {
-            Color.paeoniaBackgroundSecondary
+        layout {
+            Image(systemName: systemImage)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .frame(width: 28)
+                .accessibilityHidden(true)
 
-            VStack(spacing: PaeoniaSpacing.space8) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(.paeoniaAccentPrimary)
-                    .accessibilityHidden(true)
+            textBlock
 
-                textBlock
-
-                actionBlock
+            if showsProgress {
+                ProgressView()
+                    .tint(.paeoniaAccentPrimary)
             }
-            .padding(PaeoniaSpacing.space12)
         }
+        .padding(PaeoniaSpacing.cardContentPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.paeoniaBackgroundSecondary)
+    }
+
+    private var layout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space12))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: PaeoniaSpacing.space12))
     }
 
     private var textBlock: some View {
-        VStack(spacing: PaeoniaSpacing.space4) {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
             Text(title)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
-                .multilineTextAlignment(.center)
 
             Text(message)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
-                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
-                .multilineTextAlignment(.center)
-        }
-    }
 
-    @ViewBuilder
-    private var actionBlock: some View {
-        if showsProgress {
-            ProgressView()
-                .tint(.paeoniaAccentPrimary)
-                .frame(minHeight: PaeoniaSpacing.buttonHeight)
-        } else if let actionTitle, let action {
-            actionButton(title: actionTitle, action: action)
+            // Under the text rather than trailing, so the message keeps the full
+            // width on a narrow phone.
+            if !showsProgress, let actionTitle, let action {
+                actionButton(title: actionTitle, action: action)
+                    .padding(.top, PaeoniaSpacing.space8)
+            }
         }
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func actionButton(title: LocalizedStringResource, action: @escaping () -> Void) -> some View {
@@ -65,7 +69,7 @@ struct MapEmptyState: View {
             Label {
                 Text(title)
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(.leading)
             } icon: {
                 if let actionSystemImage {
                     Image(systemName: actionSystemImage)
@@ -76,9 +80,10 @@ struct MapEmptyState: View {
         .font(PaeoniaTypography.caption.weight(.semibold))
         .foregroundStyle(.paeoniaTextInverse)
         .padding(.horizontal, PaeoniaSpacing.space12)
-        .frame(minHeight: PaeoniaSpacing.buttonHeight)
+        .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
         .background(.paeoniaAccentPrimary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
         .buttonStyle(.plain)
+        .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: false)
     }
 }

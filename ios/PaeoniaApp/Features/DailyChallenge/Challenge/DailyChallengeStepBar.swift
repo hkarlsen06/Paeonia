@@ -61,7 +61,7 @@ struct DailyChallengeStepBar: View {
         .animation(PaeoniaMotion.stateChange, value: current)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.dailyChallengeProgressAccessibilityLabel))
-        .accessibilityValue(Text(verbatim: "\(completedCount)/\(segmentCount)"))
+        .accessibilityValue(Text(.dailyChallengeProgressPillAccessibility(completedCount, segmentCount)))
 
         if let onSelect {
             // VoiceOver users swipe up or down to move between questions, the same

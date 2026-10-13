@@ -18,23 +18,13 @@ struct DailyPromptCard: View {
     var body: some View {
         PaeoniaCard {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                HStack(alignment: .center) {
-                    PaeoniaCardEyebrow(.homeDailyPromptEyebrow)
-
-                    Spacer(minLength: PaeoniaSpacing.space12)
-
-                    DailyPromptProgressPill(
-                        answeredCount: state.answeredCount,
-                        totalCount: state.totalCount
-                    )
-                    .redacted(reason: isLoading ? .placeholder : [])
-                    .accessibilityHidden(isLoading)
-                }
+                PaeoniaCardEyebrow(.homeDailyPromptEyebrow)
 
                 DailyChallengeStepBar(
                     total: state.totalCount,
                     completed: state.answeredCount
                 )
+                .accessibilityHidden(isLoading)
 
                 titleBlock
 
@@ -181,29 +171,6 @@ struct DailyPromptCard: View {
                 .dailyChallengeSeeYourAnswersButton
             }
         }
-    }
-}
-
-private struct DailyPromptProgressPill: View {
-    let answeredCount: Int
-    let totalCount: Int
-
-    var body: some View {
-        HStack(spacing: PaeoniaSpacing.space4) {
-            Text(answeredCount, format: .number)
-            Text(verbatim: "/")
-            Text(totalCount, format: .number)
-        }
-        .font(PaeoniaTypography.caption.weight(.semibold))
-        .monospacedDigit()
-        .foregroundStyle(.paeoniaTextInverse)
-        .padding(.horizontal, PaeoniaSpacing.space12)
-        .padding(.vertical, PaeoniaSpacing.space4)
-        .background(.paeoniaAccentPrimary)
-        .clipShape(Capsule())
-        // One element for VoiceOver ("1 of 2 answered"), not three fragments.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(.dailyChallengeProgressPillAccessibility(answeredCount, totalCount)))
     }
 }
 

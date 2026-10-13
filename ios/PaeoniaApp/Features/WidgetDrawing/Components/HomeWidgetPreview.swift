@@ -183,45 +183,40 @@ struct HomeWidgetCard: View {
         .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
     }
 
+    /// One short line, so the drawing keeps most of the tile. It shows the partner
+    /// drawing, or who drew the saved picture and when, or a prompt to draw when
+    /// nothing is saved yet. The generic widget title is left out because the card
+    /// itself already says what it is.
+    @ViewBuilder
     private var header: some View {
-        HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
-            headerTitle
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
-
-            if let savedAt = model.content.savedAt {
+        if live?.partnerActivity == .drawing, let partnerName {
+            headerTitle(Text(.homeWidgetPartnerDrawing(partnerName)))
+        } else if let savedAt = model.content.savedAt {
+            HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
+                if let authorName = model.content.authorName {
+                    headerTitle(Text(verbatim: authorName))
+                }
                 Text(Self.timestampText(savedAt))
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .lineLimit(1)
-            } else {
-                Text(.homeWidgetCta)
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(.paeoniaAccentPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .layoutPriority(1)
             }
-
-            Spacer(minLength: PaeoniaSpacing.space4)
-
-            Image(systemName: "arrow.clockwise")
-                .font(.system(size: 12, weight: .semibold))
+        } else {
+            Text(.homeWidgetCta)
+                .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaAccentPrimary)
-                .accessibilityHidden(true)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
         }
     }
 
-    @ViewBuilder
-    private var headerTitle: some View {
-        if live?.partnerActivity == .drawing, let partnerName {
-            Text(.homeWidgetPartnerDrawing(partnerName))
-        } else if let authorName = model.content.authorName {
-            Text(verbatim: authorName)
-        } else {
-            Text(.widgetDrawingTitle)
-        }
+    private func headerTitle(_ text: Text) -> some View {
+        text
+            .font(PaeoniaTypography.caption.weight(.semibold))
+            .foregroundStyle(.paeoniaTextPrimary)
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+            .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
     }
 
     private static func timestampText(_ date: Date) -> String {

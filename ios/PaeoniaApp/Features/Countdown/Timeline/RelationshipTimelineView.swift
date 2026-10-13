@@ -199,7 +199,7 @@ struct RelationshipTimelineView: View {
     /// stand in for pluralization, matching the countdown card's until/until.one
     /// pattern. (Foundation's day-unit styles say "døgn" in Norwegian, which is the
     /// wrong word for this copy.)
-    private static func daysText(_ days: Int) -> String {
+    static func daysText(_ days: Int) -> String {
         days == 1
             ? String(localized: .homeMilestoneTimelineDaysOne)
             : String(localized: .homeMilestoneTimelineDays(days.formatted()))

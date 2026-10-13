@@ -11,7 +11,9 @@ import SwiftUI
 /// The milestone, its day count, and its date all come from
 /// `RelationshipMilestoneCalculator`, so it stays current: a new couple counts down
 /// to their first month, while a couple of years counts down to their next
-/// anniversary or their next round day count.
+/// anniversary or their next round day count. A small "Together for 394 days" line
+/// above the count shows how long the couple has been together, and is left out on
+/// the first day.
 ///
 /// Tapping the card opens `RelationshipTimelineView` (days together, the milestones
 /// ahead, and the date editor). The heart burst is reserved for the milestone day
@@ -52,6 +54,12 @@ struct MilestoneCountdownCard: View {
         return RelationshipMilestoneCalculator().nextMilestone(startedOn: startedOn, now: now)
     }
 
+    /// Whole days since the start, matching the "Together for" line in the timeline.
+    private var daysTogether: Int? {
+        guard let startedOn else { return nil }
+        return RelationshipMilestoneCalculator().daysTogether(startedOn: startedOn, now: now)
+    }
+
     var body: some View {
         Group {
             if let milestone {
@@ -83,6 +91,8 @@ struct MilestoneCountdownCard: View {
     private func card(for milestone: RelationshipMilestone) -> some View {
         Button(action: { isTimelinePresented = true }) {
             VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
+                togetherForLine
+
                 VStack(alignment: .center, spacing: PaeoniaSpacing.space4) {
                     countdown(for: milestone)
 
@@ -119,6 +129,18 @@ struct MilestoneCountdownCard: View {
         .onAppear { celebrateIfMilestoneDay(milestone) }
         .onChange(of: milestone) { _, milestone in
             celebrateIfMilestoneDay(milestone)
+        }
+    }
+
+    @ViewBuilder
+    private var togetherForLine: some View {
+        if let daysTogether, daysTogether > 0 {
+            Text(.homeMilestoneTimelineTogetherFor(RelationshipTimelineView.daysText(daysTogether)))
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextSecondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
         }
     }
 

@@ -3297,7 +3297,7 @@
       }
     },
     "dailyChallenge.progress.pillAccessibility" : {
-      "comment" : "VoiceOver label for the small progress pill on the daily card. First number is answered questions, second is the total.",
+      "comment" : "VoiceOver value for the daily question step bar. First number is answered questions, second is the total.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
