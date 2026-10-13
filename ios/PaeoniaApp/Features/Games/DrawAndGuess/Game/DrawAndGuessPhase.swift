@@ -63,6 +63,21 @@ nonisolated struct DrawAndGuessResolution: Equatable, Sendable {
     let round: DrawAndGuessRoundView?
     /// A move is saved on this phone and not on the server yet.
     let isWaitingToSend: Bool
+    /// The phase once the person moves on from the reveal, or `phase` when there
+    /// is no reveal. Whose turn the hub shows comes from this. It is never `.reveal`.
+    let turnPhase: DrawAndGuessPhase
+
+    init(
+        phase: DrawAndGuessPhase,
+        round: DrawAndGuessRoundView?,
+        isWaitingToSend: Bool,
+        turnPhase: DrawAndGuessPhase? = nil
+    ) {
+        self.phase = phase
+        self.round = round
+        self.isWaitingToSend = isWaitingToSend
+        self.turnPhase = turnPhase ?? phase
+    }
 }
 
 /// Works out the phase from the server's state, this phone's unsent moves, and
@@ -89,6 +104,7 @@ nonisolated struct DrawAndGuessResolver: Sendable {
 
         let round = effectiveRound(state: state, game: game, pending: pending)
         if let round, !round.isFinished {
+            let phase = activePhase(round: round, isPartnerDrawingLive: isPartnerDrawingLive)
             // The partner may have solved the last round and started the next one while
             // this person was away. That result comes first.
             if let unseen = unseenResult(
@@ -97,13 +113,14 @@ nonisolated struct DrawAndGuessResolver: Sendable {
                 acknowledged: acknowledgedRoundIDs,
                 pending: pending
             ) {
-                return DrawAndGuessResolution(phase: .reveal, round: unseen, isWaitingToSend: waiting)
+                return DrawAndGuessResolution(phase: .reveal, round: unseen, isWaitingToSend: waiting, turnPhase: phase)
             }
-            let phase = activePhase(round: round, isPartnerDrawingLive: isPartnerDrawingLive)
             return DrawAndGuessResolution(phase: phase, round: round, isWaitingToSend: waiting)
         }
         if let round, !acknowledgedRoundIDs.contains(round.id) {
-            return DrawAndGuessResolution(phase: .reveal, round: round, isWaitingToSend: waiting)
+            // The guesser of a finished round draws next, also before the server has heard.
+            let next: DrawAndGuessPhase = round.guesserUserID == userID ? .chooseWord : .waitingForWord
+            return DrawAndGuessResolution(phase: .reveal, round: round, isWaitingToSend: waiting, turnPhase: next)
         }
 
         return DrawAndGuessResolution(phase: phaseBetweenRounds(game), round: round, isWaitingToSend: waiting)

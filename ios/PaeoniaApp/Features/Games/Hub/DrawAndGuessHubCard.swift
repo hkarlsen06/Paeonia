@@ -79,20 +79,21 @@ struct DrawAndGuessHubCard: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
+    /// Solid green so it stands out against both the plum card and the white art.
     private var partnerHereChip: some View {
         Label {
             Text(.gamesPartnerHereNow(partnerName))
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextPrimary)
+                .font(PaeoniaTypography.caption.weight(.bold))
         } icon: {
             Circle()
-                .fill(.paeoniaSuccess)
                 .frame(width: 8, height: 8)
                 .accessibilityHidden(true)
         }
+        .foregroundStyle(.paeoniaTextInverse)
         .padding(.horizontal, PaeoniaSpacing.space12)
         .padding(.vertical, PaeoniaSpacing.space8)
-        .background(.paeoniaBackgroundSecondary.opacity(0.75), in: Capsule())
+        .background(.paeoniaSuccess, in: Capsule())
+        .shadow(color: .paeoniaBackgroundSecondary.opacity(0.5), radius: 6, y: 2)
     }
 }
 
