@@ -112,6 +112,11 @@ extension DrawAndGuessViewModel {
         round = nil
         live?.stop()
         live = nil
+        liveGuessChannel = nil
+        lastSentGuessScreen = nil
+        receivedGuessScreen = nil
+        partnerGuess = nil
+        partnerReplayTimelineCache = nil
         tilesRoundID = nil
         boardRoundID = nil
         boardSentRoundID = nil

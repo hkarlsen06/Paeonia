@@ -91,6 +91,8 @@ extension DrawAndGuessViewModel {
         startReplayIfNeeded()
         updateSavePrompt()
         markSeenIfNeeded()
+        // The drawer may already follow the partner's replay, which needed this drawing.
+        updatePartnerGuess()
     }
 
     // MARK: - Replay
@@ -152,6 +154,17 @@ extension DrawAndGuessViewModel {
 
     func isReplayFinished(atWall wall: TimeInterval) -> Bool {
         replayClock?.isFinished(at: wall) ?? false
+    }
+
+    /// The guesser's replay for `DrawAndGuessReplaySurface`.
+    var replayFrames: DrawAndGuessReplayFrames {
+        DrawAndGuessReplayFrames(
+            drawing: { [weak self] wall, side in
+                guard let self, isReplayReady else { return nil }
+                return replayDrawing(atWall: wall, side: side)
+            },
+            isFinished: { [weak self] wall in self?.isReplayFinished(atWall: wall) ?? false }
+        )
     }
 
     /// Hold to fast-forward, release to go back to the drawn pace.

@@ -1,15 +1,22 @@
 import SwiftUI
 
 /// The empty slots of the answer, one per letter with a gap between words. Tapping
-/// a filled slot sends its tile back. On the reveal the slots light up.
+/// a filled slot sends its tile back. On the reveal the slots light up. The
+/// drawer's result screen shows the partner's slots with it, read only.
 struct DrawAndGuessAnswerSlots: View {
-    let viewModel: DrawAndGuessViewModel
+    let slots: DrawAndGuessSlots
     let timeline: DrawAndGuessRevealTimeline
     let namespace: Namespace.ID
     /// The round ended, so the slots show the answer.
     let isRevealed: Bool
     /// The right word lights up green. A missed round fills in quietly.
     let litsGreen: Bool
+    /// Goes up with each wrong full word, to shake the slots.
+    var wrongGuessCount = 0
+    /// The wrong word is still in the slots, outlined.
+    var isShowingWrongGuess = false
+    /// Takes the tile out of the slot at an index. Nil makes the slots read only.
+    var removeTile: ((Int) -> Void)?
 
     @State private var availableWidth: CGFloat = 320
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -32,13 +39,13 @@ struct DrawAndGuessAnswerSlots: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .modifier(DrawAndGuessShake(trigger: viewModel.wrongGuessCount, isEnabled: !reduceMotion))
+        .modifier(DrawAndGuessShake(trigger: wrongGuessCount, isEnabled: !reduceMotion))
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
-        .animation(reduceMotion ? PaeoniaMotion.buttonPress : .spring(duration: 0.16), value: viewModel.slots)
+        .animation(reduceMotion ? PaeoniaMotion.buttonPress : .spring(duration: 0.16), value: slots)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(answerDescription))
         .accessibilityRotor(Text(.gamesDrawAndGuessGuessEmptyLetters)) {
-            ForEach(viewModel.slots.slots.filter { !$0.isGap && $0.tile == nil }) { slot in
+            ForEach(slots.slots.filter { !$0.isGap && $0.tile == nil }) { slot in
                 AccessibilityRotorEntry(
                     Text(.gamesDrawAndGuessSlotEmpty(number(of: slot))),
                     id: slot.id,
@@ -55,7 +62,7 @@ struct DrawAndGuessAnswerSlots: View {
 
     private var words: [Word] {
         var groups: [[DrawAndGuessSlots.Slot]] = [[]]
-        for slot in viewModel.slots.slots {
+        for slot in slots.slots {
             if slot.isGap {
                 groups.append([])
             } else {
@@ -66,7 +73,7 @@ struct DrawAndGuessAnswerSlots: View {
     }
 
     private var letterCount: Int {
-        viewModel.slots.slots.count { !$0.isGap }
+        slots.slots.count { !$0.isGap }
     }
 
     /// Between 28 and 44 points wide, with a long word split over lines so no slot
@@ -100,13 +107,13 @@ struct DrawAndGuessAnswerSlots: View {
     private func slotView(_ slot: DrawAndGuessSlots.Slot, width slotWidth: CGFloat) -> some View {
         let number = number(of: slot)
         let isLit = isRevealed && timeline.litLetters >= number
-        let letter = viewModel.slots.shownLetter(at: slot.id, isRevealed: isRevealed, isLit: isLit)
+        let letter = slots.shownLetter(at: slot.id, isRevealed: isRevealed, isLit: isLit)
         let fill: Color = isLit && litsGreen ? .paeoniaSuccess : .paeoniaSurfacePrimary
         let textColor: Color = isLit && litsGreen ? .paeoniaTextInverse : .paeoniaTextPrimary
         return Button {
-            guard slot.tile != nil else { return }
+            guard slot.tile != nil, let removeTile else { return }
             PaeoniaHaptics.selection()
-            viewModel.removeTile(atSlot: slot.id)
+            removeTile(slot.id)
         } label: {
             ZStack {
                 if let tile = slot.tile, let letter {
@@ -124,20 +131,24 @@ struct DrawAndGuessAnswerSlots: View {
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
                     .strokeBorder(.paeoniaWarning, lineWidth: 2)
-                    .opacity(viewModel.isShowingWrongGuess && slot.tile != nil ? 1 : 0)
-                    .animation(PaeoniaMotion.buttonPress, value: viewModel.isShowingWrongGuess)
+                    .opacity(isShowingWrongGuess && slot.tile != nil ? 1 : 0)
+                    .animation(PaeoniaMotion.buttonPress, value: isShowingWrongGuess)
             }
             .scaleEffect(timeline.rippleIndex == number - 1 ? 1.18 : 1)
             .contentShape(Rectangle().inset(by: -2))
         }
         .buttonStyle(.plain)
-        .allowsHitTesting(!isRevealed)
+        .allowsHitTesting(!isRevealed && removeTile != nil)
         .accessibilityLabel(Text(slotLabel(letter: letter, number: number)))
-        .accessibilityHint(slot.tile == nil || isRevealed ? Text(verbatim: "") : Text(.gamesDrawAndGuessSlotRemoveHint))
+        .accessibilityHint(canRemove(slot) ? Text(.gamesDrawAndGuessSlotRemoveHint) : Text(verbatim: ""))
         .accessibilityRotorEntry(id: slot.id, in: rotorNamespace)
     }
 
     private static let slotHeight: CGFloat = 48
+
+    private func canRemove(_ slot: DrawAndGuessSlots.Slot) -> Bool {
+        slot.tile != nil && !isRevealed && removeTile != nil
+    }
 
     private var emptySlot: some View {
         RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
@@ -155,7 +166,7 @@ struct DrawAndGuessAnswerSlots: View {
 
     /// The position of the slot among the letters, starting at 1.
     private func number(of slot: DrawAndGuessSlots.Slot) -> Int {
-        viewModel.slots.slots.prefix(slot.id + 1).count { !$0.isGap }
+        slots.slots.prefix(slot.id + 1).count { !$0.isGap }
     }
 
     private func slotLabel(letter: Character?, number: Int) -> LocalizedStringResource {

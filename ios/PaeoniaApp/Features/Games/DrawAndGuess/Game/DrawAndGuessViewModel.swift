@@ -84,21 +84,27 @@ final class DrawAndGuessViewModel {
     }
     var customWordValidation: DrawAndGuessCustomWordValidation = .empty
     var tiles: [DrawAndGuessTile] = []
-    var slots = DrawAndGuessSlots(answer: "")
+    var slots = DrawAndGuessSlots(answer: "") {
+        didSet { sendGuessScreen() }
+    }
     /// Goes up with each wrong full guess. Use it to trigger the shake and the haptic.
     var wrongGuessCount = 0
     /// Goes up when this person solves a round. Use it to trigger the success haptic.
     var solvedCount = 0
     /// The wrong guess stays in the slots for a moment before the tiles go back.
-    var isShowingWrongGuess = false
+    var isShowingWrongGuess = false {
+        didSet { sendGuessScreen() }
+    }
     /// The screen sets this from Reduce Motion. The wrong word then stays a little
     /// longer and the tiles go back together.
     var prefersReducedMotion = false
     var partnerPresence: DrawAndGuessPartnerPresence = .away
     var invite: GameInviteState = .hidden
-    /// The result screen is open and the partner has started drawing the next
-    /// round. The bottom button then reads "Watch [Name] draw".
-    var partnerStartedDrawing = false
+    /// The result screen is open and the partner has started the next round.
+    /// The bottom button then reads "Watch [Name] draw" or "See what [Name] drew".
+    var partnerNextRound: DrawAndGuessPartnerNextRound?
+    /// Drawer only: the partner's guess screen while they are on it, from the live room.
+    var partnerGuess: DrawAndGuessPartnerGuess?
     /// A move is saved on this phone and not sent yet. It may be on its way.
     var isWaitingToSend = false
     /// A waiting move has failed to send at least once, so it really is held on
@@ -132,6 +138,11 @@ final class DrawAndGuessViewModel {
     let board = DrawAndGuessDrawingBoard()
     /// The relay room, nil when the couple has none.
     var live: WidgetLiveDrawing?
+    /// The game's own messages in the relay room.
+    @ObservationIgnored var liveGuessChannel: GameLiveChannel<DrawAndGuessLiveMessage>?
+    @ObservationIgnored var lastSentGuessScreen: DrawAndGuessSentGuessScreen?
+    @ObservationIgnored var receivedGuessScreen: DrawAndGuessReceivedGuessScreen?
+    @ObservationIgnored var partnerReplayTimelineCache: (roundID: UUID, timeline: DrawAndGuessReplayTimeline)?
 
     // MARK: - Dependencies
 
@@ -194,7 +205,9 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var loadingAssetID: UUID?
     @ObservationIgnored var downloadedDrawing: PKDrawing?
     @ObservationIgnored var replayTimeline: DrawAndGuessReplayTimeline?
-    @ObservationIgnored var replayClock: DrawAndGuessReplayClock?
+    @ObservationIgnored var replayClock: DrawAndGuessReplayClock? {
+        didSet { sendGuessScreen() }
+    }
 
     init(
         dependencies: GamesDependencies,
@@ -334,7 +347,8 @@ final class DrawAndGuessViewModel {
         choices = (phase == .chooseWord ? state?.choices : nil)?.map(DrawAndGuessWordChoice.init) ?? []
         choicesUnavailable = phase == .chooseWord && choices.isEmpty
         updatePresenceState()
-        updatePartnerStartedDrawing()
+        updatePartnerGuess()
+        updatePartnerNextRound()
         updateSpeedBonus()
         if phase == .preparing || phase == .needsSetup {
             startFailed = startFailed && phase == .preparing
@@ -358,6 +372,7 @@ final class DrawAndGuessViewModel {
         startReplayIfNeeded()
         loadDrawingIfNeeded()
         finishReplayIfNeeded()
+        sendGuessScreen()
         markSeenIfNeeded()
         if phase == .preparing, !startFailed, startTask == nil {
             startTask = Task { [weak self] in

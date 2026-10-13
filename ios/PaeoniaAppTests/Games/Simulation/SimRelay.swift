@@ -27,6 +27,7 @@ final class SimRelay {
 
     private enum Delivery {
         case message(SimRelaySocket, socketID: String, WidgetLiveMessage)
+        case gameData(SimRelaySocket, socketID: String, Data)
         case disconnect(SimRelaySocket)
     }
 
@@ -101,6 +102,15 @@ final class SimRelay {
         }
     }
 
+    /// A game's own message, forwarded unread as the relay does.
+    func forward(from socket: Socket, gameData: Data) {
+        guard !socket.hasLeft else { return }
+        broadcast(from: socket) { .gameData($0, socketID: $1, gameData) }
+        if isExpired(socket) {
+            expire(socket)
+        }
+    }
+
     /// Closes every socket past its session, as the room's alarm does.
     func expireSessions() {
         for socket in open where isExpired(socket) {
@@ -129,11 +139,15 @@ final class SimRelay {
     }
 
     private func broadcast(from sender: Socket, _ message: WidgetLiveMessage) {
+        broadcast(from: sender) { .message($0, socketID: $1, message) }
+    }
+
+    private func broadcast(from sender: Socket, _ delivery: (SimRelaySocket, String) -> Delivery) {
         for peer in open where peer.user != sender.user {
             if isExpired(peer) {
                 expire(peer)
             } else if let connection = peer.connection {
-                enqueue(.message(connection, socketID: peer.id, message))
+                enqueue(delivery(connection, peer.id))
             }
         }
     }
@@ -154,6 +168,10 @@ final class SimRelay {
                 // A socket the phone has since lost hears nothing.
                 if connection.socketID == socketID {
                     connection.onMessage?(message)
+                }
+            case let .gameData(connection, socketID, data):
+                if connection.socketID == socketID {
+                    connection.onGameData?(data)
                 }
             case let .disconnect(connection):
                 connection.relayDidDisconnect()
@@ -216,6 +234,11 @@ final class SimRelaySocket: WidgetLiveConnection {
     override func send(_ message: WidgetLiveMessage) {
         guard let socket else { return }
         relay.forward(from: socket, message)
+    }
+
+    override func send(gameData: Data) {
+        guard let socket else { return }
+        relay.forward(from: socket, gameData: gameData)
     }
 
     /// The real connection tries again after a drop. The driver calls this as its backoff.

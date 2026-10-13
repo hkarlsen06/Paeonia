@@ -144,7 +144,8 @@ struct DrawAndGuessWaitingView: View {
 }
 
 /// "Tell [Name] you want to play". It shows only while the partner is not in the
-/// game, reads "Sent" after a send, and comes back 15 minutes after the last invite.
+/// game, reads "Sent" after a send with the time the next one can go, and comes
+/// back 15 minutes after the last invite. The view model's tick brings it back.
 struct DrawAndGuessInviteButton: View {
     let viewModel: DrawAndGuessViewModel
 
@@ -155,22 +156,21 @@ struct DrawAndGuessInviteButton: View {
         case .available:
             sendButton
         case let .sent(until):
-            // One tick at the moment the button comes back, so nothing polls.
-            TimelineView(.explicit([until])) { context in
-                if context.date >= until {
-                    sendButton
-                } else {
-                    Button {} label: {
-                        Label {
-                            Text(.gamesInviteSent)
-                        } icon: {
-                            Image(systemName: "checkmark").accessibilityHidden(true)
-                        }
+            VStack(spacing: PaeoniaSpacing.space8) {
+                Button {} label: {
+                    Label {
+                        Text(.gamesInviteSent)
+                    } icon: {
+                        Image(systemName: "checkmark").accessibilityHidden(true)
                     }
-                    .buttonStyle(PaeoniaSecondaryButtonStyle())
-                    .disabled(true)
-                    .accessibilityIdentifier("draw.invite.sent")
                 }
+                .buttonStyle(PaeoniaSecondaryButtonStyle())
+                .disabled(true)
+                .accessibilityIdentifier("draw.invite.sent")
+                Text(.gamesInviteSentUntil(until.formatted(date: .omitted, time: .shortened)))
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .multilineTextAlignment(.center)
             }
         }
     }

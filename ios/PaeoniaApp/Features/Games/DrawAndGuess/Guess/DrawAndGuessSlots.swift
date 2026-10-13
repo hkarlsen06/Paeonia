@@ -31,6 +31,15 @@ nonisolated struct DrawAndGuessSlots: Equatable, Sendable {
         }
     }
 
+    /// The partner's slots as their phone shows them. `letters` has one entry per
+    /// slot, nil where it is empty. Each letter gets the slot's index as its tile id.
+    init(answer: String, letters: [Character?]) {
+        self.init(answer: answer)
+        for index in slots.indices where !slots[index].isGap && letters.indices.contains(index) {
+            slots[index].tile = letters[index].map { DrawAndGuessTile(id: index, letter: $0) }
+        }
+    }
+
     var placedTileIDs: Set<Int> {
         Set(slots.compactMap { $0.tile?.id })
     }

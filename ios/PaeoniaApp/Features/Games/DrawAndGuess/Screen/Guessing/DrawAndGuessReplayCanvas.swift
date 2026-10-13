@@ -46,7 +46,7 @@ struct DrawAndGuessReplayCanvas: View {
             WidgetLiveOverlayView(live: live)
                 .allowsHitTesting(false)
         } else if viewModel.isReplayReady {
-            DrawAndGuessReplaySurface(viewModel: viewModel, side: side)
+            DrawAndGuessReplaySurface(frames: viewModel.replayFrames, side: side)
                 .allowsHitTesting(false)
         } else if viewModel.phase != .reveal {
             // On the reveal, `DrawAndGuessRevealDrawing` shows the spinner or the error.
@@ -93,10 +93,18 @@ struct DrawAndGuessReplayCanvas: View {
     }
 }
 
-/// Draws the replay on a canvas that takes no touches, on every screen frame while
-/// the drawing is still moving.
+/// What a replay surface draws on each screen frame.
+struct DrawAndGuessReplayFrames {
+    /// The drawing at a wall time, scaled to `side`. Nil while there is nothing to play.
+    let drawing: @MainActor (_ wall: TimeInterval, _ side: CGFloat) -> PKDrawing?
+    let isFinished: @MainActor (_ wall: TimeInterval) -> Bool
+}
+
+/// Draws a replay on a canvas that takes no touches, on every screen frame while
+/// the drawing is still moving. The guesser's own replay and the drawer's view of
+/// it both use it.
 struct DrawAndGuessReplaySurface: UIViewRepresentable {
-    let viewModel: DrawAndGuessViewModel
+    let frames: DrawAndGuessReplayFrames
     let side: CGFloat
 
     func makeUIView(context: Context) -> PKCanvasView {
@@ -109,7 +117,7 @@ struct DrawAndGuessReplaySurface: UIViewRepresentable {
 
     func updateUIView(_: PKCanvasView, context: Context) {
         context.coordinator.side = side
-        context.coordinator.viewModel = viewModel
+        context.coordinator.frames = frames
     }
 
     static func dismantleUIView(_: PKCanvasView, coordinator: Coordinator) {
@@ -117,20 +125,20 @@ struct DrawAndGuessReplaySurface: UIViewRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(viewModel: viewModel, side: side)
+        Coordinator(frames: frames, side: side)
     }
 
     @MainActor
     final class Coordinator: NSObject {
-        var viewModel: DrawAndGuessViewModel
+        var frames: DrawAndGuessReplayFrames
         var side: CGFloat
         private weak var canvasView: PKCanvasView?
         private var displayLink: CADisplayLink?
         private var drawnSide: CGFloat = 0
         private var finishedDrawing = false
 
-        init(viewModel: DrawAndGuessViewModel, side: CGFloat) {
-            self.viewModel = viewModel
+        init(frames: DrawAndGuessReplayFrames, side: CGFloat) {
+            self.frames = frames
             self.side = side
         }
 
@@ -147,12 +155,13 @@ struct DrawAndGuessReplaySurface: UIViewRepresentable {
         }
 
         @objc private func step(_: CADisplayLink) {
-            guard let canvasView, viewModel.isReplayReady else { return }
+            guard let canvasView else { return }
             let wall = CACurrentMediaTime()
-            let isFinished = viewModel.isReplayFinished(atWall: wall)
+            let isFinished = frames.isFinished(wall)
             // Once the last stroke is drawn there is nothing left to redraw.
             if isFinished, finishedDrawing, drawnSide == side { return }
-            canvasView.drawing = viewModel.replayDrawing(atWall: wall, side: side)
+            guard let drawing = frames.drawing(wall, side) else { return }
+            canvasView.drawing = drawing
             finishedDrawing = isFinished
             drawnSide = side
         }

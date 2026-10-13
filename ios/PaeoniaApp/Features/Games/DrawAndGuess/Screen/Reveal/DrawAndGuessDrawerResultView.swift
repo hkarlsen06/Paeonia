@@ -1,9 +1,10 @@
 import SwiftUI
 
 /// The drawer's screen after sending the drawing. It shows who has seen it, the
-/// guesses as they come, and when the round ends the result. The chips are the
-/// drawer's payoff for the turn, so on a round that ended earlier they play back
-/// one by one.
+/// guesses as they come, and when the round ends the result. While the partner is
+/// on their guess screen, it shows their letters and plays the drawing where
+/// their replay is. The chips are the drawer's payoff for the turn, so on a round
+/// that ended earlier they play back one by one.
 struct DrawAndGuessDrawerResultView: View {
     @Bindable var viewModel: DrawAndGuessViewModel
 
@@ -22,11 +23,15 @@ struct DrawAndGuessDrawerResultView: View {
     }
 
     private var isRevealed: Bool { viewModel.phase == .reveal }
-    /// The button reads "Watch [Name] draw" and is on screen.
-    private var showsWatchCall: Bool { isRevealed && timeline.buttonShown && viewModel.partnerStartedDrawing }
+    /// The button that leads to the partner's next round, while it is on screen.
+    private var nextRoundCall: DrawAndGuessPartnerNextRound? {
+        isRevealed && timeline.buttonShown ? viewModel.partnerNextRound : nil
+    }
     private var revealProgress: Int {
         [timeline.titleShown, timeline.panelShown].count { $0 }
     }
+    /// The partner's guess screen, while the round is open and they are on it.
+    private var partnerGuess: DrawAndGuessPartnerGuess? { isRevealed ? nil : viewModel.partnerGuess }
     private var wrongAttempts: [DrawAndGuessAttemptView] { viewModel.round?.attempts.filter { !$0.isCorrect } ?? [] }
     private var visibleWrong: [DrawAndGuessAttemptView] {
         isRevealed ? Array(wrongAttempts.prefix(shownWrongCount)) : wrongAttempts
@@ -46,7 +51,7 @@ struct DrawAndGuessDrawerResultView: View {
             }
         } square: { side in
             DrawAndGuessSquare(side: side, scale: 0.8, glow: timeline.glow) {
-                DrawAndGuessRevealDrawing(viewModel: viewModel, side: side)
+                DrawAndGuessDrawerSquareContent(viewModel: viewModel, partnerGuess: partnerGuess, side: side)
             }
             .drawAndGuessDrawingAccessibility(
                 label: Text(.gamesDrawAndGuessGuessReplayLabel(viewModel.me.name)),
@@ -59,9 +64,12 @@ struct DrawAndGuessDrawerResultView: View {
                 Button {
                     Task { await viewModel.continueFromReveal() }
                 } label: {
-                    if viewModel.partnerStartedDrawing {
+                    switch viewModel.partnerNextRound {
+                    case .drawing:
                         DrawAndGuessWatchLabel(partnerName: viewModel.partnerName)
-                    } else {
+                    case .sent:
+                        Text(.gamesDrawAndGuessHandoffSeeDrawing(viewModel.partnerName))
+                    case nil:
                         Text(.gamesDrawAndGuessHandoffContinue)
                     }
                 }
@@ -90,12 +98,14 @@ struct DrawAndGuessDrawerResultView: View {
                 PaeoniaHaptics.partnerDrawingReceived()
             }
         }
-        .onChange(of: showsWatchCall) { _, shows in
-            guard shows else { return }
+        .onChange(of: nextRoundCall) { _, call in
+            guard let call else { return }
             PaeoniaHaptics.partnerDrawingReceived()
-            AccessibilityNotification.Announcement(
-                String(localized: .gamesDrawAndGuessWaitDrawing(viewModel.partnerName))
-            ).post()
+            let announcement: String = switch call {
+            case .drawing: String(localized: .gamesDrawAndGuessWaitDrawing(viewModel.partnerName))
+            case .sent: String(localized: .gamesDrawAndGuessHandoffSeeDrawing(viewModel.partnerName))
+            }
+            AccessibilityNotification.Announcement(announcement).post()
         }
         .onChange(of: viewModel.partnerPresence.isHere) { old, new in
             guard new, !old else { return }
@@ -108,6 +118,7 @@ struct DrawAndGuessDrawerResultView: View {
             if shown, UIAccessibility.isVoiceOverRunning { isTitleFocused = true }
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: visibleWrong.count)
+        .animation(PaeoniaMotion.stateChange, value: partnerGuess == nil)
         .onDisappear {
             playbackTask?.cancel()
             timeline.stop()
@@ -146,6 +157,10 @@ struct DrawAndGuessDrawerResultView: View {
         VStack(spacing: PaeoniaSpacing.space16) {
             if viewModel.isHeldOnPhone, !isRevealed {
                 DrawAndGuessOfflineLine()
+            }
+            if let partnerGuess {
+                DrawAndGuessPartnerSlots(guess: partnerGuess, partnerName: viewModel.partnerName)
+                    .transition(.opacity)
             }
             guessArea
                 .overlay {

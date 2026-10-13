@@ -3,7 +3,7 @@ import Foundation
 /// Maps wall time to replay time. Changing the rate (hold to fast-forward)
 /// re-anchors the clock at the current replay time, so the picture never jumps.
 /// Pass any steady wall clock, such as `CACurrentMediaTime()`.
-nonisolated struct DrawAndGuessReplayClock: Sendable {
+nonisolated struct DrawAndGuessReplayClock: Equatable, Sendable {
     static let fastForwardRate: Double = 4
 
     let duration: TimeInterval
@@ -15,6 +15,15 @@ nonisolated struct DrawAndGuessReplayClock: Sendable {
     init(duration: TimeInterval, startingAt wall: TimeInterval) {
         self.duration = duration
         anchorWall = wall
+    }
+
+    /// Plays on from `replayTime` at `rate` when the wall clock reads `wall`, as
+    /// the partner's replay does on their phone.
+    init(duration: TimeInterval, replayTime: TimeInterval, rate: Double, at wall: TimeInterval) {
+        self.duration = duration
+        anchorWall = wall
+        anchorReplay = min(duration, max(0, replayTime))
+        self.rate = max(0, rate)
     }
 
     func replayTime(at wall: TimeInterval) -> TimeInterval {

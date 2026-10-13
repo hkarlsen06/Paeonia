@@ -19,6 +19,18 @@ nonisolated enum DrawAndGuessAnswer {
         normalized(answer).filter { $0 != " " }
     }
 
+    /// Each character of the normalized answer with its place among the letters,
+    /// or nil for a space. The reveal lights letters by that place, so a space
+    /// must not take a number.
+    static func numberedCharacters(of answer: String) -> [(character: Character, letter: Int?)] {
+        var next = 0
+        return normalized(answer).map { character in
+            guard character != " " else { return (character, nil) }
+            defer { next += 1 }
+            return (character, next)
+        }
+    }
+
     /// A word as the screens show it: the first letter in capitals, the rest as typed.
     static func display(_ word: String) -> String {
         let text = collapsingWhitespace(word)

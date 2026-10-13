@@ -42,9 +42,14 @@ final class WidgetLiveDrawing {
     /// after a replace, because the canvas view picks that up on the next
     /// SwiftUI update.
     @ObservationIgnored var currentDrawing: (() -> PKDrawing)?
+    /// The partner may have missed what this phone sent: this phone connected to
+    /// a room the partner was in, or the partner joined. A game sends its whole
+    /// state again.
+    @ObservationIgnored var onPartnerArrived: (() -> Void)?
 
     @ObservationIgnored private(set) var role: WidgetLivePresence.Role
-    @ObservationIgnored private let connection: WidgetLiveConnection
+    /// The socket. A game opens its `GameLiveChannel` on it.
+    @ObservationIgnored let connection: WidgetLiveConnection
     @ObservationIgnored private var presence = WidgetLivePresence()
     @ObservationIgnored private var room = WidgetLiveRoom()
     @ObservationIgnored private var playback = WidgetLivePlayback()
@@ -238,6 +243,7 @@ final class WidgetLiveDrawing {
             presence.welcome(id: message.id, peers: message.peers ?? 0)
             isAwaitingRoomState = role == .drawing && presence.peerCount > 0
             sendHello(needsCanvas: presence.peerCount > 0)
+            announceArrivalIfPartnerIsHere()
         case .joined:
             // The partner may be back after a drop the relay never saw, with
             // strokes drawn while away. Their whole canvas is asked for again.
@@ -245,6 +251,7 @@ final class WidgetLiveDrawing {
             isPartnerCanvasCaughtUp = false
             hasSentCanvasToPartner = false
             sendHello(needsCanvas: role == .watching)
+            announceArrivalIfPartnerIsHere()
         case .hello:
             if let from = message.from, let peerRole = message.role.flatMap(WidgetLivePresence.Role.init) {
                 presence.hello(from: from, role: peerRole)
@@ -260,6 +267,12 @@ final class WidgetLiveDrawing {
             presence.left(id: message.id)
         case .live, .liveEnd, .ops:
             break
+        }
+    }
+
+    private func announceArrivalIfPartnerIsHere() {
+        if presence.peerCount > 0 {
+            onPartnerArrived?()
         }
     }
 

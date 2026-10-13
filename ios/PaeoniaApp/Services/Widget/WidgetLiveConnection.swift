@@ -26,6 +26,9 @@ class WidgetLiveConnection {
     private static let maxBackoff: Duration = .seconds(30)
 
     var onMessage: ((WidgetLiveMessage) -> Void)?
+    /// A game's own message, as the JSON of a `GameLiveEnvelope`. `GameLiveChannel`
+    /// decodes it.
+    var onGameData: ((Data) -> Void)?
     /// The socket closed. Not called after `stop()`.
     var onDisconnect: (() -> Void)?
 
@@ -70,6 +73,15 @@ class WidgetLiveConnection {
               let data = try? encoder.encode(message),
               let text = String(data: data, encoding: .utf8)
         else {
+            return
+        }
+        socket.send(.string(text)) { _ in }
+    }
+
+    /// Sends a game's own message, the JSON of a `GameLiveEnvelope`. Dropped
+    /// while offline, like `send(_:)`.
+    func send(gameData: Data) {
+        guard let socket, let text = String(data: gameData, encoding: .utf8) else {
             return
         }
         socket.send(.string(text)) { _ in }
@@ -131,8 +143,13 @@ class WidgetLiveConnection {
                 break
             }
             didReceive = true
-            if case let .string(text) = message,
-               let decoded = try? decoder.decode(WidgetLiveMessage.self, from: Data(text.utf8)) {
+            guard case let .string(text) = message else {
+                continue
+            }
+            let data = Data(text.utf8)
+            if GameLiveEnvelopeTag.isGameMessage(data, decoder: decoder) {
+                onGameData?(data)
+            } else if let decoded = try? decoder.decode(WidgetLiveMessage.self, from: data) {
                 onMessage?(decoded)
             }
         }

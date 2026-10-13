@@ -90,6 +90,10 @@ extension DrawAndGuessViewModel {
         room.savedStrokeKeys = { [] }
         room.setAsideDrawing = { _ in }
         room.currentDrawing = { [weak self] in self?.board.drawing ?? PKDrawing() }
+        room.onPartnerArrived = { [weak self] in self?.resendGuessScreen() }
+        let channel = GameLiveChannel<DrawAndGuessLiveMessage>(connection: room.connection)
+        channel.onMessage = { [weak self] message in self?.receiveGuessScreen(message) }
+        liveGuessChannel = channel
         live = room
     }
 
@@ -144,14 +148,27 @@ extension DrawAndGuessViewModel {
     }
 
     /// This phone looks at an old result, and the partner already draws the next
-    /// round. The result screen then offers "Watch [Name] draw".
-    func updatePartnerStartedDrawing() {
+    /// round or has sent it. The result screen then offers to go to it.
+    func updatePartnerNextRound() {
         guard phase == .reveal, let userID = currentUserID,
-              let current = state?.currentRound, current.id != round?.id
+              let current = state?.currentRound, current.id != round?.id,
+              current.drawerUserID != userID
         else {
-            partnerStartedDrawing = false
+            partnerNextRound = nil
             return
         }
-        partnerStartedDrawing = current.state == .drawing && current.drawerUserID != userID
+        partnerNextRound = switch current.state {
+        case .drawing: .drawing
+        case .guessing: .sent
+        case .solved, .missed: nil
+        }
     }
+}
+
+/// Where the partner is in the round after the one on this phone's result screen.
+enum DrawAndGuessPartnerNextRound: Equatable {
+    /// "Watch [Name] draw".
+    case drawing
+    /// "See what [Name] drew".
+    case sent
 }

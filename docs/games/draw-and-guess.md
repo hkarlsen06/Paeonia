@@ -76,6 +76,7 @@ Live runs whenever both partners have the game screen open. Without the partner 
 - **Strokes.** The drawer's strokes stream over the relay as in `WidgetLiveMessage` and play on the guesser's screen through `WidgetLivePlayback`.
 - **Joining late.** A guesser who opens the game mid-drawing asks for a snapshot with `hello`, as `WidgetLiveRoom` does. The strokes so far play back quickly, then live strokes follow. A drawer who has tapped Done has no canvas left to answer, so a guesser who joins then gets no snapshot. The guesser's phone downloads the sent drawing and replays it whenever the live canvas holds no strokes.
 - **Guesses.** Guesses go through Convex, because they are saved anyway. The drawer's live query shows them within a few hundred milliseconds.
+- **The guess screen.** While guessing, the guesser's phone sends its screen to the room as a `DrawAndGuessLiveMessage`: the letters in the slots, whether a wrong word is showing, and where the replay is (its replay time and speed). It sends the whole screen whenever it changes, and again when the drawer joins or this phone connects to a room the drawer is in. Nothing in it is saved. The drawer's result screen shows it (see "The drawer's result").
 - **A correct guess** ends the round right away. The drawer's phone sends the drawing as it is at that moment, and both phones show the reveal together. The roles then swap. The new drawer picks a word while the other partner stays to watch, so two partners who are both online can play back and forth without leaving the screen.
 - **The drawer taps Done before a correct guess.** The round continues as a normal round, and the guesser keeps guessing on the finished drawing.
 - **Lost connection.** The drawer keeps drawing and the drawing still sends on Done. The guesser's phone reconnects and asks for a fresh snapshot. The relay closes sockets after 10 minutes (`SESSION_MS`), so the same reconnect path runs during long rounds without the players noticing.
@@ -272,7 +273,7 @@ Layout, centered in the content, top to bottom.
 3. Dim slots (optional, see above).
 4. Pinned bottom, only while the partner is not in the game: the invite button.
 
-The invite button is secondary style, "Tell [Name] you want to play". After a send it is disabled and reads "Sent" with `checkmark`. It comes back when `last_invite_at` is 15 minutes old (a `TimelineView` on that date, no polling). It hides while the partner has the game open. A failed send uses the top banner and leaves the button enabled.
+The invite button is secondary style, "Tell [Name] you want to play". After a send it is disabled and reads "Sent" with `checkmark`, with a caption under it, "You can send another at [time]". It comes back when `last_invite_at` is 15 minutes old, on the view model's next 15 second tick. Do not use `TimelineView(.explicit([until]))` for this. Its first render gets `context.date == until`, so the button would never read "Sent". It hides while the partner has the game open. A failed send uses the top banner and leaves the button enabled.
 
 The switch to guessing happens at the first stroke (live) or when the drawing arrives (async). The avatar fades out as the canvas rises in with `cardReveal`. Reduce Motion: cross-fade.
 
@@ -287,6 +288,7 @@ The switch to guessing happens at the first stroke (live) or when the drawing ar
 | `wait.letters` | %lld letters | %lld bokstaver |
 | `wait.invite` | Tell [Name] you want to play | Si til [Name] at du vil spille |
 | `wait.inviteSent` | Sent | Sendt |
+| `invite.sentUntil` | You can send another at [time] | Du kan sende en ny kl. [time] |
 
 VoiceOver reads avatar and title as one element. The ring is hidden. The score capsule and a pending save row sit above, in that order.
 
@@ -295,7 +297,7 @@ VoiceOver reads avatar and title as one element. The ring is hidden. The score c
 Purpose. Watch, guess fast, feel clever.
 
 Layout, top to bottom.
-1. Live row, one fixed line. Leading, "[Name] is drawing for you" while live, or "[Name] drew this for you" in async (avatar 24 pt). Trailing, the speed bonus label in "Against each other" only (see below).
+1. Live row, one fixed line. Leading, "[Name] is drawing for you" while live, "[Name] is watching you guess" with the accent ring while the drawer is in the game after Done (their result screen shows this screen), or "[Name] drew this for you" otherwise (avatar 24 pt). Trailing, the speed bonus label in "Against each other" only (see below).
 2. Square replay (`DrawAndGuessReplayTimeline` driven by `DrawAndGuessReplayClock`). A 2 pt progress line runs along its bottom edge in `.paeoniaAccentPrimary` at 0.6 opacity.
 3. Language line, only when the word's language differs from the app's: `globe` and "The word is in English" in `caption`, `.paeoniaTextSecondary`, centered above the slots. It follows the couple's game language, as the decoy tiles do. A custom word gets no line, because the drawer could type it in any language. It fades out with the live row on the reveal.
 4. Answer slots, centered, one group per word. A group never splits unless one word is wider than the screen at the smallest slot. Then it splits into even pieces on separate lines (`DrawAndGuessSlotSizing`). Slots are 28 to 44 pt wide, the widest that adds no line, and 48 pt tall. An empty slot is `.paeoniaSurfaceSecondary` with a 2 pt underline in `.paeoniaTextTertiary`. A filled slot is `.paeoniaSurfacePrimary` with the letter in `PaeoniaTypography.title`. Hit areas run the full 48 pt height and reach into the gaps.
@@ -317,6 +319,7 @@ The speed timer. Only "Against each other" gets one, because only that style has
 | Key | English | Norwegian |
 |---|---|---|
 | `guess.drawnBy` | [Name] drew this for you | [Name] tegnet dette til deg |
+| `guess.watchingYou` | [Name] is watching you guess | [Name] ser at du gjetter |
 | `guess.speedBonus` | Speed bonus +1 | Fartsbonus +1 |
 | `guess.speedBonus.a11y` | Guess within 30 seconds for 1 extra point. | Gjett innen 30 sekunder for ett ekstra poeng. |
 | `guess.holdHint` | Hold to speed up | Hold for å spole fremover |
@@ -389,8 +392,9 @@ Purpose. The drawer's payoff. It should feel like watching the other person thin
 
 Right after Done, if the round is not solved, the drawer sees the same square (80%, static, showing the full drawing) with:
 1. Status line. "Sent to [Name]". Under it, one of three lines. "[Name] is looking at it" while the partner is on the guess screen (role `watching`, with the avatar ring and the same joined pulse as phase 2). "[Name] has seen it" once the server has `guesser_first_seen_at` for the round and the partner has left the guess screen. "[Name] hasn't seen it yet" when the guesser has never seen the drawing, also while the partner is somewhere else in the game. Whether the partner has the drawing is separate from whether it has left this phone. While it still waits to leave, the line says "hasn't seen it yet" unless the server has `guesser_first_seen_at` or the partner watches live, which means they asked for and got this phone's whole canvas in the live room since either phone last joined (`DrawAndGuessSentStatus`).
-2. Guess area. With no guesses, "No guesses yet. We'll tell you when [Name] guesses it." As guesses arrive, each wrong word is a chip (`.paeoniaSurfacePrimary`, `caption` semibold, wrapping, in order), appearing with `cardReveal` and `partnerDrawingReceived()`. The row reads "[Name] tried" in front.
-3. Pinned bottom: nothing, until the round ends. The drawer may leave with back.
+2. The partner's letters, only while the partner is on the guess screen and their phone has sent it. "[Name] is guessing" in `caption`, then their answer slots, read only, filling and emptying as they place tiles. A wrong word gets the same shake and outline as on their screen. While they replay the drawing, the square plays it at the point their replay is, at their speed. A partner who watched live sees the whole drawing, and so does the square. When the partner leaves the guess screen, the letters go and the square shows the whole drawing again.
+3. Guess area. With no guesses, "No guesses yet. We'll tell you when [Name] guesses it." As guesses arrive, each wrong word is a chip (`.paeoniaSurfacePrimary`, `caption` semibold, wrapping, in order), appearing with `cardReveal` and `partnerDrawingReceived()`. The row reads "[Name] tried" in front.
+4. Pinned bottom: nothing, until the round ends. The drawer may leave with back.
 
 Async open. When the drawer opens the game after a round ended, the chips play back in order, 0.5 s apart, compressed so the sequence takes 3 seconds at most, each with a soft `partnerDrawingReceived()`. Tapping the screen finishes the sequence. This is the screen the doc calls the drawer's payoff, so it never appears all at once the first time. Reduce Motion: all chips at once.
 
@@ -405,6 +409,7 @@ Missed, from the drawer's side. Title "[Name] asked for the answer", then the ch
 | `result.sent` | Sent to [Name] | Sendt til [Name] |
 | `result.notSeen` | [Name] hasn't seen it yet | [Name] har ikke sett den ennå |
 | `result.looking` | [Name] is looking at it | [Name] ser på den nå |
+| `result.guessing` | [Name] is guessing | [Name] gjetter |
 | `result.seen` | [Name] has seen it | [Name] har sett den |
 | `result.tried` | [Name] tried | [Name] prøvde |
 | `result.noTries` | No guesses yet. We'll tell you when [Name] guesses it. | Ingen gjetninger ennå. Vi sier fra når [Name] gjetter riktig. |
@@ -415,8 +420,9 @@ Missed, from the drawer's side. Title "[Name] asked for the answer", then the ch
 | `result.noPoints` | No points this round. | Ingen poeng denne runden. |
 | `handoff.continue` | Continue | Fortsett |
 | `handoff.watch` | Watch [Name] draw | Se [Name] tegne |
+| `handoff.seeDrawing` | See what [Name] drew | Se hva [Name] tegnet |
 
-Watch the partner draw. When this phone is on the drawer's result and the server's current round is a newer round in state `drawing` with the partner as drawer, the bottom button changes from "Continue" to "Watch [Name] draw", with a pulsing dot in front (still under Reduce Motion). It gives one `partnerDrawingReceived()` haptic and a VoiceOver announcement ("[Name] is drawing for you") when it appears. Tapping it does what Continue does, which also counts as not saving, and lands in the live watching phase when the partner is drawing live. The save button stays above it. The view model exposes this as `partnerStartedDrawing`.
+Watch the partner draw. When this phone is on the drawer's result and the server's current round is a newer round in state `drawing` with the partner as drawer, the bottom button changes from "Continue" to "Watch [Name] draw", with a pulsing dot in front (still under Reduce Motion). It gives one `partnerDrawingReceived()` haptic and a VoiceOver announcement ("[Name] is drawing for you") when it appears. Tapping it does what Continue does, which also counts as not saving, and lands in the live watching phase when the partner is drawing live. The save button stays above it. When the partner has already sent that round (state `guessing`), the button reads "See what [Name] drew" instead, with the same haptic and a VoiceOver announcement of the button text, and no pulsing dot because nothing is happening live. The view model exposes both as `partnerNextRound`.
 
 VoiceOver reads the guesses as one sentence, "[Name] tried CAT, then HAT, then DOG", built with `ListFormatStyle`-style joining, and the chips are hidden from the rotor.
 

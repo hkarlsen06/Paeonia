@@ -55,10 +55,12 @@ struct DrawAndGuessAttemptChips: View {
     /// The right word. Its letters light up one after another, like the answer slots.
     private func correctChip(_ word: String) -> some View {
         HStack(spacing: 1) {
-            ForEach(Array(word.uppercased().enumerated()), id: \.offset) { index, letter in
-                Text(String(letter))
-                    .opacity(index < litLetters || litLetters == 0 ? 1 : 0.35)
-                    .scaleEffect(rippleIndex == index ? 1.3 : 1)
+            ForEach(Array(DrawAndGuessAnswer.numberedCharacters(of: word).enumerated()), id: \.offset) { _, item in
+                // A space has no letter number and is never dimmed.
+                let isLit = litLetters == 0 || item.letter.map { $0 < litLetters } ?? true
+                Text(String(item.character))
+                    .opacity(isLit ? 1 : 0.35)
+                    .scaleEffect(item.letter != nil && rippleIndex == item.letter ? 1.3 : 1)
             }
         }
         .font(PaeoniaTypography.caption.weight(.bold))

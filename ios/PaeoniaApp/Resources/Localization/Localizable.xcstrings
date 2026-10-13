@@ -3260,6 +3260,60 @@
         }
       }
     },
+    "games.drawAndGuess.guess.watchingYou" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is watching you guess"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser at du gjetter"
+          }
+        }
+      },
+      "comment" : "Line above the drawing while the partner who drew it watches the guess live. %@ is the partner's name."
+    },
+    "games.drawAndGuess.handoff.seeDrawing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See what %@ drew"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se hva %@ tegnet"
+          }
+        }
+      },
+      "comment" : "Button on the result screen once the partner has sent their drawing for the next round"
+    },
+    "games.drawAndGuess.result.guessing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is guessing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gjetter"
+          }
+        }
+      },
+      "comment" : "Above the partner's answer letters on the drawer's result screen, while the partner guesses live. %@ is the partner's name."
+    },
     "home.dailyPrompt.eyebrow" : {
       "comment" : "Small overline above today's shared questions on the Us tab; the couple answers three each day",
       "extractionState" : "manual",
@@ -13571,6 +13625,24 @@
         }
       },
       "comment" : "Label of the invite button after an invite was sent"
+    },
+    "games.invite.sentUntil" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can send another at %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan sende en ny kl. %@"
+          }
+        }
+      },
+      "comment" : "Small line under the disabled Sent button. %@ is the time of day, like 14:32, when the next invite to play can go out."
     },
     "games.partnerHereNow" : {
       "extractionState" : "manual",

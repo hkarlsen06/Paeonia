@@ -14,6 +14,15 @@ struct DrawAndGuessSlotsTests {
         #expect(slots.answer == "ICE CREAM")
     }
 
+    @Test func theRightWordChipNumbersLettersButNotSpaces() {
+        let numbered = DrawAndGuessAnswer.numberedCharacters(of: "ice  cream")
+
+        #expect(String(numbered.map(\.character)) == "ICE CREAM")
+        #expect(numbered.map(\.letter) == [0, 1, 2, nil, 3, 4, 5, 6, 7])
+        // The reveal lights all 8 letters, so the last letter must be number 7.
+        #expect(numbered.compactMap(\.letter).max() == DrawAndGuessAnswer.letters(of: "ice cream").count - 1)
+    }
+
     @Test func tilesFillTheNextFreeSlotAndSkipGaps() {
         var slots = DrawAndGuessSlots(answer: "a b")
 

@@ -70,24 +70,6 @@ struct DrawAndGuessGuessView: View {
         .onDisappear { timeline.stop() }
     }
 
-    // MARK: Live row
-
-    private var liveRow: some View {
-        DrawAndGuessLiveRow {
-            DrawAndGuessPresenceLabel(
-                player: viewModel.partner,
-                text: isLive
-                    ? .gamesDrawAndGuessWaitDrawing(viewModel.partnerName)
-                    : .gamesDrawAndGuessGuessDrawnBy(viewModel.partnerName),
-                showsRing: isLive
-            )
-        } trailing: {
-            if viewModel.speedBonus != .hidden {
-                DrawAndGuessSpeedBonusLabel(viewModel: viewModel)
-            }
-        }
-    }
-
     // MARK: Square
 
     private func square(side: CGFloat) -> some View {
@@ -172,11 +154,14 @@ struct DrawAndGuessGuessView: View {
 
     private var slots: some View {
         DrawAndGuessAnswerSlots(
-            viewModel: viewModel,
+            slots: viewModel.slots,
             timeline: timeline,
             namespace: tileNamespace,
             isRevealed: isRevealed,
-            litsGreen: viewModel.reveal?.isSolved == true
+            litsGreen: viewModel.reveal?.isSolved == true,
+            wrongGuessCount: viewModel.wrongGuessCount,
+            isShowingWrongGuess: viewModel.isShowingWrongGuess,
+            removeTile: { viewModel.removeTile(atSlot: $0) }
         )
         .overlay {
             if let start = timeline.bloomStart {
@@ -282,6 +267,39 @@ struct DrawAndGuessGuessView: View {
             AccessibilityNotification.Announcement(
                 String(localized: .gamesDrawAndGuessRevealA11Y(DrawAndGuessAnswer.display(reveal.word), points))
             ).post()
+        }
+    }
+}
+
+// MARK: - Live row
+
+extension DrawAndGuessGuessView {
+    /// The drawer is on their result screen, which shows this screen's letters and replay.
+    private var isWatchedGuessing: Bool {
+        viewModel.phase == .guessing && viewModel.partnerPresence == .drawing
+    }
+
+    private var liveRowText: LocalizedStringResource {
+        if isLive {
+            return .gamesDrawAndGuessWaitDrawing(viewModel.partnerName)
+        }
+        if isWatchedGuessing {
+            return .gamesDrawAndGuessGuessWatchingYou(viewModel.partnerName)
+        }
+        return .gamesDrawAndGuessGuessDrawnBy(viewModel.partnerName)
+    }
+
+    private var liveRow: some View {
+        DrawAndGuessLiveRow {
+            DrawAndGuessPresenceLabel(
+                player: viewModel.partner,
+                text: liveRowText,
+                showsRing: isLive || isWatchedGuessing
+            )
+        } trailing: {
+            if viewModel.speedBonus != .hidden {
+                DrawAndGuessSpeedBonusLabel(viewModel: viewModel)
+            }
         }
     }
 }

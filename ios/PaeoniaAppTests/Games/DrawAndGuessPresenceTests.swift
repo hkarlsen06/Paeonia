@@ -221,13 +221,37 @@ struct DrawAndGuessPresenceTests {
 
         #expect(viewModel.phase == .reveal)
         #expect(viewModel.round?.id == GameFixture.roundID)
-        #expect(viewModel.partnerStartedDrawing)
+        #expect(viewModel.partnerNextRound == .drawing)
 
         // Tapping the button acknowledges the result, which is a "not now" to saving.
         await viewModel.continueFromReveal()
 
-        #expect(!viewModel.partnerStartedDrawing)
+        #expect(viewModel.partnerNextRound == nil)
         #expect(viewModel.phase == .waitingForDrawing)
+        #expect(viewModel.round?.id == GameFixture.nextRoundID)
+    }
+
+    @Test func theResultOffersTheDrawingWhenThePartnerAlreadySentTheNextRound() async {
+        let sentNext = GameFixture.state(
+            settings: GameFixture.settings(),
+            game: GameFixture.game(state: .guessing, turn: GameFixture.me, roundID: GameFixture.nextRoundID),
+            round: GameFixture.round(
+                id: GameFixture.nextRoundID, state: .guessing, drawer: GameFixture.partner, hasDrawing: true
+            ),
+            recentRounds: [
+                GameFixture.round(state: .solved, drawer: GameFixture.me, hasDrawing: true, solveMs: 9_000),
+            ]
+        )
+        let viewModel = environment(sentNext).viewModel()
+        await viewModel.reload()
+
+        #expect(viewModel.phase == .reveal)
+        #expect(viewModel.partnerNextRound == .sent)
+
+        await viewModel.continueFromReveal()
+
+        #expect(viewModel.partnerNextRound == nil)
+        #expect(viewModel.phase == .guessing)
         #expect(viewModel.round?.id == GameFixture.nextRoundID)
     }
 
@@ -241,7 +265,7 @@ struct DrawAndGuessPresenceTests {
         await viewModel.reload()
 
         #expect(viewModel.phase == .reveal)
-        #expect(!viewModel.partnerStartedDrawing)
+        #expect(viewModel.partnerNextRound == nil)
     }
 
     // MARK: No offline flash
