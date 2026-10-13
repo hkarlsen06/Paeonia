@@ -146,11 +146,9 @@
       case .paywallTrial, .paywallStandard, .paywallPaired, .paywallLoading:
         DeveloperPaywallScenarioView(scenario: scenario)
       case .pairedHome, .questions, .questionsPartial, .questionsRevealed, .questionsEmpty,
-        .questionsLoading, .questionsError, .memoriesEmpty, .memoriesPopulated,
+        .questionsLoading, .questionsError, .questionsHistory, .memoriesEmpty, .memoriesPopulated,
         .questionsOfflineQueued, .questionAnswerFlow:
         DeveloperPairedScenarioHost(scenario: scenario)
-      case .questionsHistory:
-        DeveloperQuestionsHistoryScenarioView()
       case .streakHealthy, .streakBroken, .streakRestored:
         DeveloperStreakScenarioView(scenario: scenario)
       case .memoryEditor:

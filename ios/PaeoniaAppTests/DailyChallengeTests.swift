@@ -41,12 +41,6 @@ struct DailyChallengeMappingTests {
                 status: "answered",
                 ownAnswerID: UUID()
             ),
-            questionRow(
-                slotNumber: 3,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
-                status: "answered",
-                ownAnswerID: UUID()
-            ),
         ])
         let service = RecordingDailyChallengeService(
             snapshots: [
@@ -69,14 +63,30 @@ struct DailyChallengeMappingTests {
         #expect(viewModel.homeCardState.kind == .noChallenge)
     }
 
+    @Test func completedDayFollowUpDependsOnThePartner() {
+        func state(partnerAnswered: Bool, answerable: Bool) -> DailyChallengeCardState {
+            DailyChallengeCardState(
+                kind: .complete,
+                answeredCount: 2,
+                totalCount: 2,
+                hasPartnerAnswersForToday: partnerAnswered,
+                hasAnswerablePartnerQuestions: answerable
+            )
+        }
+
+        // Open partner questions come first, even when the partner also answered today.
+        #expect(state(partnerAnswered: true, answerable: true).completeFollowUp == .partnerQuestionsToAnswer)
+        #expect(state(partnerAnswered: false, answerable: false).completeFollowUp == .waitingForPartner)
+        #expect(state(partnerAnswered: true, answerable: false).completeFollowUp == .bothAnswered)
+    }
+
     @Test func unansweredOwnQuestionsAreVisibleAndAnswerable() {
         let snapshot = makeSnapshot(rows: [
             questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
             questionRow(slotNumber: 2, seededForUserID: TestDailyChallengeIDs.currentUser),
-            questionRow(slotNumber: 3, seededForUserID: TestDailyChallengeIDs.currentUser),
         ])
 
-        #expect(snapshot.ownQuestions.count == 3)
+        #expect(snapshot.ownQuestions.count == 2)
         #expect(snapshot.partnerStartedQuestions.isEmpty)
         #expect(snapshot.progress.ownAnsweredCount == 0)
         #expect(snapshot.ownQuestions.allSatisfy { $0.canSubmitTextAnswer })
@@ -94,7 +104,6 @@ struct DailyChallengeMappingTests {
                     ownAnsweredAt: TestDailyChallengeIDs.answerDate
                 ),
                 questionRow(slotNumber: 2, seededForUserID: TestDailyChallengeIDs.currentUser),
-                questionRow(slotNumber: 3, seededForUserID: TestDailyChallengeIDs.currentUser),
             ],
             details: [
                 answerDetail(answerID: answerID, isOwnAnswer: true, textBody: "I thought of us at lunch."),
@@ -197,7 +206,7 @@ struct DailyChallengeMappingTests {
         #expect(DailyChallengeAnswerKind(rawValue: "voice").rawValue == "voice")
     }
 
-    @Test func challengeProgressUsesOnlyCurrentUsersThreeSeededQuestions() {
+    @Test func challengeProgressUsesOnlyCurrentUsersTwoSeededQuestions() {
         let snapshot = makeSnapshot(rows: [
             questionRow(
                 slotNumber: 1,
@@ -212,12 +221,6 @@ struct DailyChallengeMappingTests {
                 ownAnswerID: UUID()
             ),
             questionRow(
-                slotNumber: 3,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
-                status: "answered",
-                ownAnswerID: UUID()
-            ),
-            questionRow(
                 slotNumber: 1,
                 seededForUserID: TestDailyChallengeIDs.partnerUser,
                 partnerAnswerID: UUID(),
@@ -229,24 +232,18 @@ struct DailyChallengeMappingTests {
                 partnerAnswerID: UUID(),
                 partnerAnsweredAt: TestDailyChallengeIDs.answerDate
             ),
-            questionRow(
-                slotNumber: 3,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
-                partnerAnswerID: UUID(),
-                partnerAnsweredAt: TestDailyChallengeIDs.answerDate
-            ),
         ])
 
-        #expect(snapshot.visibleQuestions.count == 6)
-        #expect(snapshot.progress.ownQuestionCount == 3)
-        #expect(snapshot.progress.ownAnsweredCount == 3)
-        #expect(snapshot.progress.partnerQuestionCount == 3)
+        #expect(snapshot.visibleQuestions.count == 4)
+        #expect(snapshot.progress.ownQuestionCount == 2)
+        #expect(snapshot.progress.ownAnsweredCount == 2)
+        #expect(snapshot.progress.partnerQuestionCount == 2)
         #expect(snapshot.progress.isComplete)
         #expect(snapshot.hasPartnerAnswersForToday)
         #expect(snapshot.homeCardState.hasPartnerAnswersForToday)
         #expect(snapshot.hasAnswerablePartnerQuestions)
-        #expect(snapshot.answerablePartnerQuestions.count == 3)
-        #expect(snapshot.answerFlowQuestions.count == 6)
+        #expect(snapshot.answerablePartnerQuestions.count == 2)
+        #expect(snapshot.answerFlowQuestions.count == 4)
     }
 
     @Test func readOverviewOrdersPartnerQuestionsThenOwnQuestionsByPartnerAnswer() {
@@ -531,9 +528,8 @@ struct DailyChallengeMappingTests {
 
     @Test func answerFlowOrdersOwnQuestionsThenAnswerablePartnerQuestions() {
         let snapshot = makeSnapshot(rows: [
-            questionRow(slotNumber: 3, seededForUserID: TestDailyChallengeIDs.currentUser),
-            questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
             questionRow(slotNumber: 2, seededForUserID: TestDailyChallengeIDs.currentUser),
+            questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
             // Partner's question that the partner answered: the current user can
             // still answer it, so it belongs at the end of the flow.
             questionRow(
@@ -546,9 +542,9 @@ struct DailyChallengeMappingTests {
 
         let flow = snapshot.answerFlowQuestions
 
-        #expect(flow.count == 4)
-        #expect(flow.prefix(3).map(\.slotNumber) == [1, 2, 3])
-        #expect(flow.prefix(3).allSatisfy { $0.origin == .own })
+        #expect(flow.count == 3)
+        #expect(flow.prefix(2).map(\.slotNumber) == [1, 2])
+        #expect(flow.prefix(2).allSatisfy { $0.origin == .own })
         #expect(flow.last?.origin == .partner)
         #expect(flow.last?.isAvailableToAnswer == true)
     }
@@ -1316,7 +1312,6 @@ struct DailyChallengeMappingTests {
         let baseSnapshot = makeSnapshot(rows: [
             questionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
             questionRow(slotNumber: 2, seededForUserID: TestDailyChallengeIDs.currentUser),
-            questionRow(slotNumber: 3, seededForUserID: TestDailyChallengeIDs.currentUser),
         ])
         let service = RecordingDailyChallengeService(snapshots: [baseSnapshot])
         let pendingStore = InMemoryPendingSyncOperationRepository()
@@ -2081,27 +2076,6 @@ struct DailyChallengeHistoryTests {
         )
     }
 
-    /// A partner-seeded question the partner has answered but the viewer hasn't — the
-    /// kind that carries forward to the Questions tab and that the history now surfaces
-    /// at the top with a CTA.
-    private func pendingPartnerQuestion(
-        localDate: String = "2026-06-27",
-        slotNumber: Int = 1,
-        partnerAnsweredAt: Date = TestDailyChallengeIDs.answerDate
-    ) -> DailyChallengeQuestion {
-        historyQuestions([
-            questionRow(
-                localDate: localDate,
-                slotNumber: slotNumber,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
-                status: "active",
-                partnerAnswerID: UUID(),
-                partnerAnsweredAt: partnerAnsweredAt,
-                canViewPartnerAnswer: false
-            ),
-        ])[0]
-    }
-
     @Test func groupsByLocalDateNewestFirst() {
         let questions = historyQuestions([
             answeredOwnRow(localDate: Self.day1, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
@@ -2115,6 +2089,29 @@ struct DailyChallengeHistoryTests {
         #expect(days.map(\.localDate) == [Self.day3, Self.day2, Self.day1])
         #expect(days.first(where: { $0.localDate == Self.day2 })?.questions.count == 2)
         #expect(days.first(where: { $0.localDate == Self.day3 })?.questions.count == 1)
+    }
+
+    @Test func removingQuestionsDropsEmptiedDays() {
+        let questions = historyQuestions([
+            answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
+            answeredOwnRow(localDate: Self.day3, slotNumber: 2, answeredAt: TestDailyChallengeIDs.answerDate),
+            answeredOwnRow(localDate: Self.day1, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
+        ])
+        let days = DailyChallengeHistory.grouped(questions)
+        let day3Ids = days[0].questions.map(\.id)
+        let day1Id = days[1].questions[0].id
+
+        // Nothing to remove leaves the days as they were.
+        #expect(DailyChallengeHistory.removing([], from: days) == days)
+
+        // One question out of two keeps its day.
+        let oneGone = DailyChallengeHistory.removing([day3Ids[0]], from: days)
+        #expect(oneGone.map(\.localDate) == [Self.day3, Self.day1])
+        #expect(oneGone[0].questions.map(\.id) == [day3Ids[1]])
+
+        // Every question of a day out removes the day, divider included.
+        let dayGone = DailyChallengeHistory.removing([day1Id], from: days)
+        #expect(dayGone.map(\.localDate) == [Self.day3])
     }
 
     @Test func ordersQuestionsWithinADayByLatestAnswerFirst() {
@@ -2251,17 +2248,13 @@ struct DailyChallengeHistoryTests {
             currentUserID: TestDailyChallengeIDs.currentUser
         )
 
-        #expect(!viewModel.isPresentationReady)
-
         await viewModel.load()
 
-        #expect(viewModel.isPresentationReady)
-        guard case let .content(content) = viewModel.state else {
+        guard case let .content(days) = viewModel.state else {
             Issue.record("Expected content state, got \(viewModel.state)")
             return
         }
-        #expect(content.pendingPartnerQuestions.isEmpty)
-        #expect(content.days.map(\.localDate) == [Self.day3, Self.day1])
+        #expect(days.map(\.localDate) == [Self.day3, Self.day1])
     }
 
     @MainActor
@@ -2275,7 +2268,6 @@ struct DailyChallengeHistoryTests {
         await viewModel.load()
 
         #expect(viewModel.state == .empty)
-        #expect(viewModel.isPresentationReady)
     }
 
     @MainActor
@@ -2293,7 +2285,6 @@ struct DailyChallengeHistoryTests {
 
         #expect(viewModel.state == .failed)
         #expect(viewModel.notice == nil)
-        #expect(viewModel.isPresentationReady)
     }
 
     @MainActor
@@ -2313,11 +2304,11 @@ struct DailyChallengeHistoryTests {
         await viewModel.load()
         await viewModel.load()
 
-        guard case let .content(content) = viewModel.state else {
+        guard case let .content(days) = viewModel.state else {
             Issue.record("Expected content to remain after a failed reload, got \(viewModel.state)")
             return
         }
-        #expect(content.days.count == 1)
+        #expect(days.count == 1)
         #expect(viewModel.notice == .loadFailed)
     }
 
@@ -2337,100 +2328,6 @@ struct DailyChallengeHistoryTests {
         // A cancelled first load leaves the loading surface up and never errors.
         #expect(viewModel.state == .loading)
         #expect(viewModel.notice == nil)
-    }
-
-    @MainActor
-    @Test func viewModelSurfacesPendingPartnerQuestionsAboveCompletedHistory() async {
-        let pending = pendingPartnerQuestion()
-        let service = RecordingDailyChallengeService(
-            snapshots: [],
-            historyQuestions: historyQuestions([
-                answeredOwnRow(localDate: Self.day1, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
-            ])
-        )
-        let viewModel = DailyChallengeHistoryViewModel(
-            service: service,
-            currentUserID: TestDailyChallengeIDs.currentUser,
-            pendingPartnerQuestions: { [pending] }
-        )
-
-        await viewModel.load()
-
-        guard case let .content(content) = viewModel.state else {
-            Issue.record("Expected content state, got \(viewModel.state)")
-            return
-        }
-        #expect(content.pendingPartnerQuestions.map(\.id) == [pending.id])
-        #expect(content.days.map(\.localDate) == [Self.day1])
-    }
-
-    @MainActor
-    @Test func viewModelShowsPendingPartnerQuestionsWithNoCompletedHistory() async {
-        let pending = pendingPartnerQuestion()
-        let service = RecordingDailyChallengeService(snapshots: [], historyQuestions: [])
-        let viewModel = DailyChallengeHistoryViewModel(
-            service: service,
-            currentUserID: TestDailyChallengeIDs.currentUser,
-            pendingPartnerQuestions: { [pending] }
-        )
-
-        await viewModel.load()
-
-        // Only a waiting partner question and no completed days is still content, not
-        // the empty state.
-        guard case let .content(content) = viewModel.state else {
-            Issue.record("Expected content state with a pending question, got \(viewModel.state)")
-            return
-        }
-        #expect(content.days.isEmpty)
-        #expect(content.pendingPartnerQuestions.count == 1)
-    }
-
-    @MainActor
-    @Test func viewModelOrdersPendingPartnerQuestionsMostRecentFirst() async {
-        let older = pendingPartnerQuestion(slotNumber: 1, partnerAnsweredAt: TestDailyChallengeIDs.answerDate)
-        let newer = pendingPartnerQuestion(
-            slotNumber: 2,
-            partnerAnsweredAt: TestDailyChallengeIDs.answerDate.addingTimeInterval(3_600)
-        )
-        let service = RecordingDailyChallengeService(snapshots: [], historyQuestions: [])
-        let viewModel = DailyChallengeHistoryViewModel(
-            service: service,
-            currentUserID: TestDailyChallengeIDs.currentUser,
-            pendingPartnerQuestions: { [older, newer] }
-        )
-
-        await viewModel.load()
-
-        guard case let .content(content) = viewModel.state else {
-            Issue.record("Expected content state, got \(viewModel.state)")
-            return
-        }
-        #expect(content.pendingPartnerQuestions.map(\.id) == [newer.id, older.id])
-    }
-
-    @MainActor
-    @Test func viewModelDropsPendingPartnerQuestionAlreadyInCompletedHistory() async {
-        // A reload can briefly see the same instance in both lists right after the user
-        // answers; the answered copy wins so it never shows as both waiting and done.
-        let shared = historyQuestions([
-            answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
-        ])[0]
-        let service = RecordingDailyChallengeService(snapshots: [], historyQuestions: [shared])
-        let viewModel = DailyChallengeHistoryViewModel(
-            service: service,
-            currentUserID: TestDailyChallengeIDs.currentUser,
-            pendingPartnerQuestions: { [shared] }
-        )
-
-        await viewModel.load()
-
-        guard case let .content(content) = viewModel.state else {
-            Issue.record("Expected content state, got \(viewModel.state)")
-            return
-        }
-        #expect(content.pendingPartnerQuestions.isEmpty)
-        #expect(content.days.count == 1)
     }
 }
 

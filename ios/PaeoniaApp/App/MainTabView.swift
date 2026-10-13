@@ -378,7 +378,6 @@ struct MainTabView: View {
                     await refreshDailyChallenge()
                 },
                 onAnswerPartnerQuestion: openPartnerAnswerFlow,
-                onOpenUnreadChat: startOpeningDailyChat,
                 privacySafetyService: dependencies.settingsPrivacyService,
                 privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
                 onReportedAndLeft: actions.leftRelationship

@@ -23,9 +23,9 @@ export const marketingNo = {
     items: [
       {
         label: 'Spørsmål',
-        title: 'Tre små spørsmål hver dag',
+        title: 'To små spørsmål hver dag',
         description:
-          'Paeonia velger tre spørsmål til deg hver dag. Skriv svaret, send en talemelding eller legg ved et bilde.',
+          'Paeonia velger to spørsmål til deg hver dag. Skriv svaret, send en talemelding eller legg ved et bilde.',
         points: [
           'Svaret til partneren din åpnes når du har svart selv',
           'Snakk om et svar i en egen chat',

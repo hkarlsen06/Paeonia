@@ -10,7 +10,7 @@ import { enqueuePartnerAnsweredNotification, enqueuePartnerNotification } from "
 import { tombstoneReportTargets } from "./reports";
 import { applyCoupleActivity } from "./streaks";
 import { nowIso } from "./time";
-import { ensureDailyChallengeSlots, isVisibleAnswer, visibleAnswersOf } from "./dailyQuestions";
+import { DAILY_QUESTION_SLOTS, ensureDailyChallengeSlots, isVisibleAnswer, visibleAnswersOf } from "./dailyQuestions";
 
 /**
  * Daily answers: reveal rules, read models, and the answer writes. The reveal rule
@@ -376,7 +376,7 @@ async function insertAnswerMedia(
 }
 
 /**
- * Port of the `handle_daily_challenge_completed` trigger. Call after a user's third
+ * Port of the `handle_daily_challenge_completed` trigger. Call after a user's last
  * own slot is answered. Counts the day for the streak and tells the partner once.
  */
 async function completeDailyChallenge(ctx: WriterCtx, coupleDayId: string, userId: string): Promise<void> {
@@ -576,7 +576,7 @@ export async function submitDailyAnswer(
             q.eq("couple_day_id", instance.couple_day_id).eq("seeded_for_user_id", userId).eq("status", "answered"),
           )
           .collect();
-        if (ownInstances.length === 3) {
+        if (ownInstances.length === DAILY_QUESTION_SLOTS) {
           await completeDailyChallenge(ctx, instance.couple_day_id, userId);
         }
       }

@@ -543,7 +543,7 @@ extension DailyChallengeQuestion {
 }
 
 nonisolated struct DailyChallengeProgress: Equatable, Sendable {
-    static let requiredOwnQuestionCount = 3
+    static let requiredOwnQuestionCount = 2
 
     let ownQuestionCount: Int
     let ownAnsweredCount: Int
@@ -592,6 +592,21 @@ nonisolated struct DailyChallengeCardState: Equatable, Sendable {
 
     var isActionEnabled: Bool {
         kind != .loading
+    }
+
+    /// What happens next once the user has answered everything, in the order the cases
+    /// are checked: the partner's questions are open to answer, the partner has not
+    /// answered yet today, or both sides have answered.
+    enum CompleteFollowUp: Equatable, Sendable {
+        case partnerQuestionsToAnswer
+        case waitingForPartner
+        case bothAnswered
+    }
+
+    var completeFollowUp: CompleteFollowUp {
+        if hasAnswerablePartnerQuestions { return .partnerQuestionsToAnswer }
+        if !hasPartnerAnswersForToday { return .waitingForPartner }
+        return .bothAnswered
     }
 }
 
@@ -707,8 +722,8 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         partnerStartedQuestions
     }
 
-    /// The main Questions tab's "Your three" section. Older own questions belong in
-    /// history so this section never shows more than today's three.
+    /// The main Questions tab's own-questions section. Older own questions belong in
+    /// history so this section never shows more than today's questions.
     var ownQuestionsForReadOverview: [DailyChallengeQuestion] {
         ownQuestions.sorted(by: readOverviewDayOrder)
     }
@@ -766,7 +781,7 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
     }
 
     /// Questions surfaced inside the focused answering flow, in the order the
-    /// flow steps through them: the user's own three first, then any of the
+    /// flow steps through them: the user's own questions first, then any of the
     /// partner's questions the user can still answer. Already-answered own
     /// questions stay in the list so the user can swipe back and review them.
     var answerFlowQuestions: [DailyChallengeQuestion] {

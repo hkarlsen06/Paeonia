@@ -17,6 +17,7 @@ import {
   type ClientOperationArgs,
 } from "./lib/dailyAnswers";
 import {
+  DAILY_QUESTION_SLOTS,
   ensureDailyChallengeSlots,
   getDailyQuestionsForCoupleDay,
   getDailyQuestionsHistory,
@@ -103,7 +104,7 @@ async function shuffleQuestion(
   args: OperationArgs & { p_slot_number: number },
 ): Promise<string> {
   const slot = args.p_slot_number;
-  if (!Number.isInteger(slot) || slot < 1 || slot > 3) {
+  if (!Number.isInteger(slot) || slot < 1 || slot > DAILY_QUESTION_SLOTS) {
     fail("23514", "slot number is out of range");
   }
   const operation = operationFrom(args);

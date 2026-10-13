@@ -23,9 +23,9 @@ export const marketingEn = {
     items: [
       {
         label: 'Questions',
-        title: 'Three small questions a day',
+        title: 'Two small questions a day',
         description:
-          'Paeonia picks three questions for you every day. Write your answer, record a voice note, or add a photo.',
+          'Paeonia picks two questions for you every day. Write your answer, record a voice note, or add a photo.',
         points: [
           'Your partner\'s answer opens once you have answered too',
           'Talk about an answer in its own chat',

@@ -318,14 +318,14 @@ struct DailyChallengeViewModelSeedTests {
         let cachedRow = sampleSnapshotRow(ownerUserID: CacheTestIDs.ownerUserID)
         cache.save(cachedRow, ownerUserID: CacheTestIDs.ownerUserID)
 
-        // The network returns a snapshot with 3 questions (different from the
+        // The network returns a snapshot with 2 questions (different from the
         // cached 1). After configure the view model must reflect the network
         // result, not the seed.
-        let threeQuestionSnapshot = makeSeedTestSnapshot(
+        let twoQuestionSnapshot = makeSeedTestSnapshot(
             ownerUserID: CacheTestIDs.ownerUserID,
-            slotCount: 3
+            slotCount: 2
         )
-        let service = ImmediateDailyChallengeService(snapshot: threeQuestionSnapshot)
+        let service = ImmediateDailyChallengeService(snapshot: twoQuestionSnapshot)
         let viewModel = DailyChallengeViewModel(
             service: service,
             operationProvider: FixedSeedOperationProvider(),
@@ -334,8 +334,8 @@ struct DailyChallengeViewModelSeedTests {
 
         await viewModel.configure(currentUserID: CacheTestIDs.ownerUserID)
 
-        // Network result (3 questions) wins over the cache seed (1 question).
-        #expect(viewModel.snapshot.ownQuestions.count == 3)
+        // Network result (2 questions) wins over the cache seed (1 question).
+        #expect(viewModel.snapshot.ownQuestions.count == 2)
     }
 
     @MainActor

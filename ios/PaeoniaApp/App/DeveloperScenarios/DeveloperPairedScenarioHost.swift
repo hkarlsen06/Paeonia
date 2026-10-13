@@ -72,7 +72,7 @@
     private static func initialTab(for scenario: DeveloperScenario) -> MainTab {
       switch scenario {
       case .questions, .questionsPartial, .questionsRevealed, .questionsEmpty,
-        .questionsLoading, .questionsError, .questionAnswerFlow:
+        .questionsLoading, .questionsError, .questionsHistory, .questionAnswerFlow:
         .questions
       case .memoriesEmpty, .memoriesPopulated:
         .memories

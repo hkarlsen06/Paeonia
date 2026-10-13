@@ -387,7 +387,7 @@
       case .questionsError:
         "Failed initial load and retry state"
       case .questionsHistory:
-        "Several completed exchanges grouped by day"
+        "Earlier days listed under today's questions"
       case .questionsOfflineQueued:
         "Answer retained locally while waiting to send"
       case .questionAnswerFlow:

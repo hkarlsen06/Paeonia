@@ -18,7 +18,7 @@ struct DailySendingPreview {
 ///
 /// A partner question the user can still answer opens the answer flow instead, and
 /// is the zoom source for it. That stays locked until the user finishes their own
-/// three. A row whose answer is still saving shows what was saved.
+/// questions. A row whose answer is still saving shows what was saved.
 struct DailyChallengeReadCard: View {
     let question: DailyChallengeQuestion
     var participants = DailyChallengeParticipants()
@@ -40,7 +40,7 @@ struct DailyChallengeReadCard: View {
         sending == nil && question.origin == .partner && question.isAvailableToAnswer
     }
 
-    /// Answering a partner's question is gated behind finishing your own three first.
+    /// Answering a partner's question is gated behind finishing your own questions first.
     private var canOpenAnswerFlow: Bool {
         isAnswerable && isOwnChallengeComplete
     }

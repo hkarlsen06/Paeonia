@@ -1,6 +1,6 @@
 import Foundation
 
-/// One day's worth of answered questions in the history overview. Identified by the
+/// One day's worth of answered questions in the earlier-days list. Identified by the
 /// couple's local date string so it stays stable across reloads, and carrying a
 /// parsed `date` purely so the divider can format it in the reader's locale.
 nonisolated struct DailyChallengeHistoryDay: Identifiable, Equatable, Sendable {
@@ -39,6 +39,17 @@ nonisolated enum DailyChallengeHistory {
                 )
             }
             .sorted { $0.localDate > $1.localDate }
+    }
+
+    /// The days without the questions in `ids`. A day left with no questions is dropped,
+    /// so the earlier-days list never shows a divider with nothing under it.
+    static func removing(_ ids: Set<UUID>, from days: [DailyChallengeHistoryDay]) -> [DailyChallengeHistoryDay] {
+        guard !ids.isEmpty else { return days }
+        return days.compactMap { day in
+            let remaining = day.questions.filter { !ids.contains($0.id) }
+            guard !remaining.isEmpty else { return nil }
+            return DailyChallengeHistoryDay(localDate: day.localDate, date: day.date, questions: remaining)
+        }
     }
 
     /// Parses a `yyyy-MM-dd` couple-local date into midnight UTC. Returns nil for a

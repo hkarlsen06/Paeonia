@@ -233,7 +233,7 @@ struct DailyChallengeAnswerFlow: View {
     /// surface stable even when the live question list re-sorts underneath it.
     private func partnerRevealHoldingState(_ question: DailyChallengeQuestion) -> some View {
         VStack(spacing: PaeoniaSpacing.space16) {
-            // A partner question is outside the required three, so no required step
+            // A partner question is outside the required questions, so no required step
             // should become selected just because the live list re-indexes underneath.
             stepHeader(currentStep: nil)
 

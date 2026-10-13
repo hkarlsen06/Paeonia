@@ -23,14 +23,7 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
                         seededFor: currentUserID,
                         origin: .own,
                         prompt: "What's one thing you're looking forward to together?",
-                        short: "Something to look forward to"
-                    ),
-                    previewDailyQuestion(
-                        slot: 3,
-                        seededFor: currentUserID,
-                        origin: .own,
-                        prompt: "Record a short goodnight message.",
-                        short: "A short goodnight message",
+                        short: "Something to look forward to",
                         answerKinds: [.voice, .text]
                     ),
                     previewDailyQuestion(

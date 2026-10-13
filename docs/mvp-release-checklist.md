@@ -166,8 +166,8 @@ Record any skipped command with the reason.
 ## Daily Challenge
 
 - [ ] Today’s challenge loads from database-backed question content.
-- [ ] A user receives up to three own daily questions.
-- [ ] A user must answer three own daily questions to complete the challenge.
+- [ ] A user receives up to two own daily questions.
+- [ ] A user must answer two own daily questions to complete the challenge.
 - [ ] Partners may receive different questions.
 - [ ] A partner’s answered questions appear in the history/answered screen for the other partner to answer.
 - [ ] Partner answers remain hidden until the current user answers that same question.

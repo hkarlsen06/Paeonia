@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The streak screen the answer flow turns over to once the user's three questions
+/// The streak screen the answer flow turns over to once the user's questions
 /// are answered. A slipped streak's version offers to buy the streak back in place.
 struct DailyChallengeCompletionView: View {
     let streak: Int

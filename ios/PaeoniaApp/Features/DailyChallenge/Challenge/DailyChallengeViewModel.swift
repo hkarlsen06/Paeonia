@@ -7,22 +7,6 @@ import OSLog
 @MainActor
 @Observable
 final class DailyChallengeViewModel {
-    /// A still-sending answer, reconstructed from the queued operation so the "saved,
-    /// sending" preview survives relaunch and clears once the send lands. Any
-    /// combination can be present (e.g. a photo with a caption).
-    private struct SendingAnswer: Equatable {
-        var text: String? = nil
-        var partnerChoiceUserID: UUID? = nil
-        var media: Media? = nil
-        /// A try to send it failed, so it may stay on this phone a while.
-        var isHeldOnPhone = false
-
-        struct Media: Equatable {
-            let draft: DailyAnswerMediaDraft
-            let stagedData: Data?
-        }
-    }
-
     enum Notice: Equatable {
         case loadFailed
         case startFailed
@@ -37,26 +21,26 @@ final class DailyChallengeViewModel {
         case dayEnded
     }
 
-    private let service: any DailyChallengeServicing
-    private let operationProvider: any SyncClientOperationProviding
-    private let draftStore: any DailyChallengeDraftStoring
-    private let mediaDraftStore: any DailyAnswerMediaDraftStoring
-    private let pendingOperationStore: any PendingSyncOperationPersisting
+    let service: any DailyChallengeServicing
+    let operationProvider: any SyncClientOperationProviding
+    let draftStore: any DailyChallengeDraftStoring
+    let mediaDraftStore: any DailyAnswerMediaDraftStoring
+    let pendingOperationStore: any PendingSyncOperationPersisting
     private let snapshotCache: any DailyChallengeSnapshotCaching
-    private let chatService: any DailyQuestionChatServicing
-    private let now: @Sendable () -> Date
-    private let encoder = JSONEncoder()
+    let chatService: any DailyQuestionChatServicing
+    let now: @Sendable () -> Date
+    let encoder = JSONEncoder()
     #if DEBUG
-    private let logger = Logger(
+    let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "no.paeonia.app",
         category: "DailyChallenge"
     )
     #endif
-    private var localChangeSyncHandler: (@MainActor () async -> Void)?
-    private var currentUserID: UUID?
+    private(set) var localChangeSyncHandler: (@MainActor () async -> Void)?
+    private(set) var currentUserID: UUID?
     private var reloadTask: Task<Void, Never>?
     private var reloadTaskUserID: UUID?
-    private var answerDrafts: [UUID: DailyAnswerDraft] = [:]
+    var answerDrafts: [UUID: DailyAnswerDraft] = [:]
     /// Whether today's challenge has resolved for the current user — set once the
     /// first load attempt has settled (applied a result or failed with a banner),
     /// not merely while a request is in flight. The home card shows its loading
@@ -64,7 +48,7 @@ final class DailyChallengeViewModel {
     /// "no challenge" before we actually know; and once resolved the card keeps the
     /// real, last-known state through later refreshes instead of dropping back to
     /// loading. Reset when the signed-in user changes.
-    private var hasResolvedTodayState = false
+    var hasResolvedTodayState = false
     /// Callers of `awaitAnswerReveal`, signalled each time a snapshot is applied.
     private var snapshotWaiters: [UUID: AsyncStream<Void>.Continuation] = [:]
     private var liveUpdatesTask: Task<Void, Never>?
@@ -73,7 +57,7 @@ final class DailyChallengeViewModel {
     private var dayEndTask: Task<Void, Never>?
     /// One token per photo being prepared. A newer pick, a removal, or a skip replaces
     /// or clears it, so a slow earlier pick can't land on top of a later choice.
-    private var photoStagingTokens: [UUID: UUID] = [:]
+    var photoStagingTokens: [UUID: UUID] = [:]
 
     private(set) var participants = DailyChallengeParticipants()
     private(set) var snapshot = DailyChallengeSnapshot.empty(currentUserID: nil)
@@ -81,15 +65,15 @@ final class DailyChallengeViewModel {
     /// background, keyed to what's being sent so the "saved, sending" preview can show
     /// the text, the picked person, or a photo/voice note (and a voice note's length)
     /// without the editable draft.
-    private var sendingAnswers: [UUID: SendingAnswer] = [:]
+    var sendingAnswers: [UUID: SendingAnswer] = [:]
     /// Bumped on every local send, so a store read that started before the send
     /// can't overwrite `sendingAnswers` with a list that misses it.
-    private var sendingGeneration = 0
+    var sendingGeneration = 0
     private(set) var isLoading = false
     private(set) var isStarting = false
-    private(set) var submittingQuestionID: UUID?
-    private(set) var shufflingSlotNumber: Int?
-    private(set) var notice: Notice?
+    var submittingQuestionID: UUID?
+    var shufflingSlotNumber: Int?
+    var notice: Notice?
     /// The couple's shared streak, shown on the completion celebration. Loaded on
     /// demand and kept across failures so a transient error never blanks it.
     private(set) var streak = CoupleStreak.none
@@ -100,7 +84,9 @@ final class DailyChallengeViewModel {
     private(set) var seenPartnerAnswerIDs: Set<UUID> = []
     /// Seen answers being sent to the server right now, so a second trigger doesn't
     /// send the same one twice.
-    @ObservationIgnored private var seenAnswerUploads: Set<UUID> = []
+    @ObservationIgnored var seenAnswerUploads: Set<UUID> = []
+    /// The chat screen to open next, already read from this phone by `prepareChat(for:)`.
+    @ObservationIgnored var preparedChat: DailyQuestionChatViewModel?
 
     init(
         service: (any DailyChallengeServicing)? = nil,
@@ -138,7 +124,7 @@ final class DailyChallengeViewModel {
     /// Prints the real error behind a user-facing notice to the Xcode console in
     /// debug builds, so a failure that shows only a friendly banner can still be
     /// diagnosed. No-op in release.
-    private func logFailure(_ context: String, _ error: Error) {
+    func logFailure(_ context: String, _ error: Error) {
         #if DEBUG
         logger.error("\(context, privacy: .public): \(String(describing: error))")
         #endif
@@ -149,7 +135,7 @@ final class DailyChallengeViewModel {
     /// real failure. Foundation reports a cancelled URLSession task as
     /// `URLError.cancelled` (-999) rather than Swift's `CancellationError`, so both
     /// must be treated the same: swallowed silently, never shown as an error banner.
-    private nonisolated func isCancellation(_ error: Error) -> Bool {
+    nonisolated func isCancellation(_ error: Error) -> Bool {
         if error is CancellationError { return true }
         if let urlError = error as? URLError, urlError.code == .cancelled { return true }
         return false
@@ -159,16 +145,6 @@ final class DailyChallengeViewModel {
     /// answer is flushed promptly (mirrors the location pattern).
     func setLocalChangeSyncHandler(_ handler: (@MainActor () async -> Void)?) {
         localChangeSyncHandler = handler
-    }
-
-    /// Queued answers are already durable locally, so the answering flow should
-    /// not wait for sync before moving on to the next question.
-    private func syncQueuedAnswerInBackground() {
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            await localChangeSyncHandler?()
-            await reload()
-        }
     }
 
     /// Best-effort wait for the snapshot that contains an unlocked partner reply after
@@ -211,141 +187,6 @@ final class DailyChallengeViewModel {
 
     private func hasRevealedPartnerAnswer(for instanceID: UUID) -> Bool {
         snapshot.questions.first(where: { $0.id == instanceID })?.canViewPartnerAnswer == true
-    }
-
-    /// Builds the view model for the Questions history flow, sharing this screen's
-    /// service and current identity so the history reads through the same backend and
-    /// labels answers with the same two people.
-    func makeHistoryViewModel() -> DailyChallengeHistoryViewModel {
-        DailyChallengeHistoryViewModel(
-            service: service,
-            chatService: chatService,
-            currentUserID: currentUserID,
-            participants: participants,
-            // The partner's still-unanswered questions are carried-forward exchanges
-            // that live in this snapshot, not the answered-history read model. Reading
-            // them live keeps the history's actionable cards identical to the Questions
-            // tab's, and answering one here updates both surfaces.
-            pendingPartnerQuestions: { [weak self] in
-                self?.snapshot.answerablePartnerQuestions ?? []
-            }
-        )
-    }
-
-    /// The chat screen to open next, already read from this phone by `prepareChat(for:)`.
-    @ObservationIgnored private var preparedChat: DailyQuestionChatViewModel?
-
-    /// Reads a question's chat before its screen opens, so the screen's first frame
-    /// is complete. Callers await this, then open the screen.
-    func prepareChat(for question: DailyChallengeQuestion) async {
-        let chat = newChatViewModel(question: question)
-        await chat.prepare()
-        preparedChat = chat
-    }
-
-    func makeChatViewModel(question: DailyChallengeQuestion) -> DailyQuestionChatViewModel {
-        if let preparedChat, preparedChat.question.id == question.id {
-            return preparedChat
-        }
-        return newChatViewModel(question: question)
-    }
-
-    private func newChatViewModel(question: DailyChallengeQuestion) -> DailyQuestionChatViewModel {
-        DailyQuestionChatViewModel(
-            question: question,
-            participants: participants,
-            service: chatService,
-            operationProvider: operationProvider,
-            // The thread summaries live feed keeps previews current. A one-shot
-            // summaries read here could replace them with an older list.
-            syncAfterLocalChange: { [weak self] in
-                await self?.localChangeSyncHandler?()
-            }
-        )
-    }
-
-    func threadPreview(for instanceID: UUID) -> String? {
-        threadSummariesByInstanceID[instanceID]?.lastMessagePreview
-    }
-
-    func hasUnreadChat(for instanceID: UUID) -> Bool {
-        guard let summary = threadSummariesByInstanceID[instanceID], let currentUserID else { return false }
-        return summary.isUnread(by: currentUserID, readThrough: chatReadMarks[summary.threadID])
-    }
-
-    /// The user can read the partner's answer and hasn't seen it yet.
-    func hasNewPartnerAnswer(_ question: DailyChallengeQuestion) -> Bool {
-        question.hasNewPartnerAnswer(seen: seenPartnerAnswerIDs)
-    }
-
-    /// The answer flow showed the partner's answer. Saved on this phone first, which
-    /// sends it to the server through `uploadSeenPartnerAnswers`.
-    func markPartnerAnswerSeen(_ question: DailyChallengeQuestion) {
-        Task { await DeliveredNotifications.clearQuestion(instanceID: question.id) }
-        guard let currentUserID, question.isChatAvailable, question.partnerAnswerSeenAt == nil else { return }
-        let chatService = chatService
-        Task { await chatService.markPartnerAnswerSeen(ownerUserID: currentUserID, instanceID: question.id) }
-    }
-
-    /// Sends answers seen on this phone that the server doesn't know about yet. Runs
-    /// whenever the questions or the seen list change, so one that failed offline is
-    /// sent again once a live update arrives. The server keeps the first time it heard.
-    private func uploadSeenPartnerAnswers() {
-        let pending = snapshot.questions.filter {
-            seenPartnerAnswerIDs.contains($0.id) && $0.isChatAvailable && $0.partnerAnswerSeenAt == nil
-                && !seenAnswerUploads.contains($0.id)
-        }
-        for question in pending {
-            seenAnswerUploads.insert(question.id)
-            let chatService = chatService
-            Task { @MainActor [weak self] in
-                await chatService.markPartnerAnswerSeenOnServer(instanceID: question.id)
-                self?.seenAnswerUploads.remove(question.id)
-            }
-        }
-    }
-
-    /// Something from the partner the user hasn't seen yet: a new answer or a chat message.
-    func hasNewFromPartner(_ question: DailyChallengeQuestion) -> Bool {
-        hasNewPartnerAnswer(question) || (question.isChatAvailable && hasUnreadChat(for: question.id))
-    }
-
-    /// Chats with a partner message the user has not opened yet, newest first.
-    var unreadChats: [DailyQuestionThreadSummary] {
-        guard let currentUserID else { return [] }
-        return threadSummariesByInstanceID.values
-            .filter { $0.isUnread(by: currentUserID, readThrough: chatReadMarks[$0.threadID]) }
-            .sorted { ($0.lastMessageAt ?? .distantPast) > ($1.lastMessageAt ?? .distantPast) }
-    }
-
-    /// The question text for a chat, when today's questions include it.
-    func questionPrompt(for instanceID: UUID) -> String? {
-        snapshot.questions.first(where: { $0.id == instanceID })?.prompt
-    }
-
-    /// Today's copy of a question opened earlier, so an open page sees the partner's
-    /// answer arrive. Older questions are not in today's snapshot and stay as they were.
-    func latestQuestion(_ question: DailyChallengeQuestion) -> DailyChallengeQuestion {
-        snapshot.questions.first(where: { $0.id == question.id }) ?? question
-    }
-
-    func refreshThreadSummaries() async {
-        guard let currentUserID else { return }
-        applyThreadSummaries(await chatService.cachedThreadSummaries(ownerUserID: currentUserID))
-        if let summaries = try? await chatService.refreshThreadSummaries(ownerUserID: currentUserID) {
-            applyThreadSummaries(summaries)
-        }
-    }
-
-    func questionForChat(instanceID: UUID) async -> DailyChallengeQuestion? {
-        if let question = snapshot.questions.first(where: { $0.id == instanceID && $0.isChatAvailable }) {
-            return question
-        }
-        guard let currentUserID else { return nil }
-        guard let questions = try? await service.loadHistory(currentUserID: currentUserID) else {
-            return nil
-        }
-        return questions.first(where: { $0.id == instanceID && $0.isChatAvailable })
     }
 
     func configure(currentUserID: UUID?) async {
@@ -541,7 +382,7 @@ final class DailyChallengeViewModel {
         await refreshSendingState()
     }
 
-    private func applyThreadSummaries(_ summaries: [DailyQuestionThreadSummary]) {
+    func applyThreadSummaries(_ summaries: [DailyQuestionThreadSummary]) {
         threadSummariesByInstanceID = Dictionary(
             summaries.map { ($0.instanceID, $0) },
             uniquingKeysWith: { _, latest in latest }
@@ -594,595 +435,11 @@ final class DailyChallengeViewModel {
         isStarting = false
     }
 
-    /// Sends the user's answer for a question, resolving the kind(s) from the draft.
-    /// Every kind is saved on the device first and sent in the background, so a
-    /// network blip never loses what the user wrote. Questions that allow a photo or
-    /// partner pick *alongside* text send whatever the user filled in, together.
-    func submitAnswer(for question: DailyChallengeQuestion) async {
-        guard submittingQuestionID == nil, let currentUserID else { return }
-        // The composer's counter already shows this; the backend would reject it.
-        guard !isDraftTextTooLong(for: question.id) else { return }
-        // The couple's day ended while this was open (offline, or before the live
-        // update arrived). The server only takes your own answers made during their
-        // day, so a queued one would never send.
-        if question.origin == .own, question.endsAt <= now() {
-            endCurrentDayIfNeeded()
-            notice = .dayEnded
-            Task { await reload() }
-            return
-        }
-
-        guard let outgoing = resolveOutgoingAnswer(for: question) else {
-            notice = .emptyAnswer
-            return
-        }
-
-        await enqueueAnswer(outgoing, for: question, currentUserID: currentUserID)
-    }
-
-    private typealias OutgoingAnswer = (
-        content: DailySubmitAnswerOperationPayload.Content,
-        sending: SendingAnswer
-    )
-
-    /// Resolves the draft into the answer to queue and its "saved, sending" preview,
-    /// or nil when there's nothing to send. Combined questions fold text together with
-    /// a photo or partner pick; everything else stays single-kind.
-    private func resolveOutgoingAnswer(for question: DailyChallengeQuestion) -> OutgoingAnswer? {
-        let text = nonEmptyDraftText(for: question.id)
-
-        if question.usesCombinedCompose {
-            switch question.combinedSecondaryKind {
-            case .photo:
-                if let media = stagedMediaParts(for: question) {
-                    if let text {
-                        return (.textAndMedia(text, media.payload), SendingAnswer(text: text, media: media.sending))
-                    }
-                    return (.media(media.payload), SendingAnswer(media: media.sending))
-                }
-                return textOnly(text)
-            case .partnerChoice:
-                if let choice = partnerChoiceSelection(for: question.id) {
-                    if let text {
-                        return (.textAndPartnerChoice(text, choice), SendingAnswer(text: text, partnerChoiceUserID: choice))
-                    }
-                    return (.partnerChoice(choice), SendingAnswer(partnerChoiceUserID: choice))
-                }
-                return textOnly(text)
-            default:
-                return nil
-            }
-        }
-
-        switch composeKind(for: question) {
-        case .photo, .voice:
-            guard let media = stagedMediaParts(for: question) else { return nil }
-            return (.media(media.payload), SendingAnswer(media: media.sending))
-        case .partnerChoice:
-            guard let choice = partnerChoiceSelection(for: question.id) else { return nil }
-            return (.partnerChoice(choice), SendingAnswer(partnerChoiceUserID: choice))
-        case .text:
-            return textOnly(text)
-        default:
-            return nil
-        }
-    }
-
-    /// A text-only outgoing answer, or nil when there's no text.
-    private func textOnly(_ text: String?) -> OutgoingAnswer? {
-        guard let text else { return nil }
-        return (.text(text), SendingAnswer(text: text))
-    }
-
-    /// Builds the queue and preview parts for a staged photo/voice draft, with fresh
-    /// reserve/finalize operations fixed in the payload so retries stay idempotent.
-    private func stagedMediaParts(
-        for question: DailyChallengeQuestion
-    ) -> (payload: DailySubmitAnswerOperationPayload.Media, sending: SendingAnswer.Media)? {
-        guard
-            let media = answerDrafts[question.id]?.media,
-            let stagedData = mediaDraftStore.stagedMediaData(instanceID: question.id)
-        else { return nil }
-
-        let payload = DailySubmitAnswerOperationPayload.Media(
-            draft: media,
-            coupleID: question.coupleID,
-            reserveOperation: operationProvider.makeOperation(),
-            finalizeOperation: operationProvider.makeOperation(),
-            stagedData: stagedData
-        )
-        return (payload, SendingAnswer.Media(draft: media, stagedData: stagedData))
-    }
-
-    /// Saves the resolved answer on the device and queues it for sending, then nudges
-    /// the sync engine to send it now if we're online (it retries in the background
-    /// otherwise). Local-first: a transient failure never surfaces an error — the
-    /// queued answer is sent when it can be. Staged media bytes stay on disk for the
-    /// upload; the handler clears them once it lands.
-    private func enqueueAnswer(
-        _ outgoing: OutgoingAnswer,
-        for question: DailyChallengeQuestion,
-        currentUserID: UUID
-    ) async {
-        submittingQuestionID = question.id
-        let operationPayload = DailySubmitAnswerOperationPayload(
-            instanceID: question.id,
-            answerID: UUID(),
-            content: outgoing.content
-        )
-
-        do {
-            try await pendingOperationStore.enqueue(
-                PendingSyncOperationRequest(
-                    ownerUserID: currentUserID,
-                    operation: operationProvider.makeOperation(),
-                    operationKind: .submitDailyAnswer,
-                    idempotencyScope: "daily-answer:\(question.id.uuidString.lowercased())",
-                    requestData: try encoder.encode(operationPayload)
-                )
-            )
-        } catch {
-            logFailure("Saving an answer to send failed", error)
-            notice = .submitFailed
-            submittingQuestionID = nil
-            return
-        }
-
-        // Shown as sending right away; the queued operation now carries the answer, so
-        // the editable draft can go (staged media stays on disk for the upload).
-        sendingAnswers[question.id] = outgoing.sending
-        sendingGeneration += 1
-        clearDraft(for: question.id)
-        submittingQuestionID = nil
-        syncQueuedAnswerInBackground()
-    }
-
-    /// Whether anything is typed, picked, or staged for a question, whether or not it
-    /// can be sent yet. Skipping throws the draft away, so Skip stays off while this
-    /// is true, even when the text is too long to send.
-    func hasDraftContent(for questionID: UUID) -> Bool {
-        answerDrafts[questionID]?.hasContent == true || isPreparingPhoto(for: questionID)
-    }
-
-    /// Whether the draft text is past the length the backend accepts. The composer
-    /// shows a counter and keeps Send off until it's shortened.
-    func isDraftTextTooLong(for questionID: UUID) -> Bool {
-        DailyAnswerDraft.measuredLength(of: draftText(for: questionID)) > DailyAnswerDraft.maxTextLength
-    }
-
-    /// The trimmed draft text for a question, or nil when it's empty.
-    private func nonEmptyDraftText(for questionID: UUID) -> String? {
-        let text = draftText(for: questionID).trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.isEmpty ? nil : text
-    }
-
-    /// Whether the current draft is complete enough to send — drives the flow's
-    /// primary button and keeps Skip out of reach once an answer is in progress. A
-    /// combined question needs only one of its parts filled in.
-    func hasDraftToSubmit(for question: DailyChallengeQuestion) -> Bool {
-        // While a picked photo is still being prepared, sending would leave it out.
-        !isDraftTextTooLong(for: question.id)
-            && !isPreparingPhoto(for: question.id)
-            && draftHasRequiredParts(for: question)
-    }
-
-    /// Whether the draft holds what the question needs, ignoring length and photo
-    /// preparation (see `hasDraftToSubmit`).
-    private func draftHasRequiredParts(for question: DailyChallengeQuestion) -> Bool {
-        let hasText = nonEmptyDraftText(for: question.id) != nil
-        let hasMedia = answerDrafts[question.id]?.media != nil
-        let hasChoice = partnerChoiceSelection(for: question.id) != nil
-
-        if question.usesCombinedCompose {
-            switch question.combinedSecondaryKind {
-            case .photo: return hasText || hasMedia
-            case .partnerChoice: return hasText || hasChoice
-            default: return hasText
-            }
-        }
-
-        switch composeKind(for: question) {
-        case .photo, .voice: return hasMedia
-        case .partnerChoice: return hasChoice
-        case .text: return hasText
-        default: return false
-        }
-    }
-
-    /// The kind the user is composing with for a question, honouring an explicit
-    /// choice when the question accepts more than one kind, otherwise its default.
-    func composeKind(for question: DailyChallengeQuestion) -> DailyChallengeAnswerKind? {
-        if let selected = answerDrafts[question.id]?.selectedKind,
-           question.composableAnswerKinds.contains(selected) {
-            return selected
-        }
-        return question.defaultComposableKind
-    }
-
-    func setComposeKind(_ kind: DailyChallengeAnswerKind, for questionID: UUID) {
-        var draft = answerDrafts[questionID] ?? DailyAnswerDraft()
-        draft.selectedKind = kind
-        answerDrafts[questionID] = draft
-        persist(draft, for: questionID)
-    }
-
-    /// Saves an edit to an answer the user already sent. Only allowed while the
-    /// answer is still private; the backend rejects it once the partner has
-    /// answered, which surfaces as a clear, non-retryable notice.
-    func editTextAnswer(for question: DailyChallengeQuestion) async {
-        guard
-            question.editableAnswerKind == .text,
-            submittingQuestionID == nil,
-            shufflingSlotNumber == nil,
-            !isDraftTextTooLong(for: question.id)
-        else { return }
-
-        let answerText = draftText(for: question.id).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !answerText.isEmpty else {
-            notice = .emptyAnswer
-            return
-        }
-
-        submittingQuestionID = question.id
-        do {
-            _ = try await service.editTextAnswer(
-                instanceID: question.id,
-                text: answerText,
-                operation: operationProvider.makeOperation()
-            )
-            // Keep the draft equal to the saved text so the field reflects it and
-            // Save disables again until the next change.
-            setDraftText(answerText, for: question.id)
-            await reload()
-        } catch is DailyChallengeEditLockedError {
-            notice = .editLocked
-            await reload()
-        } catch {
-            if !isCancellation(error) {
-                logFailure("Saving a text answer edit failed", error)
-                notice = .editFailed
-            }
-        }
-        submittingQuestionID = nil
-    }
-
-    /// Saves a changed partner-choice answer. Like the text edit, this is only
-    /// allowed while the answer is still private; the backend locks it once the
-    /// partner has answered, which surfaces as a clear, non-retryable notice.
-    func editPartnerChoiceAnswer(for question: DailyChallengeQuestion) async {
-        guard question.editableAnswerKind == .partnerChoice, submittingQuestionID == nil, shufflingSlotNumber == nil else { return }
-
-        guard let selection = partnerChoiceSelection(for: question.id) else {
-            notice = .emptyAnswer
-            return
-        }
-
-        submittingQuestionID = question.id
-        do {
-            _ = try await service.editPartnerChoice(
-                instanceID: question.id,
-                selectedUserID: selection,
-                operation: operationProvider.makeOperation()
-            )
-            // Keep the draft equal to the saved choice so Save disables again until
-            // the next change.
-            setPartnerChoice(selection, for: question.id)
-            await reload()
-        } catch is DailyChallengeEditLockedError {
-            notice = .editLocked
-            await reload()
-        } catch {
-            if !isCancellation(error) {
-                logFailure("Saving a partner-choice answer edit failed", error)
-                notice = .editFailed
-            }
-        }
-        submittingQuestionID = nil
-    }
-
-    /// Swaps one of the user's own, still-unanswered questions for a fresh one.
-    /// The backend caps the number of swaps per day; when that cap is hit we show
-    /// a calm, plain-language notice instead of a generic error.
-    func shuffle(_ question: DailyChallengeQuestion) async {
-        guard
-            question.origin == .own,
-            !question.hasOwnAnswer,
-            !isSending(question.id),
-            submittingQuestionID == nil,
-            shufflingSlotNumber == nil,
-            let currentUserID
-        else { return }
-
-        cancelInFlightReload()
-        shufflingSlotNumber = question.slotNumber
-        do {
-            let result = try await service.shuffleQuestion(
-                currentUserID: currentUserID,
-                slotNumber: question.slotNumber,
-                operation: operationProvider.makeOperation()
-            )
-            apply(result)
-            hasResolvedTodayState = true
-            // The skipped question is gone for good, so its private photo or voice
-            // note shouldn't stay on the phone either.
-            photoStagingTokens[question.id] = nil
-            mediaDraftStore.removeStagedMedia(instanceID: question.id)
-            clearDraft(for: question.id)
-        } catch is DailyChallengeShuffleLimitError {
-            notice = .shuffleLimitReached
-        } catch {
-            if !isCancellation(error) {
-                logFailure("Skipping (shuffling) a question failed", error)
-                notice = .shuffleFailed
-            }
-        }
-        shufflingSlotNumber = nil
-    }
-
-    func isShuffling(_ question: DailyChallengeQuestion) -> Bool {
-        shufflingSlotNumber == question.slotNumber
-    }
-
-    func draftText(for questionID: UUID) -> String {
-        answerDrafts[questionID]?.text ?? ""
-    }
-
-    func setDraftText(_ text: String, for questionID: UUID) {
-        var draft = answerDrafts[questionID] ?? DailyAnswerDraft()
-        draft.text = text
-        answerDrafts[questionID] = draft
-        persist(draft, for: questionID)
-    }
-
-    func partnerChoiceSelection(for questionID: UUID) -> UUID? {
-        answerDrafts[questionID]?.partnerChoiceUserID
-    }
-
-    func setPartnerChoice(_ userID: UUID?, for questionID: UUID) {
-        var draft = answerDrafts[questionID] ?? DailyAnswerDraft()
-        draft.partnerChoiceUserID = userID
-        answerDrafts[questionID] = draft
-        persist(draft, for: questionID)
-    }
-
-    /// The bytes of a staged-but-not-yet-sent photo or voice note, for the composer's
-    /// preview.
-    func stagedMediaData(for questionID: UUID) -> Data? {
-        guard answerDrafts[questionID]?.media != nil else { return nil }
-        return mediaDraftStore.stagedMediaData(instanceID: questionID)
-    }
-
-    /// The recorded length of a staged voice note, for the composer's preview.
-    func stagedVoiceDurationMs(for questionID: UUID) -> Int? {
-        answerDrafts[questionID]?.media?.durationMs
-    }
-
-    /// Whether a picked photo is still being prepared for this question.
-    func isPreparingPhoto(for questionID: UUID) -> Bool {
-        photoStagingTokens[questionID] != nil
-    }
-
-    /// Compresses and stages a picked photo so it persists across reopen and is ready
-    /// to upload. Selecting a photo also makes photo the chosen kind. Compressing a
-    /// large photo takes a moment, so it runs off the main thread while the composer
-    /// shows a spinner.
-    func stagePhoto(_ imageData: Data, for questionID: UUID) async {
-        let token = UUID()
-        photoStagingTokens[questionID] = token
-        let compressed = await Task.detached(priority: .userInitiated) {
-            ImageCompressor.compress(imageData)
-        }.value
-        // A newer pick, a removal, a skip, or a different signed-in user replaced this
-        // one while it was compressing.
-        guard photoStagingTokens[questionID] == token else { return }
-        photoStagingTokens[questionID] = nil
-
-        guard let compressed else {
-            #if DEBUG
-            logger.error("Compressing the picked photo returned nil; cannot stage it")
-            #endif
-            notice = .photoFailed
-            return
-        }
-
-        do {
-            try mediaDraftStore.writeStagedMedia(compressed.data, instanceID: questionID)
-        } catch {
-            logFailure("Staging a photo on the device failed", error)
-            notice = .photoFailed
-            return
-        }
-
-        var draft = answerDrafts[questionID] ?? DailyAnswerDraft()
-        draft.selectedKind = .photo
-        draft.media = DailyAnswerMediaDraft(
-            purpose: .photo,
-            mimeType: compressed.mediaType,
-            fileExtension: compressed.fileExtension,
-            width: compressed.width,
-            height: compressed.height,
-            durationMs: nil
-        )
-        answerDrafts[questionID] = draft
-        persist(draft, for: questionID)
-    }
-
-    /// The photo picker couldn't hand over the chosen photo (for example an iCloud
-    /// photo that failed to download).
-    func photoPickFailed() {
-        notice = .photoFailed
-    }
-
-    /// Stages a recorded voice note so it persists across reopen and is ready to
-    /// upload. Reads the recording's bytes off the temporary file.
-    func stageVoice(url: URL, durationMs: Int, for questionID: UUID) {
-        let data: Data
-        do {
-            data = try Data(contentsOf: url)
-        } catch {
-            logFailure("Reading the recorded voice note off disk failed", error)
-            notice = .voiceFailed
-            return
-        }
-
-        do {
-            try mediaDraftStore.writeStagedMedia(data, instanceID: questionID)
-        } catch {
-            logFailure("Staging a voice note on the device failed", error)
-            notice = .voiceFailed
-            return
-        }
-        try? FileManager.default.removeItem(at: url)
-
-        var draft = answerDrafts[questionID] ?? DailyAnswerDraft()
-        draft.selectedKind = .voice
-        draft.media = DailyAnswerMediaDraft(
-            purpose: .voice,
-            mimeType: "audio/mp4",
-            fileExtension: "m4a",
-            width: nil,
-            height: nil,
-            durationMs: durationMs
-        )
-        answerDrafts[questionID] = draft
-        persist(draft, for: questionID)
-    }
-
-    /// Discards a staged photo or voice note (the bytes and the draft reference),
-    /// keeping the chosen kind so the composer stays on that kind.
-    func removeStagedMedia(for questionID: UUID) {
-        photoStagingTokens[questionID] = nil
-        mediaDraftStore.removeStagedMedia(instanceID: questionID)
-        var draft = answerDrafts[questionID] ?? DailyAnswerDraft()
-        draft.media = nil
-        answerDrafts[questionID] = draft
-        persist(draft, for: questionID)
-    }
-
-    private func persist(_ draft: DailyAnswerDraft, for questionID: UUID) {
-        guard let currentUserID else { return }
-        draftStore.setDraft(draft, for: questionID, userID: currentUserID)
-    }
-
-    private func clearDraft(for questionID: UUID) {
-        answerDrafts[questionID] = nil
-        if let currentUserID {
-            draftStore.clearDraft(for: questionID, userID: currentUserID)
-        }
-    }
-
-    /// Whether a question's answer is saved on the device and waiting to finish
-    /// sending in the background. Once the snapshot carries the sent answer it reads
-    /// from that instead, so a live update that lands the answer replaces the "saved,
-    /// sending" preview right away rather than at the next full reload.
-    func isSending(_ instanceID: UUID) -> Bool {
-        guard sendingAnswers[instanceID] != nil else { return false }
-        return snapshot.questions.first(where: { $0.id == instanceID })?.hasOwnAnswer != true
-    }
-
-    /// The text of a still-sending answer (a standalone text answer or the caption on
-    /// a combined photo/choice answer). Nil when there's no text or it isn't sending.
-    func sendingText(for instanceID: UUID) -> String? {
-        sendingAnswers[instanceID]?.text
-    }
-
-    /// The chosen person's name for a still-sending partner-choice answer. Nil
-    /// otherwise.
-    func sendingPartnerChoiceName(for instanceID: UUID) -> String? {
-        guard let userID = sendingAnswers[instanceID]?.partnerChoiceUserID else { return nil }
-        return participants.name(for: userID)
-    }
-
-    /// The staged media bytes for a still-sending media answer, for its "saved,
-    /// sending" preview. Reads the staged file first, then queued fallback bytes.
-    /// Nil for answers without media.
-    func sendingMediaData(for instanceID: UUID) -> Data? {
-        guard let media = sendingAnswers[instanceID]?.media else { return nil }
-        return mediaDraftStore.stagedMediaData(instanceID: instanceID) ?? media.stagedData
-    }
-
-    /// Everything a still-sending answer carries, for its "saved, sending" preview.
-    /// Nil once it has landed and reads from the revealed answer instead.
-    func sendingPreview(for question: DailyChallengeQuestion) -> DailySendingPreview? {
-        guard isSending(question.id) else { return nil }
-        return DailySendingPreview(
-            mediaKind: question.mediaAnswerKind,
-            mediaData: sendingMediaData(for: question.id),
-            voiceDurationMs: sendingVoiceDurationMs(for: question.id),
-            partnerChoiceName: sendingPartnerChoiceName(for: question.id),
-            text: sendingText(for: question.id),
-            isHeldOnPhone: isHeldOnPhone(question.id)
-        )
-    }
-
-    /// A still-sending answer failed to send at least once. Only then does the
-    /// screen say it is saved on this phone, so a normal send never flashes that line.
-    func isHeldOnPhone(_ instanceID: UUID) -> Bool {
-        isSending(instanceID) && sendingAnswers[instanceID]?.isHeldOnPhone == true
-    }
-
-    /// The recorded length of a still-sending voice note, so its playback scrubber
-    /// shows a duration before the local file finishes loading. Nil for photos.
-    func sendingVoiceDurationMs(for instanceID: UUID) -> Int? {
-        guard let media = sendingAnswers[instanceID]?.media, media.draft.purpose == .voice else { return nil }
-        return media.draft.durationMs
-    }
-
-    /// Recomputes which questions still have a queued/in-flight answer, from the
-    /// persisted operations — so the "sending" state survives relaunch and clears once
-    /// the send finishes.
-    private func refreshSendingState() async {
-        guard let currentUserID else {
-            sendingAnswers = [:]
-            return
-        }
-
-        let generation = sendingGeneration
-        // A failed read keeps what we have. Treating it as "nothing is sending" would
-        // make a queued answer look lost, with its composer empty.
-        guard let operations = try? await pendingOperationStore.inFlightOperations(
-            ownerUserID: currentUserID,
-            kind: .submitDailyAnswer
-        ) else { return }
-        // A send queued while this read was in flight may be missing from it. Keep the
-        // local entry; the reload that follows that send refreshes this again.
-        guard generation == sendingGeneration, self.currentUserID == currentUserID else { return }
-
-        sendingAnswers = Dictionary(
-            operations.compactMap { operation -> (UUID, SendingAnswer)? in
-                guard let data = operation.requestData,
-                      let payload = try? JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
-                else { return nil }
-                var answer = Self.sendingAnswer(from: payload.content)
-                answer.isHeldOnPhone = operation.hasFailedAttempt
-                return (payload.instanceID, answer)
-            },
-            uniquingKeysWith: { first, _ in first }
-        )
-    }
-
-    private static func sendingAnswer(
-        from content: DailySubmitAnswerOperationPayload.Content
-    ) -> SendingAnswer {
-        switch content {
-        case let .text(body):
-            return SendingAnswer(text: body)
-        case let .partnerChoice(userID):
-            return SendingAnswer(partnerChoiceUserID: userID)
-        case let .media(media):
-            return SendingAnswer(media: .init(draft: media.draft, stagedData: media.stagedData))
-        case let .textAndMedia(body, media):
-            return SendingAnswer(text: body, media: .init(draft: media.draft, stagedData: media.stagedData))
-        case let .textAndPartnerChoice(body, userID):
-            return SendingAnswer(text: body, partnerChoiceUserID: userID)
-        }
-    }
-
     func dismissNotice() {
         notice = nil
     }
 
-    private func apply(_ result: DailyChallengeLoadResult) {
+    func apply(_ result: DailyChallengeLoadResult) {
         // A cached day, or a response from just before the couple's day ended, must
         // not show as today.
         snapshot = result.snapshot.endingCurrentDay(ifEndedBy: now())
@@ -1193,7 +450,7 @@ final class DailyChallengeViewModel {
     }
 
     /// Drops the active day from the snapshot once it has ended.
-    private func endCurrentDayIfNeeded() {
+    func endCurrentDayIfNeeded() {
         let ended = snapshot.endingCurrentDay(ifEndedBy: now())
         if ended != snapshot {
             snapshot = ended
@@ -1216,20 +473,6 @@ final class DailyChallengeViewModel {
         }
     }
 
-    /// The outbox puts an answer back into the drafts when the server refuses it for
-    /// good, so nothing the user wrote is lost. Picks those up without touching drafts
-    /// the user is editing now, and says the answer didn't go through.
-    private func restoreReturnedDrafts(for userID: UUID) {
-        var returnedAny = false
-        for (instanceID, draft) in draftStore.drafts(for: userID) where answerDrafts[instanceID] == nil {
-            answerDrafts[instanceID] = draft
-            returnedAny = true
-        }
-        if returnedAny {
-            notice = .submitFailed
-        }
-    }
-
     /// A refresh can fail after the screen already has a usable, previously-loaded
     /// challenge. Keep that state quietly; the debug log still captures the network
     /// failure, but the user should not see a banner for content that stayed usable.
@@ -1237,7 +480,7 @@ final class DailyChallengeViewModel {
         !(hasResolvedTodayState && snapshot.hasAnyQuestions)
     }
 
-    private func cancelInFlightReload() {
+    func cancelInFlightReload() {
         reloadTask?.cancel()
         reloadTask = nil
         reloadTaskUserID = nil

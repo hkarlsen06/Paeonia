@@ -3,7 +3,7 @@ import SwiftUI
 /// A segmented progress bar for the daily challenge. Each segment is one of the
 /// day's questions: filled segments are answered, an optional `current` segment
 /// is highlighted while the user is on it. Shared between the compact Us-tab card
-/// and the full answering flow so the "three steps" read identically in both.
+/// and the full answering flow so the steps read identically in both.
 struct DailyChallengeStepBar: View {
     let total: Int
     /// Which segments are answered. The flow passes the real steps, because the user
@@ -122,9 +122,9 @@ struct DailyChallengeStepBar: View {
 #if DEBUG
 #Preview {
     VStack(spacing: PaeoniaSpacing.space24) {
-        DailyChallengeStepBar(total: 3, completed: 1)
-        DailyChallengeStepBar(total: 3, completed: 1, current: 1, height: 8)
-        DailyChallengeStepBar(total: 3, completed: 3, height: 8)
+        DailyChallengeStepBar(total: 2, completed: 1)
+        DailyChallengeStepBar(total: 2, completed: 1, current: 1, height: 8)
+        DailyChallengeStepBar(total: 2, completed: 2, height: 8)
     }
     .padding(PaeoniaSpacing.screenHorizontalPadding)
     .frame(maxWidth: .infinity, maxHeight: .infinity)

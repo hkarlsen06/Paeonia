@@ -28,7 +28,7 @@ function op() {
 
 async function answerAll(t: ReturnType<typeof newTest>, user: TestUser) {
   const mine = (await liveInstancesFor(t, user.userId)).filter((row) => row.seeded_for_user_id === user.userId);
-  for (const instance of mine.slice(-3)) {
+  for (const instance of mine.slice(-2)) {
     await user.as.mutation(api.daily.submit_daily_answer, {
       p_instance_id: instance.id,
       p_payload: { text: "ok" },

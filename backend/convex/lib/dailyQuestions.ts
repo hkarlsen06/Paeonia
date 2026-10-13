@@ -18,6 +18,9 @@ import { addDaysToInstant, localDateOf, nowIso } from "./time";
 // question left unanswered for longer than this must still show up.
 export const CARRY_OVER_LOOKBACK_DAYS = 30;
 
+/** Daily questions each partner gets and must answer per couple day. */
+export const DAILY_QUESTION_SLOTS = 2;
+
 export type DailyQuestionRow = {
   couple_day_id: string;
   couple_id: string;
@@ -396,10 +399,33 @@ function shuffled<T>(items: T[]): T[] {
   return copy;
 }
 
+/** The active version of a question when it has both locales and 1 to 2 answer kinds. */
+async function usableVersionId(ctx: ReaderCtx, questionId: string): Promise<string | null> {
+  const version = await ctx.db
+    .query("question_versions")
+    .withIndex("by_question_id_status", (q) => q.eq("question_id", questionId).eq("status", "active"))
+    .first();
+  if (!version) return null;
+  const localizations = await ctx.db
+    .query("question_version_localizations")
+    .withIndex("by_question_version_id_locale", (q) => q.eq("question_version_id", version.id))
+    .collect();
+  if (!localizations.some((row) => row.locale === "en") || !localizations.some((row) => row.locale === "nb")) return null;
+  const kinds = await ctx.db
+    .query("question_answer_kinds")
+    .withIndex("by_question_version_id_answer_kind", (q) => q.eq("question_version_id", version.id))
+    .collect();
+  return kinds.length >= 1 && kinds.length <= 2 ? version.id : null;
+}
+
 /**
  * Port of `internal.pick_daily_question_version`: a random active system question
- * that is ready, not already active for the user on this day, not recently skipped,
+ * that is ready, not already given to the user on this day, not recently skipped,
  * and not answered yet (or answered long enough ago when it can resurface).
+ * A couple answers up to four questions per person per day (their own and the
+ * partner's), so a small catalog runs dry. When no question passes those rules, the
+ * picker falls back to the usable question the user answered longest ago, whether or
+ * not it can resurface. It fails only when no usable question is left at all.
  * `answered` can be shared across picks that do not write answers.
  */
 export async function pickDailyQuestionVersion(
@@ -421,21 +447,24 @@ export async function pickDailyQuestionVersion(
         .collect()
     : [];
 
-  const activeToday = await ctx.db
+  // Every instance the user got today, answered and shuffled ones too, so the fallback
+  // below can never hand out a question the user already has today.
+  const todaysInstances = await ctx.db
     .query("daily_question_instances")
     .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) =>
-      q.eq("couple_day_id", coupleDayId).eq("seeded_for_user_id", userId).eq("status", "active"),
+      q.eq("couple_day_id", coupleDayId).eq("seeded_for_user_id", userId),
     )
     .collect();
-  const activeQuestionIds = new Set<string>();
-  for (const instance of activeToday) {
+  const todaysQuestionIds = new Set<string>();
+  for (const instance of todaysInstances) {
     const version = await getByUuid(ctx, "question_versions", instance.question_version_id);
-    if (version) activeQuestionIds.add(version.question_id);
+    if (version) todaysQuestionIds.add(version.question_id);
   }
   const history = answered ?? (await loadAnsweredQuestions(ctx, userId));
 
+  const answeredBefore: { questionId: string; lastAnsweredAt: string }[] = [];
   for (const question of shuffled(questions)) {
-    if (question.id === excludedQuestionId || activeQuestionIds.has(question.id)) continue;
+    if (question.id === excludedQuestionId || todaysQuestionIds.has(question.id)) continue;
     const skipped = await ctx.db
       .query("daily_question_shuffles")
       .withIndex("by_user_id_question_id_exclude_until", (q) =>
@@ -444,26 +473,22 @@ export async function pickDailyQuestionVersion(
       .first();
     if (skipped) continue;
     const lastAnsweredAt = history.get(question.id);
-    if (lastAnsweredAt !== undefined) {
-      if (!question.resurfaceable) continue;
-      if (lastAnsweredAt > subtractMonths(now, question.resurface_after_months ?? 6)) continue;
+    if (
+      lastAnsweredAt !== undefined &&
+      !(question.resurfaceable && lastAnsweredAt <= subtractMonths(now, question.resurface_after_months ?? 6))
+    ) {
+      answeredBefore.push({ questionId: question.id, lastAnsweredAt });
+      continue;
     }
-    const version = await ctx.db
-      .query("question_versions")
-      .withIndex("by_question_id_status", (q) => q.eq("question_id", question.id).eq("status", "active"))
-      .first();
-    if (!version) continue;
-    const localizations = await ctx.db
-      .query("question_version_localizations")
-      .withIndex("by_question_version_id_locale", (q) => q.eq("question_version_id", version.id))
-      .collect();
-    if (!localizations.some((row) => row.locale === "en") || !localizations.some((row) => row.locale === "nb")) continue;
-    const kinds = await ctx.db
-      .query("question_answer_kinds")
-      .withIndex("by_question_version_id_answer_kind", (q) => q.eq("question_version_id", version.id))
-      .collect();
-    if (kinds.length < 1 || kinds.length > 2) continue;
-    return version.id;
+    const versionId = await usableVersionId(ctx, question.id);
+    if (versionId) return versionId;
+  }
+  // ponytail: oldest answer first, resurfaceable or not. Add a resurfaceable-first tier if repeats of questions
+  // marked as one-time ever matter more than repeats of resurfaceable ones.
+  answeredBefore.sort((a, b) => compareStrings(a.lastAnsweredAt, b.lastAnsweredAt));
+  for (const { questionId } of answeredBefore) {
+    const versionId = await usableVersionId(ctx, questionId);
+    if (versionId) return versionId;
   }
   return fail("22023", "no eligible daily questions are available");
 }
@@ -480,7 +505,7 @@ export async function insertDailyQuestionInstance(
   if (!day || !(await isActiveCoupleMember(ctx, input.seeded_for_user_id, day.couple_id))) {
     fail("23514", "daily question instance user must be an active couple member");
   }
-  if (!Number.isInteger(input.slot_number) || input.slot_number < 1 || input.slot_number > 3) {
+  if (!Number.isInteger(input.slot_number) || input.slot_number < 1 || input.slot_number > DAILY_QUESTION_SLOTS) {
     checkViolation("daily_question_instances", "daily_question_instances_slot_number_check");
   }
   const sameSlot = await ctx.db
@@ -509,7 +534,7 @@ export async function insertDailyQuestionInstance(
   return id;
 }
 
-/** Port of `internal.ensure_daily_challenge_slots`: a challenge row and three live slots per active member. */
+/** Port of `internal.ensure_daily_challenge_slots`: a challenge row and the live slots per active member. */
 export async function ensureDailyChallengeSlots(ctx: WriterCtx, coupleDayId: string): Promise<void> {
   const day = await getByUuid(ctx, "couple_days", coupleDayId);
   if (!day) {
@@ -536,7 +561,7 @@ export async function ensureDailyChallengeSlots(ctx: WriterCtx, coupleDayId: str
         .collect()
     ).filter(isLive);
     let answered: AnsweredQuestions | undefined;
-    for (let slot = 1; slot <= 3; slot += 1) {
+    for (let slot = 1; slot <= DAILY_QUESTION_SLOTS; slot += 1) {
       if (existing.some((instance) => instance.slot_number === slot)) continue;
       answered ??= await loadAnsweredQuestions(ctx, member.user_id);
       const versionId = await pickDailyQuestionVersion(ctx, coupleDayId, member.user_id, null, answered);

@@ -201,7 +201,7 @@ private struct DailyPromptProgressPill: View {
         .padding(.vertical, PaeoniaSpacing.space4)
         .background(.paeoniaAccentPrimary)
         .clipShape(Capsule())
-        // One element for VoiceOver ("1 of 3 answered"), not three fragments.
+        // One element for VoiceOver ("1 of 2 answered"), not three fragments.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.dailyChallengeProgressPillAccessibility(answeredCount, totalCount)))
     }
@@ -210,7 +210,7 @@ private struct DailyPromptProgressPill: View {
 #if DEBUG
 #Preview("Loading") {
     DailyPromptCard(
-        state: DailyChallengeCardState(kind: .loading, answeredCount: 0, totalCount: 3),
+        state: DailyChallengeCardState(kind: .loading, answeredCount: 0, totalCount: 2),
         partnerName: "Oda"
     )
     .padding(PaeoniaSpacing.screenHorizontalPadding)
@@ -223,7 +223,7 @@ private struct DailyPromptProgressPill: View {
         state: DailyChallengeCardState(
             kind: .active(prompt: "A small moment today"),
             answeredCount: 1,
-            totalCount: 3
+            totalCount: 2
         ),
         partnerName: "Oda"
     )
@@ -237,7 +237,7 @@ private struct DailyPromptProgressPill: View {
         state: DailyChallengeCardState(
             kind: .active(prompt: "A small moment today"),
             answeredCount: 1,
-            totalCount: 3,
+            totalCount: 2,
             hasPartnerAnswersForToday: true,
             hasAnswerablePartnerQuestions: true
         ),
@@ -252,8 +252,8 @@ private struct DailyPromptProgressPill: View {
     DailyPromptCard(
         state: DailyChallengeCardState(
             kind: .complete,
-            answeredCount: 3,
-            totalCount: 3
+            answeredCount: 2,
+            totalCount: 2
         ),
         partnerName: "Oda"
     )
