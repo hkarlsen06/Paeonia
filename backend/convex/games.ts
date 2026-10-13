@@ -14,41 +14,50 @@ import {
   beginTurn,
   drawWordChoices,
   enqueueGamePush,
+  AVERAGE_SOLVE_MAX_MS,
+  FIRST_TRY_BONUS_POINTS,
   gameJson,
   GAME_RELAY_CHANNELS,
   getGame,
   getGameSettings,
+  getMovesByCouple,
   getMovesByGame,
   getPresence,
+  getRoundStar,
   INVITE_INTERVAL_MS,
+  isPersonalBest,
+  listGuesses,
+  playerRecords,
   MAX_GUESS_LENGTH,
+  MAX_HISTORY_PAGE,
   patchGame,
   patchMove,
   PRESENCE_DELETE_AFTER_MS,
   requireGameSettings,
   requirePartnerId,
   roundJson,
+  roundOutcomeJson,
   scoreSolve,
   settingsJson,
-  SPEED_BONUS_POINTS,
   TURN_REMINDER_AFTER_MS,
+  wordLetterCount,
   type Game,
   type GameMove,
 } from "./lib/games";
-import { newUuid, dateArg, uuidArg } from "./lib/ids";
+import { newUuid, uuidArg } from "./lib/ids";
 import { signLiveTicket } from "./lib/liveTicket";
-import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
 import { applyCoupleActivity } from "./lib/streaks";
 import { charLength } from "./lib/text";
 import { addMs, nowIso } from "./lib/time";
 import { gameLanguage, gamePlayStyle, literals } from "./lib/validators";
-import { attachMemoryMediaAssets, insertMemory } from "./memories";
 
 // Games. Draw & Guess is the only game so far. The rules and decisions are in
 // docs/games-plan.md and docs/games/draw-and-guess.md. Helpers are in lib/games.ts.
 
 const gameKind = v.literal("draw_and_guess");
 const nullableString = v.optional(v.union(v.null(), v.string()));
+/** The speed bonus tiers a phone can claim. */
+const SPEED_BONUS_CLAIMS: readonly number[] = [0, 1, 2];
 
 // --- Shared lookups ---------------------------------------------------------
 
@@ -222,9 +231,8 @@ export const get_draw_and_guess = query({
 });
 
 /**
- * One round by id, in the same shape as the rounds of `get_draw_and_guess`. A save
- * queued on the phone uses it to find the drawing of a round that is no longer
- * among the recent rounds. Null when the couple has no such round.
+ * One round by id, in the same shape as the rounds of `get_draw_and_guess`. The phone uses it
+ * to find a round that is no longer among the recent rounds. Null when the couple has no such round.
  */
 export const get_draw_and_guess_round = query({
   args: { p_round_id: v.string() },
@@ -432,21 +440,29 @@ export const mark_round_seen = mutation({
 const MAX_STORED_SOLVE_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
- * Stores one attempt. A correct guess solves the round: the points are added, the speed
- * bonus applies, and the next turn begins with the guesser as the drawer.
+ * Stores one attempt. A correct guess solves the round: the points are added, the bonuses
+ * apply, and the next turn begins with the guesser as the drawer.
  *
- * The phone sends what the player saw: `p_speed_bonus` says whether the bonus was still on
- * screen when the guess was made, and `p_solve_ms` is the time since the player first saw the
- * drawing, both on the phone's clock. A guess can reach the server late (offline queue) or
- * before `mark_round_seen`, so the server clock alone would disagree with the screen. When the
- * phone sends a value, the server uses it. When it sends nothing, `scoreSolve` decides.
+ * The phone sends what the player saw. `p_speed_bonus` is the tier on screen when the guess was
+ * made (0, 1, or 2), and `p_solve_ms` is the time since the player first saw the drawing, both on
+ * the phone's clock. A guess can reach the server late (offline queue) or before `mark_round_seen`,
+ * so the server clock alone would disagree with the screen. When the phone sends a value, the
+ * server uses it. When it sends nothing, `scoreSolve` decides.
+ *
+ * `p_hints_used` counts the letters the phone's hints showed. The phone picks the letters. A
+ * correct guess stores the count, and any hint zeroes the speed bonus and the first-try bonus.
+ * A wrong guess ignores `p_hints_used`. The first-try bonus is +1 for a correct first attempt.
+ *
+ * Result: `{ guess_id, correct, round_state, points, speed_bonus, first_try_bonus, hints_used,
+ * personal_best, solve_ms, created_at }`. A wrong guess returns zeros, `false`, and a null solve time.
  */
 export const submit_guess = mutation({
   args: {
     p_round_id: v.string(),
     p_guess: v.string(),
-    p_speed_bonus: v.optional(v.union(v.null(), v.boolean())),
+    p_speed_bonus: v.optional(v.union(v.null(), v.number())),
     p_solve_ms: v.optional(v.union(v.null(), v.number())),
+    p_hints_used: v.optional(v.union(v.null(), v.number())),
     ...clientOperationArgs,
   },
   handler: async (ctx, args) => {
@@ -456,16 +472,27 @@ export const submit_guess = mutation({
     if (guess === "" || charLength(guess) > MAX_GUESS_LENGTH) fail("23514", "guess must be 1 to 40 characters");
     const claimedBonus = args.p_speed_bonus ?? null;
     const claimedSolveMs = args.p_solve_ms ?? null;
+    const claimedHints = args.p_hints_used ?? null;
+    if (claimedBonus !== null && !SPEED_BONUS_CLAIMS.includes(claimedBonus)) {
+      fail("23514", "speed bonus must be 0, 1, or 2");
+    }
     // A game waits as long as it needs, so a guess after a month away still counts. Only a
     // value that is not a time is refused.
     if (claimedSolveMs !== null && !(Number.isFinite(claimedSolveMs) && claimedSolveMs >= 0)) {
       fail("23514", "solve time must be a number of milliseconds from 0 up");
     }
+    if (claimedHints !== null && !(Number.isInteger(claimedHints) && claimedHints >= 0)) {
+      fail("23514", "hints used must be a whole number from 0 up");
+    }
 
     return await runClientOperation(
       ctx,
       userId,
-      toClientOperation(args, { kind: "submit_guess", scope: "games", request: ["submit_guess", roundId, guess, claimedBonus, claimedSolveMs] }),
+      toClientOperation(args, {
+        kind: "submit_guess",
+        scope: "games",
+        request: ["submit_guess", roundId, guess, claimedBonus, claimedSolveMs, claimedHints],
+      }),
       async () => {
         const { move, game } = await requireRound(ctx, userId, roundId);
         if (move.guesser_user_id !== userId) fail("42501", "only the guesser can guess");
@@ -473,6 +500,12 @@ export const submit_guess = mutation({
 
         const now = nowIso();
         const correct = guess === move.word;
+        // A hint can reveal at most all letters but one, or the hints would give the word away.
+        if (correct && claimedHints !== null && claimedHints > wordLetterCount(move.word) - 1) {
+          fail("23514", "hints used is more than the word allows");
+        }
+        const firstAttempt =
+          (await ctx.db.query("game_guesses").withIndex("by_move_id_created_at", (q) => q.eq("move_id", move.id)).first()) === null;
         const guessId = newUuid();
         await ctx.db.insert("game_guesses", {
           id: guessId,
@@ -484,18 +517,41 @@ export const submit_guess = mutation({
           created_at: now,
         });
         if (!correct) {
-          return { guess_id: guessId, correct, round_state: move.state, points: 0, speed_bonus: 0, solve_ms: null, created_at: now };
+          return {
+            guess_id: guessId,
+            correct,
+            round_state: move.state,
+            points: 0,
+            speed_bonus: 0,
+            first_try_bonus: 0,
+            hints_used: 0,
+            personal_best: false,
+            solve_ms: null,
+            created_at: now,
+          };
         }
 
+        const hintsUsed = claimedHints ?? 0;
         const scored = scoreSolve(move, now);
-        const speedBonus = claimedBonus === null ? scored.speedBonus : claimedBonus ? SPEED_BONUS_POINTS : 0;
         const solveMs = claimedSolveMs === null ? scored.solveMs : Math.min(Math.round(claimedSolveMs), MAX_STORED_SOLVE_MS);
-        await patchMove(ctx, move, { state: "solved", ended_at: now, solve_ms: solveMs, speed_bonus: speedBonus });
+        const speedBonus = hintsUsed > 0 ? 0 : (claimedBonus ?? scored.speedBonus);
+        const firstTryBonus = hintsUsed === 0 && firstAttempt ? FIRST_TRY_BONUS_POINTS : 0;
+        const personalBest =
+          hintsUsed === 0 && solveMs !== undefined && isPersonalBest(await getMovesByCouple(ctx, move.couple_id), userId, solveMs);
+        await patchMove(ctx, move, {
+          state: "solved",
+          ended_at: now,
+          solve_ms: solveMs,
+          speed_bonus: speedBonus,
+          first_try_bonus: firstTryBonus,
+          hints_used: hintsUsed,
+          personal_best: personalBest,
+        });
         // The shared total gets the word points. Each partner's total follows the "against each
         // other" rules, so switching the play style later loses nothing.
         const pointsByUser = { ...game.points_by_user };
         pointsByUser[move.drawer_user_id] = (pointsByUser[move.drawer_user_id] ?? 0) + move.points;
-        pointsByUser[userId] = (pointsByUser[userId] ?? 0) + move.points + speedBonus;
+        pointsByUser[userId] = (pointsByUser[userId] ?? 0) + move.points + speedBonus + firstTryBonus;
         await beginTurn(ctx, game, userId, { shared_points: game.shared_points + move.points, points_by_user: pointsByUser });
         await enqueueGamePush(ctx, {
           kind: "game_guessed",
@@ -514,6 +570,9 @@ export const submit_guess = mutation({
           round_state: "solved" as const,
           points: move.points,
           speed_bonus: speedBonus,
+          first_try_bonus: firstTryBonus,
+          hints_used: hintsUsed,
+          personal_best: personalBest,
           solve_ms: solveMs ?? null,
           created_at: now,
         };
@@ -544,75 +603,187 @@ export const give_up_round = mutation({
   },
 });
 
-// --- Save to Memories -------------------------------------------------------
+// --- After the round: result, reaction, stars -------------------------------
 
-/** "Not now" for the caller only. The partner's prompt stays open. */
-export const respond_save_prompt = mutation({
+/** A round that ended. Reactions, stars, and the result screen only apply to these. */
+function assertFinished(move: GameMove): void {
+  if (move.state !== "solved" && move.state !== "missed") fail("23514", "the round is not finished yet");
+}
+
+/**
+ * Records that the caller dismissed the finished round's result. The caller must be the drawer
+ * or the guesser. It sets the caller's own field once and keeps the first time, so a second
+ * device or a retry changes nothing. Result: `{ round_id, result_seen_at }`.
+ */
+export const mark_round_result_seen = mutation({
   args: { p_round_id: v.string() },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     await assertNoPendingAccountDeletion(ctx, userId);
     const { move } = await requireRound(ctx, userId, uuidArg(args.p_round_id));
-    if (move.state !== "solved" && move.state !== "missed") fail("23514", "the round is not finished yet");
-    const existing = await ctx.db
-      .query("game_save_responses")
-      .withIndex("by_move_id_user_id", (q) => q.eq("move_id", move.id).eq("user_id", userId))
-      .unique();
-    if (!existing) {
-      await ctx.db.insert("game_save_responses", {
-        move_id: move.id,
-        couple_id: move.couple_id,
-        user_id: userId,
-        response: "not_now",
-        created_at: nowIso(),
-      });
-    }
-    return null;
+    assertFinished(move);
+    const field =
+      move.drawer_user_id === userId ? "drawer_result_seen_at" : move.guesser_user_id === userId ? "guesser_result_seen_at" : null;
+    if (field === null) return fail("42501", "only the drawer or the guesser can see this result");
+    const seenAt = move[field] ?? nowIso();
+    if (move[field] === undefined) await patchMove(ctx, move, { [field]: seenAt });
+    return { round_id: move.id, result_seen_at: seenAt };
   },
 });
 
 /**
- * Saves a finished round as a memory titled with the word. The phone renders the drawing
- * to an image and uploads it first (purpose `memory_photo`, parent kind `memory_media`, parent
- * id = a new memory media id). A round is saved at most once: when both partners say yes at
- * the same time, the second call gets the first memory back and its image is queued for deletion.
+ * The guesser's reaction to a finished round: `love`, `laugh`, `wow`, or null to clear it. The
+ * last write wins, setting the same value again changes nothing, and nobody gets a push.
+ * Result: `{ round_id, guesser_reaction }`.
  */
-export const save_round_to_memories = mutation({
-  args: {
-    p_round_id: v.string(),
-    p_memory_id: v.string(),
-    p_media_asset_id: v.string(),
-    p_memory_date: v.string(),
-  },
+export const set_round_reaction = mutation({
+  args: { p_round_id: v.string(), p_reaction: v.optional(v.union(v.null(), literals("love", "laugh", "wow"))) },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     await assertNoPendingAccountDeletion(ctx, userId);
-    const memoryId = uuidArg(args.p_memory_id);
-    const assetId = uuidArg(args.p_media_asset_id);
-    const memoryDate = dateArg(args.p_memory_date);
     const { move } = await requireRound(ctx, userId, uuidArg(args.p_round_id));
-    if (move.state !== "solved" && move.state !== "missed") fail("23514", "the round is not finished yet");
+    if (move.guesser_user_id !== userId) fail("42501", "only the guesser can react");
+    assertFinished(move);
+    const reaction = args.p_reaction ?? undefined;
+    if (move.guesser_reaction !== reaction) await patchMove(ctx, move, { guesser_reaction: reaction });
+    return { round_id: move.id, guesser_reaction: orNull(reaction) };
+  },
+});
 
-    if (move.memory_id !== undefined) {
-      const asset = await getByUuid(ctx, "media_assets", assetId);
-      if (asset && asset.owner_user_id === userId && asset.couple_id === move.couple_id) {
-        await queueOrphanedMediaAssetForDelete(ctx, assetId);
+/**
+ * Stars or unstars a finished round for the caller. Stars are private: the partner is not told.
+ * Setting the current value again changes nothing. Result: `{ round_id, starred }`.
+ */
+export const set_round_star = mutation({
+  args: { p_round_id: v.string(), p_starred: v.boolean() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    await assertNoPendingAccountDeletion(ctx, userId);
+    const { move } = await requireRound(ctx, userId, uuidArg(args.p_round_id));
+    assertFinished(move);
+    const existing = await getRoundStar(ctx, move.id, userId);
+    if (args.p_starred && !existing) {
+      await ctx.db.insert("game_round_stars", {
+        couple_id: move.couple_id,
+        move_id: move.id,
+        user_id: userId,
+        round_number: move.round_number,
+        created_at: nowIso(),
+      });
+    } else if (!args.p_starred && existing) {
+      await ctx.db.delete(existing._id);
+    }
+    return { round_id: move.id, starred: args.p_starred };
+  },
+});
+
+// --- History and records ----------------------------------------------------
+
+/**
+ * The couple's finished rounds that hold a drawing, newest first by round number and strictly
+ * before `p_before_round_number`. `p_limit` is capped at 50. With `p_starred_only` it returns
+ * only the rounds the caller starred. It does not read the clock.
+ *
+ * Result: `{ rounds, next_before_round_number }`. Pass `next_before_round_number` as the next
+ * `p_before_round_number`; it is null when there are no more rounds. Each round has `id`,
+ * `round_number`, `drawer_user_id`, `guesser_user_id`, `word`, `difficulty`, `points`, `state`,
+ * `drawing_media_asset_id`, `solve_ms`, `speed_bonus`, `first_try_bonus`, `hints_used`,
+ * `attempt_count`, `guesser_reaction`, `personal_best`, `starred_by_me`,
+ * `started_at`, and `ended_at`.
+ */
+export const get_draw_and_guess_history = query({
+  args: {
+    p_starred_only: v.boolean(),
+    p_before_round_number: v.optional(v.union(v.null(), v.number())),
+    p_limit: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+    if (!Number.isFinite(args.p_limit) || args.p_limit < 1) fail("23514", "limit must be 1 or more");
+    const before = args.p_before_round_number ?? Number.MAX_SAFE_INTEGER;
+    if (Number.isNaN(before)) fail("23514", "round number cursor must be a number");
+    const limit = Math.min(Math.floor(args.p_limit), MAX_HISTORY_PAGE);
+
+    const found: GameMove[] = [];
+    let more = false;
+    // Takes one round more than the limit to learn whether another page exists.
+    const take = (move: GameMove | null): boolean => {
+      if (!move || (move.state !== "solved" && move.state !== "missed") || move.drawing_media_asset_id === undefined) return false;
+      if (found.length === limit) {
+        more = true;
+        return true;
       }
-      return { memory_id: move.memory_id, created: false };
+      found.push(move);
+      return false;
+    };
+    if (args.p_starred_only) {
+      const stars = ctx.db
+        .query("game_round_stars")
+        .withIndex("by_couple_id_user_id_round_number", (q) =>
+          q.eq("couple_id", coupleId).eq("user_id", userId).lt("round_number", before),
+        )
+        .order("desc");
+      for await (const star of stars) {
+        if (take(await getByUuid(ctx, "game_moves", star.move_id))) break;
+      }
+    } else {
+      const game = await getGame(ctx, coupleId, "draw_and_guess");
+      const moves = game
+        ? ctx.db
+            .query("game_moves")
+            .withIndex("by_game_id_round_number", (q) => q.eq("game_id", game.id).lt("round_number", before))
+            .order("desc")
+        : null;
+      if (moves) {
+        for await (const move of moves) {
+          if (take(move)) break;
+        }
+      }
     }
 
-    const title = move.word.charAt(0).toLocaleUpperCase() + move.word.slice(1);
-    await insertMemory(ctx, {
-      id: memoryId,
-      couple_id: move.couple_id,
-      title,
-      memory_date: memoryDate,
-      created_by_user_id: userId,
-      last_edited_by_user_id: userId,
-    });
-    await attachMemoryMediaAssets(ctx, userId, memoryId, [assetId]);
-    await patchMove(ctx, move, { memory_id: memoryId, saved_by_user_id: userId });
-    return { memory_id: memoryId, created: true };
+    const rounds = [];
+    for (const move of found) {
+      rounds.push({
+        id: move.id,
+        round_number: move.round_number,
+        drawer_user_id: move.drawer_user_id,
+        guesser_user_id: move.guesser_user_id,
+        word: move.word,
+        difficulty: move.difficulty,
+        points: move.points,
+        state: move.state,
+        drawing_media_asset_id: move.drawing_media_asset_id!,
+        ...roundOutcomeJson(move),
+        attempt_count: (await listGuesses(ctx, move.id)).count,
+        starred_by_me: (await getRoundStar(ctx, move.id, userId)) !== null,
+        started_at: move.started_at,
+        ended_at: orNull(move.ended_at),
+      });
+    }
+    return { rounds, next_before_round_number: more ? found[found.length - 1].round_number : null };
+  },
+});
+
+/**
+ * Each partner's numbers, the caller first. It scans the couple's rounds, which is fine for one
+ * couple. `solves` counts rounds they solved as the guesser. `first_try_solves` counts the solves
+ * that earned the first-try bonus. `average_solve_ms` covers hint-free solves of 10 minutes or
+ * less, and `fastest_solve_ms` with `fastest_solve_word` covers every hint-free solve. Both are
+ * null with none. `drawings_solved` counts rounds they drew that the partner solved.
+ *
+ * Result: `{ partners: [{ user_id, solves, first_try_solves, average_solve_ms, fastest_solve_ms,
+ * fastest_solve_word, drawings_solved }] }`.
+ */
+export const get_draw_and_guess_records = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+    const members = await listActiveMembers(ctx, coupleId);
+    const ids = [userId, ...members.map((member) => member.user_id).filter((id) => id !== userId)];
+    const moves = await getMovesByCouple(ctx, coupleId);
+    return { partners: ids.map((id) => playerRecords(moves, id)) };
   },
 });
 

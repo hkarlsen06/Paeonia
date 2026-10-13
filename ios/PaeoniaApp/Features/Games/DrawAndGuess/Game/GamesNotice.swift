@@ -15,8 +15,6 @@ nonisolated enum GamesNotice: Equatable, Sendable {
     case drawingUnavailable
     /// The drawing is bigger than the server accepts.
     case drawingTooBig
-    /// Saving to Memories failed for good.
-    case saveRejected
     /// A guess or give up was refused for good. The round is still open.
     case moveRejected
     /// Queueing a move on the phone failed.
@@ -28,7 +26,6 @@ nonisolated enum GamesNotice: Equatable, Sendable {
         case .wordRejected: self = .wordRejected
         case .wordRejectedDrawingKept: self = .wordRejectedDrawingKept
         case .drawingRejected: self = .drawingRejected
-        case .saveRejected: self = .saveRejected
         case .moveRejected: self = .moveRejected
         }
     }
@@ -46,7 +43,6 @@ nonisolated enum GamesNotice: Equatable, Sendable {
         case .drawingRejected: .gamesNoticeDrawingRejectedTitle
         case .drawingUnavailable: .gamesNoticeDrawingUnavailableTitle
         case .drawingTooBig: .gamesNoticeDrawingTooBigTitle
-        case .saveRejected: .gamesNoticeSaveRejectedTitle
         case .moveRejected: .gamesNoticeMoveRejectedTitle
         case .couldNotSaveMove: .gamesNoticeMoveFailedTitle
         case .couldNotSendInvite: .gamesNoticeInviteFailedTitle
@@ -62,7 +58,6 @@ nonisolated enum GamesNotice: Equatable, Sendable {
         case .drawingRejected: .gamesNoticeDrawingRejectedMessage
         case .drawingUnavailable: .gamesNoticeDrawingUnavailableMessage
         case .drawingTooBig: .gamesNoticeDrawingTooBigMessage
-        case .saveRejected: .gamesNoticeSaveRejectedMessage
         case .moveRejected: .gamesNoticeMoveRejectedMessage
         case .couldNotSaveMove: .gamesNoticeMoveFailedMessage
         case .couldNotSendInvite: .gamesNoticeInviteFailedMessage

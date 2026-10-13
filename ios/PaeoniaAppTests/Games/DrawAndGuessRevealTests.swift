@@ -28,9 +28,16 @@ struct DrawAndGuessRevealTests {
         _ kind: Timeline.Kind = .solved,
         letters: Int = 8,
         points: Int = 3,
-        bonus: Bool = true
+        bonus: Bool = true,
+        firstTry: Bool = false
     ) -> Timeline.Plan {
-        Timeline.Plan(kind: kind, letterCount: letters, pointsAdded: points, hasSpeedBonus: bonus)
+        Timeline.Plan(
+            kind: kind,
+            letterCount: letters,
+            pointsAdded: points,
+            hasSpeedBonus: bonus,
+            hasFirstTryBonus: firstTry
+        )
     }
 
     private func settle(_ timeline: Timeline) async {
@@ -40,7 +47,7 @@ struct DrawAndGuessRevealTests {
     // MARK: Script
 
     @Test func theSolvedScriptFollowsTheDesignedBeats() {
-        let steps = Timeline.steps(for: plan(letters: 8), schedule: .standard)
+        let steps = Timeline.steps(for: plan(letters: 8, firstTry: true), schedule: .standard)
 
         #expect(steps.first == Timeline.Step(at: 0, event: .start))
         // Eight letters at 45 ms start at 0.10 s and the last one lights at 0.415 s.
@@ -51,7 +58,9 @@ struct DrawAndGuessRevealTests {
         #expect(steps.contains(Timeline.Step(at: 1.10, event: .title)))
         #expect(steps.contains(Timeline.Step(at: 1.40, event: .panel)))
         #expect(steps.contains(Timeline.Step(at: 1.90, event: .speedBonus)))
-        #expect(steps.last == Timeline.Step(at: 2.20, event: .save))
+        // The first-try line has its own beat after the speed bonus.
+        #expect(steps.contains(Timeline.Step(at: 2.20, event: .firstTryBonus)))
+        #expect(steps.last == Timeline.Step(at: 2.50, event: .actions))
         #expect(steps.map(\.at) == steps.map(\.at).sorted())
     }
 
@@ -79,6 +88,7 @@ struct DrawAndGuessRevealTests {
         let steps = Timeline.steps(for: plan(points: 0, bonus: false), schedule: .standard)
 
         #expect(!steps.contains { $0.event == .speedBonus })
+        #expect(!steps.contains { $0.event == .firstTryBonus })
         #expect(!steps.contains { $0.event == .panel })
     }
 
@@ -95,17 +105,18 @@ struct DrawAndGuessRevealTests {
     @Test func theRunEndsSettledWithEveryHapticOnce() async {
         let log = HapticLog()
         let timeline = Timeline(schedule: .instant, haptics: log.haptics, sleep: { _ in })
-        timeline.begin(plan(letters: 4, points: 3), reduceMotion: false)
+        timeline.begin(plan(letters: 4, points: 3, firstTry: true), reduceMotion: false)
         await settle(timeline)
 
         #expect(timeline.isSettled)
         #expect(timeline.litLetters == 4)
-        #expect(timeline.titleShown && timeline.buttonShown && timeline.panelShown && timeline.saveShown)
-        #expect(timeline.speedBonusShown)
+        #expect(timeline.titleShown && timeline.buttonShown && timeline.panelShown && timeline.actionsShown)
+        #expect(timeline.speedBonusShown && timeline.firstTryBonusShown)
         #expect(timeline.bloomStart != nil)
         #expect(log.events.filter { $0 == "revealed" }.count == 1)
         #expect(log.events.filter { $0 == "selection" }.count == 1)
-        #expect(log.events.filter { $0 == "bonus" }.count == 1)
+        // One for the speed bonus and one for the first-try bonus.
+        #expect(log.events.filter { $0 == "bonus" }.count == 2)
         #expect(log.events.filter { $0 == "letter" }.count == 4)
         #expect(log.events.filter { $0 == "score" }.count == 3)
         // The answer lands after the letters, and the bonus after the answer.
@@ -144,7 +155,7 @@ struct DrawAndGuessRevealTests {
 
         #expect(timeline.isSettled)
         #expect(timeline.wasSkipped)
-        #expect(timeline.titleShown && timeline.saveShown)
+        #expect(timeline.titleShown && timeline.actionsShown)
         #expect(timeline.bloomStart == nil)
         #expect(log.events == hapticsAtSkip)
     }
@@ -189,7 +200,8 @@ struct DrawAndGuessRevealTests {
 
     private func reveal(
         outcome: DrawAndGuessReveal.Outcome = .iSolvedIt,
-        bonus: Int? = 1,
+        bonus: Int = 1,
+        firstTry: Int = 0,
         isConfirmed: Bool = true,
         duration: TimeInterval? = 18
     ) -> DrawAndGuessReveal {
@@ -200,8 +212,12 @@ struct DrawAndGuessRevealTests {
             difficulty: .medium,
             wordPoints: 2,
             speedBonus: bonus,
+            firstTryBonus: firstTry,
+            hintsUsed: 0,
+            personalBest: false,
+            reaction: nil,
             solveDuration: duration,
-            pointsForMe: solved ? 2 + (outcome == .iSolvedIt ? bonus ?? 0 : 0) : 0,
+            pointsForMe: solved ? 2 + (outcome == .iSolvedIt ? bonus + firstTry : 0) : 0,
             pointsForCouple: solved ? 2 : 0,
             attempts: [],
             isConfirmed: isConfirmed
@@ -256,9 +272,42 @@ struct DrawAndGuessRevealTests {
         #expect(column.before == 11 && column.after == 13)
     }
 
-    @Test func aResultOnlyOnThePhoneAddsToTheTotalsAndHasNoBonus() throws {
+    @Test func theFirstTryBonusAddsItsOwnLineToTheGuessersColumnOnly() throws {
         let score = try #require(DrawAndGuessRevealScore.make(
-            reveal: reveal(bonus: nil, isConfirmed: false),
+            reveal: reveal(bonus: 2, firstTry: 1),
+            score: .against(mine: 8, partner: 5),
+            iAmGuesser: true
+        ))
+
+        guard case let .against(mine, partner) = score.style else {
+            Issue.record("Expected the against style")
+            return
+        }
+        #expect(mine.lines.map(\.kind) == [.word, .speedBonus, .firstTry])
+        #expect(mine.lines.map(\.points) == [2, 2, 1])
+        #expect(mine.before == 3 && mine.after == 8)
+        // The drawer gets the word's points only.
+        #expect(partner.lines.map(\.kind) == [.drawing])
+        #expect(partner.added == 2)
+    }
+
+    @Test func noSpeedBonusAndNoFirstTryLeavesOnlyTheWord() throws {
+        let score = try #require(DrawAndGuessRevealScore.make(
+            reveal: reveal(bonus: 0, firstTry: 0),
+            score: .against(mine: 8, partner: 5),
+            iAmGuesser: true
+        ))
+
+        guard case let .against(mine, _) = score.style else {
+            Issue.record("Expected the against style")
+            return
+        }
+        #expect(mine.lines.map(\.kind) == [.word])
+    }
+
+    @Test func aResultOnlyOnThePhoneAddsToTheTotalsWithTheBonusesThePhonePromised() throws {
+        let score = try #require(DrawAndGuessRevealScore.make(
+            reveal: reveal(bonus: 2, firstTry: 1, isConfirmed: false),
             score: .against(mine: 8, partner: 5),
             iAmGuesser: true
         ))
@@ -268,8 +317,8 @@ struct DrawAndGuessRevealTests {
             return
         }
         #expect(score.isEstimate)
-        #expect(mine.before == 8 && mine.after == 10)
-        #expect(mine.lines.map(\.kind) == [.word])
+        #expect(mine.before == 8 && mine.after == 13)
+        #expect(mine.lines.map(\.kind) == [.word, .speedBonus, .firstTry])
     }
 
     @Test func aMissedRoundHasNoScorePanel() {

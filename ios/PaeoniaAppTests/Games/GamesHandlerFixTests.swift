@@ -1,23 +1,6 @@
 import Foundation
 import Testing
-import UIKit
 @testable import PaeoniaApp
-
-/// Records the media a save uploads.
-private actor RecordingMemoryUploader: MemoryMediaUploading {
-    private(set) var media: [MemoryUploadMedia] = []
-
-    func uploadMedia(
-        _ media: MemoryUploadMedia,
-        memoryMediaID: UUID,
-        coupleID _: UUID,
-        reserveOperation _: SyncClientOperation,
-        finalizeOperation _: SyncClientOperation
-    ) async throws -> MemoryMediaUploadResult { // swiftlint:disable:this async_without_await
-        self.media.append(media)
-        return MemoryMediaUploadResult(memoryMediaID: memoryMediaID, mediaAssetID: UUID())
-    }
-}
 
 /// Fixes for the queued Games moves and the files and cache they touch.
 @MainActor
@@ -79,55 +62,88 @@ struct GamesHandlerFixTests {
         GameGuessPayload(id: UUID(), roundID: roundID, guess: text, isCorrect: correct, createdAt: GameFixture.now)
     }
 
-    // MARK: Save to Memories
+    // MARK: Reaction and result seen
 
-    @Test func savingToMemoriesSendsThePixelSizeOfTheImage() async throws {
-        let size = CGSize(width: 30, height: 20)
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        let renderer = UIGraphicsImageRenderer(size: size, format: format)
-        let image = renderer.jpegData(withCompressionQuality: 0.9) { context in
-            UIColor.red.setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-        }
-        let uploader = RecordingMemoryUploader()
-        let payload = GameSaveRoundPayload(
-            roundID: GameFixture.roundID,
-            coupleID: DeveloperScenarioFixture.coupleID,
-            memoryID: UUID(),
-            memoryMediaID: UUID(),
-            imageData: image,
-            memoryDate: "2026-01-01",
-            reserveOperation: operation(1),
-            finalizeOperation: operation(2)
+    @Test func aQueuedReactionWaitsForTheGuessThatEndedTheRound() async throws {
+        let correct = guess("umbrella", correct: true)
+        let guessOperation = operation(1)
+        try await enqueue(.submitGameGuess, correct, guessOperation)
+        let reaction = GameReactionPayload(roundID: GameFixture.roundID, reaction: .love, createdAt: GameFixture.now)
+        let handler = GameReactionPendingOperationHandler(gateway: environment.gateway, cache: environment.cache)
+
+        let waiting = try await handler.send(
+            try snapshot(.setGameRoundReaction, reaction, operation: operation(2)),
+            context: syncContext(environment.pending)
         )
-        let handler = SaveGameRoundPendingOperationHandler(
-            gateway: environment.gateway,
-            mediaUploader: uploader,
-            cache: environment.cache,
-            transfer: environment.transfer,
-            drawingStore: environment.drawingStore
+        #expect(waiting == .retry(after: nil))
+        #expect(environment.gateway.reactions.isEmpty)
+
+        try await environment.pending.markSucceeded(clientOperationID: guessOperation.id, at: GameFixture.now)
+        let sent = try await handler.send(
+            try snapshot(.setGameRoundReaction, reaction, operation: operation(2)),
+            context: syncContext(environment.pending)
         )
+        #expect(sent == .succeeded)
+        #expect(environment.gateway.reactions == [
+            ScriptedGamesGateway.SentReaction(roundID: GameFixture.roundID, reaction: .love)
+        ])
+    }
+
+    @Test func aClearedReactionIsSentAsNothing() async throws {
+        let cleared = GameReactionPayload(roundID: GameFixture.roundID, reaction: nil, createdAt: GameFixture.now)
+        let handler = GameReactionPendingOperationHandler(gateway: environment.gateway, cache: environment.cache)
 
         let result = try await handler.send(
-            try snapshot(.saveGameRoundToMemories, payload),
+            try snapshot(.setGameRoundReaction, cleared),
             context: syncContext(environment.pending)
         )
 
         #expect(result == .succeeded)
-        let sent = await uploader.media
-        #expect(sent.first?.width == 30)
-        #expect(sent.first?.height == 20)
+        #expect(environment.gateway.reactions == [
+            ScriptedGamesGateway.SentReaction(roundID: GameFixture.roundID, reaction: nil)
+        ])
     }
 
-    @Test func theRendererMakesTheSquareImageTheSaveDescribes() throws {
-        let image = try #require(DrawAndGuessImageRenderer.render(GameFixture.umbrella()))
+    @Test func aReactionTheServerRefusesForGoodIsDroppedWithoutANotice() async throws {
+        environment.gateway.setReactionError(.server(code: "23514", message: "the round is not finished yet"))
+        let reaction = GameReactionPayload(roundID: GameFixture.roundID, reaction: .wow, createdAt: GameFixture.now)
+        let handler = GameReactionPendingOperationHandler(gateway: environment.gateway, cache: environment.cache)
 
-        let size = try #require(DrawAndGuessImageRenderer.pixelSize(of: image))
+        let result = try await handler.send(
+            try snapshot(.setGameRoundReaction, reaction),
+            context: syncContext(environment.pending)
+        )
 
-        #expect(size.width == Int(DrawAndGuessImageRenderer.pixelSide))
-        #expect(size.height == Int(DrawAndGuessImageRenderer.pixelSide))
-        #expect(DrawAndGuessImageRenderer.pixelSize(of: Data([1, 2, 3])) == nil)
+        guard case .terminalFailure = result else {
+            Issue.record("Expected a terminal failure, got \(result)")
+            return
+        }
+        #expect(await environment.cache.takeNotices(ownerUserID: GameFixture.me).isEmpty)
+    }
+
+    @Test func theResultSeenMarkWaitsForTheGiveUpAndThenGoesToTheServer() async throws {
+        let giveUpOperation = operation(1)
+        try await enqueue(
+            .giveUpGameRound,
+            GameGiveUpPayload(roundID: GameFixture.roundID, createdAt: GameFixture.now),
+            giveUpOperation
+        )
+        let mark = GameResultSeenPayload(roundID: GameFixture.roundID, createdAt: GameFixture.now)
+        let handler = GameResultSeenPendingOperationHandler(gateway: environment.gateway, cache: environment.cache)
+
+        let waiting = try await handler.send(
+            try snapshot(.markGameRoundResultSeen, mark, operation: operation(2)),
+            context: syncContext(environment.pending)
+        )
+        #expect(waiting == .retry(after: nil))
+
+        try await environment.pending.markSucceeded(clientOperationID: giveUpOperation.id, at: GameFixture.now)
+        let sent = try await handler.send(
+            try snapshot(.markGameRoundResultSeen, mark, operation: operation(2)),
+            context: syncContext(environment.pending)
+        )
+        #expect(sent == .succeeded)
+        #expect(environment.gateway.resultSeenRounds == [GameFixture.roundID])
     }
 
     // MARK: Privacy purge

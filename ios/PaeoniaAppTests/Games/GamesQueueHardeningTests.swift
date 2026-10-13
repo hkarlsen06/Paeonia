@@ -41,18 +41,6 @@ private final class ExpiringUploadTransfer: GameDrawingTransferring, @unchecked 
     }
 }
 
-private actor AcceptingMemoryUploader: MemoryMediaUploading {
-    func uploadMedia(
-        _: MemoryUploadMedia,
-        memoryMediaID: UUID,
-        coupleID _: UUID,
-        reserveOperation _: SyncClientOperation,
-        finalizeOperation _: SyncClientOperation
-    ) async throws -> MemoryMediaUploadResult { // swiftlint:disable:this async_without_await
-        MemoryMediaUploadResult(memoryMediaID: memoryMediaID, mediaAssetID: UUID())
-    }
-}
-
 /// The queued Games writes: how they wait, how often a refusal is tried, and how
 /// the cache orders the answers they read.
 @MainActor
@@ -102,13 +90,8 @@ struct GamesQueueHardeningTests {
                 drawingStore: environment.drawingStore
             ),
             SubmitGameGuessPendingOperationHandler(gateway: gateway, cache: cache),
-            SaveGameRoundPendingOperationHandler(
-                gateway: gateway,
-                mediaUploader: AcceptingMemoryUploader(),
-                cache: cache,
-                transfer: transfer,
-                drawingStore: environment.drawingStore
-            ),
+            GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
+            GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
         ])
     }
 
@@ -157,10 +140,9 @@ struct GamesQueueHardeningTests {
         #expect(await environment.queued(.submitGameDrawing).count == 1)
     }
 
-    // MARK: Save to Memories
+    // MARK: Reaction and result seen
 
-    @Test func aSaveWaitsForTheGuessThatFinishesTheRound() async throws {
-        let image = try #require(DrawAndGuessImageRenderer.render(GameFixture.umbrella()))
+    @Test func aReactionAndTheSeenMarkGoOutInOrderAfterTheGuessThatEndedTheRound() async throws {
         let guess = GameGuessPayload(
             id: UUID(),
             roundID: GameFixture.roundID,
@@ -168,66 +150,53 @@ struct GamesQueueHardeningTests {
             isCorrect: true,
             createdAt: GameFixture.now
         )
-        let save = GameSaveRoundPayload(
+        try await enqueue(.submitGameGuess, guess, sequence: 1)
+        try await enqueue(
+            .setGameRoundReaction,
+            GameReactionPayload(roundID: GameFixture.roundID, reaction: .love, createdAt: GameFixture.now),
+            sequence: 2
+        )
+        try await enqueue(
+            .setGameRoundReaction,
+            GameReactionPayload(roundID: GameFixture.roundID, reaction: .wow, createdAt: GameFixture.now),
+            sequence: 3
+        )
+        try await enqueue(
+            .markGameRoundResultSeen,
+            GameResultSeenPayload(roundID: GameFixture.roundID, createdAt: GameFixture.now),
+            sequence: 4
+        )
+
+        await runDrain()
+
+        #expect(environment.gateway.calls.filter { ["guess", "reaction", "resultSeen"].contains($0) }
+            == ["guess", "reaction", "reaction", "resultSeen"])
+        #expect(environment.gateway.reactions.map(\.reaction) == [.love, .wow])
+        #expect(environment.gateway.resultSeenRounds == [GameFixture.roundID])
+        #expect(await environment.queued(.setGameRoundReaction).isEmpty)
+        #expect(await environment.queued(.markGameRoundResultSeen).isEmpty)
+    }
+
+    @Test func aReactionWaitsWhileTheGuessBeforeItCannotBeSent() async throws {
+        let guess = GameGuessPayload(
+            id: UUID(),
             roundID: GameFixture.roundID,
-            coupleID: DeveloperScenarioFixture.coupleID,
-            memoryID: UUID(),
-            memoryMediaID: UUID(),
-            imageData: image,
-            memoryDate: "2026-01-01",
-            reserveOperation: SyncClientOperation(clientID: clientID, clientSequence: 20),
-            finalizeOperation: SyncClientOperation(clientID: clientID, clientSequence: 21)
+            guess: "umbrella",
+            isCorrect: true,
+            createdAt: GameFixture.now
         )
         try await enqueue(.submitGameGuess, guess, sequence: 1)
-        try await enqueue(.saveGameRoundToMemories, save, sequence: 2)
+        try await enqueue(
+            .setGameRoundReaction,
+            GameReactionPayload(roundID: GameFixture.roundID, reaction: .laugh, createdAt: GameFixture.now),
+            sequence: 2
+        )
         environment.gateway.fail("guess")
 
         await runDrain()
 
-        #expect(!environment.gateway.calls.contains("saveRound"))
-        #expect(await environment.queued(.saveGameRoundToMemories).count == 1)
-    }
-
-    private func saveWithoutImage() -> GameSaveRoundPayload {
-        GameSaveRoundPayload(
-            roundID: GameFixture.roundID,
-            coupleID: DeveloperScenarioFixture.coupleID,
-            memoryID: UUID(),
-            memoryMediaID: UUID(),
-            imageData: nil,
-            memoryDate: "2026-01-01",
-            reserveOperation: SyncClientOperation(clientID: clientID, clientSequence: 20),
-            finalizeOperation: SyncClientOperation(clientID: clientID, clientSequence: 21)
-        )
-    }
-
-    private func solved(hasDrawing: Bool) -> RemoteDrawAndGuessState {
-        GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil),
-            round: GameFixture.round(state: .solved, drawer: GameFixture.partner, hasDrawing: hasDrawing)
-        )
-    }
-
-    @Test func aSaveWithoutAnImageWaitsForTheDrawersDrawingThenRendersIt() async throws {
-        // The cache starts from this round. The environment's state already has its drawing,
-        // and the cache never goes back to a state that lost it.
-        await environment.cache.clearAll()
-        await environment.cache.saveState(solved(hasDrawing: false), ownerUserID: GameFixture.me)
-        environment.gateway.setRoundToLoad(GameFixture.round(state: .solved, drawer: GameFixture.partner))
-        try await enqueue(.saveGameRoundToMemories, saveWithoutImage(), sequence: 1)
-
-        await runDrain()
-        #expect(!environment.gateway.calls.contains("saveRound"))
-        #expect(await environment.queued(.saveGameRoundToMemories).count == 1)
-
-        // The drawer's drawing reaches the server.
-        await environment.cache.saveState(solved(hasDrawing: true), ownerUserID: GameFixture.me)
-        await runDrain()
-
-        #expect(environment.gateway.calls.contains("saveRound"))
-        #expect(environment.transfer.downloads == [GameFixture.assetID])
-        #expect(await environment.queued(.saveGameRoundToMemories).isEmpty)
+        #expect(!environment.gateway.calls.contains("reaction"))
+        #expect(await environment.queued(.setGameRoundReaction).count == 1)
     }
 
     // MARK: Refusals
@@ -334,6 +303,28 @@ struct GamesQueueHardeningTests {
         #expect(await !next.hasSeenSettings(coupleID: coupleID, ownerUserID: GameFixture.partner))
     }
 
+    @Test func aLateStateWithoutTheSeenMarkNeverReplacesOneWithIt() async {
+        let cache = InMemoryGamesCache()
+        func solved(seen: Bool) -> RemoteDrawAndGuessState {
+            GameFixture.state(
+                settings: GameFixture.settings(),
+                game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil),
+                round: GameFixture.round(
+                    state: .solved,
+                    drawer: GameFixture.partner,
+                    hasDrawing: true,
+                    resultSeenBy: seen ? [GameFixture.me] : []
+                )
+            )
+        }
+        await cache.saveState(solved(seen: true), ownerUserID: GameFixture.me)
+
+        // A live update sent before the mark landed arrives late.
+        await cache.saveState(solved(seen: false), ownerUserID: GameFixture.me)
+
+        #expect(await cache.document(ownerUserID: GameFixture.me).state == solved(seen: true))
+    }
+
     @Test func anOlderReadThatAnswersLastDoesNotReplaceANewerOne() async {
         let cache = InMemoryGamesCache()
         let older = GameFixture.state(
@@ -352,62 +343,5 @@ struct GamesQueueHardeningTests {
 
         #expect(!savedOlder)
         #expect(await cache.document(ownerUserID: GameFixture.me).state == newer)
-    }
-}
-
-// MARK: Save to Memories after the round left the cache
-
-extension GamesQueueHardeningTests {
-    @Test func aSaveRetriesWhenTheRoundCannotBeReadAfterAPurge() async throws {
-        // The privacy purge emptied the cache and kept the queued save.
-        await environment.cache.clearAll()
-        try await enqueue(.saveGameRoundToMemories, saveWithoutImage(), sequence: 1)
-        environment.gateway.fail("loadRound")
-
-        await runDrain()
-        #expect(!environment.gateway.calls.contains("saveRound"))
-        #expect(await environment.queued(.saveGameRoundToMemories).count == 1)
-        #expect(await environment.cache.takeNotices(ownerUserID: GameFixture.me).isEmpty)
-
-        // Access is back and the server has the round.
-        environment.gateway.unfail("loadRound")
-        environment.gateway.setRoundToLoad(
-            GameFixture.round(state: .solved, drawer: GameFixture.partner, hasDrawing: true)
-        )
-        await runDrain()
-
-        #expect(environment.gateway.calls.contains("saveRound"))
-        #expect(await environment.queued(.saveGameRoundToMemories).isEmpty)
-    }
-
-    @Test func aSaveFindsItsRoundByIDWhenItIsNoLongerAmongTheRecentRounds() async throws {
-        let newer = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .drawing, turn: GameFixture.me, roundID: GameFixture.nextRoundID),
-            round: GameFixture.round(id: GameFixture.nextRoundID, state: .drawing, drawer: GameFixture.me)
-        )
-        await environment.cache.saveState(newer, ownerUserID: GameFixture.me)
-        environment.gateway.setStateToLoad(newer)
-        environment.gateway.setRoundToLoad(
-            GameFixture.round(state: .solved, drawer: GameFixture.partner, hasDrawing: true)
-        )
-        try await enqueue(.saveGameRoundToMemories, saveWithoutImage(), sequence: 1)
-
-        await runDrain()
-
-        #expect(environment.gateway.calls.contains("saveRound"))
-        #expect(environment.transfer.downloads == [GameFixture.assetID])
-        #expect(await environment.queued(.saveGameRoundToMemories).isEmpty)
-    }
-
-    @Test func aSaveForARoundTheServerDoesNotHaveIsDropped() async throws {
-        await environment.cache.clearAll()
-        try await enqueue(.saveGameRoundToMemories, saveWithoutImage(), sequence: 1)
-
-        await runDrain()
-
-        #expect(!environment.gateway.calls.contains("saveRound"))
-        #expect(await environment.queued(.saveGameRoundToMemories).isEmpty)
-        #expect(await environment.cache.takeNotices(ownerUserID: GameFixture.me) == [.saveRejected])
     }
 }

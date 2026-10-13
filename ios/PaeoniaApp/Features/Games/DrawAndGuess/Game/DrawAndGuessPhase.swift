@@ -23,7 +23,7 @@ nonisolated enum DrawAndGuessPhase: Equatable, Sendable {
     case watchingLive
     /// This person guesses on the finished drawing, with the replay.
     case guessing
-    /// The round ended. Shows the word, the result, and the save prompt.
+    /// The round ended. Shows the word and the result.
     case reveal
     /// This person's last move is queued on the phone, and the next turn can
     /// start once it reaches the server.
@@ -80,15 +80,16 @@ nonisolated struct DrawAndGuessResolution: Equatable, Sendable {
     }
 }
 
-/// Works out the phase from the server's state, this phone's unsent moves, and
-/// what the person has already seen. It reads no clock and no network.
+/// Works out the phase from the server's state and this phone's unsent moves.
+/// A finished round's result counts as seen when the server has this person's
+/// "result seen" time for it, or a mark for it waits on this phone. It reads no
+/// clock and no network.
 nonisolated struct DrawAndGuessResolver: Sendable {
     let userID: UUID
 
     func resolve(
         state: RemoteDrawAndGuessState?,
         pending: DrawAndGuessPendingWork,
-        acknowledgedRoundIDs: Set<UUID>,
         isPartnerDrawingLive: Bool
     ) -> DrawAndGuessResolution {
         guard let state else {
@@ -110,14 +111,13 @@ nonisolated struct DrawAndGuessResolver: Sendable {
             if let unseen = unseenResult(
                 state: state,
                 newerRoundID: round.id,
-                acknowledged: acknowledgedRoundIDs,
                 pending: pending
             ) {
                 return DrawAndGuessResolution(phase: .reveal, round: unseen, isWaitingToSend: waiting, turnPhase: phase)
             }
             return DrawAndGuessResolution(phase: phase, round: round, isWaitingToSend: waiting)
         }
-        if let round, !acknowledgedRoundIDs.contains(round.id) {
+        if let round, !hasSeenResult(of: round, pending: pending) {
             // The guesser of a finished round draws next, also before the server has heard.
             let next: DrawAndGuessPhase = round.guesserUserID == userID ? .chooseWord : .waitingForWord
             return DrawAndGuessResolution(phase: .reveal, round: round, isWaitingToSend: waiting, turnPhase: next)
@@ -126,26 +126,32 @@ nonisolated struct DrawAndGuessResolver: Sendable {
         return DrawAndGuessResolution(phase: phaseBetweenRounds(game), round: round, isWaitingToSend: waiting)
     }
 
-    /// The latest finished round before `newerRoundID`, when this phone has not
-    /// shown its result. Only the latest counts, so a fresh install shows one
-    /// result and not the whole history. A drawing still queued for it counts as
-    /// sent, as on the current round, so the drawer's phone never sends it twice.
+    private func hasSeenResult(of round: DrawAndGuessRoundView, pending: DrawAndGuessPendingWork) -> Bool {
+        round.hasSeenResult(userID) || pending.hasResultSeen(roundID: round.id)
+    }
+
+    /// The latest finished round before `newerRoundID`, when this person has not
+    /// moved past its result. Only the latest counts, so a person who never saw
+    /// several results sees one and not the whole history. A drawing still queued
+    /// for it counts as sent, as on the current round, so the drawer's phone never
+    /// sends it twice.
     private func unseenResult(
         state: RemoteDrawAndGuessState,
         newerRoundID: UUID,
-        acknowledged: Set<UUID>,
         pending: DrawAndGuessPendingWork
     ) -> DrawAndGuessRoundView? {
         let rounds = (state.currentRound.map { [$0] } ?? []) + state.recentRounds
-        guard let latest = rounds.first(where: { $0.id != newerRoundID && $0.state.isFinished }),
-              !acknowledged.contains(latest.id)
-        else {
+        guard let latest = rounds.first(where: { $0.id != newerRoundID && $0.state.isFinished }) else {
             return nil
         }
         var round = DrawAndGuessRoundView(latest)
+        guard !hasSeenResult(of: round, pending: pending) else {
+            return nil
+        }
         if pending.hasDrawing(roundID: round.id) {
             round.isDrawingSent = true
         }
+        applyUnsentReaction(to: &round, pending: pending)
         return round
     }
 
@@ -189,7 +195,15 @@ nonisolated struct DrawAndGuessResolver: Sendable {
         if !round.isFinished {
             applyUnsentGuesses(to: &round, pending: pending)
         }
+        applyUnsentReaction(to: &round, pending: pending)
         return round
+    }
+
+    /// A reaction made on this phone shows at once, before the server has it.
+    private func applyUnsentReaction(to round: inout DrawAndGuessRoundView, pending: DrawAndGuessPendingWork) {
+        if round.isFinished, let reaction = pending.reaction(roundID: round.id) {
+            round.guesserReaction = reaction
+        }
     }
 
     /// The round the server has, or the one a queued word pick starts.
@@ -229,6 +243,11 @@ nonisolated struct DrawAndGuessResolver: Sendable {
         if let solved = guesses.first(where: \.isCorrect) {
             round.state = .solved
             round.localSolvedAt = solved.createdAt
+            // What the phone promised, until the server's numbers replace it.
+            round.hintsUsed = solved.hintsUsed ?? 0
+            round.speedBonus = round.hintsUsed > 0 ? 0 : solved.speedBonus ?? 0
+            let isFirstAttempt = round.attempts.first?.id == solved.id
+            round.firstTryBonus = round.hintsUsed == 0 && isFirstAttempt ? 1 : 0
         } else if pending.hasGiveUp(roundID: round.id) {
             round.state = .missed
         }

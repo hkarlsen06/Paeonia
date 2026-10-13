@@ -4,6 +4,9 @@ import SwiftUI
 /// A screen the Games tab can open.
 nonisolated enum GamesDestination: Hashable, Sendable {
     case drawAndGuess
+    /// "Our drawings".
+    case drawAndGuessHistory
+    case drawAndGuessHistoryDetail(UUID)
 }
 
 /// The Games tab: first-time setup, the hub, and the couple's game settings.
@@ -38,6 +41,8 @@ final class GamesViewModel {
     private(set) var partnerName: String
 
     let drawAndGuess: DrawAndGuessViewModel
+    /// "Our drawings". It shares the star state of `drawAndGuess.stars`.
+    let history: DrawAndGuessHistoryViewModel
 
     private let dependencies: GamesDependencies
     private var participants: DrawAndGuessParticipants
@@ -48,7 +53,9 @@ final class GamesViewModel {
         self.dependencies = dependencies
         participants = DrawAndGuessParticipants()
         partnerName = ""
-        self.drawAndGuess = drawAndGuess ?? DrawAndGuessViewModel(dependencies: dependencies)
+        let drawAndGuess = drawAndGuess ?? DrawAndGuessViewModel(dependencies: dependencies)
+        self.drawAndGuess = drawAndGuess
+        history = DrawAndGuessHistoryViewModel(dependencies: dependencies, stars: drawAndGuess.stars)
     }
 
     /// A game waits for this person to draw or guess. The Games tab shows a badge.
@@ -65,6 +72,7 @@ final class GamesViewModel {
         participants = newParticipants
         partnerName = newParticipants.partnerName
         drawAndGuess.configure(participants: newParticipants)
+        history.configure(participants: newParticipants)
         if userChanged {
             hasLoaded = false
             state = nil
@@ -74,6 +82,7 @@ final class GamesViewModel {
 
     func setLocalChangeSyncHandler(_ handler: (@MainActor @Sendable () async -> Void)?) {
         drawAndGuess.setLocalChangeSyncHandler(handler)
+        drawAndGuess.stars.setLocalChangeSyncHandler(handler)
     }
 
     // MARK: - Reading
@@ -105,6 +114,8 @@ final class GamesViewModel {
         ) ?? .none
         state = document.state
         hasLoaded = true
+        // Stars follow the same writes as the rest of the Games cache.
+        await drawAndGuess.stars.reload()
         settings = document.state?.settings
         if let settings {
             draftPlayStyle = settings.playStyle
@@ -117,7 +128,6 @@ final class GamesViewModel {
             let resolution = DrawAndGuessResolver(userID: userID).resolve(
                 state: state,
                 pending: pending,
-                acknowledgedRoundIDs: Set(document.acknowledgedRoundIDs),
                 isPartnerDrawingLive: false
             )
             return DrawAndGuessHubSummary(state: state, resolution: resolution, now: dependencies.now())

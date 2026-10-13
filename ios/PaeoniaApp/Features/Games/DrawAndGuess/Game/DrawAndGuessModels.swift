@@ -131,43 +131,6 @@ nonisolated enum DrawAndGuessGuessSource: Equatable, Sendable {
     case live
 }
 
-/// The save-to-Memories prompt on the reveal.
-nonisolated enum DrawAndGuessSavePrompt: Equatable, Sendable {
-    case hidden
-    /// "Save this to Memories?" with Save and Not now.
-    case ask
-    /// A save is queued on this phone.
-    case saving
-    /// This person's save went through.
-    case saved
-    /// The partner saved it first.
-    case savedByPartner
-
-    /// - Parameters:
-    ///   - hasSaveQueued: This person's save waits to be sent.
-    ///   - hasDrawing: The drawing is on the phone or can be fetched, so it can be rendered.
-    static func make(
-        round: DrawAndGuessRoundView,
-        userID: UUID,
-        hasSaveQueued: Bool,
-        hasDrawing: Bool
-    ) -> DrawAndGuessSavePrompt {
-        guard round.isFinished else {
-            return .hidden
-        }
-        if round.memoryID != nil {
-            return round.savedByUserID == userID ? .saved : .savedByPartner
-        }
-        if hasSaveQueued {
-            return .saving
-        }
-        if round.mySaveResponse == .notNow || !hasDrawing {
-            return .hidden
-        }
-        return .ask
-    }
-}
-
 /// The result of a finished round.
 nonisolated struct DrawAndGuessReveal: Equatable, Sendable {
     enum Outcome: Equatable, Sendable {
@@ -184,12 +147,22 @@ nonisolated struct DrawAndGuessReveal: Equatable, Sendable {
     let difficulty: DrawAndGuessDifficulty
     /// What the word is worth.
     let wordPoints: Int
-    /// The speed bonus, or nil while the server has not confirmed it yet.
-    let speedBonus: Int?
+    /// The speed bonus, 0 to 2. On a result still on this phone it is the tier
+    /// the screen showed, and the server's number replaces it.
+    let speedBonus: Int
+    /// 1 for a correct first attempt without hints. On a result still on this
+    /// phone it is the phone's prediction.
+    let firstTryBonus: Int
+    /// How many letters the hints showed.
+    let hintsUsed: Int
+    /// The guesser's fastest hint-free solve yet. Only the server says so.
+    let personalBest: Bool
+    /// The guesser's reaction, with one waiting on this phone applied.
+    let reaction: DrawAndGuessReaction?
     /// How long the guess took, counted from the first look at the drawing.
     let solveDuration: TimeInterval?
     /// What this person earned. The drawer gets the word's points. The guesser also
-    /// gets the speed bonus.
+    /// gets the speed bonus and the first-try bonus.
     let pointsForMe: Int
     /// What the couple's shared score grew by.
     let pointsForCouple: Int
@@ -217,8 +190,16 @@ nonisolated struct DrawAndGuessReveal: Equatable, Sendable {
 
     /// One sentence for the drawer: "Robin got it in 18 seconds, on the first try."
     /// The time is left out when it is missing or too long to mean anything.
+    /// With hints it says how many instead of how many tries.
     func solvedLine(partnerName: String) -> LocalizedStringResource {
-        switch (shownSolveDuration, tries) {
+        if hintsUsed > 0 {
+            let hints = String(localized: .gamesDrawAndGuessHints(hintsUsed))
+            if let duration = shownSolveDuration {
+                return .gamesDrawAndGuessResultSolvedTimedHints(partnerName, Self.spokenDuration(duration), hints)
+            }
+            return .gamesDrawAndGuessResultSolvedHints(partnerName, hints)
+        }
+        return switch (shownSolveDuration, tries) {
         case (let duration?, 1):
             .gamesDrawAndGuessResultSolvedTimedFirstTry(partnerName, Self.spokenDuration(duration))
         case (let duration?, let tries):

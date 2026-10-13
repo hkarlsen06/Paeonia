@@ -39,13 +39,16 @@ nonisolated struct GameGuessPayload: Codable, Equatable, Sendable {
     /// Whether the guess matched the answer on this phone.
     let isCorrect: Bool
     let createdAt: Date
-    /// Whether the speed bonus was still on screen when the player made the
+    /// The speed bonus tier (0, 1 or 2) on screen when the player made the
     /// correct guess, on this phone's clock. The server takes it as it is, so a
     /// guess that waits offline keeps what the player saw. Nil for a wrong guess.
-    var speedBonus: Bool?
+    var speedBonus: Int?
     /// Milliseconds from when the player first saw the drawing to the correct
     /// guess, on this phone's clock. Nil when the player never saw it.
     var solveMs: Int?
+    /// How many letters the player's hints showed before the correct guess. Nil
+    /// for a wrong guess.
+    var hintsUsed: Int?
 }
 
 nonisolated struct GameGiveUpPayload: Codable, Equatable, Sendable {
@@ -53,21 +56,26 @@ nonisolated struct GameGiveUpPayload: Codable, Equatable, Sendable {
     let createdAt: Date
 }
 
-/// Saves a finished round to Memories. The image is the rendered drawing.
-nonisolated struct GameSaveRoundPayload: Codable, Equatable, Sendable {
+/// `games:set_round_star`. The last one queued for a round wins, and sending
+/// the same one twice changes nothing.
+nonisolated struct GameStarPayload: Codable, Equatable, Sendable {
     let roundID: UUID
-    let coupleID: UUID
-    let memoryID: UUID
-    let memoryMediaID: UUID
-    /// Nil when the drawer's final drawing was not on the phone yet. The send
-    /// then renders it once the drawer's drawing is on the server.
-    let imageData: Data?
-    /// `yyyy-MM-dd`, the day the person said yes.
-    let memoryDate: String
-    let reserveOperation: SyncClientOperation
-    let finalizeOperation: SyncClientOperation
-    /// When the save was queued again because its first photo upload was gone.
-    var renewedAt: Date?
+    let starred: Bool
+    let createdAt: Date
+}
+
+/// The guesser's reaction to a finished round. Nil clears it. The last one made
+/// is the one the screen shows.
+nonisolated struct GameReactionPayload: Codable, Equatable, Sendable {
+    let roundID: UUID
+    let reaction: DrawAndGuessReaction?
+    let createdAt: Date
+}
+
+/// This person moved past the result of a finished round.
+nonisolated struct GameResultSeenPayload: Codable, Equatable, Sendable {
+    let roundID: UUID
+    let createdAt: Date
 }
 
 /// The queued Games writes of one person that have not reached the server, as
@@ -80,7 +88,9 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
     /// Oldest first.
     var guesses: [GameGuessPayload] = []
     var giveUps: [GameGiveUpPayload] = []
-    var saves: [GameSaveRoundPayload] = []
+    /// Oldest first.
+    var reactions: [GameReactionPayload] = []
+    var resultsSeen: [GameResultSeenPayload] = []
     /// A waiting move was tried again and the attempt failed for a reason other
     /// than having no connection, such as the server refusing it. The waiting
     /// screen then says so instead of "saved on this phone".
@@ -93,7 +103,8 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
     static let none = DrawAndGuessPendingWork()
 
     var isEmpty: Bool {
-        pick == nil && drawings.isEmpty && guesses.isEmpty && giveUps.isEmpty && saves.isEmpty
+        pick == nil && drawings.isEmpty && guesses.isEmpty && giveUps.isEmpty && reactions.isEmpty
+            && resultsSeen.isEmpty
     }
 
     func hasDrawing(roundID: UUID) -> Bool {
@@ -108,11 +119,17 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
         giveUps.contains { $0.roundID == roundID }
     }
 
-    func hasSave(roundID: UUID) -> Bool {
-        saves.contains { $0.roundID == roundID }
+    /// The reaction this person made last for the round and has not sent yet.
+    /// The outer nil means none is waiting. The inner nil is a cleared reaction.
+    func reaction(roundID: UUID) -> DrawAndGuessReaction?? {
+        reactions.last { $0.roundID == roundID }.map(\.reaction)
     }
 
-    /// A move of the turn (not a save) waits to be sent.
+    func hasResultSeen(roundID: UUID) -> Bool {
+        resultsSeen.contains { $0.roundID == roundID }
+    }
+
+    /// A move of the turn (not a reaction or a seen mark) waits to be sent.
     var hasMoveWaiting: Bool {
         pick != nil || !drawings.isEmpty || !guesses.isEmpty || !giveUps.isEmpty
     }
@@ -145,7 +162,8 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
             work.drawings = try await read(.submitGameDrawing)
             work.guesses = try await read(.submitGameGuess)
             work.giveUps = try await read(.giveUpGameRound)
-            work.saves = try await read(.saveGameRoundToMemories, isMove: false)
+            work.reactions = try await read(.setGameRoundReaction, isMove: false)
+            work.resultsSeen = try await read(.markGameRoundResultSeen, isMove: false)
         } catch {
             // A failed read keeps the screen as it is. Treating it as an empty
             // queue would make a queued move look lost.

@@ -38,7 +38,7 @@ extension SimDriver {
     func checkSettled() async throws {
         try checkAlways()
         try checkServerTotals()
-        try await checkMemories()
+        try await checkReactions()
         for phone in phones {
             try await checkLedger(phone)
         }
@@ -53,8 +53,19 @@ extension SimDriver {
     private func checkServerTotals() throws {
         guard let game = server.game else { return }
         for round in server.rounds where round.state == .solved {
-            if let promised = promisedBonus[round.id], round.speedBonus != (promised ? 1 : 0) {
+            if let promised = promisedBonus[round.id], round.speedBonus != promised {
                 throw fail("round \(round.id.uuidString.prefix(6)) has speed bonus \(round.speedBonus), the screen promised \(promised)")
+            }
+            if let promised = promisedHints[round.id], round.hintsUsed != promised {
+                throw fail("round \(round.id.uuidString.prefix(6)) has \(round.hintsUsed) hints, the screen showed \(promised)")
+            }
+            // Any hint takes both bonuses away. The first try is the round's first attempt.
+            if round.hintsUsed > 0, round.speedBonus != 0 || round.firstTryBonus != 0 {
+                throw fail("round \(round.id.uuidString.prefix(6)) has bonuses after \(round.hintsUsed) hints")
+            }
+            let expectedFirstTry = round.hintsUsed == 0 && round.attempts.count == 1 ? 1 : 0
+            if round.firstTryBonus != expectedFirstTry {
+                throw fail("round \(round.id.uuidString.prefix(6)) has first try bonus \(round.firstTryBonus), expected \(expectedFirstTry)")
             }
         }
         let solved = server.rounds.filter { $0.state == .solved }
@@ -62,7 +73,7 @@ extension SimDriver {
         guard game.shared == shared else { throw fail("server shared points \(game.shared) != \(shared)") }
         for user in server.users {
             let expected = solved.reduce(0) { total, round in
-                total + (round.drawer == user ? round.points : 0) + (round.guesser == user ? round.points + round.speedBonus : 0)
+                total + (round.drawer == user ? round.points : 0) + (round.guesser == user ? round.points + round.speedBonus + round.firstTryBonus : 0)
             }
             guard (game.points[user] ?? 0) == expected else {
                 throw fail("server points for a player \(game.points[user] ?? 0) != \(expected)")
@@ -70,23 +81,26 @@ extension SimDriver {
         }
     }
 
-    private func checkMemories() async throws {
-        var seen = Set<UUID>()
-        for memory in server.memories {
-            guard seen.insert(memory.roundID).inserted else { throw fail("two memories for one round") }
-            guard let round = server.round(memory.roundID), let drawingID = round.drawingAssetID,
-                  let drawingData = server.assets[drawingID]?.data,
-                  let photo = server.assets[memory.assetID]?.data
-            else {
-                throw fail("memory \(memory.title) has no drawing on its round")
+    /// Once the queues drained, the server holds a reaction the guesser's screen showed, unless a
+    /// reaction of that round was dropped for good or a phone could not send yet.
+    private func checkReactions() async throws {
+        var skipped = Set<UUID>()
+        for phone in phones {
+            let sends = phone.isAlive && phone.isForeground
+            for entry in await phone.pending.ledger where entry.kind == .setGameRoundReaction {
+                guard let payload = entry.requestData.flatMap({ try? JSONDecoder().decode(GameReactionPayload.self, from: $0) })
+                else { continue }
+                if case .terminal = entry.outcome {
+                    skipped.insert(payload.roundID)
+                } else if entry.outcome == .inFlight, !sends {
+                    skipped.insert(payload.roundID)
+                }
             }
-            guard let drawing = try? PKDrawing(data: drawingData),
-                  let expected = DrawAndGuessImageRenderer.render(drawing)
-            else {
-                throw fail("could not render the round's drawing")
-            }
-            if expected != photo {
-                throw fail("memory \(memory.title) is not the round's final drawing")
+        }
+        for (roundID, shown) in shownReactions where !skipped.contains(roundID) {
+            let stored = server.round(roundID)?.reaction?.rawValue ?? "none"
+            if !shown.contains(stored) {
+                throw fail("round \(roundID.uuidString.prefix(6)) has reaction \(stored), the guesser's screen showed \(shown)")
             }
         }
     }
@@ -110,7 +124,6 @@ extension SimDriver {
             .wordRejected: [.pickDrawWord],
             .wordRejectedDrawingKept: [.pickDrawWord],
             .drawingRejected: [.submitGameDrawing],
-            .saveRejected: [.saveGameRoundToMemories],
         ]
         for notice in Set(notices) {
             if let kinds = explains[notice], dropped.isDisjoint(with: kinds) {
@@ -186,19 +199,13 @@ extension SimDriver {
                 case .inFlight:
                     break
                 }
-            case .saveGameRoundToMemories:
-                guard let save = try? decoder.decode(GameSaveRoundPayload.self, from: data) else { continue }
-                switch entry.outcome {
-                case .succeeded:
-                    guard server.round(save.roundID)?.memoryID != nil else {
-                        throw fail("\(phone.name) save succeeded but the round has no memory")
+            case .markGameRoundResultSeen:
+                guard let seen = try? decoder.decode(GameResultSeenPayload.self, from: data) else { continue }
+                if case .succeeded = entry.outcome, let round = server.round(seen.roundID) {
+                    let stamp = round.drawer == phone.userID ? round.drawerSeenAt : round.guesserSeenAt
+                    guard stamp != nil else {
+                        throw fail("\(phone.name) result seen succeeded but the server has no time for it")
                     }
-                case let .terminal(reason):
-                    guard reason.contains("upload expired") || noticed([.saveRejected]) else {
-                        throw fail("\(phone.name) save dropped without a notice: \(reason)")
-                    }
-                case .inFlight:
-                    break
                 }
             default:
                 break
@@ -217,14 +224,9 @@ extension SimDriver {
                 }
             }
         }
-        // Once online with nothing held, only a save waiting for the partner's drawing may stay.
+        // Once online with nothing held, nothing may stay in the queue.
         guard phone.isAlive, phone.isForeground else { return }
         for entry in ledger where entry.outcome == .inFlight {
-            if entry.kind == .saveGameRoundToMemories,
-               let save = entry.requestData.flatMap({ try? decoder.decode(GameSaveRoundPayload.self, from: $0) }),
-               server.round(save.roundID)?.drawingAssetID == nil {
-                continue
-            }
             throw fail("\(phone.name) \(entry.kind.rawValue) is stuck in the queue after settling")
         }
     }
@@ -249,12 +251,16 @@ extension SimDriver {
         guard !work.hasMoveWaiting else { return }
 
         // Whose turn, and the phase.
-        let acknowledged = Set(document.acknowledgedRoundIDs)
         let current = server.currentRound
         let latestFinished = server.rounds.filter(\.state.isFinished).max { $0.number < $1.number }
         let me = phone.userID
         let expected: Set<DrawAndGuessPhase>
-        if let latestFinished, !acknowledged.contains(latestFinished.id) {
+        // A result counts as seen once the server has this person's time for it, or a mark waits on the phone.
+        let seenByMe = latestFinished.map { round in
+            (round.drawer == phone.userID ? round.drawerSeenAt : round.guesserSeenAt) != nil
+                || work.hasResultSeen(roundID: round.id)
+        } ?? true
+        if let latestFinished, !seenByMe {
             expected = [.reveal]
             if viewModel.round?.id != latestFinished.id {
                 throw fail("\(name) reveal should show round \(latestFinished.id.uuidString.prefix(6)), shows \(viewModel.round?.id.uuidString.prefix(6) ?? "none") in \(viewModel.phase)")
@@ -306,9 +312,10 @@ extension SimDriver {
             }
         }
 
-        // A no to the save question stays a no, also after a relaunch.
-        if viewModel.savePrompt == .ask, let round = viewModel.round, declinedSaves.contains("\(name)-\(round.id)") {
-            throw fail("\(name) asks again to save \(round.id.uuidString.prefix(6)) after the person said no")
+        // A letter a hint showed stays shown, also after a relaunch.
+        if viewModel.phase.allowsGuessing, let round = viewModel.round, viewModel.tilesRoundID == round.id,
+           viewModel.slots.hintedIndexes != hinted["\(name)-\(round.id)"] ?? [] {
+            throw fail("\(name) shows hints at \(viewModel.slots.hintedIndexes), the person saw \(hinted["\(name)-\(round.id)"] ?? [])")
         }
 
         switch viewModel.phase {
@@ -422,10 +429,6 @@ extension SimDriver {
         guard let round = viewModel.round, server.round(round.id)?.drawingAssetID != nil else { return }
         guard let final = viewModel.finalDrawing, !final.drawing.strokes.isEmpty else {
             throw fail("\(phone.name) reveal of \(round.id.uuidString.prefix(6)) has no drawing to show (loading \(viewModel.isLoadingDrawing), failed \(viewModel.drawingLoadFailed))")
-        }
-        if viewModel.savePrompt == .hidden, round.memoryID == nil, round.mySaveResponse == nil,
-           !viewModel.declinedSaveRoundIDs.contains(round.id) {
-            throw fail("\(phone.name) reveal hides the save question with a drawing on hand")
         }
     }
 

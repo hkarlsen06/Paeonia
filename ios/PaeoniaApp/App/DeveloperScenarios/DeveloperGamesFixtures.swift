@@ -66,7 +66,13 @@
       attempts: [(text: String, correct: Bool)] = [],
       solveMs: Int? = nil,
       speedBonus: Int = 0,
-      mySaveResponse: DrawAndGuessSaveResponse? = nil,
+      firstTryBonus: Int = 0,
+      hintsUsed: Int = 0,
+      personalBest: Bool = false,
+      reaction: DrawAndGuessReaction? = nil,
+      starredByMe: Bool = false,
+      /// The people who already moved past the result, as the server records it.
+      resultSeenBy: Set<UUID> = [],
       guesserHasSeenIt: Bool = false
     ) -> RemoteDrawAndGuessRound {
       let guesser = drawer == me ? partner : me
@@ -87,10 +93,13 @@
         endedAt: finished ? now.addingTimeInterval(-580) : nil,
         solveMs: solveMs,
         speedBonus: speedBonus,
-        memoryID: nil,
-        savedByUserID: nil,
-        mySaveResponse: mySaveResponse,
-        partnerSaveResponse: nil,
+        firstTryBonus: firstTryBonus,
+        hintsUsed: hintsUsed,
+        personalBest: personalBest,
+        guesserReaction: reaction,
+        starredByMe: starredByMe,
+        drawerResultSeenAt: resultSeenBy.contains(drawer) ? now.addingTimeInterval(-300) : nil,
+        guesserResultSeenAt: resultSeenBy.contains(guesser) ? now.addingTimeInterval(-300) : nil,
         attempts: attempts.enumerated().map { index, attempt in
           RemoteDrawAndGuessAttempt(
             id: UUID(uuidString: "dddddddd-0000-4000-8000-00000000000\(index + 1)") ?? UUID(),

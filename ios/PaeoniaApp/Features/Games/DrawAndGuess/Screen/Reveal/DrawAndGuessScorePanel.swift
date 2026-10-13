@@ -10,12 +10,13 @@ struct DrawAndGuessScorePanel: View {
     let isCounting: Bool
     let animates: Bool
     let showsSpeedBonus: Bool
+    let showsFirstTryBonus: Bool
     /// The result failed to send at least once. Only then does the panel say the
     /// score updates later, so a result on its normal way never flashes that line.
     let isHeldOnPhone: Bool
 
-    /// The server confirmed a result that was only on this phone, with a speed
-    /// bonus the reveal did not plan for. The line shows without a second celebration.
+    /// The server confirmed a result that was only on this phone, with a bonus
+    /// the reveal did not plan for. The line shows without a second celebration.
     @State private var bonusArrivedLate = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -130,6 +131,11 @@ struct DrawAndGuessScorePanel: View {
                 .foregroundStyle(Color.paeoniaInkGold)
                 .opacity(showsSpeedBonus || bonusArrivedLate ? 1 : 0)
                 .scaleEffect(showsSpeedBonus || bonusArrivedLate || !animates ? 1 : 0.8)
+        case .firstTry:
+            Text(.gamesDrawAndGuessRevealLineFirstTry(line.points))
+                .foregroundStyle(.paeoniaTextSecondary)
+                .opacity(showsFirstTryBonus || bonusArrivedLate ? 1 : 0)
+                .scaleEffect(showsFirstTryBonus || bonusArrivedLate || !animates ? 1 : 0.8)
         }
     }
 

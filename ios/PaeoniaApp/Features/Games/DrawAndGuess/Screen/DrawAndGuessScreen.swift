@@ -23,6 +23,7 @@ struct DrawAndGuessScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbar { historyButton }
         .preferredColorScheme(.dark)
         .task { await viewModel.start() }
         .onAppear { viewModel.prefersReducedMotion = reduceMotion }
@@ -37,6 +38,21 @@ struct DrawAndGuessScreen: View {
             viewModel.clearNotice()
         }
         .accessibilityIdentifier("draw.screen")
+    }
+
+    /// Opens "Our drawings".
+    @ToolbarContentBuilder
+    private var historyButton: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            NavigationLink(value: GamesDestination.drawAndGuessHistory) {
+                Label {
+                    Text(.gamesDrawAndGuessHistoryTitle)
+                } icon: {
+                    Image(systemName: "square.grid.2x2")
+                }
+            }
+            .accessibilityIdentifier("draw.history.open")
+        }
     }
 
     /// Cross-fade and a 12 point rise. Reduce Motion keeps only the cross-fade.

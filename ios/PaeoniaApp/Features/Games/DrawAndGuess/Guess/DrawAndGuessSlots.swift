@@ -8,6 +8,9 @@ nonisolated struct DrawAndGuessSlots: Equatable, Sendable {
         /// A space between words. Gaps never hold a tile.
         let isGap: Bool
         fileprivate(set) var tile: DrawAndGuessTile?
+        /// A hint placed the tile. The slot is locked: tapping it, clearing the
+        /// slots and a wrong word leave it alone.
+        fileprivate(set) var isHint = false
     }
 
     enum Status: Equatable, Sendable {
@@ -38,6 +41,35 @@ nonisolated struct DrawAndGuessSlots: Equatable, Sendable {
         for index in slots.indices where !slots[index].isGap && letters.indices.contains(index) {
             slots[index].tile = letters[index].map { DrawAndGuessTile(id: index, letter: $0) }
         }
+    }
+
+    /// How many slots a hint filled.
+    var hintCount: Int {
+        slots.count(where: \.isHint)
+    }
+
+    /// The slot indexes the hints filled, left to right.
+    var hintedIndexes: [Int] {
+        slots.filter(\.isHint).map(\.id)
+    }
+
+    /// Hints show at most all letters but one, or they would give the word away.
+    var maxHints: Int {
+        max(0, slots.count { !$0.isGap } - 1)
+    }
+
+    /// The slot the next hint fills, picked at random from the letters no hint
+    /// showed yet. A letter the player already has right is skipped, so a hint
+    /// always shows something new. The same seed gives the same pick on every
+    /// phone and in tests.
+    func nextHintIndex(seed: String) -> Int? {
+        let letters = Array(answer)
+        let open = slots.filter { !$0.isGap && !$0.isHint }
+        let unknown = open.filter { $0.tile?.letter != letters[$0.id] }
+        let pool = unknown.isEmpty ? open : unknown
+        guard !pool.isEmpty else { return nil }
+        var generator = DrawAndGuessSeededGenerator(seed: seed)
+        return pool[generator.nextIndex(below: pool.count)].id
     }
 
     var placedTileIDs: Set<Int> {
@@ -75,12 +107,20 @@ nonisolated struct DrawAndGuessSlots: Equatable, Sendable {
         return true
     }
 
+    /// Fills the slot with a hint. A tile that sits there goes back to its cell
+    /// first. The caller picks a tile that is not in another slot.
+    mutating func placeHint(_ tile: DrawAndGuessTile, at index: Int) {
+        guard slots.indices.contains(index), !slots[index].isGap, !slots[index].isHint else { return }
+        slots[index].tile = tile
+        slots[index].isHint = true
+    }
+
     /// Takes the tile out of a slot, as when the player taps the slot. Returns
-    /// nil for a gap, an empty slot, or an index out of range. Later tiles stay
-    /// where they are.
+    /// nil for a gap, an empty slot, a hinted slot, or an index out of range.
+    /// Later tiles stay where they are.
     @discardableResult
     mutating func remove(at index: Int) -> DrawAndGuessTile? {
-        guard slots.indices.contains(index), let tile = slots[index].tile else {
+        guard slots.indices.contains(index), !slots[index].isHint, let tile = slots[index].tile else {
             return nil
         }
         slots[index].tile = nil
@@ -98,9 +138,9 @@ nonisolated struct DrawAndGuessSlots: Equatable, Sendable {
         return letters.indices.contains(index) ? letters[index] : nil
     }
 
-    /// Returns every tile.
+    /// Returns every tile except the ones the hints placed.
     mutating func clear() {
-        for index in slots.indices {
+        for index in slots.indices where !slots[index].isHint {
             slots[index].tile = nil
         }
     }

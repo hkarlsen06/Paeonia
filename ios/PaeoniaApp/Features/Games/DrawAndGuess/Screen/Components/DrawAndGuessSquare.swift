@@ -64,39 +64,3 @@ struct DrawAndGuessFinalDrawingView: View {
             .accessibilityHidden(true)
     }
 }
-
-/// A small picture of a finished drawing, for the pending save row.
-struct DrawAndGuessThumbnail: View {
-    let drawing: DrawAndGuessFinalDrawing?
-    var side: CGFloat = 48
-    @State private var image: UIImage?
-    @Environment(\.displayScale) private var displayScale
-
-    var body: some View {
-        ZStack {
-            Color.paeoniaBackgroundPrimary
-            if let image {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-            }
-        }
-        .frame(width: side, height: side)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-        .accessibilityHidden(true)
-        .task(id: drawing?.drawing.strokes.count) {
-            guard let drawing else { return }
-            image = Self.render(drawing.drawing, side: side, displayScale: displayScale)
-        }
-    }
-
-    private static func render(_ drawing: PKDrawing, side: CGFloat, displayScale: CGFloat) -> UIImage {
-        let canonical = DrawAndGuessCanvas.canonicalSide
-        let bounds = CGRect(x: 0, y: 0, width: canonical, height: canonical)
-        var image = UIImage()
-        UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-            image = drawing.image(from: bounds, scale: displayScale * side / canonical)
-        }
-        return image
-    }
-}

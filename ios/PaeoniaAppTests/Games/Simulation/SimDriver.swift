@@ -35,11 +35,15 @@ final class SimDriver {
     var lastProgressVersion = -1
     private var lastHeartbeat: Date
     private var hasWeekPassed = false
-    /// The speed bonus each phone's screen promised for its last correct guess of a round.
-    var promisedBonus: [UUID: Bool] = [:]
-    /// Save questions a person answered with no, by phone and round. Filled
-    /// before the action, and only checked while that question would show.
-    var declinedSaves: Set<String> = []
+    /// The speed bonus tier each phone's screen promised for its last correct guess of a round.
+    var promisedBonus: [UUID: Int] = [:]
+    /// The hints each phone's screen had shown at its last correct guess of a round.
+    var promisedHints: [UUID: Int] = [:]
+    /// The slots a hint filled, by phone and round, as the person saw them.
+    var hinted: [String: [Int]] = [:]
+    /// Every reaction each guesser's screen showed for a finished round ("none" for a cleared one).
+    /// A request held on the network may land after a newer one, so the server may hold any of them.
+    var shownReactions: [UUID: Set<String>] = [:]
     /// Rounds whose drawing a person sent from their own phone.
     var drawnHere: Set<UUID> = []
     /// Actions run back to back without waiting for the phones.
@@ -113,7 +117,9 @@ final class SimDriver {
         let missed = server.rounds.filter { $0.state == .missed }.count
         var parts = [
             "seed \(seed)", "rounds \(server.rounds.count)", "solved \(solved)", "missed \(missed)",
-            "memories \(server.memories.count)", "attempts \(server.rounds.reduce(0) { $0 + $1.attempts.count })",
+            "hints \(server.rounds.reduce(0) { $0 + $1.hintsUsed })",
+            "reactions \(server.rounds.filter { $0.reaction != nil }.count)",
+            "attempts \(server.rounds.reduce(0) { $0 + $1.attempts.count })",
             "settles \(settleCount)",
         ]
         for phone in phones {
@@ -402,43 +408,56 @@ final class SimDriver {
             ("right", canSee ? 3.0 : 0.5),
             ("wrong", 4.5),
             ("showMe", 0.6),
+            ("hint", viewModel.canShowLetter ? 1.2 : 0),
             ("wait", 1.5),
         ])
         switch action {
         case "right", "wrong":
-            if viewModel.slots.slots.contains(where: { $0.tile != nil }) {
+            if viewModel.slots.slots.contains(where: { $0.tile != nil && !$0.isHint }) {
                 viewModel.clearGuess()
             }
             let tiles = viewModel.tiles
-            guard !tiles.isEmpty else { return }
+            // A hint locks its slot, so the person fills only the open ones.
+            let open = viewModel.slots.slots.filter { !$0.isGap && $0.tile == nil }
+            guard !tiles.isEmpty, !open.isEmpty else { return }
+            var used = viewModel.slots.placedTileIDs
             var letters: [DrawAndGuessTile] = []
             if action == "right" {
-                var used = Set<Int>()
-                for slot in viewModel.slots.slots where !slot.isGap {
+                for slot in open {
                     let letter = Array(viewModel.slots.answer)[slot.id]
                     guard let tile = tiles.first(where: { $0.letter == letter && !used.contains($0.id) }) else { return }
                     used.insert(tile.id)
                     letters.append(tile)
                 }
             } else {
-                let needed = viewModel.slots.slots.filter { !$0.isGap }.count
-                var pool = tiles
-                for _ in 0..<needed {
+                var pool = tiles.filter { !used.contains($0.id) }
+                for _ in open {
                     let index = random.int(0...(pool.count - 1))
                     letters.append(pool.remove(at: index))
                 }
             }
-            let word = String(letters.map(\.letter))
-            if word == viewModel.slots.answer.filter({ $0 != " " }) {
-                promisedBonus[round.id] = viewModel.speedBonusClaim(at: clock.now).speedBonus
+            // The whole word as it will stand, hinted letters included.
+            var standing = viewModel.slots.slots.map { $0.isGap ? Character(" ") : ($0.tile?.letter ?? "?") }
+            for (slot, tile) in zip(open, letters) {
+                standing[slot.id] = tile.letter
+            }
+            let word = String(standing)
+            let isRight = word == viewModel.slots.answer
+            if isRight {
+                let claim = viewModel.speedBonusClaim(at: clock.now)
+                promisedBonus[round.id] = claim.speedBonus
+                promisedHints[round.id] = claim.hintsUsed
             }
             log.add("\(phone.name) guess \(word) on \(round.id.uuidString.prefix(6)) [\(viewModel.phase)]")
-            let isRight = word == viewModel.slots.answer.filter { $0 != " " }
             await expectMove(phone, kind: .submitGameGuess, "guess", shows: isRight ? [.reveal] : []) {
                 for tile in letters {
                     viewModel.placeTile(tile)
                 }
             }
+        case "hint":
+            viewModel.showLetter()
+            hinted["\(phone.name)-\(round.id)"] = viewModel.slots.hintedIndexes
+            log.add("\(phone.name) hint \(viewModel.slots.hintedIndexes) on \(round.id.uuidString.prefix(6))")
         case "showMe":
             log.add("\(phone.name) show me")
             await expectMove(phone, kind: .giveUpGameRound, "show me", shows: [.reveal]) { await viewModel.giveUp() }
@@ -451,19 +470,12 @@ final class SimDriver {
     }
 
     private func reveal(_ phone: SimPhone, _ viewModel: DrawAndGuessViewModel) async {
-        // Continue and "Not now" both answer an open save question with no.
-        if viewModel.savePrompt == .ask, let round = viewModel.round {
-            declinedSaves.insert("\(phone.name)-\(round.id)")
-        }
-        if viewModel.savePrompt == .ask, random.chance(0.35) {
-            log.add("\(phone.name) save to memories")
-            if let round = viewModel.round {
-                declinedSaves.remove("\(phone.name)-\(round.id)")
-            }
-            await expectMove(phone, kind: .saveGameRoundToMemories, "save") { await viewModel.saveToMemories() }
-        } else if viewModel.savePrompt == .ask, random.chance(0.2) {
-            log.add("\(phone.name) not now")
-            Task { await viewModel.skipSaving() }
+        if let round = viewModel.round, round.guesserUserID == phone.userID, random.chance(0.35) {
+            let reaction = random.pick(DrawAndGuessReaction.allCases)
+            log.add("\(phone.name) react \(reaction.rawValue)")
+            await expectMove(phone, kind: .setGameRoundReaction, "react") { await viewModel.react(reaction) }
+            shownReactions[round.id, default: []].insert(viewModel.reveal?.reaction?.rawValue ?? "none")
+            return
         } else {
             log.add("\(phone.name) continue")
             let roundID = viewModel.round?.id

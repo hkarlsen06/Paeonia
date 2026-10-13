@@ -18,8 +18,9 @@ struct DrawAndGuessSpeedBonusTests {
                 guesserUserID: remote.guesserUserID, state: remote.state, difficulty: remote.difficulty,
                 word: remote.word, points: remote.points, drawingMediaAssetID: remote.drawingMediaAssetID,
                 drawingSubmittedAt: now.addingTimeInterval(-submittedAgo), startedAt: remote.startedAt,
-                guesserFirstSeenAt: nil, endedAt: nil, solveMs: nil, speedBonus: 0, memoryID: nil,
-                savedByUserID: nil, mySaveResponse: nil, partnerSaveResponse: nil, attempts: []
+                guesserFirstSeenAt: nil, endedAt: nil, solveMs: nil, speedBonus: 0, firstTryBonus: 0,
+                hintsUsed: 0, personalBest: false, guesserReaction: nil, starredByMe: false, drawerResultSeenAt: nil,
+                guesserResultSeenAt: nil, attempts: []
             )
         }
         return DrawAndGuessRoundView(remote)
@@ -47,6 +48,20 @@ struct DrawAndGuessSpeedBonusTests {
         let mine = DrawAndGuessRoundView(GameFixture.round(state: .guessing, drawer: GameFixture.me, hasDrawing: true))
 
         #expect(bonus(.against, mine, seenAgo: 1) == .hidden)
+    }
+
+    @Test func theBonusHasTwoTiersAndThenNothing() {
+        func tier(seenAgo: TimeInterval?) -> Int {
+            bonus(.against, round(drawing: true), seenAgo: seenAgo).tier(at: now)
+        }
+
+        #expect(tier(seenAgo: nil) == 2)
+        #expect(tier(seenAgo: 0) == 2)
+        #expect(tier(seenAgo: 15) == 2)
+        #expect(tier(seenAgo: 15.5) == 1)
+        #expect(tier(seenAgo: 30) == 1)
+        #expect(tier(seenAgo: 30.5) == 0)
+        #expect(DrawAndGuessSpeedBonus.hidden.tier(at: now) == 0)
     }
 
     @Test func whileThePartnerStillDrawsTheThirtySecondsCountFromTheFirstLook() {

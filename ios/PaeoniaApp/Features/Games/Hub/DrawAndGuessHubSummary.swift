@@ -16,11 +16,14 @@ nonisolated struct DrawAndGuessHubSummary: Equatable, Sendable {
     let partnerIsHere: Bool
     /// Nil until the game exists.
     let score: DrawAndGuessScore?
+    /// The couple has a finished drawing, so "Our drawings" has something to show.
+    let hasDrawings: Bool
 
-    init(status: Status, partnerIsHere: Bool, score: DrawAndGuessScore?) {
+    init(status: Status, partnerIsHere: Bool, score: DrawAndGuessScore?, hasDrawings: Bool = false) {
         self.status = status
         self.partnerIsHere = partnerIsHere
         self.score = score
+        self.hasDrawings = hasDrawings
     }
 
     init(state: RemoteDrawAndGuessState, resolution: DrawAndGuessResolution, now: Date) {
@@ -28,7 +31,8 @@ nonisolated struct DrawAndGuessHubSummary: Equatable, Sendable {
         self.init(
             status: Self.status(for: resolution.turnPhase),
             partnerIsHere: GamePresence.isFresh(state.partnerLastSeenAt, now: now),
-            score: state.game.map { DrawAndGuessScore(game: $0, playStyle: playStyle) }
+            score: state.game.map { DrawAndGuessScore(game: $0, playStyle: playStyle) },
+            hasDrawings: state.hasFinishedDrawing
         )
     }
 

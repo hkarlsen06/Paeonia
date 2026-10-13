@@ -28,7 +28,7 @@ struct DrawAndGuessDrawerResultView: View {
         isRevealed && timeline.buttonShown ? viewModel.partnerNextRound : nil
     }
     private var revealProgress: Int {
-        [timeline.titleShown, timeline.panelShown].count { $0 }
+        [timeline.titleShown, timeline.panelShown, timeline.actionsShown].count { $0 }
     }
     /// The partner's guess screen, while the round is open and they are on it.
     private var partnerGuess: DrawAndGuessPartnerGuess? { isRevealed ? nil : viewModel.partnerGuess }
@@ -83,9 +83,9 @@ struct DrawAndGuessDrawerResultView: View {
                 .accessibilityIdentifier("draw.reveal.continue")
             }
         }
-        .drawAndGuessSaveToolbar(viewModel, isShown: isRevealed && timeline.saveShown)
         .animation(PaeoniaMotion.stateChange, value: viewModel.isPartnerChoosingNextWord)
         .simultaneousGesture(TapGesture().onEnded { finishNow() })
+        .drawAndGuessStarToolbar(viewModel, isShown: isRevealed && timeline.actionsShown)
         .onChange(of: viewModel.phase, initial: true) { _, phase in
             if phase == .reveal {
                 if playbackTask == nil, !timeline.hasBegun {
@@ -103,6 +103,12 @@ struct DrawAndGuessDrawerResultView: View {
             if !isRevealed, new > old, !viewModel.board.isStrokeInProgress {
                 PaeoniaHaptics.partnerDrawingReceived()
             }
+        }
+        .onChange(of: viewModel.round?.guesserReaction) { old, new in
+            // A reaction that shows up while the result is on screen. One that was
+            // there when the screen opened comes in with the result instead.
+            guard new != nil, new != old, timeline.actionsShown else { return }
+            PaeoniaHaptics.partnerDrawingReceived()
         }
         .onChange(of: nextRoundCall) { _, call in
             guard let call else { return }
@@ -228,20 +234,29 @@ struct DrawAndGuessDrawerResultView: View {
                     isCounting: timeline.scoreCounting,
                     animates: !timeline.wasSkipped,
                     showsSpeedBonus: timeline.speedBonusShown,
+                    showsFirstTryBonus: timeline.firstTryBonusShown,
                     isHeldOnPhone: viewModel.isHeldOnPhone
                 )
                 .transition(transition)
             }
-            if timeline.saveShown, viewModel.savePrompt == .saving, viewModel.isHeldOnPhone {
-                DrawAndGuessOfflineLine()
-                    .transition(transition)
+            if timeline.actionsShown, let reaction = reveal.reaction {
+                DrawAndGuessReactionCapsule(reaction: reaction, partnerName: viewModel.partnerName)
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.9)))
             }
         }
+        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: reveal.reaction)
     }
 
-    private func lines(for reveal: DrawAndGuessReveal) -> [Text] {
-        guard reveal.isSolved else { return [Text(.gamesDrawAndGuessResultNoPoints)] }
-        return [Text(reveal.solvedLine(partnerName: viewModel.partnerName))]
+    private func lines(for reveal: DrawAndGuessReveal) -> [DrawAndGuessRevealTitle.Line] {
+        guard reveal.isSolved else { return [.init(text: Text(.gamesDrawAndGuessResultNoPoints))] }
+        var lines = [DrawAndGuessRevealTitle.Line(text: Text(reveal.solvedLine(partnerName: viewModel.partnerName)))]
+        if reveal.personalBest {
+            lines.append(.init(
+                text: Text(.gamesDrawAndGuessResultPersonalBest(viewModel.partnerName)),
+                isAccent: true
+            ))
+        }
+        return lines
     }
 }
 
@@ -266,12 +281,15 @@ extension DrawAndGuessDrawerResultView {
     private func beginReveal() {
         guard let reveal = viewModel.reveal, !timeline.hasBegun else { return }
         let added = viewModel.revealScore?.largestGain ?? 0
+        // "Together" has no bonuses, so no bonus beat plays.
+        let isAgainst = viewModel.settings?.playStyle == .against
         timeline.begin(
             DrawAndGuessRevealTimeline.Plan(
                 kind: reveal.isSolved ? .solved : .missed,
                 letterCount: reveal.isSolved ? DrawAndGuessAnswer.letters(of: reveal.word).count : 0,
                 pointsAdded: added,
-                hasSpeedBonus: (reveal.speedBonus ?? 0) > 0
+                hasSpeedBonus: isAgainst && reveal.speedBonus > 0,
+                hasFirstTryBonus: isAgainst && reveal.firstTryBonus > 0
             ),
             reduceMotion: reduceMotion
         )

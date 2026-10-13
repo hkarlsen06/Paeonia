@@ -116,6 +116,7 @@ actor SimPendingStore: PendingSyncOperationPersisting {
     }
 
     static let gameKinds: [SyncPendingOperationKind] = [
-        .pickDrawWord, .submitGameDrawing, .submitGameGuess, .giveUpGameRound, .saveGameRoundToMemories,
+        .pickDrawWord, .submitGameDrawing, .submitGameGuess, .giveUpGameRound, .setGameRoundReaction,
+        .markGameRoundResultSeen,
     ]
 }

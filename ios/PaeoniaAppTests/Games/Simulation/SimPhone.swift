@@ -173,13 +173,8 @@ final class SimPhone {
             ),
             SubmitGameGuessPendingOperationHandler(gateway: gateway, cache: cache),
             GiveUpGameRoundPendingOperationHandler(gateway: gateway, cache: cache),
-            SaveGameRoundPendingOperationHandler(
-                gateway: gateway,
-                mediaUploader: SimMemoryUploader(user: userID, server: server, network: network),
-                cache: cache,
-                transfer: transfer,
-                drawingStore: drawingStore
-            ),
+            GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
+            GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
         ])
         let clock = clock
         let dependencies = GamesDependencies(
@@ -473,7 +468,7 @@ final class SimPhone {
                 "\(viewModel.isLoadingDrawing)",
                 "\(viewModel.loadedDrawingVersion)",
                 "\(viewModel.partnerPresence)",
-                "\(viewModel.savePrompt)",
+                "\(viewModel.reveal?.reaction.map(\.rawValue) ?? "-")",
                 "\(viewModel.isShowingWrongGuess)",
                 "\(viewModel.live?.partnerActivity ?? .away)",
                 "\(viewModel.live?.roomVersion ?? -1)",

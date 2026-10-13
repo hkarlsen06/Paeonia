@@ -10,15 +10,19 @@ struct GamesPhaseTests {
     private func phase(
         _ state: RemoteDrawAndGuessState?,
         pending: DrawAndGuessPendingWork = .none,
-        acknowledged: Set<UUID> = [],
         live: Bool = false
     ) -> DrawAndGuessPhase {
-        resolver.resolve(
-            state: state,
-            pending: pending,
-            acknowledgedRoundIDs: acknowledged,
-            isPartnerDrawingLive: live
-        ).phase
+        resolver.resolve(state: state, pending: pending, isPartnerDrawingLive: live).phase
+    }
+
+    /// A "result seen" mark that waits on this phone for the round.
+    private func markingSeen(
+        _ roundID: UUID = GameFixture.roundID,
+        in pending: DrawAndGuessPendingWork = .none
+    ) -> DrawAndGuessPendingWork {
+        var pending = pending
+        pending.resultsSeen.append(GameResultSeenPayload(roundID: roundID, createdAt: GameFixture.now))
+        return pending
     }
 
     private func state(
@@ -75,13 +79,93 @@ struct GamesPhaseTests {
         )
 
         #expect(phase(solved) == .reveal)
-        #expect(phase(solved, acknowledged: [GameFixture.roundID]) == .chooseWord)
+        #expect(phase(solved, pending: markingSeen()) == .chooseWord)
 
         let partnersTurn = state(
             game: GameFixture.game(state: .choosingWord, turn: GameFixture.partner),
             round: GameFixture.round(state: .missed, drawer: GameFixture.me, hasDrawing: true)
         )
-        #expect(phase(partnersTurn, acknowledged: [GameFixture.roundID]) == .waitingForWord)
+        #expect(phase(partnersTurn, pending: markingSeen()) == .waitingForWord)
+    }
+
+    @Test func aResultTheServerSaysThisPersonSawNeverShowsAgain() {
+        // A fresh install or a second phone: nothing is stored here, the server knows.
+        let seenByMe = state(
+            game: GameFixture.game(state: .choosingWord, turn: GameFixture.me),
+            round: GameFixture.round(
+                state: .solved,
+                drawer: GameFixture.partner,
+                hasDrawing: true,
+                resultSeenBy: [GameFixture.me]
+            )
+        )
+        let seenOnlyByPartner = state(
+            game: GameFixture.game(state: .choosingWord, turn: GameFixture.me),
+            round: GameFixture.round(
+                state: .solved,
+                drawer: GameFixture.partner,
+                hasDrawing: true,
+                resultSeenBy: [GameFixture.partner]
+            )
+        )
+        let drawerSeenIt = state(
+            game: GameFixture.game(state: .choosingWord, turn: GameFixture.partner),
+            round: GameFixture.round(
+                state: .solved,
+                drawer: GameFixture.me,
+                hasDrawing: true,
+                resultSeenBy: [GameFixture.me]
+            )
+        )
+
+        #expect(phase(seenByMe) == .chooseWord)
+        #expect(phase(seenOnlyByPartner) == .reveal)
+        #expect(phase(drawerSeenIt) == .waitingForWord)
+    }
+
+    @Test func anOlderUnseenResultComesFirstUntilItIsSeen() {
+        let nextRound = UUID()
+        func afterResult(seenBy: Set<UUID>) -> RemoteDrawAndGuessState {
+            GameFixture.state(
+                settings: GameFixture.settings(),
+                game: GameFixture.game(state: .drawing, turn: GameFixture.partner, roundID: nextRound),
+                round: GameFixture.round(id: nextRound, state: .drawing, drawer: GameFixture.partner),
+                recentRounds: [
+                    GameFixture.round(
+                        state: .solved,
+                        drawer: GameFixture.me,
+                        hasDrawing: true,
+                        resultSeenBy: seenBy
+                    ),
+                ]
+            )
+        }
+
+        #expect(phase(afterResult(seenBy: [])) == .reveal)
+        #expect(phase(afterResult(seenBy: [GameFixture.me])) == .waitingForDrawing)
+        #expect(phase(afterResult(seenBy: []), pending: markingSeen()) == .waitingForDrawing)
+    }
+
+    @Test func aQueuedReactionShowsOnTheFinishedRoundBeforeTheServerHasIt() {
+        let solved = state(
+            game: GameFixture.game(state: .choosingWord, turn: GameFixture.me),
+            round: GameFixture.round(state: .solved, drawer: GameFixture.partner, hasDrawing: true)
+        )
+        var pending = DrawAndGuessPendingWork.none
+        pending.reactions = [
+            GameReactionPayload(roundID: GameFixture.roundID, reaction: .love, createdAt: GameFixture.now),
+            GameReactionPayload(roundID: GameFixture.roundID, reaction: .wow, createdAt: GameFixture.now),
+        ]
+
+        let withReaction = resolver.resolve(state: solved, pending: pending, isPartnerDrawingLive: false)
+        pending.reactions.append(
+            GameReactionPayload(roundID: GameFixture.roundID, reaction: nil, createdAt: GameFixture.now)
+        )
+        let cleared = resolver.resolve(state: solved, pending: pending, isPartnerDrawingLive: false)
+
+        #expect(solved.currentRound?.guesserReaction == nil)
+        #expect(withReaction.round?.guesserReaction == .wow)
+        #expect(cleared.round?.guesserReaction == nil)
     }
 
     @Test func theChoicesAreForTheDrawerOnly() {
@@ -107,12 +191,7 @@ struct GamesPhaseTests {
         var pending = DrawAndGuessPendingWork.none
         pending.pick = pick
 
-        let resolution = resolver.resolve(
-            state: waiting,
-            pending: pending,
-            acknowledgedRoundIDs: [],
-            isPartnerDrawingLive: false
-        )
+        let resolution = resolver.resolve(state: waiting, pending: pending, isPartnerDrawingLive: false)
 
         #expect(resolution.phase == .drawing)
         #expect(resolution.round?.word == "pizza")
@@ -156,29 +235,75 @@ struct GamesPhaseTests {
         var gaveUp = DrawAndGuessPendingWork.none
         gaveUp.giveUps = [GameGiveUpPayload(roundID: GameFixture.roundID, createdAt: GameFixture.now)]
 
-        let solved = resolver.resolve(state: guessing, pending: correct, acknowledgedRoundIDs: [], isPartnerDrawingLive: false)
+        let solved = resolver.resolve(state: guessing, pending: correct, isPartnerDrawingLive: false)
 
         #expect(solved.phase == .reveal)
         #expect(solved.round?.state == .solved)
         #expect(solved.round?.localSolvedAt == GameFixture.now)
         #expect(phase(guessing, pending: wrong) == .guessing)
-        #expect(resolver.resolve(state: guessing, pending: wrong, acknowledgedRoundIDs: [], isPartnerDrawingLive: false)
+        #expect(resolver.resolve(state: guessing, pending: wrong, isPartnerDrawingLive: false)
             .round?.attempts.map(\.isPending) == [true])
         #expect(phase(guessing, pending: gaveUp) == .reveal)
         // After the reveal, the next turn waits for the server to hear the guess.
-        #expect(phase(guessing, pending: correct, acknowledged: [GameFixture.roundID]) == .waitingToSync)
+        #expect(phase(guessing, pending: markingSeen(in: correct)) == .waitingToSync)
+    }
+
+    @Test func aQueuedCorrectGuessCarriesTheBonusesThePhonePromised() {
+        let guessing = state(
+            game: GameFixture.game(state: .guessing, turn: GameFixture.me),
+            round: GameFixture.round(state: .guessing, drawer: GameFixture.partner, hasDrawing: true)
+        )
+        func solved(
+            speed: Int,
+            hints: Int,
+            earlier: [(String, Bool)] = []
+        ) -> DrawAndGuessRoundView? {
+            var pending = DrawAndGuessPendingWork.none
+            pending.guesses = earlier.map { guess, isCorrect in
+                GameGuessPayload(
+                    id: UUID(),
+                    roundID: GameFixture.roundID,
+                    guess: guess,
+                    isCorrect: isCorrect,
+                    createdAt: GameFixture.now
+                )
+            } + [
+                GameGuessPayload(
+                    id: UUID(),
+                    roundID: GameFixture.roundID,
+                    guess: "umbrella",
+                    isCorrect: true,
+                    createdAt: GameFixture.now,
+                    speedBonus: speed,
+                    solveMs: 9_000,
+                    hintsUsed: hints
+                ),
+            ]
+            return resolver.resolve(state: guessing, pending: pending, isPartnerDrawingLive: false).round
+        }
+
+        let fastFirstTry = solved(speed: 2, hints: 0)
+        #expect(fastFirstTry?.speedBonus == 2)
+        #expect(fastFirstTry?.firstTryBonus == 1)
+        #expect(fastFirstTry?.hintsUsed == 0)
+
+        // A wrong word before the right one costs the first-try bonus.
+        let secondTry = solved(speed: 1, hints: 0, earlier: [("cat", false)])
+        #expect(secondTry?.speedBonus == 1)
+        #expect(secondTry?.firstTryBonus == 0)
+
+        // Any hint takes both bonuses away, whatever the claim says.
+        let hinted = solved(speed: 2, hints: 2)
+        #expect(hinted?.speedBonus == 0)
+        #expect(hinted?.firstTryBonus == 0)
+        #expect(hinted?.hintsUsed == 2)
     }
 
     // MARK: Hub
 
     @Test func theHubStatusFollowsWhoseTurnItIs() {
         func status(_ state: RemoteDrawAndGuessState) -> DrawAndGuessHubSummary {
-            let resolution = resolver.resolve(
-                state: state,
-                pending: .none,
-                acknowledgedRoundIDs: [],
-                isPartnerDrawingLive: false
-            )
+            let resolution = resolver.resolve(state: state, pending: .none, isPartnerDrawingLive: false)
             return DrawAndGuessHubSummary(state: state, resolution: resolution, now: GameFixture.now)
         }
         let yourDraw = status(state(game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil)))
@@ -204,12 +329,7 @@ struct GamesPhaseTests {
         _ state: RemoteDrawAndGuessState,
         pending: DrawAndGuessPendingWork = .none
     ) -> DrawAndGuessHubSummary.Status {
-        let resolution = resolver.resolve(
-            state: state,
-            pending: pending,
-            acknowledgedRoundIDs: [],
-            isPartnerDrawingLive: false
-        )
+        let resolution = resolver.resolve(state: state, pending: pending, isPartnerDrawingLive: false)
         #expect(resolution.phase == .reveal)
         return DrawAndGuessHubSummary(state: state, resolution: resolution, now: GameFixture.now).status
     }
@@ -273,7 +393,7 @@ struct GamesPhaseTests {
             game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil),
             partnerIsHere: true
         )
-        let resolution = resolver.resolve(state: here, pending: .none, acknowledgedRoundIDs: [], isPartnerDrawingLive: false)
+        let resolution = resolver.resolve(state: here, pending: .none, isPartnerDrawingLive: false)
 
         #expect(DrawAndGuessHubSummary(state: here, resolution: resolution, now: GameFixture.now).partnerIsHere)
         #expect(!DrawAndGuessHubSummary(

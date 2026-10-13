@@ -1,51 +1,44 @@
 import Foundation
 
-// The reveal and the save prompt.
+// The reveal: moving past a result, and the guesser's reaction to it.
 extension DrawAndGuessViewModel {
-    /// Leaves the reveal for the next turn. Continuing without saving means no,
-    /// so an open save question is answered "not now" for this person.
+    /// Leaves the reveal for the next turn. The "I have seen this result" mark is
+    /// saved on the phone first, so the screen moves on at once without the
+    /// network. The server keeps it per person, so a second phone and a fresh
+    /// install do not show the same result again.
     func continueFromReveal() async {
-        guard phase == .reveal, let round, let userID = currentUserID else { return }
-        await skipSaving()
-        await dependencies.cache.acknowledgeRound(round.id, ownerUserID: userID)
-        await reload()
+        guard phase == .reveal, let round else { return }
+        let payload = GameResultSeenPayload(roundID: round.id, createdAt: dependencies.now())
+        await enqueue(
+            .markGameRoundResultSeen,
+            scope: "game-result-seen:\(round.id.uuidString.lowercased())",
+            payload: payload
+        )
     }
 
-    /// Closes the save question for this person only. It never waits for the
-    /// network, so "Continue" moves on at once on a slow connection. The answer
-    /// is kept on the phone too, so it stays closed after a relaunch while the
-    /// server has not heard it.
-    func skipSaving() async {
-        guard savePrompt == .ask, let round, let userID = currentUserID else { return }
-        savePrompt = .hidden
-        declinedSaveRoundIDs.insert(round.id)
-        await dependencies.cache.declineSave(round.id, ownerUserID: userID)
-        let gateway = gateway
-        let roundID = round.id
-        Task { try? await gateway.respondSavePrompt(roundID: roundID) }
+    /// The guesser's reaction to the round this person just drew, for the screen
+    /// that waits for the partner's next word. The drawer can leave the result
+    /// before the guesser reacts, so the reaction shows up there instead.
+    var reactionToMyLastDrawing: DrawAndGuessReaction? {
+        guard phase == .waitingForWord, let userID = currentUserID, let round, round.isFinished,
+              round.isDrawer(userID)
+        else { return nil }
+        return round.guesserReaction
     }
 
-    /// Queues the save for Memories at once. The image is the drawer's final
-    /// drawing. When it is already on this phone, it is rendered now. Otherwise
-    /// the queued save renders it once the drawer's drawing is sent, so a live
-    /// canvas that missed a stroke, or a canvas still being drawn on, never
-    /// becomes the memory.
-    func saveToMemories() async {
-        guard savePrompt == .ask, let round, let coupleID = participants.coupleID else { return }
-        let image = submittedDrawing.flatMap { DrawAndGuessImageRenderer.render($0.drawing) }
-        let payload = GameSaveRoundPayload(
+    /// The guesser's reaction to the finished round. Choosing the one that is
+    /// already chosen clears it. The reaction shows on the phone at once and goes
+    /// out when the phone is online. The last one made wins.
+    func react(_ reaction: DrawAndGuessReaction) async {
+        guard phase == .reveal, let round, round.guesserUserID == currentUserID else { return }
+        let payload = GameReactionPayload(
             roundID: round.id,
-            coupleID: coupleID,
-            memoryID: UUID(),
-            memoryMediaID: UUID(),
-            imageData: image,
-            memoryDate: MemoryTimeline.localDateString(for: dependencies.now()),
-            reserveOperation: dependencies.operationProvider.makeOperation(),
-            finalizeOperation: dependencies.operationProvider.makeOperation()
+            reaction: round.guesserReaction == reaction ? nil : reaction,
+            createdAt: dependencies.now()
         )
         await enqueue(
-            .saveGameRoundToMemories,
-            scope: "game-save:\(round.id.uuidString.lowercased())",
+            .setGameRoundReaction,
+            scope: "game-reaction:\(round.id.uuidString.lowercased())",
             payload: payload
         )
     }

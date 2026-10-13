@@ -18,27 +18,39 @@ nonisolated protocol GamesGateway: Sendable {
         operation: SyncClientOperation
     ) async throws -> RemoteSubmitDrawingResult
     func markRoundSeen(roundID: UUID) async throws -> RemoteMarkSeenResult
-    /// `speedBonus` and `solveMs` are what the player saw on the phone. The server
-    /// uses them when present and works them out itself when nil.
-    func submitGuess(
+    /// `speedBonus` (0, 1 or 2), `solveMs` and `hintsUsed` are what the player saw
+    /// on the phone. The server uses them when present and works the speed bonus
+    /// and solve time out itself when nil. Any hint sets both bonuses to 0.
+    func submitGuess( // swiftlint:disable:this function_parameter_count
         roundID: UUID,
         guess: String,
-        speedBonus: Bool?,
+        speedBonus: Int?,
         solveMs: Int?,
+        hintsUsed: Int?,
         operation: SyncClientOperation
     ) async throws -> RemoteGuessResult
     func giveUp(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteGiveUpResult
 
-    func respondSavePrompt(roundID: UUID) async throws
-    func saveRoundToMemories(
-        roundID: UUID,
-        memoryID: UUID,
-        mediaAssetID: UUID,
-        memoryDate: String
-    ) async throws -> RemoteSaveRoundResult
+    /// The guesser's reaction to a finished round, or nil to clear it. The last
+    /// write wins, so a retry is safe.
+    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) async throws -> RemoteReactionResult
+    /// This person moved past the finished round's result. The server keeps the
+    /// first time, so a retry is safe.
+    func markRoundResultSeen(roundID: UUID) async throws -> RemoteResultSeenResult
 
     func sendInvite() async throws -> RemoteInviteResult
     func setPresence(_ isPresent: Bool) async throws
+
+    /// A page of the couple's finished rounds with a drawing, newest first, before
+    /// `beforeRoundNumber`. With `starredOnly`, only the rounds this person starred.
+    func loadDrawAndGuessHistory(
+        starredOnly: Bool,
+        beforeRoundNumber: Int?,
+        limit: Int
+    ) async throws -> RemoteDrawAndGuessHistoryPage
+    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords
+    /// Private and safe to retry. The partner is not told.
+    func setRoundStar(roundID: UUID, starred: Bool) async throws -> RemoteRoundStarResult
 }
 
 nonisolated struct LiveGamesGateway: GamesGateway {
@@ -86,11 +98,12 @@ nonisolated struct LiveGamesGateway: GamesGateway {
         try await client.mutation("games:mark_round_seen", args: RoundRequest(roundID: roundID))
     }
 
-    func submitGuess(
+    func submitGuess( // swiftlint:disable:this function_parameter_count
         roundID: UUID,
         guess: String,
-        speedBonus: Bool?,
+        speedBonus: Int?,
         solveMs: Int?,
+        hintsUsed: Int?,
         operation: SyncClientOperation
     ) async throws -> RemoteGuessResult {
         try await client.mutation(
@@ -100,6 +113,7 @@ nonisolated struct LiveGamesGateway: GamesGateway {
                 guess: guess,
                 speedBonus: speedBonus,
                 solveMs: solveMs,
+                hintsUsed: hintsUsed,
                 operation: operation
             )
         )
@@ -112,25 +126,15 @@ nonisolated struct LiveGamesGateway: GamesGateway {
         )
     }
 
-    func respondSavePrompt(roundID: UUID) async throws {
-        try await client.mutation("games:respond_save_prompt", args: RoundRequest(roundID: roundID))
+    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) async throws -> RemoteReactionResult {
+        try await client.mutation(
+            "games:set_round_reaction",
+            args: SetRoundReactionRequest(roundID: roundID, reaction: reaction)
+        )
     }
 
-    func saveRoundToMemories(
-        roundID: UUID,
-        memoryID: UUID,
-        mediaAssetID: UUID,
-        memoryDate: String
-    ) async throws -> RemoteSaveRoundResult {
-        try await client.mutation(
-            "games:save_round_to_memories",
-            args: SaveRoundRequest(
-                roundID: roundID,
-                memoryID: memoryID,
-                mediaAssetID: mediaAssetID,
-                memoryDate: memoryDate
-            )
-        )
+    func markRoundResultSeen(roundID: UUID) async throws -> RemoteResultSeenResult {
+        try await client.mutation("games:mark_round_result_seen", args: RoundRequest(roundID: roundID))
     }
 
     func sendInvite() async throws -> RemoteInviteResult {
@@ -139,6 +143,25 @@ nonisolated struct LiveGamesGateway: GamesGateway {
 
     func setPresence(_ isPresent: Bool) async throws {
         try await client.mutation("games:set_game_presence", args: PresenceRequest(isPresent: isPresent))
+    }
+
+    func loadDrawAndGuessHistory(
+        starredOnly: Bool,
+        beforeRoundNumber: Int?,
+        limit: Int
+    ) async throws -> RemoteDrawAndGuessHistoryPage {
+        try await client.query(
+            "games:get_draw_and_guess_history",
+            args: HistoryRequest(starredOnly: starredOnly, beforeRoundNumber: beforeRoundNumber, limit: limit)
+        )
+    }
+
+    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
+        try await client.query("games:get_draw_and_guess_records")
+    }
+
+    func setRoundStar(roundID: UUID, starred: Bool) async throws -> RemoteRoundStarResult {
+        try await client.mutation("games:set_round_star", args: StarRequest(roundID: roundID, starred: starred))
     }
 }
 
@@ -180,17 +203,43 @@ nonisolated private struct PresenceRequest: Encodable {
     }
 }
 
-nonisolated private struct SaveRoundRequest: Encodable {
+nonisolated private struct SetRoundReactionRequest: Encodable {
     let roundID: UUID
-    let memoryID: UUID
-    let mediaAssetID: UUID
-    let memoryDate: String
+    /// Nil clears the reaction, so the key is sent as null.
+    let reaction: DrawAndGuessReaction?
 
     enum CodingKeys: String, CodingKey {
         case roundID = "p_round_id"
-        case memoryID = "p_memory_id"
-        case mediaAssetID = "p_media_asset_id"
-        case memoryDate = "p_memory_date"
+        case reaction = "p_reaction"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(roundID, forKey: .roundID)
+        try container.encode(reaction, forKey: .reaction)
+    }
+}
+
+nonisolated private struct HistoryRequest: Encodable {
+    let starredOnly: Bool
+    /// Nil for the first page, so the key is left out.
+    let beforeRoundNumber: Int?
+    let limit: Int
+
+    enum CodingKeys: String, CodingKey {
+        case starredOnly = "p_starred_only"
+        case beforeRoundNumber = "p_before_round_number"
+        case limit = "p_limit"
+    }
+}
+
+nonisolated private struct StarRequest: Encodable {
+    let roundID: UUID
+    let starred: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case roundID = "p_round_id"
+        case starred = "p_starred"
     }
 }
 
@@ -279,15 +328,24 @@ nonisolated private struct SubmitDrawingRequest: Encodable {
 nonisolated private struct SubmitGuessRequest: Encodable {
     let roundID: UUID
     let guess: String
-    let speedBonus: Bool?
+    let speedBonus: Int?
     let solveMs: Int?
+    let hintsUsed: Int?
     let operation: GameClientOperationFields
 
-    init(roundID: UUID, guess: String, speedBonus: Bool?, solveMs: Int?, operation: SyncClientOperation) {
+    init(
+        roundID: UUID,
+        guess: String,
+        speedBonus: Int?,
+        solveMs: Int?,
+        hintsUsed: Int?,
+        operation: SyncClientOperation
+    ) {
         self.roundID = roundID
         self.guess = guess
         self.speedBonus = speedBonus
         self.solveMs = solveMs
+        self.hintsUsed = hintsUsed
         self.operation = GameClientOperationFields(operation)
     }
 
@@ -296,6 +354,7 @@ nonisolated private struct SubmitGuessRequest: Encodable {
         case guess = "p_guess"
         case speedBonus = "p_speed_bonus"
         case solveMs = "p_solve_ms"
+        case hintsUsed = "p_hints_used"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -304,6 +363,7 @@ nonisolated private struct SubmitGuessRequest: Encodable {
         try container.encode(guess, forKey: .guess)
         try container.encodeIfPresent(speedBonus, forKey: .speedBonus)
         try container.encodeIfPresent(solveMs, forKey: .solveMs)
+        try container.encodeIfPresent(hintsUsed, forKey: .hintsUsed)
         try operation.encode(to: encoder)
     }
 }

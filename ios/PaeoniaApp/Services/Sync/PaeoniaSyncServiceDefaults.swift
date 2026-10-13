@@ -119,13 +119,9 @@ nonisolated enum PaeoniaSyncServiceDefaults {
             ),
             SubmitGameGuessPendingOperationHandler(gateway: gamesGateway, cache: FileGamesCache.shared),
             GiveUpGameRoundPendingOperationHandler(gateway: gamesGateway, cache: FileGamesCache.shared),
-            SaveGameRoundPendingOperationHandler(
-                gateway: gamesGateway,
-                mediaUploader: LiveMemoryMediaUploadService(client: client),
-                cache: FileGamesCache.shared,
-                transfer: LiveGameDrawingTransfer(client: client),
-                drawingStore: FileGameDrawingStore.shared
-            ),
+            SetGameRoundStarPendingOperationHandler(gateway: gamesGateway, cache: FileGamesCache.shared),
+            GameReactionPendingOperationHandler(gateway: gamesGateway, cache: FileGamesCache.shared),
+            GameResultSeenPendingOperationHandler(gateway: gamesGateway, cache: FileGamesCache.shared),
         ]
 
         return [

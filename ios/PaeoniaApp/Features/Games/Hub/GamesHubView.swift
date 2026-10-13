@@ -15,7 +15,8 @@ struct GamesHubView: View {
                         partnerName: viewModel.partnerName,
                         me: viewModel.drawAndGuess.me,
                         partner: viewModel.drawAndGuess.partner,
-                        open: { open(.drawAndGuess) }
+                        open: { open(.drawAndGuess) },
+                        openHistory: { open(.drawAndGuessHistory) }
                     )
                 }
             }

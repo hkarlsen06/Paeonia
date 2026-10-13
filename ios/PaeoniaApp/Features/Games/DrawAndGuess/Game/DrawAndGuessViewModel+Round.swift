@@ -2,7 +2,7 @@ import PencilKit
 import SwiftUI
 
 // What changes when the round changes: the guesser's tiles, the drawer's canvas,
-// and the numbers on the reveal.
+// the speed bonus, and the numbers on the reveal.
 extension DrawAndGuessViewModel {
     /// Sets up the tiles for a guesser and the canvas for a drawer when a new
     /// round starts.
@@ -28,6 +28,7 @@ extension DrawAndGuessViewModel {
                 tilesRoundID = round.id
                 tilesLanguage = language
                 isShowingWrongGuess = false
+                restoreHints(for: round)
             }
         } else if tilesRoundID != nil {
             tiles = []
@@ -132,7 +133,12 @@ extension DrawAndGuessViewModel {
         )
     }
 
+    /// Any hint takes the speed bonus away, so the label and the line go.
     func updateSpeedBonus() {
+        guard hintCount == 0 else {
+            speedBonus = .hidden
+            return
+        }
         let firstSeen = round.flatMap { $0.guesserFirstSeenAt ?? localFirstSeenAt[$0.id] }
         speedBonus = DrawAndGuessSpeedBonus.make(
             playStyle: settings?.playStyle,
@@ -142,10 +148,11 @@ extension DrawAndGuessViewModel {
         )
     }
 
-    /// What the screen promised for a correct guess made at `now`: whether the
-    /// bonus was still available and how long the guesser had looked at the
-    /// drawing. It ignores the play style, because the server keeps every total.
-    func speedBonusClaim(at now: Date) -> (speedBonus: Bool, solveMs: Int?) {
+    /// What the screen promised for a correct guess made at `now`: the speed
+    /// bonus tier it showed (0, 1 or 2), how long the guesser had looked at the
+    /// drawing, and how many hints they used. It ignores the play style, because
+    /// the server keeps every total. A hint always means no speed bonus.
+    func speedBonusClaim(at now: Date) -> DrawAndGuessSolveClaim {
         let firstSeen = round.flatMap { $0.guesserFirstSeenAt ?? localFirstSeenAt[$0.id] }
         let bonus = DrawAndGuessSpeedBonus.make(
             playStyle: .against,
@@ -154,12 +161,21 @@ extension DrawAndGuessViewModel {
             firstSeenAt: firstSeen
         )
         let solveMs = firstSeen.map { max(0, Int((now.timeIntervalSince($0) * 1_000).rounded())) }
-        return (bonus.isAvailable(at: now), solveMs)
+        return DrawAndGuessSolveClaim(
+            speedBonus: hintCount > 0 ? 0 : bonus.tier(at: now),
+            solveMs: solveMs,
+            hintsUsed: hintCount
+        )
+    }
+
+    /// The points a correct guess earns for speed right now: 2, 1 or 0.
+    var speedBonusTier: Int {
+        speedBonus.tier(at: dependencies.now())
     }
 
     /// The bonus can still be earned right now.
     var speedBonusIsAvailable: Bool {
-        speedBonus.isAvailable(at: dependencies.now())
+        speedBonusTier > 0
     }
 
     /// Seconds of the speed bonus left, counted on the game's clock.
@@ -180,17 +196,22 @@ extension DrawAndGuessViewModel {
         case (false, true): .iGaveUp
         case (false, false): .partnerGaveUp
         }
-        // A result that only exists on this phone has no confirmed bonus or time yet.
+        // A result that only exists on this phone carries the bonuses the phone
+        // promised. The server's numbers replace them when the result arrives.
         let isConfirmed = round.localSolvedAt == nil && !pending.hasGiveUp(roundID: round.id)
-        let bonus = isConfirmed ? round.speedBonus : nil
+        let bonuses = iAmGuesser ? round.speedBonus + round.firstTryBonus : 0
         reveal = DrawAndGuessReveal(
             outcome: outcome,
             word: round.word,
             difficulty: round.difficulty,
             wordPoints: round.points,
-            speedBonus: isSolved ? bonus : 0,
+            speedBonus: isSolved ? round.speedBonus : 0,
+            firstTryBonus: isSolved ? round.firstTryBonus : 0,
+            hintsUsed: isSolved ? round.hintsUsed : 0,
+            personalBest: isSolved && isConfirmed && round.personalBest,
+            reaction: round.guesserReaction,
             solveDuration: isSolved ? solveDuration(for: round) : nil,
-            pointsForMe: isSolved ? round.points + (iAmGuesser ? bonus ?? 0 : 0) : 0,
+            pointsForMe: isSolved ? round.points + bonuses : 0,
             pointsForCouple: isSolved ? round.points : 0,
             attempts: round.attempts,
             isConfirmed: isConfirmed
@@ -207,28 +228,6 @@ extension DrawAndGuessViewModel {
             return nil
         }
         return max(0, solvedAt.timeIntervalSince(first))
-    }
-
-    /// The save question shows on the reveal, and afterwards as a row on the
-    /// screens where the next turn starts.
-    func updateSavePrompt() {
-        guard let userID = currentUserID, let round, round.isFinished,
-              phase == .reveal || phase == .chooseWord || phase == .waitingForWord
-        else {
-            savePrompt = .hidden
-            return
-        }
-        savePrompt = DrawAndGuessSavePrompt.make(
-            round: round,
-            userID: userID,
-            hasSaveQueued: pending.hasSave(roundID: round.id),
-            hasDrawing: finalDrawing != nil || round.drawingMediaAssetID != nil
-        )
-        // The server's answer may still be on its way. Until it arrives, a "not now"
-        // from this phone keeps the question closed.
-        if savePrompt == .ask, declinedSaveRoundIDs.contains(round.id) {
-            savePrompt = .hidden
-        }
     }
 
     /// The finished drawing at the canonical size, from whichever source this phone
@@ -259,8 +258,7 @@ extension DrawAndGuessViewModel {
 
     /// The drawing the drawer sent or queued, which can no longer change: the
     /// downloaded file or the drawing queued on this phone. A live room can miss
-    /// a stroke still on its way, and the canvas can still change, so Memories
-    /// only ever gets this one.
+    /// a stroke still on its way, and the canvas can still change.
     var submittedDrawing: DrawAndGuessFinalDrawing? {
         _ = loadedDrawingVersion
         guard let round else { return nil }
@@ -274,6 +272,15 @@ extension DrawAndGuessViewModel {
         }
         return nil
     }
+}
+
+/// What the screen showed when the guesser made the correct guess.
+struct DrawAndGuessSolveClaim: Equatable {
+    /// The speed bonus tier on screen: 2, 1 or 0.
+    let speedBonus: Int
+    /// Milliseconds since the guesser first saw the drawing, on this phone's clock.
+    let solveMs: Int?
+    let hintsUsed: Int
 }
 
 /// A finished drawing at the canonical canvas size. Scale it to the canvas with

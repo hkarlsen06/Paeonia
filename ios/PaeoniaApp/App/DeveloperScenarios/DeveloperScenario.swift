@@ -79,11 +79,13 @@
     case drawGuessingReplay = "draw-guessing-replay"
     case drawGuessingLongWord = "draw-guessing-long-word"
     case drawRevealSolved = "draw-reveal-solved"
-    case drawSavePrompt = "draw-save-prompt"
+    case drawRevealBonuses = "draw-reveal-bonuses"
     case drawRevealMissed = "draw-reveal-missed"
     case drawRevealAsDrawer = "draw-reveal-as-drawer"
     case drawRevealPartnerDrawing = "draw-reveal-partner-drawing"
     case drawRevealLoading = "draw-reveal-loading"
+    case drawHistory = "draw-history"
+    case drawHistoryEmpty = "draw-history-empty"
 
     case notificationPrimer = "notification-primer"
     case settings
@@ -182,11 +184,13 @@
       case .drawGuessingReplay: "Draw & Guess · guessing a replay"
       case .drawGuessingLongWord: "Draw & Guess · guessing a 20-letter word"
       case .drawRevealSolved: "Draw & Guess · reveal, solved"
-      case .drawSavePrompt: "Draw & Guess · reveal with save prompt"
+      case .drawRevealBonuses: "Draw & Guess · reveal with bonuses and reactions"
       case .drawRevealMissed: "Draw & Guess · reveal, missed"
       case .drawRevealAsDrawer: "Draw & Guess · reveal as the drawer"
       case .drawRevealPartnerDrawing: "Draw & Guess · partner drew the next one"
       case .drawRevealLoading: "Draw & Guess · reveal, drawing still loading"
+      case .drawHistory: "Draw & Guess · our drawings"
+      case .drawHistoryEmpty: "Draw & Guess · our drawings, none yet"
       case .notificationPrimer: "Notifications · primer"
       case .settings: "Settings"
       case .settingsNotificationsDenied: "Settings · notifications denied"
@@ -330,8 +334,8 @@
         "The longest custom word: slots split over two lines"
       case .drawRevealSolved:
         "You solved it: time, speed bonus, points"
-      case .drawSavePrompt:
-        "The same reveal with the save-to-Memories question"
+      case .drawRevealBonuses:
+        "Speed bonus +2, first try, your fastest solve yet, and the reaction row"
       case .drawRevealMissed:
         "You pressed Show me: the word and the drawing"
       case .drawRevealAsDrawer:
@@ -340,6 +344,10 @@
         "The result, and Robin already draws the next one: the button reads Watch Robin draw"
       case .drawRevealLoading:
         "You solved it while Robin's drawing is still downloading"
+      case .drawHistory:
+        "Records and a grid of finished drawings, some starred, one missed. Open one to replay it"
+      case .drawHistoryEmpty:
+        "Our drawings before the first round has finished"
       case .notificationPrimer:
         "Pre-permission notification explanation"
       case .settings:
@@ -390,8 +398,8 @@
       case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting,
         .gamesHubPartnerHere, .drawChooseWord, .drawWaitingForWord, .drawDrawing, .drawSavedOffline,
         .drawWaitingForGuess, .drawWaitingForDrawing, .drawWatchingLive, .drawGuessingReplay,
-        .drawGuessingLongWord, .drawRevealSolved, .drawSavePrompt, .drawRevealMissed, .drawRevealAsDrawer,
-        .drawRevealPartnerDrawing, .drawRevealLoading:
+        .drawGuessingLongWord, .drawRevealSolved, .drawRevealBonuses, .drawRevealMissed, .drawRevealAsDrawer,
+        .drawRevealPartnerDrawing, .drawRevealLoading, .drawHistory, .drawHistoryEmpty:
         .games
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         .widget

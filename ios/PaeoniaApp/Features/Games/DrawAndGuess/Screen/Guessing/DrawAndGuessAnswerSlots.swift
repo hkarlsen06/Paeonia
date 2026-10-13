@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The empty slots of the answer, one per letter with a gap between words. Tapping
-/// a filled slot sends its tile back. On the reveal the slots light up. The
+/// a filled slot sends its tile back, except a slot a hint filled, which is
+/// locked and has an accent outline. On the reveal the slots light up. The
 /// drawer's result screen shows the partner's slots with it, read only.
 struct DrawAndGuessAnswerSlots: View {
     let slots: DrawAndGuessSlots
@@ -111,7 +112,7 @@ struct DrawAndGuessAnswerSlots: View {
         let fill: Color = isLit && litsGreen ? .paeoniaSuccess : .paeoniaSurfacePrimary
         let textColor: Color = isLit && litsGreen ? .paeoniaTextInverse : .paeoniaTextPrimary
         return Button {
-            guard slot.tile != nil, let removeTile else { return }
+            guard slot.tile != nil, !slot.isHint, let removeTile else { return }
             PaeoniaHaptics.selection()
             removeTile(slot.id)
         } label: {
@@ -128,26 +129,34 @@ struct DrawAndGuessAnswerSlots: View {
                 }
             }
             .frame(width: slotWidth, height: Self.slotHeight)
-            .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                    .strokeBorder(.paeoniaWarning, lineWidth: 2)
-                    .opacity(isShowingWrongGuess && slot.tile != nil ? 1 : 0)
-                    .animation(PaeoniaMotion.buttonPress, value: isShowingWrongGuess)
-            }
+            .overlay { outline(of: slot) }
             .scaleEffect(timeline.rippleIndex == number - 1 ? 1.18 : 1)
             .contentShape(Rectangle().inset(by: -2))
         }
         .buttonStyle(.plain)
         .allowsHitTesting(!isRevealed && removeTile != nil)
-        .accessibilityLabel(Text(slotLabel(letter: letter, number: number)))
+        .accessibilityLabel(Text(slotLabel(letter: letter, number: number, isHint: slot.isHint)))
         .accessibilityHint(canRemove(slot) ? Text(.gamesDrawAndGuessSlotRemoveHint) : Text(verbatim: ""))
         .accessibilityRotorEntry(id: slot.id, in: rotorNamespace)
     }
 
     private static let slotHeight: CGFloat = 48
 
+    /// The orange outline of a wrong word, and the accent outline of a letter a hint placed.
+    private func outline(of slot: DrawAndGuessSlots.Slot) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+                .strokeBorder(.paeoniaWarning, lineWidth: 2)
+                .opacity(isShowingWrongGuess && slot.tile != nil && !slot.isHint ? 1 : 0)
+                .animation(PaeoniaMotion.buttonPress, value: isShowingWrongGuess)
+            RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+                .strokeBorder(.paeoniaAccentPrimary, lineWidth: PaeoniaRadius.strokeEmphasis)
+                .opacity(slot.isHint && !isRevealed ? 1 : 0)
+        }
+    }
+
     private func canRemove(_ slot: DrawAndGuessSlots.Slot) -> Bool {
-        slot.tile != nil && !isRevealed && removeTile != nil
+        slot.tile != nil && !slot.isHint && !isRevealed && removeTile != nil
     }
 
     private var emptySlot: some View {
@@ -169,8 +178,11 @@ struct DrawAndGuessAnswerSlots: View {
         slots.slots.prefix(slot.id + 1).count { !$0.isGap }
     }
 
-    private func slotLabel(letter: Character?, number: Int) -> LocalizedStringResource {
+    private func slotLabel(letter: Character?, number: Int, isHint: Bool) -> LocalizedStringResource {
         guard let letter else { return .gamesDrawAndGuessSlotEmpty(number) }
+        if isHint && !isRevealed {
+            return .gamesDrawAndGuessSlotHint(number, String(letter))
+        }
         return .gamesDrawAndGuessSlotFilled(number, String(letter))
     }
 

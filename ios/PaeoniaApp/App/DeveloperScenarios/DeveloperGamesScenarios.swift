@@ -76,19 +76,24 @@
           round: Fixture.round(state: .drawing, drawer: Fixture.partner),
           partnerIsHere: true
         )
-      case .drawRevealSolved, .drawSavePrompt, .drawRevealLoading:
+      case .drawRevealSolved, .drawRevealLoading:
+        return revealState(.solved, drawer: Fixture.partner)
+      case .drawRevealBonuses:
+        // A fast first-try solve that is also the guesser's best so far.
         return revealState(
           .solved,
           drawer: Fixture.partner,
-          saveResponse: scenario == .drawSavePrompt ? nil : .notNow
+          attempts: [("umbrella", true)],
+          bonuses: .init(speed: 2, firstTry: 1, personalBest: true)
         )
       case .drawRevealMissed:
-        return revealState(.missed, drawer: Fixture.partner, saveResponse: .notNow)
+        return revealState(.missed, drawer: Fixture.partner)
       case .drawRevealAsDrawer:
         return revealState(
           .solved,
           drawer: Fixture.me,
-          attempts: [("cat", false), ("hat", false), ("umbrella", true)]
+          attempts: [("cat", false), ("hat", false), ("umbrella", true)],
+          bonuses: .init(hints: 2, reaction: .laugh)
         )
       case .drawRevealPartnerDrawing:
         // Robin solved the last drawing and has already started the next one.
@@ -113,11 +118,20 @@
       }
     }
 
+    /// What a solved round earned besides the word's points.
+    nonisolated private struct Bonuses {
+      var speed = 1
+      var firstTry = 0
+      var hints = 0
+      var personalBest = false
+      var reaction: DrawAndGuessReaction?
+    }
+
     private static func revealState(
       _ state: DrawAndGuessRoundState,
       drawer: UUID,
       attempts: [(text: String, correct: Bool)] = [],
-      saveResponse: DrawAndGuessSaveResponse? = nil
+      bonuses: Bonuses = Bonuses()
     ) -> RemoteDrawAndGuessState {
       typealias Fixture = DeveloperGamesFixture
       let nextDrawer = drawer == Fixture.me ? Fixture.partner : Fixture.me
@@ -130,8 +144,11 @@
           hasDrawing: true,
           attempts: attempts,
           solveMs: state == .solved ? 18_400 : nil,
-          speedBonus: state == .solved ? 1 : 0,
-          mySaveResponse: saveResponse
+          speedBonus: state == .solved && bonuses.hints == 0 ? bonuses.speed : 0,
+          firstTryBonus: state == .solved ? bonuses.firstTry : 0,
+          hintsUsed: state == .solved ? bonuses.hints : 0,
+          personalBest: state == .solved && bonuses.personalBest,
+          reaction: bonuses.reaction
         ),
         choices: nextDrawer == Fixture.me ? Fixture.choices : nil
       )
@@ -155,7 +172,7 @@
         hasSeenSettings: scenario != .gamesPartnerPicked
       )
       return GamesDependencies(
-        gateway: DeveloperGamesGateway(),
+        gateway: DeveloperGamesGateway(historyIsEmpty: scenario == .drawHistoryEmpty),
         cache: cache,
         pendingOperationStore: InMemoryPendingSyncOperationRepository(),
         operationProvider: DeveloperScenarioOperationProvider(),
@@ -209,6 +226,9 @@
   /// Every call succeeds and changes nothing. The screens already show a move the
   /// moment it is saved in the pending operations.
   struct DeveloperGamesGateway: GamesGateway {
+    /// "Our drawings" answers with no rounds and empty records.
+    var historyIsEmpty = false
+
     func setSettings(playStyle: GamePlayStyle, language: GameLanguage) async throws -> RemoteGameSettings {
       RemoteGameSettings(
         coupleID: DeveloperScenarioFixture.coupleID,
@@ -255,11 +275,12 @@
       RemoteMarkSeenResult(guesserFirstSeenAt: DeveloperGamesFixture.now)
     }
 
-    func submitGuess(
+    func submitGuess( // swiftlint:disable:this function_parameter_count
         roundID _: UUID,
         guess _: String,
-        speedBonus _: Bool?,
+        speedBonus _: Int?,
         solveMs _: Int?,
+        hintsUsed _: Int?,
         operation _: SyncClientOperation
     ) async throws -> RemoteGuessResult {
       throw URLError(.notConnectedToInternet)
@@ -269,15 +290,12 @@
       RemoteGiveUpResult(roundID: roundID, roundState: .missed)
     }
 
-    func respondSavePrompt(roundID _: UUID) async throws {}
+    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) async throws -> RemoteReactionResult {
+      RemoteReactionResult(roundID: roundID, guesserReaction: reaction)
+    }
 
-    func saveRoundToMemories(
-      roundID _: UUID,
-      memoryID: UUID,
-      mediaAssetID _: UUID,
-      memoryDate _: String
-    ) async throws -> RemoteSaveRoundResult {
-      RemoteSaveRoundResult(memoryID: memoryID, created: true)
+    func markRoundResultSeen(roundID: UUID) async throws -> RemoteResultSeenResult {
+      RemoteResultSeenResult(roundID: roundID, resultSeenAt: DeveloperGamesFixture.now)
     }
 
     func sendInvite() async throws -> RemoteInviteResult {
@@ -285,6 +303,23 @@
     }
 
     func setPresence(_: Bool) async throws {}
+
+    func loadDrawAndGuessHistory(
+      starredOnly: Bool,
+      beforeRoundNumber: Int?,
+      limit: Int
+    ) async throws -> RemoteDrawAndGuessHistoryPage {
+      guard !historyIsEmpty else { return RemoteDrawAndGuessHistoryPage(rounds: [], nextBeforeRoundNumber: nil) }
+      return DeveloperGamesFixture.historyPage(starredOnly: starredOnly, before: beforeRoundNumber, limit: limit)
+    }
+
+    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
+      historyIsEmpty ? DeveloperGamesFixture.emptyRecords : DeveloperGamesFixture.records
+    }
+
+    func setRoundStar(roundID: UUID, starred: Bool) async throws -> RemoteRoundStarResult {
+      RemoteRoundStarResult(roundID: roundID, starred: starred)
+    }
   }
 
   /// The partner's drawing for every download: the fixture umbrella. A stalled

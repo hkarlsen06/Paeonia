@@ -34,10 +34,16 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
     var localSolvedAt: Date?
     let endedAt: Date?
     let solveMs: Int?
-    let speedBonus: Int
-    let memoryID: UUID?
-    let savedByUserID: UUID?
-    let mySaveResponse: DrawAndGuessSaveResponse?
+    /// A queued correct guess carries the tier the screen showed, until the server confirms.
+    var speedBonus: Int
+    /// A queued correct guess carries the phone's prediction, until the server confirms.
+    var firstTryBonus: Int
+    var hintsUsed: Int
+    let personalBest: Bool
+    /// The guesser's reaction, with a reaction waiting on this phone applied.
+    var guesserReaction: DrawAndGuessReaction?
+    let drawerResultSeenAt: Date?
+    let guesserResultSeenAt: Date?
     var attempts: [DrawAndGuessAttemptView]
     /// The word pick is queued and the server does not know the round yet.
     let isOnlyOnThisPhone: Bool
@@ -59,9 +65,12 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
         endedAt = round.endedAt
         solveMs = round.solveMs
         speedBonus = round.speedBonus
-        memoryID = round.memoryID
-        savedByUserID = round.savedByUserID
-        mySaveResponse = round.mySaveResponse
+        firstTryBonus = round.firstTryBonus
+        hintsUsed = round.hintsUsed
+        personalBest = round.personalBest
+        guesserReaction = round.guesserReaction
+        drawerResultSeenAt = round.drawerResultSeenAt
+        guesserResultSeenAt = round.guesserResultSeenAt
         attempts = round.attempts.map {
             DrawAndGuessAttemptView(
                 id: $0.id,
@@ -93,9 +102,12 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
         endedAt = nil
         solveMs = nil
         speedBonus = 0
-        memoryID = nil
-        savedByUserID = nil
-        mySaveResponse = nil
+        firstTryBonus = 0
+        hintsUsed = 0
+        personalBest = false
+        guesserReaction = nil
+        drawerResultSeenAt = nil
+        guesserResultSeenAt = nil
         attempts = []
         isOnlyOnThisPhone = true
     }
@@ -106,5 +118,10 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
 
     var isFinished: Bool {
         state.isFinished
+    }
+
+    /// The server has this person's "I have seen the result" for the round.
+    func hasSeenResult(_ userID: UUID) -> Bool {
+        (drawerUserID == userID ? drawerResultSeenAt : guesserResultSeenAt) != nil
     }
 }

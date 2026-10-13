@@ -89,7 +89,6 @@ extension DrawAndGuessViewModel {
         loadedDrawingVersion += 1
         replayTimeline = DrawAndGuessReplayTimeline(drawing: decoded)
         startReplayIfNeeded()
-        updateSavePrompt()
         markSeenIfNeeded()
         // The drawer may already follow the partner's replay, which needed this drawing.
         updatePartnerGuess()
@@ -177,11 +176,11 @@ extension DrawAndGuessViewModel {
 
     // MARK: - First look
 
-    /// Tells the server when the guesser first saw the drawing. The 30-second
-    /// speed bonus counts from it. The first call wins on the server. Nothing is
+    /// Tells the server when the guesser first saw the drawing. The speed
+    /// bonus counts from it. The first call wins on the server. Nothing is
     /// seen while the screen is closed or the app is in the background. A live
     /// canvas counts once the drawer's first stroke is on it, so a drawer who
-    /// has not started yet does not use up the guesser's 30 seconds.
+    /// has not started yet does not use up the guesser's bonus time.
     func markSeenIfNeeded() {
         guard isActive, !isStopped,
               let userID = currentUserID, let round, !round.isFinished, round.guesserUserID == userID,

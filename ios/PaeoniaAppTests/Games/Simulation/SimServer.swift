@@ -26,28 +26,23 @@ final class SimServer {
         var endedAt: Date?
         var solveMs: Int?
         var speedBonus = 0
-        var memoryID: UUID?
-        var savedBy: UUID?
-        var notNow: Set<UUID> = []
+        var firstTryBonus = 0
+        var hintsUsed = 0
+        var personalBest = false
+        var reaction: DrawAndGuessReaction?
+        var drawerSeenAt: Date?
+        var guesserSeenAt: Date?
         var attempts: [RemoteDrawAndGuessAttempt] = []
     }
 
     struct Asset {
         let id: UUID
         let owner: UUID
-        /// The round a game drawing was reserved for. Nil for a memory photo.
-        let roundID: UUID?
+        /// The round the drawing was reserved for.
+        let roundID: UUID
         let data: Data
         let createdAt: Date
         var queuedForDelete = false
-    }
-
-    struct Memory {
-        let id: UUID
-        let roundID: UUID
-        let assetID: UUID
-        let title: String
-        let createdBy: UUID
     }
 
     struct Game {
@@ -82,7 +77,6 @@ final class SimServer {
     private(set) var game: Game?
     private(set) var rounds: [Round] = []
     private(set) var assets: [UUID: Asset] = [:]
-    private(set) var memories: [Memory] = []
     private var presence: [UUID: Date] = [:]
     private var invites: [UUID: Date] = [:]
     private var usedWords: [String: Set<String>] = [:]
@@ -399,22 +393,30 @@ final class SimServer {
 
     static let maxStoredSolveMs = 30 * 24 * 60 * 60 * 1_000
 
-    func submitGuess(
+    func submitGuess( // swiftlint:disable:this function_parameter_count
         user: UUID,
         roundID: UUID,
         guess rawGuess: String,
-        speedBonus: Bool?,
+        speedBonus: Int?,
         solveMs: Int?,
+        hintsUsed: Int?,
         operation: SyncClientOperation
     ) throws -> RemoteGuessResult {
         let guess = Self.normalizeWordText(rawGuess)
         guard !guess.isEmpty, guess.count <= 40 else { throw Self.fail("23514", "guess must be 1 to 40 characters") }
+        if let speedBonus, !(0...2).contains(speedBonus) {
+            throw Self.fail("23514", "speed bonus must be 0, 1, or 2")
+        }
         if let solveMs, solveMs < 0 {
             throw Self.fail("23514", "solve time must be a number of milliseconds from 0 up")
+        }
+        if let hintsUsed, hintsUsed < 0 {
+            throw Self.fail("23514", "hints used must be a whole number from 0 up")
         }
         let request = [
             "submit_guess", roundID.uuidString, guess,
             speedBonus.map { "\($0)" } ?? "null", solveMs.map { "\($0)" } ?? "null",
+            hintsUsed.map { "\($0)" } ?? "null",
         ]
         return try runOperation(user, operation, request: request) {
             let index = try requireRound(roundID)
@@ -422,6 +424,11 @@ final class SimServer {
             guard round.guesser == user else { throw Self.fail("42501", "only the guesser can guess") }
             guard !round.state.isFinished else { throw Self.fail("23514", "this round is already finished") }
             let correct = guess == round.word
+            // A hint can reveal at most all letters but one.
+            if correct, let hintsUsed, hintsUsed > round.word.filter({ $0 != " " }).count - 1 {
+                throw Self.fail("23514", "hints used is more than the word allows")
+            }
+            let isFirstAttempt = round.attempts.isEmpty
             let attempt = RemoteDrawAndGuessAttempt(id: UUID(), userID: user, text: guess, correct: correct, createdAt: now)
             round.attempts.append(attempt)
             guard correct else {
@@ -433,21 +440,30 @@ final class SimServer {
                     roundState: round.state,
                     points: 0,
                     speedBonus: 0,
+                    firstTryBonus: 0,
+                    hintsUsed: 0,
+                    personalBest: false,
                     solveMs: nil,
                     createdAt: now
                 )
             }
+            let hints = hintsUsed ?? 0
             let scored = scoreSolve(round)
-            let bonus = speedBonus.map { $0 ? 1 : 0 } ?? scored.bonus
+            let bonus = hints > 0 ? 0 : (speedBonus ?? scored.bonus)
+            let firstTry = hints == 0 && isFirstAttempt ? 1 : 0
             let storedSolveMs = solveMs.map { min($0, Self.maxStoredSolveMs) } ?? scored.solveMs
+            let best = hints == 0 && storedSolveMs.map { isPersonalBest(guesser: user, solveMs: $0) } == true
             round.state = .solved
             round.endedAt = now
             round.solveMs = storedSolveMs
             round.speedBonus = bonus
+            round.firstTryBonus = firstTry
+            round.hintsUsed = hints
+            round.personalBest = best
             rounds[index] = round
             if var game {
                 game.points[round.drawer, default: 0] += round.points
-                game.points[user, default: 0] += round.points + bonus
+                game.points[user, default: 0] += round.points + bonus + firstTry
                 game.shared += round.points
                 beginTurn(&game, drawer: user)
                 self.game = game
@@ -459,17 +475,28 @@ final class SimServer {
                 roundState: .solved,
                 points: round.points,
                 speedBonus: bonus,
+                firstTryBonus: firstTry,
+                hintsUsed: hints,
+                personalBest: best,
                 solveMs: storedSolveMs,
                 createdAt: now
             )
         }
     }
 
-    /// `scoreSolve`.
+    /// `scoreSolve`: 2 within 15 seconds of the first look, 1 within 30, else 0.
     private func scoreSolve(_ round: Round) -> (bonus: Int, solveMs: Int?) {
         guard let seen = round.firstSeenAt else { return (0, nil) }
         let solveMs = max(0, Int(now.timeIntervalSince(seen) * 1_000))
-        return (solveMs <= 30_000 ? 1 : 0, solveMs)
+        return (solveMs <= 15_000 ? 2 : solveMs <= 30_000 ? 1 : 0, solveMs)
+    }
+
+    /// `isPersonalBest`: faster than every earlier hint-free solve by the guesser, and there is one.
+    private func isPersonalBest(guesser: UUID, solveMs: Int) -> Bool {
+        let earlier = rounds.filter {
+            $0.guesser == guesser && $0.state == .solved && $0.hintsUsed == 0 && $0.solveMs != nil
+        }
+        return !earlier.isEmpty && earlier.allSatisfy { solveMs < ($0.solveMs ?? 0) }
     }
 
     func giveUp(user: UUID, roundID: UUID, operation: SyncClientOperation) throws -> RemoteGiveUpResult {
@@ -490,68 +517,50 @@ final class SimServer {
         }
     }
 
-    // MARK: - Save to Memories
+    // MARK: - After the round
 
-    func respondSavePrompt(user: UUID, roundID: UUID) throws {
-        let index = try requireRound(roundID)
-        guard rounds[index].state.isFinished else { throw Self.fail("23514", "the round is not finished yet") }
-        if rounds[index].notNow.insert(user).inserted {
-            changed()
-        }
-    }
-
-    func saveRound(
-        user: UUID,
-        roundID: UUID,
-        memoryID: UUID,
-        assetID: UUID,
-        memoryDate _: String
-    ) throws -> RemoteSaveRoundResult {
+    /// `mark_round_result_seen`: the first time wins, for the caller's own role.
+    func markResultSeen(user: UUID, roundID: UUID) throws -> RemoteResultSeenResult {
         let index = try requireRound(roundID)
         var round = rounds[index]
         guard round.state.isFinished else { throw Self.fail("23514", "the round is not finished yet") }
-        if let existing = round.memoryID {
-            // Only an upload no memory uses is deleted, as `queueOrphanedMediaAssetForDelete` checks.
-            if let asset = assets[assetID], asset.owner == user, !memories.contains(where: { $0.assetID == assetID }) {
-                assets[assetID]?.queuedForDelete = true
-            }
-            return RemoteSaveRoundResult(memoryID: existing, created: false)
+        let seenAt: Date
+        var isFirstTime = false
+        if round.drawer == user {
+            isFirstTime = round.drawerSeenAt == nil
+            seenAt = round.drawerSeenAt ?? now
+            round.drawerSeenAt = seenAt
+        } else if round.guesser == user {
+            isFirstTime = round.guesserSeenAt == nil
+            seenAt = round.guesserSeenAt ?? now
+            round.guesserSeenAt = seenAt
+        } else {
+            throw Self.fail("42501", "only the drawer or the guesser can see this result")
         }
-        guard !memories.contains(where: { $0.id == memoryID }) else {
-            throw Self.fail("23505", "duplicate key value violates unique constraint \"memories_pkey\"")
+        if isFirstTime {
+            rounds[index] = round
+            changed()
         }
-        guard let asset = assets[assetID], asset.owner == user, asset.roundID == nil,
-              !memories.contains(where: { $0.assetID == assetID })
-        else {
-            throw Self.fail("23514", "memory media asset is not usable")
+        return RemoteResultSeenResult(roundID: roundID, resultSeenAt: seenAt)
+    }
+
+    /// `set_round_reaction`: the guesser's reaction to a finished round. The last write wins.
+    func setReaction(user: UUID, roundID: UUID, reaction: DrawAndGuessReaction?) throws -> RemoteReactionResult {
+        let index = try requireRound(roundID)
+        guard rounds[index].guesser == user else { throw Self.fail("42501", "only the guesser can react") }
+        guard rounds[index].state.isFinished else { throw Self.fail("23514", "the round is not finished yet") }
+        if rounds[index].reaction != reaction {
+            rounds[index].reaction = reaction
+            changed()
         }
-        memories.append(Memory(
-            id: memoryID,
-            roundID: roundID,
-            assetID: assetID,
-            title: round.word.prefix(1).uppercased() + round.word.dropFirst(),
-            createdBy: user
-        ))
-        round.memoryID = memoryID
-        round.savedBy = user
-        rounds[index] = round
-        changed()
-        return RemoteSaveRoundResult(memoryID: memoryID, created: true)
+        return RemoteReactionResult(roundID: roundID, guesserReaction: reaction)
     }
 
     // MARK: - Uploads
 
     /// Reserve, upload and finalize in one step. The same reservation gives the same asset.
-    func uploadDrawing(user: UUID, data: Data, roundID: UUID, reserveOperation: SyncClientOperation) throws -> UUID {
-        try upload(user: user, data: data, roundID: roundID, reserveOperation: reserveOperation)
-    }
-
-    func uploadMemoryPhoto(user: UUID, data: Data, reserveOperation: SyncClientOperation) throws -> UUID {
-        try upload(user: user, data: data, roundID: nil, reserveOperation: reserveOperation)
-    }
-
     /// A replayed reservation returns its asset, unless the orphan sweep deleted it.
-    private func upload(user: UUID, data: Data, roundID: UUID?, reserveOperation: SyncClientOperation) throws -> UUID {
+    func uploadDrawing(user: UUID, data: Data, roundID: UUID, reserveOperation: SyncClientOperation) throws -> UUID {
         if let existing = uploadsByReservation[reserveOperation.id] {
             guard assets[existing]?.queuedForDelete == false else {
                 throw Self.fail("42501", "media upload reservation is not available")
@@ -568,8 +577,7 @@ final class SimServer {
     func sweepOrphanedUploads() -> Int {
         var swept = 0
         for (id, asset) in assets where !asset.queuedForDelete && now.timeIntervalSince(asset.createdAt) > 7 * 86_400 {
-            let used = rounds.contains { $0.drawingAssetID == id } || memories.contains { $0.assetID == id }
-            if !used {
+            if !rounds.contains(where: { $0.drawingAssetID == id }) {
                 assets[id]?.queuedForDelete = true
                 swept += 1
             }
@@ -667,10 +675,14 @@ final class SimServer {
             endedAt: round.endedAt,
             solveMs: round.solveMs,
             speedBonus: round.speedBonus,
-            memoryID: round.memoryID,
-            savedByUserID: round.savedBy,
-            mySaveResponse: round.notNow.contains(user) ? .notNow : nil,
-            partnerSaveResponse: round.notNow.contains(partner(of: user)) ? .notNow : nil,
+            firstTryBonus: round.firstTryBonus,
+            hintsUsed: round.hintsUsed,
+            personalBest: round.personalBest,
+            guesserReaction: round.reaction,
+            // The simulation does not model stars.
+            starredByMe: false,
+            drawerResultSeenAt: round.drawerSeenAt,
+            guesserResultSeenAt: round.guesserSeenAt,
             attempts: Array(round.attempts.suffix(200)),
             attemptCount: round.attempts.count
         )

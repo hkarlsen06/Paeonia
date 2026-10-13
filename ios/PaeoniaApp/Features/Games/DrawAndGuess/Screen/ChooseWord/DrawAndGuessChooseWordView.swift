@@ -33,7 +33,6 @@ struct DrawAndGuessChooseWordView: View {
                 if !(isWritingOwn && verticalSizeClass == .compact) {
                     heading
                 }
-                DrawAndGuessPendingSaveRow(viewModel: viewModel)
                 if viewModel.choicesUnavailable, !isWritingOwn {
                     offline
                 } else {

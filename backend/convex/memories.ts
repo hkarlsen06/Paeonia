@@ -91,7 +91,7 @@ export async function assertMemoryMediaAllowed(
  * Inserts a memories row. Runs `assert_memory_member_allowed` first and the
  * `enqueue_memory_created_notification` trigger after.
  */
-export async function insertMemory(
+async function insertMemory(
   ctx: WriterCtx,
   row: {
     id: string;
@@ -202,7 +202,7 @@ async function requireWritableMemory(ctx: ReaderCtx, userId: string, memoryId: s
 }
 
 /** Port of `internal.attach_memory_media_assets`. Returns the new memory_media ids. */
-export async function attachMemoryMediaAssets(
+async function attachMemoryMediaAssets(
   ctx: WriterCtx,
   userId: string,
   memoryId: string,

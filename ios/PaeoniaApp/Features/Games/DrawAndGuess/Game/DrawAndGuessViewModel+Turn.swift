@@ -92,7 +92,7 @@ extension DrawAndGuessViewModel {
 
     /// The partner solved the round while this person was still drawing, or the
     /// round ended while they were away from it. The drawing goes out as it is,
-    /// so the reveal and Memories have it. It comes from the canvas when the
+    /// so the reveal and the history have it. It comes from the canvas when the
     /// canvas holds the round, with a stroke in progress finished first, and
     /// otherwise from the draft saved on the phone.
     func sendLiveDrawingIfSolved() {
@@ -188,7 +188,8 @@ extension DrawAndGuessViewModel {
             isCorrect: isCorrect,
             createdAt: now,
             speedBonus: claim?.speedBonus,
-            solveMs: claim?.solveMs
+            solveMs: claim?.solveMs,
+            hintsUsed: claim?.hintsUsed
         )
         Task {
             await enqueue(.submitGameGuess, scope: "game-guess:\(round.id.uuidString.lowercased())", payload: payload)
@@ -223,7 +224,7 @@ extension DrawAndGuessViewModel {
         if prefersReducedMotion {
             slots.clear()
         } else {
-            for slot in slots.slots.reversed() where slot.tile != nil {
+            for slot in slots.slots.reversed() where slot.tile != nil && !slot.isHint {
                 slots.remove(at: slot.id)
                 try? await sleep(Self.tileReturnGap)
                 guard !Task.isCancelled else { return }

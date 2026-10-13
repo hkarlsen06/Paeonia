@@ -11,10 +11,17 @@ typealias GameFixture = DeveloperGamesFixture
 final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
     struct Failure: Error {}
 
-    /// What a guess sent along about the speed bonus.
+    /// What a guess sent along about the speed bonus and the hints.
     struct GuessClaim: Equatable {
-        var speedBonus: Bool?
+        var speedBonus: Int?
         var solveMs: Int?
+        var hintsUsed: Int?
+    }
+
+    /// A reaction the phone sent. The reaction is nil when it cleared one.
+    struct SentReaction: Equatable {
+        var roundID: UUID
+        var reaction: DrawAndGuessReaction?
     }
 
     private struct Record {
@@ -25,7 +32,8 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         var guesses: [String] = []
         var guessClaims: [GuessClaim] = []
         var seenRounds: [UUID] = []
-        var savePromptAnswers: [UUID] = []
+        var reactions: [SentReaction] = []
+        var resultSeenRounds: [UUID] = []
         var inviteCount = 0
         var failing: Set<String> = []
         var pickError: PaeoniaConvexError?
@@ -33,9 +41,15 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         var guessError: PaeoniaConvexError?
         var guessErrorOnlyWithClaim = false
         var giveUpError: PaeoniaConvexError?
+        var reactionError: PaeoniaConvexError?
         var inviteError: (any Error)?
         var stateToLoad: RemoteDrawAndGuessState?
         var roundsToLoad: [UUID: RemoteDrawAndGuessRound] = [:]
+        var historyRounds: [RemoteDrawAndGuessHistoryRound] = []
+        var historyRequests: [HistoryRequest] = []
+        var recordsToLoad: RemoteDrawAndGuessRecords?
+        var starWrites: [StarWrite] = []
+        var starError: PaeoniaConvexError?
     }
 
     private let lock = NSLock()
@@ -56,7 +70,8 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
     var guesses: [String] { read(\.guesses) }
     var guessClaims: [GuessClaim] { read(\.guessClaims) }
     var seenRounds: [UUID] { read(\.seenRounds) }
-    var savePromptAnswers: [UUID] { read(\.savePromptAnswers) }
+    var reactions: [SentReaction] { read(\.reactions) }
+    var resultSeenRounds: [UUID] { read(\.resultSeenRounds) }
     var inviteCount: Int { read(\.inviteCount) }
 
     func fail(_ name: String) {
@@ -86,6 +101,10 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
 
     func setGiveUpError(_ error: PaeoniaConvexError?) {
         write { $0.giveUpError = error }
+    }
+
+    func setReactionError(_ error: PaeoniaConvexError?) {
+        write { $0.reactionError = error }
     }
 
     func setInviteError(_ error: (any Error)?) {
@@ -169,20 +188,22 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         return RemoteMarkSeenResult(guesserFirstSeenAt: GameFixture.now)
     }
 
-    func submitGuess(
+    func submitGuess( // swiftlint:disable:this function_parameter_count
         roundID _: UUID,
         guess: String,
-        speedBonus: Bool?,
+        speedBonus: Int?,
         solveMs: Int?,
+        hintsUsed: Int?,
         operation _: SyncClientOperation
     ) async throws -> RemoteGuessResult {
         try begin("guess")
-        if let error = read(\.guessError), !read(\.guessErrorOnlyWithClaim) || speedBonus != nil || solveMs != nil {
+        if let error = read(\.guessError),
+           !read(\.guessErrorOnlyWithClaim) || speedBonus != nil || solveMs != nil || hintsUsed != nil {
             throw error
         }
         write {
             $0.guesses.append(guess)
-            $0.guessClaims.append(GuessClaim(speedBonus: speedBonus, solveMs: solveMs))
+            $0.guessClaims.append(GuessClaim(speedBonus: speedBonus, solveMs: solveMs, hintsUsed: hintsUsed))
         }
         return RemoteGuessResult(
             guessID: UUID(),
@@ -190,6 +211,9 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
             roundState: .guessing,
             points: 0,
             speedBonus: 0,
+            firstTryBonus: 0,
+            hintsUsed: 0,
+            personalBest: false,
             solveMs: nil,
             createdAt: GameFixture.now
         )
@@ -201,19 +225,17 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
         return RemoteGiveUpResult(roundID: roundID, roundState: .missed)
     }
 
-    func respondSavePrompt(roundID: UUID) async throws {
-        try begin("respondSavePrompt")
-        write { $0.savePromptAnswers.append(roundID) }
+    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) async throws -> RemoteReactionResult {
+        try begin("reaction")
+        if let error = read(\.reactionError) { throw error }
+        write { $0.reactions.append(SentReaction(roundID: roundID, reaction: reaction)) }
+        return RemoteReactionResult(roundID: roundID, guesserReaction: reaction)
     }
 
-    func saveRoundToMemories(
-        roundID _: UUID,
-        memoryID: UUID,
-        mediaAssetID _: UUID,
-        memoryDate _: String
-    ) async throws -> RemoteSaveRoundResult {
-        try begin("saveRound")
-        return RemoteSaveRoundResult(memoryID: memoryID, created: true)
+    func markRoundResultSeen(roundID: UUID) async throws -> RemoteResultSeenResult {
+        try begin("resultSeen")
+        write { $0.resultSeenRounds.append(roundID) }
+        return RemoteResultSeenResult(roundID: roundID, resultSeenAt: GameFixture.now)
     }
 
     func sendInvite() async throws -> RemoteInviteResult {
@@ -228,6 +250,53 @@ final class ScriptedGamesGateway: GamesGateway, @unchecked Sendable {
             $0.calls.append("presence")
             $0.presence.append(isPresent)
         }
+    }
+
+    // MARK: History and stars
+
+    var historyRequests: [HistoryRequest] { read(\.historyRequests) }
+    var starWrites: [StarWrite] { read(\.starWrites) }
+
+    /// The rounds the history holds, newest first. The gateway pages them the way the server does.
+    func setHistory(_ rounds: [RemoteDrawAndGuessHistoryRound]) {
+        write { $0.historyRounds = rounds }
+    }
+
+    func setStarError(_ error: PaeoniaConvexError?) {
+        write { $0.starError = error }
+    }
+
+    func setRecords(_ records: RemoteDrawAndGuessRecords?) {
+        write { $0.recordsToLoad = records }
+    }
+
+    func loadDrawAndGuessHistory(
+        starredOnly: Bool,
+        beforeRoundNumber: Int?,
+        limit: Int
+    ) async throws -> RemoteDrawAndGuessHistoryPage {
+        let request = HistoryRequest(starredOnly: starredOnly, beforeRoundNumber: beforeRoundNumber, limit: limit)
+        write { $0.historyRequests.append(request) }
+        try begin("history")
+        return DeveloperGamesFixture.historyPage(
+            from: read(\.historyRounds),
+            starredOnly: starredOnly,
+            before: beforeRoundNumber,
+            limit: limit
+        )
+    }
+
+    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
+        try begin("records")
+        guard let records = read(\.recordsToLoad) else { throw Failure() }
+        return records
+    }
+
+    func setRoundStar(roundID: UUID, starred: Bool) async throws -> RemoteRoundStarResult {
+        try begin("star")
+        if let error = read(\.starError) { throw error }
+        write { $0.starWrites.append(StarWrite(roundID: roundID, starred: starred)) }
+        return RemoteRoundStarResult(roundID: roundID, starred: starred)
     }
 }
 

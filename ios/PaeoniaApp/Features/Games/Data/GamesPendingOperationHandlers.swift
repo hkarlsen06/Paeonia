@@ -335,7 +335,8 @@ struct SubmitGameDrawingPendingOperationHandler: PendingSyncOperationHandling {
 func hasEarlierGameMove(
     in roundID: UUID,
     before operation: PendingSyncOperationSnapshot,
-    context: SyncContext
+    context: SyncContext,
+    kinds: [SyncPendingOperationKind] = [.submitGameGuess, .giveUpGameRound]
 ) async throws -> Bool {
     struct Move: Decodable {
         let roundID: UUID
@@ -343,7 +344,7 @@ func hasEarlierGameMove(
     let order = { (snapshot: PendingSyncOperationSnapshot) in
         (snapshot.operation.localCreatedAt, snapshot.operation.clientSequence)
     }
-    for kind in [SyncPendingOperationKind.submitGameGuess, .giveUpGameRound] {
+    for kind in kinds {
         let earlier = try await context.pendingOperationStore
             .inFlightOperations(ownerUserID: operation.ownerUserID, kind: kind)
             .contains { other in
@@ -400,6 +401,7 @@ struct SubmitGameGuessPendingOperationHandler: PendingSyncOperationHandling {
                 guess: payload.guess,
                 speedBonus: payload.speedBonus,
                 solveMs: payload.solveMs,
+                hintsUsed: payload.hintsUsed,
                 operation: operation.operation
             )
             return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)

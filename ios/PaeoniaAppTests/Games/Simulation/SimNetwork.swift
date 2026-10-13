@@ -141,7 +141,7 @@ final class SimNetwork {
             log.add("\(name) \(callName) refused: \(error)")
             throw error
         }
-        if ["pick", "submitDrawing", "guess", "giveUp", "saveRound", "upload", "uploadPhoto"].contains(callName) {
+        if ["pick", "submitDrawing", "guess", "giveUp", "reaction", "resultSeen", "upload"].contains(callName) {
             log.add("\(name) \(callName) applied")
         }
         if fault == .dropAfter {
@@ -208,11 +208,12 @@ final class SimGateway: GamesGateway, @unchecked Sendable {
         try await call("markSeen") { try $0.markSeen(user: $1, roundID: roundID) }
     }
 
-    func submitGuess(
+    func submitGuess( // swiftlint:disable:this function_parameter_count
         roundID: UUID,
         guess: String,
-        speedBonus: Bool?,
+        speedBonus: Int?,
         solveMs: Int?,
+        hintsUsed: Int?,
         operation: SyncClientOperation
     ) async throws -> RemoteGuessResult {
         try await call("guess") {
@@ -222,6 +223,7 @@ final class SimGateway: GamesGateway, @unchecked Sendable {
                 guess: guess,
                 speedBonus: speedBonus,
                 solveMs: solveMs,
+                hintsUsed: hintsUsed,
                 operation: operation
             )
         }
@@ -231,19 +233,12 @@ final class SimGateway: GamesGateway, @unchecked Sendable {
         try await call("giveUp") { try $0.giveUp(user: $1, roundID: roundID, operation: operation) }
     }
 
-    func respondSavePrompt(roundID: UUID) async throws {
-        try await call("notNow") { try $0.respondSavePrompt(user: $1, roundID: roundID) }
+    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) async throws -> RemoteReactionResult {
+        try await call("reaction") { try $0.setReaction(user: $1, roundID: roundID, reaction: reaction) }
     }
 
-    func saveRoundToMemories(
-        roundID: UUID,
-        memoryID: UUID,
-        mediaAssetID: UUID,
-        memoryDate: String
-    ) async throws -> RemoteSaveRoundResult {
-        try await call("saveRound") {
-            try $0.saveRound(user: $1, roundID: roundID, memoryID: memoryID, assetID: mediaAssetID, memoryDate: memoryDate)
-        }
+    func markRoundResultSeen(roundID: UUID) async throws -> RemoteResultSeenResult {
+        try await call("resultSeen") { try $0.markResultSeen(user: $1, roundID: roundID) }
     }
 
     func sendInvite() async throws -> RemoteInviteResult {
@@ -257,6 +252,24 @@ final class SimGateway: GamesGateway, @unchecked Sendable {
 
     func setPresence(_ isPresent: Bool) async throws {
         try await call("presence") { $0.setPresence(user: $1, present: isPresent) }
+    }
+
+    // The simulation plays rounds. "Our drawings" has its own tests, so these stay offline.
+
+    func loadDrawAndGuessHistory(
+        starredOnly _: Bool,
+        beforeRoundNumber _: Int?,
+        limit _: Int
+    ) async throws -> RemoteDrawAndGuessHistoryPage {
+        throw URLError(.notConnectedToInternet)
+    }
+
+    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
+        throw URLError(.notConnectedToInternet)
+    }
+
+    func setRoundStar(roundID _: UUID, starred _: Bool) async throws -> RemoteRoundStarResult {
+        throw URLError(.notConnectedToInternet)
     }
 }
 
@@ -300,39 +313,5 @@ final class SimDrawingTransfer: GameDrawingTransferring, @unchecked Sendable {
     @MainActor
     private func download(_ assetID: UUID) async throws -> Data {
         try await network.call("download", from: incarnation) { try server.download(assetID: assetID) }
-    }
-}
-
-/// Memory photo uploads through the phone's network.
-final class SimMemoryUploader: MemoryMediaUploading, @unchecked Sendable {
-    private let user: UUID
-    private let server: SimServer
-    private let network: SimNetwork
-    private let incarnation: Int
-
-    @MainActor
-    init(user: UUID, server: SimServer, network: SimNetwork) {
-        self.user = user
-        self.server = server
-        self.network = network
-        incarnation = network.incarnation
-    }
-
-    func uploadMedia(
-        _ media: MemoryUploadMedia,
-        memoryMediaID: UUID,
-        coupleID _: UUID,
-        reserveOperation: SyncClientOperation,
-        finalizeOperation _: SyncClientOperation
-    ) async throws -> MemoryMediaUploadResult {
-        let assetID = try await upload(media.data, reserveOperation: reserveOperation)
-        return MemoryMediaUploadResult(memoryMediaID: memoryMediaID, mediaAssetID: assetID)
-    }
-
-    @MainActor
-    private func upload(_ data: Data, reserveOperation: SyncClientOperation) async throws -> UUID {
-        try await network.call("uploadPhoto", from: incarnation) {
-            try server.uploadMemoryPhoto(user: user, data: data, reserveOperation: reserveOperation)
-        }
     }
 }

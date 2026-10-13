@@ -135,7 +135,9 @@ describe("access", () => {
     const other = await createCouple(s.t);
     expect((await failure(guess(other.first, picked.round_id, "cat"))).code).toBe("42501");
     expect((await failure(other.first.as.mutation(api.games.mark_round_seen, { p_round_id: picked.round_id }))).code).toBe("42501");
-    expect((await failure(other.first.as.mutation(api.games.respond_save_prompt, { p_round_id: picked.round_id }))).code).toBe("42501");
+    expect((await failure(other.first.as.mutation(api.games.mark_round_result_seen, { p_round_id: picked.round_id }))).code).toBe("42501");
+    expect((await failure(other.first.as.mutation(api.games.set_round_star, { p_round_id: picked.round_id, p_starred: true }))).code).toBe("42501");
+    expect((await failure(other.first.as.mutation(api.games.set_round_reaction, { p_round_id: picked.round_id, p_reaction: "love" }))).code).toBe("42501");
     expect(await view(other.first)).toMatchObject({ game: null, current_round: null });
   });
 
@@ -523,7 +525,7 @@ describe("guessing", () => {
     await s.b.as.mutation(api.games.mark_round_seen, { p_round_id: picked.round_id });
     tick(8);
     const solved = await guess(s.b, picked.round_id, picked.word);
-    expect(solved).toMatchObject({ correct: true, round_state: "solved", speed_bonus: 1, solve_ms: 8000 });
+    expect(solved).toMatchObject({ correct: true, round_state: "solved", speed_bonus: 2, solve_ms: 8000 });
 
     // The round is over before any drawing exists, and the guesser already draws next.
     let data = await view(s.a);
@@ -575,22 +577,22 @@ describe("scoring", () => {
   test("every solve adds the word points to the shared total and to each personal total, in either play style", async () => {
     for (const playStyle of ["together", "against"] as const) {
       const s = await startGame({ playStyle });
-      // a draws an easy word, b guesses 10 seconds after seeing it: b gets 1 + the speed bonus, a gets 1.
+      // a draws an easy word, b guesses 10 seconds after seeing it on the first try: b gets 1 + 2 + 1, a gets 1.
       await playRound(s, s.a, s.b, "easy", 10);
       let data = await view(s.a);
-      expect(data.game).toMatchObject({ shared_points: 1, my_points: 1, partner_points: 2 });
-      // b draws a hard word, a guesses 40 seconds after seeing it: a gets 3, b gets 3.
+      expect(data.game).toMatchObject({ shared_points: 1, my_points: 1, partner_points: 4 });
+      // b draws a hard word, a guesses 40 seconds after seeing it on the first try: a gets 3 + 0 + 1, b gets 3.
       await playRound(s, s.b, s.a, "hard", 40);
       data = await view(s.a);
-      expect(data.game).toMatchObject({ shared_points: 4, my_points: 4, partner_points: 5 });
+      expect(data.game).toMatchObject({ shared_points: 4, my_points: 5, partner_points: 7 });
       data = await view(s.b);
-      expect(data.game).toMatchObject({ shared_points: 4, my_points: 5, partner_points: 4 });
+      expect(data.game).toMatchObject({ shared_points: 4, my_points: 7, partner_points: 5 });
       expect(data.settings?.play_style).toBe(playStyle);
       // A missed round changes nothing.
       const third = await pick(s.a, s.gameId, "hard");
       await sendDrawing(s, s.a, third.round_id);
       await s.b.as.mutation(api.games.give_up_round, { ...op(), p_round_id: third.round_id });
-      expect((await view(s.a)).game).toMatchObject({ shared_points: 4, my_points: 4, partner_points: 5 });
+      expect((await view(s.a)).game).toMatchObject({ shared_points: 4, my_points: 5, partner_points: 7 });
       await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     }
   });
@@ -607,7 +609,7 @@ describe("scoring", () => {
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("the speed bonus needs a guess within 30 seconds of first seeing the drawing", async () => {
+  test("the speed bonus is 2 within 15 seconds, 1 within 30, and 0 after that", async () => {
     const s = await startGame({ playStyle: "against" });
     const bonus = async (seconds: number | null) => {
       const { result } = await playRound(s, s.a, s.b, "easy", seconds);
@@ -617,39 +619,41 @@ describe("scoring", () => {
       await s.a.as.mutation(api.games.give_up_round, { ...op(), p_round_id: back.round_id });
       return result;
     };
+    expect(await bonus(15)).toMatchObject({ points: 1, speed_bonus: 2, first_try_bonus: 1, solve_ms: 15_000 });
+    expect(await bonus(16)).toMatchObject({ points: 1, speed_bonus: 1, first_try_bonus: 1, solve_ms: 16_000 });
     expect(await bonus(30)).toMatchObject({ points: 1, speed_bonus: 1, solve_ms: 30_000 });
     expect(await bonus(31)).toMatchObject({ points: 1, speed_bonus: 0, solve_ms: 31_000 });
     expect(await bonus(null)).toMatchObject({ points: 1, speed_bonus: 0, solve_ms: null });
     const data = await view(s.b);
-    // b scored 1 + 1, 1, 1. a scored 1 for each of the three, as the drawer.
-    expect(data.game).toMatchObject({ shared_points: 3, my_points: 4, partner_points: 3 });
+    // b scored 4, 3, 3, 2, 2 (word, speed, first try). a scored 1 for each of the five, as the drawer.
+    expect(data.game).toMatchObject({ shared_points: 5, my_points: 14, partner_points: 5 });
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
   describe("the phone's speed bonus claim", () => {
-    const claimed = (user: TestUser, roundId: string, text: string, claim: { p_speed_bonus?: boolean | null; p_solve_ms?: number | null }) =>
+    const claimed = (user: TestUser, roundId: string, text: string, claim: { p_speed_bonus?: number | null; p_solve_ms?: number | null }) =>
       user.as.mutation(api.games.submit_guess, { ...op(), p_round_id: roundId, p_guess: text, ...claim });
 
-    test("a true claim gives the bonus even when the server clock alone says no", async () => {
+    test("a claim gives the bonus tier on screen even when the server clock alone says no", async () => {
       const s = await startGame({ playStyle: "against" });
       const picked = await pick(s.a, s.gameId, "easy");
       await sendDrawing(s, s.a, picked.round_id);
       // The guess waited in the offline queue, and mark_round_seen never arrived.
       tick(300);
-      const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: true, p_solve_ms: 12_000 });
-      expect(solved).toMatchObject({ correct: true, points: 1, speed_bonus: 1, solve_ms: 12_000 });
-      expect((await view(s.b)).game).toMatchObject({ shared_points: 1, my_points: 2, partner_points: 1 });
+      const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: 2, p_solve_ms: 12_000 });
+      expect(solved).toMatchObject({ correct: true, points: 1, speed_bonus: 2, solve_ms: 12_000 });
+      expect((await view(s.b)).game).toMatchObject({ shared_points: 1, my_points: 4, partner_points: 1 });
       await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     });
 
-    test("a false claim gives no bonus even when the server clock alone says yes", async () => {
+    test("a claim of 0 gives no bonus even when the server clock alone says yes", async () => {
       const s = await startGame({ playStyle: "against" });
       const picked = await pick(s.a, s.gameId, "easy");
       await s.b.as.mutation(api.games.mark_round_seen, { p_round_id: picked.round_id });
       tick(5);
-      const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: false, p_solve_ms: 45_000 });
+      const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: 0, p_solve_ms: 45_000 });
       expect(solved).toMatchObject({ correct: true, speed_bonus: 0, solve_ms: 45_000 });
-      expect((await view(s.b)).game).toMatchObject({ my_points: 1 });
+      expect((await view(s.b)).game).toMatchObject({ my_points: 2 });
       await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     });
 
@@ -659,7 +663,7 @@ describe("scoring", () => {
       await s.b.as.mutation(api.games.mark_round_seen, { p_round_id: picked.round_id });
       tick(8);
       const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: null, p_solve_ms: null });
-      expect(solved).toMatchObject({ speed_bonus: 1, solve_ms: 8000 });
+      expect(solved).toMatchObject({ speed_bonus: 2, solve_ms: 8000 });
       await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     });
 
@@ -677,8 +681,17 @@ describe("scoring", () => {
       const s = await startGame();
       const picked = await pick(s.a, s.gameId, "easy");
       for (const p_solve_ms of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
-        expect((await failure(claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: true, p_solve_ms }))).code).toBe("23514");
+        expect((await failure(claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: 1, p_solve_ms }))).code).toBe("23514");
       }
+    });
+
+    test("a speed bonus claim outside 0, 1 and 2 is refused", async () => {
+      const s = await startGame();
+      const picked = await pick(s.a, s.gameId, "easy");
+      for (const p_speed_bonus of [3, -1, 1.5, Number.NaN]) {
+        expect((await failure(claimed(s.b, picked.round_id, picked.word, { p_speed_bonus }))).code).toBe("23514");
+      }
+      expect(await s.t.run((ctx) => ctx.db.query("game_guesses").collect())).toHaveLength(0);
     });
 
     test("a guess after more than 30 days still solves the round, with the solve time capped", async () => {
@@ -687,7 +700,7 @@ describe("scoring", () => {
       await sendDrawing(s, s.a, picked.round_id);
       await s.b.as.mutation(api.games.mark_round_seen, { p_round_id: picked.round_id });
       tick(31 * 24 * 3600);
-      const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: false, p_solve_ms: 31 * 24 * 3600 * 1000 });
+      const solved = await claimed(s.b, picked.round_id, picked.word, { p_speed_bonus: 0, p_solve_ms: 31 * 24 * 3600 * 1000 });
       expect(solved).toMatchObject({ correct: true, round_state: "solved", speed_bonus: 0, solve_ms: 30 * 24 * 3600 * 1000 });
       expect((await view(s.b)).game).toMatchObject({ state: "choosing_word", turn_user_id: s.b.userId, shared_points: 1 });
       await s.t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -697,13 +710,15 @@ describe("scoring", () => {
       const s = await startGame({ playStyle: "against" });
       const picked = await pick(s.a, s.gameId, "easy");
       await sendDrawing(s, s.a, picked.round_id);
-      const args = { ...op(), p_round_id: picked.round_id, p_guess: picked.word, p_speed_bonus: true, p_solve_ms: 4000 };
+      const args = { ...op(), p_round_id: picked.round_id, p_guess: picked.word, p_speed_bonus: 2, p_solve_ms: 4000 };
       const first = await s.b.as.mutation(api.games.submit_guess, args);
       expect(await s.b.as.mutation(api.games.submit_guess, args)).toEqual(first);
-      const changed = { ...args, p_speed_bonus: false };
+      const changed = { ...args, p_speed_bonus: 1 };
       expect((await failure(s.b.as.mutation(api.games.submit_guess, changed))).message).toContain("replay hash mismatch");
       const slower = { ...args, p_solve_ms: 5000 };
       expect((await failure(s.b.as.mutation(api.games.submit_guess, slower))).message).toContain("replay hash mismatch");
+      const hinted = { ...args, p_hints_used: 1 };
+      expect((await failure(s.b.as.mutation(api.games.submit_guess, hinted))).message).toContain("replay hash mismatch");
       await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     });
   });
@@ -855,15 +870,8 @@ describe("push drain", () => {
     await sendDrawing(s, s.a, picked.round_id);
     await s.a.as.mutation(api.games.send_game_invite, { p_kind: "draw_and_guess" });
     await guess(s.b, picked.round_id, "flying cat");
-    const image = await uploadAsset(s.t, s.b, photo(s.couple.coupleId));
-    await s.b.as.mutation(api.games.save_round_to_memories, {
-      p_round_id: picked.round_id,
-      p_memory_id: newUuid(),
-      p_media_asset_id: image.assetId,
-      p_memory_date: "2026-10-10",
-    });
     expect(kinds((await outbox(s.t)).filter((row) => row.last_attempt_at === undefined))).toEqual(
-      ["game_guessed", "game_invite", "game_turn_ready", "memory_created"],
+      ["game_guessed", "game_invite", "game_turn_ready"],
     );
     await endCouple(s.t, s.couple.coupleId, s.a.userId);
     expect(await claim(s)).toEqual([]);
@@ -969,96 +977,456 @@ describe("turn reminder", () => {
   });
 });
 
-describe("save to Memories", () => {
-  async function finishedRound(s: Setup) {
-    const picked = await pick(s.a, s.gameId, "custom", "flying cat");
+const guessWith = (user: TestUser, roundId: string, text: string, extra: Record<string, number | null> = {}) =>
+  user.as.mutation(api.games.submit_guess, { ...op(), p_round_id: roundId, p_guess: text, ...extra });
+
+/** `drawer` picks a word and sends the drawing, then `guesser` solves it on the first try. */
+async function finishedRound(s: Setup, drawer: TestUser, guesser: TestUser, extra: Record<string, number | null> = {}) {
+  const picked = await pick(drawer, s.gameId, "easy");
+  await sendDrawing(s, drawer, picked.round_id);
+  const result = await guessWith(guesser, picked.round_id, picked.word, extra);
+  return { picked, result };
+}
+
+describe("first-try and hint bonuses", () => {
+  test("a correct first attempt earns the first-try bonus, and an earlier wrong one removes it", async () => {
+    const s = await startGame({ playStyle: "against" });
+    const first = await finishedRound(s, s.a, s.b);
+    expect(first.result).toMatchObject({ points: 1, speed_bonus: 0, first_try_bonus: 1, hints_used: 0, personal_best: false });
+
+    const second = await pick(s.b, s.gameId, "easy");
+    await sendDrawing(s, s.b, second.round_id);
+    await guess(s.a, second.round_id, "nope");
+    expect(await guess(s.a, second.round_id, second.word)).toMatchObject({ first_try_bonus: 0, hints_used: 0 });
+
+    const data = await view(s.a);
+    expect(data.current_round).toMatchObject({ first_try_bonus: 0, hints_used: 0, attempt_count: 2 });
+    expect(data.recent_rounds[0]).toMatchObject({ first_try_bonus: 1, hints_used: 0 });
+    // a drew round 1 (1) and guessed round 2 (1). b guessed round 1 (1 + 1) and drew round 2 (1).
+    expect(data.game).toMatchObject({ shared_points: 2, my_points: 2, partner_points: 3 });
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("any hint zeroes the speed bonus and the first-try bonus, and the count is stored", async () => {
+    const s = await startGame({ playStyle: "against" });
+    const picked = await pick(s.a, s.gameId, "custom", "hot dog");
     await sendDrawing(s, s.a, picked.round_id);
-    await guess(s.b, picked.round_id, "flying cat");
-    return picked;
+    const result = await guessWith(s.b, picked.round_id, "hot dog", { p_speed_bonus: 2, p_solve_ms: 5000, p_hints_used: 2 });
+    expect(result).toMatchObject({ points: 2, speed_bonus: 0, first_try_bonus: 0, hints_used: 2, personal_best: false, solve_ms: 5000 });
+    const data = await view(s.a);
+    expect(data.current_round).toMatchObject({ speed_bonus: 0, first_try_bonus: 0, hints_used: 2 });
+    expect(data.game).toMatchObject({ shared_points: 2, my_points: 2, partner_points: 2 });
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a wrong guess ignores the hint count", async () => {
+    const s = await startGame();
+    const picked = await pick(s.a, s.gameId, "custom", "hot dog");
+    const wrong = await guessWith(s.b, picked.round_id, "cold dog", { p_hints_used: 99 });
+    expect(wrong).toMatchObject({ correct: false, hints_used: 0, first_try_bonus: 0 });
+    expect(await guessWith(s.b, picked.round_id, "hot dog", { p_hints_used: 1 })).toMatchObject({ hints_used: 1 });
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("hints are limited to the letters of the word minus one, and spaces do not count", async () => {
+    const s = await startGame();
+    const picked = await pick(s.a, s.gameId, "custom", "hot dog");
+    for (const p_hints_used of [6, -1, 1.5, Number.NaN]) {
+      expect((await failure(guessWith(s.b, picked.round_id, "hot dog", { p_hints_used }))).code).toBe("23514");
+    }
+    expect(await s.t.run((ctx) => ctx.db.query("game_guesses").collect())).toHaveLength(0);
+    expect(await guessWith(s.b, picked.round_id, "hot dog", { p_hints_used: 5 })).toMatchObject({ correct: true, hints_used: 5 });
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("personal best", () => {
+  test("a hint-free solve beats every earlier hint-free solve by the same guesser, and needs one earlier solve", async () => {
+    const s = await startGame({ playStyle: "against" });
+    // b guesses a's drawing, then draws one back that a gives up on, so b guesses again.
+    const bSolves = async (solveMs: number, hints = 0) => {
+      const { result } = await finishedRound(s, s.a, s.b, { p_speed_bonus: 0, p_solve_ms: solveMs, ...(hints ? { p_hints_used: hints } : {}) });
+      const back = await pick(s.b, s.gameId, "easy");
+      await sendDrawing(s, s.b, back.round_id);
+      await s.a.as.mutation(api.games.give_up_round, { ...op(), p_round_id: back.round_id });
+      return result;
+    };
+    expect((await bSolves(20_000)).personal_best).toBe(false);
+    const faster = await bSolves(10_000);
+    expect(faster.personal_best).toBe(true);
+    expect((await bSolves(15_000)).personal_best).toBe(false);
+    // A solve with a hint is never a personal best, and it does not count against later ones.
+    expect((await bSolves(1_000, 1)).personal_best).toBe(false);
+    expect((await bSolves(9_000)).personal_best).toBe(true);
+    expect((await bSolves(9_000)).personal_best).toBe(false);
+
+    const data = await view(s.a);
+    const stored = await s.t.run((ctx) => ctx.db.query("game_moves").collect());
+    expect(stored.filter((move) => move.personal_best === true)).toHaveLength(2);
+    expect(data.recent_rounds.filter((round) => round.personal_best)).toHaveLength(2);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a solve without a solve time is never a personal best", async () => {
+    const s = await startGame();
+    const first = await finishedRound(s, s.a, s.b, { p_solve_ms: 5000 });
+    expect(first.result.personal_best).toBe(false);
+    const back = await pick(s.b, s.gameId, "easy");
+    await s.a.as.mutation(api.games.give_up_round, { ...op(), p_round_id: back.round_id });
+    const second = await finishedRound(s, s.a, s.b);
+    expect(second.result).toMatchObject({ solve_ms: null, personal_best: false });
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("reactions", () => {
+  const react = (user: TestUser, roundId: string, reaction: "love" | "laugh" | "wow" | null) =>
+    user.as.mutation(api.games.set_round_reaction, { p_round_id: roundId, p_reaction: reaction });
+
+  test("the guesser sets, changes, and clears a reaction on a finished round without a push", async () => {
+    const s = await startGame();
+    const { picked } = await finishedRound(s, s.a, s.b);
+    const queued = (await outbox(s.t)).length;
+    expect(await react(s.b, picked.round_id, "love")).toEqual({ round_id: picked.round_id, guesser_reaction: "love" });
+    expect(await react(s.b, picked.round_id, "love")).toEqual({ round_id: picked.round_id, guesser_reaction: "love" });
+    expect((await view(s.a)).current_round?.guesser_reaction).toBe("love");
+    expect(await react(s.b, picked.round_id, "wow")).toMatchObject({ guesser_reaction: "wow" });
+    expect(await react(s.b, picked.round_id, "laugh")).toMatchObject({ guesser_reaction: "laugh" });
+    expect(await react(s.b, picked.round_id, null)).toEqual({ round_id: picked.round_id, guesser_reaction: null });
+    expect((await view(s.b)).current_round?.guesser_reaction).toBeNull();
+    expect(await react(s.b, picked.round_id, null)).toMatchObject({ guesser_reaction: null });
+    expect((await outbox(s.t)).length).toBe(queued);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("only the guesser reacts, only after the round ended, and a missed round counts", async () => {
+    const s = await startGame();
+    const { picked } = await finishedRound(s, s.a, s.b);
+    expect((await failure(react(s.a, picked.round_id, "love"))).code).toBe("42501");
+
+    // b draws round 2, which is open for a.
+    const open = await pick(s.b, s.gameId, "easy");
+    expect((await failure(react(s.a, open.round_id, "love"))).message).toMatch(/not finished/);
+    await sendDrawing(s, s.b, open.round_id);
+    await s.a.as.mutation(api.games.give_up_round, { ...op(), p_round_id: open.round_id });
+    expect(await react(s.a, open.round_id, "wow")).toMatchObject({ guesser_reaction: "wow" });
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("result seen", () => {
+  const seen = (user: TestUser, roundId: string) => user.as.mutation(api.games.mark_round_result_seen, { p_round_id: roundId });
+
+  test("each partner's field is set once, keeps the first time, and the other field stays empty", async () => {
+    const s = await startGame();
+    const { picked } = await finishedRound(s, s.a, s.b);
+    expect((await view(s.a)).current_round).toMatchObject({ drawer_result_seen_at: null, guesser_result_seen_at: null });
+
+    const first = await seen(s.b, picked.round_id);
+    expect(first.round_id).toBe(picked.round_id);
+    tick(60);
+    expect(await seen(s.b, picked.round_id)).toEqual(first);
+    expect((await view(s.a)).current_round).toMatchObject({ drawer_result_seen_at: null, guesser_result_seen_at: first.result_seen_at });
+
+    const drawer = await seen(s.a, picked.round_id);
+    expect(drawer.result_seen_at > first.result_seen_at).toBe(true);
+    expect((await view(s.b)).current_round).toMatchObject({ drawer_result_seen_at: drawer.result_seen_at, guesser_result_seen_at: first.result_seen_at });
+    expect((await view(s.a)).current_round?.id).toBe(picked.round_id);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a round that is still open cannot be marked, and a missed round can", async () => {
+    const s = await startGame();
+    const open = await pick(s.a, s.gameId, "easy");
+    expect((await failure(seen(s.a, open.round_id))).message).toMatch(/not finished/);
+    expect((await failure(seen(s.b, open.round_id))).message).toMatch(/not finished/);
+    await s.b.as.mutation(api.games.give_up_round, { ...op(), p_round_id: open.round_id });
+    expect((await seen(s.b, open.round_id)).result_seen_at).toEqual(expect.any(String));
+  });
+});
+
+describe("stars", () => {
+  const star = (user: TestUser, roundId: string, starred: boolean) =>
+    user.as.mutation(api.games.set_round_star, { p_round_id: roundId, p_starred: starred });
+  const stars = (t: TestConvex) => t.run((ctx) => ctx.db.query("game_round_stars").collect());
+
+  test("a star is private, idempotent, and removed by unstarring", async () => {
+    const s = await startGame();
+    const { picked } = await finishedRound(s, s.a, s.b);
+    const queued = (await outbox(s.t)).length;
+    expect(await star(s.a, picked.round_id, true)).toEqual({ round_id: picked.round_id, starred: true });
+    await star(s.a, picked.round_id, true);
+    expect(await stars(s.t)).toMatchObject([{ couple_id: s.couple.coupleId, move_id: picked.round_id, user_id: s.a.userId, round_number: 1 }]);
+    await star(s.b, picked.round_id, true);
+    expect(await stars(s.t)).toHaveLength(2);
+    expect((await outbox(s.t)).length).toBe(queued);
+
+    await star(s.a, picked.round_id, false);
+    await star(s.a, picked.round_id, false);
+    expect(await stars(s.t)).toMatchObject([{ user_id: s.b.userId }]);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("only a finished round can be starred", async () => {
+    const s = await startGame();
+    const open = await pick(s.a, s.gameId, "easy");
+    expect((await failure(star(s.a, open.round_id, true))).message).toMatch(/not finished/);
+    expect(await stars(s.t)).toHaveLength(0);
+  });
+});
+
+describe("history", () => {
+  const history = (user: TestUser, args: { starredOnly?: boolean; before?: number | null; limit?: number } = {}) =>
+    user.as.query(api.games.get_draw_and_guess_history, {
+      p_starred_only: args.starredOnly ?? false,
+      p_before_round_number: args.before ?? null,
+      p_limit: args.limit ?? 50,
+    });
+  const numbers = (page: { rounds: { round_number: number }[] }) => page.rounds.map((round) => round.round_number);
+
+  /**
+   * Seven rounds, alternating drawers. Round 3 is missed. Round 5 is solved live and its drawing never
+   * arrives. Round 7 is still open. Returns the round ids by number.
+   */
+  async function playHistory(s: Setup) {
+    const ids: Record<number, { id: string; word: string; drawer: TestUser }> = {};
+    let drawer = s.a;
+    let guesser = s.b;
+    for (let number = 1; number <= 7; number += 1) {
+      const picked = await pick(drawer, s.gameId, "easy");
+      ids[number] = { id: picked.round_id, word: picked.word, drawer };
+      if (number === 5) {
+        await guess(guesser, picked.round_id, picked.word);
+      } else {
+        await sendDrawing(s, drawer, picked.round_id);
+        if (number === 3) await guesser.as.mutation(api.games.give_up_round, { ...op(), p_round_id: picked.round_id });
+        else if (number !== 7) await guess(guesser, picked.round_id, picked.word);
+      }
+      if (number !== 7) [drawer, guesser] = [guesser, drawer];
+    }
+    return ids;
   }
 
-  const uploadImage = (s: Setup, user: TestUser) => uploadAsset(s.t, user, photo(s.couple.coupleId));
-  const save = (user: TestUser, roundId: string, image: { assetId: string; parentId: string }, memoryId = newUuid()) =>
-    user.as.mutation(api.games.save_round_to_memories, {
-      p_round_id: roundId,
-      p_memory_id: memoryId,
-      p_media_asset_id: image.assetId,
-      p_memory_date: "2026-10-10",
+  test("lists finished rounds that hold a drawing, newest first, in pages", async () => {
+    const s = await startGame();
+    const ids = await playHistory(s);
+    const all = await history(s.a);
+    expect(numbers(all)).toEqual([6, 4, 3, 2, 1]);
+    expect(all.next_before_round_number).toBeNull();
+    expect(all.rounds.map((round) => round.state)).toEqual(["solved", "solved", "missed", "solved", "solved"]);
+
+    const first = await history(s.a, { limit: 2 });
+    expect(numbers(first)).toEqual([6, 4]);
+    expect(first.next_before_round_number).toBe(4);
+    const second = await history(s.a, { limit: 2, before: first.next_before_round_number });
+    expect(numbers(second)).toEqual([3, 2]);
+    expect(second.next_before_round_number).toBe(2);
+    const third = await history(s.a, { limit: 2, before: second.next_before_round_number });
+    expect(numbers(third)).toEqual([1]);
+    expect(third.next_before_round_number).toBeNull();
+    // The cursor is exclusive, and a page that ends exactly at the last round has no next page.
+    expect(numbers(await history(s.a, { limit: 5 }))).toEqual([6, 4, 3, 2, 1]);
+    expect((await history(s.a, { limit: 5 })).next_before_round_number).toBeNull();
+    expect(numbers(await history(s.a, { before: 1 }))).toEqual([]);
+
+    const item = all.rounds[4];
+    expect(Object.keys(item).sort()).toEqual(
+      [
+        "id", "round_number", "drawer_user_id", "guesser_user_id", "word", "difficulty", "points", "state", "drawing_media_asset_id",
+        "solve_ms", "speed_bonus", "first_try_bonus", "hints_used", "attempt_count", "guesser_reaction", "personal_best",
+        "starred_by_me", "started_at", "ended_at",
+      ].sort(),
+    );
+    expect(item).toMatchObject({
+      id: ids[1].id,
+      drawer_user_id: s.a.userId,
+      guesser_user_id: s.b.userId,
+      word: ids[1].word,
+      difficulty: "easy",
+      points: 1,
+      first_try_bonus: 1,
+      hints_used: 0,
+      attempt_count: 1,
+      guesser_reaction: null,
+      personal_best: false,
+      starred_by_me: false,
     });
-
-  test("creates a memory titled with the word, created by the caller", async () => {
-    const s = await startGame();
-    const picked = await finishedRound(s);
-    const image = await uploadImage(s, s.b);
-    const memoryId = newUuid();
-    expect(await save(s.b, picked.round_id, image, memoryId)).toEqual({ memory_id: memoryId, created: true });
-
-    const memories = await s.t.run((ctx) => ctx.db.query("memories").collect());
-    expect(memories).toHaveLength(1);
-    expect(memories[0]).toMatchObject({ id: memoryId, title: "Flying cat", created_by_user_id: s.b.userId, couple_id: s.couple.coupleId });
-    const links = await s.t.run((ctx) => ctx.db.query("memory_media").collect());
-    expect(links).toMatchObject([{ memory_id: memoryId, media_asset_id: image.assetId, owner_user_id: s.b.userId }]);
-    const data = await view(s.a);
-    expect(data.current_round).toMatchObject({ memory_id: memoryId, saved_by_user_id: s.b.userId });
+    expect(item.drawing_media_asset_id).toEqual(expect.any(String));
+    // The same history for both partners.
+    expect(numbers(await history(s.b))).toEqual([6, 4, 3, 2, 1]);
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("two partners saying yes at once get one memory, and the extra image is queued for deletion", async () => {
+  test("starred only returns the caller's stars, and the item shows only the caller's star", async () => {
     const s = await startGame();
-    const picked = await finishedRound(s);
-    const imageA = await uploadImage(s, s.a);
-    const imageB = await uploadImage(s, s.b);
-    const memoryA = newUuid();
-    const memoryB = newUuid();
-    const results = await Promise.all([save(s.a, picked.round_id, imageA, memoryA), save(s.b, picked.round_id, imageB, memoryB)]);
+    const ids = await playHistory(s);
+    for (const number of [1, 2, 4, 5]) await s.a.as.mutation(api.games.set_round_star, { p_round_id: ids[number].id, p_starred: true });
+    await s.b.as.mutation(api.games.set_round_star, { p_round_id: ids[4].id, p_starred: true });
+    await s.b.as.mutation(api.games.set_round_star, { p_round_id: ids[3].id, p_starred: true });
 
-    expect(results.filter((result) => result.created)).toHaveLength(1);
-    const winner = results.find((result) => result.created)!;
-    expect(results.every((result) => result.memory_id === winner.memory_id)).toBe(true);
-    expect(await s.t.run((ctx) => ctx.db.query("memories").collect())).toHaveLength(1);
-    expect(await s.t.run((ctx) => ctx.db.query("memory_media").collect())).toHaveLength(1);
+    // Round 5 has no drawing, so its star stays out of the history.
+    expect(numbers(await history(s.a, { starredOnly: true }))).toEqual([4, 2, 1]);
+    const page = await history(s.a, { starredOnly: true, limit: 2 });
+    expect(numbers(page)).toEqual([4, 2]);
+    expect(page.next_before_round_number).toBe(2);
+    const rest = await history(s.a, { starredOnly: true, limit: 2, before: page.next_before_round_number });
+    expect(numbers(rest)).toEqual([1]);
+    expect(rest.next_before_round_number).toBeNull();
+    expect(numbers(await history(s.b, { starredOnly: true }))).toEqual([4, 3]);
 
-    const loserImage = winner.memory_id === memoryA ? imageB : imageA;
-    const winnerImage = winner.memory_id === memoryA ? imageA : imageB;
-    const assets = await s.t.run((ctx) => ctx.db.query("media_assets").collect());
-    expect(assets.find((asset) => asset.id === loserImage.assetId)).toMatchObject({ storage_delete_status: "pending" });
-    expect(assets.find((asset) => asset.id === winnerImage.assetId)).toMatchObject({ storage_delete_status: "none" });
+    const all = await history(s.a);
+    expect(all.rounds.map((round) => [round.round_number, round.starred_by_me])).toEqual([
+      [6, false],
+      [4, true],
+      [3, false],
+      [2, true],
+      [1, true],
+    ]);
+    // The partner's stars never reach the caller.
+    expect(all.rounds.every((round) => !("starred_by_partner" in round))).toBe(true);
+    await s.a.as.mutation(api.games.set_round_star, { p_round_id: ids[4].id, p_starred: false });
+    expect(numbers(await history(s.a, { starredOnly: true }))).toEqual([2, 1]);
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("a second save one after the other returns the existing memory", async () => {
-    const s = await startGame();
-    const picked = await finishedRound(s);
-    const first = await save(s.a, picked.round_id, await uploadImage(s, s.a));
-    const second = await save(s.b, picked.round_id, await uploadImage(s, s.b));
-    expect(second).toEqual({ memory_id: first.memory_id, created: false });
-    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
-  });
-
-  test("an unfinished round cannot be saved, and a stranger's round neither", async () => {
+  test("the game state and a round by id carry the caller's own star only", async () => {
     const s = await startGame();
     const picked = await pick(s.a, s.gameId, "easy");
-    const image = await uploadImage(s, s.a);
-    expect((await failure(save(s.a, picked.round_id, image))).message).toMatch(/not finished/);
-    const stranger = await createCouple(s.t);
-    expect((await failure(save(stranger.first, picked.round_id, image))).code).toBe("42501");
+    await sendDrawing(s, s.a, picked.round_id);
+    await guess(s.b, picked.round_id, picked.word);
+    const state = async (user: TestUser) => (await view(user)).current_round?.starred_by_me;
+    expect([await state(s.a), await state(s.b)]).toEqual([false, false]);
+
+    await s.b.as.mutation(api.games.set_round_star, { p_round_id: picked.round_id, p_starred: true });
+    expect([await state(s.a), await state(s.b)]).toEqual([false, true]);
+    const byId = (user: TestUser) => user.as.query(api.games.get_draw_and_guess_round, { p_round_id: picked.round_id });
+    expect([(await byId(s.a))?.starred_by_me, (await byId(s.b))?.starred_by_me]).toEqual([false, true]);
+
+    // Once a later round is current, the star is on the recent rounds.
+    await pick(s.b, s.gameId, "easy");
+    expect((await view(s.b)).recent_rounds.map((round) => round.starred_by_me)).toEqual([true]);
+    await s.b.as.mutation(api.games.set_round_star, { p_round_id: picked.round_id, p_starred: false });
+    expect((await view(s.b)).recent_rounds.map((round) => round.starred_by_me)).toEqual([false]);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("Not now closes the prompt for one partner only", async () => {
+  test("shows the reaction, hints, and personal best stored on the round", async () => {
     const s = await startGame();
-    const picked = await finishedRound(s);
-    expect((await failure(s.a.as.mutation(api.games.respond_save_prompt, { p_round_id: newUuid() }))).code).toBe("42501");
-    await s.b.as.mutation(api.games.respond_save_prompt, { p_round_id: picked.round_id });
-    await s.b.as.mutation(api.games.respond_save_prompt, { p_round_id: picked.round_id });
-    expect((await view(s.b)).current_round).toMatchObject({ my_save_response: "not_now", partner_save_response: null });
-    expect((await view(s.a)).current_round).toMatchObject({ my_save_response: null, partner_save_response: "not_now" });
-    expect(await s.t.run((ctx) => ctx.db.query("game_save_responses").collect())).toHaveLength(1);
-    // The other partner can still say yes.
-    expect((await save(s.a, picked.round_id, await uploadImage(s, s.a))).created).toBe(true);
-
-    const open = await pick(s.b, s.gameId, "easy");
-    expect((await failure(s.b.as.mutation(api.games.respond_save_prompt, { p_round_id: open.round_id }))).message).toMatch(/not finished/);
+    const picked = await pick(s.a, s.gameId, "custom", "hot dog");
+    await sendDrawing(s, s.a, picked.round_id);
+    await guessWith(s.b, picked.round_id, "hot dog", { p_hints_used: 3, p_solve_ms: 40_000 });
+    await s.b.as.mutation(api.games.set_round_reaction, { p_round_id: picked.round_id, p_reaction: "laugh" });
+    const [item] = (await history(s.a)).rounds;
+    expect(item).toMatchObject({ hints_used: 3, solve_ms: 40_000, speed_bonus: 0, first_try_bonus: 0, guesser_reaction: "laugh", personal_best: false });
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("both partners can still download the drawing of an old round", async () => {
+    const s = await startGame();
+    await playHistory(s);
+    const oldest = (await history(s.a)).rounds.at(-1)!;
+    for (const user of [s.a, s.b]) {
+      const [row] = await user.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: oldest.drawing_media_asset_id, p_expires_in_seconds: 300 });
+      expect(row.bucket).toBe("game-drawings");
+    }
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a page holds at most 50 rounds and the limit must be positive", async () => {
+    const s = await startGame();
+    await s.t.run(async (ctx) => {
+      for (let number = 1; number <= 60; number += 1) {
+        const now = new Date().toISOString();
+        await ctx.db.insert("game_moves", {
+          id: newUuid(),
+          game_id: s.gameId,
+          couple_id: s.couple.coupleId,
+          round_number: number,
+          drawer_user_id: s.a.userId,
+          guesser_user_id: s.b.userId,
+          state: "solved",
+          difficulty: "easy",
+          word: "cat",
+          points: 1,
+          drawing_media_asset_id: newUuid(),
+          started_at: now,
+          ended_at: now,
+          speed_bonus: 0,
+          created_at: now,
+          updated_at: now,
+        });
+      }
+    });
+    const page = await history(s.a, { limit: 1000 });
+    expect(page.rounds).toHaveLength(50);
+    expect(page.rounds[0].round_number).toBe(60);
+    expect(page.next_before_round_number).toBe(11);
+    expect(numbers(await history(s.a, { limit: 1000, before: 11 }))).toHaveLength(10);
+    expect((await failure(history(s.a, { limit: 0 }))).code).toBe("23514");
+  });
+
+  test("another couple sees none of it, and a user without a couple is refused", async () => {
+    const s = await startGame();
+    await playHistory(s);
+    const other = await startGame();
+    expect(await history(other.a)).toEqual({ rounds: [], next_before_round_number: null });
+    expect(await history(other.a, { starredOnly: true })).toEqual({ rounds: [], next_before_round_number: null });
+    const loner = await createSignedInUser(s.t, { name: "Loner" });
+    expect((await failure(history(loner))).code).toBe("42501");
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("records", () => {
+  test("counts solves, first tries, solve times, and solved drawings for each partner", async () => {
+    const s = await startGame();
+    // Round 1: a draws, b solves on the first try in 20 seconds.
+    const r1 = await finishedRound(s, s.a, s.b, { p_solve_ms: 20_000 });
+    // Round 2: b draws, a tries twice and solves in 30 seconds.
+    const r2 = await pick(s.b, s.gameId, "easy");
+    await sendDrawing(s, s.b, r2.round_id);
+    await guess(s.a, r2.round_id, "nope");
+    await guessWith(s.a, r2.round_id, r2.word, { p_solve_ms: 30_000 });
+    // Round 3: a draws, b solves with a hint in 1 second. Hints keep it out of the times and the first tries.
+    await finishedRound(s, s.a, s.b, { p_solve_ms: 1000, p_hints_used: 1 });
+    // Round 4: b draws, a solves on the first try in 11 minutes. It stays out of the average only.
+    await finishedRound(s, s.b, s.a, { p_solve_ms: 11 * 60_000 });
+    // Round 5: a draws, b gives up.
+    const r5 = await pick(s.a, s.gameId, "easy");
+    await s.b.as.mutation(api.games.give_up_round, { ...op(), p_round_id: r5.round_id });
+    // Round 6 is open.
+    await pick(s.b, s.gameId, "easy");
+
+    const records = await s.a.as.query(api.games.get_draw_and_guess_records, {});
+    expect(records.partners.map((partner) => partner.user_id)).toEqual([s.a.userId, s.b.userId]);
+    expect(records.partners[0]).toEqual({
+      user_id: s.a.userId,
+      solves: 2,
+      first_try_solves: 1,
+      average_solve_ms: 30_000,
+      fastest_solve_ms: 30_000,
+      fastest_solve_word: r2.word,
+      drawings_solved: 2,
+    });
+    expect(records.partners[1]).toEqual({
+      user_id: s.b.userId,
+      solves: 2,
+      first_try_solves: 1,
+      average_solve_ms: 20_000,
+      fastest_solve_ms: 20_000,
+      fastest_solve_word: r1.picked.word,
+      drawings_solved: 2,
+    });
+    expect((await s.b.as.query(api.games.get_draw_and_guess_records, {})).partners.map((partner) => partner.user_id)).toEqual([s.b.userId, s.a.userId]);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a couple with no solved rounds has zeros and nulls, and a stranger is refused", async () => {
+    const s = await startGame();
+    const empty = { solves: 0, first_try_solves: 0, average_solve_ms: null, fastest_solve_ms: null, fastest_solve_word: null, drawings_solved: 0 };
+    expect((await s.a.as.query(api.games.get_draw_and_guess_records, {})).partners).toMatchObject([empty, empty]);
+    const loner = await createSignedInUser(s.t, { name: "Loner" });
+    expect((await failure(loner.as.query(api.games.get_draw_and_guess_records, {}))).code).toBe("42501");
   });
 });
 
@@ -1169,15 +1537,8 @@ describe("relationship end", () => {
     const first = await pick(s.a, s.gameId, "easy");
     await sendDrawing(s, s.a, first.round_id);
     await guess(s.b, first.round_id, first.word);
-    await s.b.as.mutation(api.games.respond_save_prompt, { p_round_id: first.round_id });
+    await s.a.as.mutation(api.games.set_round_star, { p_round_id: first.round_id, p_starred: true });
     await s.a.as.mutation(api.games.send_game_invite, { p_kind: "draw_and_guess" });
-    const memoryImage = await uploadAsset(s.t, s.a, photo(s.couple.coupleId));
-    await s.a.as.mutation(api.games.save_round_to_memories, {
-      p_round_id: first.round_id,
-      p_memory_id: newUuid(),
-      p_media_asset_id: memoryImage.assetId,
-      p_memory_date: "2026-10-10",
-    });
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "draw_and_guess", p_present: true });
     // A second couple's game must survive.
     const keep = await startGame();
@@ -1188,7 +1549,7 @@ describe("relationship end", () => {
       "games",
       "game_moves",
       "game_guesses",
-      "game_save_responses",
+      "game_round_stars",
       "game_used_words",
       "game_presence",
       "game_invites",

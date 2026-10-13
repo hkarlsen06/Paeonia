@@ -13376,42 +13376,6 @@
       },
       "comment" : "Banner message when a drawing is too big to send"
     },
-    "games.notice.saveRejected.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't save to Memories"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke lagre i Minner"
-          }
-        }
-      },
-      "comment" : "Banner title when saving a drawing to Memories failed"
-    },
-    "games.notice.saveRejected.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You can try saving it again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du kan prøve å lagre den igjen."
-          }
-        }
-      },
-      "comment" : "Banner message when saving a drawing to Memories failed"
-    },
     "games.notice.moveFailed.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -13652,13 +13616,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This round won't give any points. You can still save the drawing."
+            "value" : "This round won't give any points. You'll still see the word and the drawing."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Denne runden gir ingen poeng. Du kan fortsatt lagre tegningen."
+            "value" : "Denne runden gir ingen poeng. Du får fortsatt se ordet og tegningen."
           }
         }
       },
@@ -14979,22 +14943,22 @@
       "comment" : "Line above the drawing the player is about to guess. %@ is the partner's name."
     },
     "games.drawAndGuess.guess.speedBonus" : {
+      "comment" : "Gold label on the guess screen while a fast guess still earns extra points. %lld is 2 during the first 15 seconds and 1 until 30 seconds.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Speed bonus +1"
+            "value" : "Speed bonus +%lld"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fartsbonus +1"
+            "value" : "Fartsbonus +%lld"
           }
         }
-      },
-      "comment" : "Gold label while a fast guess still earns one extra point."
+      }
     },
     "games.drawAndGuess.guess.speedBonus.a11y" : {
       "extractionState" : "manual",
@@ -15409,78 +15373,6 @@
         }
       },
       "comment" : "Button that leaves the drawer's result."
-    },
-    "games.drawAndGuess.save.save" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save drawing to Memories"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre tegningen i Minner"
-          }
-        }
-      },
-      "comment" : "Draw & Guess result: full-width button that saves the round's drawing to the couple's Memories. Continuing without tapping it means no."
-    },
-    "games.drawAndGuess.save.saved" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved to Memories"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret i Minner"
-          }
-        }
-      },
-      "comment" : "Shown after the drawing was saved to Memories."
-    },
-    "games.drawAndGuess.save.savedBy" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ saved this to Memories"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ lagret dette i Minner"
-          }
-        }
-      },
-      "comment" : "Shown when the partner saved the drawing first. %@ is the partner's name."
-    },
-    "games.drawAndGuess.save.pendingRow" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save %@ to Memories?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre %@ i Minner?"
-          }
-        }
-      },
-      "comment" : "Question about the last drawing, shown on top of the next screen. %@ is the word that was drawn."
     },
     "games.drawAndGuess.missed.title" : {
       "extractionState" : "manual",
@@ -16195,6 +16087,930 @@
         }
       },
       "comment" : "Decorative letter tiles on the Draw and Guess card. The word must name the heart drawn next to them. Use capital letters and keep it to one short word."
+    },
+    "games.drawAndGuess.guess.speedBonusFast.a11y" : {
+      "comment" : "VoiceOver label of the speed bonus while the full bonus is on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guess within 15 seconds for 2 extra points."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjett innen 15 sekunder for to ekstra poeng."
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.hint" : {
+      "comment" : "Quiet button under the tiles that places the next letter of the answer. Also the confirm button of its alert.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show a letter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis en bokstav"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.hint.confirm.title" : {
+      "comment" : "Title of the alert before the first letter hint of a round in the mode where partners compete.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show a letter?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vise en bokstav?"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.hint.confirm.message" : {
+      "comment" : "Message of the alert before the first letter hint. The two bonuses are extra points for guessing fast and for guessing right on the first try.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You won't get the speed bonus or the first try bonus this round."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du får ikke fartsbonusen eller bonusen for første forsøk denne runden."
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.guess.hintPlaced" : {
+      "comment" : "VoiceOver announcement after a hint places a letter. %1$@ is the letter and %2$lld the position.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hint. %1$@ in letter %2$lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hint. %1$@ i bokstav %2$lld"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.slotHint" : {
+      "comment" : "VoiceOver label of an answer slot that a hint filled. %1$lld is the position and %2$@ the letter.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letter %1$lld, %2$@, hint"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bokstav %1$lld, %2$@, hint"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.hints" : {
+      "comment" : "A number of letter hints. %lld is the count.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hint"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hints"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hint"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hint"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.reveal.line.firstTry" : {
+      "comment" : "Point for guessing right on the first try. %lld is the points.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "First try +%lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Første forsøk +%lld"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.reveal.personalBest" : {
+      "comment" : "Line under the title when this was the guesser's fastest solve so far.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your fastest solve yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din raskeste løsning så langt"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.result.personalBest" : {
+      "comment" : "Line under the title on the drawer's result when the partner's solve was their fastest so far. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s fastest solve yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sin raskeste løsning så langt"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.result.solvedTimedHints" : {
+      "comment" : "Drawer's result line when the partner used letter hints. %1$@ is the partner's name, %2$@ a duration such as 24 seconds, %3$@ the hints, for example 2 hints.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ got it in %2$@ with %3$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ klarte det på %2$@ med %3$@."
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.result.solvedHints" : {
+      "comment" : "Drawer's result line when the partner used letter hints and the time is not shown. %1$@ is the partner's name, %2$@ the hints, for example 2 hints.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ got it with %2$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ klarte det med %2$@."
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.reaction.prompt" : {
+      "comment" : "Caption above the three reaction buttons on the guesser's result. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell %@ what you think"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si til %@ hva du synes"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.reaction.love" : {
+      "comment" : "Reaction button with a heart.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Love"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elsker"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.reaction.laugh" : {
+      "comment" : "Reaction button with a smiling face.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haha"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haha"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.reaction.wow" : {
+      "comment" : "Reaction button with clapping hands.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wow"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wow"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.result.reaction.love" : {
+      "comment" : "Drawer's result: the partner reacted with a heart. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ loved it"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ elsket den"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.result.reaction.laugh" : {
+      "comment" : "Drawer's result: the partner reacted with a laugh. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ laughed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ lo"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.result.reaction.wow" : {
+      "comment" : "Drawer's result: the partner reacted with wow. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ said wow"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sa wow"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.history.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Our drawings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningene våre"
+          }
+        }
+      },
+      "comment" : "Title of the Our drawings screen, the label of the button that opens it, and the link on the Draw & Guess card. It lists every finished drawing of the couple."
+    },
+    "games.drawAndGuess.history.records.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Records"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekorder"
+          }
+        }
+      },
+      "comment" : "Heading of the records section at the top of Our drawings. It compares both partners."
+    },
+    "games.drawAndGuess.history.records.firstTry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solved on the first try"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Løst på første forsøk"
+          }
+        }
+      },
+      "comment" : "Label of a record row: how many words each partner guessed on their very first try."
+    },
+    "games.drawAndGuess.history.records.average" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Average time"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjennomsnittstid"
+          }
+        }
+      },
+      "comment" : "Label of a record row: the average time each partner needed to guess a drawing."
+    },
+    "games.drawAndGuess.history.records.fastest" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fastest solve"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raskeste løsning"
+          }
+        }
+      },
+      "comment" : "Label of a record row: each partner's fastest guess, with the time and the word."
+    },
+    "games.drawAndGuess.history.records.none" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke ennå"
+          }
+        }
+      },
+      "comment" : "Shown instead of a record value when a partner has not set that record yet."
+    },
+    "games.drawAndGuess.history.records.spoken" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      },
+      "comment" : "VoiceOver text for one partner's record. %1$@ is the name (You or the partner's name), %2$@ is the value, such as 3 or 24 sec."
+    },
+    "games.drawAndGuess.history.records.fastestSpoken" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      },
+      "comment" : "VoiceOver text for the fastest solve. %1$@ is the time such as 9 sec, %2$@ is the word that was guessed."
+    },
+    "games.drawAndGuess.history.filter.all" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle"
+          }
+        }
+      },
+      "comment" : "First option of the filter above the drawings. Shows every finished drawing."
+    },
+    "games.drawAndGuess.history.filter.starred" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starred"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stjernemerket"
+          }
+        }
+      },
+      "comment" : "Second option of the filter above the drawings. Shows only the drawings this person starred."
+    },
+    "games.drawAndGuess.history.filter.label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the All and Starred filter."
+    },
+    "games.drawAndGuess.history.who.you" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "deg"
+          }
+        }
+      },
+      "comment" : "Lowercase word for the signed-in person, used after by: by you."
+    },
+    "games.drawAndGuess.history.cell.caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "by %1$@ · %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "av %1$@ · %2$@"
+          }
+        }
+      },
+      "comment" : "Line under a drawing in the grid. %1$@ is who drew it (the partner's name, or you), %2$@ is a short date such as Oct 12."
+    },
+    "games.drawAndGuess.history.cell.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, drawn by %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, tegnet av %2$@"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of a drawing in the grid. %1$@ is the word, %2$@ is who drew it (the partner's name, or you)."
+    },
+    "games.drawAndGuess.history.cell.starred.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, drawn by %2$@, starred"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, tegnet av %2$@, stjernemerket"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of a drawing in the grid that this person starred. %1$@ is the word, %2$@ is who drew it (the partner's name, or you)."
+    },
+    "games.drawAndGuess.history.empty.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No drawings yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen tegninger ennå"
+          }
+        }
+      },
+      "comment" : "Heading when the couple has no finished drawing yet."
+    },
+    "games.drawAndGuess.history.empty.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawings will show up here after your first round."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningene deres dukker opp her etter første runde."
+          }
+        }
+      },
+      "comment" : "Text when the couple has no finished drawing yet."
+    },
+    "games.drawAndGuess.history.emptyStarred.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No starred drawings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen stjernemerkede tegninger"
+          }
+        }
+      },
+      "comment" : "Heading when the Starred filter is on and this person has starred nothing."
+    },
+    "games.drawAndGuess.history.emptyStarred.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the star on a drawing you like, and it shows up here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk på stjernen på en tegning du liker, så dukker den opp her."
+          }
+        }
+      },
+      "comment" : "Text when the Starred filter is on and this person has starred nothing. It explains how to star a drawing."
+    },
+    "games.drawAndGuess.history.offline.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to see your drawings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å se tegningene deres."
+          }
+        }
+      },
+      "comment" : "Text under You're offline when Our drawings cannot load and nothing is saved on the phone."
+    },
+    "games.drawAndGuess.history.loadMore.failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load older drawings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke laste eldre tegninger."
+          }
+        }
+      },
+      "comment" : "Text above a Try again button when older drawings could not load."
+    },
+    "games.drawAndGuess.history.detail.drawnBy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawn by %1$@ · %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegnet av %1$@ · %2$@"
+          }
+        }
+      },
+      "comment" : "Line under the word on the drawing screen. %1$@ is who drew it (the partner's name, or you), %2$@ is the date such as Oct 12, 2026."
+    },
+    "games.drawAndGuess.history.detail.replay" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill av igjen"
+          }
+        }
+      },
+      "comment" : "Button and VoiceOver action that plays the drawing again from the start."
+    },
+    "games.drawAndGuess.history.detail.holdHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold the drawing to speed it up."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold på tegningen for å spole fremover."
+          }
+        }
+      },
+      "comment" : "Small hint under the drawing. Holding a finger on the drawing plays it faster."
+    },
+    "games.drawAndGuess.history.detail.drawing.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing of %1$@, drawn by %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegning av %1$@, tegnet av %2$@"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the drawing. %1$@ is the word, %2$@ is who drew it (the partner's name, or you)."
+    },
+    "games.drawAndGuess.history.star" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Star"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stjernemerk"
+          }
+        }
+      },
+      "comment" : "Toolbar button on the drawing screen that stars the drawing. Only this person sees their stars."
+    },
+    "games.drawAndGuess.history.starred" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starred"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stjernemerket"
+          }
+        }
+      },
+      "comment" : "Toolbar button on the drawing screen when this person already starred it. Tapping it removes the star."
+    },
+    "games.drawAndGuess.history.star.privacy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only you can see your stars."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bare du ser stjernene dine."
+          }
+        }
+      },
+      "comment" : "Small note on the drawing screen. Stars are private, and the partner is never told about them."
+    },
+    "games.drawAndGuess.wait.reaction.love" : {
+      "comment" : "Drawer's waiting screen, after they left the result: the partner reacted with a heart. %1$@ is the partner's name, %2$@ the word in capitals.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ loved the %2$@ drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ elsket %2$@-tegningen"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.wait.reaction.laugh" : {
+      "comment" : "Drawer's waiting screen, after they left the result: the partner reacted with a laugh. %1$@ is the partner's name, %2$@ the word in capitals.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ thought the %2$@ drawing was funny"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ syntes %2$@-tegningen var morsom"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.wait.reaction.wow" : {
+      "comment" : "Drawer's waiting screen, after they left the result: the partner reacted with wow. %1$@ is the partner's name, %2$@ the word in capitals.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ said wow to the %2$@ drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ sa wow til %2$@-tegningen"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

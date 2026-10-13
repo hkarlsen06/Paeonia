@@ -14,8 +14,9 @@ private final class ManualClock: @unchecked Sendable {
     }
 }
 
-/// The guess carries what the player saw: whether the speed bonus was still on
-/// screen and how long they had looked at the drawing, on the phone's clock.
+/// The guess carries what the player saw: the speed bonus tier on screen (2
+/// within 15 seconds, 1 within 30, else 0), how long they had looked at the
+/// drawing on the phone's clock, and how many letter hints they used.
 @MainActor
 struct DrawAndGuessSpeedBonusClaimTests {
     private let clock = ManualClock()
@@ -78,8 +79,25 @@ struct DrawAndGuessSpeedBonusClaimTests {
 
         let payload = try await queuedGuess(environment)
         #expect(payload.isCorrect)
-        #expect(payload.speedBonus == true)
+        #expect(payload.speedBonus == 2)
         #expect(payload.solveMs == 12_000)
+        #expect(payload.hintsUsed == 0)
+    }
+
+    @Test func aCorrectGuessInTheSecondHalfOfTheWindowClaimsTheSmallerBonus() async throws {
+        let environment = makeEnvironment(guessing)
+        let viewModel = makeViewModel(environment)
+        await viewModel.reload()
+        let seen = await waitUntil { viewModel.localFirstSeenAt[GameFixture.roundID] != nil }
+        #expect(seen)
+
+        clock.advance(by: 22)
+        #expect(viewModel.speedBonusTier == 1)
+        try type("umbrella", into: viewModel)
+
+        let payload = try await queuedGuess(environment)
+        #expect(payload.speedBonus == 1)
+        #expect(payload.solveMs == 22_000)
     }
 
     @Test func aCorrectGuessAfterTheWindowClaimsNoBonusButKeepsTheSolveTime() async throws {
@@ -93,7 +111,7 @@ struct DrawAndGuessSpeedBonusClaimTests {
         try type("umbrella", into: viewModel)
 
         let payload = try await queuedGuess(environment)
-        #expect(payload.speedBonus == false)
+        #expect(payload.speedBonus == 0)
         #expect(payload.solveMs == 31_000)
     }
 
@@ -139,7 +157,7 @@ struct DrawAndGuessSpeedBonusClaimTests {
         try type("umbrella", into: viewModel)
 
         let payload = try await queuedGuess(environment)
-        #expect(payload.speedBonus == true)
+        #expect(payload.speedBonus == 1)
         #expect(payload.solveMs == 20_000)
     }
 
@@ -152,7 +170,7 @@ struct DrawAndGuessSpeedBonusClaimTests {
         try type("umbrella", into: viewModel)
 
         let payload = try await queuedGuess(environment)
-        #expect(payload.speedBonus == false)
+        #expect(payload.speedBonus == 0)
         #expect(payload.solveMs == 31_000)
     }
 
@@ -170,7 +188,7 @@ struct DrawAndGuessSpeedBonusClaimTests {
         try type("umbrella", into: viewModel)
 
         let payload = try await queuedGuess(environment)
-        #expect(payload.speedBonus == true)
+        #expect(payload.speedBonus == 2)
         #expect(payload.solveMs == nil)
     }
 
@@ -198,7 +216,7 @@ struct DrawAndGuessSpeedBonusClaimTests {
         try type("umbrella", into: viewModel)
 
         let payload = try await queuedGuess(environment)
-        #expect(payload.speedBonus == true)
+        #expect(payload.speedBonus == 2)
         #expect(payload.solveMs == 5_000)
     }
 
@@ -213,6 +231,7 @@ struct DrawAndGuessSpeedBonusClaimTests {
         #expect(!payload.isCorrect)
         #expect(payload.speedBonus == nil)
         #expect(payload.solveMs == nil)
+        #expect(payload.hintsUsed == nil)
     }
 
     @Test func theQueuedGuessSendsTheClaimToTheServerEvenWhenItWaitedOffline() async throws {
@@ -222,8 +241,9 @@ struct DrawAndGuessSpeedBonusClaimTests {
             guess: "umbrella",
             isCorrect: true,
             createdAt: GameFixture.now,
-            speedBonus: true,
-            solveMs: 12_000
+            speedBonus: 2,
+            solveMs: 12_000,
+            hintsUsed: 1
         )
         let wrong = GameGuessPayload(
             id: UUID(),
@@ -239,8 +259,8 @@ struct DrawAndGuessSpeedBonusClaimTests {
 
         #expect(env.gateway.guesses == ["cat", "umbrella"])
         #expect(env.gateway.guessClaims == [
-            ScriptedGamesGateway.GuessClaim(speedBonus: nil, solveMs: nil),
-            ScriptedGamesGateway.GuessClaim(speedBonus: true, solveMs: 12_000),
+            ScriptedGamesGateway.GuessClaim(speedBonus: nil, solveMs: nil, hintsUsed: nil),
+            ScriptedGamesGateway.GuessClaim(speedBonus: 2, solveMs: 12_000, hintsUsed: 1),
         ])
     }
 }

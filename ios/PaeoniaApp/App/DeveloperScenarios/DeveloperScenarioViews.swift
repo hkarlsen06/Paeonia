@@ -165,9 +165,11 @@
         DeveloperPairedScenarioHost(scenario: scenario)
       case .drawChooseWord, .drawWaitingForWord, .drawDrawing, .drawSavedOffline,
         .drawWaitingForGuess, .drawWaitingForDrawing, .drawWatchingLive, .drawGuessingReplay,
-        .drawGuessingLongWord, .drawRevealSolved, .drawSavePrompt, .drawRevealMissed, .drawRevealAsDrawer,
+        .drawGuessingLongWord, .drawRevealSolved, .drawRevealBonuses, .drawRevealMissed, .drawRevealAsDrawer,
         .drawRevealPartnerDrawing, .drawRevealLoading:
         DeveloperGamesScenarioView(scenario: scenario)
+      case .drawHistory, .drawHistoryEmpty:
+        DeveloperGamesHistoryScenarioView(scenario: scenario)
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         DeveloperWidgetScenarioView(scenario: scenario)
       case .notificationPrimer, .settings, .settingsNotificationsDenied, .privacySafety,

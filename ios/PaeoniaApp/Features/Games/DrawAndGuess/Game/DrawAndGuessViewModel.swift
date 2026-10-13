@@ -52,7 +52,8 @@ nonisolated struct DrawAndGuessPlayer: Equatable, Sendable {
 /// The state comes from three places that are combined on every change:
 /// the server's state in the Games cache (kept current by `DrawAndGuessLiveFeed`),
 /// the moves saved on this phone that have not been sent (the pending operations),
-/// and what this person has seen. `DrawAndGuessResolver` turns them into `phase`.
+/// and the results this person has moved past (marked on the server, or waiting
+/// in the pending operations). `DrawAndGuessResolver` turns them into `phase`.
 /// Every move is written to the pending operations first, so it works offline.
 ///
 /// Files: this file holds the state and the lifecycle. The turn actions, the
@@ -114,7 +115,6 @@ final class DrawAndGuessViewModel {
     /// waiting screen then says so and offers `retrySending()`.
     var isSendFailing = false
     var reveal: DrawAndGuessReveal?
-    var savePrompt: DrawAndGuessSavePrompt = .hidden
     /// Show it through the banner center, then call `clearNotice()`.
     var notice: GamesNotice?
     var guessSource: DrawAndGuessGuessSource = .replay
@@ -148,6 +148,11 @@ final class DrawAndGuessViewModel {
 
     @ObservationIgnored let dependencies: GamesDependencies
     @ObservationIgnored var gateway: any GamesGateway { dependencies.gateway }
+    /// This person's private stars on finished rounds. The result screens and
+    /// "Our drawings" share it: `stars.isStarred(roundID)` and `stars.toggle(roundID:)`.
+    @ObservationIgnored lazy var stars = DrawAndGuessStars(dependencies: dependencies) { [weak self] in
+        self?.currentUserID
+    }
     @ObservationIgnored let heartbeatInterval: Duration
     @ObservationIgnored let tickInterval: Duration
     @ObservationIgnored let monotonicNow: @Sendable () -> TimeInterval
@@ -161,9 +166,9 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var participants: DrawAndGuessParticipants
     @ObservationIgnored var state: RemoteDrawAndGuessState?
     @ObservationIgnored var pending = DrawAndGuessPendingWork.none
-    @ObservationIgnored var acknowledgedRoundIDs: Set<UUID> = []
-    /// Rounds where this person said "not now" to saving on this phone.
-    @ObservationIgnored var declinedSaveRoundIDs: Set<UUID> = []
+    /// The answer slots the hints showed, by round. Kept in the Games cache too,
+    /// so they survive leaving the screen and relaunching.
+    @ObservationIgnored var persistedHints: [UUID: [Int]] = [:]
     @ObservationIgnored var now: Date
     @ObservationIgnored var localInviteSentAt: Date?
     @ObservationIgnored var isRunning = false
@@ -282,8 +287,9 @@ final class DrawAndGuessViewModel {
         guard generation == reloadGeneration, currentUserID == userID else { return }
 
         state = document.state
-        acknowledgedRoundIDs = Set(document.acknowledgedRoundIDs)
-        declinedSaveRoundIDs.formUnion(document.declinedSaveRoundIDs)
+        for kept in document.hints where kept.slotIndexes.count > persistedHints[kept.roundID, default: []].count {
+            persistedHints[kept.roundID] = kept.slotIndexes
+        }
         if let work {
             pending = work
         }
@@ -325,14 +331,13 @@ final class DrawAndGuessViewModel {
 
     // MARK: - Working out the screen
 
-    /// Combines the server's state, the unsent moves, and what the person has
-    /// seen into the observable state, then runs the effects a new state needs.
+    /// Combines the server's state and the unsent moves into the observable
+    /// state, then runs the effects a new state needs.
     func recompute() {
         guard let userID = currentUserID else { return }
         let resolution = DrawAndGuessResolver(userID: userID).resolve(
             state: state,
             pending: pending,
-            acknowledgedRoundIDs: acknowledgedRoundIDs,
             isPartnerDrawingLive: isPartnerDrawingLive
         )
         phase = resolution.phase
@@ -349,14 +354,13 @@ final class DrawAndGuessViewModel {
         updatePresenceState()
         updatePartnerGuess()
         updatePartnerNextRound()
-        updateSpeedBonus()
         if phase == .preparing || phase == .needsSetup {
             startFailed = startFailed && phase == .preparing
         }
 
         syncRoundState()
+        updateSpeedBonus()
         updateReveal()
-        updateSavePrompt()
         runEffects()
     }
 

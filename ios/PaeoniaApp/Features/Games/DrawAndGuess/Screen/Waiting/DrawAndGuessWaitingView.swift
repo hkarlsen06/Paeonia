@@ -18,10 +18,7 @@ struct DrawAndGuessWaitingView: View {
     var body: some View {
         DrawAndGuessFocusedLayout(fillsHeight: true) {
             VStack(spacing: PaeoniaSpacing.space24) {
-                VStack(spacing: PaeoniaSpacing.space12) {
-                    DrawAndGuessScoreHeader(viewModel: viewModel)
-                    DrawAndGuessPendingSaveRow(viewModel: viewModel)
-                }
+                DrawAndGuessScoreHeader(viewModel: viewModel)
                 Spacer(minLength: PaeoniaSpacing.space16)
                 VStack(spacing: PaeoniaSpacing.space16) {
                     avatar
@@ -43,6 +40,7 @@ struct DrawAndGuessWaitingView: View {
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("draw.waiting")
+                reactionCapsule
                 Spacer(minLength: PaeoniaSpacing.space16)
             }
             .frame(maxWidth: .infinity)
@@ -53,6 +51,15 @@ struct DrawAndGuessWaitingView: View {
         // while this screen is open. Everything moves to its new place together.
         .animation(PaeoniaMotion.stateChange, value: viewModel.partnerPresence)
         .animation(PaeoniaMotion.stateChange, value: viewModel.invite)
+        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: viewModel.reactionToMyLastDrawing)
+        .onChange(of: viewModel.reactionToMyLastDrawing) { old, new in
+            // The guesser reacted after this person left the result.
+            guard let new, new != old, !isDrawing else { return }
+            PaeoniaHaptics.partnerDrawingReceived()
+            AccessibilityNotification.Announcement(
+                String(localized: new.drawerLine(partnerName: viewModel.partnerName, word: viewModel.round?.word))
+            ).post()
+        }
         .drawAndGuessScoreToolbar(viewModel)
     }
 
@@ -76,6 +83,21 @@ struct DrawAndGuessWaitingView: View {
             return viewModel.partnerPresence.isHere ? .gamesDrawAndGuessWaitHintLive : .gamesDrawAndGuessWaitHintLater
         }
         return viewModel.partnerPresence.isInRoom ? nil : .gamesDrawAndGuessWaitHintLater
+    }
+
+    /// The partner's reaction to the round this person just drew. The line names
+    /// the word, because the drawing is not on this screen.
+    @ViewBuilder
+    private var reactionCapsule: some View {
+        if !isDrawing, let reaction = viewModel.reactionToMyLastDrawing {
+            DrawAndGuessReactionCapsule(
+                reaction: reaction,
+                partnerName: viewModel.partnerName,
+                word: viewModel.round?.word
+            )
+            .multilineTextAlignment(.center)
+            .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.9)))
+        }
     }
 
     // MARK: Avatar

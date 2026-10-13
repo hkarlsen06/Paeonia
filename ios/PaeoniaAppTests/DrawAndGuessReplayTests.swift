@@ -280,6 +280,34 @@ struct DrawAndGuessReplayTests {
         #expect(result.duration < 2.5)
     }
 
+    @Test func partialAndFinalStrokesKeepTheMaskTransformInkAndCreationDate() throws {
+        let mask = UIBezierPath(rect: CGRect(x: -3, y: 0, width: 20, height: 200))
+        let original = ReplayFixtures.stroke(
+            created: 3,
+            offsets: (0...10).map { Double($0) / 2 },
+            y: 50,
+            ink: PKInk(.pencil, color: .blue),
+            transform: CGAffineTransform(translationX: 0, y: 10),
+            mask: mask
+        )
+        let result = timeline(original)
+        try #require(!original.maskedPathRanges.isEmpty)
+
+        let partial = try #require(result.drawing(at: 0.5).strokes.first)
+        let final = try #require(result.drawing(at: result.duration).strokes.first)
+
+        #expect(partial.path.count < original.path.count)
+        #expect(final.path.count == original.path.count)
+        for stroke in [partial, final] {
+            #expect(stroke.mask?.cgPath == original.mask?.cgPath)
+            #expect(stroke.transform == original.transform)
+            #expect(stroke.ink.inkType == original.ink.inkType)
+            #expect(stroke.ink.color == original.ink.color)
+            #expect(stroke.path.creationDate == original.path.creationDate)
+            #expect(stroke.randomSeed == original.randomSeed)
+        }
+    }
+
     @Test func piecesThatShareACreationDateAndOffsetsStartTogetherWhenNothingIsMasked() {
         let firstPiece = ReplayFixtures.stroke(created: 0, offsets: [0, 1, 2], y: 1)
         let secondPiece = ReplayFixtures.stroke(created: 0, offsets: [0, 1, 2], y: 2)

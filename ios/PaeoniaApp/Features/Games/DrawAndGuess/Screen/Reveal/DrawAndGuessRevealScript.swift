@@ -15,6 +15,7 @@ nonisolated struct DrawAndGuessRevealPlan: Equatable, Sendable {
     /// The most points one column gains, for the count-up ticks.
     var pointsAdded: Int
     var hasSpeedBonus: Bool
+    var hasFirstTryBonus = false
 }
 
 /// When each beat happens, in seconds after the last tile lands.
@@ -28,16 +29,19 @@ nonisolated struct DrawAndGuessRevealSchedule: Sendable {
     var panel: TimeInterval = 1.40
     var countSpan: TimeInterval = 0.60
     var speedBonus: TimeInterval = 1.90
-    var save: TimeInterval = 2.20
+    /// The first-try line lands after the speed bonus.
+    var firstTryBonus: TimeInterval = 2.20
+    /// The reaction row appears.
+    var actions: TimeInterval = 2.50
     /// The missed round fills the answer over this long, then moves on.
     var missedFill: TimeInterval = 0.50
     var missedTitle: TimeInterval = 0.90
-    var missedSave: TimeInterval = 1.10
+    var missedActions: TimeInterval = 1.10
 
     static let standard = Self()
     static let instant = Self(
         lightStart: 0, lightSpan: 0, maxLetterGap: 0, bloom: 0, glowSettle: 0, title: 0, panel: 0,
-        countSpan: 0, speedBonus: 0, save: 0, missedFill: 0, missedTitle: 0, missedSave: 0
+        countSpan: 0, speedBonus: 0, firstTryBonus: 0, actions: 0, missedFill: 0, missedTitle: 0, missedActions: 0
     )
 }
 
@@ -48,6 +52,7 @@ struct DrawAndGuessRevealHaptics {
     var answerRevealed: @MainActor () -> Void
     var soft: @MainActor () -> Void
     var scoreTick: @MainActor (CGFloat) -> Void
+    /// A bonus line lands, for the speed bonus and for the first-try bonus.
     var speedBonus: @MainActor () -> Void
 
     static let live = Self(
@@ -70,7 +75,8 @@ nonisolated enum DrawAndGuessRevealEvent: Equatable, Sendable {
     case panel
     case scoreTick(CGFloat)
     case speedBonus
-    case save
+    case firstTryBonus
+    case actions
     case fillLetter(index: Int)
     case fillStart
 }
@@ -119,7 +125,10 @@ nonisolated enum DrawAndGuessRevealScript {
         if plan.hasSpeedBonus {
             steps.append(Step(at: schedule.speedBonus, event: .speedBonus))
         }
-        steps.append(Step(at: schedule.save, event: .save))
+        if plan.hasFirstTryBonus {
+            steps.append(Step(at: schedule.firstTryBonus, event: .firstTryBonus))
+        }
+        steps.append(Step(at: schedule.actions, event: .actions))
         return steps
     }
 
@@ -145,7 +154,7 @@ nonisolated enum DrawAndGuessRevealScript {
         steps += (0..<letters).map { Step(at: gap * Double($0), event: .fillLetter(index: $0)) }
         steps.append(Step(at: schedule.missedFill, event: .collapse))
         steps.append(Step(at: schedule.missedTitle, event: .title))
-        steps.append(Step(at: schedule.missedSave, event: .save))
+        steps.append(Step(at: schedule.missedActions, event: .actions))
         return steps
     }
 }

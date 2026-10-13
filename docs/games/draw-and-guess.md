@@ -14,12 +14,22 @@ Decided on 2026-10-12.
 - **Words come in the couple's game language.** See `docs/games-plan.md`.
 - **No streak of its own.** Turns count toward the couple's existing streak. See "Streak".
 
+Decided on 2026-10-13.
+
+- **The speed bonus has tiers.** A correct guess within 15 seconds of first seeing the drawing earns 2 points, within 30 seconds earns 1, and later earns 0.
+- **First-try bonus.** The guesser earns 1 point when the correct guess is the round's first attempt and no hint was used.
+- **Hints.** The guesser can ask for letter hints. The phone decides which letters a hint shows, and the server only counts them. Any hint sets both bonuses to 0. Hints don't change the word points.
+- **Reactions.** The guesser can react to a finished round with love, laugh or wow. Nobody gets a push for it.
+- **Personal stars.** Each partner can star finished rounds. A star is private, and nobody is told.
+- **History replaces save to Memories.** Draw & Guess no longer saves to Memories. The game keeps its own history of finished rounds with their drawings. See "History and stars".
+- **The result is marked seen on the server.** Each partner's "I have seen this result" is stored on the round, so a second phone doesn't show the result again.
+
 ## Why this game first
 
 - It works across time zones, and it gets better when both partners happen to be online.
 - It uses the drawing canvas, which other game apps don't have and Paeonia already does. Saved drawings are `PKDrawing` data (`widget_drawing_revisions.format = "pkdrawing"`), and each PencilKit stroke point keeps its time offset, so a saved drawing can be replayed at the pace it was drawn.
 - Live watching reuses the live drawing code in `WidgetDrawing/Live/`: relay presence, the `hello` and snapshot catch-up, and stroke playback at the drawn pace.
-- Building it produces the turn engine, the drawing replay, and the save-to-Memories flow. Exquisite corpse needs all three later.
+- Building it produces the turn engine, the drawing replay, and a history of finished drawings. Exquisite corpse needs all three later.
 
 ## The turn
 
@@ -27,7 +37,7 @@ The game never ends. A couple has one ongoing Draw & Guess game, and a turn has 
 
 1. **Guess.** Open the game and your partner's drawing starts playing back. Guess by tapping letter tiles. You can guess while the drawing is still playing.
 2. **Reveal.** The word locks in, the rest of the drawing finishes at once, and the phone gives a success haptic. The screen shows how long the guess took.
-3. **Save prompt.** Either partner can save the drawing to Memories (see below).
+3. **Result.** The guesser can react, and either partner can star the round (see "History and stars").
 4. **Draw back.** You pick a word and draw it for your partner.
 
 The very first turn of a new game skips the guess and starts at "Draw back".
@@ -49,6 +59,7 @@ The round starts in Convex the moment the drawer picks a word, not when they fin
 ### Replay
 
 - The replay shows the strokes in the final drawing in the order they were drawn. Erased strokes don't play back.
+- The canvas keeps the pixel eraser (`PKEraserTool(.fixedWidthBitmap)`). PencilKit hides erased ink with `PKStroke.mask` and `maskedPathRanges`, and splits a stroke into pieces that share its path and `creationDate`. The replay plays only the visible part of each piece at its original time offsets, and every partial stroke keeps the mask, transform and ink, so erased ink never shows. Live sync sends masked strokes too, because the stroke signature includes the mask.
 - Long pauses in the replay are shortened to about one second, so a drawer who stopped to think doesn't make the guesser wait.
 - The guesser can hold the replay to fast-forward.
 
@@ -59,6 +70,7 @@ The round starts in Convex the moment the drawer picks a word, not when they fin
 - When every slot is filled with a wrong word, the slots shake and the letters go back to the tiles.
 - Guesses ignore case. Tiles show capital letters.
 - Attempts are unlimited. A "Show me" button reveals the answer, and the round counts as missed.
+- A quiet "Show a letter" button places a random letter of the answer in its slot and locks that slot. The phone can show at most all letters but one. Any hint takes both bonuses away for the round (see "Scoring").
 - Every attempt is saved in Convex with a timestamp. In a live round the drawer sees each wrong guess appear while drawing. In an async round the drawer watches the guesses in order afterward ("They tried CAT, then HAT..."). That is the drawer's payoff for the turn.
 
 ## Live
@@ -89,9 +101,15 @@ The play style is a couple setting (see `docs/games-plan.md`).
 
 **Together.** One shared score. Each correct guess adds the word's points to the couple's total. A missed round adds nothing and takes nothing away.
 
-Points are 1 for easy, 2 for medium and 3 for hard.
+Points are 1 for easy, 2 for medium and 3 for hard. A custom word scores 2.
 
-**Against each other.** Each partner has their own score. A correct guess gives the guesser the word's points plus a speed bonus of 1 point when the guess comes within 30 seconds of first seeing the drawing, as the guesser's own screen showed it. Watching live, the 30 seconds start at the drawer's first stroke, so a drawer who opens the canvas and does something else first does not use them up. The drawer gets the word's points when the guess is right. Both partners draw and guess equally often, so the difference between the totals comes down to how fast and how well each one plays.
+**Against each other.** Each partner has their own score. The drawer gets the word's points when the guess is right. The guesser gets the word's points plus two bonuses.
+
+- **Speed bonus.** 2 points when the guess comes within 15 seconds of first seeing the drawing, 1 point within 30 seconds, and 0 after that. The time is what the guesser's own screen showed. Watching live, the clock starts at the drawer's first stroke, so a drawer who opens the canvas and does something else first does not use it up.
+- **First-try bonus.** 1 point when the correct guess is the round's first attempt.
+- **Hints.** A hint doesn't change the word's points. Once the guesser uses any hint, the speed bonus and the first-try bonus are both 0 for that round.
+
+Both partners draw and guess equally often, so the difference between the totals comes down to how fast and how well each one plays.
 
 In both styles the scores keep growing and never reset. The server keeps the shared total and both personal totals at all times, so switching play style loses nothing.
 
@@ -99,11 +117,16 @@ In both styles the scores keep growing and never reset. The server keeps the sha
 
 Draw & Guess counts toward the couple's existing streak through a new game activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Sending a drawing counts, with the round id as the dedupe key. Guessing alone doesn't count, because the turn isn't done until you draw back.
 
-## Save to Memories
+## History and stars
 
-After the reveal, both partners can save the drawing to Memories. The guesser sees the prompt at the reveal. In a live round the drawer sees it at the same moment. In an async round the drawer sees it the next time they open the game. If either one says yes, the drawing is saved as a memory with the word as its title. Nothing is saved without a yes, and the game never saves on its own. The prompt rules are in `docs/games-plan.md`.
+Draw & Guess does not save to Memories. The game keeps its own history instead, and each partner can star the rounds they want to find again.
 
-The phone that says yes renders the drawer's final drawing to an image, uploads it as ordinary memory media, and asks the server to save the round. It never renders the live canvas, which can miss a stroke that is still on its way, or a canvas that is still being drawn on. The save is queued as soon as the person says yes. When the final drawing is not on the phone yet, the queued save waits until the server has the drawer's drawing, then downloads and renders it. It reads the round by id with `get_draw_and_guess_round`, so an old round or an empty cache after a privacy purge still works. A failed read only makes it try again. The save is dropped only when the server says the couple has no such round. The server saves a round at most once. When both partners say yes at the same moment, the second request gets the existing memory back.
+- **History.** The history lists the couple's finished rounds (solved or missed) that hold a drawing, newest first. It pages by round number, up to 50 rounds a page. The caller can ask for starred rounds only. Each round shows the word, the difficulty, the points, the solve time, the bonuses, the hints used, the number of attempts, the reaction, and whether each partner starred it. The game state (`current_round`, `recent_rounds`) and a round read by id (`get_draw_and_guess_round`) carry `starred_by_me` too, so a round starred on another phone shows as starred on the result screen. The drawings stay readable through `get_media_signed_url` for as long as the couple's game rows exist.
+- **Stars.** Either partner can star or unstar a finished round. A star is private. The partner is not notified. The server returns only the caller's own stars (`starred_by_me`), so a partner's stars never leave the server. Stars are deleted with the rest of the couple's game rows.
+- **Reactions.** The guesser can react to a finished round with love, laugh or wow, or clear the reaction. The last choice wins. It is stored on the round and both partners see it. No push goes out.
+- **Personal best.** A solve with no hints and a solve time is a personal best when it beat every earlier hint-free solve by the same guesser, and at least one such solve exists. The server decides this when the guess arrives and stores it on the round, so later faster solves don't change older rounds.
+- **Records.** For each partner: solves as the guesser, first-try solves, average solve time, fastest solve with its word, and drawings the partner solved. The average covers hint-free solves of 10 minutes or less. The fastest covers every hint-free solve.
+- **Result seen.** Each partner marks a finished round's result as seen once. The server keeps the first time for the drawer and for the guesser separately. The app uses it to decide whether to show a finished round's result again.
 
 ## Word lists
 
@@ -119,16 +142,17 @@ The functions are in `backend/convex/games.ts` and the helpers in `backend/conve
 
 - `game_settings`: one row per couple with the play style and the game language. Either partner writes it, and the last write wins. Changing the language replaces the words offered for the open turn.
 - `games`: one row per couple with `kind = "draw_and_guess"`, created by `ensure_draw_and_guess_game` (the caller draws first). `state` is `choosing_word`, `drawing`, or `guessing`, and `turn_user_id` is the partner who acts next. The row holds the shared total (`shared_points`), each partner's own total, the three word choices while a word is being chosen, and the start of the turn. `version` goes up with every change.
-- `game_moves`: one row per round. It holds the word (or the custom word), the difficulty, the drawing as `pkdrawing` media in the `game-drawings` bucket, the time the guesser first saw the drawing, and the result (`drawing`, `guessing`, `solved`, or `missed`). The round exists from the moment the drawer picks a word. The client creates the round id, so a drawing queued offline can name its round.
+- `game_moves`: one row per round. It holds the word (or the custom word), the difficulty, the drawing as `pkdrawing` media in the `game-drawings` bucket, the time the guesser first saw the drawing, and the result (`drawing`, `guessing`, `solved`, or `missed`). A solved round also holds `solve_ms`, `speed_bonus` (0, 1 or 2), `first_try_bonus` (0 or 1), `hints_used` and `personal_best`. A finished round can hold `guesser_reaction` (`love`, `laugh` or `wow`) and the two result seen times, `drawer_result_seen_at` and `guesser_result_seen_at`. The round exists from the moment the drawer picks a word. The client creates the round id, so a drawing queued offline can name its round.
 - `game_guesses`: every attempt with its timestamp. The query returns the newest 200 attempts of each round, oldest first, and the exact number of attempts in `attempt_count`.
-- `game_save_responses`: a partner's "Not now" for a round. A yes saves the memory and is recorded on the round (`memory_id`, `saved_by_user_id`).
+- `game_round_stars`: one row per partner and starred round, with the round number so one partner's stars page in order.
 - `game_used_words`: the words the couple has already been offered, per language and difficulty. A difficulty starts over when all its words were offered.
 - `game_presence` and `game_invites`: the open game screen, and the last invite each partner sent.
 - The guesser's phone receives the word when the round starts, because it builds the tiles and checks guesses locally for instant feedback. The UI never shows the word before the reveal. Cheating isn't a real risk between partners, so the server doesn't hide the word. The three word choices are different: only the drawer whose turn it is receives them.
 - A turn drawn offline is saved on the phone and sent when the phone is back online. The UI tells the drawer: "Saved on this phone. We'll send it when you're online." Picking a word, sending a drawing, a guess, and giving up are safe to retry.
-- Scoring: a correct guess adds the word's points to the shared total and to the drawer's total. The guesser's total gets the word's points plus 1 when the phone says the bonus was on screen. When the guess has no claim, `scoreSolve` in `lib/games.ts` decides: 1 when the guess is within 30 seconds of `guesser_first_seen_at`, and 0 without it. The server keeps all three totals whatever the play style, so the style only changes what the app shows. The speed bonus follows what the player saw. A correct guess carries `p_speed_bonus` (whether the bonus was still on screen) and `p_solve_ms` (time since the player first saw the drawing), both from the phone's clock. The phone works them out the same way in both play styles. The server uses them when present and falls back to `scoreSolve` only when both are missing. A guess that waited in the offline queue, or that reached the server before `mark_round_seen`, keeps the bonus the screen showed. The server refuses a solve time that is negative or not a number, and stores a longer one than 30 days as 30 days, so a guess after a long break still counts. Both values are part of the request hash for the guess, so a retry with different values is refused. A wrong guess ignores them. Either partner could send false values, which is acceptable for a two-person game.
+- Scoring: a correct guess adds the word's points to the shared total and to the drawer's total. The guesser's total gets the word's points plus the speed bonus plus the first-try bonus. The server keeps all three totals whatever the play style, so the style only changes what the app shows.
+- The speed bonus follows what the player saw. A correct guess carries `p_speed_bonus` (the tier on screen: 0, 1 or 2), `p_solve_ms` (time since the player first saw the drawing) and `p_hints_used` (how many letters the hints showed), all from the phone's clock and screen. The server refuses a speed bonus outside 0 to 2, a negative or non-numeric solve time, and a hint count that is not a whole number from 0 up. It stores a solve time longer than 30 days as 30 days, so a guess after a long break still counts. The hint count can be at most the word's letters minus 1, not counting spaces, and a larger count on a correct guess is refused. When the claims are missing, `scoreSolve` in `lib/games.ts` decides the speed bonus from `guesser_first_seen_at`: 2 within 15 seconds, 1 within 30 seconds, 0 after that or without a first look. With any hint, the speed bonus and the first-try bonus are 0 whatever the claim says. The server works out the first-try bonus itself: the correct guess is the round's first stored attempt and no hint was used. A guess that waited in the offline queue, or that reached the server before `mark_round_seen`, keeps the bonus the screen showed. All three values are part of the request hash for the guess, so a retry with different values is refused. A wrong guess ignores them. Either partner could send false values, which is acceptable for a two-person game.
 - A correct guess ends the round at once, even when the drawer has not sent the drawing yet. The guesser's turn to draw starts, and the drawer's later `submit_drawing` attaches the drawing to the solved round without changing the turn.
-- Relationship cleanup deletes every game row of the couple and queues the drawings for deletion. Presence rows go as soon as the relationship ends. A memory saved from a round is an ordinary memory and follows the memory rules.
+- Relationship cleanup deletes every game row of the couple, including stars, and queues the drawings for deletion. Presence rows go as soon as the relationship ends. Account deletion ends the relationship, so it follows the same path.
 
 ## Notifications
 
@@ -177,7 +201,8 @@ At accessibility Dynamic Type sizes the capsule moves out of the toolbar to the 
 | Letter ripple on reveal | `streakTick(intensity:)`, 0.25 rising to 0.85, at most 8 ticks |
 | Reveal lands | `answerRevealed()` |
 | Score count-up and speed bonus | `streakTick`, then `streakContinued()` for the bonus |
-| Saved to Memories | `memorySaved()` |
+| Show a letter, pick a reaction | `selection()` |
+| Reaction arrives on the drawer's result | `partnerDrawingReceived()` |
 | Invalid custom word | `validationError()` |
 | Wrong word (new) | `gameWrongGuess()`, two soft impacts 60 ms apart, built on the private `impact` helper. A wrong guess is not an error, so it does not use the error notification. |
 
@@ -187,10 +212,9 @@ Purpose. Make one quick choice and start. The round starts in Convex when the dr
 
 Layout, top to bottom.
 1. Title "Pick a word to draw" (`PaeoniaTypography.heroTitle`), one line of subtitle in `.paeoniaTextSecondary`.
-2. Pending save row, only when the last round's save prompt is still open (see Reveal). It is one compact row with a 48 pt thumbnail, so the prompt has a home after the player leaves the result.
-3. Three word rows in a `VStack(spacing: space12)`, easy, medium, hard from top to bottom. A row is `radius16`, `.paeoniaSurfaceSecondary`, minimum 64 pt tall. Left, the word in `PaeoniaTypography.title`. Under it, "Easy, 1 point" in `caption`, `.paeoniaTextSecondary`. Right, difficulty pips: 1, 2 or 3 `camera.macro` flowers in `.paeoniaAccentPrimary`. At accessibility sizes the pips hide, the text stays.
-4. "Draw your own" row, same shape, with `square.and.pencil` instead of pips.
-5. Pinned bottom: primary "Start drawing", disabled until a row is selected.
+2. Three word rows in a `VStack(spacing: space12)`, easy, medium, hard from top to bottom. A row is `radius16`, `.paeoniaSurfaceSecondary`, minimum 64 pt tall. Left, the word in `PaeoniaTypography.title`. Under it, "Easy, 1 point" in `caption`, `.paeoniaTextSecondary`. Right, difficulty pips: 1, 2 or 3 `camera.macro` flowers in `.paeoniaAccentPrimary`. At accessibility sizes the pips hide, the text stays.
+3. "Draw your own" row, same shape, with `square.and.pencil` instead of pips.
+4. Pinned bottom: primary "Start drawing", disabled until a row is selected.
 
 Interactions.
 - Tap a row to select it. The row gets a `strokeEmphasis` `.paeoniaAccentPrimary` border and a `checkmark.circle.fill`, with `buttonPress` timing and `selection()`. Tapping another row moves the selection. Nothing is selected at first, so no word is pushed on the player.
@@ -265,6 +289,7 @@ Variants, one layout.
 - Waiting for the word. The title follows the partner's role. On the result screen: "Waiting for [Name] to continue". On the choose word screen: "[Name] is picking a word". Away or unknown: "Waiting for [Name]", with the later hint and the invite button. The live hint is left out here, because there is no drawing to watch yet.
 - Partner drawing, live or not. Title "[Name] is drawing for you".
 - The title of the screen is fixed when it opens, so it does not change its words while it fades out into the guess.
+- Reaction to my drawing. The drawer can tap Continue before the guesser reacts. While this screen waits for the partner's next word, the reaction to the round I just drew shows under the title in the same capsule as on the drawer's result. The drawing is not on this screen, so the line names the word: "[Name] loved the UMBRELLA drawing". The word goes in front of "drawing" ("PARAPLY-tegningen" in Norwegian), so verbs, plurals, any gender and custom phrases all read right. When it arrives while the screen is open, it rises in with `cardReveal` and `partnerDrawingReceived()`, and VoiceOver reads the line. Reduce Motion: fade only. Once the partner picks a word, the reaction stays in "Our drawings".
 - Once the round has started, dim answer slots appear under the title with "5 letters". It is the first hint that something is coming, and it leaks nothing, because the guesser's phone has the word anyway.
 
 Layout, centered in the content, top to bottom.
@@ -289,20 +314,23 @@ The switch to guessing happens at the first stroke (live) or when the drawing ar
 | `wait.invite` | Tell [Name] you want to play | Si til [Name] at du vil spille |
 | `wait.inviteSent` | Sent | Sendt |
 | `invite.sentUntil` | You can send another at [time] | Du kan sende en ny kl. [time] |
+| `wait.reaction.love` | %1$@ loved the %2$@ drawing | %1$@ elsket %2$@-tegningen |
+| `wait.reaction.laugh` | %1$@ thought the %2$@ drawing was funny | %1$@ syntes %2$@-tegningen var morsom |
+| `wait.reaction.wow` | %1$@ said wow to the %2$@ drawing | %1$@ sa wow til %2$@-tegningen |
 
-VoiceOver reads avatar and title as one element. The ring is hidden. The score capsule and a pending save row sit above, in that order.
+VoiceOver reads avatar and title as one element. The ring is hidden. The score capsule sits above.
 
 ### 4. Guessing
 
 Purpose. Watch, guess fast, feel clever.
 
 Layout, top to bottom.
-1. Live row, one fixed line. Leading, "[Name] is drawing for you" while live, "[Name] is watching you guess" with the accent ring while the drawer is in the game after Done (their result screen shows this screen), or "[Name] drew this for you" otherwise (avatar 24 pt). Trailing, the speed bonus label in "Against each other" only (see below).
+1. Live row, one fixed line. Leading, "[Name] is drawing for you" while live, "[Name] is watching you guess" with the accent ring while the drawer is in the game after Done (their result screen shows this screen), or "[Name] drew this for you" otherwise (avatar 24 pt). Trailing, the speed bonus label in "Against each other" only, until the first hint (see below).
 2. Square replay (`DrawAndGuessReplayTimeline` driven by `DrawAndGuessReplayClock`). A 2 pt progress line runs along its bottom edge in `.paeoniaAccentPrimary` at 0.6 opacity.
 3. Language line, only when the word's language differs from the app's: `globe` and "The word is in English" in `caption`, `.paeoniaTextSecondary`, centered above the slots. It follows the couple's game language, as the decoy tiles do. A custom word gets no line, because the drawer could type it in any language. It fades out with the live row on the reveal.
-4. Answer slots, centered, one group per word. A group never splits unless one word is wider than the screen at the smallest slot. Then it splits into even pieces on separate lines (`DrawAndGuessSlotSizing`). Slots are 28 to 44 pt wide, the widest that adds no line, and 48 pt tall. An empty slot is `.paeoniaSurfaceSecondary` with a 2 pt underline in `.paeoniaTextTertiary`. A filled slot is `.paeoniaSurfacePrimary` with the letter in `PaeoniaTypography.title`. Hit areas run the full 48 pt height and reach into the gaps.
+4. Answer slots, centered, one group per word. A group never splits unless one word is wider than the screen at the smallest slot. Then it splits into even pieces on separate lines (`DrawAndGuessSlotSizing`). Slots are 28 to 44 pt wide, the widest that adds no line, and 48 pt tall. An empty slot is `.paeoniaSurfaceSecondary` with a 2 pt underline in `.paeoniaTextTertiary`. A filled slot is `.paeoniaSurfacePrimary` with the letter in `PaeoniaTypography.title`. A slot a hint filled has a `strokeEmphasis` outline in `.paeoniaAccentPrimary` and takes no taps. Hit areas run the full 48 pt height and reach into the gaps.
 5. Tile grid, 6 columns and 2 or 3 rows, tile = (width minus 5 gaps of `space8`) / 6, capped at 56 pt, square, `radius12`, `.paeoniaSurfacePrimary`, letter in `PaeoniaTypography.title`. A used tile becomes an empty `.paeoniaSurfaceSecondary` cell, so the grid never reflows.
-6. Pinned bottom: the grid and slots sit here, in thumb reach, and below them a quiet "Show me" button (`PaeoniaQuietButtonStyle`, 44 pt).
+6. Pinned bottom: the grid and slots sit here, in thumb reach, and below them two quiet buttons side by side (`PaeoniaQuietButtonStyle`, 44 pt): "Show a letter" and "Show me". At accessibility text sizes they stack.
 
 Interactions.
 - Replay plays at the drawn pace from the first moment the screen shows the drawing. Press and hold anywhere on the replay for 4x (`DrawAndGuessReplayClock.fastForwardRate`). Release returns to 1x. While held, a `forward.fill` glyph shows at the bottom trailing corner of the canvas in `.paeoniaAccentPrimary`, and `selection()` fires once at press. Holding must not block the tiles, which are outside the replay.
@@ -312,25 +340,33 @@ Interactions.
 - A full, wrong word. The slots shake sideways 8 pt, three swings in `motionSlow`, and their outline turns `.paeoniaWarning` for 0.4 s. `gameWrongGuess()` fires. Then the tiles fly back, last letter first, 30 ms apart. Reduce Motion: no shake. The outline holds in `.paeoniaWarning` for 0.6 s and the tiles cross-fade back. The attempt goes to Convex without any wait.
 - A full, correct word goes to the reveal (phase 5).
 - Show me. A centered alert. The default action does not use the destructive role, because nothing is lost.
+- Show a letter. Each tap places a random letter of the answer in its slot with `selection()`. It never picks a space, a hinted letter, or a letter the player already has right. The pick is seeded by the round and the hint count (`DrawAndGuessSlots.nextHintIndex(seed:)`), so it is the same on every run. A tile that sits in that slot goes back to the grid first, and the hint uses a tile with that letter from the grid. When every tile with that letter is in a slot, the hint takes one from a slot where it is wrong, never one the player has right. A hinted slot is locked: tapping it does nothing, clearing the slots and a wrong word leave it, and VoiceOver reads it as a hint. The button is disabled once the hints show all letters but one. In "Against each other", the first hint of a round asks first with a centered alert ("Show a letter?", "You won't get the speed bonus or the first try bonus this round."). "Together" has no bonuses, so it has no alert. The default action is "Show a letter" and the cancel action is "Keep guessing". The hinted slots survive leaving the screen and relaunching, and the next visit shows no alert again. The drawer sees the hinted letters fill in like any other letter, without a mark.
 - A guess typed while offline is checked on the phone, so feedback is instant. See the reveal for what a queued win shows.
 
-The speed timer. Only "Against each other" gets one, because only that style has a bonus. It is not a countdown number. The trailing slot of the live row shows "Speed bonus +1" in `.paeoniaInkGold` (`bolt.fill`), and a 3 pt line under the replay drains from full to empty over 30 seconds in the same gold. When time is up, both fade (`motionSlow`) with no sound and no haptic, and nothing in the screen turns red or pushes. The 30 seconds count from the server's `guesser_first_seen_at`, so reopening the app resumes the right remaining time. A live watcher's first look is the first stroke of the drawer's that reaches their phone, so the line drains while the partner draws and does not restart when they tap Done. Before that first stroke the label shows and the line stays full. Under Reduce Motion the line is replaced by the label alone, which disappears at 30 seconds. "Together" has no timer and never mentions speed.
+The speed timer. Only "Against each other" gets one, because only that style has a bonus. It is not a countdown number. The trailing slot of the live row shows "Speed bonus +2" in `.paeoniaInkGold` (`bolt.fill`) for the first 15 seconds, then "Speed bonus +1" until 30 seconds. A 3 pt line under the replay drains from full to empty over 30 seconds in the same gold, with a small notch above the line at the 15 second point. The line reaches the notch when the label drops from +2 to +1, and the notch goes away then. When the 30 seconds are over, the label and the line fade (`motionSlow`) with no sound and no haptic, and nothing in the screen turns red or pushes. The 30 seconds count from the server's `guesser_first_seen_at`, so reopening the app resumes the right remaining time. A live watcher's first look is the first stroke of the drawer's that reaches their phone, so the line drains while the partner draws and does not restart when they tap Done. Before that first stroke the label shows "+2" and the line stays full. Under Reduce Motion the line and the notch are replaced by the label alone, which still steps from +2 to +1 and disappears at 30 seconds. After the first hint the label and the line are gone, because any hint takes the bonus away. The tier on screen when the correct guess is made (2, 1 or 0) goes to the server as `p_speed_bonus`. "Together" has no timer and never mentions speed.
 
 | Key | English | Norwegian |
 |---|---|---|
 | `guess.drawnBy` | [Name] drew this for you | [Name] tegnet dette til deg |
 | `guess.watchingYou` | [Name] is watching you guess | [Name] ser at du gjetter |
-| `guess.speedBonus` | Speed bonus +1 | Fartsbonus +1 |
+| `guess.speedBonus` | Speed bonus +%lld (2 for 15 seconds, then 1) | Fartsbonus +%lld |
+| `guess.speedBonusFast.a11y` | Guess within 15 seconds for 2 extra points. | Gjett innen 15 sekunder for to ekstra poeng. |
 | `guess.speedBonus.a11y` | Guess within 30 seconds for 1 extra point. | Gjett innen 30 sekunder for ett ekstra poeng. |
 | `guess.holdHint` | Hold to speed up | Hold for å spole fremover |
 | `guess.wordLanguage.english` | The word is in English | Ordet er på engelsk |
 | `guess.wordLanguage.norwegian` | The word is in Norwegian | Ordet er på norsk |
 | `guess.showMe` | Show me | Vis meg |
 | `guess.showMe.title` | Show the answer? | Vise svaret? |
-| `guess.showMe.message` | This round won't give any points. You can still save the drawing. | Denne runden gir ingen poeng. Du kan fortsatt lagre tegningen. |
+| `guess.showMe.message` | This round won't give any points. You'll still see the word and the drawing. | Denne runden gir ingen poeng. Du får fortsatt se ordet og tegningen. |
 | `guess.showMe.cancel` | Keep guessing | Fortsett å gjette |
+| `hint` | Show a letter | Vis en bokstav |
+| `hint.confirm.title` | Show a letter? | Vise en bokstav? |
+| `hint.confirm.message` | You won't get the speed bonus or the first try bonus this round. | Du får ikke fartsbonusen eller bonusen for første forsøk denne runden. |
+| `guess.hintPlaced` | Hint. %1$@ in letter %2$lld | Hint. %1$@ i bokstav %2$lld |
+| `slotHint` | Letter %1$lld, %2$@, hint | Bokstav %1$lld, %2$@, hint |
+| `hints` | %lld hint / %lld hints | %lld hint |
 
-VoiceOver. The game is visual, and the drawing has no text version before the reveal. So the replay is one element, "Drawing by [Name], playing", with the hint "It can't be described before you guess." / "Den kan ikke beskrives før du har gjettet." Custom actions on it are "Play faster" (toggles 4x) and "Show the whole drawing" (calls the clock's `finish`). The answer is one group, "Answer, two words, 3 and 5 letters", containing one element per letter slot ("Letter 2, A. Double tap to remove" or "Letter 2, empty"). Tiles come next in row order, and a rotor named "Empty letters" jumps between empty slots. Placing a tile announces "A in letter 2". A wrong word announces "Not it. Try again."
+VoiceOver. The game is visual, and the drawing has no text version before the reveal. So the replay is one element, "Drawing by [Name], playing", with the hint "It can't be described before you guess." / "Den kan ikke beskrives før du har gjettet." Custom actions on it are "Play faster" (toggles 4x) and "Show the whole drawing" (calls the clock's `finish`). The answer is one group, "Answer, two words, 3 and 5 letters", containing one element per letter slot ("Letter 2, A. Double tap to remove" or "Letter 2, empty"). Tiles come next in row order, and a rotor named "Empty letters" jumps between empty slots. Placing a tile announces "A in letter 2", and a hint announces "Hint. A in letter 2". A hinted slot reads "Letter 2, A, hint" and has no remove hint. A wrong word announces "Not it. Try again."
 
 Dynamic Type. Tile and slot letters cap at `.accessibility1` because the grid keeps 6 columns, and tiles grow with the size up to 64 pt. The screen scrolls above the pinned tiles. The live row wraps to two lines, and the speed label moves under it.
 
@@ -350,23 +386,24 @@ Beats, in seconds after the last tile lands.
 | 0.70 to 1.10 | The tile grid collapses (`meaningfulMoment`). The canvas eases to 80% width. |
 | 1.10 | Title "Got it!" and the solve time fade up (`celebrationReveal`). The primary button appears. |
 | 1.40 | Two avatars (44 pt) with a `PaeoniaHeartDivider` between them appear, and the score panel starts (below). |
-| 1.90 | "Speed bonus +1" lands in gold with `streakContinued()`, if the guess earned it. |
-| 2.20 | The save row rises in (`cardReveal`). |
+| 1.90 | "Speed bonus +2" (or +1) lands in gold with `streakContinued()`, if the guess earned it. |
+| 2.20 | "First try +1" lands with `streakContinued()`, if the guess earned it. It has its own beat after the speed bonus. |
+| 2.50 | The reaction row rises in (`cardReveal`). |
 
 Everything is tappable from 1.10 s. A tap on the screen jumps to the settled state, as `PairingCelebrationTimeline.skip` does, without repeating haptics. Build a `DrawAndGuessRevealTimeline` like that timeline, with a run id, an injected schedule and injected haptics, so tests can run it fast. Reduce Motion: no ripple, bloom, glow or count-up. The settled state shows at once, with only `answerRevealed()`.
 
 Drawing still loading. When the final drawing is not on the phone yet, such as on a reveal opened after a relaunch, the square keeps its size and shows a small `ProgressView` in `.paeoniaAccentPrimary`, centered, with the VoiceOver label "Loading the drawing" / "Laster inn tegningen". The spinner waits 0.3 s before it shows, so a fast download never flashes it. The drawing then fades in (`meaningfulMoment`, opacity only, so Reduce Motion gets the same). A failed download shows "Can't load the drawing" with Try again in the same square. The drawer's result uses the same view (`DrawAndGuessRevealDrawing`). The Debug scenario `draw-reveal-loading` shows it.
 
-Solve time. "You solved it in 24 seconds" (`Duration.UnitsFormatStyle`, seconds and minutes). It uses the server's `solve_ms`. Past 10 minutes the line is dropped, because the time then says more about the day than the guess.
+Solve time. "You solved it in 24 seconds" (`Duration.UnitsFormatStyle`, seconds and minutes). It uses the server's `solve_ms`. Past 10 minutes the line is dropped, because the time then says more about the day than the guess. When the server confirms `personal_best`, a second line in `.paeoniaAccentPrimary` says "Your fastest solve yet". The phone never guesses this one, so it shows only after the server answered.
 
 Score panel.
 - Together. The couple total counts up from the old to the new total in 0.6 s, big, in `PaeoniaTypography.countdownNumber`, with "points together" under it and "+2" in `.paeoniaAccentPrimary` beside it. Both avatars sit above. One `streakTick` per point added.
-- Against each other. The two avatars are the two columns, each with a total below. A "+3" pops on mine and a "+2" on theirs, and the totals count up. Under my column, if I am the guesser, two quiet lines "The word +2" and "Speed bonus +1" (gold). Under theirs, "For the drawing +2". No winner banner and no comparison text. The numbers do that.
-- Queued win (offline). The panel shows the word's points without a bonus and the line "Your score updates when you're online." The server adds the bonus the phone claimed when the guess arrives, so a queued guess keeps it, and the bonus line appears once the result is confirmed.
+- Against each other. The two avatars are the two columns, each with a total below. A "+3" pops on mine and a "+2" on theirs, and the totals count up. Under my column, if I am the guesser, up to three quiet lines: "The word +2", "Speed bonus +2" (gold, only when above 0) and "First try +1" (only when earned). Under theirs, "For the drawing +2". No winner banner and no comparison text. The numbers do that.
+- Queued win (offline). The panel counts the word's points plus the bonuses the phone promised: the speed bonus tier the screen showed, and the first-try bonus when no wrong word came before and no hint was used. It adds the line "Your score updates when you're online." when the move is held on the phone. The server takes the speed bonus as sent, works out the first-try bonus itself, and its numbers replace the phone's when they arrive. A line that arrives late shows without a second celebration.
 
-Save to Memories. The row is one full-width secondary button, "Save drawing to Memories", with no question above it. Saving shows the button's loading state while the phone renders and uploads the image, then the whole row becomes `checkmark.circle.fill` "Saved to Memories" (`memorySaved()`). If the partner saved first, the row opens already in the saved state with "[Name] saved this to Memories". Offline, the row shows the `draw.sendOffline` line and keeps trying. Continue at the bottom means no. It records "not now" for me only.
+Reactions. Under the panel (and under the "Not this time" text on a missed round), the guesser sees a caption "Tell [Name] what you think" and three buttons: love (`heart.fill`, "Love"), laugh (`face.smiling`, "Haha") and wow (`hands.clap.fill`, "Wow"). The symbols are `.paeoniaAccentPrimary`. Tapping a button selects it (accent outline, `selection()`). Tapping the selected one clears it. The choice shows on the phone at once and goes out when the phone is online. The last choice wins. The drawer's phone shows it on their result screen (phase 6). The row arrives at 2.50 s, or at once after a tap on the screen. At accessibility text sizes the buttons stack. VoiceOver reads each as a button with the `.isSelected` trait on the chosen one.
 
-If the player leaves the result some other way, such as closing the app, the save option moves to the pending save row at the top of the choose and waiting screens (compact: thumbnail, "Save CAT to Memories?", the same single button) until the next round starts.
+Star. Once the result's buttons appear, a star button shows in the trailing toolbar (`star`, `star.fill` when starred, `.paeoniaAccentPrimary`). It toggles my private star with `selection()`, and its label reads "Star" or "Starred" with the selected trait while starred. It sits next to the "Our drawings" button, which every Draw & Guess screen has. The first time a person stars a drawing, a quiet banner says "Only you can see your stars." with a `star.fill` glyph, so a private star never looks like it tells the partner. It shows once per phone (`games.drawAndGuess.starHintShown`). The star works on a solved and a missed round. It uses the same `DrawAndGuessStars` object as "Our drawings".
 
 Hand-off. The primary button is "Your turn to draw", pinned at the bottom and always the primary action. It crosses to phase 1 over `pairedScreenTransition` and keeps no state. There is no forced answer, no second confirm, and no auto-advance, because the player may want to look at the drawing a bit longer. In a live pair the drawer's phone is already on its own result screen, so the two phones move on independently.
 
@@ -376,12 +413,11 @@ Hand-off. The primary button is "Your turn to draw", pinned at the bottom and al
 | `reveal.solveTime` | You solved it in %@ | Du løste den på %@ |
 | `reveal.pointsTogether` | points together | poeng sammen |
 | `reveal.you` | You | Du |
-| `reveal.word` / `reveal.speed` / `reveal.drawing` | The word / Speed bonus / For the drawing | Ordet / Fartsbonus / For tegningen |
+| `reveal.line.word` / `reveal.line.speed` / `reveal.line.firstTry` / `reveal.line.drawing` | The word +%lld / Speed bonus +%lld / First try +%lld / For the drawing +%lld | Ordet +%lld / Fartsbonus +%lld / Første forsøk +%lld / For tegningen +%lld |
+| `reveal.personalBest` | Your fastest solve yet | Din raskeste løsning så langt |
 | `reveal.offlineScore` | Your score updates when you're online. | Poengene oppdateres når du er på nett. |
-| `save.save` | Save drawing to Memories | Lagre tegningen i Minner |
-| `save.saved` | Saved to Memories | Lagret i Minner |
-| `save.savedBy` | [Name] saved this to Memories | [Name] lagret dette i Minner |
-| `save.pendingRow` | Save %@ to Memories? | Lagre %@ i Minner? |
+| `reaction.prompt` | Tell [Name] what you think | Si til [Name] hva du synes |
+| `reaction.love` / `reaction.laugh` / `reaction.wow` | Love / Haha / Wow | Elsker / Haha / Wow |
 | `handoff.draw` | Your turn to draw | Din tur til å tegne |
 
 VoiceOver. On the word landing, post one announcement, "Correct. It was CAT. 2 points." Then focus moves to the title. The bloom and glow are hidden. The count-up exposes only the final value. Dynamic Type. The avatar columns stack vertically at accessibility sizes, and the screen scrolls with the button pinned.
@@ -398,11 +434,13 @@ Right after Done, if the round is not solved, the drawer sees the same square (8
 
 Async open. When the drawer opens the game after a round ended, the chips play back in order, 0.5 s apart, compressed so the sequence takes 3 seconds at most, each with a soft `partnerDrawingReceived()`. Tapping the screen finishes the sequence. This is the screen the doc calls the drawer's payoff, so it never appears all at once the first time. Reduce Motion: all chips at once.
 
-Solved. The correct word joins the chip row last, in `.paeoniaSuccess`, with the same letter ripple, `answerRevealed()` and a half-size bloom as phase 5. Title "[Name] got it!". Under it one sentence, "[Name] got it in 24 seconds, on the first try." or "[Name] got it in 24 seconds and 3 tries.", without the time when it is missing or past 10 minutes. The panel for points is phase 5's, with my column showing "For the drawing +2". The save row and the primary button "Continue" (to phase 3) follow. If the solve happens while the drawer is still drawing, the sequence is the same, and the sent drawing is the final frame.
+Solved. The correct word joins the chip row last, in `.paeoniaSuccess`, with the same letter ripple, `answerRevealed()` and a half-size bloom as phase 5. Title "[Name] got it!". Under it one sentence, "[Name] got it in 24 seconds, on the first try." or "[Name] got it in 24 seconds and 3 tries.", without the time when it is missing or past 10 minutes. When the guesser used hints, the sentence names them instead of the tries: "[Name] got it in 24 seconds with 2 hints." When the server says it was the guesser's fastest solve so far, a second line in `.paeoniaAccentPrimary` says "[Name]'s fastest solve yet". The panel for points is phase 5's, with my column showing "For the drawing +2". Under the panel, the guesser's reaction shows when there is one, as a capsule with its symbol in `.paeoniaAccentPrimary` and a short line: "[Name] loved it", "[Name] laughed" or "[Name] said wow". If the reaction is already there when the screen opens, it comes in with the result at 2.50 s. If it arrives while the drawer looks at the result, it rises in (`cardReveal` with a small scale, opacity only under Reduce Motion) and fires `partnerDrawingReceived()`. VoiceOver reads the capsule as one line. The primary button "Continue" (to phase 3) follows. If the solve happens while the drawer is still drawing, the sequence is the same, and the sent drawing is the final frame.
 
-Unseen results. The drawer may not open the game until the partner has already solved and drawn back, so the current round is then a new one. The game shows the latest finished round's result first when this phone has not shown it, with "Continue" leading to the new round. A local flag per round id (a small store like `StreakMilestoneStore`) tracks it.
+Star. The drawer's result has the same toolbar star as phase 5. It shows only once the round has ended, never while the round is still open after Done.
 
-Missed, from the drawer's side. Title "[Name] asked for the answer", then the chips of the tries, then "No points this round." The tone stays flat and kind, with no "gave up" wording.
+Unseen results. The drawer may not open the game until the partner has already solved and drawn back, so the current round is then a new one. The game shows the latest finished round's result first when this person has not moved past it, with "Continue" leading to the new round. A result counts as seen when the server has the drawer's `drawer_result_seen_at` for it, or a "result seen" mark for it waits on this phone. A fresh install and a second phone therefore never show an old result again.
+
+Missed, from the drawer's side. Title "[Name] asked for the answer", then the chips of the tries, then "No points this round." The tone stays flat and kind, with no "gave up" wording. A reaction to a missed round shows the same way as on a solved one.
 
 | Key | English | Norwegian |
 |---|---|---|
@@ -416,13 +454,16 @@ Missed, from the drawer's side. Title "[Name] asked for the answer", then the ch
 | `result.gotIt` | [Name] got it! | [Name] gjettet riktig! |
 | `result.solvedTimedFirstTry` / `result.solvedTimedTries` | [Name] got it in %@, on the first try. / [Name] got it in %@ and %lld tries. | [Name] klarte det på %@, på første forsøk. / [Name] klarte det på %@ og %lld forsøk. |
 | `result.solvedFirstTry` / `result.solvedTries` | [Name] got it on the first try. / [Name] got it in %lld tries. | [Name] klarte det på første forsøk. / [Name] klarte det på %lld forsøk. |
+| `result.solvedTimedHints` / `result.solvedHints` | [Name] got it in %@ with 2 hints. / [Name] got it with 2 hints. | [Name] klarte det på %@ med 2 hint. / [Name] klarte det med 2 hint. |
+| `result.personalBest` | [Name]'s fastest solve yet | [Name] sin raskeste løsning så langt |
+| `result.reaction.love` / `.laugh` / `.wow` | [Name] loved it / [Name] laughed / [Name] said wow | [Name] elsket den / [Name] lo / [Name] sa wow |
 | `result.missed` | [Name] asked for the answer | [Name] ba om å få se svaret |
 | `result.noPoints` | No points this round. | Ingen poeng denne runden. |
 | `handoff.continue` | Continue | Fortsett |
 | `handoff.watch` | Watch [Name] draw | Se [Name] tegne |
 | `handoff.seeDrawing` | See what [Name] drew | Se hva [Name] tegnet |
 
-Watch the partner draw. When this phone is on the drawer's result and the server's current round is a newer round in state `drawing` with the partner as drawer, the bottom button changes from "Continue" to "Watch [Name] draw", with a pulsing dot in front (still under Reduce Motion). It gives one `partnerDrawingReceived()` haptic and a VoiceOver announcement ("[Name] is drawing for you") when it appears. Tapping it does what Continue does, which also counts as not saving, and lands in the live watching phase when the partner is drawing live. The save button stays above it. When the partner has already sent that round (state `guessing`), the button reads "See what [Name] drew" instead, with the same haptic and a VoiceOver announcement of the button text, and no pulsing dot because nothing is happening live. The view model exposes both as `partnerNextRound`.
+Watch the partner draw. When this phone is on the drawer's result and the server's current round is a newer round in state `drawing` with the partner as drawer, the bottom button changes from "Continue" to "Watch [Name] draw", with a pulsing dot in front (still under Reduce Motion). It gives one `partnerDrawingReceived()` haptic and a VoiceOver announcement ("[Name] is drawing for you") when it appears. Tapping it does what Continue does, which also marks the result as seen, and lands in the live watching phase when the partner is drawing live. When the partner has already sent that round (state `guessing`), the button reads "See what [Name] drew" instead, with the same haptic and a VoiceOver announcement of the button text, and no pulsing dot because nothing is happening live. The view model exposes both as `partnerNextRound`.
 
 VoiceOver reads the guesses as one sentence, "[Name] tried CAT, then HAT, then DOG", built with `ListFormatStyle`-style joining, and the chips are hidden from the rotor.
 
@@ -433,7 +474,7 @@ Purpose. A soft landing. No guilt, no lost points.
 After the Show me alert is confirmed, the slots fill with the answer left to right (still `.paeoniaTextPrimary` on `.paeoniaSurfacePrimary`, not green) over 0.5 s, with a single `partnerDrawingReceived()` and no bloom. The replay finishes, the canvas eases to 80%, and the panel shows:
 - Title "Not this time".
 - Line "No points this round. Ready to draw one back?"
-- The save row (the drawing and word are still a good memory).
+- The reaction row (phase 5), shown at 1.10 s. A missed round can still get a reaction.
 - Primary "Your turn to draw".
 
 There is no score panel, in both styles, because nothing changed. The play style needs no other handling.
@@ -443,6 +484,77 @@ There is no score panel, in both styles, because nothing changed. The play style
 | `missed.title` | Not this time | Ikke denne gangen |
 | `missed.line` | No points this round. Ready to draw one back? | Ingen poeng denne runden. Klar for å tegne en tilbake? |
 
+### 8. Our drawings
+
+Purpose. Find a drawing again. Every finished round that holds a drawing is here, solved or missed, newest first. Draw & Guess no longer saves to Memories, so this is where drawings live.
+
+Entry points.
+- A `square.grid.2x2` button in the trailing toolbar of `DrawAndGuessScreen`, labelled "Our drawings".
+- A quiet link on the Games hub's Draw & Guess card, under the main button. It shows once the cached game state holds a finished round with a drawing. The card on the Us tab has no link.
+
+Look. The screen follows the shell above: `.paeoniaBackgroundSecondary`, dark toolbar, inline title, no cards. Only the drawing cells get a fill (`.paeoniaSurfaceSecondary`, `radius16`). Icons are plum and text is white. Nothing is red, because nothing here is destructive.
+
+Layout, top to bottom, all in one scroll view.
+1. Records. The heading "Records" (`sectionTitle`), a header row with my avatar and "You" next to the partner's avatar and name, then three rows. Each row has a caption label and one value per partner in `PaeoniaTypography.title`. The rows are solves on the first try, the average solve time, and the fastest solve (time, with the word under it in `caption`). A partner with no value for a row reads "Not yet" in `.paeoniaTextTertiary`. Times use `Duration.UnitsFormatStyle` in abbreviated form ("24 sec"). The section shows in both play styles. At accessibility text sizes the header row goes away, the columns stack, and each value carries its owner's name. Each row is one VoiceOver element, "Fastest solve, You: 9 sec, Cat. Robin: 12 sec, Umbrella."
+2. A segmented picker, "All" and "Starred". It shows my stars only.
+3. The grid. `LazyVGrid` with adaptive columns of at least 160 pt, which gives 2 columns on a phone and more on an iPad. A cell has a square picture on `.paeoniaBackgroundPrimary` (`radius12`), the word (`bodyEmphasis`, up to two lines), and "by Robin · Oct 12" or "by you · Oct 12" in `caption`. A filled `star.fill` badge sits at the top trailing corner when I starred the drawing, and a small badge with the guesser's reaction sits at the bottom trailing corner. A missed round looks the same as a solved one.
+
+Pictures. `DrawAndGuessThumbnails` renders a `PKDrawing` to a 240 pt square at 2x off the main actor and keeps the result in memory (an `NSCache` limited to 48 MB). The drawing comes from the phone when it has it, and otherwise through `GameDrawingTransferring`, the path the game already uses. A downloaded drawing stays on the phone with the partner's other drawings, so the screen shows what it showed before while offline. A privacy purge empties the memory cache together with the files.
+
+Loading and paging.
+- The screen shows the cached first page of "All" and the cached records at once, then reads the server. The cache holds the first page and the records (`GamesHistoryCache`). A failed read keeps what is on screen and says nothing.
+- A page is 30 rounds. The cell near the end of the list (the last 6) loads the next page with `next_before_round_number`. A failed page shows "We couldn't load older drawings." and Try again.
+- Returning from a drawing and pulling down both read the first page again. A list that was scrolled past its first page keeps its older rounds.
+- The "Starred" list is built from the starred pages and the loaded "All" rounds, filtered by what the star store says. A drawing leaves the list the moment I unstar it, and joins it the moment I star it from "All". Offline, it falls back to the cached "All" rounds.
+
+Empty states, with `PaeoniaEmptyStateView`.
+- No drawings yet (the first round has not finished): `square.grid.2x2`, "No drawings yet".
+- "Starred" with no stars: `star`, "No starred drawings".
+- Offline with nothing cached: the usual `wifi.slash` state ("You're offline", `choose.offline.title`) with Try again.
+
+The detail screen. A cell pushes it. It shows, top to bottom, the square drawing, a "Play again" button with a small hint, the word (`heroTitle`), "Drawn by Robin · Oct 12", one result line, the reaction if there is one, and a caption "Only you can see your stars."
+- The drawing plays back once at the drawn pace through `DrawAndGuessReplayTimeline` and `DrawAndGuessReplayClock`, on the same `DrawAndGuessReplaySurface` the guess screen uses. Holding anywhere on it plays at 4x, with a `forward.fill` glyph and a `selection()` haptic. "Play again" starts it over. With Reduce Motion the finished drawing shows at once and "Play again" plays it on request.
+- The result line reuses the drawer's result copy with the guesser's name ("You" when I guessed): "Robin got it in 24 seconds, on the first try.", "Robin got it in 24 seconds and 3 tries.", or "Robin asked for the answer". The time is left out past 10 minutes.
+- The toolbar star button (`star` and `star.fill`) toggles my star with `selection()`. Its label reads "Star" or "Starred", and it has the selected trait while starred.
+- A drawing that can't load shows the "Can't load the drawing" state with Try again, in the square.
+
+Stars. `DrawAndGuessStars` is the one place that knows my stars. The star of a round shows at once, is kept on the phone as a queued `setGameRoundStar` write, and is sent when the phone is online. The last write of a round wins, and the server sets the value it is given, so a retry changes nothing. The value shown is the server's value with the queued writes on top. The server's value comes from the game state for its rounds (`starred_by_me`) and from the cached history pages and star writes for older ones. A star write's answer also updates the cached game state. It keys by round id, so a round that just ended and is not in the history list yet can be starred. The result screens use the same object through `DrawAndGuessViewModel.stars`: `stars.isStarred(roundID)` and `stars.toggle(roundID:)` or `stars.setStarred(_:roundID:)`.
+
+VoiceOver. A cell is one element, "Cat, drawn by Robin, starred" or "Cat, drawn by you". The badges are hidden. The drawing on the detail screen is one element, "Drawing of Cat, drawn by Robin", with the actions "Play again" and "Show the whole drawing". Everything scales with Dynamic Type.
+
+| Key | English | Norwegian |
+|---|---|---|
+| `history.title` | Our drawings | Tegningene våre |
+| `history.records.title` | Records | Rekorder |
+| `history.records.firstTry` | Solved on the first try | Løst på første forsøk |
+| `history.records.average` | Average time | Gjennomsnittstid |
+| `history.records.fastest` | Fastest solve | Raskeste løsning |
+| `history.records.none` | Not yet | Ikke ennå |
+| `history.records.spoken` | %1$@: %2$@ | %1$@: %2$@ |
+| `history.records.fastestSpoken` | %1$@, %2$@ | %1$@, %2$@ |
+| `history.filter.all` | All | Alle |
+| `history.filter.starred` | Starred | Stjernemerket |
+| `history.filter.label` | Show | Vis |
+| `history.who.you` | you | deg |
+| `history.cell.caption` | by %1$@ · %2$@ | av %1$@ · %2$@ |
+| `history.cell.a11y` | %1$@, drawn by %2$@ | %1$@, tegnet av %2$@ |
+| `history.cell.starred.a11y` | %1$@, drawn by %2$@, starred | %1$@, tegnet av %2$@, stjernemerket |
+| `history.empty.title` | No drawings yet | Ingen tegninger ennå |
+| `history.empty.message` | Your drawings will show up here after your first round. | Tegningene deres dukker opp her etter første runde. |
+| `history.emptyStarred.title` | No starred drawings | Ingen stjernemerkede tegninger |
+| `history.emptyStarred.message` | Tap the star on a drawing you like, and it shows up here. | Trykk på stjernen på en tegning du liker, så dukker den opp her. |
+| `history.offline.message` | Connect to the internet to see your drawings. | Koble til internett for å se tegningene deres. |
+| `history.loadMore.failed` | We couldn't load older drawings. | Vi kunne ikke laste eldre tegninger. |
+| `history.detail.drawnBy` | Drawn by %1$@ · %2$@ | Tegnet av %1$@ · %2$@ |
+| `history.detail.replay` | Play again | Spill av igjen |
+| `history.detail.holdHint` | Hold the drawing to speed it up. | Hold på tegningen for å spole fremover. |
+| `history.detail.drawing.a11y` | Drawing of %1$@, drawn by %2$@ | Tegning av %1$@, tegnet av %2$@ |
+| `history.star` | Star | Stjernemerk |
+| `history.starred` | Starred | Stjernemerket |
+| `history.star.privacy` | Only you can see your stars. | Bare du ser stjernene dine. |
+
+The detail screen also reuses `result.solvedTimedFirstTry`, `result.solvedTimedTries`, `result.solvedFirstTry`, `result.solvedTries`, `result.missed`, `reveal.you`, `drawingLoading`, `guess.replay.skip`, `notice.drawingUnavailable` and `choose.offline.title`.
+
 ### Wide layouts and Dynamic Type
 
 - Wide means 700 pt or more wide and wider than tall, measured with `onGeometryChange`, not the device idiom. It applies to iPad landscape, iPad Split View, and iPhone landscape.
@@ -451,20 +563,19 @@ There is no score panel, in both styles, because nothing changed. The play style
 - Choose, waiting and missed are text-led and use `.paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)` in every size.
 - At accessibility Dynamic Type sizes every phase becomes a scroll view with the primary button pinned. The canvas keeps its square. Pips, ring and avatars in the reveal rearrange, never disappear.
 
-### Rules questions this design raises
-
-- The unseen result gate is local to the phone (a second device would show the result again).
-
 ## iOS
 
 Code map in `docs/implementation-map.md`. Decisions the sections above leave open:
 
-- **Local first.** Picking a word, sending the drawing, a guess, "Show me" and saving to Memories go into the pending operations before anything is sent. The screen applies those queued moves on top of the server's state, so a correct guess shows the reveal at once and a drawing sent offline shows "Saved on this phone. We'll send it when you're online." The server's points, speed bonus and solve time replace the local values when they arrive. The speed bonus and solve time are the ones the phone sent with the guess. Creating the couple's game and changing settings need a connection.
-- **Order.** A drawing waits for the word pick of its round, and a pick waits for this person's earlier guesses and give up. A guess or give up waits for the earlier guesses of the same round, so a wrong guess is never refused after the correct one ended the round. A save to Memories waits for this person's guesses and give up of its round, because the server saves only a finished round. A refused word or drawing stops retrying and shows a notice. The server can also answer a move with an error the phone has no rule for, such as a bare "Server Error". After the server refuses that move three times, the phone drops it, keeps the round open, and shows "Your move wasn't sent". Only those refusals count, kept per move in the Games cache. Offline failures, sign-in problems, waiting behind an earlier move, and "active entitled game access is required" never count and never drop a move. A correct guess that is dropped empties the answer slots, so the person can guess again. The server deletes an upload that nothing used within a week. When a phone stayed offline that long after uploading a drawing, or the photo of a save to Memories, the phone queues the drawing or the save again with a new upload. When the server takes a move, the phone reads the server's state before the move leaves the queue, so the screen never falls back to the state from before the move while the live feed catches up. When that read fails, the move stays in the queue, and the next try replays it and reads again. That try comes after 2 seconds, then 4, 8 and at most 15, instead of the usual minute, so "Saved on this phone" goes away within seconds once the network works. Offline, the replay itself fails and waits the usual time. The server answers a replay from its record of the operation. The Games cache never takes a server state that is behind the one it holds, such as a live feed update sent before a move the phone already read back. It tells by what the server only moves forward: the game's version, a round's drawing, first look and memory, its attempts, and whether it ended. A one-shot read that is ahead of the kept state by the same measure is kept, even when a live update arrived while the read ran. While a move waits and the last try failed for a reason other than being offline, the waiting screen says "We couldn't send your move yet" and has a "Try again" button. Deploy the backend before shipping an app build that sends new fields, because an old server answers them with that bare error. A refused drawing goes back on the canvas. When the word is refused, the drawing already made for it is not sent. It is kept and appears on the canvas of the drawer's next round, after they pick another word.
+- **Local first.** Picking a word, sending the drawing, a guess, "Show me", a reaction and moving past a result go into the pending operations before anything is sent. The screen applies those queued moves on top of the server's state, so a correct guess shows the reveal at once, a reaction shows the moment it is tapped, and a drawing sent offline shows "Saved on this phone. We'll send it when you're online." The server's points, bonuses and solve time replace the local values when they arrive. The speed bonus tier, the solve time and the hint count are the ones the phone sent with the guess. The first-try bonus on a queued win is the phone's prediction: no earlier wrong word in the round and no hint. Creating the couple's game and changing settings need a connection.
+- **Order.** A drawing waits for the word pick of its round, and a pick waits for this person's earlier guesses and give up. A guess or give up waits for the earlier guesses of the same round, so a wrong guess is never refused after the correct one ended the round. A reaction and a result seen mark wait for this person's guesses and give up of their round, because the server takes them only on a finished round, and a reaction also waits for an earlier reaction of the same round, so the last one made is the last one sent. A refused word or drawing stops retrying and shows a notice. The server can also answer a move with an error the phone has no rule for, such as a bare "Server Error". After the server refuses that move three times, the phone drops it, keeps the round open, and shows "Your move wasn't sent". Only those refusals count, kept per move in the Games cache. Offline failures, sign-in problems, waiting behind an earlier move, and "active entitled game access is required" never count and never drop a move. A correct guess that is dropped empties the answer slots, so the person can guess again. A reaction and a result seen mark are not counted this way. Only a refusal a retry can never fix drops them, without a notice, and any other error keeps them in the queue. The server deletes an upload that nothing used within a week. When a phone stayed offline that long after uploading a drawing, the phone queues the drawing again with a new upload. When the server takes a move, the phone reads the server's state before the move leaves the queue, so the screen never falls back to the state from before the move while the live feed catches up. When that read fails, the move stays in the queue, and the next try replays it and reads again. That try comes after 2 seconds, then 4, 8 and at most 15, instead of the usual minute, so "Saved on this phone" goes away within seconds once the network works. Offline, the replay itself fails and waits the usual time. The server answers a replay from its record of the operation. The Games cache never takes a server state that is behind the one it holds, such as a live feed update sent before a move the phone already read back. It tells by what the server only moves forward: the game's version, a round's drawing, first look and result seen times, its attempts, and whether it ended. A one-shot read that is ahead of the kept state by the same measure is kept, even when a live update arrived while the read ran. While a move waits and the last try failed for a reason other than being offline, the waiting screen says "We couldn't send your move yet" and has a "Try again" button. Deploy the backend before shipping an app build that sends new fields, because an old server answers them with that bare error. A refused drawing goes back on the canvas. When the word is refused, the drawing already made for it is not sent. It is kept and appears on the canvas of the drawer's next round, after they pick another word.
 - **One drawing size.** The drawer scales the drawing to a 320 point square before sending, and the guesser scales it to their own canvas. The live room uses the same size.
-- **Reveal.** Each person moves past a round's reveal once, and the phone remembers it. "Continue" with the save question still open answers "not now" for this person, without waiting for the network. The phone keeps that answer, so the question stays closed after a relaunch while the server has not heard it. A person who leaves the reveal another way, such as closing the app, keeps the question, and the choose and waiting screens show it as the pending save row until the next round starts. The guesser draws next, so "Your turn to draw" shows when the guesser leaves the reveal.
-- **Built screens.** The screens follow the design above with these differences. The answer slots sit under the square in the scrolling content (pinned with the tiles only at accessibility text sizes), so the reveal does not move them. The "Missed" result uses the same layout as the solved reveal instead of the focused width. When the partner solves the round while the drawer is still drawing, the drawer's screen cross-fades to the result instead of folding the tools away. The pending save row covers the round that just ended, and is gone once the next round starts. The Draw & Guess canvas shares the widget tool controls through `WidgetDrawingToolControlling` instead of the widget view model.
-- **Live to async.** A guesser who watched the drawing live keeps the live canvas when the drawer taps Done, until the drawer leaves the live room. The live canvas counts only when a snapshot of the drawer's whole canvas arrived since either phone last joined the room, because a canvas from before a lost connection can miss strokes. Otherwise the sent drawing is downloaded and replayed. The guesser asks for that snapshot whenever a socket joins and whenever the partner starts drawing. A guesser who did not watch gets the replay. A guesser who solves the round live keeps the live canvas as it was at that moment, on the phone in the Games drawings, so a relaunch before the drawer's drawing arrives still shows it on the reveal. It never becomes the Memories image. The phone keeps one such snapshot per person, deletes it once the drawer's drawing is downloaded, and clears it with the partner's downloaded drawings on sign-out and in a privacy purge. The speed bonus clock starts when the guesser first sees the drawing, live or replayed. Live, that is the first stroke on the canvas, not an empty canvas. A drawing that finishes downloading while the app is in the background starts its replay and tells the server it was seen only when the screen is back.
+- **Result seen.** A finished round's result counts as seen for this person when the round's `drawer_result_seen_at` (or `guesser_result_seen_at`, for the guesser) is set on the server, or when a "result seen" mark for it waits in the pending operations on this phone. The phone keeps no list of seen rounds of its own. "Continue" on the reveal queues `mark_round_result_seen` and the screen moves on at once, without waiting for the network. The queued mark waits for this person's guess or give up of that round. The handler reads the server's state before the mark leaves the queue, so the result never comes back in between. A fresh install or a second phone reads the seen time from the server and does not show an old result again. The guesser draws next, so "Your turn to draw" shows when the guesser leaves the reveal.
+- **Reactions.** Tapping a reaction queues `set_round_reaction` with the choice, or with nothing when the tap clears it. The round on screen carries the last queued reaction, so the row updates at once. The server keeps the last write, so a retry is safe. The drawer gets the reaction through the live feed. A reaction can change in both directions, so the cache does not use it to judge how old a state is.
+- **Hints.** The view model's `showLetter()` places the next hint on a copy of the slots and assigns it once. Hinted slots are marked in `DrawAndGuessSlots` (`isHint`), so `place`, `remove` and `clear` skip them. The hinted slot indexes of a round are kept in the Games cache (`GamesLocalDocument.hints`, the latest 20 rounds) and in the view model. The tiles of a round are built together with the restored hints, so leaving the screen or relaunching shows the same letters. The hint count goes to the server as `p_hints_used` with the correct guess. The first hint ends the speed bonus on screen at once.
+- **Built screens.** The screens follow the design above with these differences. The answer slots sit under the square in the scrolling content (pinned with the tiles only at accessibility text sizes), so the reveal does not move them. The "Missed" result uses the same layout as the solved reveal instead of the focused width. When the partner solves the round while the drawer is still drawing, the drawer's screen cross-fades to the result instead of folding the tools away. The Draw & Guess canvas shares the widget tool controls through `WidgetDrawingToolControlling` instead of the widget view model.
+- **Live to async.** A guesser who watched the drawing live keeps the live canvas when the drawer taps Done, until the drawer leaves the live room. The live canvas counts only when a snapshot of the drawer's whole canvas arrived since either phone last joined the room, because a canvas from before a lost connection can miss strokes. Otherwise the sent drawing is downloaded and replayed. The guesser asks for that snapshot whenever a socket joins and whenever the partner starts drawing. A guesser who did not watch gets the replay. A guesser who solves the round live keeps the live canvas as it was at that moment, on the phone in the Games drawings, so a relaunch before the drawer's drawing arrives still shows it on the reveal. The phone keeps one such snapshot per person, deletes it once the drawer's drawing is downloaded, and clears it with the partner's downloaded drawings on sign-out and in a privacy purge. The speed bonus clock starts when the guesser first sees the drawing, live or replayed. Live, that is the first stroke on the canvas, not an empty canvas. A drawing that finishes downloading while the app is in the background starts its replay and tells the server it was seen only when the screen is back.
+- **Our drawings.** The history reads `get_draw_and_guess_history` and `get_draw_and_guess_records` through `GamesGateway` and keeps the first page, the records and the person's stars in the Games cache (`GamesLocalDocument.drawings`). `DrawAndGuessHistoryViewModel` owns the lists and the filters, `DrawAndGuessHistoryDetailViewModel` owns one replay, and `DrawAndGuessStars` owns the stars. A star is a queued `setGameRoundStar` write. It waits for this person's guess or give up of the round and for an earlier star of the same round, then calls `set_round_star`. The handler saves the server's answer in the cache before the write leaves the queue, so the star never flips back in between. A refusal that a retry can't fix drops the write without a notice, and the star then shows the server's value.
 - **Role.** The open screen announces the role from the Live section through the relay `hello` and changes it with the phase (`syncLiveRole`).
 - **Presence.** The open screen sends `set_game_presence` true on appear and every 30 seconds, and false on disappear and in the background. The hub and the game treat a heartbeat under 60 seconds old as "here", and check again every 15 seconds.
 - **Setup.** The couple's game language is preselected from the first supported language of the phone, because the app cannot see the partner's language. The partner who did not choose sees "Here's what [Name] picked" once, tracked on the phone.
@@ -472,5 +583,4 @@ Code map in `docs/implementation-map.md`. Decisions the sections above leave ope
 
 ## Open questions
 
-- How a pixel eraser affects replay. It splits strokes, so check that the pieces keep their timing.
 - Accessibility. Tiles must work with VoiceOver. The drawing has no text version until the reveal.

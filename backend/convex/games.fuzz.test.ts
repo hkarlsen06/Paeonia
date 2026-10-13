@@ -13,7 +13,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { WORD_CATALOGS, WORD_DIFFICULTIES, type GameLanguage, type WordDifficulty } from "./lib/gameWords";
 import { newUuid } from "./lib/ids";
-import { op, photo, setMediaEnv, uploadAsset } from "./media.testing";
+import { op, setMediaEnv, uploadAsset } from "./media.testing";
 import { addDevice, createCouple, newTest, type TestConvex, type TestUser } from "./test.setup";
 
 const RUNS = Number(process.env.GAMES_FUZZ_RUNS ?? 180);
@@ -23,7 +23,11 @@ const MIN_STEPS = 60;
 const MAX_STEPS = 120;
 
 // The rules, written from the docs rather than imported from the engine.
-const BONUS_WINDOW_MS = 30_000;
+/** The speed bonus tiers: 2 within 15 seconds, 1 within 30, else 0. */
+const bonusFor = (solveMs: number) => (solveMs <= 15_000 ? 2 : solveMs <= 30_000 ? 1 : 0);
+const AVERAGE_MAX_MS = 10 * 60_000;
+const HISTORY_MAX = 50;
+const REACTIONS = ["love", "laugh", "wow"] as const;
 const PRESENCE_FRESH_MS = 60_000;
 const PRESENCE_DELETE_MS = 120_000;
 const INVITE_GAP_MS = 15 * 60_000;
@@ -34,7 +38,7 @@ const PUSH_KINDS = ["game_turn_ready", "game_guessed", "game_invite", "game_turn
 const PAYLOAD_KEYS = new Set(["type", "game_kind", "couple_id", "game_id", "round_id", "actor_user_id", "route", "deeplink"]);
 const VALID_CUSTOM = ["flying cat", "  Dog At   Mom ", "Brunost", "ab", "Æ Ø Å", "hot dog", "x".repeat(20)];
 const INVALID_CUSTOM = ["", "a", "   ", "cat5", "one two three four", "x".repeat(21), "no!", "tæ.st"];
-const TIME_JUMPS = [1_000, 4_000, 15_000, 29_000, 30_000, 30_001, 31_000, 61_000, 125_000, INVITE_GAP_MS, REMINDER_AFTER_MS - 1_000, REMINDER_AFTER_MS, REMINDER_AFTER_MS + 3_600_000];
+const TIME_JUMPS = [1_000, 4_000, 14_000, 15_000, 15_001, 29_000, 30_000, 30_001, 31_000, 61_000, 125_000, INVITE_GAP_MS, REMINDER_AFTER_MS - 1_000, REMINDER_AFTER_MS, REMINDER_AFTER_MS + 3_600_000];
 
 type Uid = string;
 type Choice = { difficulty: WordDifficulty; word_id: string; word: string };
@@ -54,10 +58,13 @@ type Round = {
   endedAt?: number;
   solveMs?: number;
   speedBonus: number;
-  memoryId?: string;
-  memoryAsset?: string;
-  savedBy?: Uid;
-  notNow: Set<Uid>;
+  firstTryBonus: number;
+  hintsUsed: number;
+  personalBest: boolean;
+  reaction?: (typeof REACTIONS)[number];
+  drawerSeenAt?: number;
+  guesserSeenAt?: number;
+  stars: Set<Uid>;
   attempts: { text: string; correct: boolean }[];
   frozen?: string;
 };
@@ -91,7 +98,6 @@ type Model = {
   assets: Asset[];
   ops: RecordedOp[];
   opsByKey: Map<string, RecordedOp>;
-  saves: { user: Uid; roundId: string; memoryId: string; assetId: string }[];
   lastVersion: number;
 };
 
@@ -266,7 +272,6 @@ class Fuzz {
       assets: [],
       ops: [],
       opsByKey: new Map(),
-      saves: [],
       lastVersion: 0,
     };
     this.note(`setup: ${this.name(first.userId)} draws first, ${style}, ${language}`);
@@ -313,8 +318,9 @@ class Fuzz {
       [open ? 14 : 2, () => this.guess()],
       [open ? 3 : 1, () => this.giveUp()],
       [m.ops.length > 0 ? 6 : 0, () => this.replay()],
-      [anyFinished ? 4 : 1, () => this.save()],
-      [anyFinished ? 2 : 1, () => this.notNow()],
+      [anyFinished ? 3 : 1, () => this.react()],
+      [anyFinished ? 3 : 1, () => this.star()],
+      [anyFinished ? 3 : 1, () => this.resultSeen()],
       [2, () => this.invite()],
       [4, () => this.presence()],
       [7, () => this.timeJump()],
@@ -413,7 +419,10 @@ class Fuzz {
       word,
       points: POINTS[choice],
       speedBonus: 0,
-      notNow: new Set(),
+      firstTryBonus: 0,
+      hintsUsed: 0,
+      personalBest: false,
+      stars: new Set(),
       attempts: [],
     });
     m.state = "drawing";
@@ -543,8 +552,8 @@ class Fuzz {
     const round = this.round(roundId);
     const user = round ? this.actor(round.guesser) : this.pick([this.a.userId, this.b.userId]);
     if (round && !finished(round) && round.seenAt !== undefined && this.chance(0.25)) {
-      // Land right on the edge of the speed bonus window.
-      const edge = round.seenAt + this.pick([BONUS_WINDOW_MS - 1, BONUS_WINDOW_MS, BONUS_WINDOW_MS + 1]);
+      // Land right on the edge of a speed bonus tier.
+      const edge = round.seenAt + this.pick([14_999, 15_000, 15_001, 29_999, 30_000, 30_001]);
       if (edge > Date.now()) {
         vi.setSystemTime(new Date(edge));
         this.note(`time -> ${iso(edge)} (bonus window edge)`);
@@ -560,21 +569,25 @@ class Fuzz {
     else text = "y".repeat(40);
     const claimRoll = this.rng();
     let claim: Record<string, unknown> = {};
-    if (claimRoll < 0.5) claim = {};
-    else if (claimRoll < 0.7) claim = { p_speed_bonus: this.chance(0.5), p_solve_ms: this.int(0, 120_000) };
-    else if (claimRoll < 0.8) claim = { p_speed_bonus: this.chance(0.5) };
-    else if (claimRoll < 0.88) claim = { p_solve_ms: this.chance(0.5) ? this.int(0, 90_000) : this.int(0, 90_000) + 0.5 };
-    else if (claimRoll < 0.93) claim = { p_speed_bonus: null, p_solve_ms: null };
-    else if (claimRoll < 0.97) claim = { p_speed_bonus: true, p_solve_ms: this.pick([MAX_SOLVE_MS, MAX_SOLVE_MS + 1, 40 * 24 * 3_600_000]) };
-    else claim = { p_solve_ms: this.pick([-1, Number.POSITIVE_INFINITY]) };
+    if (claimRoll < 0.4) claim = {};
+    else if (claimRoll < 0.6) claim = { p_speed_bonus: this.int(0, 2), p_solve_ms: this.int(0, 120_000) };
+    else if (claimRoll < 0.7) claim = { p_speed_bonus: this.int(0, 2) };
+    else if (claimRoll < 0.78) claim = { p_solve_ms: this.chance(0.5) ? this.int(0, 90_000) : this.int(0, 90_000) + 0.5 };
+    else if (claimRoll < 0.83) claim = { p_speed_bonus: null, p_solve_ms: null };
+    else if (claimRoll < 0.88) claim = { p_speed_bonus: 2, p_solve_ms: this.pick([MAX_SOLVE_MS, MAX_SOLVE_MS + 1, 40 * 24 * 3_600_000]) };
+    else if (claimRoll < 0.92) claim = { p_solve_ms: this.pick([-1, Number.POSITIVE_INFINITY]) };
+    else if (claimRoll < 0.96) claim = { p_speed_bonus: this.pick([3, -1, 1.5]) };
+    const hintRoll = this.rng();
+    if (hintRoll < 0.25) claim = { ...claim, p_hints_used: this.int(0, 3) };
+    else if (hintRoll < 0.3) claim = { ...claim, p_hints_used: this.pick([null, 0, 7, 99, -1, 1.5]) };
     await this.runOp("guess", user, { ...op(), p_round_id: roundId, p_guess: text, ...claim });
   }
 
-  /** The doc's fallback: the bonus while still drawing, or within 30 s of the later of seen and sent. */
+  /** The doc's fallback: the tiered bonus for the time since the guesser first saw the drawing. */
   private scoreSolve(round: Round, now: number): { bonus: number; solveMs: number | undefined } {
     if (round.seenAt === undefined) return { bonus: 0, solveMs: undefined };
     const solveMs = Math.max(0, now - round.seenAt);
-    return { bonus: solveMs <= BONUS_WINDOW_MS ? 1 : 0, solveMs };
+    return { bonus: bonusFor(solveMs), solveMs };
   }
 
   private beginTurn(drawer: Uid) {
@@ -597,42 +610,58 @@ class Fuzz {
     const roundId = (args.p_round_id as string).toLowerCase();
     const round = this.round(roundId);
     const text = normalize(args.p_guess as string);
-    const claimBonus = (args.p_speed_bonus as boolean | null | undefined) ?? null;
+    const claimBonus = (args.p_speed_bonus as number | null | undefined) ?? null;
     const claimMs = (args.p_solve_ms as number | null | undefined) ?? null;
+    const claimHints = (args.p_hints_used as number | null | undefined) ?? null;
+    const correct = round !== undefined && text === round.word;
     let expected: Expect = "ok";
     if (text === "" || [...text].length > 40) expected = { code: "23514", message: /guess must be/ };
+    else if (claimBonus !== null && ![0, 1, 2].includes(claimBonus)) expected = { code: "23514", message: /speed bonus/ };
     else if (claimMs !== null && !this.solveMsAllowed(claimMs)) expected = { code: "23514", message: /solve time/ };
+    else if (claimHints !== null && !(Number.isInteger(claimHints) && claimHints >= 0)) expected = { code: "23514", message: /hints used must be/ };
     else if (!round) expected = { code: "42501" };
     else if (round.guesser !== user) expected = { code: "42501", message: /only the guesser/ };
     else if (finished(round)) expected = { code: "23514", message: /already finished/ };
+    else if (correct && claimHints !== null && claimHints > [...round.word.replace(/ /g, "")].length - 1) expected = { code: "23514", message: /more than the word allows/ };
     const outcome = await attempt(this.users[user].as.mutation(api.games.submit_guess, args as never));
-    const claimText = `bonus=${args.p_speed_bonus} ms=${args.p_solve_ms}`;
+    const claimText = `bonus=${args.p_speed_bonus} ms=${args.p_solve_ms} hints=${args.p_hints_used}`;
     const result = this.check(`${this.name(user)} guess ${JSON.stringify(args.p_guess)} ${claimText} round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok" || !round) return outcome;
     const now = Date.now();
-    const correct = text === round.word;
+    const firstAttempt = round.attempts.length === 0;
     round.attempts.push({ text, correct });
     const value = result as Record<string, unknown>;
     if (!correct) {
-      this.same("wrong guess result", [value.correct, value.round_state, value.points, value.speed_bonus, value.solve_ms, value.created_at], [false, round.state, 0, 0, null, iso(now)]);
+      this.same(
+        "wrong guess result",
+        [value.correct, value.round_state, value.points, value.speed_bonus, value.first_try_bonus, value.hints_used, value.personal_best, value.solve_ms, value.created_at],
+        [false, round.state, 0, 0, 0, 0, false, null, iso(now)],
+      );
       return outcome;
     }
+    const hints = claimHints ?? 0;
     const scored = this.scoreSolve(round, now);
-    const bonus = claimBonus === null ? scored.bonus : claimBonus ? 1 : 0;
+    const bonus = hints > 0 ? 0 : (claimBonus ?? scored.bonus);
+    const firstTry = hints === 0 && firstAttempt ? 1 : 0;
     const solveMs = claimMs === null ? scored.solveMs : this.storedSolveMs(claimMs);
+    const earlier = m.rounds.filter((item) => item.state === "solved" && item.guesser === round.guesser && item.hintsUsed === 0 && item.solveMs !== undefined);
+    const personalBest = hints === 0 && solveMs !== undefined && earlier.length > 0 && earlier.every((item) => solveMs < item.solveMs!);
     round.state = "solved";
     round.endedAt = now;
     round.solveMs = solveMs;
     round.speedBonus = bonus;
+    round.firstTryBonus = firstTry;
+    round.hintsUsed = hints;
+    round.personalBest = personalBest;
     m.shared += round.points;
     m.points[round.drawer] += round.points;
-    m.points[round.guesser] += round.points + bonus;
+    m.points[round.guesser] += round.points + bonus + firstTry;
     this.beginTurn(round.guesser);
     if (!this.present(round.drawer)) m.pushes.game_guessed += 1;
     this.same(
       "correct guess result",
-      [value.correct, value.round_state, value.points, value.speed_bonus, value.solve_ms, value.created_at],
-      [true, "solved", round.points, bonus, orNull(solveMs), iso(now)],
+      [value.correct, value.round_state, value.points, value.speed_bonus, value.first_try_bonus, value.hints_used, value.personal_best, value.solve_ms, value.created_at],
+      [true, "solved", round.points, bonus, firstTry, hints, personalBest, orNull(solveMs), iso(now)],
     );
     return outcome;
   }
@@ -679,7 +708,7 @@ class Fuzz {
       case "submit":
         return JSON.stringify([name, lower(args.p_round_id), lower(args.p_media_asset_id)]);
       case "guess":
-        return JSON.stringify([name, lower(args.p_round_id), normalize(String(args.p_guess)), args.p_speed_bonus ?? null, args.p_solve_ms ?? null]);
+        return JSON.stringify([name, lower(args.p_round_id), normalize(String(args.p_guess)), args.p_speed_bonus ?? null, args.p_solve_ms ?? null, args.p_hints_used ?? null]);
       case "giveUp":
         return JSON.stringify([name, lower(args.p_round_id)]);
     }
@@ -740,7 +769,7 @@ class Fuzz {
       const changed: Args = { ...recorded.args, ...fresh };
       if (recorded.name === "guess") {
         if (this.chance(0.5) || recorded.args.p_speed_bonus === undefined) changed.p_guess = "fuzz changed";
-        else changed.p_speed_bonus = !recorded.args.p_speed_bonus;
+        else changed.p_speed_bonus = (Number(recorded.args.p_speed_bonus ?? 0) + 1) % 3;
       } else if (recorded.name === "submit") changed.p_media_asset_id = newUuid();
       else changed.p_round_id = newUuid();
       await this.runOp(recorded.name, recorded.user, changed);
@@ -764,66 +793,59 @@ class Fuzz {
     return canonical({ views, tables });
   }
 
-  // --- Memories, invites, presence, time ----------------------------------------
+  // --- Reactions, stars, result seen, invites, presence, time ---------------------
 
-  private async save() {
-    const m = this.m;
-    const done = m.rounds.filter(finished);
+  /** A finished round most of the time, otherwise any round id, so the "not finished" and unknown cases run too. */
+  private afterRound(): { roundId: string; round: Round | undefined } {
+    const done = this.m.rounds.filter(finished);
     const roundId = done.length > 0 && this.chance(0.7) ? this.pick(done).id : this.targetRound();
-    const round = this.round(roundId);
-    const user = this.pick([this.a.userId, this.b.userId]);
-    const earlier = m.saves.filter((call) => call.user === user && call.roundId === roundId);
-    let memoryId: string;
-    let assetId: string;
-    if (earlier.length > 0 && this.chance(0.4)) {
-      ({ memoryId, assetId } = this.pick(earlier));
-    } else {
-      memoryId = newUuid();
-      assetId = (await uploadAsset(this.t, this.users[user], photo(this.coupleId))).assetId;
-    }
-    let expected: Expect = "ok";
-    if (!round) expected = { code: "42501" };
-    else if (!finished(round)) expected = { code: "23514", message: /not finished/ };
-    const outcome = await attempt(
-      this.users[user].as.mutation(api.games.save_round_to_memories, {
-        p_round_id: roundId,
-        p_memory_id: memoryId,
-        p_media_asset_id: assetId,
-        p_memory_date: "2026-10-10",
-      }),
-    );
-    const result = this.check(`${this.name(user)} save round=${roundId.slice(0, 8)} memory=${memoryId.slice(0, 8)}`, outcome, expected);
-    m.saves.push({ user, roundId, memoryId, assetId });
-    if (expected !== "ok" || !round) return;
-    if (round.memoryId === undefined) {
-      round.memoryId = memoryId;
-      round.memoryAsset = assetId;
-      round.savedBy = user;
-      this.same("save result", result, { memory_id: memoryId, created: true });
-    } else {
-      this.same("save result", result, { memory_id: round.memoryId, created: false });
-      const status = await this.t.run(async (ctx) => {
-        const asset = await ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", assetId)).unique();
-        return asset?.storage_delete_status;
-      });
-      // The extra image goes away, the one the memory shows stays.
-      const attached = m.rounds.some((item) => item.memoryAsset === assetId);
-      this.same(`image ${assetId.slice(0, 8)} after a second save`, status, attached ? "none" : "pending");
-    }
+    return { roundId, round: this.round(roundId) };
   }
 
-  private async notNow() {
-    const m = this.m;
-    const done = m.rounds.filter(finished);
-    const roundId = done.length > 0 && this.chance(0.7) ? this.pick(done).id : this.targetRound();
-    const round = this.round(roundId);
+  private async react() {
+    const { roundId, round } = this.afterRound();
+    const user = round ? this.actor(round.guesser) : this.pick([this.a.userId, this.b.userId]);
+    const reaction = this.pick([...REACTIONS, null]);
+    let expected: Expect = "ok";
+    if (!round) expected = { code: "42501" };
+    else if (round.guesser !== user) expected = { code: "42501", message: /only the guesser/ };
+    else if (!finished(round)) expected = { code: "23514", message: /not finished/ };
+    const outcome = await attempt(this.users[user].as.mutation(api.games.set_round_reaction, { p_round_id: roundId, p_reaction: reaction }));
+    const result = this.check(`${this.name(user)} react ${reaction} round=${roundId.slice(0, 8)}`, outcome, expected);
+    if (expected !== "ok") return;
+    round!.reaction = reaction ?? undefined;
+    this.same("reaction result", result, { round_id: roundId, guesser_reaction: reaction });
+  }
+
+  private async star() {
+    const { roundId, round } = this.afterRound();
+    const user = this.pick([this.a.userId, this.b.userId]);
+    const starred = this.chance(0.6);
+    let expected: Expect = "ok";
+    if (!round) expected = { code: "42501" };
+    else if (!finished(round)) expected = { code: "23514", message: /not finished/ };
+    const outcome = await attempt(this.users[user].as.mutation(api.games.set_round_star, { p_round_id: roundId, p_starred: starred }));
+    const result = this.check(`${this.name(user)} star ${starred} round=${roundId.slice(0, 8)}`, outcome, expected);
+    if (expected !== "ok") return;
+    if (starred) round!.stars.add(user);
+    else round!.stars.delete(user);
+    this.same("star result", result, { round_id: roundId, starred });
+  }
+
+  private async resultSeen() {
+    const { roundId, round } = this.afterRound();
     const user = this.pick([this.a.userId, this.b.userId]);
     let expected: Expect = "ok";
     if (!round) expected = { code: "42501" };
     else if (!finished(round)) expected = { code: "23514", message: /not finished/ };
-    const outcome = await attempt(this.users[user].as.mutation(api.games.respond_save_prompt, { p_round_id: roundId }));
-    this.check(`${this.name(user)} not now round=${roundId.slice(0, 8)}`, outcome, expected);
-    if (expected === "ok") round!.notNow.add(user);
+    const outcome = await attempt(this.users[user].as.mutation(api.games.mark_round_result_seen, { p_round_id: roundId }));
+    const result = this.check(`${this.name(user)} result seen round=${roundId.slice(0, 8)}`, outcome, expected);
+    if (expected !== "ok") return;
+    const drawer = round!.drawer === user;
+    const seenAt = (drawer ? round!.drawerSeenAt : round!.guesserSeenAt) ?? Date.now();
+    if (drawer) round!.drawerSeenAt = seenAt;
+    else round!.guesserSeenAt = seenAt;
+    this.same("result seen result", result, { round_id: roundId, result_seen_at: iso(seenAt) });
   }
 
   private async invite() {
@@ -877,7 +899,7 @@ class Fuzz {
     return await user.as.query(api.games.get_draw_and_guess, {});
   }
 
-  private roundJson(round: Round, me: Uid) {
+  private roundJson(round: Round, viewer: Uid) {
     return {
       id: round.id,
       round_number: round.number,
@@ -893,10 +915,13 @@ class Fuzz {
       ended_at: round.endedAt === undefined ? null : iso(round.endedAt),
       solve_ms: orNull(round.solveMs),
       speed_bonus: round.speedBonus,
-      memory_id: orNull(round.memoryId),
-      saved_by_user_id: orNull(round.savedBy),
-      my_save_response: round.notNow.has(me) ? "not_now" : null,
-      partner_save_response: round.notNow.has(this.other(me)) ? "not_now" : null,
+      first_try_bonus: round.firstTryBonus,
+      hints_used: round.hintsUsed,
+      personal_best: round.personalBest,
+      guesser_reaction: orNull(round.reaction),
+      starred_by_me: round.stars.has(viewer),
+      drawer_result_seen_at: round.drawerSeenAt === undefined ? null : iso(round.drawerSeenAt),
+      guesser_result_seen_at: round.guesserSeenAt === undefined ? null : iso(round.guesserSeenAt),
       attempt_count: round.attempts.length,
       attempts: round.attempts.map((item) => [item.text, item.correct]),
     };
@@ -973,8 +998,7 @@ class Fuzz {
       game: (await ctx.db.query("games").first())!,
       moves: await ctx.db.query("game_moves").collect(),
       guesses: await ctx.db.query("game_guesses").collect(),
-      memories: await ctx.db.query("memories").collect(),
-      memoryMedia: await ctx.db.query("memory_media").collect(),
+      stars: await ctx.db.query("game_round_stars").collect(),
       assets: await ctx.db.query("media_assets").collect(),
       outbox: await ctx.db.query("notification_outbox").collect(),
       activity: await ctx.db.query("couple_activity_events").collect(),
@@ -1001,11 +1025,19 @@ class Fuzz {
     const solved = db.moves.filter((move) => move.state === "solved");
     this.same("shared total is the sum of solved word points", db.game.shared_points, solved.reduce((sum, move) => sum + move.points, 0));
     for (const uid of [this.a.userId, this.b.userId]) {
-      const own = solved.reduce((sum, move) => sum + (move.drawer_user_id === uid ? move.points : 0) + (move.guesser_user_id === uid ? move.points + move.speed_bonus : 0), 0);
+      const own = solved.reduce(
+        (sum, move) =>
+          sum + (move.drawer_user_id === uid ? move.points : 0) + (move.guesser_user_id === uid ? move.points + move.speed_bonus + (move.first_try_bonus ?? 0) : 0),
+        0,
+      );
       this.same(`personal total of ${this.name(uid)}`, db.game.points_by_user[uid] ?? 0, own);
     }
     for (const move of db.moves) {
-      this.assert("speed bonus is 0 or 1, and only on a solve", move.speed_bonus === 0 || (move.speed_bonus === 1 && move.state === "solved"), move);
+      this.assert("speed bonus is 0, 1 or 2, and only on a solve", move.speed_bonus === 0 || ([1, 2].includes(move.speed_bonus) && move.state === "solved"), move);
+      this.assert("first-try bonus is 0 or 1, and only on a solve", (move.first_try_bonus ?? 0) === 0 || (move.first_try_bonus === 1 && move.state === "solved"), move);
+      this.assert("a hint zeroes both bonuses", (move.hints_used ?? 0) === 0 || (move.speed_bonus === 0 && (move.first_try_bonus ?? 0) === 0), move);
+      this.assert("only a solve is a personal best", move.state === "solved" || !move.personal_best, move);
+      this.assert("only a finished round has a reaction", move.guesser_reaction === undefined || move.state === "solved" || move.state === "missed", move);
       this.same("points follow the difficulty", move.points, POINTS[move.difficulty]);
     }
 
@@ -1013,19 +1045,19 @@ class Fuzz {
     for (const round of m.rounds) {
       if (!finished(round)) continue;
       const move = db.moves.find((item) => item.id === round.id)!;
-      const result = JSON.stringify([move.state, move.ended_at, move.solve_ms, move.speed_bonus, move.points, move.word, db.guesses.filter((g) => g.move_id === move.id).length]);
+      const result = JSON.stringify([
+        move.state, move.ended_at, move.solve_ms, move.speed_bonus, move.first_try_bonus, move.hints_used, move.personal_best,
+        move.points, move.word, db.guesses.filter((g) => g.move_id === move.id).length,
+      ]);
       if (round.frozen === undefined) round.frozen = result;
       else this.same(`finished round ${round.id.slice(0, 8)}`, result, round.frozen);
     }
 
-    // At most one memory per round, and a memory's image is never queued for deletion.
-    const memoryIds = db.moves.flatMap((move) => (move.memory_id ? [move.memory_id] : []));
-    this.assert("one memory per round", new Set(memoryIds).size === memoryIds.length);
-    this.same("memories", db.memories.map((memory) => memory.id).sort(), [...memoryIds].sort());
-    for (const link of db.memoryMedia) {
-      const asset = db.assets.find((item) => item.id === link.media_asset_id);
-      this.same("memory image stays", asset?.storage_delete_status, "none");
-    }
+    // Stars match the model, and a round has at most one star per partner.
+    const starKeys = db.stars.map((star) => `${star.move_id}:${star.user_id}`).sort();
+    this.same("stars", starKeys, m.rounds.flatMap((round) => [...round.stars].map((uid) => `${round.id}:${uid}`)).sort());
+    for (const star of db.stars) this.same("star round number", star.round_number, m.rounds.find((round) => round.id === star.move_id)?.number);
+    await this.checkHistoryAndRecords();
 
     // Pushes: the expected count per kind, at most one reminder per move, never the word.
     const words = m.rounds.map((round) => round.word);
@@ -1050,6 +1082,77 @@ class Fuzz {
 
     // Progress: someone can always act.
     if (m.state === "choosing_word") this.assert("the drawer has words to pick", m.choices !== undefined && m.choices !== null && m.choices.length === 3);
+  }
+
+  /** The history pages and the records, compared with the model for both partners. */
+  private async checkHistoryAndRecords() {
+    const m = this.m;
+    const eligible = [...m.rounds].reverse().filter((round) => finished(round) && round.drawing !== undefined);
+    const item = (round: Round, me: Uid) => ({
+      id: round.id,
+      round_number: round.number,
+      drawer_user_id: round.drawer,
+      guesser_user_id: round.guesser,
+      word: round.word,
+      difficulty: round.difficulty,
+      points: round.points,
+      state: round.state,
+      drawing_media_asset_id: round.drawing,
+      solve_ms: orNull(round.solveMs),
+      speed_bonus: round.speedBonus,
+      first_try_bonus: round.firstTryBonus,
+      hints_used: round.hintsUsed,
+      attempt_count: round.attempts.length,
+      guesser_reaction: orNull(round.reaction),
+      personal_best: round.personalBest,
+      starred_by_me: round.stars.has(me),
+      ended_at: round.endedAt === undefined ? null : iso(round.endedAt),
+    });
+    for (const me of [this.a.userId, this.b.userId]) {
+      const who = this.name(me);
+      for (const starredOnly of [false, true]) {
+        const pool = eligible.filter((round) => !starredOnly || round.stars.has(me));
+        const limit = this.chance(0.5) ? 1000 : this.int(1, 4);
+        const before = this.chance(0.5) || pool.length === 0 ? null : this.pick(pool).number + this.int(0, 1);
+        const candidates = pool.filter((round) => before === null || round.number < before);
+        const size = Math.min(limit, HISTORY_MAX);
+        const page = candidates.slice(0, size);
+        const expected = {
+          rounds: page.map((round) => item(round, me)),
+          next_before_round_number: candidates.length > size ? page[page.length - 1].number : null,
+        };
+        const got = await this.users[me].as.query(api.games.get_draw_and_guess_history, {
+          p_starred_only: starredOnly,
+          p_before_round_number: before,
+          p_limit: limit,
+        });
+        this.same(
+          `${who} history starred=${starredOnly} limit=${limit} before=${before}`,
+          { ...got, rounds: got.rounds.map(({ started_at: _started, ...rest }) => rest) },
+          expected,
+        );
+      }
+      const records = await this.users[me].as.query(api.games.get_draw_and_guess_records, {});
+      this.same(`${who} records`, records, { partners: [me, this.other(me)].map((uid) => this.records(uid)) });
+    }
+  }
+
+  /** One player's records, written from the docs. */
+  private records(uid: Uid) {
+    const solves = this.m.rounds.filter((round) => round.guesser === uid && round.state === "solved");
+    const free = solves.filter((round) => round.hintsUsed === 0 && round.solveMs !== undefined);
+    const short = free.filter((round) => round.solveMs! <= AVERAGE_MAX_MS);
+    let fastest: Round | undefined;
+    for (const round of free) if (fastest === undefined || round.solveMs! < fastest.solveMs!) fastest = round;
+    return {
+      user_id: uid,
+      solves: solves.length,
+      first_try_solves: solves.filter((round) => round.firstTryBonus > 0).length,
+      average_solve_ms: short.length === 0 ? null : Math.round(short.reduce((sum, round) => sum + round.solveMs!, 0) / short.length),
+      fastest_solve_ms: fastest?.solveMs ?? null,
+      fastest_solve_word: fastest?.word ?? null,
+      drawings_solved: this.m.rounds.filter((round) => round.drawer === uid && round.state === "solved").length,
+    };
   }
 
   /** Plays two whole rounds from wherever the game is, to prove it can always move on. */

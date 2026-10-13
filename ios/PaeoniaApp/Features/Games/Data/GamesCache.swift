@@ -8,10 +8,16 @@ nonisolated enum GameStoredNotice: String, Codable, Equatable, Sendable {
     case wordRejectedDrawingKept
     /// A drawing could not be sent. It is back on the canvas.
     case drawingRejected
-    /// A drawing could not be saved to Memories.
-    case saveRejected
     /// A guess or give up was refused for good. The round stays open.
     case moveRejected
+}
+
+/// The letters the guesser's hints showed in one round, kept so they survive
+/// leaving the screen and relaunching.
+nonisolated struct GameRoundHints: Codable, Equatable, Sendable {
+    let roundID: UUID
+    /// Answer slot indexes (spaces count as slots), in the order the hints showed them.
+    var slotIndexes: [Int]
 }
 
 /// What this phone keeps for one signed-in person. `state` is the last result
@@ -19,15 +25,14 @@ nonisolated enum GameStoredNotice: String, Codable, Equatable, Sendable {
 /// launch and offline. The rest is only ever local.
 nonisolated struct GamesLocalDocument: Codable, Equatable, Sendable {
     var state: RemoteDrawAndGuessState?
-    /// Rounds whose reveal this person has moved past.
-    var acknowledgedRoundIDs: [UUID] = []
-    /// Rounds whose save question this person answered with "not now", so it
-    /// stays closed while the answer has not reached the server.
-    var declinedSaveRoundIDs: [UUID] = []
+    /// The hints of the latest rounds, oldest first.
+    var hints: [GameRoundHints] = []
     var notices: [GameStoredNotice] = []
     /// One entry per unexplained server refusal of a queued write, by operation
     /// id. Offline tries and waits behind an earlier move never land here.
     var unexplainedRefusals: [UUID] = []
+    /// "Our drawings": the first page, the records, and this person's stars.
+    var drawings: GamesHistoryCache?
 }
 
 /// The Games cache. The live feed writes `state`, and the screens read it.
@@ -50,8 +55,13 @@ protocol GamesCaching: Actor {
     /// Counts one unexplained server refusal of a queued write and returns how
     /// many that write has had.
     func recordUnexplainedRefusal(operationID: UUID, ownerUserID: UUID) -> Int
-    func acknowledgeRound(_ roundID: UUID, ownerUserID: UUID)
-    func declineSave(_ roundID: UUID, ownerUserID: UUID)
+    /// Keeps the answer slots the hints of a round have shown.
+    func saveHints(_ slotIndexes: [Int], roundID: UUID, ownerUserID: UUID)
+    /// Keeps the first page of "Our drawings" and the stars it carries.
+    func saveHistoryFirstPage(_ page: RemoteDrawAndGuessHistoryPage, ownerUserID: UUID)
+    func saveRecords(_ records: RemoteDrawAndGuessRecords, ownerUserID: UUID)
+    /// Keeps what the server said about this person's star on rounds.
+    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID)
     /// This person has seen the settings screen or the "here's what your partner
     /// picked" moment for this couple, so setup never shows again. It is kept
     /// apart from the document, which a version change or a purge throws away.
@@ -80,23 +90,19 @@ extension GamesCaching {
 
 /// Rules shared by the file and in-memory caches.
 nonisolated extension GamesLocalDocument {
-    private static let maxAcknowledgedRounds = 50
+    private static let maxHintedRounds = 20
     private static let maxRefusals = 100
 
-    mutating func acknowledge(_ roundID: UUID) {
-        guard !acknowledgedRoundIDs.contains(roundID) else { return }
-        acknowledgedRoundIDs.append(roundID)
-        if acknowledgedRoundIDs.count > Self.maxAcknowledgedRounds {
-            acknowledgedRoundIDs.removeFirst(acknowledgedRoundIDs.count - Self.maxAcknowledgedRounds)
+    mutating func saveHints(_ slotIndexes: [Int], roundID: UUID) {
+        hints.removeAll { $0.roundID == roundID }
+        hints.append(GameRoundHints(roundID: roundID, slotIndexes: slotIndexes))
+        if hints.count > Self.maxHintedRounds {
+            hints.removeFirst(hints.count - Self.maxHintedRounds)
         }
     }
 
-    mutating func declineSave(_ roundID: UUID) {
-        guard !declinedSaveRoundIDs.contains(roundID) else { return }
-        declinedSaveRoundIDs.append(roundID)
-        if declinedSaveRoundIDs.count > Self.maxAcknowledgedRounds {
-            declinedSaveRoundIDs.removeFirst(declinedSaveRoundIDs.count - Self.maxAcknowledgedRounds)
-        }
+    func hintedSlotIndexes(roundID: UUID) -> [Int] {
+        hints.first { $0.roundID == roundID }?.slotIndexes ?? []
     }
 
     /// Takes a state from the server unless it is older than the one kept.
@@ -153,7 +159,7 @@ actor FileGamesCache: GamesCaching {
 
     /// Bump when a stored type gains a required field. A file with another
     /// version reads as empty.
-    private static let schemaVersion = 3
+    private static let schemaVersion = 4
 
     private let directoryURL: URL
     private let defaults: UserDefaults
@@ -206,12 +212,20 @@ actor FileGamesCache: GamesCaching {
         return count
     }
 
-    func acknowledgeRound(_ roundID: UUID, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.acknowledge(roundID) }
+    func saveHints(_ slotIndexes: [Int], roundID: UUID, ownerUserID: UUID) {
+        update(ownerUserID: ownerUserID) { $0.saveHints(slotIndexes, roundID: roundID) }
     }
 
-    func declineSave(_ roundID: UUID, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.declineSave(roundID) }
+    func saveHistoryFirstPage(_ page: RemoteDrawAndGuessHistoryPage, ownerUserID: UUID) {
+        update(ownerUserID: ownerUserID) { $0.saveHistoryFirstPage(page) }
+    }
+
+    func saveRecords(_ records: RemoteDrawAndGuessRecords, ownerUserID: UUID) {
+        update(ownerUserID: ownerUserID) { $0.saveRecords(records) }
+    }
+
+    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID) {
+        update(ownerUserID: ownerUserID) { $0.saveStars(stars) }
     }
 
     func hasSeenSettings(coupleID: UUID, ownerUserID: UUID) -> Bool {
@@ -305,12 +319,20 @@ actor InMemoryGamesCache: GamesCaching {
         documents[ownerUserID, default: GamesLocalDocument()].recordRefusal(of: operationID)
     }
 
-    func acknowledgeRound(_ roundID: UUID, ownerUserID: UUID) {
-        documents[ownerUserID, default: GamesLocalDocument()].acknowledge(roundID)
+    func saveHints(_ slotIndexes: [Int], roundID: UUID, ownerUserID: UUID) {
+        documents[ownerUserID, default: GamesLocalDocument()].saveHints(slotIndexes, roundID: roundID)
     }
 
-    func declineSave(_ roundID: UUID, ownerUserID: UUID) {
-        documents[ownerUserID, default: GamesLocalDocument()].declineSave(roundID)
+    func saveHistoryFirstPage(_ page: RemoteDrawAndGuessHistoryPage, ownerUserID: UUID) {
+        documents[ownerUserID, default: GamesLocalDocument()].saveHistoryFirstPage(page)
+    }
+
+    func saveRecords(_ records: RemoteDrawAndGuessRecords, ownerUserID: UUID) {
+        documents[ownerUserID, default: GamesLocalDocument()].saveRecords(records)
+    }
+
+    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID) {
+        documents[ownerUserID, default: GamesLocalDocument()].saveStars(stars)
     }
 
     func hasSeenSettings(coupleID: UUID, ownerUserID: UUID) -> Bool {
@@ -340,8 +362,8 @@ actor InMemoryGamesCache: GamesCaching {
 extension RemoteDrawAndGuessState {
     /// This state is from before `other`. The server only ever moves these
     /// forward: the game's version goes up, a round gets its drawing, its first
-    /// look and its memory once, attempts are only added, and a finished round
-    /// stays finished. A state that has any of them behind `other` for the same
+    /// look and its result seen times once, attempts are only added, and a
+    /// finished round stays finished. A state that has any of them behind `other` for the same
     /// game is an old answer that arrived late, such as a live feed update sent
     /// before a move that this phone already read back. Keeping it would put the
     /// move off the screen again.
@@ -362,7 +384,8 @@ extension RemoteDrawAndGuessState {
             if (theirs.drawingMediaAssetID != nil && mine.drawingMediaAssetID == nil)
                 || (theirs.state.isFinished && !mine.state.isFinished)
                 || (theirs.guesserFirstSeenAt != nil && mine.guesserFirstSeenAt == nil)
-                || (theirs.memoryID != nil && mine.memoryID == nil)
+                || (theirs.drawerResultSeenAt != nil && mine.drawerResultSeenAt == nil)
+                || (theirs.guesserResultSeenAt != nil && mine.guesserResultSeenAt == nil)
                 || attempts(theirs) > attempts(mine) {
                 return true
             }

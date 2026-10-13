@@ -22,13 +22,12 @@ struct DrawAndGuessSimulationRegressionTests {
         driver.shutDown()
     }
 
-    /// "Continue" on the reveal waited for the "not now" request, so on a slow
-    /// connection the button did nothing until the request gave up.
+    /// "Continue" on the reveal waited for the network, so on a slow connection
+    /// the button did nothing until the request gave up.
     @Test func continueLeavesTheRevealWithoutWaitingForTheNetwork() async throws {
         await scenario { driver in
         let (_, guesser) = try await driver.scriptRoundToReveal()
         let viewModel = try driver.require(guesser, in: .reveal)
-        #expect(viewModel.savePrompt == .ask)
 
         guesser.network.holdRate = 1
         let continued = Task { await viewModel.continueFromReveal() }
@@ -68,7 +67,6 @@ struct DrawAndGuessSimulationRegressionTests {
         let resolution = DrawAndGuessResolver(userID: GameFixture.me).resolve(
             state: state,
             pending: pending,
-            acknowledgedRoundIDs: [],
             isPartnerDrawingLive: false
         )
 
@@ -146,30 +144,6 @@ struct DrawAndGuessSimulationRegressionTests {
         #expect(await cache.document(ownerUserID: GameFixture.me).state == newer)
     }
 
-    /// The photo for a save to Memories was uploaded, then the save itself
-    /// failed and the phone stayed away for a week. The server deleted the
-    /// unused upload, and every retry of the save failed on the gone reservation
-    /// without an end and without telling the person.
-    @Test func aSaveWhosePhotoUploadWasSweptUploadsItAgain() async {
-        await scenario { driver in
-            let (_, guesser) = try await driver.scriptRoundToReveal()
-            let viewModel = try driver.require(guesser, in: .reveal)
-            guesser.network.failNext("saveRound", with: .dropBefore)
-            await viewModel.saveToMemories()
-            await driver.pump()
-            let roundID = try #require(viewModel.round?.id)
-            #expect(driver.server.round(roundID)?.memoryID == nil)
-
-            guesser.setOnline(false)
-            driver.clock.advance(8 * 86_400)
-            #expect(driver.server.sweepOrphanedUploads() == 1)
-            await driver.settle()
-
-            #expect(driver.server.round(roundID)?.memoryID != nil)
-            #expect(await guesser.pending.inFlightCount(ownerUserID: guesser.userID) == 0)
-        }
-    }
-
     /// A drawer who relaunched after the drawing was sent had to download their
     /// own drawing for the result screen. Offline, that square stayed blank.
     @Test func theDrawersOwnSentDrawingShowsAfterARelaunchOffline() async {
@@ -239,15 +213,13 @@ struct DrawAndGuessSimulationRegressionTests {
         #expect(env.transfer.downloads.isEmpty)
     }
 
-    /// "Continue" answers the save question with "not now". Offline, that
-    /// answer only lived in the open screen, so after a relaunch the choose
-    /// word screen asked again.
-    @Test func aNoToSavingSurvivesARelaunchOffline() async {
+    /// "Continue" saves the "result seen" mark on the phone first. Offline, the
+    /// mark waits in the queue, so after a relaunch the result stays closed.
+    @Test func aSeenResultSurvivesARelaunchOffline() async {
         await scenario { driver in
             let (_, guesser) = try await driver.scriptRoundToReveal()
             let viewModel = try driver.require(guesser, in: .reveal)
             let roundID = try #require(viewModel.round?.id)
-            #expect(viewModel.savePrompt == .ask)
 
             guesser.setOnline(false)
             await viewModel.continueFromReveal()
@@ -255,11 +227,59 @@ struct DrawAndGuessSimulationRegressionTests {
             guesser.forceQuit(closesSocket: true)
             guesser.launch()
             guesser.openScreen()
-            await driver.settle()
+            await driver.pump()
 
             let reopened = try driver.require(guesser, in: .chooseWord)
             #expect(reopened.round?.id == roundID)
-            #expect(reopened.savePrompt == .hidden)
+            #expect(reopened.reveal == nil)
+            #expect(driver.server.round(roundID)?.guesserSeenAt == nil)
+
+            await driver.settle()
+            #expect(driver.server.round(roundID)?.guesserSeenAt != nil)
+            #expect(try driver.require(guesser, in: .chooseWord).reveal == nil)
+        }
+    }
+
+    /// A fresh install has no local memory of what was seen. The server knows,
+    /// so the old result does not show again.
+    @Test func aFreshInstallDoesNotShowAResultTheServerKnowsAsSeen() async {
+        await scenario { driver in
+            let (_, guesser) = try await driver.scriptRoundToReveal()
+            let viewModel = try driver.require(guesser, in: .reveal)
+            let roundID = try #require(viewModel.round?.id)
+            await viewModel.continueFromReveal()
+            await driver.settle()
+            #expect(driver.server.round(roundID)?.guesserSeenAt != nil)
+
+            guesser.forceQuit(closesSocket: true)
+            await guesser.cache.clearAll()
+            guesser.launch()
+            guesser.openScreen()
+            await driver.settle()
+
+            let reopened = try driver.require(guesser, in: .chooseWord)
+            #expect(reopened.reveal == nil)
+        }
+    }
+
+    /// The guesser reacts offline. The reaction shows at once, waits behind the
+    /// guess that ended the round, and the drawer sees it once the phone is online.
+    @Test func aReactionMadeOfflineReachesTheDrawerLater() async {
+        await scenario { driver in
+            let (drawer, guesser) = try await driver.scriptRoundToReveal()
+            let viewModel = try driver.require(guesser, in: .reveal)
+            let roundID = try #require(viewModel.round?.id)
+
+            guesser.setOnline(false)
+            await viewModel.react(.laugh)
+            await driver.pump()
+            #expect(viewModel.reveal?.reaction == .laugh)
+            #expect(driver.server.round(roundID)?.reaction == nil)
+
+            await driver.settle()
+
+            #expect(driver.server.round(roundID)?.reaction == .laugh)
+            #expect(drawer.viewModel?.round?.guesserReaction == .laugh)
         }
     }
 

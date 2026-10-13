@@ -40,8 +40,9 @@ struct GamesRulesTests {
          "state":"solved","difficulty":"custom","word":"the dog","points":2,
          "drawing_media_asset_id":"cccccccc-0000-4000-8000-000000000001","drawing_submitted_at":"2026-10-12T10:00:00.000Z",
          "started_at":"2026-10-12T09:50:00.000Z","guesser_first_seen_at":"2026-10-12T10:00:05.000Z",
-         "ended_at":"2026-10-12T10:00:20.000Z","solve_ms":15000,"speed_bonus":1,"memory_id":null,"saved_by_user_id":null,
-         "my_save_response":"not_now","partner_save_response":null,
+         "ended_at":"2026-10-12T10:00:20.000Z","solve_ms":15000,"speed_bonus":1,"first_try_bonus":0,
+         "hints_used":2,"personal_best":false,"guesser_reaction":"laugh",
+         "drawer_result_seen_at":null,"guesser_result_seen_at":"2026-10-12T10:00:30.000Z","attempt_count":1,
          "attempts":[{"id":"dddddddd-0000-4000-8000-000000000001","user_id":"11111111-1111-1111-1111-111111111111",
                       "text":"the cat","correct":false,"created_at":"2026-10-12T10:00:10.000Z"}]}
         """
@@ -49,8 +50,13 @@ struct GamesRulesTests {
 
         #expect(round.difficulty == .custom)
         #expect(round.solveMs == 15_000)
-        #expect(round.mySaveResponse == .notNow)
-        #expect(round.partnerSaveResponse == nil)
+        #expect(round.speedBonus == 1)
+        #expect(round.firstTryBonus == 0)
+        #expect(round.hintsUsed == 2)
+        #expect(!round.personalBest)
+        #expect(round.guesserReaction == .laugh)
+        #expect(round.drawerResultSeenAt == nil)
+        #expect(round.guesserResultSeenAt != nil)
         #expect(round.attempts.map(\.text) == ["the cat"])
     }
 
@@ -101,67 +107,6 @@ struct GamesRulesTests {
         #expect(DrawAndGuessScore(game: game, playStyle: .against) == .against(mine: 8, partner: 5))
         #expect(DrawAndGuessScore(game: game, playStyle: .against).leader == .me)
         #expect(DrawAndGuessScore(game: game, playStyle: .together).leader == nil)
-    }
-
-    // MARK: Save prompt
-
-    @Test func theSavePromptFollowsTheRulesFromTheDesign() {
-        let me = GameFixture.me
-        func prompt(
-            _ round: RemoteDrawAndGuessRound,
-            queued: Bool = false,
-            hasDrawing: Bool = true
-        ) -> DrawAndGuessSavePrompt {
-            DrawAndGuessSavePrompt.make(
-                round: DrawAndGuessRoundView(round),
-                userID: me,
-                hasSaveQueued: queued,
-                hasDrawing: hasDrawing
-            )
-        }
-        let solved = GameFixture.round(state: .solved, drawer: GameFixture.partner, hasDrawing: true)
-
-        #expect(prompt(solved) == .ask)
-        #expect(prompt(GameFixture.round(state: .guessing, drawer: GameFixture.partner)) == .hidden)
-        #expect(prompt(solved, queued: true) == .saving)
-        #expect(prompt(solved, hasDrawing: false) == .hidden)
-        // "Not now" closes it for this person only.
-        let notNow = GameFixture.round(
-            state: .missed,
-            drawer: GameFixture.partner,
-            hasDrawing: true,
-            mySaveResponse: .notNow
-        )
-        #expect(prompt(notNow) == .hidden)
-    }
-
-    @Test func aSavedRoundTurnsThePromptIntoSavedToMemories() throws {
-        let json = """
-        {"id":"bbbbbbbb-0000-4000-8000-000000000001","round_number":1,
-         "drawer_user_id":"22222222-2222-2222-2222-222222222222","guesser_user_id":"11111111-1111-1111-1111-111111111111",
-         "state":"solved","difficulty":"easy","word":"cat","points":1,"drawing_media_asset_id":null,
-         "drawing_submitted_at":null,"started_at":"2026-10-12T09:50:00.000Z","guesser_first_seen_at":null,
-         "ended_at":null,"solve_ms":null,"speed_bonus":0,
-         "memory_id":"eeeeeeee-0000-4000-8000-000000000001","saved_by_user_id":"22222222-2222-2222-2222-222222222222",
-         "my_save_response":null,"partner_save_response":null,"attempts":[]}
-        """
-        let round = try PaeoniaConvexClient.decoder.decode(RemoteDrawAndGuessRound.self, from: Data(json.utf8))
-
-        let byPartner = DrawAndGuessSavePrompt.make(
-            round: DrawAndGuessRoundView(round),
-            userID: GameFixture.me,
-            hasSaveQueued: false,
-            hasDrawing: true
-        )
-        let byMe = DrawAndGuessSavePrompt.make(
-            round: DrawAndGuessRoundView(round),
-            userID: GameFixture.partner,
-            hasSaveQueued: false,
-            hasDrawing: true
-        )
-
-        #expect(byPartner == .savedByPartner)
-        #expect(byMe == .saved)
     }
 
     // MARK: Language

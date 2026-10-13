@@ -24,10 +24,11 @@ nonisolated enum DrawAndGuessRoundState: String, Codable, Sendable {
     }
 }
 
-/// A partner's answer to the save prompt. Only "Not now" is stored. A yes
-/// saves the memory instead.
-nonisolated enum DrawAndGuessSaveResponse: String, Codable, Sendable {
-    case notNow = "not_now"
+/// How the guesser reacted to a finished round.
+nonisolated enum DrawAndGuessReaction: String, Codable, CaseIterable, Sendable {
+    case love
+    case laugh
+    case wow
 }
 
 /// One of the three words offered to the drawer, or the drawer's own pick.
@@ -110,11 +111,20 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
     let guesserFirstSeenAt: Date?
     let endedAt: Date?
     let solveMs: Int?
+    /// 0, 1 or 2 points for a fast guess.
     let speedBonus: Int
-    let memoryID: UUID?
-    let savedByUserID: UUID?
-    let mySaveResponse: DrawAndGuessSaveResponse?
-    let partnerSaveResponse: DrawAndGuessSaveResponse?
+    /// 1 point for a correct first attempt without hints.
+    let firstTryBonus: Int
+    /// How many letters the guesser's hints showed.
+    let hintsUsed: Int
+    /// The guesser's fastest hint-free solve so far, and not their first one.
+    let personalBest: Bool
+    let guesserReaction: DrawAndGuessReaction?
+    /// This person's own private star. The partner's is never sent.
+    var starredByMe: Bool
+    /// When each partner moved past the result of the finished round.
+    let drawerResultSeenAt: Date?
+    let guesserResultSeenAt: Date?
     /// Oldest first. The newest 200 when there are more.
     let attempts: [RemoteDrawAndGuessAttempt]
     /// Every attempt of the round, also those past the 200 in `attempts`.
@@ -136,10 +146,13 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
         case endedAt = "ended_at"
         case solveMs = "solve_ms"
         case speedBonus = "speed_bonus"
-        case memoryID = "memory_id"
-        case savedByUserID = "saved_by_user_id"
-        case mySaveResponse = "my_save_response"
-        case partnerSaveResponse = "partner_save_response"
+        case firstTryBonus = "first_try_bonus"
+        case hintsUsed = "hints_used"
+        case personalBest = "personal_best"
+        case guesserReaction = "guesser_reaction"
+        case starredByMe = "starred_by_me"
+        case drawerResultSeenAt = "drawer_result_seen_at"
+        case guesserResultSeenAt = "guesser_result_seen_at"
         case attempts
         case attemptCount = "attempt_count"
     }
@@ -153,9 +166,9 @@ nonisolated struct RemoteDrawAndGuessState: Codable, Equatable, Sendable {
     let coupleID: UUID
     let settings: RemoteGameSettings?
     let game: RemoteDrawAndGuessGame?
-    let currentRound: RemoteDrawAndGuessRound?
+    var currentRound: RemoteDrawAndGuessRound?
     /// Newest first, at most 20.
-    let recentRounds: [RemoteDrawAndGuessRound]
+    var recentRounds: [RemoteDrawAndGuessRound]
     /// Only the drawer whose turn it is, while the game is choosing a word.
     let choices: [RemoteDrawAndGuessChoice]?
     let myLastSeenAt: Date?
@@ -231,6 +244,9 @@ nonisolated struct RemoteGuessResult: Decodable, Equatable, Sendable {
     let roundState: DrawAndGuessRoundState
     let points: Int
     let speedBonus: Int
+    let firstTryBonus: Int
+    let hintsUsed: Int
+    let personalBest: Bool
     let solveMs: Int?
     let createdAt: Date
 
@@ -240,6 +256,9 @@ nonisolated struct RemoteGuessResult: Decodable, Equatable, Sendable {
         case roundState = "round_state"
         case points
         case speedBonus = "speed_bonus"
+        case firstTryBonus = "first_try_bonus"
+        case hintsUsed = "hints_used"
+        case personalBest = "personal_best"
         case solveMs = "solve_ms"
         case createdAt = "created_at"
     }
@@ -255,13 +274,23 @@ nonisolated struct RemoteGiveUpResult: Decodable, Equatable, Sendable {
     }
 }
 
-nonisolated struct RemoteSaveRoundResult: Decodable, Equatable, Sendable {
-    let memoryID: UUID
-    let created: Bool
+nonisolated struct RemoteReactionResult: Decodable, Equatable, Sendable {
+    let roundID: UUID
+    let guesserReaction: DrawAndGuessReaction?
 
     enum CodingKeys: String, CodingKey {
-        case memoryID = "memory_id"
-        case created
+        case roundID = "round_id"
+        case guesserReaction = "guesser_reaction"
+    }
+}
+
+nonisolated struct RemoteResultSeenResult: Decodable, Equatable, Sendable {
+    let roundID: UUID
+    let resultSeenAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case roundID = "round_id"
+        case resultSeenAt = "result_seen_at"
     }
 }
 

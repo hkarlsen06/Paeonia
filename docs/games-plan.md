@@ -10,6 +10,10 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 ## Decisions
 
+Decided on 2026-10-13.
+
+- **Games don't save to Memories.** A creative game keeps its own history instead, such as the finished drawings of Draw & Guess. Each partner can star rounds in that history, and stars are private: the partner isn't told and a star doesn't change the game. This replaces the opt-in save prompt from 2026-10-11 and the save prompt details from 2026-10-12. Board games and quick duels keep no history.
+
 Decided on 2026-10-12.
 
 - **Draw & Guess is the first game.** Design in `docs/games/draw-and-guess.md`.
@@ -21,7 +25,6 @@ Decided on 2026-10-12.
 - **Tab order.** Home, Questions, Games, Memories, You. Games sits in the middle.
 - **Tab badge.** The Games tab shows a badge of 1 while any game waits for this person to draw or guess. The tab bar loads the game state at launch, so the badge shows before the tab is opened.
 - **Tab bar in a game.** On iPhone the tab bar hides while a game screen is open. On iPad it stays, because the iPad tab bar sits at the top and iPadOS 26 moves the game's content when it hides during the push.
-- **Save prompt details.** The partner who says yes first is recorded as the memory's creator. The save option is a single "Save drawing to Memories" button with no question above it. Continuing past the result without tapping it means no, for that partner only. Once the drawing is saved, the other partner's prompt turns into "Saved to Memories".
 - **One ongoing game per kind.** A couple has at most one active game of each kind.
 - **Turn reminder.** When a move has waited 72 hours, the partner whose turn it is gets one reminder. There is never a second one for the same move.
 - **Live is not deferred.** When a game's design includes live play, live ships in the game's first version.
@@ -34,7 +37,6 @@ Decided on 2026-10-11.
 - **Games is the fifth tab.** It becomes a new `MainTab` case. Its position among the tabs is still open.
 - **Overflow plan.** If the tab bar ever needs a sixth entry, the You tab becomes a More tab. Memories keeps its own tab.
 - **Included in the subscription.** Games are part of the subscription the couple already has. There is no separate purchase and no per-game unlock. Use the same couple entitlement check as other paid features.
-- **Saving to Memories is opt-in.** Only creative games offer it, such as Exquisite corpse and Draw & Guess drawings. Board games and quick duels never offer it. When a creative game or round ends, both partners are asked whether to save it. If either one says yes, it is saved. Nothing is saved without a yes.
 - **No forfeits on a timer.** An async game waits as long as it needs to. This follows the forgiving-streak rule in `AGENTS.md`.
 
 ## Quality bar
@@ -74,7 +76,7 @@ Convex owns the state of every game. The relay carries only movement that never 
 - Draw & Guess has one mutation per action (`pick_draw_word`, `submit_drawing`, `submit_guess`, `give_up_round`), each checking access, turn ownership, and round state. Proposal for board games: one `make_move({ game_id, expected_version, move })` mutation. It checks couple access, whose turn it is, and the version, then runs a pure rules function for that `kind`. A stale version fails instead of overwriting.
 - A `view_for(state, user_id)` function per kind. Queries return only that projection, so hidden information (Battleship boards, unrevealed answers, the drawing under the fold) never reaches the other phone.
 - Game data joins relationship end and account deletion cleanup (`lib/relationshipCleanup.ts`, `lib/accountDeletion.ts`).
-- A saved game becomes an ordinary `memories` row with its media, so the existing moderation and report flow covers it.
+- A creative game keeps its own history in its own tables, such as the finished rounds and drawings of Draw & Guess. Stars are a per-game table with one row per partner and round. Nothing is copied into `memories`.
 
 ### Real-time fairness
 
@@ -99,9 +101,9 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 
 ### Real-time (both online)
 
-| Game | Transport | Memories | Effort |
+| Game | Transport | Own history | Effort |
 |---|---|---|---|
-| Draw & Guess | Relay strokes, Convex round state | Yes, the drawings | S |
+| Draw & Guess | Relay strokes, Convex round state | Yes, the drawings with stars | S |
 | Mind Meld | Convex only | No | S |
 | Touch | Relay | No | S |
 | Reaction duel | Relay, Convex for results | No | S |
@@ -115,7 +117,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 
 ### Async (one turn, then hours of waiting)
 
-| Game | Hidden information | Memories | Effort |
+| Game | Hidden information | Own history | Effort |
 |---|---|---|---|
 | Exquisite corpse | Yes | Yes | M |
 | Story chain | No | Yes | S |
@@ -134,7 +136,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 
 ## Order
 
-Draw & Guess comes first. It builds the turn engine, the drawing replay and the save-to-Memories flow. Exquisite corpse reuses all three, so it is the likely second game. Mind Meld is the cheapest game that tests a simultaneous reveal on Convex. Connect Four fails quality bar item 3 unless it gets a Paeonia-specific twist.
+Draw & Guess comes first. It builds the turn engine, the drawing replay and the history with stars. Exquisite corpse reuses all three, so it is the likely second game. Mind Meld is the cheapest game that tests a simultaneous reveal on Convex. Connect Four fails quality bar item 3 unless it gets a Paeonia-specific twist.
 
 ## Open questions
 

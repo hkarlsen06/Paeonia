@@ -87,14 +87,6 @@ struct DrawAndGuessHardeningTests {
         )
     }
 
-    private func solvedByMe(hasDrawing: Bool) -> RemoteDrawAndGuessState {
-        GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil),
-            round: GameFixture.round(state: .solved, drawer: GameFixture.partner, hasDrawing: hasDrawing)
-        )
-    }
-
     private func type(_ word: String, into viewModel: DrawAndGuessViewModel) throws {
         for letter in word.uppercased() where letter != " " {
             let used = viewModel.slots.placedTileIDs
@@ -206,25 +198,6 @@ struct DrawAndGuessHardeningTests {
         #expect(await queuedDrawings(env).first?.strokes.count == 4)
     }
 
-    @Test func aSaveDuringTheStrokeWaitDoesNotRenderTheUnfinishedCanvas() async {
-        let env = GamesTestEnvironment(state: myDrawing)
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-        viewModel.board.canvasDidLayout(side: DrawAndGuessCanvas.canonicalSide)
-        viewModel.board.updateDrawing(GameFixture.umbrella())
-        viewModel.board.setStrokeInProgress(true)
-        await env.cache.saveState(solvedWhileIDrew, ownerUserID: GameFixture.me)
-        await viewModel.reload()
-        #expect(viewModel.savePrompt == .ask)
-
-        await viewModel.saveToMemories()
-
-        let saves = await queuedSaves(env)
-        #expect(saves.count == 1)
-        #expect(saves.first?.imageData == nil)
-        viewModel.board.setStrokeInProgress(false)
-    }
-
     @Test func doneSendsALateEraserChangeTheCanvasDidNotReport() async {
         let env = GamesTestEnvironment(state: myDrawing)
         let viewModel = env.viewModel()
@@ -242,44 +215,6 @@ struct DrawAndGuessHardeningTests {
         await viewModel.finishDrawing()
 
         #expect(await queuedDrawings(env).first?.strokes.count == 2)
-    }
-
-    // MARK: Save to Memories
-
-    private func queuedSaves(_ env: GamesTestEnvironment) async -> [GameSaveRoundPayload] {
-        await env.queued(.saveGameRoundToMemories).compactMap { snapshot in
-            snapshot.requestData.flatMap { try? JSONDecoder().decode(GameSaveRoundPayload.self, from: $0) }
-        }
-    }
-
-    @Test func aSaveNeverRendersTheLiveSnapshotAndIsQueuedAtOnce() async {
-        let env = GamesTestEnvironment(state: solvedByMe(hasDrawing: false))
-        let viewModel = env.viewModel()
-        let partOfIt = PKDrawing(strokes: Array(GameFixture.umbrella().strokes.prefix(1)))
-        viewModel.liveSnapshots[GameFixture.roundID] = partOfIt
-        await viewModel.reload()
-        #expect(viewModel.phase == .reveal)
-        #expect(viewModel.savePrompt == .ask)
-
-        await viewModel.saveToMemories()
-
-        // Queued now, so leaving the round or the app keeps it. The send renders
-        // the drawer's drawing once the server has it.
-        #expect(viewModel.savePrompt == .saving)
-        let saves = await queuedSaves(env)
-        #expect(saves.count == 1)
-        #expect(saves.first?.imageData == nil)
-    }
-
-    @Test func aSaveRendersTheDownloadedDrawingWhenItIsHere() async {
-        let env = GamesTestEnvironment(state: solvedByMe(hasDrawing: true))
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-        _ = await waitUntil { viewModel.submittedDrawing != nil }
-
-        await viewModel.saveToMemories()
-
-        #expect(await queuedSaves(env).first?.imageData != nil)
     }
 
     // MARK: Guessing

@@ -256,7 +256,7 @@ final class PaeoniaAppUITests: XCTestCase {
         "draw-watching-live",
         "draw-guessing-replay",
         "draw-reveal-solved",
-        "draw-save-prompt",
+        "draw-reveal-bonuses",
         "draw-reveal-missed",
         "draw-reveal-as-drawer",
         "draw-reveal-partner-drawing",

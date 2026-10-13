@@ -5,6 +5,7 @@ import { getByUuid, orNull } from "./db";
 import { fail } from "./errors";
 import { pickWordChoices, WORD_DIFFICULTIES, type GameLanguage, type WordChoice, type WordDifficulty } from "./gameWords";
 import { enqueueNotificationForUser } from "./notifications";
+import { charLength } from "./text";
 import { addMs, nowIso } from "./time";
 
 // Shared engine helpers for the games tables. The registered functions are in games.ts.
@@ -18,9 +19,17 @@ export type GameSettings = Doc<"game_settings">;
 export const PRESENCE_FRESH_MS = 60_000;
 /** The cleanup cron deletes presence rows older than this. */
 export const PRESENCE_DELETE_AFTER_MS = 2 * 60_000;
-/** A correct guess this soon after the guesser first saw the drawing earns the speed bonus. */
-export const SPEED_BONUS_WINDOW_MS = 30_000;
-export const SPEED_BONUS_POINTS = 1;
+/** A correct guess within `withinMs` of first seeing the drawing earns `points`. Checked in order. */
+export const SPEED_BONUS_TIERS = [
+  { withinMs: 15_000, points: 2 },
+  { withinMs: 30_000, points: 1 },
+] as const;
+/** The guesser's bonus for a correct first attempt. */
+export const FIRST_TRY_BONUS_POINTS = 1;
+/** Solves slower than this stay out of the average solve time. */
+export const AVERAGE_SOLVE_MAX_MS = 10 * 60_000;
+/** The most rounds one history page returns. */
+export const MAX_HISTORY_PAGE = 50;
 export const INVITE_INTERVAL_MS = 15 * 60_000;
 export const TURN_REMINDER_AFTER_MS = 72 * 3_600_000;
 export const MAX_GUESS_LENGTH = 40;
@@ -75,6 +84,14 @@ export async function getMovesByGame(ctx: ReaderCtx, gameId: string, take: numbe
 
 /** The most attempts a round returns. Attempts are unlimited, so the oldest ones drop off. */
 export const MAX_RETURNED_ATTEMPTS = 200;
+
+/** Every move of a couple, oldest first by index order. Fine at this scale: one couple plays a few rounds a day. */
+export async function getMovesByCouple(ctx: ReaderCtx, coupleId: string): Promise<GameMove[]> {
+  return await ctx.db
+    .query("game_moves")
+    .withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId))
+    .collect();
+}
 
 /** The newest attempts of a round, oldest first, and the exact number of attempts. */
 export async function listGuesses(ctx: ReaderCtx, moveId: string): Promise<{ guesses: Doc<"game_guesses">[]; count: number }> {
@@ -178,10 +195,15 @@ export async function beginTurn(
   });
 }
 
+/** The speed bonus for a solve time: 2 within 15 seconds, 1 within 30, else 0. */
+export function speedBonusForSolveMs(solveMs: number): number {
+  return SPEED_BONUS_TIERS.find((tier) => solveMs <= tier.withinMs)?.points ?? 0;
+}
+
 /**
- * Points for a correct guess. `shared` always gets the word points. The guesser also gets the
- * speed bonus for a guess within 30 seconds of first seeing the drawing. A guesser who watches
- * live first sees it at the drawer's first stroke, so the clock runs while the partner draws.
+ * The server's own speed bonus and solve time for a correct guess, used when the phone sent no
+ * claim. A guesser who watches live first sees the drawing at the drawer's first stroke, so the
+ * clock runs while the partner draws.
  */
 export function scoreSolve(
   move: Pick<GameMove, "guesser_first_seen_at">,
@@ -189,7 +211,45 @@ export function scoreSolve(
 ): { speedBonus: number; solveMs: number | undefined } {
   if (move.guesser_first_seen_at === undefined) return { speedBonus: 0, solveMs: undefined };
   const solveMs = Math.max(0, Date.parse(solvedAt) - Date.parse(move.guesser_first_seen_at));
-  return { speedBonus: solveMs <= SPEED_BONUS_WINDOW_MS ? SPEED_BONUS_POINTS : 0, solveMs };
+  return { speedBonus: speedBonusForSolveMs(solveMs), solveMs };
+}
+
+/** Whether a solve with no hints beat every earlier hint-free solve by the same guesser. Needs at least one earlier one. */
+export function isPersonalBest(
+  moves: Pick<GameMove, "guesser_user_id" | "state" | "hints_used" | "solve_ms">[],
+  guesserId: string,
+  solveMs: number,
+): boolean {
+  const earlier = moves.filter(
+    (move) =>
+      move.guesser_user_id === guesserId &&
+      move.state === "solved" &&
+      (move.hints_used ?? 0) === 0 &&
+      move.solve_ms !== undefined,
+  );
+  return earlier.length > 0 && earlier.every((move) => solveMs < move.solve_ms!);
+}
+
+/** One player's numbers across the couple's rounds. See `get_draw_and_guess_records`. */
+export function playerRecords(moves: GameMove[], userId: string) {
+  const solves = moves.filter((move) => move.guesser_user_id === userId && move.state === "solved");
+  const timed = solves.filter((move) => (move.hints_used ?? 0) === 0 && move.solve_ms !== undefined);
+  const average = timed.filter((move) => move.solve_ms! <= AVERAGE_SOLVE_MAX_MS);
+  const fastest = timed.reduce<GameMove | null>((best, move) => (best === null || move.solve_ms! < best.solve_ms! ? move : best), null);
+  return {
+    user_id: userId,
+    solves: solves.length,
+    first_try_solves: solves.filter((move) => (move.first_try_bonus ?? 0) > 0).length,
+    average_solve_ms: average.length === 0 ? null : Math.round(average.reduce((sum, move) => sum + move.solve_ms!, 0) / average.length),
+    fastest_solve_ms: fastest?.solve_ms ?? null,
+    fastest_solve_word: fastest?.word ?? null,
+    drawings_solved: moves.filter((move) => move.drawer_user_id === userId && move.state === "solved").length,
+  };
+}
+
+/** The letters of a word without spaces. A guesser can use at most this many minus 1 hints. */
+export function wordLetterCount(word: string): number {
+  return charLength(word.replaceAll(" ", ""));
 }
 
 // --- Notifications ----------------------------------------------------------
@@ -302,13 +362,21 @@ export function gameJson(game: Game, userId: string, partnerId: string | null) {
   };
 }
 
-/** One round with its attempts and the save-prompt state for `userId`. */
+/** The fields of a finished round that history, records, and the result screens share. */
+export function roundOutcomeJson(move: GameMove) {
+  return {
+    solve_ms: orNull(move.solve_ms),
+    speed_bonus: move.speed_bonus,
+    first_try_bonus: move.first_try_bonus ?? 0,
+    hints_used: move.hints_used ?? 0,
+    personal_best: move.personal_best ?? false,
+    guesser_reaction: orNull(move.guesser_reaction),
+  };
+}
+
+/** One round with its attempts. `starred_by_me` is the caller's private star. */
 export async function roundJson(ctx: ReaderCtx, move: GameMove, userId: string) {
   const { guesses, count } = await listGuesses(ctx, move.id);
-  const responses = await ctx.db
-    .query("game_save_responses")
-    .withIndex("by_move_id_user_id", (q) => q.eq("move_id", move.id))
-    .collect();
   return {
     id: move.id,
     round_number: move.round_number,
@@ -323,12 +391,11 @@ export async function roundJson(ctx: ReaderCtx, move: GameMove, userId: string) 
     started_at: move.started_at,
     guesser_first_seen_at: orNull(move.guesser_first_seen_at),
     ended_at: orNull(move.ended_at),
-    solve_ms: orNull(move.solve_ms),
-    speed_bonus: move.speed_bonus,
-    memory_id: orNull(move.memory_id),
-    saved_by_user_id: orNull(move.saved_by_user_id),
-    my_save_response: responses.find((row) => row.user_id === userId)?.response ?? null,
-    partner_save_response: responses.find((row) => row.user_id !== userId)?.response ?? null,
+    ...roundOutcomeJson(move),
+    starred_by_me: (await getRoundStar(ctx, move.id, userId)) !== null,
+    /** When each partner dismissed the result. The app reads the field for its own role. */
+    drawer_result_seen_at: orNull(move.drawer_result_seen_at),
+    guesser_result_seen_at: orNull(move.guesser_result_seen_at),
     /** Every attempt of the round. `attempts` holds the newest 200, oldest first. */
     attempt_count: count,
     attempts: guesses.map((guess) => ({
@@ -339,6 +406,14 @@ export async function roundJson(ctx: ReaderCtx, move: GameMove, userId: string) 
       created_at: guess.created_at,
     })),
   };
+}
+
+/** The user's star on a round, if any. */
+export async function getRoundStar(ctx: ReaderCtx, moveId: string, userId: string): Promise<Doc<"game_round_stars"> | null> {
+  return await ctx.db
+    .query("game_round_stars")
+    .withIndex("by_move_id_user_id", (q) => q.eq("move_id", moveId).eq("user_id", userId))
+    .unique();
 }
 
 // --- Cleanup ----------------------------------------------------------------
@@ -357,9 +432,9 @@ export async function deleteGamePresenceForCouple(ctx: WriterCtx, coupleId: stri
 // ponytail: like the rest of the couple cleanup, this runs in one mutation, so a couple with more
 // than about 8000 game rows (guesses count) will not finish. Upgrade path: delete in chunks and reschedule.
 /**
- * Deletes every game row of a couple: settings, games, rounds, guesses, save answers, used
+ * Deletes every game row of a couple: settings, games, rounds, guesses, stars, used
  * words, presence, and invites. Drawing media is queued for deletion by the couple media
- * sweep in `cleanupCoupleContent`. Memories saved from a game stay ordinary memories.
+ * sweep in `cleanupCoupleContent`.
  */
 export async function deleteCoupleGameRows(ctx: WriterCtx, coupleId: string): Promise<number> {
   let deleted = 0;
@@ -371,7 +446,7 @@ export async function deleteCoupleGameRows(ctx: WriterCtx, coupleId: string): Pr
   for (const row of await ctx.db.query("games").withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
   for (const row of await ctx.db.query("game_moves").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
   for (const row of await ctx.db.query("game_guesses").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
-  for (const row of await ctx.db.query("game_save_responses").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
+  for (const row of await ctx.db.query("game_round_stars").withIndex("by_couple_id_user_id_round_number", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
   for (const row of await ctx.db.query("game_used_words").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
   for (const row of await ctx.db.query("game_presence").withIndex("by_couple_id_kind_user_id", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
   for (const row of await ctx.db.query("game_invites").withIndex("by_couple_id_kind_sender_user_id", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);

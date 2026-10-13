@@ -197,7 +197,7 @@ struct DrawAndGuessFixTests {
 
     // MARK: Unseen results
 
-    private func awayState(oldRoundID: UUID) -> RemoteDrawAndGuessState {
+    private func awayState(oldRoundID: UUID, seenBy: Set<UUID> = []) -> RemoteDrawAndGuessState {
         let nextRound = UUID()
         return GameFixture.state(
             settings: GameFixture.settings(),
@@ -210,7 +210,8 @@ struct DrawAndGuessFixTests {
                     drawer: GameFixture.me,
                     hasDrawing: true,
                     attempts: [("cat", false), ("umbrella", true)],
-                    solveMs: 18_000
+                    solveMs: 18_000,
+                    resultSeenBy: seenBy
                 ),
             ]
         )
@@ -220,16 +221,10 @@ struct DrawAndGuessFixTests {
         let oldRound = UUID()
         let resolver = DrawAndGuessResolver(userID: GameFixture.me)
 
-        let unseen = resolver.resolve(
-            state: awayState(oldRoundID: oldRound),
-            pending: .none,
-            acknowledgedRoundIDs: [],
-            isPartnerDrawingLive: false
-        )
+        let unseen = resolver.resolve(state: awayState(oldRoundID: oldRound), pending: .none, isPartnerDrawingLive: false)
         let seen = resolver.resolve(
-            state: awayState(oldRoundID: oldRound),
+            state: awayState(oldRoundID: oldRound, seenBy: [GameFixture.me]),
             pending: .none,
-            acknowledgedRoundIDs: [oldRound],
             isPartnerDrawingLive: false
         )
 
@@ -255,7 +250,7 @@ struct DrawAndGuessFixTests {
 
     // MARK: Result line
 
-    private func solvedReveal(duration: TimeInterval?, wrongGuesses: Int) -> DrawAndGuessReveal {
+    private func solvedReveal(duration: TimeInterval?, wrongGuesses: Int, hints: Int = 0) -> DrawAndGuessReveal {
         func attempt(_ text: String, correct: Bool) -> DrawAndGuessAttemptView {
             DrawAndGuessAttemptView(
                 id: UUID(),
@@ -273,6 +268,10 @@ struct DrawAndGuessFixTests {
             difficulty: .medium,
             wordPoints: 2,
             speedBonus: 0,
+            firstTryBonus: 0,
+            hintsUsed: hints,
+            personalBest: false,
+            reaction: nil,
             solveDuration: duration,
             pointsForMe: 2,
             pointsForCouple: 2,
@@ -323,5 +322,20 @@ struct DrawAndGuessFixTests {
             #expect(text(line, locale: "en") == item.en)
             #expect(text(line, locale: "nb") == item.nb)
         }
+    }
+
+    @Test func theDrawersResultMentionsHintsInsteadOfTries() {
+        let time = DrawAndGuessReveal.spokenDuration(24)
+        let timed = solvedReveal(duration: 24, wrongGuesses: 3, hints: 2).solvedLine(partnerName: "Robin")
+        let untimed = solvedReveal(duration: nil, wrongGuesses: 0, hints: 1).solvedLine(partnerName: "Robin")
+
+        // The hint count is its own string in the phone's language. The sentence around it is English here.
+        let twoHints = String(localized: .gamesDrawAndGuessHints(2))
+        let oneHint = String(localized: .gamesDrawAndGuessHints(1))
+        #expect(text(timed, locale: "en") == "Robin got it in \(time) with \(twoHints).")
+        #expect(text(untimed, locale: "en") == "Robin got it with \(oneHint).")
+        // The hint count is its own plural string, so each language gets its own words.
+        #expect(text(.gamesDrawAndGuessHints(1), locale: "nb") == "1 hint")
+        #expect(text(.gamesDrawAndGuessHints(2), locale: "nb") == "2 hint")
     }
 }

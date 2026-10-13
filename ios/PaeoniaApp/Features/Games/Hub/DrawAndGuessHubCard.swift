@@ -8,6 +8,8 @@ struct DrawAndGuessHubCard: View {
     let me: DrawAndGuessPlayer
     let partner: DrawAndGuessPlayer
     let open: () -> Void
+    /// Opens "Our drawings". Nil where the card has no room for the link.
+    var openHistory: (() -> Void)?
 
     private let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
 
@@ -40,6 +42,8 @@ struct DrawAndGuessHubCard: View {
                 }
                 .buttonStyle(PaeoniaPrimaryButtonStyle())
                 .accessibilityIdentifier("games.hub.drawAndGuess")
+
+                historyLink
             }
             .padding([.horizontal, .bottom], PaeoniaSpacing.space20)
             .padding(.top, PaeoniaSpacing.space4)
@@ -55,6 +59,23 @@ struct DrawAndGuessHubCard: View {
                 summary.status.isYourTurn ? Color.paeoniaAccentPrimary.opacity(0.6) : .paeoniaSurfacePressed,
                 lineWidth: summary.status.isYourTurn ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeHairline
             )
+        }
+    }
+
+    /// A quiet link to "Our drawings", once the couple has a finished drawing.
+    @ViewBuilder
+    private var historyLink: some View {
+        if summary.hasDrawings, let openHistory {
+            Button(action: openHistory) {
+                Label {
+                    Text(.gamesDrawAndGuessHistoryTitle)
+                } icon: {
+                    Image(systemName: "square.grid.2x2")
+                }
+            }
+            .buttonStyle(PaeoniaQuietButtonStyle())
+            .frame(maxWidth: .infinity)
+            .accessibilityIdentifier("games.hub.history")
         }
     }
 

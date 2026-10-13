@@ -25,6 +25,10 @@ struct GamesRootView: View {
                     switch destination {
                     case .drawAndGuess:
                         DrawAndGuessScreen(viewModel: viewModel.drawAndGuess)
+                    case .drawAndGuessHistory:
+                        DrawAndGuessHistoryScreen(viewModel: viewModel.history)
+                    case let .drawAndGuessHistoryDetail(roundID):
+                        DrawAndGuessHistoryDetailHost(history: viewModel.history, roundID: roundID)
                     }
                 }
         }

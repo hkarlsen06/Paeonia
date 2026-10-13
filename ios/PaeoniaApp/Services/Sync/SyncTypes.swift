@@ -144,7 +144,9 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case submitGameDrawing = "submit_game_drawing"
     case submitGameGuess = "submit_game_guess"
     case giveUpGameRound = "give_up_game_round"
-    case saveGameRoundToMemories = "save_game_round_to_memories"
+    case setGameRoundStar = "set_game_round_star"
+    case setGameRoundReaction = "set_game_round_reaction"
+    case markGameRoundResultSeen = "mark_game_round_result_seen"
 }
 
 nonisolated enum SyncPendingOperationStatus: String, Codable, CaseIterable, Sendable {

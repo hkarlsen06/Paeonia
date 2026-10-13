@@ -223,7 +223,7 @@ struct DrawAndGuessPresenceTests {
         #expect(viewModel.round?.id == GameFixture.roundID)
         #expect(viewModel.partnerNextRound == .drawing)
 
-        // Tapping the button acknowledges the result, which is a "not now" to saving.
+        // Tapping the button marks the result as seen.
         await viewModel.continueFromReveal()
 
         #expect(viewModel.partnerNextRound == nil)

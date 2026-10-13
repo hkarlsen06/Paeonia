@@ -35,7 +35,9 @@ final class DrawAndGuessRevealTimeline {
     private(set) var panelShown = false
     private(set) var scoreCounting = false
     private(set) var speedBonusShown = false
-    private(set) var saveShown = false
+    private(set) var firstTryBonusShown = false
+    /// The rows under the result appear, such as the reaction row.
+    private(set) var actionsShown = false
     private(set) var isSettled = false
     /// The settled state was shown without playing, so counts should not animate.
     private(set) var wasSkipped = false
@@ -125,7 +127,8 @@ final class DrawAndGuessRevealTimeline {
         panelShown = false
         scoreCounting = false
         speedBonusShown = false
-        saveShown = false
+        firstTryBonusShown = false
+        actionsShown = false
         isSettled = false
         wasSkipped = false
     }
@@ -156,7 +159,7 @@ final class DrawAndGuessRevealTimeline {
         switch event {
         case .start, .lightLetter, .bloom, .glowSettle, .fillStart, .fillLetter:
             applyAnswer(event)
-        case .collapse, .title, .panel, .scoreTick, .speedBonus, .save:
+        case .collapse, .title, .panel, .scoreTick, .speedBonus, .firstTryBonus, .actions:
             applyResult(event)
         }
     }
@@ -199,7 +202,7 @@ final class DrawAndGuessRevealTimeline {
         }
     }
 
-    /// The beats after the answer: the layout, the title, the points and the save row.
+    /// The beats after the answer: the layout, the title, the points and the rows under them.
     private func applyResult(_ event: Event) {
         switch event {
         case .collapse:
@@ -224,9 +227,14 @@ final class DrawAndGuessRevealTimeline {
             withAnimation(PaeoniaMotion.celebrationReveal) {
                 speedBonusShown = true
             }
-        case .save:
+        case .firstTryBonus:
+            haptics.speedBonus()
+            withAnimation(PaeoniaMotion.celebrationReveal) {
+                firstTryBonusShown = true
+            }
+        case .actions:
             withAnimation(PaeoniaMotion.cardReveal) {
-                saveShown = true
+                actionsShown = true
             }
         default:
             break
@@ -246,7 +254,8 @@ final class DrawAndGuessRevealTimeline {
         panelShown = plan.kind == .solved && plan.pointsAdded > 0
         scoreCounting = panelShown
         speedBonusShown = plan.hasSpeedBonus
-        saveShown = true
+        firstTryBonusShown = plan.hasFirstTryBonus
+        actionsShown = true
         wasSkipped = true
         isSettled = true
     }

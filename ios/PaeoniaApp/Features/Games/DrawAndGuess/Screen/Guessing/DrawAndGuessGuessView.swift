@@ -7,7 +7,6 @@ struct DrawAndGuessGuessView: View {
     @Bindable var viewModel: DrawAndGuessViewModel
 
     @State private var timeline = DrawAndGuessRevealTimeline()
-    @State private var isShowMeAlertPresented = false
     @Namespace private var tileNamespace
     @AccessibilityFocusState private var isTitleFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -16,7 +15,7 @@ struct DrawAndGuessGuessView: View {
     private var isRevealed: Bool { viewModel.phase == .reveal }
     private var isLive: Bool { viewModel.phase == .watchingLive }
     private var revealProgress: Int {
-        [timeline.titleShown, timeline.panelShown].count { $0 }
+        [timeline.titleShown, timeline.panelShown, timeline.actionsShown].count { $0 }
     }
 
     var body: some View {
@@ -36,7 +35,6 @@ struct DrawAndGuessGuessView: View {
         } bottom: {
             bottom
         }
-        .drawAndGuessSaveToolbar(viewModel, isShown: isRevealed && timeline.saveShown)
         .animation(PaeoniaMotion.stateChange, value: viewModel.isPartnerWaitingForMe)
         .simultaneousGesture(TapGesture().onEnded {
             if timeline.titleShown { timeline.skip() }
@@ -56,19 +54,8 @@ struct DrawAndGuessGuessView: View {
             PaeoniaHaptics.gameWrongGuess()
             AccessibilityNotification.Announcement(String(localized: .gamesDrawAndGuessGuessWrong)).post()
         }
-        .alert(Text(.gamesDrawAndGuessShowMeConfirmTitle), isPresented: $isShowMeAlertPresented) {
-            Button {
-                Task { await viewModel.giveUp() }
-            } label: {
-                Text(.gamesDrawAndGuessShowMe)
-            }
-            Button(role: .cancel) {} label: {
-                Text(.gamesDrawAndGuessKeepGuessing)
-            }
-        } message: {
-            Text(.gamesDrawAndGuessShowMeConfirmMessage)
-        }
         .onDisappear { timeline.stop() }
+        .drawAndGuessStarToolbar(viewModel, isShown: isRevealed && timeline.actionsShown)
     }
 
     // MARK: Square
@@ -194,22 +181,31 @@ struct DrawAndGuessGuessView: View {
                         isCounting: timeline.scoreCounting,
                         animates: !timeline.wasSkipped,
                         showsSpeedBonus: timeline.speedBonusShown,
+                        showsFirstTryBonus: timeline.firstTryBonusShown,
                         isHeldOnPhone: viewModel.isHeldOnPhone
                     )
                     .transition(transition)
                 }
-                if timeline.saveShown, viewModel.savePrompt == .saving, viewModel.isHeldOnPhone {
-                    DrawAndGuessOfflineLine()
+                if timeline.actionsShown {
+                    DrawAndGuessReactionRow(viewModel: viewModel)
                         .transition(transition)
                 }
             }
         }
     }
 
-    private func lines(for reveal: DrawAndGuessReveal) -> [Text] {
-        guard reveal.isSolved else { return [Text(.gamesDrawAndGuessMissedLine)] }
-        guard let duration = reveal.shownSolveDuration else { return [] }
-        return [Text(.gamesDrawAndGuessRevealSolveTime(DrawAndGuessReveal.spokenDuration(duration)))]
+    private func lines(for reveal: DrawAndGuessReveal) -> [DrawAndGuessRevealTitle.Line] {
+        guard reveal.isSolved else { return [.init(text: Text(.gamesDrawAndGuessMissedLine))] }
+        var lines: [DrawAndGuessRevealTitle.Line] = []
+        if let duration = reveal.shownSolveDuration {
+            lines.append(.init(
+                text: Text(.gamesDrawAndGuessRevealSolveTime(DrawAndGuessReveal.spokenDuration(duration)))
+            ))
+        }
+        if reveal.personalBest {
+            lines.append(.init(text: Text(.gamesDrawAndGuessRevealPersonalBest), isAccent: true))
+        }
+        return lines
     }
 
     // MARK: Bottom
@@ -222,17 +218,7 @@ struct DrawAndGuessGuessView: View {
                     slots
                 }
                 DrawAndGuessTileGrid(viewModel: viewModel, namespace: tileNamespace)
-                Button {
-                    isShowMeAlertPresented = true
-                } label: {
-                    Text(.gamesDrawAndGuessShowMe)
-                }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-                .opacity(isRevealed ? 0 : 1)
-                .animation(PaeoniaMotion.stateChange, value: isRevealed)
-                .disabled(isRevealed)
-                .accessibilityHidden(isRevealed)
-                .accessibilityIdentifier("draw.showMe")
+                DrawAndGuessGuessActions(viewModel: viewModel, isRevealed: isRevealed)
             }
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
@@ -259,12 +245,15 @@ struct DrawAndGuessGuessView: View {
         guard let reveal = viewModel.reveal, !timeline.hasBegun else { return }
         let letters = viewModel.slots.slots.count { !$0.isGap }
         let added = viewModel.revealScore?.largestGain ?? 0
+        // "Together" has no bonuses, so no bonus beat plays.
+        let isAgainst = viewModel.settings?.playStyle == .against
         timeline.begin(
             DrawAndGuessRevealTimeline.Plan(
                 kind: reveal.isSolved ? .solved : .missed,
                 letterCount: letters,
                 pointsAdded: added,
-                hasSpeedBonus: (reveal.speedBonus ?? 0) > 0
+                hasSpeedBonus: isAgainst && reveal.speedBonus > 0,
+                hasFirstTryBonus: isAgainst && reveal.firstTryBonus > 0
             ),
             reduceMotion: reduceMotion
         )
@@ -342,8 +331,15 @@ private struct DrawAndGuessReplayAccessibility: ViewModifier {
 
 /// "Got it!" with a line or two under it.
 struct DrawAndGuessRevealTitle: View {
+    /// One line under the title.
+    struct Line {
+        let text: Text
+        /// The line stands out, such as "Your fastest solve yet".
+        var isAccent = false
+    }
+
     let title: LocalizedStringResource
-    let lines: [Text]
+    let lines: [Line]
     var isFocused: AccessibilityFocusState<Bool>.Binding
 
     var body: some View {
@@ -354,9 +350,9 @@ struct DrawAndGuessRevealTitle: View {
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
             ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                line
+                line.text
                     .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
+                    .foregroundStyle(line.isAccent ? .paeoniaAccentPrimary : .paeoniaTextSecondary)
                     .multilineTextAlignment(.center)
             }
         }

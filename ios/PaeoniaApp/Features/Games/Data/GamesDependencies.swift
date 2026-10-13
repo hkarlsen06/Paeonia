@@ -75,11 +75,12 @@ nonisolated struct UnavailableGamesGateway: GamesGateway {
         throw Unavailable()
     }
 
-    func submitGuess(
+    func submitGuess( // swiftlint:disable:this function_parameter_count
         roundID _: UUID,
         guess _: String,
-        speedBonus _: Bool?,
+        speedBonus _: Int?,
         solveMs _: Int?,
+        hintsUsed _: Int?,
         operation _: SyncClientOperation
     ) async throws -> RemoteGuessResult {
         throw Unavailable()
@@ -89,16 +90,11 @@ nonisolated struct UnavailableGamesGateway: GamesGateway {
         throw Unavailable()
     }
 
-    func respondSavePrompt(roundID _: UUID) async throws {
+    func setRoundReaction(roundID _: UUID, reaction _: DrawAndGuessReaction?) async throws -> RemoteReactionResult {
         throw Unavailable()
     }
 
-    func saveRoundToMemories(
-        roundID _: UUID,
-        memoryID _: UUID,
-        mediaAssetID _: UUID,
-        memoryDate _: String
-    ) async throws -> RemoteSaveRoundResult {
+    func markRoundResultSeen(roundID _: UUID) async throws -> RemoteResultSeenResult {
         throw Unavailable()
     }
 
@@ -107,6 +103,22 @@ nonisolated struct UnavailableGamesGateway: GamesGateway {
     }
 
     func setPresence(_: Bool) async throws {
+        throw Unavailable()
+    }
+
+    func loadDrawAndGuessHistory(
+        starredOnly _: Bool,
+        beforeRoundNumber _: Int?,
+        limit _: Int
+    ) async throws -> RemoteDrawAndGuessHistoryPage {
+        throw Unavailable()
+    }
+
+    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
+        throw Unavailable()
+    }
+
+    func setRoundStar(roundID _: UUID, starred _: Bool) async throws -> RemoteRoundStarResult {
         throw Unavailable()
     }
 }

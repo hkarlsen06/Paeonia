@@ -6,7 +6,7 @@ import Foundation
 /// round. A downloaded drawing is the partner's, kept so a replay works offline.
 /// A live snapshot is the partner's canvas as this person saw it when they
 /// guessed it live. It fills the reveal after a relaunch until the partner's
-/// sent drawing is downloaded, and it never goes to Memories.
+/// sent drawing is downloaded.
 nonisolated protocol GameDrawingStoring: Sendable {
     func draft(ownerUserID: UUID, roundID: UUID) -> Data?
     func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID)
@@ -32,6 +32,8 @@ nonisolated extension GameDrawingStoring {
     /// unsent drawings, like the widget and memory drafts. Signing out and a
     /// permanent loss remove them too.
     func purge(for scope: LocalPrivacyPurgeScope) {
+        // The pictures of "Our drawings" held in memory go with the files.
+        DrawAndGuessThumbnails.removeAll()
         if scope == .relationshipAccessHidden {
             clearDownloads()
         } else {

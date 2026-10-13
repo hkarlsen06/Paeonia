@@ -106,8 +106,7 @@ extension DrawAndGuessViewModel {
     func resetForNewIdentity() {
         state = nil
         pending = .none
-        acknowledgedRoundIDs = []
-        declinedSaveRoundIDs = []
+        persistedHints = [:]
         phase = .loading
         round = nil
         live?.stop()

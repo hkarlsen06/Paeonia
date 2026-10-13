@@ -1404,10 +1404,18 @@ export default defineSchema({
     started_at: ts,
     ended_at: optTs,
     solve_ms: v.optional(v.number()),
+    // Guesser bonuses of a solve: 0, 1, or 2 for speed, 0 or 1 for the first try.
     speed_bonus: v.number(),
-    // The memory this round was saved to, at most one per round.
-    memory_id: optUuid,
-    saved_by_user_id: optUuid,
+    first_try_bonus: v.optional(v.number()),
+    // Letters the guesser's hints showed before the correct guess. Set on a solve. Any hint zeroes both bonuses.
+    hints_used: v.optional(v.number()),
+    // True when this hint-free solve beat every earlier hint-free solve by the same guesser. Fixed at solve time.
+    personal_best: v.optional(v.boolean()),
+    // The guesser's reaction to the finished round. Cleared by patching to undefined.
+    guesser_reaction: v.optional(literals("love", "laugh", "wow")),
+    // When each partner first dismissed the finished round's result. The first time wins.
+    drawer_result_seen_at: optTs,
+    guesser_result_seen_at: optTs,
     created_at: ts,
     updated_at: ts,
   })
@@ -1430,16 +1438,17 @@ export default defineSchema({
     .index("by_move_id_created_at", ["move_id", "created_at"])
     .index("by_couple_id", ["couple_id"]),
 
-  // FK: move_id -> game_moves cascade. (move_id, user_id) is unique. Only "Not now" is stored; a yes saves the memory.
-  game_save_responses: defineTable({
-    move_id: uuid,
+  // FK: move_id -> game_moves cascade. (move_id, user_id) is unique. A partner's private star on a finished round. Nobody else is told.
+  // round_number repeats the round's number so one user's stars page by round without reading the rounds.
+  game_round_stars: defineTable({
     couple_id: uuid,
+    move_id: uuid,
     user_id: uuid,
-    response: v.literal("not_now"),
+    round_number: v.number(),
     created_at: ts,
   })
     .index("by_move_id_user_id", ["move_id", "user_id"])
-    .index("by_couple_id", ["couple_id"]),
+    .index("by_couple_id_user_id_round_number", ["couple_id", "user_id", "round_number"]),
 
   // FK: game_id -> games cascade. Words already shown to the couple.
   game_used_words: defineTable({

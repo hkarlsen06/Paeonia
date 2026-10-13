@@ -70,7 +70,7 @@ struct GamesStuckMoveTests {
             guess: "umbrella",
             isCorrect: true,
             createdAt: GameFixture.now,
-            speedBonus: true,
+            speedBonus: 2,
             solveMs: 4_000
         )
         try await enqueue(.submitGameGuess, wrong, sequence: 1)
@@ -90,10 +90,14 @@ struct GamesStuckMoveTests {
             state: GameFixture.state(
                 settings: GameFixture.settings(),
                 game: GameFixture.game(state: .guessing, turn: GameFixture.me),
-                round: GameFixture.round(state: .guessing, drawer: GameFixture.partner, hasDrawing: true)
+                round: GameFixture.round(
+                    state: .guessing,
+                    drawer: GameFixture.partner,
+                    hasDrawing: true,
+                    resultSeenBy: [GameFixture.me]
+                )
             ),
             pending: work,
-            acknowledgedRoundIDs: [GameFixture.roundID],
             isPartnerDrawingLive: false
         ).phase
     }
@@ -200,7 +204,22 @@ struct GamesStuckMoveTests {
             try? await drain.push(context: syncContext(pending))
         }
         await viewModel.reload()
-        await environment.cache.acknowledgeRound(GameFixture.roundID, ownerUserID: GameFixture.me)
+        // The server already has this person's "result seen" for the round, so the next turn
+        // waits for the guess to land instead of showing the result.
+        await environment.cache.saveState(
+            GameFixture.state(
+                settings: GameFixture.settings(),
+                game: GameFixture.game(state: .guessing, turn: GameFixture.me),
+                round: GameFixture.round(
+                    state: .guessing,
+                    drawer: GameFixture.partner,
+                    hasDrawing: true,
+                    resultSeenBy: [GameFixture.me]
+                ),
+                choices: GameFixture.choices
+            ),
+            ownerUserID: GameFixture.me
+        )
         try await queueWrongThenCorrectGuess()
         await viewModel.reload()
         #expect(viewModel.phase == .waitingToSync)
