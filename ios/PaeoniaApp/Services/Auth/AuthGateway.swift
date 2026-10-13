@@ -82,7 +82,10 @@ actor LiveAuthGateway: AuthGateway {
     }
 
     func restoreSession() async throws -> RemoteAuthSession? {
-        await Self.activeClerkSession()
+        #if DEBUG
+        await DebugSignInTicket.signInIfGiven()
+        #endif
+        return await Self.activeClerkSession()
     }
 
     func signInWithApple(idToken: String) async throws -> RemoteAuthSession {

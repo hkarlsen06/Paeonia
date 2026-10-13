@@ -52,6 +52,27 @@ The developer uses these wrappers from the repository root:
 ./scripts/xcode-test-agent.sh
 ```
 
+### Signing a simulator in
+
+The app offers only Apple and Google sign-in. To sign the Debug build on a simulator into one of the two test accounts on `api.paeonia.no`, install the app, then run:
+
+```bash
+scripts/sim-sign-in "<simulator name or UDID>" <first|second>
+```
+
+`first` is Hjalmar and `second` is Elena, the test couple. The session stays in the simulator's keychain, so this is needed once per simulator. Add `--reset` to switch a simulator to the other account.
+
+### Sharing the hosted backend
+
+A deploy replaces every function on `api.paeonia.no`, so a deploy from one branch removes what another branch deployed. Only one thread deploys and tests against it at a time. Before deploying, create the lock with noclobber, then rebase onto local `main`, deploy, test, and delete the lock:
+
+```bash
+set -o noclobber
+echo "<thread> $(date -u +%FT%TZ)" > "$(git rev-parse --git-common-dir)/paeonia-hosted-backend.lock"
+```
+
+Keep a session to about 20 minutes. If the lock exists, wait and do other work. Ask the developer about a lock older than 45 minutes instead of removing it.
+
 ### Toolchain Requirement
 
 Build with Xcode 27.0 beta by setting `DEVELOPER_DIR` for the command or by selecting the beta globally with `xcode-select`. On macOS 27 beta, GM Xcode 26.5's `actool` crashes when compiling the app's Icon Composer icon at `ios/PaeoniaApp/Resources/AppIcon/paeonia_app.icon`.
