@@ -143,6 +143,7 @@ describe("access snapshot", () => {
           source: null,
           status: null,
           product_id: null,
+          billing_period: null,
           current_period_end: null,
           updated_at: null,
         },
@@ -262,14 +263,6 @@ describe("verify_purchase", () => {
       "Apple transaction belongs to a different user",
     );
 
-    const unregistered = transactionInfo(newUuid());
-    appleReturns(unregistered);
-    await expectFailure(
-      user.as.action(api.access.verify_purchase, uploadBody(unregistered)),
-      "purchase_linked_to_another_account",
-      "Apple appAccountToken is not registered",
-    );
-
     const missingToken = transactionInfo(undefined);
     appleReturns(missingToken);
     await expectFailure(
@@ -278,6 +271,70 @@ describe("verify_purchase", () => {
       "Apple transaction is missing appAccountToken",
     );
     expect(await transactions(t)).toHaveLength(0);
+  });
+
+  /** Finishes `user`'s account deletion the way the deletion drain leaves it. */
+  async function deleteAccount(t: TestConvex, user: TestUser) {
+    await t.run(async (ctx) => {
+      const now = new Date().toISOString();
+      await ctx.db.insert("account_deletion_jobs", {
+        id: newUuid(),
+        request_id: newUuid(),
+        user_id: user.userId,
+        auth_provider: "apple",
+        status: "completed",
+        provider_revocation_status: "not_required",
+        auth_delete_attempts: 1,
+        completed_at: now,
+        created_at: now,
+        updated_at: now,
+      });
+      const tokens = await ctx.db.query("app_account_tokens").withIndex("by_user_id", (q) => q.eq("user_id", user.userId)).collect();
+      for (const row of tokens) await ctx.db.delete(row._id);
+    });
+  }
+
+  test("a subscription from a deleted account moves to the account that sends it", async () => {
+    const { t, user: deleted, token: oldToken } = await setup();
+    const first = transactionInfo(oldToken);
+    appleReturns(first);
+    await deleted.as.action(api.access.verify_purchase, uploadBody(first));
+    await deleteAccount(t, deleted);
+
+    const next = await createSignedInUser(t);
+    await tokenFor(next);
+    const renewal = transactionInfo(oldToken, { transactionId: "2000000000002" });
+    appleReturns(renewal);
+    expect(await next.as.action(api.access.verify_purchase, uploadBody(renewal))).toMatchObject({ entitled: true });
+    expect((await transactions(t)).map((row) => row.user_id)).toEqual([next.userId, next.userId]);
+  });
+
+  test("a subscription whose token no account holds goes to the account that sends it", async () => {
+    const { t, user } = await setup();
+    const info = transactionInfo(newUuid());
+    appleReturns(info);
+    expect(await user.as.action(api.access.verify_purchase, uploadBody(info))).toMatchObject({ entitled: true });
+    expect((await transactions(t))[0].user_id).toBe(user.userId);
+  });
+
+  test("a subscription a live account took over stays with it", async () => {
+    const { t, user: deleted, token: oldToken } = await setup();
+    const info = transactionInfo(oldToken);
+    appleReturns(info);
+    await deleted.as.action(api.access.verify_purchase, uploadBody(info));
+    await deleteAccount(t, deleted);
+    const holder = await createSignedInUser(t);
+    await holder.as.action(api.access.verify_purchase, uploadBody(info));
+
+    const other = await createSignedInUser(t);
+    const renewal = transactionInfo(oldToken, { transactionId: "2000000000002" });
+    appleReturns(renewal);
+    await expectFailure(
+      other.as.action(api.access.verify_purchase, uploadBody(renewal)),
+      "purchase_linked_to_another_account",
+      "Apple transaction belongs to a different user",
+    );
+    expect((await transactions(t)).map((row) => row.user_id)).toEqual([holder.userId]);
   });
 
   test("fails requests that are not valid purchases", async () => {
@@ -431,6 +488,12 @@ describe("redeem_streak_restore", () => {
     await expect(
       couple.second.as.action(api.access.redeem_streak_restore, restoreBody(info)),
     ).rejects.toMatchObject({ data: { code: "no_streak_to_restore", message: "No streak is available to restore" } });
+
+    const orphaned = consumable(newUuid());
+    appleReturns(orphaned);
+    await expect(
+      couple.second.as.action(api.access.redeem_streak_restore, restoreBody(orphaned)),
+    ).rejects.toMatchObject({ data: { code: "purchase_linked_to_another_account", message: "Apple appAccountToken is not registered" } });
 
     appleReturns(consumable(undefined));
     await expect(

@@ -70,7 +70,7 @@ struct ReportAndLeaveView: View {
             .paeoniaReadableWidth(alignment: .leading)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .background(.paeoniaBackgroundPrimary)
+        .paeoniaScreenBackground()
         .navigationTitle(Text(.reportAndLeaveTitle))
         .navigationBarTitleDisplayMode(.inline)
         // Going back mid-send would leave the app unaware that the relationship

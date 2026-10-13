@@ -1,5 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
-import type { ReaderCtx } from "./db";
+import { getByUuid, type ReaderCtx } from "./db";
 import { nowIso } from "./time";
 
 /** One row of the SQL `user_entitlements` view. */
@@ -19,6 +19,8 @@ export type ResolvedEntitlement = {
   source: string | null;
   status: string | null;
   product_id: string | null;
+  /** "monthly" or "yearly" for a subscription product. Null for grants without a product. */
+  billing_period: string | null;
   current_period_end: string | null;
   updated_at: string | null;
 };
@@ -137,12 +139,14 @@ export async function resolveUserEntitlement(
     return compareByPeriodAndUpdate(a.row, b.row);
   });
   const best = rows[0]?.row;
+  const product = best?.product_id ? await getByUuid(ctx, "subscription_products", best.product_id) : null;
   return {
     user_id: userId,
     is_entitled: rows.some((item) => item.grants),
     source: best?.source ?? null,
     status: best?.status ?? null,
     product_id: best?.product_id ?? null,
+    billing_period: product?.billing_period ?? null,
     current_period_end: best?.current_period_end ?? null,
     updated_at: best?.updated_at ?? null,
   };

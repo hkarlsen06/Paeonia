@@ -32,21 +32,36 @@ struct DrawAndGuessScoreCapsule: View {
                     .accessibilityHidden(true)
                 Text(.gamesDrawAndGuessPoints(total))
             case let .against(mine, theirs):
-                DrawAndGuessAvatar(player: me, isMe: true, size: 22)
-                Text(verbatim: "\(mine)")
-                DrawAndGuessAvatar(player: partner, isMe: false, size: 22)
-                Text(verbatim: "\(theirs)")
+                HStack(spacing: PaeoniaSpacing.space4) {
+                    DrawAndGuessAvatar(player: me, isMe: true, size: 22)
+                    Text(verbatim: "\(mine)")
+                }
+                HStack(spacing: PaeoniaSpacing.space4) {
+                    DrawAndGuessAvatar(player: partner, isMe: false, size: 22)
+                    Text(verbatim: "\(theirs)")
+                }
             }
         }
         .font(PaeoniaTypography.caption.weight(.semibold))
         .monospacedDigit()
         .foregroundStyle(.paeoniaTextPrimary)
-        .padding(.horizontal, PaeoniaSpacing.space12)
+        .padding(horizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space4)
         .background(.paeoniaSurfaceSecondary, in: Capsule(style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
         .accessibilityIdentifier("draw.score")
+    }
+
+    /// The leading avatar sits as far from the edge as from the top and bottom,
+    /// so its circle is concentric with the capsule's end.
+    private var horizontalPadding: EdgeInsets {
+        switch score {
+        case .together:
+            EdgeInsets(top: 0, leading: PaeoniaSpacing.space12, bottom: 0, trailing: PaeoniaSpacing.space12)
+        case .against:
+            EdgeInsets(top: 0, leading: PaeoniaSpacing.space4, bottom: 0, trailing: PaeoniaSpacing.space8)
+        }
     }
 
     private var accessibilityText: Text {

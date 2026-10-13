@@ -280,6 +280,15 @@ extension MainTabView {
         self.deepLink.wrappedValue = nil
     }
 
+    /// The game card on Us, shown while the partner is in the game. A partner who
+    /// has not seen the couple's settings yet lands on the Games tab to see them first.
+    func openDrawAndGuessFromHome() {
+        selection.wrappedValue = .games
+        if gamesViewModel.screen == .hub {
+            gamesPath = [.drawAndGuess]
+        }
+    }
+
     /// Links into the Questions tab refresh first, so a partner's answer or a
     /// new day is on screen before the question is focused or opened.
     private func handleQuestionsDeepLink(_ deepLink: PaeoniaDeepLink) async {

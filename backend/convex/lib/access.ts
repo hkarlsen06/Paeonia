@@ -185,6 +185,7 @@ export type CoupleEntitlement = {
   source: string | null;
   status: string | null;
   product_id: string | null;
+  billing_period: string | null;
   current_period_end: string | null;
   updated_at: string | null;
 };
@@ -225,6 +226,7 @@ export async function resolveCurrentCoupleEntitlement(
     source: best?.source ?? null,
     status: best?.status ?? null,
     product_id: best?.product_id ?? null,
+    billing_period: best?.billing_period ?? null,
     current_period_end: best?.current_period_end ?? null,
     updated_at: best?.updated_at ?? null,
   };

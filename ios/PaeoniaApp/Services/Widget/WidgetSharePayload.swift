@@ -13,7 +13,9 @@ nonisolated enum WidgetSharePrivacyMode: String, Codable, Equatable, Sendable {
 /// preview images it points at.
 ///
 /// The field names and JSON shape must stay compatible with the decoder in the
-/// widget target (`PaeoniaWidgetStore`).
+/// widget target (`PaeoniaWidgetStore`). The widget extension also writes this
+/// file (`PaeoniaWidgetRefreshService.CurrentPayload`) and must write every
+/// field this type requires.
 nonisolated struct WidgetSharePayload: Codable, Equatable {
     nonisolated static let currentSchemaVersion = 1
     nonisolated static let currentRendererVersion = 1

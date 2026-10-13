@@ -60,6 +60,11 @@ struct DrawAndGuessDrawerResultView: View {
         } footer: {
             footer
         } bottom: {
+            if isRevealed, timeline.buttonShown, viewModel.isPartnerChoosingNextWord {
+                DrawAndGuessLiveHint(text: .gamesDrawAndGuessWaitChoosing(viewModel.partnerName))
+                    .transition(.opacity)
+                    .accessibilityIdentifier("draw.reveal.partnerChoosing")
+            }
             if isRevealed, timeline.buttonShown {
                 Button {
                     Task { await viewModel.continueFromReveal() }
@@ -79,6 +84,7 @@ struct DrawAndGuessDrawerResultView: View {
             }
         }
         .drawAndGuessSaveToolbar(viewModel, isShown: isRevealed && timeline.saveShown)
+        .animation(PaeoniaMotion.stateChange, value: viewModel.isPartnerChoosingNextWord)
         .simultaneousGesture(TapGesture().onEnded { finishNow() })
         .onChange(of: viewModel.phase, initial: true) { _, phase in
             if phase == .reveal {
@@ -237,9 +243,11 @@ struct DrawAndGuessDrawerResultView: View {
         guard reveal.isSolved else { return [Text(.gamesDrawAndGuessResultNoPoints)] }
         return [Text(reveal.solvedLine(partnerName: viewModel.partnerName))]
     }
+}
 
-    // MARK: Playback
+// MARK: - Playback
 
+extension DrawAndGuessDrawerResultView {
     private func playResult() async {
         let total = wrongAttempts.count
         if !reduceMotion, shownWrongCount < total {
@@ -284,22 +292,46 @@ struct DrawAndGuessDrawerResultView: View {
 /// "Watch [Name] draw" with a dot that pulses, as the live badge of the game does.
 struct DrawAndGuessWatchLabel: View {
     let partnerName: String
+
+    var body: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            DrawAndGuessLiveDot(color: .paeoniaTextInverse)
+            Text(.gamesDrawAndGuessHandoffWatch(partnerName))
+        }
+    }
+}
+
+/// A line above a result screen's button about what the partner does right now.
+struct DrawAndGuessLiveHint: View {
+    let text: LocalizedStringResource
+
+    var body: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            DrawAndGuessLiveDot(color: .paeoniaAccentPrimary)
+            Text(text)
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// A dot that pulses to show the partner is there right now.
+struct DrawAndGuessLiveDot: View {
+    let color: Color
     @State private var isDim = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            Circle()
-                .fill(.paeoniaTextInverse)
-                .frame(width: 10, height: 10)
-                .opacity(isDim ? 0.35 : 1)
-                .scaleEffect(isDim ? 0.8 : 1)
-                .accessibilityHidden(true)
-            Text(.gamesDrawAndGuessHandoffWatch(partnerName))
-        }
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { isDim = true }
-        }
+        Circle()
+            .fill(color)
+            .frame(width: 10, height: 10)
+            .opacity(isDim ? 0.35 : 1)
+            .scaleEffect(isDim ? 0.8 : 1)
+            .accessibilityHidden(true)
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { isDim = true }
+            }
     }
 }

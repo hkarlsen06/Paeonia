@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The identity row at the top of the Me tab, opening the profile screen.
+/// The label of the identity row at the top of the Me tab. The list row around it
+/// opens the profile screen and draws the chevron.
 ///
 /// It is the one row that leads with a photo instead of a glyph, so the tab still
 /// opens on the person rather than straight into a list of settings.
@@ -34,14 +35,8 @@ struct SettingsProfileRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-
-            Image(systemName: "chevron.right")
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextTertiary)
-                .accessibilityHidden(true)
         }
-        .padding(PaeoniaSpacing.space16)
-        .contentShape(Rectangle())
+        .padding(.vertical, PaeoniaSpacing.space4)
     }
 
     /// The avatar draws initials, and the row still needs a title, before the

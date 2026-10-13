@@ -120,13 +120,20 @@ struct WidgetDrawingSizeControlsView: View {
                     .accessibilityHidden(true)
             }
         )
-        .tint(viewModel.isColorSelectionEnabled ? .paeoniaAccentPrimary : .paeoniaTextTertiary)
+        .tint(isSizeEnabled ? .paeoniaAccentPrimary : .paeoniaTextTertiary)
+        .disabled(viewModel.selectedTool.isFill)
         .padding(.horizontal, PaeoniaSpacing.space16)
         .frame(maxWidth: 360)
     }
+
+    /// The eraser has a size but no color. The paint bucket has neither.
+    private var isSizeEnabled: Bool {
+        viewModel.isColorSelectionEnabled && !viewModel.selectedTool.isFill
+    }
 }
 
-/// Pen, pencil, and eraser, then undo and redo. All buttons are 44 points.
+/// Pen, pencil, paint bucket, and eraser, then undo and redo. All buttons
+/// are 44 points.
 struct WidgetDrawingToolControlsView: View {
     let viewModel: any WidgetDrawingToolControlling
 

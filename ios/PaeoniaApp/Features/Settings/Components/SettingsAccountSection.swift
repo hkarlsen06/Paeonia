@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// The account actions at the bottom of the Me tab: log out, leave the
-/// relationship, and delete the account.
+/// The account actions on the profile screen: log out, leave the relationship,
+/// and delete the account.
 ///
-/// They sit last on the tab, below everything a user opens every day, and each one
+/// They sit one step away from the Me tab, below the name and photo, and each one
 /// only opens a centered confirmation. Nothing happens until the user confirms.
+/// The footer names the sign-in provider.
 struct SettingsAccountSection: View {
     let viewModel: SettingsViewModel
     let authProvider: AuthProvider?
@@ -23,17 +24,28 @@ struct SettingsAccountSection: View {
     @State private var isConfirmingDelete = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            SettingsMenuSection(title: .settingsAccountSectionTitle) {
-                actionRows
-            }
-
+        Section {
+            // Each confirmation sits on its own row. On the section it would land
+            // on every row.
+            logoutRow
+            leaveRow
+            deleteRow
+        } header: {
+            Text(.settingsAccountSectionTitle)
+        } footer: {
             if let authProviderName {
                 Text(.settingsProfileSignedInWith(authProviderName))
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextTertiary)
-                    .padding(.horizontal, PaeoniaSpacing.space16)
             }
+        }
+    }
+
+    private var logoutRow: some View {
+        SettingsActionRow(
+            title: .settingsAccountLogoutButton,
+            systemImage: "rectangle.portrait.and.arrow.right",
+            isBusy: isLoggingOut
+        ) {
+            isConfirmingLogout = true
         }
         .alert(Text(.settingsAccountLogoutConfirmTitle), isPresented: $isConfirmingLogout) {
             Button(role: .destructive, action: onLogout) {
@@ -45,6 +57,18 @@ struct SettingsAccountSection: View {
         } message: {
             Text(.settingsAccountLogoutConfirmMessage)
         }
+    }
+
+    private var leaveRow: some View {
+        SettingsActionRow(
+            title: .settingsUnpairButton,
+            systemImage: "heart.slash.fill",
+            role: .destructive,
+            isBusy: viewModel.isLeavingRelationship
+        ) {
+            isConfirmingLeave = true
+        }
+        .disabled(isLoggingOut)
         .alert(Text(.pairingUnpairConfirmTitle(partnerName)), isPresented: $isConfirmingLeave) {
             Button(role: .destructive, action: leaveRelationship) {
                 Text(.pairingUnpairConfirmAction)
@@ -55,6 +79,17 @@ struct SettingsAccountSection: View {
         } message: {
             Text(.pairingUnpairConfirmMessage(partnerName))
         }
+    }
+
+    private var deleteRow: some View {
+        SettingsActionRow(
+            title: .authDeleteAccountButton,
+            systemImage: "trash",
+            role: .destructive
+        ) {
+            isConfirmingDelete = true
+        }
+        .disabled(viewModel.isLeavingRelationship || isLoggingOut)
         .alert(Text(.authDeleteAccountConfirmTitle), isPresented: $isConfirmingDelete) {
             Button(role: .destructive, action: onDeleteAccount) {
                 Text(.authDeleteAccountConfirmAction)
@@ -65,40 +100,6 @@ struct SettingsAccountSection: View {
         } message: {
             Text(.authDeleteAccountConfirmMessage)
         }
-    }
-
-    @ViewBuilder
-    private var actionRows: some View {
-        SettingsActionRow(
-            title: .settingsAccountLogoutButton,
-            systemImage: "rectangle.portrait.and.arrow.right",
-            isBusy: isLoggingOut
-        ) {
-            isConfirmingLogout = true
-        }
-
-        SettingsMenuDivider()
-
-        SettingsActionRow(
-            title: .settingsUnpairButton,
-            systemImage: "heart.slash.fill",
-            isDestructive: true,
-            isBusy: viewModel.isLeavingRelationship
-        ) {
-            isConfirmingLeave = true
-        }
-        .disabled(isLoggingOut)
-
-        SettingsMenuDivider()
-
-        SettingsActionRow(
-            title: .authDeleteAccountButton,
-            systemImage: "trash",
-            isDestructive: true
-        ) {
-            isConfirmingDelete = true
-        }
-        .disabled(viewModel.isLeavingRelationship || isLoggingOut)
     }
 
     /// Brand names stay unlocalized; only the sentence around them is translated.

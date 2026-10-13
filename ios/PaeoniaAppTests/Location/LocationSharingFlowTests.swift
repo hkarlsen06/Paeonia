@@ -52,7 +52,7 @@ struct LocationSharingFlowTests {
         let capture = ControlledLocationCapture(authorizationState: .authorized)
         let viewModel = makeViewModel(capture: capture)
         await viewModel.configure(identity: identity)
-        #expect(viewModel.mapState == .currentUnknown)
+        #expect(viewModel.mapState == .loading)
 
         let optIn = Task { await viewModel.setSharingEnabled(true) }
         await capture.waitUntilRequested()
@@ -134,7 +134,7 @@ struct LocationSharingFlowTests {
         await viewModel.refreshOwnLocationIfSharingEnabled(source: .foregroundOpen, mayPromptForAuthorization: false)
 
         #expect(viewModel.authorizationState == .authorized)
-        #expect(viewModel.mapState == .currentUnknown)
+        #expect(viewModel.mapState == .loading)
     }
 
     /// Locations queued while offline used to replay one by one. Only the
@@ -237,6 +237,7 @@ struct LocationSharingFlowTests {
 
     private func snapshot(
         _ state: PartnerLocationVisibilityState,
+        viewerSharing: Bool = true,
         partnerSharing: Bool = true,
         partner: LocationPoint? = nil
     ) -> LocationVisibilitySnapshot {
@@ -246,7 +247,7 @@ struct LocationSharingFlowTests {
             viewerUserID: ownerUserID,
             partnerUserID: flowUUID("33333333-3333-3333-3333-333333333333"),
             visibilityState: state,
-            viewerSharingEnabled: true,
+            viewerSharingEnabled: viewerSharing,
             partnerSharingEnabled: partnerSharing,
             partnerLocation: partner,
             partnerLocationIsStale: false,
@@ -270,7 +271,13 @@ extension LocationSharingFlowTests {
         )
         let partnerLocation = LocationPoint(latitude: 69.96, longitude: 23.27, capturedAt: Date())
 
-        #expect(LocationMapViewModel.resolveMapState(visibility: nil, ownLocation: nil) == .currentUnknown)
+        // No snapshot means the server has not answered yet, as after a return
+        // from the paywall. Asking to share then would flash the wrong card.
+        #expect(LocationMapViewModel.resolveMapState(visibility: nil, ownLocation: nil) == .loading)
+        #expect(LocationMapViewModel.resolveMapState(
+            visibility: snapshot(.notSharing, viewerSharing: false),
+            ownLocation: nil
+        ) == .currentUnknown)
         #expect(LocationMapViewModel.resolveMapState(
             visibility: nil, ownLocation: nil, isLocating: true
         ) == .locatingCurrent)

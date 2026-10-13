@@ -126,7 +126,8 @@
         pairingService: pairingService,
         operationProvider: operationProvider,
         userID: DeveloperScenarioFixture.currentUserID.uuidString,
-        storeKitService: storeKitService
+        storeKitService: storeKitService,
+        loadAccessSnapshot: { DeveloperScenarioFixture.subscriptionSnapshot }
       )
       let widgetDrawingViewModel = WidgetDrawingViewModel(
         authorName: "Alex",

@@ -544,7 +544,7 @@ class Fuzz {
     const user = round ? this.actor(round.guesser) : this.pick([this.a.userId, this.b.userId]);
     if (round && !finished(round) && round.seenAt !== undefined && this.chance(0.25)) {
       // Land right on the edge of the speed bonus window.
-      const edge = Math.max(round.seenAt, round.submittedAt ?? 0) + this.pick([BONUS_WINDOW_MS - 1, BONUS_WINDOW_MS, BONUS_WINDOW_MS + 1]);
+      const edge = round.seenAt + this.pick([BONUS_WINDOW_MS - 1, BONUS_WINDOW_MS, BONUS_WINDOW_MS + 1]);
       if (edge > Date.now()) {
         vi.setSystemTime(new Date(edge));
         this.note(`time -> ${iso(edge)} (bonus window edge)`);
@@ -572,11 +572,9 @@ class Fuzz {
 
   /** The doc's fallback: the bonus while still drawing, or within 30 s of the later of seen and sent. */
   private scoreSolve(round: Round, now: number): { bonus: number; solveMs: number | undefined } {
-    if (round.seenAt === undefined) return { bonus: round.state === "drawing" ? 1 : 0, solveMs: undefined };
+    if (round.seenAt === undefined) return { bonus: 0, solveMs: undefined };
     const solveMs = Math.max(0, now - round.seenAt);
-    if (round.state === "drawing") return { bonus: 1, solveMs };
-    const from = Math.max(round.seenAt, round.submittedAt ?? 0);
-    return { bonus: now - from <= BONUS_WINDOW_MS ? 1 : 0, solveMs };
+    return { bonus: solveMs <= BONUS_WINDOW_MS ? 1 : 0, solveMs };
   }
 
   private beginTurn(drawer: Uid) {

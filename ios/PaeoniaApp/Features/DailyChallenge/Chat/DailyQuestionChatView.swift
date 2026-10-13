@@ -66,7 +66,7 @@ struct DailyQuestionChatView: View {
             }
         }
         .paeoniaReadableWidth()
-        .background(.paeoniaBackgroundPrimary)
+        .paeoniaScreenBackground()
         .navigationTitle(Text(.dailyChatNavigationTitle))
         .navigationBarTitleDisplayMode(.inline)
         .task(id: viewModel.isChatAvailable) {

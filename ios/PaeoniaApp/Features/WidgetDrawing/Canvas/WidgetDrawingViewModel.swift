@@ -53,8 +53,9 @@ final class WidgetDrawingViewModel {
     /// The pen or pencil to go back to after the eraser.
     @ObservationIgnored private var lastDrawingTool: WidgetDrawingTool = .pen
     private var selectedUIColor: UIColor = .paeoniaWidgetDrawing
-    private(set) var canUndoDrawing = false
-    private(set) var canRedoDrawing = false
+    private var history = DrawingEditHistory()
+    var canUndoDrawing: Bool { history.canUndo }
+    var canRedoDrawing: Bool { history.canRedo }
     private(set) var toolConfigurationRevision = 0
     private(set) var selectedColorChoiceID: String? = "blush"
     @ObservationIgnored private weak var canvasView: PKCanvasView?
@@ -180,6 +181,12 @@ final class WidgetDrawingViewModel {
         !isPublishing && !drawing.strokes.isEmpty
     }
 
+    /// The canvas was changed on top of the drawing on the widgets, and can go
+    /// back to it.
+    var canRevertToSavedDrawing: Bool {
+        !isPublishing && savedBaseline != nil && hasUnsavedEdits
+    }
+
     var pencilKitTool: any PKTool {
         selectedTool.pencilKitTool(
             color: selectedUIColor,
@@ -260,23 +267,14 @@ final class WidgetDrawingViewModel {
     func bindCanvasView(_ canvasView: PKCanvasView) {
         self.canvasView = canvasView
         live?.attach(to: canvasView)
-        // This is called from the canvas representable's `makeUIView`, which runs
-        // inside SwiftUI's view update. Defer the observed undo/redo refresh to
-        // the next main-actor turn so we don't mutate published state mid-update.
-        Task { @MainActor in
-            self.refreshUndoRedoAvailability()
-        }
     }
 
-    func updateDrawing(_ drawing: PKDrawing, undoManager: UndoManager?) {
+    /// A stroke or an erase on the canvas.
+    func updateDrawing(_ drawing: PKDrawing) {
+        history.record(from: self.drawing, to: drawing)
         self.drawing = drawing
         live?.localDrawingDidChange(drawing, side: currentCanvasSide())
         scheduleDraftPersistence()
-        refreshUndoRedoAvailability(using: undoManager)
-
-        Task { @MainActor in
-            self.refreshUndoRedoAvailability()
-        }
     }
 
     /// The canvas reports when a finger or pencil touches down and lifts, so a
@@ -308,7 +306,7 @@ final class WidgetDrawingViewModel {
         guard canvasDrawing != drawing else {
             return
         }
-        updateDrawing(canvasDrawing, undoManager: canvasView.undoManager)
+        updateDrawing(canvasDrawing)
     }
 
     /// The drawing as it is right now, including a late eraser change.
@@ -378,14 +376,12 @@ final class WidgetDrawingViewModel {
         // The person may have started drawing while the saved drawing loaded.
         // Their strokes win; the loaded drawing is still the baseline above.
         guard drawing.paeoniaContentSignature == signatureBeforeLoad else {
-            refreshUndoRedoAvailability()
             return
         }
 
         restoreDraftOrBaseline()
         drawingCanvasSide = targetSide
         fitDrawingToCanvas()
-        refreshUndoRedoAvailability()
     }
 
     /// Puts an unsent draft on the canvas, or the drawing on the widgets.
@@ -478,7 +474,6 @@ final class WidgetDrawingViewModel {
         if let draftKey = usableDraftKey {
             draftStore.removeDraft(for: draftKey)
         }
-        refreshUndoRedoAvailability()
     }
 
     /// Makes room for the partner's new drawing. Returns false when the canvas
@@ -651,11 +646,33 @@ final class WidgetDrawingViewModel {
     /// Empties the canvas as a local editing action. The widgets keep the last
     /// sent drawing until the next send.
     func clearCanvas() {
-        live?.localDrawingDidChange(PKDrawing(), side: currentCanvasSide())
-        replaceDrawing(with: PKDrawing())
+        applyEdit(PKDrawing())
         partnerSentWhileEditing = false
         persistDraftIfNeeded()
-        refreshUndoRedoAvailability()
+    }
+
+    /// Puts the drawing on the widgets back on the canvas, as an edit that undo
+    /// takes back.
+    func revertToSavedDrawing() {
+        guard canRevertToSavedDrawing, let savedBaseline else {
+            return
+        }
+        applyEdit(savedBaseline)
+        partnerSentWhileEditing = false
+        persistDraftIfNeeded()
+    }
+
+    /// The paint bucket was tapped at `point`, in canvas points.
+    func fill(at point: CGPoint) {
+        guard let stroke = DrawingFloodFill.fillStroke(
+            in: latestDrawing(),
+            side: currentCanvasSide(),
+            at: point,
+            color: selectedUIColor
+        ) else {
+            return
+        }
+        applyEdit(PKDrawing(strokes: drawing.strokes + [stroke]))
     }
 
     // MARK: - Drafts
@@ -771,7 +788,6 @@ final class WidgetDrawingViewModel {
         replaceDrawing(with: aside)
         partnerSentWhileEditing = false
         persistDraftIfNeeded()
-        refreshUndoRedoAvailability()
     }
 
     func discardSetAsideDrawing() {
@@ -820,12 +836,11 @@ final class WidgetDrawingViewModel {
             lastSavedDrawingSignature = scaledBaseline.paeoniaContentSignature
         }
         let scaledDrawing = drawing.scaled(fromSide: drawingCanvasSide, toSide: laidOutCanvasSide)
+        history.scale(fromSide: drawingCanvasSide, toSide: laidOutCanvasSide)
         self.drawingCanvasSide = laidOutCanvasSide
-        if !hadUnsavedEdits, let savedBaseline {
-            replaceDrawing(with: savedBaseline)
-        } else {
-            replaceDrawing(with: scaledDrawing)
-        }
+        let fitted = !hadUnsavedEdits ? savedBaseline ?? scaledDrawing : scaledDrawing
+        showOnCanvas(fitted)
+        live?.drawingReplacedFromCode(fitted)
     }
 
     private func setBaseline(_ baseline: PKDrawing, authorName: String?, createdAt: Date?) {
@@ -835,11 +850,29 @@ final class WidgetDrawingViewModel {
         savedDrawingCreatedAt = createdAt
     }
 
-    /// Replaces the canvas content from code (not from a stroke).
+    /// Replaces the canvas content from code (not from a stroke). Undo starts
+    /// over, because its steps were made on the drawing that is gone.
     private func replaceDrawing(with newDrawing: PKDrawing) {
+        history.removeAll()
+        showOnCanvas(newDrawing)
+        live?.drawingReplacedFromCode(newDrawing)
+    }
+
+    /// A change the person made with a button or a tap, not a stroke.
+    private func applyEdit(_ newDrawing: PKDrawing) {
+        history.record(from: drawing, to: newDrawing)
+        showEdit(newDrawing)
+    }
+
+    private func showEdit(_ newDrawing: PKDrawing) {
+        showOnCanvas(newDrawing)
+        live?.localDrawingDidChange(newDrawing, side: currentCanvasSide())
+        scheduleDraftPersistence()
+    }
+
+    private func showOnCanvas(_ newDrawing: PKDrawing) {
         drawing = newDrawing
         drawingRevision += 1
-        live?.drawingReplacedFromCode(newDrawing)
     }
 
     // MARK: - Drawing together
@@ -858,53 +891,25 @@ final class WidgetDrawingViewModel {
     }
 
     /// The partner's strokes arrived. They become part of this canvas, like
-    /// strokes drawn here, so the draft keeps them and Send sends them.
+    /// strokes drawn here, so the draft keeps them and Send sends them. Undo
+    /// keeps working: it only takes back this person's own steps.
     private func applyPartnerLiveDrawing(_ merged: PKDrawing) {
-        replaceDrawing(with: merged)
+        showOnCanvas(merged)
+        live?.drawingReplacedFromCode(merged)
         scheduleDraftPersistence()
-        Task { @MainActor in
-            self.refreshUndoRedoAvailability()
-        }
     }
 
     // MARK: - Undo
 
     func undoDrawing() {
-        guard let canvasView,
-              let undoManager = canvasView.undoManager,
-              undoManager.canUndo
-        else {
-            refreshUndoRedoAvailability()
-            return
+        if let previous = history.undo(latestDrawing()) {
+            showEdit(previous)
         }
-
-        undoManager.undo()
-        drawing = canvasView.drawing
-        live?.localDrawingDidChange(drawing, side: currentCanvasSide())
-        refreshUndoRedoAvailability(using: undoManager)
     }
 
     func redoDrawing() {
-        guard let canvasView,
-              let undoManager = canvasView.undoManager,
-              undoManager.canRedo
-        else {
-            refreshUndoRedoAvailability()
-            return
+        if let next = history.redo(latestDrawing()) {
+            showEdit(next)
         }
-
-        undoManager.redo()
-        drawing = canvasView.drawing
-        live?.localDrawingDidChange(drawing, side: currentCanvasSide())
-        refreshUndoRedoAvailability(using: undoManager)
-    }
-
-    private func refreshUndoRedoAvailability() {
-        refreshUndoRedoAvailability(using: canvasView?.undoManager)
-    }
-
-    private func refreshUndoRedoAvailability(using undoManager: UndoManager?) {
-        canUndoDrawing = undoManager?.canUndo ?? false
-        canRedoDrawing = undoManager?.canRedo ?? false
     }
 }

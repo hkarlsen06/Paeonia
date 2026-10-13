@@ -23,6 +23,13 @@ final class SettingsViewModel {
         case denied
     }
 
+    enum SubscriptionDetailsState: Equatable {
+        case loading
+        case loaded(SubscriptionDetails)
+        /// The first load failed. Details already shown stay on screen instead.
+        case failed
+    }
+
     enum NotificationLoadState: Equatable {
         case loading
         case loaded
@@ -36,6 +43,7 @@ final class SettingsViewModel {
     private let pairingService: (any PairingServicing)?
     private let operationProvider: any PairingClientOperationProviding
     private let storeKitService: any PaeoniaStoreKitServicing
+    private let loadAccessSnapshot: (@Sendable () async throws -> RemoteAccessSnapshot)?
 
     /// What the switches show. Starts at the server defaults (all on) so nothing
     /// flickers off while the real values load.
@@ -47,6 +55,7 @@ final class SettingsViewModel {
     /// disable and avoid a double tap.
     private(set) var isLeavingRelationship = false
     private(set) var isRestoringPurchases = false
+    private(set) var subscriptionDetailsState = SubscriptionDetailsState.loading
     private(set) var notice: Notice?
 
     /// The last value the server reported or accepted for each switch. A failed
@@ -65,13 +74,18 @@ final class SettingsViewModel {
         pairingService: (any PairingServicing)? = nil,
         operationProvider: (any PairingClientOperationProviding)? = nil,
         userID: String? = nil,
-        storeKitService: (any PaeoniaStoreKitServicing)? = nil
+        storeKitService: (any PaeoniaStoreKitServicing)? = nil,
+        loadAccessSnapshot: (@Sendable () async throws -> RemoteAccessSnapshot)? = nil
     ) {
         self.preferences = preferences
         self.authorization = authorization
         self.pairingService = pairingService ?? (try? RemotePairingService.live())
         self.operationProvider = operationProvider ?? PairingClientOperationFactory.shared
         self.storeKitService = storeKitService ?? PaeoniaStoreKitService.shared
+        self.loadAccessSnapshot = loadAccessSnapshot
+            ?? (try? LiveAccessGateway(client: PaeoniaConvexClientProvider.shared.client())).map { gateway in
+                { try await gateway.loadAccessSnapshot() }
+            }
         if let userID {
             self.storeKitService.configure(userID: userID)
         }
@@ -225,6 +239,9 @@ final class SettingsViewModel {
         do {
             let restored = try await storeKitService.restorePurchases()
             notice = restored ? .purchasesRestored : .noPurchasesToRestore
+            if restored {
+                await loadSubscriptionDetails()
+            }
             return restored
         } catch PaeoniaPurchaseError.cancelled {
             // The user closed the App Store sign-in sheet. Nothing went wrong.
@@ -235,6 +252,23 @@ final class SettingsViewModel {
         } catch {
             notice = .restorePurchasesFailed
             return false
+        }
+    }
+
+    /// Reads the server's record fresh each time the screen opens, because the
+    /// screen exists so people can compare it with what Apple shows.
+    func loadSubscriptionDetails() async {
+        guard let loadAccessSnapshot else {
+            subscriptionDetailsState = .failed
+            return
+        }
+        do {
+            subscriptionDetailsState = .loaded(SubscriptionDetails(snapshot: try await loadAccessSnapshot()))
+        } catch {
+            if case .loaded = subscriptionDetailsState {
+                return
+            }
+            subscriptionDetailsState = .failed
         }
     }
 

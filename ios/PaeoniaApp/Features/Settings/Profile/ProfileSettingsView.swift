@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// The screen behind the Me tab's identity row: the user's name and photo.
+/// The screen behind the Me tab's identity row: the user's name and photo, and
+/// the account actions below them.
 ///
 /// While there are unsaved edits the back button steps aside for Cancel, so a
 /// stray swipe can never throw away a new name or photo. Save sits at the bottom
-/// within thumb reach and rises with the keyboard. The Me tab shows the banner
+/// within thumb reach, and the keyboard covers it while the name is typed. The Me tab shows the banner
 /// for the result, so it still appears if the user has moved on.
 struct ProfileSettingsView: View {
     let editor: ProfileEditorViewModel
@@ -12,14 +13,25 @@ struct ProfileSettingsView: View {
     let customProfilePhotoAssetID: UUID?
     let providerProfilePhotoAssetID: UUID?
     let onSave: @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool
+    let accountSection: SettingsAccountSection
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        SettingsDetailScreen(title: .settingsProfileSectionTitle) {
-            ProfileHeaderEditorView(editor: editor)
+        Form {
+            Section {
+                ProfileHeaderEditorView(editor: editor)
+                    .padding(.vertical, PaeoniaSpacing.space8)
+                    .listRowBackground(Color.clear)
+            }
+
+            accountSection
+                .listRowBackground(Color.paeoniaSurfacePrimary)
         }
-        .safeAreaInset(edge: .bottom) {
+        .paeoniaGroupedList()
+        .navigationTitle(Text(.settingsProfileSectionTitle))
+        .navigationBarTitleDisplayMode(.inline)
+        .paeoniaBottomBar {
             if showsSaveBar {
                 saveBar
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -109,7 +121,15 @@ private struct SavedProfile: Equatable {
             savedDisplayName: "Hjalmar",
             customProfilePhotoAssetID: nil,
             providerProfilePhotoAssetID: nil,
-            onSave: { _, _ in true }
+            onSave: { _, _ in true },
+            accountSection: SettingsAccountSection(
+                viewModel: SettingsViewModel(),
+                authProvider: .apple,
+                partnerName: "Oda",
+                onLeftRelationship: {},
+                onLogout: {},
+                onDeleteAccount: {}
+            )
         )
     }
     .environment(PaeoniaBannerCenter())

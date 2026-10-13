@@ -86,15 +86,15 @@ nonisolated struct DrawAndGuessRevealScore: Equatable, Sendable {
 /// The speed bonus of the guess in front of the player, "Against each other" only.
 nonisolated enum DrawAndGuessSpeedBonus: Equatable, Sendable {
     case hidden
-    /// The partner is still drawing, or the guesser has not seen the finished
-    /// drawing yet. Any guess earns the bonus.
+    /// The guesser has not seen the drawing yet. Any guess earns the bonus.
     case open
-    /// The 30 seconds run from `startedAt`.
+    /// The 30 seconds run from `startedAt`, while the partner draws live too.
     case counting(startedAt: Date)
 
     static let window: TimeInterval = 30
 
-    /// - Parameter firstSeenAt: When the guesser first saw the drawing, if they did.
+    /// - Parameter firstSeenAt: When the guesser first saw the drawing, if they
+    ///   did. Live, that is the drawer's first stroke.
     static func make(
         playStyle: GamePlayStyle?,
         round: DrawAndGuessRoundView?,
@@ -104,11 +104,8 @@ nonisolated enum DrawAndGuessSpeedBonus: Equatable, Sendable {
         guard playStyle == .against, let round, round.guesserUserID == userID, !round.isFinished else {
             return .hidden
         }
-        guard round.isDrawingSent, let firstSeenAt else {
-            return .open
-        }
-        // The clock starts when both the drawing and the guesser are there.
-        return .counting(startedAt: max(firstSeenAt, round.drawingSubmittedAt ?? firstSeenAt))
+        guard let firstSeenAt else { return .open }
+        return .counting(startedAt: firstSeenAt)
     }
 
     /// Seconds left, or nil when the bonus has no countdown. Zero once it is over.

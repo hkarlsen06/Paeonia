@@ -113,6 +113,7 @@
         source: "developer_local_flow",
         status: "active",
         productID: nil,
+        billingPeriod: "monthly",
         currentPeriodEnd: DeveloperScenarioFixture.now.addingTimeInterval(30 * 86_400),
         updatedAt: DeveloperScenarioFixture.now
       )
@@ -127,6 +128,7 @@
         source: "developer_local_flow",
         status: "active",
         productID: nil,
+        billingPeriod: "monthly",
         currentPeriodEnd: DeveloperScenarioFixture.now.addingTimeInterval(30 * 86_400),
         updatedAt: DeveloperScenarioFixture.now
       )

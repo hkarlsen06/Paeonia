@@ -70,6 +70,7 @@ extension WidgetDrawingColorChoice {
 enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
     case pen
     case pencil
+    case fill
     case eraser
 
     var id: Self { self }
@@ -78,12 +79,19 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
         self == .eraser
     }
 
+    /// The paint bucket fills on a tap instead of drawing, so it has no size.
+    var isFill: Bool {
+        self == .fill
+    }
+
     var systemImageName: String {
         switch self {
         case .pen:
             "pencil.tip"
         case .pencil:
             "pencil"
+        case .fill:
+            "paint.bucket.classic"
         case .eraser:
             "eraser.fill"
         }
@@ -95,6 +103,8 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
             .widgetDrawingToolPen
         case .pencil:
             .widgetDrawingToolPencil
+        case .fill:
+            .widgetDrawingToolFill
         case .eraser:
             .widgetDrawingToolEraser
         }
@@ -104,7 +114,9 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
         let clampedWidth = clampedWidth(width)
 
         return switch self {
-        case .pen:
+        // The canvas takes no strokes while the bucket is picked. The fill
+        // itself is made in `DrawingFloodFill` on a tap.
+        case .pen, .fill:
             // PencilKit's `.pen` ink sizes finger strokes by speed and mostly
             // ignores the width, so the size slider barely changed it. Monoline
             // draws exactly the width it is given.
@@ -133,7 +145,7 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
     /// useful, but it draws wider widths correctly, so the pen sets its own.
     var validWidthRange: ClosedRange<CGFloat> {
         switch self {
-        case .pen:
+        case .pen, .fill:
             1...12
         case .pencil:
             PKInkingTool.InkType.pencil.validWidthRange

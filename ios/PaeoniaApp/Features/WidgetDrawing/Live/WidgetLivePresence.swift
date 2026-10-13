@@ -5,8 +5,8 @@ import Foundation
 /// then says what it is doing with a `hello`.
 nonisolated struct WidgetLivePresence {
     /// The cases are in the order the partner's activity picks from when several
-    /// sockets are in the room. The widget canvas sends only `drawing` and
-    /// `watching`. The last three are for Draw & Guess.
+    /// sockets are in the widget canvas's room. The widget canvas sends only
+    /// `drawing` and `watching`. The last three are for Draw & Guess.
     enum Role: String, Codable, Sendable, CaseIterable {
         /// On the drawing canvas.
         case drawing
@@ -39,10 +39,19 @@ nonisolated struct WidgetLivePresence {
         }
     }
 
+    /// Draw & Guess: a phone has one socket in the game's room, so another
+    /// socket of the partner's is an old one the relay has not closed yet, such
+    /// as after their phone locked or lost signal. It keeps the role it had, so
+    /// only the socket that said hello last counts.
+    let countsLatestHelloOnly: Bool
     private(set) var ownID: String?
     /// The partner's sockets in the room, including ones that have not said hello yet.
     private(set) var peerCount = 0
     private var roles: [String: Role] = [:]
+
+    init(countsLatestHelloOnly: Bool = false) {
+        self.countsLatestHelloOnly = countsLatestHelloOnly
+    }
 
     var partnerActivity: PartnerActivity {
         guard peerCount > 0, !roles.isEmpty else {
@@ -63,6 +72,9 @@ nonisolated struct WidgetLivePresence {
     }
 
     mutating func hello(from id: String, role: Role) {
+        if countsLatestHelloOnly {
+            roles = [:]
+        }
         roles[id] = role
     }
 
@@ -77,6 +89,6 @@ nonisolated struct WidgetLivePresence {
     }
 
     mutating func reset() {
-        self = WidgetLivePresence()
+        self = WidgetLivePresence(countsLatestHelloOnly: countsLatestHelloOnly)
     }
 }

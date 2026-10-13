@@ -64,16 +64,7 @@ struct WidgetDrawingView: View {
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    isHistoryPresented = true
-                } label: {
-                    Image(systemName: "clock.arrow.circlepath")
-                }
-                .accessibilityLabel(Text(.widgetHistoryOpenButton))
-            }
-        }
+        .toolbar { toolbarButtons }
         .sheet(isPresented: $isHistoryPresented) {
             if let historyViewModel, let historyThumbnailLoader {
                 WidgetDrawingHistoryView(
@@ -189,17 +180,7 @@ struct WidgetDrawingView: View {
         GeometryReader { proxy in
             let side = min(proxy.size.width, proxy.size.height)
 
-            PencilKitCanvasView(
-                drawing: $viewModel.drawing,
-                drawingRevision: viewModel.drawingRevision,
-                tool: viewModel.pencilKitTool,
-                toolConfigurationRevision: viewModel.toolConfigurationRevision,
-                onCanvasReady: viewModel.bindCanvasView,
-                onDrawingChange: viewModel.updateDrawing,
-                onStrokeInProgressChange: viewModel.setDrawingStrokeInProgress,
-                onDrawingApplied: viewModel.canvasDidApplyDrawing,
-                onFinishRendering: viewModel.refreshDrawingFromCanvas
-            )
+            canvasView
             // PencilKit coordinates, the rasterizer source rect, previews, and
             // widget rendering all use this exact square. Constraining the UIKit
             // view itself avoids recording a wider coordinate space on devices
@@ -293,6 +274,43 @@ struct WidgetDrawingView: View {
 }
 
 private extension WidgetDrawingView {
+    var canvasView: PencilKitCanvasView {
+        PencilKitCanvasView(
+            drawing: viewModel.drawing,
+            drawingRevision: viewModel.drawingRevision,
+            tool: viewModel.pencilKitTool,
+            toolConfigurationRevision: viewModel.toolConfigurationRevision,
+            onCanvasReady: viewModel.bindCanvasView,
+            onDrawingChange: viewModel.updateDrawing,
+            onStrokeInProgressChange: viewModel.setDrawingStrokeInProgress,
+            isFillToolSelected: viewModel.selectedTool.isFill,
+            onFill: viewModel.fill,
+            onDrawingApplied: viewModel.canvasDidApplyDrawing,
+            onFinishRendering: viewModel.refreshDrawingFromCanvas
+        )
+    }
+
+    @ToolbarContentBuilder
+    var toolbarButtons: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                viewModel.revertToSavedDrawing()
+            } label: {
+                Image(systemName: "arrow.counterclockwise")
+            }
+            .disabled(!viewModel.canRevertToSavedDrawing)
+            .accessibilityLabel(Text(.widgetDrawingRevertButton))
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                isHistoryPresented = true
+            } label: {
+                Image(systemName: "clock.arrow.circlepath")
+            }
+            .accessibilityLabel(Text(.widgetHistoryOpenButton))
+        }
+    }
+
     /// The partner's strokes while they draw them.
     @ViewBuilder
     var liveOverlay: some View {

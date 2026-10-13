@@ -26,6 +26,9 @@ final class WidgetLiveDrawing {
     /// phone or the partner last connected, so it holds every stroke. A canvas
     /// left over from before a drop can miss strokes even when it is not empty.
     private(set) var isPartnerCanvasCaughtUp = false
+    /// Watching only: a stroke of the partner's is on screen, finished or still
+    /// being drawn.
+    private(set) var hasPartnerStrokes = false
     /// Drawing only: the watching partner asked for this whole canvas and got it
     /// since either phone last joined, so they see the strokes as they are drawn.
     private(set) var hasSentCanvasToPartner = false
@@ -82,9 +85,14 @@ final class WidgetLiveDrawing {
     /// stroke back as their own unsent one.
     @ObservationIgnored private var removedHereKeys: Set<String> = []
 
-    init(connection: WidgetLiveConnection, role: WidgetLivePresence.Role = .drawing) {
+    init(
+        connection: WidgetLiveConnection,
+        role: WidgetLivePresence.Role = .drawing,
+        presence: WidgetLivePresence = WidgetLivePresence()
+    ) {
         self.connection = connection
         self.role = role
+        self.presence = presence
         connection.onMessage = { [weak self] message in
             self?.handle(message)
         }
@@ -302,6 +310,7 @@ final class WidgetLiveDrawing {
             isPartnerCanvasCaughtUp = false
         }
         isShowingPartnerCanvas = room.drawing != nil
+        hasPartnerStrokes = room.drawing?.strokes.isEmpty == false || !playback.isEmpty
     }
 
     private func sendHello(needsCanvas: Bool) {
@@ -431,7 +440,11 @@ extension WidgetLiveDrawing {
 extension WidgetLiveDrawing {
     private func touchBegan(_ touch: UITouch, event: UIEvent) {
         outgoing = nil
-        guard let canvasView, let tool = canvasView.tool as? PKInkingTool else {
+        // A tap with the paint bucket draws no stroke to show live.
+        guard let canvasView,
+              canvasView.drawingGestureRecognizer.isEnabled,
+              let tool = canvasView.tool as? PKInkingTool
+        else {
             strokeToCalibrate = nil
             return
         }

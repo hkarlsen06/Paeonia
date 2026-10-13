@@ -70,7 +70,7 @@ struct WidgetDrawingSetAsideTests {
         await viewModel.loadSavedDrawingIfNeeded()
 
         let edit = PKDrawing(strokes: widget.strokes + setAsideDrawing(at: 60).strokes)
-        viewModel.updateDrawing(edit, undoManager: nil)
+        viewModel.updateDrawing(edit)
         viewModel.persistDraftIfNeeded()
 
         let key = WidgetDrawingDraftKey(ownerUserID: owner, coupleID: couple)
@@ -166,7 +166,7 @@ struct WidgetDrawingSetAsideRestoreTests {
         )
         await viewModel.loadSavedDrawingIfNeeded()
         let newerWork = PKDrawing(strokes: newWidget.strokes + restoreDrawing(at: 180).strokes)
-        viewModel.updateDrawing(newerWork, undoManager: nil)
+        viewModel.updateDrawing(newerWork)
 
         viewModel.restoreSetAsideDrawing()
 

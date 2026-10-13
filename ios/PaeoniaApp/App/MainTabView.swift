@@ -353,6 +353,8 @@ struct MainTabView: View {
                 )
             },
             onOpenChat: startOpeningDailyChat,
+            games: gamesViewModel,
+            onOpenDrawAndGuess: openDrawAndGuessFromHome,
             onTapStreak: openStreakDetails,
             onOpenDailyChallenge: openDailyChallengeFromHome,
             onOpenWidgetDrawing: actions.openWidgetDrawing,

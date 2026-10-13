@@ -108,7 +108,7 @@ extension DrawAndGuessViewModel {
         live.start(drawing: board.drawing)
         liveObservationTask?.cancel()
         liveObservationTask = Task { [weak self] in
-            let activity = Observations { live.partnerActivity }
+            let activity = Observations { (live.partnerActivity, live.hasPartnerStrokes) }
             for await _ in activity {
                 guard !Task.isCancelled, let self else { return }
                 recompute()
@@ -125,6 +125,18 @@ extension DrawAndGuessViewModel {
     /// The partner is in the live room and drawing.
     var isPartnerDrawingLive: Bool {
         live?.partnerActivity == .drawing
+    }
+
+    /// This phone shows a result and picks the next word, and the partner's
+    /// phone is in the room on a screen with nothing to do, so it waits for this one.
+    var isPartnerWaitingForMe: Bool {
+        phase == .reveal && isNextTurnMine && live?.partnerActivity == .present
+    }
+
+    /// This phone shows a result, and the partner picks the next word. The
+    /// result screen says so until "Watch [Name] draw" takes over.
+    var isPartnerChoosingNextWord: Bool {
+        phase == .reveal && !isNextTurnMine && partnerNextRound == nil && partnerPresence == .choosing
     }
 
     /// Tells the partner's phone what this screen is doing.

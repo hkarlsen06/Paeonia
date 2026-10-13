@@ -56,6 +56,7 @@ describe("entitlements", () => {
       source: null,
       status: null,
       product_id: null,
+      billing_period: null,
       current_period_end: null,
       updated_at: null,
     });
@@ -78,6 +79,38 @@ describe("entitlements", () => {
       await userHasDirectEntitlement(ctx, retry.userId),
     ]);
     expect(results).toEqual([true, true, false, false]);
+  });
+
+  test("a StoreKit entitlement reports its product's billing period", async () => {
+    const t = newTest();
+    const user = await createSignedInUser(t);
+    const productId = newUuid();
+    await t.run(async (ctx) => {
+      const now = new Date().toISOString();
+      await ctx.db.insert("subscription_products", {
+        id: productId,
+        apple_product_id: "no.paeonia.couple.year",
+        kind: "couple_subscription",
+        billing_period: "yearly",
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+      });
+      await ctx.db.insert("storekit_transactions", {
+        id: newUuid(),
+        user_id: user.userId,
+        product_id: productId,
+        environment: "sandbox",
+        original_transaction_id: "orig-yearly",
+        transaction_id: "tx-yearly",
+        status: "active",
+        expires_at: FUTURE,
+        created_at: now,
+        updated_at: now,
+      });
+    });
+    const resolved = await t.run((ctx) => resolveUserEntitlement(ctx, user.userId));
+    expect(resolved).toMatchObject({ is_entitled: true, product_id: productId, billing_period: "yearly" });
   });
 
   test("lifetime grants never expire, review and test grants need a future expiry", async () => {

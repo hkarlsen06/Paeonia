@@ -16,10 +16,12 @@ extension LocationMapViewModel {
         if authorization == .denied {
             return .locationAccessOff
         }
-        // No snapshot yet means sharing was never turned on here. The live feed
-        // replaces this within a moment when the server knows otherwise.
+        // No snapshot means the server has not answered yet: a first pairing,
+        // or a return from the paywall, which clears the cached location. The
+        // server always answers with a snapshot, so asking the person to share
+        // here would flash the wrong card for a moment.
         guard let visibility, visibility.viewerSharingEnabled else {
-            return isLocating ? .locatingCurrent : .currentUnknown
+            return isLocating ? .locatingCurrent : visibility == nil ? .loading : .currentUnknown
         }
         guard let current = ownLocation?.location else {
             return isLocating ? .locatingCurrent : .currentLocationMissing

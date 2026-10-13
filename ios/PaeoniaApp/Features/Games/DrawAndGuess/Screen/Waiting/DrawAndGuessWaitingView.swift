@@ -8,6 +8,7 @@ struct DrawAndGuessWaitingView: View {
     /// and must not change its words on the way.
     private let isDrawing: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isBreathing = false
 
     init(viewModel: DrawAndGuessViewModel) {
         self.viewModel = viewModel
@@ -32,6 +33,7 @@ struct DrawAndGuessWaitingView: View {
                             Text(hint)
                                 .font(PaeoniaTypography.body)
                                 .foregroundStyle(.paeoniaTextSecondary)
+                                .transition(.opacity)
                         }
                     }
                     .multilineTextAlignment(.center)
@@ -47,6 +49,10 @@ struct DrawAndGuessWaitingView: View {
         } bottom: {
             DrawAndGuessInviteButton(viewModel: viewModel)
         }
+        // The partner's phone changes the title, hint, ring, and invite button
+        // while this screen is open. Everything moves to its new place together.
+        .animation(PaeoniaMotion.stateChange, value: viewModel.partnerPresence)
+        .animation(PaeoniaMotion.stateChange, value: viewModel.invite)
         .drawAndGuessScoreToolbar(viewModel)
     }
 
@@ -76,31 +82,28 @@ struct DrawAndGuessWaitingView: View {
 
     private var avatar: some View {
         DrawAndGuessAvatar(player: viewModel.partner, isMe: false, size: 96)
-            .background {
-                if viewModel.partnerPresence.isHere {
-                    ring
-                }
-            }
+            .background { ring }
             .padding(PaeoniaSpacing.space8)
     }
 
-    /// A soft ring that breathes while the partner is in the room.
-    @ViewBuilder
+    /// A soft ring that breathes while the partner is in the room. It stays in the
+    /// layout and fades in and out. The breathing animation covers only the
+    /// ring's opacity, so the ring moves with the avatar when the layout changes.
     private var ring: some View {
-        let circle = Circle()
+        Circle()
             .stroke(.paeoniaAccentPrimary, lineWidth: 4)
             .padding(-PaeoniaSpacing.space8)
             .blur(radius: 1.5)
-            .accessibilityHidden(true)
-        if reduceMotion {
-            circle.opacity(0.35)
-        } else {
-            circle.phaseAnimator([0.2, 0.5]) { view, opacity in
-                view.opacity(opacity)
-            } animation: { _ in
-                .easeInOut(duration: 2.4)
+            .animation(reduceMotion ? nil : breathing) {
+                $0.opacity(reduceMotion ? 0.35 : isBreathing ? 0.5 : 0.2)
             }
-        }
+            .opacity(viewModel.partnerPresence.isHere ? 1 : 0)
+            .onAppear { isBreathing = true }
+            .accessibilityHidden(true)
+    }
+
+    private var breathing: Animation {
+        PaeoniaMotion.standardCurve(duration: 2.4).repeatForever(autoreverses: true)
     }
 
     // MARK: Dim slots

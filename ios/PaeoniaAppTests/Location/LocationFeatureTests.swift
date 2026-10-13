@@ -770,7 +770,7 @@ struct LocationMapViewModelTests {
         await visibilityStore.finishSuspendedLoad()
         await firstConfiguration.value
 
-        #expect(viewModel.mapState == .currentUnknown)
+        #expect(viewModel.mapState == .loading)
     }
 
     @MainActor

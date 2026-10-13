@@ -3,8 +3,9 @@ import SwiftUI
 import UIKit
 
 /// Profile setup right after the first sign-in: a name and an optional photo.
-/// One primary action sits above the keyboard; sign out and account deletion
-/// live in the toolbar menu so a new user is not met with a delete button.
+/// Continue sits at the bottom, with sign out and account deletion as quiet links
+/// under it. The keyboard covers them while the name is typed, and the keyboard's
+/// Continue key submits.
 struct AuthOnboardingView: View {
     let isWorking: Bool
     let onCompleteOnboarding: (String, Data?) -> Void
@@ -46,7 +47,7 @@ struct AuthOnboardingView: View {
         .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .paeoniaBottomBar(spacing: 0) {
             VStack(spacing: PaeoniaSpacing.space4) {
                 completeButton
                 accountActions

@@ -25,7 +25,8 @@ enum DrawAndGuessLive {
     ) -> WidgetLiveDrawing {
         WidgetLiveDrawing(
             connection: WidgetLiveConnection(coupleID: coupleID, ticketProvider: ticketProvider),
-            role: role
+            role: role,
+            presence: WidgetLivePresence(countsLatestHelloOnly: true)
         )
     }
 }

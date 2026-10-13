@@ -18,6 +18,9 @@ struct PairedHomeView: View {
     let onPromptCurrentLocation: () -> Void
     var unreadChats: [UnreadChatRow] = []
     var onOpenChat: (UUID) -> Void = { _ in }
+    /// Shows the game card while the partner has the game open, so an invite is one tap away.
+    var games: GamesViewModel?
+    var onOpenDrawAndGuess: () -> Void = {}
     var onTapStreak: (() -> Void)?
     var onOpenDailyChallenge: () -> Void = {}
     var onOpenWidgetDrawing: () -> Void = {}
@@ -56,6 +59,8 @@ struct PairedHomeView: View {
         onPromptCurrentLocation: @escaping () -> Void = {},
         unreadChats: [UnreadChatRow] = [],
         onOpenChat: @escaping (UUID) -> Void = { _ in },
+        games: GamesViewModel? = nil,
+        onOpenDrawAndGuess: @escaping () -> Void = {},
         onTapStreak: (() -> Void)? = nil,
         onOpenDailyChallenge: @escaping () -> Void = {},
         onOpenWidgetDrawing: @escaping () -> Void = {},
@@ -77,6 +82,8 @@ struct PairedHomeView: View {
         self.onPromptCurrentLocation = onPromptCurrentLocation
         self.unreadChats = unreadChats
         self.onOpenChat = onOpenChat
+        self.games = games
+        self.onOpenDrawAndGuess = onOpenDrawAndGuess
         self.onTapStreak = onTapStreak
         self.onOpenDailyChallenge = onOpenDailyChallenge
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
@@ -102,6 +109,7 @@ struct PairedHomeView: View {
                 isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
             )
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: partnerGameSummary != nil)
         }
         .paeoniaWideLayout($isWideLayout)
         .scrollIndicators(.hidden)
@@ -175,8 +183,24 @@ struct PairedHomeView: View {
                 )
                 .transition(.opacity)
             }
+            if let games, let summary = partnerGameSummary {
+                DrawAndGuessHubCard(
+                    summary: summary,
+                    partnerName: games.partnerName,
+                    me: games.drawAndGuess.me,
+                    partner: games.drawAndGuess.partner,
+                    open: onOpenDrawAndGuess
+                )
+                .transition(.opacity)
+            }
             dailyPromptCard
         }
+    }
+
+    /// Only a game the partner is in right now. Whose turn it is belongs on the Games tab.
+    private var partnerGameSummary: DrawAndGuessHubSummary? {
+        guard let summary = games?.hubSummary, summary.partnerIsHere else { return nil }
+        return summary
     }
 
     private var dailyPromptCard: some View {

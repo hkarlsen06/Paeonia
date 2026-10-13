@@ -256,90 +256,16 @@ struct HomeWidgetCard: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                HomeWidgetPlaceholderSketch()
+                // The same sample drawing the Home Screen widget shows.
+                Image(.placeholderSketch)
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+                    .accessibilityHidden(true)
                     .transition(.opacity)
             }
         }
         .aspectRatio(1, contentMode: .fit)
-    }
-}
-
-/// A lightweight sketch shown before the couple has saved a drawing, mirroring
-/// the placeholder the Home Screen widget renders.
-private struct HomeWidgetPlaceholderSketch: View {
-    private let primaryStrokePoints = [
-        CGPoint(x: 0.12, y: 0.58),
-        CGPoint(x: 0.24, y: 0.34),
-        CGPoint(x: 0.40, y: 0.46),
-        CGPoint(x: 0.53, y: 0.24),
-        CGPoint(x: 0.73, y: 0.42),
-        CGPoint(x: 0.88, y: 0.28),
-    ]
-    private let secondaryStrokePoints = [
-        CGPoint(x: 0.18, y: 0.74),
-        CGPoint(x: 0.34, y: 0.64),
-        CGPoint(x: 0.49, y: 0.76),
-        CGPoint(x: 0.66, y: 0.58),
-        CGPoint(x: 0.84, y: 0.66),
-    ]
-
-    var body: some View {
-        GeometryReader { proxy in
-            sketch(in: proxy.size)
-        }
-        .accessibilityHidden(true)
-    }
-
-    private func sketch(in size: CGSize) -> some View {
-        ZStack {
-            HomeWidgetSketchStroke(points: primaryStrokePoints)
-                .stroke(.paeoniaWidgetDrawing, style: strokeStyle(in: size, ratio: 1))
-
-            HomeWidgetSketchStroke(points: secondaryStrokePoints)
-                .stroke(.paeoniaAccentSecondary.opacity(0.82), style: strokeStyle(in: size, ratio: 0.7))
-
-            Circle()
-                .fill(.paeoniaAccentPrimary)
-                .frame(width: dotSize(in: size), height: dotSize(in: size))
-                .position(x: size.width * 0.80, y: size.height * 0.29)
-        }
-        .frame(width: size.width, height: size.height)
-    }
-
-    private func strokeStyle(in size: CGSize, ratio: CGFloat) -> StrokeStyle {
-        StrokeStyle(
-            lineWidth: max(4, min(size.width, size.height) * 0.05) * ratio,
-            lineCap: .round,
-            lineJoin: .round
-        )
-    }
-
-    private func dotSize(in size: CGSize) -> CGFloat {
-        max(7, min(size.width, size.height) * 0.09)
-    }
-}
-
-private struct HomeWidgetSketchStroke: Shape {
-    let points: [CGPoint]
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        guard let firstPoint = points.first else {
-            return path
-        }
-
-        path.move(to: point(firstPoint, in: rect))
-        for nextPoint in points.dropFirst() {
-            path.addLine(to: point(nextPoint, in: rect))
-        }
-        return path
-    }
-
-    private func point(_ point: CGPoint, in rect: CGRect) -> CGPoint {
-        CGPoint(
-            x: rect.minX + rect.width * point.x,
-            y: rect.minY + rect.height * point.y
-        )
     }
 }
 

@@ -595,7 +595,7 @@ describe("scoring", () => {
     }
   });
 
-  test("a live watcher gets the speed bonus window from when the drawing was sent", async () => {
+  test("a live watcher's speed bonus window starts when they first see the drawing, not when it is sent", async () => {
     const s = await startGame({ playStyle: "against" });
     const picked = await pick(s.a, s.gameId, "easy");
     await s.b.as.mutation(api.games.mark_round_seen, { p_round_id: picked.round_id });
@@ -603,7 +603,7 @@ describe("scoring", () => {
     await sendDrawing(s, s.a, picked.round_id);
     tick(10);
     const solved = await guess(s.b, picked.round_id, picked.word);
-    expect(solved).toMatchObject({ correct: true, speed_bonus: 1, solve_ms: 70_000 });
+    expect(solved).toMatchObject({ correct: true, speed_bonus: 0, solve_ms: 70_000 });
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

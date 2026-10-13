@@ -29,8 +29,6 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
     /// The server has the drawing, or it is queued on this phone.
     var isDrawingSent: Bool
     let startedAt: Date
-    /// When the server received the finished drawing.
-    let drawingSubmittedAt: Date?
     let guesserFirstSeenAt: Date?
     /// When a queued correct guess was made, before the server confirms it.
     var localSolvedAt: Date?
@@ -56,7 +54,6 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
         drawingMediaAssetID = round.drawingMediaAssetID
         isDrawingSent = round.drawingMediaAssetID != nil
         startedAt = round.startedAt
-        drawingSubmittedAt = round.drawingSubmittedAt
         guesserFirstSeenAt = round.guesserFirstSeenAt
         localSolvedAt = nil
         endedAt = round.endedAt
@@ -91,7 +88,6 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
         drawingMediaAssetID = nil
         isDrawingSent = false
         startedAt = pick.createdAt
-        drawingSubmittedAt = nil
         guesserFirstSeenAt = nil
         localSolvedAt = nil
         endedAt = nil

@@ -18,7 +18,7 @@ struct DrawAndGuessScreen: View {
         }
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.paeoniaBackgroundSecondary)
+        .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
         .navigationTitle(Text(.gamesDrawAndGuessName))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)

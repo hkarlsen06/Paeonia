@@ -20,8 +20,9 @@ final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
     private(set) var toolConfigurationRevision = 0
     /// The side of the square canvas on screen, in points. Zero until laid out.
     private(set) var canvasSide: CGFloat = 0
-    private(set) var canUndoDrawing = false
-    private(set) var canRedoDrawing = false
+    private var history = DrawingEditHistory()
+    var canUndoDrawing: Bool { history.canUndo }
+    var canRedoDrawing: Bool { history.canRedo }
     /// A stroke is being drawn right now.
     private(set) var isStrokeInProgress = false
 
@@ -116,7 +117,6 @@ final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
 
     func bindCanvasView(_ canvasView: PKCanvasView) {
         self.canvasView = canvasView
-        refreshUndoRedo()
     }
 
     /// The canvas was laid out at `side` points. A drawing made at another size is
@@ -127,13 +127,15 @@ final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
         let previous = canvasSide > 0 ? canvasSide : DrawAndGuessCanvas.canonicalSide
         canvasSide = side
         if !drawing.strokes.isEmpty {
-            replace(with: drawing.scaled(fromSide: previous, toSide: side))
+            history.scale(fromSide: previous, toSide: side)
+            show(drawing.scaled(fromSide: previous, toSide: side))
         }
     }
 
-    func updateDrawing(_ newDrawing: PKDrawing, undoManager _: UndoManager?) {
+    /// A stroke or an erase on the canvas.
+    func updateDrawing(_ newDrawing: PKDrawing) {
+        history.record(from: drawing, to: newDrawing)
         drawing = newDrawing
-        refreshUndoRedo()
         onUserChange?(newDrawing)
     }
 
@@ -142,7 +144,6 @@ final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
     }
 
     func canvasDidFinishRendering() {
-        refreshUndoRedo()
         refreshDrawingFromCanvas()
     }
 
@@ -153,7 +154,7 @@ final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
         guard let canvasView, !isStrokeInProgress, canvasDrawingRevision == drawingRevision else { return }
         let canvasDrawing = canvasView.drawing
         guard canvasDrawing != drawing else { return }
-        updateDrawing(canvasDrawing, undoManager: canvasView.undoManager)
+        updateDrawing(canvasDrawing)
     }
 
     /// The drawing at the canonical size, with a late eraser change and the
@@ -184,11 +185,15 @@ final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
     // MARK: Changes from code
 
     /// Puts a drawing on the canvas without telling the partner, for a restored
-    /// draft or a new round.
+    /// draft or a new round. Undo starts over.
     func replace(with newDrawing: PKDrawing) {
+        history.removeAll()
+        show(newDrawing)
+    }
+
+    private func show(_ newDrawing: PKDrawing) {
         drawing = newDrawing
         drawingRevision += 1
-        refreshUndoRedo()
     }
 
     func reset() {
@@ -202,34 +207,47 @@ final class DrawAndGuessDrawingBoard: WidgetDrawingToolControlling {
         replace(with: saved.scaled(fromSide: DrawAndGuessCanvas.canonicalSide, toSide: side))
     }
 
-    // MARK: Undo and clear
+    // MARK: Undo, clear and fill
 
     func undoDrawing() {
-        canvasView?.undoManager?.undo()
-        drawingChangedByUndo()
+        refreshDrawingFromCanvas()
+        if let previous = history.undo(drawing) {
+            showEdit(previous)
+        }
     }
 
     func redoDrawing() {
-        canvasView?.undoManager?.redo()
-        drawingChangedByUndo()
-    }
-
-    private func drawingChangedByUndo() {
-        if let canvasView {
-            drawing = canvasView.drawing
-            onUserChange?(drawing)
+        refreshDrawingFromCanvas()
+        if let next = history.redo(drawing) {
+            showEdit(next)
         }
-        refreshUndoRedo()
     }
 
     func clear() {
         guard !isEmpty else { return }
-        replace(with: PKDrawing())
-        onUserChange?(PKDrawing())
+        applyEdit(PKDrawing())
     }
 
-    func refreshUndoRedo() {
-        canUndoDrawing = canvasView?.undoManager?.canUndo ?? false
-        canRedoDrawing = canvasView?.undoManager?.canRedo ?? false
+    /// The paint bucket was tapped at `point`, in canvas points.
+    func fill(at point: CGPoint) {
+        refreshDrawingFromCanvas()
+        guard let stroke = DrawingFloodFill.fillStroke(
+            in: drawing,
+            side: canvasSide,
+            at: point,
+            color: selectedUIColor
+        ) else { return }
+        applyEdit(PKDrawing(strokes: drawing.strokes + [stroke]))
+    }
+
+    /// A change the person made with a button or a tap, not a stroke.
+    private func applyEdit(_ newDrawing: PKDrawing) {
+        history.record(from: drawing, to: newDrawing)
+        showEdit(newDrawing)
+    }
+
+    private func showEdit(_ newDrawing: PKDrawing) {
+        show(newDrawing)
+        onUserChange?(newDrawing)
     }
 }

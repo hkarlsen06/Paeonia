@@ -29,9 +29,9 @@ struct PrivacyCorrectionRequestView: View {
             formContent
         }
         .scrollBounceBehavior(.basedOnSize)
-        .background(.paeoniaBackgroundPrimary)
+        .paeoniaScreenBackground()
         .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .bottom) {
+        .paeoniaBottomBar {
             submitButton
         }
         .navigationTitle(Text(.privacySafetyCorrectionFormTitle))

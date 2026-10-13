@@ -13,49 +13,48 @@ struct LocationSettingsView: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
-        SettingsDetailScreen(title: .settingsLocationSectionTitle) {
-            PaeoniaCard {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                    SettingsToggleRow(
-                        title: .settingsLocationSharingTitle,
-                        subtitle: .settingsLocationSharingSubtitle(partnerName),
-                        isOn: sharingBinding,
-                        // A choice that is still saving cannot be flipped again,
-                        // so a second tap is never silently dropped.
-                        isEnabled: viewModel.isSharingLoaded && !viewModel.isUpdatingSharing
-                    )
+        Form {
+            Group {
+                Section {
+                    Toggle(isOn: sharingBinding) {
+                        Text(.settingsLocationSharingTitle)
+                        Text(.settingsLocationSharingSubtitle(partnerName))
+                    }
+                    // A choice that is still saving cannot be flipped again, so a
+                    // second tap is never silently dropped.
+                    .disabled(!viewModel.isSharingLoaded || viewModel.isUpdatingSharing)
 
                     if viewModel.sharingEnabled, viewModel.authorizationState != .denied {
-                        whileClosedSection
-                    }
-
-                    if viewModel.authorizationState == .denied {
-                        settingsNote(
-                            title: .homeMapAccessOffTitle,
-                            message: .settingsLocationAccessOffMessage(partnerName)
-                        )
+                        whileClosedRows
                     }
                 }
+
+                if viewModel.authorizationState == .denied {
+                    settingsNote(
+                        title: .homeMapAccessOffTitle,
+                        message: .settingsLocationAccessOffMessage(partnerName)
+                    )
+                }
             }
+            .listRowBackground(Color.paeoniaSurfacePrimary)
         }
+        .paeoniaGroupedList()
+        .navigationTitle(Text(.settingsLocationSectionTitle))
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     /// Off by default, and only offered while sharing is on. It needs iOS
     /// location access set to Always, so the note says how to get there.
     @ViewBuilder
-    private var whileClosedSection: some View {
-        Divider()
-            .overlay(.paeoniaSurfacePressed)
-
-        SettingsToggleRow(
-            title: .settingsLocationWhileClosedTitle,
-            subtitle: .settingsLocationWhileClosedSubtitle(partnerName),
-            isOn: whileClosedBinding,
-            isEnabled: !viewModel.isUpdatingSharing
-        )
+    private var whileClosedRows: some View {
+        Toggle(isOn: whileClosedBinding) {
+            Text(.settingsLocationWhileClosedTitle)
+            Text(.settingsLocationWhileClosedSubtitle(partnerName))
+        }
+        .disabled(viewModel.isUpdatingSharing)
 
         if updates.prefersUpdatesWhileClosed, !updates.updatesWhileClosedActive {
-            settingsNote(
+            noteRows(
                 title: .settingsLocationWhileClosedNeedsAlwaysTitle,
                 message: .settingsLocationWhileClosedNeedsAlwaysMessage
             )
@@ -65,10 +64,14 @@ struct LocationSettingsView: View {
     /// A switch cannot share anything while iOS holds back the access it
     /// needs, so say that plainly and offer the way to fix it.
     private func settingsNote(title: LocalizedStringResource, message: LocalizedStringResource) -> some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Divider()
-                .overlay(.paeoniaSurfacePressed)
+        Section {
+            noteRows(title: title, message: message)
+        }
+    }
 
+    @ViewBuilder
+    private func noteRows(title: LocalizedStringResource, message: LocalizedStringResource) -> some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
             Text(title)
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)
@@ -76,15 +79,14 @@ struct LocationSettingsView: View {
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+        }
 
-            Button {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    openURL(url)
-                }
-            } label: {
-                Text(.commonOpenSettings)
+        Button {
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                openURL(url)
             }
-            .buttonStyle(PaeoniaSecondaryButtonStyle())
+        } label: {
+            Text(.commonOpenSettings)
         }
     }
 

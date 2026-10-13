@@ -74,7 +74,7 @@ describe("record_verified_storekit_transaction", () => {
     expect(await t.run((ctx) => ctx.db.query("storekit_payloads").collect())).toHaveLength(2);
   });
 
-  test("rejects a missing user, a missing token, an unknown token, and another user's token", async () => {
+  test("rejects a missing user, a missing token, and another user's token", async () => {
     const t = newTest();
     await seedProducts(t);
     const alice = await createSignedInUser(t);
@@ -87,11 +87,6 @@ describe("record_verified_storekit_transaction", () => {
     expect(await record({ userId: alice.userId, token: null })).toEqual({
       ok: false,
       error: "Apple transaction is missing appAccountToken",
-      status: 403,
-    });
-    expect(await record({ userId: alice.userId, token: newUuid() })).toEqual({
-      ok: false,
-      error: "Apple appAccountToken is not registered",
       status: 403,
     });
     expect(await record({ userId: bob.userId, token: aliceToken })).toEqual({

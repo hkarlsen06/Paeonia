@@ -180,25 +180,16 @@ export async function beginTurn(
 
 /**
  * Points for a correct guess. `shared` always gets the word points. The guesser also gets the
- * speed bonus when the guess comes while the partner is still drawing (a live round), or within
- * 30 seconds of first seeing the finished drawing. A guesser who watched live saw the finished
- * drawing when it was sent, so the window starts at the later of the two times.
+ * speed bonus for a guess within 30 seconds of first seeing the drawing. A guesser who watches
+ * live first sees it at the drawer's first stroke, so the clock runs while the partner draws.
  */
 export function scoreSolve(
-  move: Pick<GameMove, "points" | "state" | "guesser_first_seen_at" | "drawing_submitted_at">,
+  move: Pick<GameMove, "guesser_first_seen_at">,
   solvedAt: string,
 ): { speedBonus: number; solveMs: number | undefined } {
-  if (move.guesser_first_seen_at === undefined) {
-    return { speedBonus: move.state === "drawing" ? SPEED_BONUS_POINTS : 0, solveMs: undefined };
-  }
+  if (move.guesser_first_seen_at === undefined) return { speedBonus: 0, solveMs: undefined };
   const solveMs = Math.max(0, Date.parse(solvedAt) - Date.parse(move.guesser_first_seen_at));
-  if (move.state === "drawing") return { speedBonus: SPEED_BONUS_POINTS, solveMs };
-  const finishedSeenAt = Math.max(
-    Date.parse(move.guesser_first_seen_at),
-    move.drawing_submitted_at === undefined ? 0 : Date.parse(move.drawing_submitted_at),
-  );
-  const sinceFinished = Date.parse(solvedAt) - finishedSeenAt;
-  return { speedBonus: sinceFinished <= SPEED_BONUS_WINDOW_MS ? SPEED_BONUS_POINTS : 0, solveMs };
+  return { speedBonus: solveMs <= SPEED_BONUS_WINDOW_MS ? SPEED_BONUS_POINTS : 0, solveMs };
 }
 
 // --- Notifications ----------------------------------------------------------

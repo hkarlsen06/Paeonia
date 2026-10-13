@@ -99,7 +99,7 @@ struct DailyChallengeScreen: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(.paeoniaBackgroundPrimary)
+        .paeoniaScreenBackground()
         .navigationTitle(Text(.mainTabQuestions))
         .toolbar(chatQuestion.wrappedValue != nil || isOpeningChat ? .hidden : .visible, for: .tabBar)
         .onChange(of: chatQuestion.wrappedValue == nil) { _, isClosed in

@@ -97,13 +97,11 @@ struct DrawAndGuessSpeedBonusClaimTests {
         #expect(payload.solveMs == 31_000)
     }
 
-    @Test func aLiveGuessBeforeDoneClaimsTheBonusHoweverLongTheDrawingTook() async throws {
-        let drawingState = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .drawing, turn: GameFixture.me),
-            round: GameFixture.round(state: .drawing, drawer: GameFixture.partner)
-        )
-        let environment = makeEnvironment(drawingState)
+    /// The guesser watches live while the drawer has the canvas open. The
+    /// 30 seconds start at the drawer's first stroke, not when the canvas opened.
+    private func watchingLiveUntilFirstStroke(
+        _ environment: GamesTestEnvironment
+    ) async throws -> DrawAndGuessViewModel {
         let (room, connection) = makeOfflineLiveRoom()
         let viewModel = makeViewModel(environment, live: room)
         viewModel.configure(participants: GameFixture.participants)
@@ -112,14 +110,50 @@ struct DrawAndGuessSpeedBonusClaimTests {
         connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: "drawing"))
         viewModel.recompute()
         #expect(viewModel.phase == .watchingLive)
-        #expect(viewModel.localFirstSeenAt[GameFixture.roundID] != nil)
+        #expect(viewModel.localFirstSeenAt[GameFixture.roundID] == nil)
+        #expect(viewModel.speedBonus == .open)
 
-        clock.advance(by: 50)
+        // The drawer was busy with something else for a minute before drawing.
+        clock.advance(by: 60)
+        sendPartnerCanvasSnapshot(on: connection)
+        viewModel.recompute()
+        #expect(viewModel.localFirstSeenAt[GameFixture.roundID] == clock.now)
+        #expect(viewModel.speedBonusRemaining() == 30)
+        return viewModel
+    }
+
+    private var partnerDrawingLive: RemoteDrawAndGuessState {
+        GameFixture.state(
+            settings: GameFixture.settings(),
+            game: GameFixture.game(state: .drawing, turn: GameFixture.me),
+            round: GameFixture.round(state: .drawing, drawer: GameFixture.partner)
+        )
+    }
+
+    @Test func aLiveGuessWithinThirtySecondsOfTheFirstStrokeClaimsTheBonus() async throws {
+        let environment = makeEnvironment(partnerDrawingLive)
+        let viewModel = try await watchingLiveUntilFirstStroke(environment)
+
+        clock.advance(by: 20)
+        #expect(viewModel.speedBonusRemaining() == 10)
         try type("umbrella", into: viewModel)
 
         let payload = try await queuedGuess(environment)
         #expect(payload.speedBonus == true)
-        #expect(payload.solveMs == 50_000)
+        #expect(payload.solveMs == 20_000)
+    }
+
+    @Test func aLiveGuessMoreThanThirtySecondsAfterTheFirstStrokeClaimsNoBonus() async throws {
+        let environment = makeEnvironment(partnerDrawingLive)
+        let viewModel = try await watchingLiveUntilFirstStroke(environment)
+
+        clock.advance(by: 31)
+        #expect(!viewModel.speedBonusIsAvailable)
+        try type("umbrella", into: viewModel)
+
+        let payload = try await queuedGuess(environment)
+        #expect(payload.speedBonus == false)
+        #expect(payload.solveMs == 31_000)
     }
 
     @Test func aGuessBeforeThePlayerSawAnythingClaimsTheBonusWithoutASolveTime() async throws {

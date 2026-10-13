@@ -188,7 +188,7 @@ struct DrawAndGuessHardeningTests {
         await viewModel.reload()
         let umbrella = GameFixture.umbrella()
         viewModel.board.canvasDidLayout(side: DrawAndGuessCanvas.canonicalSide)
-        viewModel.board.updateDrawing(umbrella, undoManager: nil)
+        viewModel.board.updateDrawing(umbrella)
         viewModel.board.setStrokeInProgress(true)
 
         await env.cache.saveState(solvedWhileIDrew, ownerUserID: GameFixture.me)
@@ -199,7 +199,7 @@ struct DrawAndGuessHardeningTests {
 
         // PencilKit commits the stroke when the finger lifts.
         let finished = PKDrawing(strokes: umbrella.strokes + [umbrella.strokes[0]])
-        viewModel.board.updateDrawing(finished, undoManager: nil)
+        viewModel.board.updateDrawing(finished)
         viewModel.board.setStrokeInProgress(false)
 
         _ = await waitForQueued(.submitGameDrawing, in: env)
@@ -211,7 +211,7 @@ struct DrawAndGuessHardeningTests {
         let viewModel = env.viewModel()
         await viewModel.reload()
         viewModel.board.canvasDidLayout(side: DrawAndGuessCanvas.canonicalSide)
-        viewModel.board.updateDrawing(GameFixture.umbrella(), undoManager: nil)
+        viewModel.board.updateDrawing(GameFixture.umbrella())
         viewModel.board.setStrokeInProgress(true)
         await env.cache.saveState(solvedWhileIDrew, ownerUserID: GameFixture.me)
         await viewModel.reload()
@@ -232,7 +232,7 @@ struct DrawAndGuessHardeningTests {
         let umbrella = GameFixture.umbrella()
         let board = viewModel.board
         board.canvasDidLayout(side: DrawAndGuessCanvas.canonicalSide)
-        board.updateDrawing(umbrella, undoManager: nil)
+        board.updateDrawing(umbrella)
         let canvas = PKCanvasView()
         board.bindCanvasView(canvas)
         board.canvasDidApplyDrawing(revision: board.drawingRevision)

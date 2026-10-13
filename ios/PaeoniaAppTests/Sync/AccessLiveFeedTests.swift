@@ -185,6 +185,7 @@ extension RemoteAccessSnapshot {
                 source: "storekit",
                 status: "active",
                 productID: nil,
+                billingPeriod: nil,
                 currentPeriodEnd: Date(timeIntervalSince1970: 2_000_000_000),
                 updatedAt: Date(timeIntervalSince1970: 1_800_000_000)
             ),
@@ -195,6 +196,7 @@ extension RemoteAccessSnapshot {
                 source: "storekit",
                 status: coupleEntitled ? "active" : "expired",
                 productID: nil,
+                billingPeriod: nil,
                 currentPeriodEnd: Date(timeIntervalSince1970: 2_000_000_000),
                 updatedAt: Date(timeIntervalSince1970: 1_800_000_000)
             ),

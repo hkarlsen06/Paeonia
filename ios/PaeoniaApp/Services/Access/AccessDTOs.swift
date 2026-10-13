@@ -18,6 +18,8 @@ nonisolated struct RemoteUserEntitlement: Codable, Equatable, Sendable {
     let source: String?
     let status: String?
     let productID: UUID?
+    /// "monthly" or "yearly" for an App Store subscription. Nil for other access.
+    let billingPeriod: String?
     let currentPeriodEnd: Date?
     let updatedAt: Date?
 
@@ -27,6 +29,7 @@ nonisolated struct RemoteUserEntitlement: Codable, Equatable, Sendable {
         case source
         case status
         case productID = "product_id"
+        case billingPeriod = "billing_period"
         case currentPeriodEnd = "current_period_end"
         case updatedAt = "updated_at"
     }
@@ -39,6 +42,8 @@ nonisolated struct RemoteCoupleEntitlement: Codable, Equatable, Sendable {
     let source: String?
     let status: String?
     let productID: UUID?
+    /// "monthly" or "yearly" for an App Store subscription. Nil for other access.
+    let billingPeriod: String?
     let currentPeriodEnd: Date?
     let updatedAt: Date?
 
@@ -49,6 +54,7 @@ nonisolated struct RemoteCoupleEntitlement: Codable, Equatable, Sendable {
         case source
         case status
         case productID = "product_id"
+        case billingPeriod = "billing_period"
         case currentPeriodEnd = "current_period_end"
         case updatedAt = "updated_at"
     }

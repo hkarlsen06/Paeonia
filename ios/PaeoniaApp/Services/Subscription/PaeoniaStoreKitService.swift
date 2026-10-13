@@ -162,11 +162,13 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         }
     }
 
-    /// Asks the App Store for this Apple ID's subscriptions and confirms the ones
-    /// bought with this account. Returns `false` when there is nothing to restore.
-    /// Throws `.purchaseLinkedToAnotherAccount` when the only subscription belongs
-    /// to a different Paeonia account, and `.cancelled` when the user closes the
-    /// App Store sign-in sheet.
+    /// Asks the App Store for this Apple ID's subscriptions and sends each one to
+    /// the server. A subscription bought with another Paeonia account is sent too,
+    /// because the server moves it here when that account was deleted. Returns
+    /// `false` when there is nothing to restore. Throws
+    /// `.purchaseLinkedToAnotherAccount` when the only subscription belongs to a
+    /// different Paeonia account, and `.cancelled` when the user closes the App
+    /// Store sign-in sheet.
     func restorePurchases() async throws -> Bool {
         let token = try await configuredAppAccountToken()
 
@@ -188,19 +190,21 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
                 continue
             }
 
-            guard transaction.appAccountToken == token else {
-                if transaction.appAccountToken != nil {
-                    foundAnotherAccountsPurchase = true
-                }
+            guard transaction.appAccountToken != nil else {
                 continue
             }
 
             let displayPrice = productDisplayPrice(for: transaction.productID)
-            try await confirm(
-                transaction: transaction,
-                jwsRepresentation: result.jwsRepresentation,
-                priceDisplay: displayPrice
-            )
+            do {
+                try await confirm(
+                    transaction: transaction,
+                    jwsRepresentation: result.jwsRepresentation,
+                    priceDisplay: displayPrice
+                )
+            } catch PaeoniaPurchaseError.purchaseLinkedToAnotherAccount where transaction.appAccountToken != token {
+                foundAnotherAccountsPurchase = true
+                continue
+            }
             // A purchase that was paid for but never confirmed is still
             // unfinished. Now that the server has it, finish it.
             await transaction.finish()

@@ -37,6 +37,7 @@ struct DrawAndGuessGuessView: View {
             bottom
         }
         .drawAndGuessSaveToolbar(viewModel, isShown: isRevealed && timeline.saveShown)
+        .animation(PaeoniaMotion.stateChange, value: viewModel.isPartnerWaitingForMe)
         .simultaneousGesture(TapGesture().onEnded {
             if timeline.titleShown { timeline.skip() }
         })
@@ -234,6 +235,11 @@ struct DrawAndGuessGuessView: View {
                 .accessibilityIdentifier("draw.showMe")
             }
             .transition(.opacity.combined(with: .move(edge: .bottom)))
+        }
+        if isRevealed, timeline.buttonShown, viewModel.isPartnerWaitingForMe {
+            DrawAndGuessLiveHint(text: .gamesDrawAndGuessRevealPartnerWaiting(viewModel.partnerName))
+                .transition(.opacity)
+                .accessibilityIdentifier("draw.reveal.partnerWaiting")
         }
         if isRevealed, timeline.buttonShown {
             Button {

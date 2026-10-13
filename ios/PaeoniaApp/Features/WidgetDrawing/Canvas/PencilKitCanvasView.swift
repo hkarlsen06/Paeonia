@@ -2,15 +2,19 @@ import PencilKit
 import SwiftUI
 
 struct PencilKitCanvasView: UIViewRepresentable {
-    @Binding var drawing: PKDrawing
+    let drawing: PKDrawing
     /// Changes only when the view model replaced the drawing from code. Strokes
     /// drawn on the canvas never change it, so they are not pushed back in.
     let drawingRevision: Int
     let tool: any PKTool
     let toolConfigurationRevision: Int
     let onCanvasReady: (PKCanvasView) -> Void
-    let onDrawingChange: (PKDrawing, UndoManager?) -> Void
+    let onDrawingChange: (PKDrawing) -> Void
     let onStrokeInProgressChange: (Bool) -> Void
+    /// The paint bucket is picked: a tap fills instead of drawing.
+    var isFillToolSelected = false
+    /// A tap with the paint bucket, in canvas points.
+    var onFill: (CGPoint) -> Void = { _ in }
     /// The canvas now shows the drawing of this `drawingRevision`.
     var onDrawingApplied: (Int) -> Void = { _ in }
     /// The canvas finished rendering. The pixel eraser can change the drawing
@@ -18,8 +22,12 @@ struct PencilKitCanvasView: UIViewRepresentable {
     var onFinishRendering: () -> Void = {}
 
     func makeUIView(context: Context) -> PKCanvasView {
-        let canvasView = PKCanvasView()
+        let canvasView = PaeoniaDrawingCanvasView()
         canvasView.configureForPaeoniaDrawingCanvas()
+        let fillTap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.fillTapped))
+        canvasView.addGestureRecognizer(fillTap)
+        context.coordinator.fillTap = fillTap
+        context.coordinator.applyFillMode(isFillToolSelected, to: canvasView)
         // Assign the initial drawing before wiring the delegate so this
         // programmatic assignment can't bounce back through
         // `canvasViewDrawingDidChange` while SwiftUI is still building the view.
@@ -43,6 +51,7 @@ struct PencilKitCanvasView: UIViewRepresentable {
             to: canvasView,
             revision: toolConfigurationRevision
         )
+        context.coordinator.applyFillMode(isFillToolSelected, to: canvasView)
 
         // Comparing revisions is cheap. Comparing `dataRepresentation()` on
         // every SwiftUI update serialized the whole drawing twice per slider
@@ -57,6 +66,12 @@ struct PencilKitCanvasView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
     }
+}
+
+/// A canvas without PencilKit's undo stack. The view models keep their own
+/// (`DrawingEditHistory`), and PencilKit's would undo to drawings that are gone.
+final class PaeoniaDrawingCanvasView: PKCanvasView {
+    override var undoManager: UndoManager? { nil }
 }
 
 extension PKCanvasView {
@@ -75,6 +90,7 @@ extension PencilKitCanvasView {
     final class Coordinator: NSObject, PKCanvasViewDelegate {
         var parent: PencilKitCanvasView
         var appliedDrawingRevision = 0
+        weak var fillTap: UITapGestureRecognizer?
         private var appliedToolConfigurationRevision: Int?
         /// True while we push a drawing into the canvas ourselves, so the
         /// resulting delegate callback doesn't feed that programmatic change back
@@ -98,6 +114,21 @@ extension PencilKitCanvasView {
             appliedToolConfigurationRevision = revision
         }
 
+        /// Turns off the drawing gesture, not `isDrawingEnabled`. With
+        /// `isDrawingEnabled` off, the canvas did not redraw the filled drawing
+        /// until much later.
+        func applyFillMode(_ isFillToolSelected: Bool, to canvasView: PKCanvasView) {
+            canvasView.drawingGestureRecognizer.isEnabled = !isFillToolSelected
+            fillTap?.isEnabled = isFillToolSelected
+        }
+
+        @objc func fillTapped(_ recognizer: UITapGestureRecognizer) {
+            guard recognizer.state == .ended, let view = recognizer.view else {
+                return
+            }
+            parent.onFill(recognizer.location(in: view))
+        }
+
         func bind(_ canvasView: PKCanvasView) {
             parent.onCanvasReady(canvasView)
         }
@@ -109,19 +140,13 @@ extension PencilKitCanvasView {
             isApplyingDrawingProgrammatically = true
             defer { isApplyingDrawingProgrammatically = false }
             canvasView.drawing = drawing
-            // Make the loaded drawing the clean undo baseline. Otherwise PencilKit
-            // keeps the snapshot from before this programmatic load, so undoing the
-            // user's first stroke reverts to that stale (often empty) snapshot and
-            // wipes the loaded drawing instead of just removing the stroke.
-            canvasView.undoManager?.removeAllActions()
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
             guard !isApplyingDrawingProgrammatically else {
                 return
             }
-            parent.drawing = canvasView.drawing
-            parent.onDrawingChange(canvasView.drawing, canvasView.undoManager)
+            parent.onDrawingChange(canvasView.drawing)
         }
 
         func canvasViewDidFinishRendering(_: PKCanvasView) {

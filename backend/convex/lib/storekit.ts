@@ -1,7 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import { sha256Hex } from "./crypto";
 import type { ReaderCtx, WriterCtx } from "./db";
-import { withUpdatedAt } from "./db";
+import { getByUuid, withUpdatedAt } from "./db";
 import { checkViolation } from "./errors";
 import { getEntitledCoupleIdForUser } from "./access";
 import { newUuid, optionalTimestampArg, uuidArg } from "./ids";
@@ -194,12 +194,16 @@ export type VerifiedTransactionInput = {
   p_payload_json?: unknown;
 };
 
-/** Ownership checks shared by both record_verified_* functions. Returns a failure or the resolved product row lookup input. */
+/**
+ * Ownership checks shared by both record_verified_* functions. A token no
+ * account holds comes back as `orphaned`. Account deletion removes the token,
+ * so this is a purchase whose account is gone.
+ */
 async function checkAppAccountToken(
   ctx: ReaderCtx,
   userId: string | null | undefined,
   appAccountToken: string | null | undefined,
-): Promise<{ failure: StorekitRecordResult } | { userId: string; token: string }> {
+): Promise<{ failure: StorekitRecordResult } | { userId: string; token: string; orphaned: boolean }> {
   if (!userId) {
     return { failure: recordFailure("Invalid user", 401) };
   }
@@ -208,13 +212,55 @@ async function checkAppAccountToken(
   }
   const token = uuidArg(appAccountToken);
   const owner = await findAppAccountTokenOwner(ctx, token);
-  if (!owner) {
-    return { failure: recordFailure("Apple appAccountToken is not registered", 403) };
-  }
-  if (owner !== userId) {
+  if (owner && owner !== userId) {
     return { failure: recordFailure("Apple transaction belongs to a different user", 403) };
   }
-  return { userId, token };
+  return { userId, token, orphaned: !owner };
+}
+
+/** A user whose account deletion finished, or whose row no longer exists. */
+async function isGoneUser(ctx: ReaderCtx, userId: string): Promise<boolean> {
+  if (!(await getByUuid(ctx, "users", userId))) {
+    return true;
+  }
+  const completedDeletion = await ctx.db
+    .query("account_deletion_jobs")
+    .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+    .filter((q) => q.eq(q.field("status"), "completed"))
+    .first();
+  return completedDeletion !== null;
+}
+
+/**
+ * Someone who deletes their account and signs up again keeps paying Apple for
+ * the old subscription, and StoreKit hands it to the new account with the old
+ * token. When every earlier owner of the subscription is gone, it moves to
+ * `userId`. A subscription a live account still holds stays with that account.
+ */
+async function adoptOrphanedSubscription(
+  ctx: WriterCtx,
+  userId: string,
+  environment: StorekitEnvironment,
+  originalTransactionId: string,
+): Promise<StorekitRecordResult | null> {
+  const rows = await ctx.db
+    .query("storekit_transactions")
+    .withIndex("by_environment_original_transaction_id", (q) =>
+      q.eq("environment", environment).eq("original_transaction_id", originalTransactionId),
+    )
+    .collect();
+  const earlierOwners = [...new Set(rows.map((row) => row.user_id))].filter((owner) => owner !== userId);
+  for (const owner of earlierOwners) {
+    if (!(await isGoneUser(ctx, owner))) {
+      return recordFailure("Apple transaction belongs to a different user", 403);
+    }
+  }
+  for (const row of rows) {
+    if (row.user_id !== userId) {
+      await patchStorekitTransaction(ctx, row, { user_id: userId });
+    }
+  }
+  return null;
 }
 
 async function findActiveProduct(
@@ -252,6 +298,12 @@ export async function recordVerifiedStorekitTransaction(
   }
 
   const environment = assertEnvironment(input.p_environment);
+  if (checked.orphaned) {
+    const refused = await adoptOrphanedSubscription(ctx, checked.userId, environment, input.p_original_transaction_id);
+    if (refused) {
+      return refused;
+    }
+  }
   const existing = await findStorekitTransaction(ctx, environment, input.p_transaction_id);
   if (existing && existing.user_id !== checked.userId) {
     return recordFailure("Apple transaction belongs to a different user", 403);
@@ -313,6 +365,10 @@ export async function recordVerifiedStreakRestore(
   const checked = await checkAppAccountToken(ctx, userId, input.p_app_account_token);
   if ("failure" in checked) {
     return checked.failure;
+  }
+  // A streak restore is bought on the spot, so it always carries the buyer's token.
+  if (checked.orphaned) {
+    return recordFailure("Apple appAccountToken is not registered", 403);
   }
 
   const product = await findActiveProduct(ctx, input.p_apple_product_id, "streak_restore");

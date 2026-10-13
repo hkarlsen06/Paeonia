@@ -179,7 +179,9 @@ extension DrawAndGuessViewModel {
 
     /// Tells the server when the guesser first saw the drawing. The 30-second
     /// speed bonus counts from it. The first call wins on the server. Nothing is
-    /// seen while the screen is closed or the app is in the background.
+    /// seen while the screen is closed or the app is in the background. A live
+    /// canvas counts once the drawer's first stroke is on it, so a drawer who
+    /// has not started yet does not use up the guesser's 30 seconds.
     func markSeenIfNeeded() {
         guard isActive, !isStopped,
               let userID = currentUserID, let round, !round.isFinished, round.guesserUserID == userID,
@@ -187,7 +189,7 @@ extension DrawAndGuessViewModel {
         else { return }
         switch phase {
         case .watchingLive:
-            guard live?.partnerActivity == .drawing else { return }
+            guard live?.partnerActivity == .drawing, live?.hasPartnerStrokes == true else { return }
             watchedLiveRoundIDs.insert(round.id)
         case .guessing:
             guard isReplayReady || guessSource == .live else { return }

@@ -234,7 +234,8 @@ enum PaeoniaWidgetRefreshService {
             createdAt: remoteDrawing.createdAt,
             renderedAt: .now,
             contentHash: remoteDrawing.contentHash,
-            previews: previews
+            previews: previews,
+            canvasSide: remoteDrawing.canvasSide
         )
         let payloadData = try CurrentPayload.encoder.encode(payload)
 

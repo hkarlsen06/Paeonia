@@ -166,3 +166,17 @@ private extension UIColor {
         )
     }
 }
+
+extension View {
+    /// A screen's background, painted under the keyboard too. Use it on any screen
+    /// that can show a keyboard.
+    ///
+    /// `.background(.paeoniaBackgroundPrimary)` stops at the top of the keyboard's
+    /// area. The iOS 26 keyboard draws its rounded panel a little lower, so the black
+    /// container behind the screen shows in that gap and beside the corners.
+    func paeoniaScreenBackground(_ color: Color = .paeoniaBackgroundPrimary) -> some View {
+        background {
+            color.ignoresSafeArea()
+        }
+    }
+}

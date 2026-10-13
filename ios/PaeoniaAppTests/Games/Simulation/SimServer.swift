@@ -467,13 +467,9 @@ final class SimServer {
 
     /// `scoreSolve`.
     private func scoreSolve(_ round: Round) -> (bonus: Int, solveMs: Int?) {
-        guard let seen = round.firstSeenAt else {
-            return (round.state == .drawing ? 1 : 0, nil)
-        }
+        guard let seen = round.firstSeenAt else { return (0, nil) }
         let solveMs = max(0, Int(now.timeIntervalSince(seen) * 1_000))
-        if round.state == .drawing { return (1, solveMs) }
-        let finishedSeenAt = max(seen, round.submittedAt ?? .distantPast)
-        return (now.timeIntervalSince(finishedSeenAt) <= 30 ? 1 : 0, solveMs)
+        return (solveMs <= 30_000 ? 1 : 0, solveMs)
     }
 
     func giveUp(user: UUID, roundID: UUID, operation: SyncClientOperation) throws -> RemoteGiveUpResult {

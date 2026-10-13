@@ -25,7 +25,7 @@ struct WidgetDrawingSendFlowTests {
         let load = Task { await viewModel.loadSavedDrawingIfNeeded() }
         await service.waitUntilLoadIsHeld()
         let stroke = flowDrawing(at: 120)
-        viewModel.updateDrawing(stroke, undoManager: nil)
+        viewModel.updateDrawing(stroke)
         await service.releaseLoad()
         await load.value
 
@@ -48,7 +48,7 @@ struct WidgetDrawingSendFlowTests {
         let viewModel = WidgetDrawingViewModel(service: service, uploader: FlowUploadSpy())
         await viewModel.loadSavedDrawingIfNeeded()
         let edit = PKDrawing(strokes: viewModel.drawing.strokes + flowDrawing(at: 150).strokes)
-        viewModel.updateDrawing(edit, undoManager: nil)
+        viewModel.updateDrawing(edit)
 
         await service.setSnapshot(WidgetCanvasSnapshot(
             drawingData: flowDrawing(at: 90).dataRepresentation(),
@@ -86,7 +86,7 @@ struct WidgetDrawingSendFlowTests {
         #expect(viewModel.drawing.strokes.isEmpty)
 
         let stroke = flowDrawing(at: 150)
-        viewModel.updateDrawing(stroke, undoManager: nil)
+        viewModel.updateDrawing(stroke)
         viewModel.setDrawingStrokeInProgress(false)
         // Lifting the finger runs the deferred check; running it here as well
         // makes the outcome observable without waiting on that task.
@@ -103,7 +103,7 @@ struct WidgetDrawingSendFlowTests {
         let uploader = FlowUploadSpy()
         uploader.outcome = .waiting
         let viewModel = WidgetDrawingViewModel(service: GatedLoadCanvasService(), uploader: uploader)
-        viewModel.updateDrawing(flowDrawing(at: 60), undoManager: nil)
+        viewModel.updateDrawing(flowDrawing(at: 60))
 
         await viewModel.save()
 
@@ -133,7 +133,7 @@ struct WidgetDrawingSendFlowTests {
         let service = GatedLoadCanvasService()
         await service.recordSavesInto(uploader)
         let viewModel = WidgetDrawingViewModel(service: service, uploader: uploader)
-        viewModel.updateDrawing(flowDrawing(at: 60), undoManager: nil)
+        viewModel.updateDrawing(flowDrawing(at: 60))
 
         await viewModel.save()
 
@@ -198,7 +198,7 @@ struct WidgetDrawingSendFlowTests {
             uploader: FlowUploadSpy(),
             draftStore: draftStore
         )
-        firstCouple.updateDrawing(flowDrawing(at: 60), undoManager: nil)
+        firstCouple.updateDrawing(flowDrawing(at: 60))
         firstCouple.persistDraftIfNeeded()
 
         let nextCouple = WidgetDrawingViewModel(
@@ -226,7 +226,7 @@ struct WidgetDrawingSendFlowTests {
             uploader: FlowUploadSpy(),
             draftStore: draftStore
         )
-        viewModel.updateDrawing(flowDrawing(at: 60), undoManager: nil)
+        viewModel.updateDrawing(flowDrawing(at: 60))
 
         draftStore.clearDraft(for: ownerUserID)
         viewModel.persistDraftIfNeeded()
@@ -243,7 +243,7 @@ struct WidgetDrawingSendFlowTests {
             uploader: FlowUploadSpy(),
             draftStore: draftStore
         )
-        viewModel.updateDrawing(flowDrawing(at: 60), undoManager: nil)
+        viewModel.updateDrawing(flowDrawing(at: 60))
 
         viewModel.persistDraftIfNeeded()
 
@@ -278,6 +278,75 @@ struct WidgetDrawingSendFlowTests {
         #expect(!WidgetDrawingLimits.allows(byteCount: 2_097_153, strokeCount: 1, pointCount: 1))
         #expect(!WidgetDrawingLimits.allows(byteCount: 1, strokeCount: 5_001, pointCount: 1))
         #expect(!WidgetDrawingLimits.allows(byteCount: 1, strokeCount: 1, pointCount: 200_001))
+    }
+}
+
+/// Undo, redo, and going back to the drawing on the widgets.
+extension WidgetDrawingSendFlowTests {
+    /// Undo used to lose its steps once the saved drawing was put on the
+    /// canvas, so a doodle on top of it could not be taken back.
+    @Test func doodleOnTheSavedDrawingCanBeUndoneAndRedone() async {
+        let saved = flowDrawing(at: 40)
+        let service = GatedLoadCanvasService()
+        await service.setSnapshot(WidgetCanvasSnapshot(
+            drawingData: saved.dataRepresentation(),
+            authorName: nil,
+            createdAt: nil,
+            canvasSide: 320
+        ))
+        let viewModel = WidgetDrawingViewModel(service: service, uploader: FlowUploadSpy())
+        viewModel.canvasDidLayout(side: 320)
+        await viewModel.loadSavedDrawingIfNeeded()
+        #expect(!viewModel.canUndoDrawing)
+
+        let doodle = PKDrawing(strokes: viewModel.drawing.strokes + flowDrawing(at: 120).strokes)
+        viewModel.updateDrawing(doodle)
+        #expect(viewModel.hasUnsavedEdits)
+
+        viewModel.undoDrawing()
+        #expect(!viewModel.hasUnsavedEdits)
+        #expect(viewModel.drawing.strokes.count == 1)
+        #expect(viewModel.canRedoDrawing)
+
+        viewModel.redoDrawing()
+        #expect(viewModel.drawing.paeoniaContentSignature == doodle.paeoniaContentSignature)
+    }
+
+    @Test func goingBackToTheSentDrawingCanBeUndone() async {
+        let service = GatedLoadCanvasService()
+        await service.setSnapshot(WidgetCanvasSnapshot(
+            drawingData: flowDrawing(at: 40).dataRepresentation(),
+            authorName: nil,
+            createdAt: nil,
+            canvasSide: 320
+        ))
+        let viewModel = WidgetDrawingViewModel(service: service, uploader: FlowUploadSpy())
+        viewModel.canvasDidLayout(side: 320)
+        await viewModel.loadSavedDrawingIfNeeded()
+        #expect(!viewModel.canRevertToSavedDrawing)
+
+        let doodle = flowDrawing(at: 120)
+        viewModel.updateDrawing(doodle)
+        #expect(viewModel.canRevertToSavedDrawing)
+
+        viewModel.revertToSavedDrawing()
+        #expect(!viewModel.hasUnsavedEdits)
+        #expect(!viewModel.canRevertToSavedDrawing)
+
+        viewModel.undoDrawing()
+        #expect(viewModel.drawing.paeoniaContentSignature == doodle.paeoniaContentSignature)
+    }
+
+    @Test func clearingTheCanvasCanBeUndone() {
+        let viewModel = WidgetDrawingViewModel(service: GatedLoadCanvasService(), uploader: FlowUploadSpy())
+        let drawing = flowDrawing(at: 60)
+        viewModel.updateDrawing(drawing)
+
+        viewModel.clearCanvas()
+        #expect(viewModel.drawing.strokes.isEmpty)
+
+        viewModel.undoDrawing()
+        #expect(viewModel.drawing.paeoniaContentSignature == drawing.paeoniaContentSignature)
     }
 }
 

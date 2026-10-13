@@ -39,11 +39,13 @@ Prefer small focused unit tests over broad UI tests unless behavior is UI-only.
 
 ## iOS Build And Test Commands
 
-During interactive debugging where the user is rebuilding in Xcode, avoid duplicate builds and tests. Otherwise run focused checks appropriate to the change, fix failures caused by the change, and rerun affected checks. Broaden verification only when risk or failures justify it. Report any remaining unverified behavior.
+Agents do not build just to check that a change compiles. The developer runs several agents in parallel and builds on their own device, which catches compile errors and warnings. Extra agent builds slow that loop down and fight over the simulator and DerivedData. Do not work around this with scratch copies of the repo or loops that wait for another agent's build.
 
-Use the existing repository wrappers for iOS builds and tests, rather than raw `xcodebuild`. Run commands from the repository root. A wrapper failure is a diagnostic to investigate within scope, not a reason to bypass it.
+Building and running the app in the simulator is fine when the task needs to see runtime behavior that reading the code can't settle, such as a layout, animation, or navigation bug.
 
-Build and test commands:
+Do not run tests without asking. If you think a test run is needed, ask the developer. They run tests once all agents have finished. In the handoff, list what you did not verify and what to check on the device.
+
+The developer uses these wrappers from the repository root:
 
 ```bash
 ./scripts/xcode-build-agent.sh

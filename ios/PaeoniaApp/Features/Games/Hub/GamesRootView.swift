@@ -9,13 +9,18 @@ struct GamesRootView: View {
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.scenePhase) private var scenePhase
 
+    /// The iPad tab bar sits at the top and stays during a game. Hiding it in a push
+    /// lays the game out below the bar and moves it up when the push ends, and the bar
+    /// comes back late after a pop.
+    private let hidesTabBarInGame = UIDevice.current.userInterfaceIdiom != .pad
+
     var body: some View {
         NavigationStack(path: $path) {
             content
                 .background(.paeoniaBackgroundPrimary)
                 // Hide the tab bar from the stack root, in the same update as the push. Hiding
                 // it from the pushed screen shifts the content and brings the bar back late.
-                .toolbar(path.isEmpty ? .automatic : .hidden, for: .tabBar)
+                .toolbar(hidesTabBarInGame && !path.isEmpty ? .hidden : .automatic, for: .tabBar)
                 .navigationDestination(for: GamesDestination.self) { destination in
                     switch destination {
                     case .drawAndGuess:
@@ -35,6 +40,12 @@ struct GamesRootView: View {
         }
     }
 
+    /// Opens a game from the hub. A second tap while it opens does nothing.
+    private func open(_ destination: GamesDestination) {
+        guard path.isEmpty else { return }
+        path.append(destination)
+    }
+
     @ViewBuilder
     private var content: some View {
         switch viewModel.screen {
@@ -47,7 +58,7 @@ struct GamesRootView: View {
         case let .partnerPicked(settings):
             GamesPartnerPickedView(viewModel: viewModel, settings: settings)
         case .hub:
-            GamesHubView(viewModel: viewModel)
+            GamesHubView(viewModel: viewModel, open: open)
         }
     }
 

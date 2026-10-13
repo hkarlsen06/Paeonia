@@ -116,18 +116,6 @@ struct WidgetDrawingViewModelTests {
         #expect(viewModel.selectedColorChoiceID == "blush")
     }
 
-    @Test func undoAvailabilityFollowsProvidedUndoManager() {
-        let viewModel = WidgetDrawingViewModel()
-        let undoManager = UndoManager()
-        let target = WidgetDrawingUndoTestTarget()
-
-        undoManager.registerUndo(withTarget: target) { _ in }
-        viewModel.updateDrawing(PKDrawing(), undoManager: undoManager)
-
-        #expect(viewModel.canUndoDrawing)
-        #expect(!viewModel.canRedoDrawing)
-    }
-
     @Test func canvasUsesLightInterfaceStyleForLiteralInkColors() {
         let canvasView = PKCanvasView()
 
@@ -232,7 +220,7 @@ struct WidgetDrawingViewModelTests {
             draftStore: draftStore
         )
         let savedSnapshot = makeNonEmptyDrawing(seed: 12)
-        viewModel.updateDrawing(savedSnapshot, undoManager: nil)
+        viewModel.updateDrawing(savedSnapshot)
 
         let saveTask = Task { @MainActor in
             await viewModel.save()
@@ -240,7 +228,7 @@ struct WidgetDrawingViewModelTests {
         await service.waitForSuspendedSaveToStart()
 
         let newerEdit = makeNonEmptyDrawing(seed: 88)
-        viewModel.updateDrawing(newerEdit, undoManager: nil)
+        viewModel.updateDrawing(newerEdit)
         await service.releaseSuspendedSave()
         await saveTask.value
 
@@ -257,7 +245,7 @@ struct WidgetDrawingViewModelTests {
         await service.suspendNextSave()
         let viewModel = WidgetDrawingViewModel(service: service, uploader: NoOpWidgetCanvasUpload())
         viewModel.canvasDidLayout(side: 600)
-        viewModel.updateDrawing(makeNonEmptyDrawing(seed: 40), undoManager: nil)
+        viewModel.updateDrawing(makeNonEmptyDrawing(seed: 40))
 
         let saveTask = Task { @MainActor in
             await viewModel.save()
@@ -391,7 +379,7 @@ struct WidgetDrawingViewModelTests {
             draftStore: draftStore
         )
 
-        firstViewModel.updateDrawing(inProgress, undoManager: nil)
+        firstViewModel.updateDrawing(inProgress)
         firstViewModel.persistDraftIfNeeded()
 
         let reopenedViewModel = WidgetDrawingViewModel(
@@ -418,7 +406,7 @@ struct WidgetDrawingViewModelTests {
             uploader: WidgetCanvasUploadSpy(),
             draftStore: draftStore
         )
-        firstViewModel.updateDrawing(makeNonEmptyDrawing(), undoManager: nil)
+        firstViewModel.updateDrawing(makeNonEmptyDrawing())
         firstViewModel.persistDraftIfNeeded()
 
         let secondViewModel = WidgetDrawingViewModel(
@@ -445,7 +433,7 @@ struct WidgetDrawingViewModelTests {
             uploader: NoOpWidgetCanvasUpload(),
             draftStore: draftStore
         )
-        viewModel.updateDrawing(makeNonEmptyDrawing(), undoManager: nil)
+        viewModel.updateDrawing(makeNonEmptyDrawing())
         viewModel.persistDraftIfNeeded()
         #expect(draftStore.draft(for: draftKey(ownerUserID)) != nil)
 
@@ -465,7 +453,7 @@ struct WidgetDrawingViewModelTests {
             draftStore: draftStore
         )
 
-        viewModel.updateDrawing(makeNonEmptyDrawing(), undoManager: nil)
+        viewModel.updateDrawing(makeNonEmptyDrawing())
 
         #expect(draftStore.draft(for: draftKey(ownerUserID)) == nil)
         viewModel.persistDraftIfNeeded()
@@ -896,8 +884,6 @@ private actor SuspendedWidgetCanvasService: WidgetCanvasManaging {
 
     func clearForPrivacy() async {}
 }
-
-private final class WidgetDrawingUndoTestTarget {}
 
 /// The couple every draft test runs in, unless a test says otherwise.
 private let draftTestCoupleID = UUID()

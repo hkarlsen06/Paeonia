@@ -1326,6 +1326,7 @@ extension AccessSyncSnapshot {
                 source: nil,
                 status: "expired",
                 productID: nil,
+                billingPeriod: nil,
                 currentPeriodEnd: nil,
                 updatedAt: Date(timeIntervalSince1970: 1_800_000_000)
             ),
@@ -1393,6 +1394,7 @@ private extension RemoteUserEntitlement {
             source: "storekit",
             status: "active",
             productID: UUID(),
+            billingPeriod: nil,
             currentPeriodEnd: Date(timeIntervalSince1970: 2_000_000_000),
             updatedAt: Date(timeIntervalSince1970: 1_800_000_000)
         )
@@ -1408,6 +1410,7 @@ private extension RemoteCoupleEntitlement {
             source: "storekit",
             status: "active",
             productID: UUID(),
+            billingPeriod: nil,
             currentPeriodEnd: Date(timeIntervalSince1970: 2_000_000_000),
             updatedAt: Date(timeIntervalSince1970: 1_800_000_000)
         )

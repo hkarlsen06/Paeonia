@@ -20,11 +20,13 @@ Decided on 2026-10-12.
 - **No game streaks.** Games never get a streak of their own. A game turn counts toward the couple's existing streak through a new activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Each game's design doc says which action counts.
 - **Tab order.** Home, Questions, Games, Memories, You. Games sits in the middle.
 - **Tab badge.** The Games tab shows a badge of 1 while any game waits for this person to draw or guess. The tab bar loads the game state at launch, so the badge shows before the tab is opened.
+- **Tab bar in a game.** On iPhone the tab bar hides while a game screen is open. On iPad it stays, because the iPad tab bar sits at the top and iPadOS 26 moves the game's content when it hides during the push.
 - **Save prompt details.** The partner who says yes first is recorded as the memory's creator. The save option is a single "Save drawing to Memories" button with no question above it. Continuing past the result without tapping it means no, for that partner only. Once the drawing is saved, the other partner's prompt turns into "Saved to Memories".
 - **One ongoing game per kind.** A couple has at most one active game of each kind.
 - **Turn reminder.** When a move has waited 72 hours, the partner whose turn it is gets one reminder. There is never a second one for the same move.
 - **Live is not deferred.** When a game's design includes live play, live ships in the game's first version.
 - **Invite to play.** Every game with live play has a "Tell [Name] you want to play" button. It shows when the partner doesn't have the game open. Tapping it sends the partner a push, "[Name] wants to play [game] with you", and opening the push goes straight into the game. A partner can send one invite every 15 minutes. Until then the button shows "Sent".
+- **Partner in a game on Us.** While the partner has a game open, its card from the Games tab also shows on the Us tab, so an invite opens in one tap. Only the game the partner is in shows there. A game that waits for your turn stays on the Games tab. Once there are more games, the Games tab lists the one the partner is in first.
 - **Scores grow forever.** Scores never reset. There are no seasons or weekly matches.
 
 Decided on 2026-10-11.

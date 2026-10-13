@@ -89,13 +89,15 @@ struct DrawAndGuessDrawingView: View {
     private func canvas(side: CGFloat) -> some View {
         DrawAndGuessSquare(side: side) {
             PencilKitCanvasView(
-                drawing: Binding(get: { board.drawing }, set: { board.drawing = $0 }),
+                drawing: board.drawing,
                 drawingRevision: board.drawingRevision,
                 tool: board.pencilKitTool,
                 toolConfigurationRevision: board.toolConfigurationRevision,
                 onCanvasReady: viewModel.canvasReady,
                 onDrawingChange: board.updateDrawing,
                 onStrokeInProgressChange: board.setStrokeInProgress,
+                isFillToolSelected: board.selectedTool.isFill,
+                onFill: board.fill,
                 onDrawingApplied: board.canvasDidApplyDrawing,
                 onFinishRendering: board.canvasDidFinishRendering
             )

@@ -93,31 +93,19 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                profileRow
+        List {
+            Group {
+                Section {
+                    profileRow
+                }
                 relationshipSection
                 appSection
-                privacySafetySection
-                SettingsDestinationLinksView()
-                SettingsAccountSection(
-                    viewModel: viewModel,
-                    authProvider: currentAuthProvider,
-                    partnerName: partnerName,
-                    onLeftRelationship: onLeftRelationship,
-                    onLogout: onLogout,
-                    onDeleteAccount: onDeleteAccount,
-                    isLoggingOut: isLoggingOut
-                )
-                PaeoniaLegalLinksView()
-                    .frame(maxWidth: .infinity)
+                helpSection
             }
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.screenTopSpacing)
-            .padding(.bottom, PaeoniaSpacing.space40)
-            .paeoniaReadableWidth(alignment: .leading)
+            .listRowBackground(Color.paeoniaSurfacePrimary)
         }
-        .background(.paeoniaBackgroundPrimary)
+        .listStyle(.insetGrouped)
+        .paeoniaGroupedList()
         .navigationTitle(Text(.mainTabYou))
         .navigationBarTitleDisplayMode(.large)
         // The notices come from screens pushed on top of this one, but this view
@@ -153,53 +141,61 @@ struct SettingsView: View {
 
 extension SettingsView {
     /// The tab opens on the user's own identity. Name and photo are edited on the
-    /// screen behind it, together with the account actions.
+    /// screen behind it, above the account actions. Those are serious enough to
+    /// sit one deliberate step away instead of on the menu.
     private var profileRow: some View {
-        PaeoniaCard(padding: 0) {
-            NavigationLink {
-                ProfileSettingsView(
-                    editor: profileEditor,
-                    savedDisplayName: currentDisplayName,
-                    customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
-                    providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID,
-                    onSave: { [onUpdateProfile] displayName, photoUpdate in
-                        await onUpdateProfile(displayName, photoUpdate)
-                    }
+        NavigationLink {
+            ProfileSettingsView(
+                editor: profileEditor,
+                savedDisplayName: currentDisplayName,
+                customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
+                providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID,
+                onSave: { [onUpdateProfile] displayName, photoUpdate in
+                    await onUpdateProfile(displayName, photoUpdate)
+                },
+                accountSection: SettingsAccountSection(
+                    viewModel: viewModel,
+                    authProvider: currentAuthProvider,
+                    partnerName: partnerName,
+                    onLeftRelationship: onLeftRelationship,
+                    onLogout: onLogout,
+                    onDeleteAccount: onDeleteAccount,
+                    isLoggingOut: isLoggingOut
                 )
-            } label: {
-                SettingsProfileRow(
-                    displayName: currentDisplayName,
-                    customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
-                    providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID
-                )
-            }
-            .buttonStyle(.plain)
+            )
+        } label: {
+            SettingsProfileRow(
+                displayName: currentDisplayName,
+                customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
+                providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID
+            )
         }
     }
 
     private var relationshipSection: some View {
-        SettingsMenuSection(title: .settingsRelationshipSectionTitle) {
+        Section {
             // The date editor is a modal task (Cancel/Save), so it presents as a
-            // sheet — same as from the Us-tab milestone tile — instead of a push
+            // sheet, same as from the Us-tab milestone tile, instead of a push
             // that would nest the editor's own navigation stack.
             Button {
-                selectedRelationshipDate = relationshipStartedOn
-                    .flatMap { try? PairingStartDate(rawValue: $0) }
-                    .flatMap { $0.date() }
-                    ?? Date()
+                selectedRelationshipDate = relationshipStartDate ?? Date()
                 isEditingRelationshipDate = true
             } label: {
-                PaeoniaDisclosureRow(
-                    title: .settingsRelationshipDateTitle,
-                    message: relationshipStartedOn == nil
-                        ? .settingsRelationshipDateMissingMessage
-                        : .settingsRelationshipDateSetMessage,
-                    systemImage: "calendar"
-                )
+                LabeledContent {
+                    if let relationshipStartDate {
+                        Text(relationshipStartDate, format: .dateTime.day().month().year())
+                    }
+                } label: {
+                    // A Button row draws its label in the tint color, so match the
+                    // NavigationLink rows.
+                    Label {
+                        Text(.settingsRelationshipDateTitle)
+                            .foregroundStyle(.paeoniaTextPrimary)
+                    } icon: {
+                        Image(systemName: "calendar")
+                    }
+                }
             }
-            .buttonStyle(.plain)
-
-            SettingsMenuDivider()
 
             NavigationLink {
                 LocationSettingsView(
@@ -207,87 +203,37 @@ extension SettingsView {
                     partnerName: partnerName
                 )
             } label: {
-                PaeoniaDisclosureRow(
-                    title: .settingsLocationSectionTitle,
-                    message: .settingsLocationRowMessage(partnerName),
-                    systemImage: "location.fill"
-                )
+                Label {
+                    Text(.settingsLocationSectionTitle)
+                } icon: {
+                    Image(systemName: "location.fill")
+                }
             }
-            .buttonStyle(.plain)
+        } header: {
+            Text(.settingsRelationshipSectionTitle)
         }
     }
 
-    /// Data requests and reporting get their own group so a safety action is
-    /// easy to find without hunting through relationship settings.
-    private var privacySafetySection: some View {
-        SettingsMenuSection(title: .privacySafetyTitle) {
-            NavigationLink {
-                PrivacySafetyView(
-                    partnerUserID: partnerUserID,
-                    partnerName: partnerName,
-                    service: privacySafetyService,
-                    operationProvider: privacyOperationProvider,
-                    onReportedAndLeft: onLeftRelationship
-                )
-            } label: {
-                PaeoniaDisclosureRow(
-                    title: .privacySafetyRequestsSectionTitle,
-                    message: .settingsPrivacySafetyMessage,
-                    systemImage: "checkmark.shield.fill"
-                )
-            }
-            .buttonStyle(.plain)
-
-            reportRow
-        }
-    }
-
-    @ViewBuilder
-    private var reportRow: some View {
-        if let partnerUserID {
-            SettingsMenuDivider()
-
-            // Reporting is a safety action, so keep it directly reachable from the
-            // Me tab instead of requiring the user to discover it inside the
-            // privacy-request screen. The destination still makes the
-            // relationship-ending consequence explicit before anything is sent.
-            NavigationLink {
-                ReportAndLeaveView(
-                    partnerUserID: partnerUserID,
-                    partnerName: partnerName,
-                    service: privacySafetyService,
-                    operationProvider: privacyOperationProvider,
-                    onReportedAndLeft: onLeftRelationship
-                )
-            } label: {
-                PaeoniaDisclosureRow(
-                    title: .privacySafetyReportTitle(partnerName),
-                    message: .privacySafetyReportDescription(partnerName),
-                    systemImage: "exclamationmark.shield",
-                    iconTint: .paeoniaError
-                )
-            }
-            .buttonStyle(.plain)
-        }
+    private var relationshipStartDate: Date? {
+        relationshipStartedOn
+            .flatMap { try? PairingStartDate(rawValue: $0) }
+            .flatMap { $0.date() }
     }
 
     private var appSection: some View {
-        SettingsMenuSection(title: .settingsSectionApp) {
+        Section {
             NavigationLink {
                 NotificationSettingsView(
                     viewModel: viewModel,
                     partnerName: partnerName
                 )
             } label: {
-                PaeoniaDisclosureRow(
-                    title: .settingsNotificationsSectionTitle,
-                    message: .settingsNotificationsRowMessage,
-                    systemImage: "bell.badge.fill"
-                )
+                Label {
+                    Text(.settingsNotificationsSectionTitle)
+                } icon: {
+                    Image(systemName: "bell.badge.fill")
+                }
             }
-            .buttonStyle(.plain)
-
-            SettingsMenuDivider()
 
             NavigationLink {
                 PurchaseSettingsView(
@@ -297,13 +243,64 @@ extension SettingsView {
                     }
                 )
             } label: {
-                PaeoniaDisclosureRow(
-                    title: .settingsPurchasesSectionTitle,
-                    message: .settingsPurchasesRowMessage,
-                    systemImage: "creditcard"
-                )
+                Label {
+                    Text(.settingsPurchasesSectionTitle)
+                } icon: {
+                    Image(systemName: "creditcard")
+                }
             }
-            .buttonStyle(.plain)
+        } header: {
+            Text(.settingsSectionApp)
+        }
+    }
+
+    /// Privacy requests and reporting share one screen. Reporting ends the
+    /// relationship, so it waits there behind a deliberate tap instead of sitting
+    /// on the menu.
+    private var helpSection: some View {
+        Section {
+            NavigationLink {
+                PrivacySafetyView(
+                    partnerUserID: partnerUserID,
+                    partnerName: partnerName,
+                    service: privacySafetyService,
+                    operationProvider: privacyOperationProvider,
+                    onReportedAndLeft: onLeftRelationship
+                )
+            } label: {
+                Label {
+                    Text(.privacySafetyTitle)
+                } icon: {
+                    Image(systemName: "checkmark.shield.fill")
+                }
+            }
+
+            supportRow
+        } footer: {
+            PaeoniaLegalLinksView()
+                .frame(maxWidth: .infinity)
+                .padding(.top, PaeoniaSpacing.space16)
+        }
+    }
+
+    @ViewBuilder
+    private var supportRow: some View {
+        if let supportURL = URL(string: "https://paeonia.no/support") {
+            Link(destination: supportURL) {
+                LabeledContent {
+                    Image(systemName: "arrow.up.right")
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextTertiary)
+                        .accessibilityHidden(true)
+                } label: {
+                    Label {
+                        Text(.authSignInSupport)
+                            .foregroundStyle(.paeoniaTextPrimary)
+                    } icon: {
+                        Image(systemName: "questionmark.circle")
+                    }
+                }
+            }
         }
     }
 }

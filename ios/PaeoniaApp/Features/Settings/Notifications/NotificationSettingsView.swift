@@ -14,23 +14,29 @@ struct NotificationSettingsView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        SettingsDetailScreen(title: .settingsNotificationsSectionTitle) {
-            // A blocked system setting or a failed load explains every switch
-            // below it, so it goes first.
-            switch viewModel.systemNotificationPermission {
-            case .denied:
-                systemDisabledNote
-            case .notAsked:
-                systemNotAskedNote
-            case .allowed:
-                if viewModel.notificationLoadState == .failed {
-                    loadFailedNote
+        Form {
+            Group {
+                // A blocked system setting or a failed load explains every switch
+                // below it, so it goes first.
+                switch viewModel.systemNotificationPermission {
+                case .denied:
+                    systemDisabledNote
+                case .notAsked:
+                    systemNotAskedNote
+                case .allowed:
+                    if viewModel.notificationLoadState == .failed {
+                        loadFailedNote
+                    }
                 }
-            }
 
-            partnerSection
-            remindersSection
+                partnerSection
+                remindersSection
+            }
+            .listRowBackground(Color.paeoniaSurfacePrimary)
         }
+        .paeoniaGroupedList()
+        .navigationTitle(Text(.settingsNotificationsSectionTitle))
+        .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.loadNotificationSettings()
         }
@@ -48,52 +54,51 @@ struct NotificationSettingsView: View {
     }
 
     private var partnerSection: some View {
-        SettingsMenuSection(title: .settingsNotificationsPartnerSectionTitle(partnerName)) {
+        Section {
             toggleRow(
                 .partnerAnswered,
                 title: .settingsNotificationsPartnerAnsweredTitle,
                 subtitle: .settingsNotificationsPartnerAnsweredSubtitle(partnerName)
             )
-            SettingsMenuDivider()
             toggleRow(
                 .messages,
                 title: .dailyChatNotificationsTitle,
                 subtitle: .dailyChatNotificationsSubtitle(partnerName)
             )
-            SettingsMenuDivider()
             toggleRow(
                 .dailyChallenge,
                 title: .settingsNotificationsDailyChallengeTitle,
                 subtitle: .settingsNotificationsDailyChallengeSubtitle(partnerName)
             )
-            SettingsMenuDivider()
             toggleRow(
                 .widgetUpdates,
                 title: .settingsNotificationsWidgetAlertsTitle,
                 subtitle: .settingsNotificationsWidgetAlertsSubtitle(partnerName)
             )
-            SettingsMenuDivider()
             toggleRow(
                 .memories,
                 title: .settingsNotificationsMemoriesTitle,
                 subtitle: .settingsNotificationsMemoriesSubtitle(partnerName)
             )
-            SettingsMenuDivider()
             toggleRow(
                 .games,
                 title: .settingsNotificationsGamesTitle,
                 subtitle: .settingsNotificationsGamesSubtitle(partnerName)
             )
+        } header: {
+            Text(.settingsNotificationsPartnerSectionTitle(partnerName))
         }
     }
 
     private var remindersSection: some View {
-        SettingsMenuSection(title: .settingsNotificationsRemindersSectionTitle) {
+        Section {
             toggleRow(
                 .streakReminders,
                 title: .settingsNotificationsStreakRemindersTitle,
                 subtitle: .settingsNotificationsStreakRemindersSubtitle
             )
+        } header: {
+            Text(.settingsNotificationsRemindersSectionTitle)
         }
     }
 
@@ -102,18 +107,18 @@ struct NotificationSettingsView: View {
         title: LocalizedStringResource,
         subtitle: LocalizedStringResource
     ) -> some View {
-        SettingsToggleRow(
-            title: title,
-            subtitle: subtitle,
+        Toggle(
             isOn: Binding(
                 get: { viewModel.isEnabled(kind) },
                 set: { newValue in
                     Task { await viewModel.setNotificationPreference(kind, enabled: newValue) }
                 }
-            ),
-            isEnabled: viewModel.isNotificationSettingsLoaded
-        )
-        .padding(PaeoniaSpacing.space16)
+            )
+        ) {
+            Text(title)
+            Text(subtitle)
+        }
+        .disabled(!viewModel.isNotificationSettingsLoaded)
     }
 
     /// Turning a switch on here does nothing while iOS has notifications off for
@@ -168,29 +173,25 @@ struct NotificationSettingsView: View {
         isBusy: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
-        PaeoniaCard {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-                Label {
+        Section {
+            Label {
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
                     Text(title)
                         .font(PaeoniaTypography.bodyEmphasis)
                         .foregroundStyle(.paeoniaTextPrimary)
-                } icon: {
-                    Image(systemName: systemImage)
-                        .foregroundStyle(.paeoniaWarning)
-                        .accessibilityHidden(true)
+                    Text(message)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-
-                Text(message)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Button(action: action) {
-                    Text(buttonTitle)
-                }
-                .buttonStyle(PaeoniaSecondaryButtonStyle())
-                .disabled(isBusy)
+            } icon: {
+                Image(systemName: systemImage)
             }
+
+            Button(action: action) {
+                Text(buttonTitle)
+            }
+            .disabled(isBusy)
         }
     }
 }

@@ -53,7 +53,7 @@ final class GamesViewModel {
 
     /// A game waits for this person to draw or guess. The Games tab shows a badge.
     var isYourTurn: Bool {
-        hubSummary?.status == .yourTurnToDraw || hubSummary?.status == .yourTurnToGuess
+        hubSummary?.status.isYourTurn == true
     }
 
     private var currentUserID: UUID? {

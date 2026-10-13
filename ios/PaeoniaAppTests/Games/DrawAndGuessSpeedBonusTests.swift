@@ -49,20 +49,20 @@ struct DrawAndGuessSpeedBonusTests {
         #expect(bonus(.against, mine, seenAgo: 1) == .hidden)
     }
 
-    @Test func whileThePartnerStillDrawsTheBonusStaysOpen() {
-        let live = bonus(.against, round(drawing: false), seenAgo: 40)
+    @Test func whileThePartnerStillDrawsTheThirtySecondsCountFromTheFirstLook() {
+        let live = bonus(.against, round(drawing: false), seenAgo: 10)
 
-        #expect(live == .open)
-        #expect(live.isAvailable(at: now))
-        #expect(live.remaining(at: now) == nil)
+        #expect(live == .counting(startedAt: now.addingTimeInterval(-10)))
+        #expect(live.remaining(at: now) == 20)
+        #expect(!bonus(.against, round(drawing: false), seenAgo: 40).isAvailable(at: now))
     }
 
-    @Test func theThirtySecondsCountFromTheLaterOfSeenAndSubmitted() {
-        // Seen 20 s ago but submitted 5 s ago: the clock started 5 s ago.
+    @Test func sendingTheDrawingDoesNotRestartTheThirtySeconds() {
+        // Watched live from 20 s ago, sent 5 s ago: the clock started 20 s ago.
         let afterSubmit = bonus(.against, round(drawing: true, submittedAgo: 5), seenAgo: 20)
-        #expect(afterSubmit.remaining(at: now) == 25)
+        #expect(afterSubmit.remaining(at: now) == 10)
 
-        // Submitted 50 s ago but first seen 10 s ago: the clock started 10 s ago.
+        // Sent 50 s ago but first seen 10 s ago: the clock started 10 s ago.
         let afterSeen = bonus(.against, round(drawing: true, submittedAgo: 50), seenAgo: 10)
         #expect(afterSeen.remaining(at: now) == 20)
     }

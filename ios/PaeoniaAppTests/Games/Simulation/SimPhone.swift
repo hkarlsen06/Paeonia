@@ -35,7 +35,7 @@ final class SimCanvas {
         board.setStrokeInProgress(true)
         let drawing = PKDrawing(strokes: view.drawing.strokes + [stroke])
         view.drawing = drawing
-        board.updateDrawing(drawing, undoManager: nil)
+        board.updateDrawing(drawing)
         board.setStrokeInProgress(false)
     }
 
@@ -46,7 +46,7 @@ final class SimCanvas {
         strokes.remove(at: index)
         let drawing = PKDrawing(strokes: strokes)
         view.drawing = drawing
-        board.updateDrawing(drawing, undoManager: nil)
+        board.updateDrawing(drawing)
     }
 }
 

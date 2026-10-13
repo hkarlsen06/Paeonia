@@ -8840,24 +8840,6 @@
         }
       }
     },
-    "settings.location.row.message" : {
-      "comment" : "Supporting line on the settings menu row that opens location sharing. %@ is the partner's name",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose whether %@ can see where you are"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg om %@ kan se hvor du er"
-          }
-        }
-      }
-    },
     "settings.location.saveError.message" : {
       "comment" : "Banner message when a location sharing change could not be saved on the phone.",
       "extractionState" : "manual",
@@ -9254,24 +9236,6 @@
         }
       }
     },
-    "settings.notifications.row.message" : {
-      "comment" : "Supporting line on the settings menu row that opens notification settings",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose what Paeonia tells you about"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Velg hva Paeonia varsler deg om"
-          }
-        }
-      }
-    },
     "settings.notifications.saveError.message" : {
       "comment" : "Error banner message when saving a notification toggle fails",
       "extractionState" : "manual",
@@ -9488,24 +9452,6 @@
         }
       }
     },
-    "settings.privacySafety.message" : {
-      "comment" : "Supporting line on the Me tab row that opens data requests: seeing, copying, or correcting the user's data.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See, copy, or correct your data"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se, kopier eller rett opp opplysningene dine"
-          }
-        }
-      }
-    },
     "settings.profile.fallbackName" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9686,19 +9632,19 @@
       }
     },
     "settings.profile.row.message" : {
-      "comment" : "Supporting line on the Me tab row that opens the profile editor.",
+      "comment" : "Subtitle under the user's name at the top of the Me tab. The row opens the screen with their name, photo, and account actions (log out, leave the relationship, delete the account).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Change your name and photo"
+            "value" : "Name, photo, and account"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Endre navnet og bildet ditt"
+            "value" : "Navn, bilde og konto"
           }
         }
       }
@@ -9843,6 +9789,330 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pålogget med %@"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.accessUntil" : {
+      "comment" : "Row label for the date the current paid period or free access ends.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Access until"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilgang til"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.endedOn" : {
+      "comment" : "Row label for the date the subscription ended.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ended"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sluttet"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.failed" : {
+      "comment" : "Shown on the Subscription screen when the subscription details could not load.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load your subscription. Check your connection and pull down to try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste inn abonnementet. Sjekk tilkoblingen og dra ned for å prøve igjen."
+          }
+        }
+      }
+    },
+    "settings.purchases.details.footer" : {
+      "comment" : "Footer under the subscription details. Says the details are Paeonia's record, that changes happen through Apple with the Manage subscription button, and that Restore purchases fixes a mismatch. Button names must match paywall.manageSubscription and paywall.restorePurchases.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is what Paeonia has saved about your subscription. Apple handles all payments, so to change your plan or cancel, tap Manage subscription. If something here doesn't match what Apple shows, tap Restore purchases."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette er det Paeonia har lagret om abonnementet ditt. Apple tar seg av all betaling, så trykk på Administrer abonnement for å bytte plan eller si opp. Hvis noe her ikke stemmer med det Apple viser, trykk på Gjenopprett kjøp."
+          }
+        }
+      }
+    },
+    "settings.purchases.details.footer.partnerPays" : {
+      "comment" : "Footer under the subscription details when the partner pays. %@ is the partner's name. Only the person who pays can change the subscription in Apple's settings. Button name must match paywall.restorePurchases.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ pays for this through Apple, so only they can change or cancel it. If something here looks wrong, ask them to tap Restore purchases on their phone."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ betaler for dette gjennom Apple, så bare den som betaler kan endre eller si opp abonnementet. Hvis noe her ser feil ut, kan den som betaler trykke på Gjenopprett kjøp på sin telefon."
+          }
+        }
+      }
+    },
+    "settings.purchases.details.header" : {
+      "comment" : "Section header on the Subscription screen above what Paeonia has saved about the subscription.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your subscription"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abonnementet ditt"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.paidBy" : {
+      "comment" : "Row label for which partner pays for the subscription.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paid by"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Betales av"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.paidBy.partnerFallback" : {
+      "comment" : "Value of the Paid by row when the partner pays and their name isn't known.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.paidBy.you" : {
+      "comment" : "Value of the Paid by row when the current user pays.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deg"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.plan" : {
+      "comment" : "Row label for the subscription plan, monthly or yearly.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plan"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plan"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.status" : {
+      "comment" : "Row label for the subscription status.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.status.active" : {
+      "comment" : "Subscription status value: the subscription is active.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktivt"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.status.ended" : {
+      "comment" : "Subscription status value: the subscription has ended.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ended"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avsluttet"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.status.freeAccess" : {
+      "comment" : "Subscription status value: Paeonia gave access for free, for example for testing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free access"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratis tilgang"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.status.lifetime" : {
+      "comment" : "Subscription status value: access that never ends.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lifetime access"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilgang for alltid"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.status.none" : {
+      "comment" : "Subscription status value: there is no subscription on record.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No subscription"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke noe abonnement"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.status.paymentProblem" : {
+      "comment" : "Subscription status value: Apple couldn't take the last payment.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment problem"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problem med betalingen"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.status.refunded" : {
+      "comment" : "Subscription status value: Apple refunded the subscription.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refunded"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refundert"
           }
         }
       }
@@ -10009,24 +10279,6 @@
         }
       }
     },
-    "settings.purchases.row.message" : {
-      "comment" : "Supporting line on the settings menu row that opens subscription and restore actions",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Manage your subscription or restore a purchase"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Administrer abonnementet eller hent tilbake et kjøp"
-          }
-        }
-      }
-    },
     "settings.purchases.sectionTitle" : {
       "comment" : "Title of the Me tab row and screen for the subscription: manage it in the App Store or restore a purchase.",
       "extractionState" : "manual",
@@ -10041,40 +10293,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abonnement"
-          }
-        }
-      }
-    },
-    "settings.relationship.date.missingMessage" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add the day your relationship started"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Legg til dagen forholdet startet"
-          }
-        }
-      }
-    },
-    "settings.relationship.date.setMessage" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Change the day your relationship started"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Endre dagen forholdet startet"
           }
         }
       }
@@ -10127,42 +10345,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App"
-          }
-        }
-      }
-    },
-    "settings.section.support" : {
-      "comment" : "Settings menu group heading for help and legal links",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Support"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hjelp"
-          }
-        }
-      }
-    },
-    "settings.support.row.message" : {
-      "comment" : "Supporting line on the settings menu row that opens the support website",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Find answers and get in touch"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Finn svar og ta kontakt"
           }
         }
       }
@@ -15732,17 +15914,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ is looking at the result"
+            "value" : "%@ is still looking at the last round"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ ser på resultatet"
+            "value" : "%@ ser fortsatt på forrige runde"
           }
         }
       },
-      "comment" : "Shown above the canvas while the partner still looks at the result of the last round"
+      "comment" : "Shown above the canvas while the partner is still on the result screen of the last round, so they are not watching this drawing yet. %@ is the partner's name."
     },
     "games.drawAndGuess.wait.generic" : {
       "extractionState" : "manual",
@@ -15779,6 +15961,24 @@
         }
       },
       "comment" : "Title while the partner still looks at the result of the last round"
+    },
+    "games.drawAndGuess.reveal.partnerWaiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is waiting for you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ venter på deg"
+          }
+        }
+      },
+      "comment" : "Line above the button on the guesser's result screen while the partner waits for them to pick the next word"
     },
     "games.drawAndGuess.result.seen" : {
       "extractionState" : "manual",
@@ -15941,6 +16141,60 @@
         }
       },
       "comment" : "Line above the answer slots when the word to guess is in Norwegian and the app is not. Helps the player think in the right language."
+    },
+    "widgetDrawing.tool.fill" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fyll"
+          }
+        }
+      },
+      "comment" : "Accessibility label for the paint bucket tool in the drawing screens. Tapping the canvas with it fills an area with the chosen color."
+    },
+    "widgetDrawing.revert.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go back to the sent drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gå tilbake til tegningen som ble sendt"
+          }
+        }
+      },
+      "comment" : "Accessibility label for the toolbar button in the widget drawing screen that puts the last sent drawing back on the canvas, taking away changes not sent yet. Undo brings the changes back."
+    },
+    "games.hub.artworkWord" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HEART"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HJERTE"
+          }
+        }
+      },
+      "comment" : "Decorative letter tiles on the Draw and Guess card. The word must name the heart drawn next to them. Use capital letters and keep it to one short word."
     }
   },
   "version" : "1.0"

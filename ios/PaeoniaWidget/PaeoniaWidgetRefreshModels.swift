@@ -105,6 +105,9 @@ extension PaeoniaWidgetRefreshService {
         let isRedacted = false
         let contentHash: String
         let previews: [String: String]
+        /// The app requires this to read the payload, so leaving it out shows
+        /// the empty sketch on the app's home card.
+        let canvasSide: Double
 
         enum CodingKeys: String, CodingKey {
             case schemaVersion
@@ -117,6 +120,7 @@ extension PaeoniaWidgetRefreshService {
             case isRedacted
             case contentHash
             case previews
+            case canvasSide
         }
 
         static var encoder: JSONEncoder {

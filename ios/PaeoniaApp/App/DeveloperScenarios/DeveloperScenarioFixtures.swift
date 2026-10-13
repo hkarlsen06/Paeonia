@@ -11,6 +11,23 @@
       UUID(uuidString: "33333333-3333-3333-3333-333333333333") ?? UUID()
     nonisolated static let now = Date(timeIntervalSince1970: 1_784_203_200)
 
+    /// A yearly subscription Alex pays for, for the Subscription settings screen.
+    nonisolated static let subscriptionSnapshot = RemoteAccessSnapshot(
+      userEntitlement: nil,
+      coupleEntitlement: RemoteCoupleEntitlement(
+        coupleID: coupleID,
+        isEntitled: true,
+        coveringUserID: currentUserID,
+        source: "storekit",
+        status: "active",
+        productID: nil,
+        billingPeriod: "yearly",
+        currentPeriodEnd: now.addingTimeInterval(200 * 86_400),
+        updatedAt: now
+      ),
+      relationshipState: nil
+    )
+
     static var completeSession: AuthSession {
       AuthSession(
         id: currentUserID.uuidString,

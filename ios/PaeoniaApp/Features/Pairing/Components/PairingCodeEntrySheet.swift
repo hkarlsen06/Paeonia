@@ -52,7 +52,7 @@ struct PairingCodeEntrySheet: View {
             .frame(maxWidth: .infinity)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .background(.paeoniaBackgroundPrimary)
+        .paeoniaScreenBackground()
         // The sheet covers the root's banner, so it mounts its own copy of the same
         // banner to show errors above itself.
         .paeoniaTopBanner(bannerCenter)

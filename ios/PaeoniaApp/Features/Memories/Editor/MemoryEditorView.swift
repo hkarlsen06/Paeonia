@@ -70,10 +70,10 @@ struct MemoryEditorView: View {
     var body: some View {
         NavigationStack {
             form
-                .background(.paeoniaBackgroundPrimary)
+                .paeoniaScreenBackground()
                 .scrollDismissesKeyboard(.interactively)
                 .keyboardDismissable()
-                .safeAreaInset(edge: .bottom) { saveBar }
+                .paeoniaBottomBar { saveBar }
                 .navigationTitle(Text(mode.title))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {

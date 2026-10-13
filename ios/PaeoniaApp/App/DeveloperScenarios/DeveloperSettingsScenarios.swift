@@ -58,7 +58,8 @@
         pairingService: DeveloperScenarioPairingService(mode: .failing),
         operationProvider: DeveloperScenarioOperationProvider(),
         userID: DeveloperScenarioFixture.currentUserID.uuidString,
-        storeKitService: DeveloperScenarioStoreKitService()
+        storeKitService: DeveloperScenarioStoreKitService(),
+        loadAccessSnapshot: { DeveloperScenarioFixture.subscriptionSnapshot }
       )
     }
 
