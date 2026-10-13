@@ -34,6 +34,47 @@ struct WidgetCanvasSyncServiceTests {
         #expect(env.localStore.savedCalls.count == 1)
     }
 
+    @Test func syncMarksOwnRevisionSeenWhileTheWidgetShowsIt() async throws {
+        let env = SyncEnvironment()
+        let identity = Self.identity(partnerID: UUID())
+        env.gateway.state = Self.state(authorUserID: try #require(identity.currentUserID), canvasSide: 280)
+        env.gateway.signedURL = URL(string: "https://example.com/payload")
+
+        await env.service.sync(identity: identity)
+
+        #expect(env.localStore.savedCalls.isEmpty)
+    }
+
+    /// A lapsed subscription hides the widget files but keeps the drawing. When
+    /// access came back, the person's own last drawing never reappeared.
+    @Test func syncPublishesOwnRevisionAgainAfterAPrivacyHide() async throws {
+        let env = SyncEnvironment()
+        let identity = Self.identity(partnerID: UUID())
+        env.gateway.state = Self.state(authorUserID: try #require(identity.currentUserID), canvasSide: 280)
+        env.gateway.signedURL = URL(string: "https://example.com/payload")
+        env.localStore.isShowingDrawing = false
+
+        await env.service.sync(identity: identity)
+
+        let save = try #require(env.localStore.savedCalls.first)
+        #expect(save.data == env.downloadedData)
+        #expect(save.authorName == "Me")
+    }
+
+    /// An older build marked the hidden drawing as seen, so the widget stayed
+    /// empty even though nothing new arrived.
+    @Test func syncPublishesASeenRevisionAgainWhileTheWidgetIsEmpty() async {
+        let env = SyncEnvironment()
+        env.gateway.state = Self.state(authorUserID: UUID(), canvasSide: 280)
+        env.gateway.signedURL = URL(string: "https://example.com/payload")
+        await env.service.sync(identity: Self.identity(partnerID: UUID()))
+
+        env.localStore.isShowingDrawing = false
+        await env.service.sync(identity: Self.identity(partnerID: UUID()))
+
+        #expect(env.localStore.savedCalls.count == 2)
+    }
+
     @Test func syncCoalescesDuplicateInFlightRequests() async throws {
         let downloadedData = SyncEnvironment.makeDrawing().dataRepresentation()
         let downloader = SyncSuspendingDownloaderSpy(data: downloadedData)
@@ -369,8 +410,10 @@ private nonisolated final class SyncLocalStoreSpy: WidgetCanvasManaging, @unchec
     }
     private(set) var savedCalls: [SaveCall] = []
     var savedDrawingData: Data?
+    var isShowingDrawing = true
 
     func loadSavedDrawing() -> Data? { savedDrawingData }
+    func isShowingSavedDrawing() -> Bool { isShowingDrawing }
     func saveDrawing(_ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date) {
         savedCalls.append(
             SaveCall(data: drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)

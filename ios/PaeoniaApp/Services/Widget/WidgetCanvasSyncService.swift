@@ -194,16 +194,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
                 return
             }
 
-            // Skip if we already rendered this revision locally.
-            guard revisionID.uuidString != defaults.string(forKey: Self.lastSyncedKey) else {
-                return
-            }
-
-            // Our own latest revision is already on this device; just mark it seen
-            // so we never pull it back over newer local work.
-            if let currentUserID = identity.currentUserID,
-               state.activeRevisionAuthorUserID == currentUserID {
-                defaults.set(revisionID.uuidString, forKey: Self.lastSyncedKey)
+            if await skipsDownload(of: state, revisionID: revisionID, identity: identity) {
                 return
             }
 
@@ -218,6 +209,30 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
             logger.error("Widget sync failed: \(String(describing: error))")
             #endif
         }
+    }
+
+    /// True when this device already shows `revisionID`. A privacy hide (a lapsed
+    /// subscription) removes the drawing from the widget but keeps it on this
+    /// device, so nothing counts as shown until the widget has a drawing again.
+    private func skipsDownload(
+        of state: WidgetCanvasState,
+        revisionID: UUID,
+        identity: WidgetSyncIdentity
+    ) async -> Bool {
+        guard await localStore.isShowingSavedDrawing() else {
+            return false
+        }
+        if revisionID.uuidString == defaults.string(forKey: Self.lastSyncedKey) {
+            return true
+        }
+        // Our own latest revision is already on this device; just mark it seen
+        // so we never pull it back over newer local work.
+        if let currentUserID = identity.currentUserID,
+           state.activeRevisionAuthorUserID == currentUserID {
+            defaults.set(revisionID.uuidString, forKey: Self.lastSyncedKey)
+            return true
+        }
+        return false
     }
 
     /// Downloads the partner's revision, persists it (which re-renders previews

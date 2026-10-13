@@ -284,6 +284,31 @@ struct WidgetCanvasServiceTests {
         #expect(environment.reloader.reloadCount == 2)
     }
 
+    @Test func showsSavedDrawingOnlyWhileTheAppCanReadTheWidgetFiles() async throws {
+        let environment = TestEnvironment()
+        let service = environment.makeService()
+        #expect(await !service.isShowingSavedDrawing())
+
+        try await service.saveDrawing(
+            makeNonEmptyDrawing().dataRepresentation(),
+            canvasSize: CGSize(width: 300, height: 300),
+            authorName: nil,
+            createdAt: Date()
+        )
+        #expect(await service.isShowingSavedDrawing())
+
+        // An older widget extension left out `canvasSide`, which the app needs.
+        var json = try #require(
+            JSONSerialization.jsonObject(with: Data(contentsOf: environment.payloadURL)) as? [String: Any]
+        )
+        json.removeValue(forKey: "canvasSide")
+        try JSONSerialization.data(withJSONObject: json).write(to: environment.payloadURL)
+        #expect(await !service.isShowingSavedDrawing())
+
+        await service.hideForPrivacy()
+        #expect(await !service.isShowingSavedDrawing())
+    }
+
     @MainActor
     @Test func rasterizerRendersNonEmptyDrawing() async throws {
         let pngData = await WidgetDrawingRasterizer().renderPNG(

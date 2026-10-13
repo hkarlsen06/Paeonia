@@ -29,10 +29,12 @@ enum PaeoniaKeyboard {
 extension View {
     /// Shows a "Done" button above the keyboard that dismisses it.
     ///
-    /// iOS 26 sets a `.keyboard` toolbar item right on top of the keyboard with no
-    /// gap, and there is no API to space it out (FB22938104). Apple's suggested way
-    /// around it is a `safeAreaBar` that shows only while the keyboard is up, which
-    /// is what this is.
+    /// iOS 26 draws a `.keyboard` toolbar item as a glass capsule sitting right on
+    /// the keyboard, and padding only grows the capsule (FB22938104). So the shared
+    /// capsule is hidden and the button draws its own glass with a gap below it.
+    /// It stays a keyboard toolbar item, so it moves with the keyboard frame by
+    /// frame. A bar driven by keyboard notifications runs on its own timing and
+    /// jumps ahead of the keyboard.
     func keyboardDoneToolbar() -> some View {
         modifier(KeyboardDoneButtonModifier())
     }
@@ -91,12 +93,11 @@ private struct PaeoniaBottomBarModifier<Bar: View>: ViewModifier {
 }
 
 private struct KeyboardDoneButtonModifier: ViewModifier {
-    @State private var isKeyboardDocked = false
-
     func body(content: Content) -> some View {
         content
-            .safeAreaBar(edge: .bottom) {
-                if isKeyboardDocked {
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
                     Button {
                         PaeoniaKeyboard.dismiss()
                     } label: {
@@ -106,12 +107,10 @@ private struct KeyboardDoneButtonModifier: ViewModifier {
                     .buttonStyle(.glass)
                     .controlSize(.large)
                     .tint(.paeoniaAccentPrimary)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.horizontal, PaeoniaSpacing.space16)
                     .padding(.bottom, PaeoniaSpacing.space8)
                 }
+                .sharedBackgroundVisibility(.hidden)
             }
-            .onDockedKeyboardChange { isKeyboardDocked = $0 }
     }
 }
 
