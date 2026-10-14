@@ -95,6 +95,7 @@ Import these instead of re-porting the SQL.
 | `mediaOrphans.ts` | live-reference check and orphan queueing |
 | `games.ts` | what every game shares: `GameKind`, settings, presence, `enqueueGamePush`, `gameDeepLink`, `settingsJson`, `deleteGamePresenceForCouple`. It never imports a game or the registry |
 | `drawAndGuess.ts` | Draw & Guess tables: turn start, word choices, scoring, json shapes, and `drawAndGuessBackend` |
+| `storyChain.ts` | Story Chain rules (line, title and dare word checks, end rules), the opening and dare word lists, seeded choices, story json, and `storyChainBackend` |
 | `gameRegistry.ts` | `GAME_BACKENDS` and the dispatchers `gamePushStillWanted`, `deleteCoupleGameRows`, `sendDueGameTurnReminders`, `gameLanguageChanged` |
 | `gameWords.ts` | Draw & Guess word lists, custom word and guess normalization |
 | `liveTicket.ts` | `signLiveTicket`, the relay ticket for the widget canvas and for game channels |
@@ -150,6 +151,7 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `memories` | `create_memory`, `update_memory`, `hide_memory`, `get_memories`, `upsert_memory_note`, `attach_memory_media`, `remove_memory_media` |
 | `media` | `create_pending_media_upload`, `finalize_media_upload`, `get_media_signed_url`, `mark_media_for_deletion` |
 | `games` | `set_game_settings`, `get_games_overview`, `send_game_invite`, `set_game_presence`, `create_game_live_ticket` (shared by all games, each takes a `p_kind` from `GAME_KINDS`) |
+| `storyChain` | `ensure_story_chain_game`, `get_story_chain`, `get_story_chain_story`, `start_story`, `add_story_line`, `name_story`, `mark_story_seen`, `set_story_star`, `get_story_chain_history` |
 | `drawAndGuess` | `ensure_draw_and_guess_game`, `get_draw_and_guess`, `get_draw_and_guess_round`, `pick_draw_word`, `submit_drawing`, `mark_round_seen`, `submit_guess`, `give_up_round`, `mark_round_result_seen`, `set_round_reaction`, `set_round_star`, `get_draw_and_guess_history`, `get_draw_and_guess_records` |
 | `widget` | `get_or_create_widget_canvas`, `get_widget_canvas`, `get_widget_drawing_revisions`, `submit_widget_drawing_revision`, `register_widget_push_device`, `create_widget_live_ticket` |
 | `location` | `update_latest_partner_location`, `update_location_sharing_preference`, `get_partner_location_visibility` |
@@ -218,7 +220,7 @@ Keep server access to what the task needs. Do not change the docker stack, Caddy
 
 ## Games
 
-Draw & Guess is the only game built so far. `GAME_KINDS` in `lib/validators.ts` lists all seven planned kinds, and the shared functions in `games.ts` accept every one of them. The design is in `docs/games/draw-and-guess.md` and `docs/games-plan.md`. Function arguments and results are documented in the comments of `convex/games.ts` and `convex/drawAndGuess.ts`.
+Draw & Guess and Story Chain are built. Story Chain's design is in `docs/games/story-chain.md`, its opening lines and dare words are in `backend/games/story-chain/`, and `backend/scripts/story-chain/play.mjs` plays the partner from the command line. `GAME_KINDS` in `lib/validators.ts` lists all seven planned kinds, and the shared functions in `games.ts` accept every one of them. The design is in `docs/games/draw-and-guess.md` and `docs/games-plan.md`. Function arguments and results are documented in the comments of `convex/games.ts` and `convex/drawAndGuess.ts`.
 
 A new game adds its entries at these points and edits no other game:
 

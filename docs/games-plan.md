@@ -131,7 +131,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 | Wordfeud-style word game | Yes, the tile rack | No | L |
 
 - **Exquisite corpse.** Each partner draws one part (head, body, legs) and sees only a thin strip of the part before. The full drawing is revealed at the end.
-- **Story chain.** Each turn adds one or two sentences, sometimes with a word that must be used.
+- **Story Chain.** Built. The partners write one story together, one or two sentences a turn. A writer can dare the partner to use a word in the next line, and the partner who did not write the last line names the story. Live play shows the partner's letters as they are typed. Its design is in `docs/games/story-chain.md`.
 - **Guess my spot.** Send a photo of where you are. The partner drops a pin on a map and scores by distance. The sender's coordinates stay hidden until the guess.
 - **Board games.** Short classic turns. Connect Four is the proposed first test of the turn engine.
 - **Battleship with date ideas.** Hide date ideas instead of ships. Sinking one turns it into a plan.
