@@ -22,6 +22,9 @@ struct UltimateTicTacToeSmallBoardView: View {
     let emphasis: UltimateTicTacToeEmphasis
     /// The color for `emphasis.glow`. Unused when there is no glow.
     let glowColor: Color
+    /// The camera's zoom. The glow shrinks by it, so a zoomed board glows as wide
+    /// on screen as an unzoomed one and stays inside the board view's clip.
+    let zoomScale: CGFloat
     let styles: BoardPieceStyles
     let pulseCount: Int
     let access: UltimateTicTacToeSmallBoardAccess
@@ -79,7 +82,7 @@ struct UltimateTicTacToeSmallBoardView: View {
             .overlay {
                 shape.strokeBorder(glowColor.opacity(isGlowing ? 0.95 : 0), lineWidth: max(1.5, side * 0.02))
             }
-            .shadow(color: glowColor.opacity(isGlowing ? 0.5 : 0), radius: side * 0.06)
+            .shadow(color: glowColor.opacity(isGlowing ? 0.5 : 0), radius: side * 0.06 / zoomScale)
     }
 
     private var gridLines: some View {

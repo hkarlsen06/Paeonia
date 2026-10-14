@@ -8,13 +8,20 @@ import SwiftUI
 /// Recording: tap the microphone to start, the arrow to stop and send, or the bin to
 /// throw it away. A take that hits the one-minute limit stops by itself and waits,
 /// so it can be played back before sending.
+///
+/// Editing, like Tidex: the field takes the message's text under an "Editing message"
+/// banner, and whatever was typed before waits until the edit is saved or cancelled.
 struct DailyChatComposer: View {
     /// ExyteChat's text, so its keyboard handling keeps working.
     let text: Binding<String>
     let replyPreview: DailyChatReplyPreview?
+    /// The sent message whose text the field is changing.
+    let editingMessage: DailyQuestionChatMessage?
     /// Changes when the field should take focus.
     let focusRequest: Int
     let onCancelReply: () -> Void
+    let onCancelEdit: () -> Void
+    let onSaveEdit: (String) async -> DailyQuestionChatViewModel.EditOutcome
     let onSendText: (String) async -> Bool
     let onSendPhotos: (String, [DailyQuestionChatPhoto]) async -> Bool
     let onSendVoice: (URL, Int) async -> Bool
@@ -28,6 +35,8 @@ struct DailyChatComposer: View {
     @State private var isSubmitting = false
     /// True when the person tapped send while recording, so the take sends once it stops.
     @State private var sendsWhenStopped = false
+    /// What the field held before an edit started, put back when the edit ends.
+    @State private var draftBeforeEdit: String?
 
     private static let controlHeight: CGFloat = 52
     private static let cornerRadius: CGFloat = 24
@@ -37,7 +46,11 @@ struct DailyChatComposer: View {
         // Rows above the field sit outside the scroll view. A row appearing inside it
         // would shift the field for a frame before it settles.
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            if let replyPreview {
+            if editingMessage != nil {
+                DailyChatEditBanner(onCancel: cancelEdit)
+                    .disabled(isSubmitting)
+                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
+            } else if let replyPreview {
                 replyBanner(replyPreview)
                     .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
             }
@@ -66,12 +79,19 @@ struct DailyChatComposer: View {
         .padding(.top, PaeoniaSpacing.space4)
         .padding(.bottom, PaeoniaSpacing.space8)
         .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.86), value: replyPreview)
+        .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.86), value: editingMessage?.id)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: mode)
         .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.86), value: staging.staged)
         .animation(reduceMotion ? nil : .spring(response: 0.26, dampingFraction: 0.86), value: staging.isDrawerOpen)
         // Size every row to its content. ExyteChat offers the input the full screen height.
         .fixedSize(horizontal: false, vertical: true)
         .onChange(of: focusRequest) { isFocused = true }
+        .onChange(of: editingMessage?.id) { oldID, newID in
+            guard newID != nil, let editingMessage else { return }
+            if oldID == nil { draftBeforeEdit = text.wrappedValue }
+            staging.isDrawerOpen = false
+            text.wrappedValue = editingMessage.body
+        }
         .onChange(of: text.wrappedValue) { _, newText in onTextChanged(newText) }
         // Typing closes the drawer. Opening the drawer puts the keyboard away.
         .onChange(of: isFocused) { _, focused in if focused { staging.isDrawerOpen = false } }
@@ -167,15 +187,18 @@ struct DailyChatComposer: View {
 
     private var textField: some View {
         HStack(alignment: .bottom, spacing: PaeoniaSpacing.space8) {
-            roundButton(
-                systemImage: staging.isDrawerOpen ? "xmark" : "plus",
-                label: .dailyChatComposerAddPhoto,
-                isProminent: false,
-                tint: .paeoniaTextPrimary,
-                action: { staging.isDrawerOpen.toggle() }
-            )
-            .glassEffect(.regular, in: Circle())
-            .padding(.bottom, 4)
+            // An edit only changes text, so there is nothing to attach.
+            if editingMessage == nil {
+                roundButton(
+                    systemImage: staging.isDrawerOpen ? "xmark" : "plus",
+                    label: .dailyChatComposerAddPhoto,
+                    isProminent: false,
+                    tint: .paeoniaTextPrimary,
+                    action: { staging.isDrawerOpen.toggle() }
+                )
+                .glassEffect(.regular, in: Circle())
+                .padding(.bottom, 4)
+            }
             composerCapsule
         }
     }
@@ -194,7 +217,8 @@ struct DailyChatComposer: View {
             .foregroundStyle(.paeoniaTextPrimary)
             .lineLimit(1...7)
             .focused($isFocused)
-            .disabled(staging.isProcessing)
+            // While an edit saves, the text stays as sent, so the result can't overwrite new typing.
+            .disabled(staging.isProcessing || (editingMessage != nil && isSubmitting))
             .padding(.vertical, PaeoniaSpacing.space12 + 2)
             .frame(minHeight: Self.controlHeight)
 
@@ -216,11 +240,53 @@ struct DailyChatComposer: View {
         .accessibilityAddTraits(.isButton)
     }
 
+    // MARK: - Pieces
+
+    private func roundButton(
+        systemImage: String,
+        label: LocalizedStringResource,
+        isProminent: Bool,
+        tint: Color = .paeoniaAccentPrimary,
+        isBusy: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Group {
+                if isBusy {
+                    ProgressView().tint(.paeoniaTextInverse)
+                } else {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(isProminent ? Color.paeoniaTextInverse : tint)
+                }
+            }
+            .frame(width: Self.buttonDiameter, height: Self.buttonDiameter)
+            .background(isProminent ? tint : tint.opacity(0.16), in: Circle())
+            // The circle stays 36pt. The tap area is 44pt.
+            .frame(width: 44, height: 44)
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isBusy)
+        .accessibilityLabel(Text(label))
+    }
+}
+
+extension DailyChatComposer {
     /// The mic while the field is empty, the send button otherwise. A full-height slot
     /// centers it on one line and keeps it at the bottom when the text grows.
     private var trailingButton: some View {
         Group {
-            if trimmedText.isEmpty, staging.staged.isEmpty, !staging.isProcessing {
+            if editingMessage != nil {
+                roundButton(
+                    systemImage: "checkmark",
+                    label: .dailyChatComposerSaveEdit,
+                    isProminent: true,
+                    isBusy: isSubmitting,
+                    action: saveEdit
+                )
+                .disabled(trimmedText.isEmpty)
+            } else if trimmedText.isEmpty, staging.staged.isEmpty, !staging.isProcessing {
                 roundButton(
                     systemImage: "mic.fill",
                     label: .dailyChatComposerRecord,
@@ -258,39 +324,35 @@ struct DailyChatComposer: View {
         }
     }
 
-    // MARK: - Pieces
+    // MARK: - Editing
 
-    private func roundButton(
-        systemImage: String,
-        label: LocalizedStringResource,
-        isProminent: Bool,
-        tint: Color = .paeoniaAccentPrimary,
-        isBusy: Bool = false,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Group {
-                if isBusy {
-                    ProgressView().tint(.paeoniaTextInverse)
-                } else {
-                    Image(systemName: systemImage)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(isProminent ? Color.paeoniaTextInverse : tint)
-                }
+    private func saveEdit() {
+        let body = trimmedText
+        guard !body.isEmpty, !isSubmitting else { return }
+        isSubmitting = true
+        Task {
+            switch await onSaveEdit(body) {
+            case .saved:
+                text.wrappedValue = draftBeforeEdit ?? ""
+                draftBeforeEdit = nil
+            case .failed:
+                break
+            case .windowClosed:
+                // Both texts stay, so nothing typed is lost.
+                let earlier = draftBeforeEdit?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                text.wrappedValue = earlier.isEmpty ? body : earlier + "\n" + body
+                draftBeforeEdit = nil
             }
-            .frame(width: Self.buttonDiameter, height: Self.buttonDiameter)
-            .background(isProminent ? tint : tint.opacity(0.16), in: Circle())
-            // The circle stays 36pt. The tap area is 44pt.
-            .frame(width: 44, height: 44)
-            .contentShape(Circle())
+            isSubmitting = false
         }
-        .buttonStyle(.plain)
-        .disabled(isBusy)
-        .accessibilityLabel(Text(label))
     }
-}
 
-extension DailyChatComposer {
+    private func cancelEdit() {
+        text.wrappedValue = draftBeforeEdit ?? ""
+        draftBeforeEdit = nil
+        onCancelEdit()
+    }
+
     private func replyBanner(_ preview: DailyChatReplyPreview) -> some View {
         HStack(alignment: .top, spacing: PaeoniaSpacing.space8) {
             RoundedRectangle(cornerRadius: 2, style: .continuous)

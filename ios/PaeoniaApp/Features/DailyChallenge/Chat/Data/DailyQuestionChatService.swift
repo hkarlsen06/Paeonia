@@ -51,6 +51,10 @@ protocol DailyQuestionChatServicing: Actor {
         replyToMessageID: UUID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionChatMessage
+    /// Replaces the text of the user's own message. The live message query brings the
+    /// change to both phones. Throws `DailyQuestionChatEditWindowClosedError` once the
+    /// server says the five minutes are over.
+    func editMessage(messageID: UUID, body: String) async throws
     /// Tells the partner's phone this person is typing in the chat, or has stopped.
     func setTyping(instanceID: UUID, isTyping: Bool) async
     /// Tells the server this person has read the thread up to `messageID`, for read receipts.
@@ -73,6 +77,10 @@ nonisolated struct DailyChatPresence: Equatable, Sendable {
 }
 
 extension DailyQuestionChatServicing {
+    func editMessage(messageID _: UUID, body _: String) async throws {
+        throw DailyQuestionChatServiceError.unavailable
+    }
+
     func setTyping(instanceID _: UUID, isTyping _: Bool) async {}
     func markThreadReadOnServer(threadID _: UUID, messageID _: UUID) async {}
     @discardableResult
@@ -120,6 +128,7 @@ protocol DailyQuestionChatGateway: Actor {
         replyToMessageID: UUID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse
+    func editMessage(messageID: UUID, body: String) async throws
     func setTyping(instanceID: UUID, isTyping: Bool) async throws
     func markThreadRead(threadID: UUID, messageID: UUID) async throws
     func markAnswerSeen(instanceID: UUID) async throws
@@ -127,6 +136,10 @@ protocol DailyQuestionChatGateway: Actor {
 }
 
 extension DailyQuestionChatGateway {
+    func editMessage(messageID _: UUID, body _: String) async throws {
+        throw DailyQuestionChatServiceError.unavailable
+    }
+
     nonisolated func liveMessages(threadID _: UUID, instanceID _: UUID) -> AsyncStream<[DailyQuestionChatMessage]> {
         AsyncStream { $0.finish() }
     }
@@ -289,6 +302,19 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
 
     func chatReadMarks(ownerUserID: UUID) async -> [UUID: Date] {
         await cache.readMarks(ownerUserID: ownerUserID)
+    }
+
+    // An edit is not queued. It only makes sense within minutes of sending, so a
+    // failure leaves the text in the message box for the person to try again.
+    func editMessage(messageID: UUID, body: String) async throws {
+        do {
+            try await gateway.editMessage(messageID: messageID, body: body)
+        } catch {
+            if String(describing: error).contains("messages can only be edited for 5 minutes") {
+                throw DailyQuestionChatEditWindowClosedError()
+            }
+            throw error
+        }
     }
 
     // Typing and read receipts are live hints, so a failed call is dropped rather than
@@ -538,6 +564,14 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
         }
     }
 
+    func editMessage(messageID: UUID, body: String) async throws {
+        try await PaeoniaSignedIn.require(isSignedIn)
+        try await client.mutation(
+            "threads:edit_thread_message",
+            args: EditThreadMessageRequest(messageID: messageID, body: body)
+        )
+    }
+
     func setTyping(instanceID: UUID, isTyping: Bool) async throws {
         try await PaeoniaSignedIn.require(isSignedIn)
         try await client.mutation(
@@ -625,6 +659,9 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
         return response
     }
 }
+
+/// The server refused an edit because the message is older than five minutes.
+nonisolated struct DailyQuestionChatEditWindowClosedError: Error, Equatable, Sendable {}
 
 nonisolated enum DailyQuestionChatServiceError: Error, Equatable, Sendable {
     case unavailable
@@ -762,6 +799,7 @@ nonisolated private struct ThreadMessageRow: Decodable {
     let senderUserID: UUID
     let body: String?
     let createdAt: Date
+    let editedAt: Date?
     let deletedAt: Date?
     let moderationStatus: String
     let mediaAssetIDs: [UUID]?
@@ -808,7 +846,8 @@ nonisolated private struct ThreadMessageRow: Decodable {
             isSending: false,
             voice: voice,
             photos: photos.isEmpty ? nil : photos,
-            replyToMessageID: replyToMessageID
+            replyToMessageID: replyToMessageID,
+            editedAt: editedAt
         )
     }
 
@@ -818,11 +857,21 @@ nonisolated private struct ThreadMessageRow: Decodable {
         case senderUserID = "sender_user_id"
         case body
         case createdAt = "created_at"
+        case editedAt = "edited_at"
         case deletedAt = "deleted_at"
         case moderationStatus = "moderation_status"
         case mediaAssetIDs = "media_asset_ids"
         case media
         case replyToMessageID = "reply_to_message_id"
+    }
+}
+
+nonisolated private struct EditThreadMessageRequest: Encodable {
+    let messageID: UUID
+    let body: String
+    enum CodingKeys: String, CodingKey {
+        case messageID = "p_message_id"
+        case body = "p_body"
     }
 }
 

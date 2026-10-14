@@ -285,6 +285,58 @@ export const send_thread_message = mutation({
   },
 });
 
+/** How long after sending the sender can still change a message's text. */
+export const MESSAGE_EDIT_WINDOW_MS = 5 * 60 * 1000;
+
+/**
+ * Replaces the text of the caller's own message within five minutes of sending.
+ * Voice messages have no text to change, and a photo message keeps a caption.
+ * Saving the same text again changes nothing. The live message query carries
+ * the edit to both phones, so there is no push.
+ */
+export const edit_thread_message = mutation({
+  args: { p_message_id: v.string(), p_body: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const message = await getByUuid(ctx, "thread_messages", uuidArg(args.p_message_id));
+    if (!message || message.sender_user_id !== userId) fail("42501", "only the sender can edit a message");
+    const thread = await getByUuid(ctx, "conversation_threads", message.thread_id);
+    if (
+      !thread ||
+      thread.deleted_at !== undefined ||
+      thread.moderation_status !== "visible" ||
+      !(await canAccessCoupleContent(ctx, userId, thread.couple_id))
+    ) {
+      fail("42501", "active entitled thread access is required");
+    }
+    if (message.deleted_at !== undefined || message.moderation_status !== "visible") {
+      fail("23514", "message is not available");
+    }
+    if (Date.now() - Date.parse(message.created_at) > MESSAGE_EDIT_WINDOW_MS) {
+      fail("23514", "messages can only be edited for 5 minutes after sending");
+    }
+    if (message.body === undefined) fail("23514", "only messages with text can be edited");
+    // A photo's caption can change. A voice message has nothing to read, so it can't.
+    for (const link of await ctx.db
+      .query("thread_message_media")
+      .withIndex("by_message_id_sort_order", (q) => q.eq("message_id", message.id))
+      .collect()) {
+      if ((await getByUuid(ctx, "media_assets", link.media_asset_id))?.media_type === "voice") {
+        fail("23514", "only messages with text can be edited");
+      }
+    }
+    const body = btrimToNull(args.p_body);
+    if (body === null) fail("23514", "an edited message must keep its text");
+    if (charLength(body) > 4000) fail("23514", "thread message body is too long");
+    if (body === message.body) return null;
+
+    await consumeRateLimit(ctx, "threadMessage", userId);
+    const now = nowIso();
+    await ctx.db.patch(message._id, { body, edited_at: now, updated_at: now });
+    return null;
+  },
+});
+
 export const create_daily_question_thread_with_message = mutation({
   args: {
     p_instance_id: v.string(),

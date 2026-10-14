@@ -13,7 +13,7 @@ struct StoryChainContractTests {
     private static let stateJSON = """
     {"user_id":"11111111-1111-4111-8111-111111111111",
      "partner_user_id":"22222222-2222-4222-8222-222222222222",
-     "couple_id":"33333333-3333-4333-8333-333333333333",
+     "couple_id":"33333333-3333-4333-8333-333333333333","data_epoch":"",
      "game":{"id":"aaaaaaaa-0000-4000-8000-000000000001","state":"writing",
        "turn_user_id":"11111111-1111-4111-8111-111111111111","turn_number":6,
        "current_story_id":"bbbbbbbb-0000-4000-8000-000000000002","story_count":2,"finished_count":1,
@@ -99,7 +99,7 @@ struct StoryChainContractTests {
     @Test func decodesAStateBeforeTheFirstStoryWithItsOpeningChoices() throws {
         let json = """
         {"user_id":"11111111-1111-4111-8111-111111111111","partner_user_id":null,
-         "couple_id":"33333333-3333-4333-8333-333333333333",
+         "couple_id":"33333333-3333-4333-8333-333333333333","data_epoch":"",
          "game":{"id":"aaaaaaaa-0000-4000-8000-000000000001","state":"choosing_opening",
            "turn_user_id":"11111111-1111-4111-8111-111111111111","turn_number":1,
            "current_story_id":null,"story_count":0,"finished_count":0,
@@ -123,7 +123,7 @@ struct StoryChainContractTests {
     @Test func decodesAStateWithoutAGame() throws {
         let json = """
         {"user_id":"11111111-1111-4111-8111-111111111111","partner_user_id":null,
-         "couple_id":"33333333-3333-4333-8333-333333333333","game":null,
+         "couple_id":"33333333-3333-4333-8333-333333333333","data_epoch":"","game":null,
          "current_story":null,"previous_story":null,"opening_choices":null,"word_choices":null}
         """
         let state = try decode(RemoteStoryChainState.self, json)

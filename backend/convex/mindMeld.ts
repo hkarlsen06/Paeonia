@@ -10,7 +10,7 @@ import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
-import { enqueueGamePush, requirePartnerId } from "./lib/games";
+import { dataEpoch, enqueueGamePush, requirePartnerId } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
 import {
   matchKey,
@@ -218,6 +218,7 @@ export const get_mind_meld = query({
       user_id: userId,
       partner_user_id: partnerId,
       couple_id: coupleId,
+      data_epoch: dataEpoch(),
       current: current ? await gameJson(ctx, overview, current, userId) : null,
       previous: previous ? await gameJson(ctx, overview, previous, userId) : null,
       stats: overview.stats,

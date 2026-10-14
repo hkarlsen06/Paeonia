@@ -7,7 +7,7 @@ import Testing
 struct BoardGameRemoteDecodingTests {
     private static let games = #"""
     {
-      "couple_id": "00000000-0000-0000-0000-0000000000c0",
+      "couple_id": "00000000-0000-0000-0000-0000000000c0", "data_epoch": "",
       "games": [
         {
           "draws": 0,

@@ -637,6 +637,7 @@ final class SimServer {
             userID: user,
             partnerUserID: partnerID,
             coupleID: coupleID,
+            dataEpoch: "",
             settings: settingsJSON,
             game: game.map { game in
                 RemoteDrawAndGuessGame(

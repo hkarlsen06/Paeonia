@@ -9,7 +9,7 @@ import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx } from "./lib/db";
 import { getByUuid } from "./lib/db";
 import { fail, uniqueViolation } from "./lib/errors";
-import { enqueueGamePush, getGameSettings, requireGameSettings, requirePartnerId } from "./lib/games";
+import { dataEpoch, enqueueGamePush, getGameSettings, requireGameSettings, requirePartnerId } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
 import {
   canEndAt,
@@ -105,7 +105,7 @@ export const get_story_chain = query({
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     const partnerId = (await listActiveMembers(ctx, coupleId)).find((member) => member.user_id !== userId)?.user_id ?? null;
     const game = await getStoryChainGame(ctx, coupleId);
-    const base = { user_id: userId, partner_user_id: partnerId, couple_id: coupleId };
+    const base = { user_id: userId, partner_user_id: partnerId, couple_id: coupleId, data_epoch: dataEpoch() };
     if (!game) {
       return { ...base, game: null, current_story: null, previous_story: null, opening_choices: null, word_choices: null };
     }

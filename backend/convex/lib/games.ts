@@ -18,6 +18,16 @@ export const GAME_PRESENCE_TIMEOUT_MS = 60_000;
 export const INVITE_INTERVAL_MS = 15 * 60_000;
 export const TURN_REMINDER_AFTER_MS = 72 * 3_600_000;
 
+/**
+ * Names the current copy of the game data, from `PAEONIA_DATA_EPOCH`. Every game state read returns it.
+ * A phone keeps its own newer copy of a game over an older answer, so after a backup restore or a hand
+ * edit that removes or rolls back game rows, set a new value. A phone that sees another value takes the
+ * server's games as they are.
+ */
+export function dataEpoch(): string {
+  return process.env.PAEONIA_DATA_EPOCH ?? "";
+}
+
 // --- Lookups ----------------------------------------------------------------
 
 export async function getGameSettings(ctx: ReaderCtx, coupleId: string): Promise<GameSettings | null> {

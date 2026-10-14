@@ -219,9 +219,19 @@ describe("ensure_board_game", () => {
     expect((await gameRows(s.t))[0]).toMatchObject({ couple_id: s.couple.coupleId, created_by_user_id: s.a.userId, version: 1 });
   });
 
+  test("get_board_games returns PAEONIA_DATA_EPOCH, so phones notice a restore", async () => {
+    const s = await startCouple();
+    process.env.PAEONIA_DATA_EPOCH = "restored-2026-10-14";
+    try {
+      expect((await list(s.a)).data_epoch).toBe("restored-2026-10-14");
+    } finally {
+      delete process.env.PAEONIA_DATA_EPOCH;
+    }
+  });
+
   test("get_board_games lists the started games in a fixed order and skips the others", async () => {
     const s = await startCouple();
-    expect(await list(s.a)).toEqual({ user_id: s.a.userId, partner_user_id: s.b.userId, couple_id: s.couple.coupleId, games: [] });
+    expect(await list(s.a)).toEqual({ user_id: s.a.userId, partner_user_id: s.b.userId, couple_id: s.couple.coupleId, data_epoch: "", games: [] });
     await ensure(s.b, "ultimate_tic_tac_toe");
     await ensure(s.a, "dots_and_boxes");
     await ensure(s.a, "connect_four");
@@ -401,10 +411,10 @@ describe("refused moves", () => {
     expect(await gameOf(s.a, "connect_four")).toEqual(done);
   });
 
-  test("an unknown game is 42501", async () => {
+  test("an unknown game is 40001, so a move queued before a restore of the server is dropped", async () => {
     const s = await startCouple();
-    expect((await failure(move(s.a, { id: newUuid(), version: 1 }, 3))).code).toBe("42501");
-    expect((await failure(rematch(s.a, { id: newUuid(), version: 1 }))).code).toBe("42501");
+    expect((await failure(move(s.a, { id: newUuid(), version: 1 }, 3))).code).toBe("40001");
+    expect((await failure(rematch(s.a, { id: newUuid(), version: 1 }))).code).toBe("40001");
   });
 });
 

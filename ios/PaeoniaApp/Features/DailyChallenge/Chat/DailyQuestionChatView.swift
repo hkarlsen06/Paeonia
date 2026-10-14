@@ -137,8 +137,11 @@ struct DailyQuestionChatView: View {
                 DailyChatComposer(
                     text: params.text,
                     replyPreview: replyPreview,
+                    editingMessage: viewModel.editTarget,
                     focusRequest: viewModel.composerFocusRequest,
                     onCancelReply: viewModel.cancelReply,
+                    onCancelEdit: viewModel.cancelEdit,
+                    onSaveEdit: { await viewModel.saveEdit($0) },
                     onSendText: { await viewModel.send($0) },
                     onSendPhotos: { await viewModel.send($0, photos: $1) },
                     onSendVoice: { await viewModel.sendVoice(fileURL: $0, durationMs: $1) },
@@ -339,17 +342,23 @@ extension DailyQuestionChatView {
         switch action {
         case .reply:
             if let target = row.message { viewModel.setReplyTarget(target) }
+        case .edit:
+            if let target = row.message { viewModel.startEditing(target) }
         case .copy:
             UIPasteboard.general.string = message.text
         case .report:
-            switch row.kind {
-            case let .answer(answer):
-                onReport?(.dailyAnswer(answerID: answer.answerID))
-            case let .message(target):
-                onReport?(.threadMessage(messageID: target.id))
-            case .question, .typing:
-                break
-            }
+            report(row)
+        }
+    }
+
+    private func report(_ row: DailyChatRow) {
+        switch row.kind {
+        case let .answer(answer):
+            onReport?(.dailyAnswer(answerID: answer.answerID))
+        case let .message(target):
+            onReport?(.threadMessage(messageID: target.id))
+        case .question, .typing:
+            break
         }
     }
 
@@ -366,7 +375,7 @@ extension DailyQuestionChatView {
             )
         }
         guard let initial = DailyChatPhotoLayout.cacheKey(for: tapped), !items.isEmpty else { return }
-        photoViewer = PaeoniaImageViewerSelection(items: items, initialItemID: initial, allowsSaving: true)
+        photoViewer = PaeoniaImageViewerSelection(items: items, initialItemID: initial)
     }
 
     /// The whole photo for the viewer, from this phone's copy or the downloaded file.

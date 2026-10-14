@@ -137,6 +137,9 @@ nonisolated struct RemoteStoryChainState: Codable, Equatable, Sendable {
     let userID: UUID
     let partnerUserID: UUID?
     let coupleID: UUID
+    /// The server's data epoch (`PAEONIA_DATA_EPOCH`). It changes only after a backup
+    /// restore or a hand edit of the games, and then the server's copy wins.
+    let dataEpoch: String
     let game: RemoteStoryChainGame?
     /// The story with the highest number.
     var currentStory: RemoteStoryChainStory?
@@ -152,6 +155,7 @@ nonisolated struct RemoteStoryChainState: Codable, Equatable, Sendable {
         case userID = "user_id"
         case partnerUserID = "partner_user_id"
         case coupleID = "couple_id"
+        case dataEpoch = "data_epoch"
         case game
         case currentStory = "current_story"
         case previousStory = "previous_story"
@@ -163,7 +167,12 @@ nonisolated struct RemoteStoryChainState: Codable, Equatable, Sendable {
     /// version. A state without a game is never older, so a new game replaces it.
     /// The cache keeps the newer state when a late read arrives.
     func isOlder(than other: RemoteStoryChainState) -> Bool {
-        guard userID == other.userID, let game, let otherGame = other.game, game.id == otherGame.id else {
+        guard userID == other.userID,
+              dataEpoch == other.dataEpoch,
+              let game,
+              let otherGame = other.game,
+              game.id == otherGame.id
+        else {
             return false
         }
         return game.version < otherGame.version

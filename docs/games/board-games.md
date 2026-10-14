@@ -147,7 +147,7 @@ The functions are in `backend/convex/boardGames.ts`, the shared helpers in `back
   - `make_move({ game_id, expected_version, move, stake? })` checks couple access, that the game is playing, that it is the caller's turn and that `expected_version` matches. It then runs the pure rules for the row's kind. A stale version fails instead of overwriting. It is a client operation, so a retry is answered from the server's record.
   - `start_rematch({ game_id, expected_version })` starts the next game when the current one is finished.
   - `set_board_game_mark({ drawing })` saves or clears the caller's mark.
-- Refusals use the wording the phone's queue understands: `42501 it is not your turn`, `23514 that move is not allowed` and `40001 the game has changed`.
+- Refusals use the wording the phone's queue understands: `42501 it is not your turn`, `23514 that move is not allowed` and `40001 the game has changed`. A game id the server doesn't have, such as after a restore of the server, is `40001` too.
 - Relationship cleanup deletes the couple's `board_games` and `board_game_marks` rows. Account deletion ends the relationship, so it follows the same path.
 - Pushes and reminders go through `boardGameBackend` in `lib/boardGameBackend.ts`, registered in `GAME_BACKENDS` for all three kinds. A turn or result push carries `round_id` as a turn token, `<game number>:<move count>`, and the push drain sends it only while the game is still at that turn or result. The DB helpers are in `lib/boardGameStore.ts`.
 

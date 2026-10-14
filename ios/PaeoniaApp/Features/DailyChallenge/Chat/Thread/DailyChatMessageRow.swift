@@ -43,8 +43,8 @@ struct DailyChatMessageRow: View {
                 }
                 VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 3) {
                     payload
-                    if let status = row.status {
-                        statusView(status)
+                    if hasStatusLine {
+                        statusLine
                     }
                 }
             }
@@ -52,7 +52,7 @@ struct DailyChatMessageRow: View {
             .frame(maxWidth: .infinity, alignment: isCurrentUser ? .trailing : .leading)
         }
         .padding(.top, groupContext.joinsPrevious ? 2 : PaeoniaSpacing.space4)
-        .padding(.bottom, row.status != nil ? 2 : (groupContext.joinsNext ? 2 : PaeoniaSpacing.space4))
+        .padding(.bottom, hasStatusLine ? 2 : (groupContext.joinsNext ? 2 : PaeoniaSpacing.space4))
         .background(isHighlighted ? Color.paeoniaAccentPrimary.opacity(0.14) : Color.clear)
     }
 
@@ -258,6 +258,37 @@ struct DailyChatMessageRow: View {
 
 extension DailyChatMessageRow {
     // MARK: - Status
+
+    private var isEdited: Bool {
+        row.message?.editedAt != nil
+    }
+
+    private var hasStatusLine: Bool {
+        row.status != nil || isEdited
+    }
+
+    /// The one small line under a bubble. Edited shares it with the delivery state, so
+    /// an edited message never gets a second line, and the state keeps its place at
+    /// the bubble's edge.
+    private var statusLine: some View {
+        HStack(spacing: 0) {
+            if isEdited {
+                editedMark
+            }
+            if let status = row.status {
+                statusView(status)
+            }
+        }
+    }
+
+    private var editedMark: some View {
+        Text(.dailyChatStatusEdited)
+            .font(.caption2)
+            .foregroundStyle(.paeoniaTextTertiary)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, PaeoniaSpacing.space4)
+    }
 
     @ViewBuilder
     private func statusView(_ status: DailyChatMessageStatus) -> some View {

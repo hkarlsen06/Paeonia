@@ -51,6 +51,20 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
     var photos: [DailyQuestionChatPhoto]?
     /// The earlier message in the thread this one answers.
     var replyToMessageID: UUID?
+    /// When the sender last changed the text.
+    var editedAt: Date?
+
+    /// How long after sending the sender can change a message. The server checks it too.
+    static let editWindow: TimeInterval = 5 * 60
+
+    /// The user's own sent message with text, still inside the edit window. A voice
+    /// message has no text to change. A question's answers are not chat messages, so
+    /// they never get here.
+    func canEdit(by userID: UUID?, now: Date = .now) -> Bool {
+        senderUserID == userID && !isSending && !sendFailed && threadID != nil && voice == nil
+            && !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && now.timeIntervalSince(createdAt) <= Self.editWindow
+    }
 
     static func visibleOrdered(
         remote: [DailyQuestionChatMessage],
@@ -154,7 +168,8 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
             isSending: false,
             voice: voice,
             photos: photos,
-            replyToMessageID: replyToMessageID
+            replyToMessageID: replyToMessageID,
+            editedAt: editedAt
         )
     }
 

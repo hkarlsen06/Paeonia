@@ -114,6 +114,9 @@ nonisolated struct RemoteExquisiteCorpseState: Codable, Equatable, Sendable {
     let userID: UUID
     let partnerUserID: UUID?
     let coupleID: UUID
+    /// The server's data epoch (`PAEONIA_DATA_EPOCH`). It changes only after a backup
+    /// restore or a hand edit of the games, and then the server's copy wins.
+    let dataEpoch: String
     let game: RemoteExquisiteCorpseGame?
     var currentFigure: RemoteExquisiteCorpseFigure?
     /// Finished figures, newest first, at most 10.
@@ -125,6 +128,7 @@ nonisolated struct RemoteExquisiteCorpseState: Codable, Equatable, Sendable {
         case userID = "user_id"
         case partnerUserID = "partner_user_id"
         case coupleID = "couple_id"
+        case dataEpoch = "data_epoch"
         case game
         case currentFigure = "current_figure"
         case recentFigures = "recent_figures"

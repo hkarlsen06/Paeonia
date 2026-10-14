@@ -109,6 +109,47 @@ struct DailyChatProjectionTests {
         #expect(items(mine.id.uuidString) == [.reply, .copy])
         #expect(items(sending.id.uuidString) == [.copy])
     }
+
+    @Test func yourOwnFreshTextOffersEditAndAnswersNever() {
+        let answer = DailyQuestionAnswerDetail(
+            answerUserID: me, answerID: UUID(), answeredAt: .now, isOwnAnswer: true,
+            canViewAnswer: true, textBody: "My answer", selectedUserID: nil, mediaAssetIDs: []
+        )
+        let fresh = DailyQuestionChatMessage(
+            id: UUID(), threadID: threadID, instanceID: instanceID, senderUserID: me,
+            body: "Just now", createdAt: .now, clientOperationID: nil, isSending: false
+        )
+        let partners = DailyQuestionChatMessage(
+            id: UUID(), threadID: threadID, instanceID: instanceID, senderUserID: partner,
+            body: "Me too", createdAt: .now, clientOperationID: nil, isSending: false
+        )
+        let projection = DailyChatProjection.make(input: DailyChatProjection.Input(
+            prompt: "What made you smile?",
+            questionStartsAt: Date(timeIntervalSince1970: 0),
+            answers: [answer],
+            messages: [fresh, partners],
+            currentUserID: me,
+            partnerName: "Oda",
+            youName: "You"
+        ))
+        func items(_ id: String) -> [DailyChatMenuAction] {
+            projection.exyteMessages.first { $0.id == id }.map(DailyChatMenuAction.menuItems(for:)) ?? []
+        }
+
+        #expect(items(fresh.id.uuidString) == [.reply, .edit, .copy])
+        #expect(!items(partners.id.uuidString).contains(.edit))
+        #expect(!items(DailyChatProjection.answerRowPrefix + answer.answerID.uuidString).contains(.edit))
+    }
+
+    @Test func anEditRedrawsTheRow() {
+        let original = message("Hi", from: me, at: 0)
+        var edited = original
+        edited.editedAt = Date(timeIntervalSince1970: 1_100)
+        let before = DailyChatProjection.make(input: input([original]))
+        let after = DailyChatProjection.make(input: input([edited]))
+
+        #expect(before.exyteMessages.last?.triggerRedraw != after.exyteMessages.last?.triggerRedraw)
+    }
 }
 
 struct DailyChatGestureResolverTests {

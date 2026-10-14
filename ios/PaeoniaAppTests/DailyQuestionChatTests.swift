@@ -361,6 +361,118 @@ struct DailyQuestionChatViewModelTests {
     }
 }
 
+@MainActor
+struct DailyQuestionChatEditTests {
+    private func ownMessage(
+        _ fixture: ChatTestFixture,
+        sentAgo seconds: TimeInterval = 30
+    ) -> DailyQuestionChatMessage {
+        DailyQuestionChatMessage(
+            id: fixture.messageID,
+            threadID: fixture.threadID,
+            instanceID: fixture.question.id,
+            senderUserID: fixture.ownerUserID,
+            body: "Se you soon",
+            createdAt: Date.now.addingTimeInterval(-seconds),
+            clientOperationID: nil,
+            isSending: false
+        )
+    }
+
+    @Test func onlyYourOwnSentTextInsideFiveMinutesCanBeEdited() {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        let fresh = ownMessage(fixture)
+        let partners = DailyQuestionChatMessage(
+            id: UUID(), threadID: fresh.threadID, instanceID: fresh.instanceID,
+            senderUserID: fixture.partnerUserID, body: "Hi", createdAt: fresh.createdAt,
+            clientOperationID: nil, isSending: false
+        )
+        var voice = fresh
+        voice.voice = DailyQuestionChatVoice(mediaAssetID: UUID(), durationMs: 1_000)
+
+        #expect(viewModel.canEdit(fresh))
+        #expect(!viewModel.canEdit(ownMessage(fixture, sentAgo: DailyQuestionChatMessage.editWindow + 1)))
+        #expect(!viewModel.canEdit(partners))
+        #expect(!viewModel.canEdit(voice))
+    }
+
+    @Test func savingSendsTheNewTextAndEndsTheEdit() async {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        let message = ownMessage(fixture)
+
+        viewModel.startEditing(message)
+        #expect(viewModel.editTarget?.id == message.id)
+
+        #expect(await viewModel.saveEdit("  See you soon  ") == .saved)
+        #expect(await fixture.gateway.lastEdit?.body == "See you soon")
+        #expect(await fixture.gateway.lastEdit?.messageID == message.id)
+        #expect(viewModel.editTarget == nil)
+    }
+
+    @Test func unchangedTextSavesWithoutAskingTheServer() async {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        viewModel.startEditing(ownMessage(fixture))
+
+        #expect(await viewModel.saveEdit("Se you soon") == .saved)
+        #expect(await fixture.gateway.lastEdit == nil)
+    }
+
+    @Test func aFailedSaveKeepsEditingAndSaysSo() async {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        await fixture.gateway.setFailure(true)
+        viewModel.startEditing(ownMessage(fixture))
+
+        #expect(await viewModel.saveEdit("See you soon") == .failed)
+        #expect(viewModel.editTarget != nil)
+        #expect(viewModel.notice == .editFailed)
+    }
+
+    @Test func theServerClosingTheWindowEndsTheEdit() async {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        await fixture.gateway.setEditError(EditWindowServerError())
+        viewModel.startEditing(ownMessage(fixture))
+
+        #expect(await viewModel.saveEdit("See you soon") == .windowClosed)
+        #expect(viewModel.editTarget == nil)
+        #expect(viewModel.notice == .editWindowClosed)
+    }
+
+    @Test func aSecondEditWaitsUntilTheFirstEnds() {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        let first = ownMessage(fixture)
+        let second = DailyQuestionChatMessage(
+            id: UUID(), threadID: first.threadID, instanceID: first.instanceID,
+            senderUserID: fixture.ownerUserID, body: "Another", createdAt: first.createdAt,
+            clientOperationID: nil, isSending: false
+        )
+        viewModel.startEditing(first)
+        viewModel.startEditing(second)
+
+        #expect(viewModel.editTarget?.id == first.id)
+    }
+
+    @Test func noReplyStartsWhileEditing() {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        let message = ownMessage(fixture)
+        viewModel.startEditing(message)
+        viewModel.setReplyTarget(message)
+
+        #expect(viewModel.replyTarget == nil)
+    }
+
+    /// Reads like the server's refusal once the error is turned into text.
+    private struct EditWindowServerError: Error, CustomStringConvertible {
+        var description: String { "23514 messages can only be edited for 5 minutes after sending" }
+    }
+}
+
 struct DailyQuestionChatMergeTests {
     @Test func mergeOrdersMessagesAndKeepsOneCopyPerOperation() throws {
         let instanceID = UUID()
@@ -1870,6 +1982,8 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
     private(set) var lastReplyToMessageID: UUID?
     private(set) var answerSeenCallCount = 0
     private var answerSeenFails = false
+    private(set) var lastEdit: (messageID: UUID, body: String)?
+    private var editError: (any Error)?
 
     init(threadID: UUID, messageID: UUID) {
         self.threadID = threadID
@@ -1890,6 +2004,16 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
 
     func setAnswerSeenFailure(_ fails: Bool) {
         answerSeenFails = fails
+    }
+
+    func setEditError(_ error: (any Error)?) {
+        editError = error
+    }
+
+    func editMessage(messageID: UUID, body: String) throws {
+        if let editError { throw editError }
+        if shouldFail { throw ChatTestError.requested }
+        lastEdit = (messageID, body)
     }
 
     func markAnswerSeen(instanceID _: UUID) async throws {

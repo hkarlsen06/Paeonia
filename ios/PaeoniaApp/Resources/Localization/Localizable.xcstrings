@@ -4059,6 +4059,24 @@
         }
       }
     },
+    "dailyChat.action.edit" : {
+      "comment" : "Menu action that starts changing the text of a message you sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rediger"
+          }
+        }
+      }
+    },
     "dailyChat.action.reply" : {
       "comment" : "Menu and VoiceOver action that starts a reply to a chat message.",
       "extractionState" : "manual",
@@ -4185,6 +4203,24 @@
         }
       }
     },
+    "dailyChat.composer.cancelEdit" : {
+      "comment" : "VoiceOver label for the button that stops changing a sent message.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop editing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avbryt redigering"
+          }
+        }
+      }
+    },
     "dailyChat.composer.deleteRecording" : {
       "comment" : "VoiceOver label for the button that throws away a voice message being recorded.",
       "extractionState" : "manual",
@@ -4199,6 +4235,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Slett opptaket"
+          }
+        }
+      }
+    },
+    "dailyChat.composer.editing" : {
+      "comment" : "Banner above the chat message box while changing a message you already sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editing message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redigerer melding"
           }
         }
       }
@@ -4365,6 +4419,24 @@
         }
       }
     },
+    "dailyChat.composer.saveEdit" : {
+      "comment" : "VoiceOver label for the button that saves the changed text of a sent message.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save change"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre endringen"
+          }
+        }
+      }
+    },
     "dailyChat.composer.send" : {
       "comment" : "VoiceOver label for the chat's send button.",
       "extractionState" : "manual",
@@ -4487,6 +4559,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kunne ikke sende meldingen din"
+          }
+        }
+      }
+    },
+    "dailyChat.error.edit.message" : {
+      "comment" : "Banner message when a change to a sent message could not be saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again. Your text is still in the message box."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettet og prøv igjen. Teksten din ligger fortsatt i meldingsfeltet."
+          }
+        }
+      }
+    },
+    "dailyChat.error.edit.title" : {
+      "comment" : "Banner title when a change to a sent message could not be saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save your change"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre endringen"
+          }
+        }
+      }
+    },
+    "dailyChat.error.editClosed.message" : {
+      "comment" : "Banner message when the five minutes to change a sent message ran out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can change a message for 5 minutes after sending it. Your text is still in the message box, so you can send it as a new message."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan endre en melding i 5 minutter etter at du har sendt den. Teksten din ligger fortsatt i meldingsfeltet, så du kan sende den som en ny melding."
+          }
+        }
+      }
+    },
+    "dailyChat.error.editClosed.title" : {
+      "comment" : "Banner title when the five minutes to change a sent message ran out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too late to change it"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For sent å endre den"
           }
         }
       }
@@ -4847,6 +4991,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lagret på denne telefonen. Vi sender det når du er på nett."
+          }
+        }
+      }
+    },
+    "dailyChat.status.edited" : {
+      "comment" : "Small mark under a chat message whose text the sender changed after sending.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edited"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redigert"
           }
         }
       }
@@ -10389,6 +10551,384 @@
         }
       }
     },
+    "games.tutorial.dots.box.message" : {
+      "comment" : "Dots and Boxes card about closing a box.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw the last side of a box and it's yours. Then you get another turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegner du den siste siden av en rute, blir den din. Så får du en tur til."
+          }
+        }
+      }
+    },
+    "games.tutorial.dots.box.title" : {
+      "comment" : "Title of the Dots and Boxes card about closing a box.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close a box, go again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lukk en rute, ta en tur til"
+          }
+        }
+      }
+    },
+    "games.tutorial.dots.line.message" : {
+      "comment" : "First Dots and Boxes How to play card. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap between two dots to draw a line. Then it's %@'s turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk mellom to prikker for å tegne en strek. Så er det %@ sin tur."
+          }
+        }
+      }
+    },
+    "games.tutorial.dots.line.title" : {
+      "comment" : "Title of the first Dots and Boxes How to play card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take turns drawing lines"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn streker etter tur"
+          }
+        }
+      }
+    },
+    "games.tutorial.dots.photo.message" : {
+      "comment" : "Last Dots and Boxes card. Memories is the name of the app's Memories tab.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The game ends when every line is drawn. If you have photos in Memories, each box you close shows a piece of one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spillet er over når alle strekene er tegnet. Har dere bilder i Minner, viser hver rute dere lukker en bit av ett av dem."
+          }
+        }
+      }
+    },
+    "games.tutorial.dots.photo.title" : {
+      "comment" : "Title of the last Dots and Boxes How to play card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Most boxes wins"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flest ruter vinner"
+          }
+        }
+      }
+    },
+    "games.tutorial.mindMeld.connect.message" : {
+      "comment" : "Mind Meld card about the next rounds. The example words are ocean, sushi and fish.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next round, you both try to write one word that links the last two. Ocean and sushi? Maybe fish."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I neste runde prøver dere begge å skrive ett ord som binder sammen de to siste. Hav og sushi? Kanskje fisk."
+          }
+        }
+      }
+    },
+    "games.tutorial.mindMeld.connect.title" : {
+      "comment" : "Title of the Mind Meld card about the next rounds.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find what links them"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finn det som binder dem sammen"
+          }
+        }
+      }
+    },
+    "games.tutorial.mindMeld.match.message" : {
+      "comment" : "Last Mind Meld How to play card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When you both write the same word, you win together. You have 10 rounds to get there."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når dere skriver det samme ordet, vinner dere sammen. Dere har 10 runder på dere."
+          }
+        }
+      }
+    },
+    "games.tutorial.mindMeld.match.title" : {
+      "comment" : "Title of the last Mind Meld card. The Norwegian name of the game is Tenk likt.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Think alike to win"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tenk likt for å vinne"
+          }
+        }
+      }
+    },
+    "games.tutorial.mindMeld.words.message" : {
+      "comment" : "First Mind Meld How to play card. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You and %@ each write any word without seeing the other's. Then both words show up together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du og %@ skriver hvert deres ord uten å se hva den andre skriver. Så vises begge ordene samtidig."
+          }
+        }
+      }
+    },
+    "games.tutorial.mindMeld.words.title" : {
+      "comment" : "Title of the first Mind Meld How to play card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write a word at the same time"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv et ord samtidig"
+          }
+        }
+      }
+    },
+    "games.tutorial.next" : {
+      "comment" : "Button under a How to play card that goes to the next card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste"
+          }
+        }
+      }
+    },
+    "games.tutorial.open" : {
+      "comment" : "Button that opens a game's How to play cards.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How to play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slik spiller du"
+          }
+        }
+      }
+    },
+    "games.tutorial.play" : {
+      "comment" : "Button on the last How to play card. It closes the cards so the person can play.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let's play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La oss spille"
+          }
+        }
+      }
+    },
+    "games.tutorial.ultimate.anywhere.message" : {
+      "comment" : "Ultimate Tic-Tac-Toe card about being sent to a won or full board.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you're sent to a small board that's already won or full, you can play in any open board."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blir du sendt til et lite brett som allerede er vunnet eller fullt, kan du spille i hvilket som helst åpent brett."
+          }
+        }
+      }
+    },
+    "games.tutorial.ultimate.anywhere.title" : {
+      "comment" : "Title of the Ultimate Tic-Tac-Toe card about being sent to a finished board.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board finished? Play anywhere"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig brett? Spill hvor du vil"
+          }
+        }
+      }
+    },
+    "games.tutorial.ultimate.goal.message" : {
+      "comment" : "First Ultimate Tic-Tac-Toe How to play card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get three in a row on a small board to win it. Win three small boards in a row to win the game."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få tre på rad på et lite brett for å vinne det. Vinn tre små brett på rad for å vinne spillet."
+          }
+        }
+      }
+    },
+    "games.tutorial.ultimate.goal.title" : {
+      "comment" : "Title of the first Ultimate Tic-Tac-Toe How to play card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nine small boards"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ni små brett"
+          }
+        }
+      }
+    },
+    "games.tutorial.ultimate.send.message" : {
+      "comment" : "Ultimate Tic-Tac-Toe card: the cell you play decides which small board the partner plays next. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The square you play in picks the small board %@ plays in next. A top-right square sends them to the top-right board."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruta du spiller i bestemmer hvilket lite brett %@ spiller i neste gang. En rute øverst til høyre sender dem til brettet øverst til høyre."
+          }
+        }
+      }
+    },
+    "games.tutorial.ultimate.send.title" : {
+      "comment" : "Title of the Ultimate Tic-Tac-Toe card about where the partner plays next. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You pick where %@ plays"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du velger hvor %@ spiller"
+          }
+        }
+      }
+    },
     "games.unavailable.message" : {
       "comment" : "Text when Games cannot load the first time",
       "extractionState" : "manual",
@@ -11681,6 +12221,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lagret i Bilder"
+          }
+        }
+      }
+    },
+    "imageViewer.savePermission.message" : {
+      "comment" : "Message of the alert shown in the full-screen photo viewer when the app can't save a photo because photo access is turned off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To save photos, turn on photo access for Paeonia in Settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For å lagre bilder, slå på bildetilgang for Paeonia i Innstillinger."
+          }
+        }
+      }
+    },
+    "imageViewer.savePermission.title" : {
+      "comment" : "Title of the alert shown in the full-screen photo viewer when the app can't save a photo because photo access is turned off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let Paeonia save to Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La Paeonia lagre i Bilder"
           }
         }
       }

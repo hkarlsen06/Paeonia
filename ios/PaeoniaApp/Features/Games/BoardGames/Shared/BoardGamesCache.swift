@@ -112,10 +112,16 @@ nonisolated extension BoardGamesLocalDocument {
     /// Takes games from the server unless a game is older than the one kept.
     /// A game of a kind the server does not mention stays, because games are
     /// never deleted while the couple stays together and a missing one is an
-    /// answer from before it was made. Returns false when every game offered
-    /// was older, so the state did not change.
+    /// answer from before it was made. A state with another data epoch replaces
+    /// everything, because the server's games were restored or edited by hand.
+    /// Returns false when every game offered was older, so the state did not
+    /// change.
     mutating func accept(_ incoming: RemoteBoardGames) -> Bool {
-        guard let kept = state, kept.userID == incoming.userID, kept.coupleID == incoming.coupleID else {
+        guard let kept = state,
+              kept.userID == incoming.userID,
+              kept.coupleID == incoming.coupleID,
+              kept.dataEpoch == incoming.dataEpoch
+        else {
             state = incoming
             return true
         }
@@ -123,6 +129,7 @@ nonisolated extension BoardGamesLocalDocument {
             userID: incoming.userID,
             partnerUserID: incoming.partnerUserID,
             coupleID: incoming.coupleID,
+            dataEpoch: incoming.dataEpoch,
             games: kept.games
         )
         var tookAny = incoming.games.isEmpty
@@ -166,7 +173,7 @@ nonisolated extension RemoteBoardGames {
     /// Keeping it would put a move off the screen again, such as a live update
     /// sent before a move that this phone already read back.
     func isOlder(than other: RemoteBoardGames) -> Bool {
-        guard userID == other.userID, coupleID == other.coupleID else { return false }
+        guard userID == other.userID, coupleID == other.coupleID, dataEpoch == other.dataEpoch else { return false }
         return other.games.contains { theirs in
             guard let mine = game(theirs.kind) else { return true }
             return mine.isOlder(than: theirs)
@@ -179,7 +186,7 @@ actor FileBoardGamesCache: BoardGamesCaching {
 
     /// Bump when a stored type gains a required field. A file with another
     /// version reads as empty.
-    private static let schemaVersion = 1
+    private static let schemaVersion = 2
 
     private let directoryURL: URL
     private var order = GamesStateWriteOrder()

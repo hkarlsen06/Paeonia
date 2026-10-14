@@ -163,6 +163,9 @@ nonisolated struct RemoteDrawAndGuessState: Codable, Equatable, Sendable {
     let userID: UUID
     let partnerUserID: UUID?
     let coupleID: UUID
+    /// The server's data epoch (`PAEONIA_DATA_EPOCH`). It changes only after a backup
+    /// restore or a hand edit of the games, and then the server's copy wins.
+    let dataEpoch: String
     let settings: RemoteGameSettings?
     let game: RemoteDrawAndGuessGame?
     var currentRound: RemoteDrawAndGuessRound?
@@ -178,6 +181,7 @@ nonisolated struct RemoteDrawAndGuessState: Codable, Equatable, Sendable {
         case userID = "user_id"
         case partnerUserID = "partner_user_id"
         case coupleID = "couple_id"
+        case dataEpoch = "data_epoch"
         case settings
         case game
         case currentRound = "current_round"

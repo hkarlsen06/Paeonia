@@ -102,6 +102,7 @@ enum StoryChainFixture {
             userID: userID,
             partnerUserID: partner,
             coupleID: couple,
+            dataEpoch: "",
             game: game,
             currentStory: current,
             previousStory: previous,

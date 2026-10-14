@@ -71,6 +71,7 @@ extension ExquisiteCorpseFixture {
             userID: userID,
             partnerUserID: state.partnerUserID,
             coupleID: state.coupleID,
+            dataEpoch: "",
             game: state.game,
             currentFigure: state.currentFigure,
             recentFigures: state.recentFigures,

@@ -1,0 +1,95 @@
+import SwiftUI
+
+/// A game's "How to play" cards. Only games whose rules are hard to pick up by
+/// playing have them, so `init` fails for every other kind.
+struct GameTutorial {
+    struct Page: Identifiable {
+        let image: ImageResource
+        let title: LocalizedStringResource
+        let message: LocalizedStringResource
+
+        var id: String { title.key }
+    }
+
+    let kind: GameKind
+    let pages: [Page]
+
+    init?(kind: GameKind, partnerName: String) {
+        switch kind {
+        case .ultimateTicTacToe: pages = Self.ultimateTicTacToePages(partnerName: partnerName)
+        case .dotsAndBoxes: pages = Self.dotsAndBoxesPages(partnerName: partnerName)
+        case .mindMeld: pages = Self.mindMeldPages(partnerName: partnerName)
+        case .drawAndGuess, .exquisiteCorpse, .storyChain, .connectFour: return nil
+        }
+        self.kind = kind
+    }
+
+    private static func ultimateTicTacToePages(partnerName: String) -> [Page] {
+        [
+            Page(
+                image: .gameTutorialUltimateGoal,
+                title: .gamesTutorialUltimateGoalTitle,
+                message: .gamesTutorialUltimateGoalMessage
+            ),
+            Page(
+                image: .gameTutorialUltimateSend,
+                title: .gamesTutorialUltimateSendTitle(partnerName),
+                message: .gamesTutorialUltimateSendMessage(partnerName)
+            ),
+            Page(
+                image: .gameTutorialUltimateAnywhere,
+                title: .gamesTutorialUltimateAnywhereTitle,
+                message: .gamesTutorialUltimateAnywhereMessage
+            ),
+        ]
+    }
+
+    private static func dotsAndBoxesPages(partnerName: String) -> [Page] {
+        [
+            Page(
+                image: .gameTutorialDotsLine,
+                title: .gamesTutorialDotsLineTitle,
+                message: .gamesTutorialDotsLineMessage(partnerName)
+            ),
+            Page(
+                image: .gameTutorialDotsBox,
+                title: .gamesTutorialDotsBoxTitle,
+                message: .gamesTutorialDotsBoxMessage
+            ),
+            Page(
+                image: .gameTutorialDotsPhoto,
+                title: .gamesTutorialDotsPhotoTitle,
+                message: .gamesTutorialDotsPhotoMessage
+            ),
+        ]
+    }
+
+    private static func mindMeldPages(partnerName: String) -> [Page] {
+        [
+            Page(
+                image: .gameTutorialMindMeldWords,
+                title: .gamesTutorialMindMeldWordsTitle,
+                message: .gamesTutorialMindMeldWordsMessage(partnerName)
+            ),
+            Page(
+                image: .gameTutorialMindMeldConnect,
+                title: .gamesTutorialMindMeldConnectTitle,
+                message: .gamesTutorialMindMeldConnectMessage
+            ),
+            Page(
+                image: .gameTutorialMindMeldMatch,
+                title: .gamesTutorialMindMeldMatchTitle,
+                message: .gamesTutorialMindMeldMatchMessage
+            ),
+        ]
+    }
+
+    /// Whether this phone has shown the cards for this game. It is per phone, not
+    /// per account, which is enough for a one-time explanation.
+    var hasBeenShown: Bool {
+        get { UserDefaults.standard.bool(forKey: seenKey) }
+        nonmutating set { UserDefaults.standard.set(newValue, forKey: seenKey) }
+    }
+
+    private var seenKey: String { "paeonia.games.tutorialShown.v1.\(kind.rawValue)" }
+}

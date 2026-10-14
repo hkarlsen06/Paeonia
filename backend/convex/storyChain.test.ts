@@ -328,6 +328,7 @@ describe("get_story_chain", () => {
       user_id: couple.first.userId,
       partner_user_id: couple.second.userId,
       couple_id: couple.coupleId,
+      data_epoch: "",
       game: null,
       current_story: null,
       previous_story: null,

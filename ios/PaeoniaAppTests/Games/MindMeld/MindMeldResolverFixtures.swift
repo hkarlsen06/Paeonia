@@ -90,6 +90,7 @@ extension MindMeldResolverFixtures {
             userID: me,
             partnerUserID: partner,
             coupleID: Self.coupleID,
+            dataEpoch: "",
             current: current,
             previous: previous,
             stats: RemoteMindMeldStats(melds: 0, fewestRounds: nil, games: 1)

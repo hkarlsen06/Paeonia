@@ -12,6 +12,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var showsTutorial = false
 
     var body: some View {
         content
@@ -21,7 +22,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar { markButton }
+            .toolbar { toolbarItems }
             .boardGameScoreToolbar(score: viewModel.score, me: viewModel.meInfo, partner: viewModel.partnerInfo)
             .preferredColorScheme(.dark)
             .task { await viewModel.start(prefersReducedMotion: reduceMotion) }
@@ -49,6 +50,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
                     )
                 }
             }
+            .gameTutorial(tutorial, isPresented: $showsTutorial)
             .accessibilityIdentifier("boardGames.screen.\(viewModel.kind.rawValue)")
     }
 
@@ -135,8 +137,17 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
         }
     }
 
+    private var tutorial: GameTutorial? {
+        GameTutorial(kind: viewModel.kind, partnerName: viewModel.partnerName)
+    }
+
     @ToolbarContentBuilder
-    private var markButton: some ToolbarContent {
+    private var toolbarItems: some ToolbarContent {
+        if tutorial != nil {
+            ToolbarItem(placement: .topBarTrailing) {
+                GameTutorialButton { showsTutorial = true }
+            }
+        }
         ToolbarItem(placement: .topBarTrailing) {
             Button(action: viewModel.openMarkEditor) {
                 Label {

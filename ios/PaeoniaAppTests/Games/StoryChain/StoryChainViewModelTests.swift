@@ -295,6 +295,7 @@ struct StoryChainTestEnvironment {
             userID: Fixture.me,
             partnerUserID: Fixture.partner,
             coupleID: Fixture.couple,
+            dataEpoch: "",
             game: game,
             currentStory: current,
             previousStory: previous,

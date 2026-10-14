@@ -144,6 +144,7 @@
         userID: me,
         partnerUserID: partner,
         coupleID: DeveloperScenarioFixture.coupleID,
+        dataEpoch: "",
         current: current,
         previous: previous,
         stats: stats

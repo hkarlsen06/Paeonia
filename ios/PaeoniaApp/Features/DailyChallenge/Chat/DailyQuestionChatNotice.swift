@@ -10,6 +10,8 @@ extension DailyQuestionChatViewModel.Notice {
         case .unavailable: .dailyChatErrorUnavailableTitle
         case .voiceFailed: .dailyChatErrorVoiceTitle
         case .photoFailed: .dailyChatErrorPhotoTitle
+        case .editFailed: .dailyChatErrorEditTitle
+        case .editWindowClosed: .dailyChatErrorEditClosedTitle
         }
     }
 
@@ -22,6 +24,8 @@ extension DailyQuestionChatViewModel.Notice {
         case .unavailable: .dailyChatErrorUnavailableMessage
         case .voiceFailed: .dailyChatErrorVoiceMessage
         case .photoFailed: .dailyChatErrorPhotoMessage
+        case .editFailed: .dailyChatErrorEditMessage
+        case .editWindowClosed: .dailyChatErrorEditClosedMessage
         }
     }
 }

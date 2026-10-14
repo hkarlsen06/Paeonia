@@ -134,7 +134,7 @@ actor FileExquisiteCorpseCache: ExquisiteCorpseCaching {
 
     /// Bump when a stored type gains a required field. A file with another
     /// version reads as empty.
-    private static let schemaVersion = 1
+    private static let schemaVersion = 2
 
     private let directoryURL: URL
     private var order = GamesStateWriteOrder()
@@ -317,7 +317,12 @@ nonisolated extension RemoteExquisiteCorpseState {
     /// would put the move off the screen again. A star never decides, because a
     /// person can change it on the server without the version moving.
     func isOlder(than other: RemoteExquisiteCorpseState) -> Bool {
-        guard userID == other.userID, let game, let otherGame = other.game, game.id == otherGame.id else {
+        guard userID == other.userID,
+              dataEpoch == other.dataEpoch,
+              let game,
+              let otherGame = other.game,
+              game.id == otherGame.id
+        else {
             return false
         }
         if game.version != otherGame.version {

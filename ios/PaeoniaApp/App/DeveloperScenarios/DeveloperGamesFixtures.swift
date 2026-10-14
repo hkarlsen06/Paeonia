@@ -130,6 +130,7 @@
         userID: me,
         partnerUserID: partner,
         coupleID: DeveloperScenarioFixture.coupleID,
+        dataEpoch: "",
         settings: settings,
         game: game,
         currentRound: round,

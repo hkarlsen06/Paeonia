@@ -10,6 +10,7 @@ struct MindMeldScreen: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isConfirmingRestart = false
+    @State private var showsTutorial = false
 
     var body: some View {
         ZStack {
@@ -48,6 +49,7 @@ struct MindMeldScreen: View {
             bannerCenter.show(notice.banner)
             viewModel.clearNotice()
         }
+        .gameTutorial(GameTutorial(kind: .mindMeld, partnerName: viewModel.partnerName), isPresented: $showsTutorial)
         .accessibilityIdentifier("mindMeld.screen")
     }
 
@@ -90,39 +92,53 @@ struct MindMeldScreen: View {
 
     // MARK: Toolbar
 
-    /// The melds capsule, which opens "Our melds", and the menu. Nothing else,
-    /// so the title keeps its room.
+    /// The melds capsule, which opens "Our melds", and the menu with "How to play".
+    /// Nothing else, so the title keeps its room.
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             MindMeldMeldsLink(melds: viewModel.stats?.melds ?? 0, me: viewModel.me, partner: viewModel.partner)
         }
         .sharedBackgroundVisibility(.hidden)
-        if viewModel.game?.state == .playing {
-            ToolbarItem(placement: .topBarTrailing) {
-                moreMenu
-            }
+        ToolbarItem(placement: .topBarTrailing) {
+            moreMenu
         }
     }
 
     private var moreMenu: some View {
         Menu {
             Button {
-                isConfirmingRestart = true
+                showsTutorial = true
             } label: {
                 Label {
-                    Text(.mindMeldRestartMenu)
+                    Text(.gamesTutorialOpen)
                 } icon: {
-                    Image(systemName: "arrow.counterclockwise")
+                    Image(systemName: "questionmark.circle")
                 }
             }
-            .accessibilityIdentifier("mindMeld.restart")
+            .accessibilityIdentifier("games.tutorial.open")
+            if viewModel.game?.state == .playing {
+                restartButton
+            }
         } label: {
             Image(systemName: "ellipsis")
                 .accessibilityLabel(Text(.mindMeldMenuA11Y))
         }
-        .disabled(viewModel.isStartingGame)
         .accessibilityIdentifier("mindMeld.menu")
+    }
+
+    private var restartButton: some View {
+        Button {
+            isConfirmingRestart = true
+        } label: {
+            Label {
+                Text(.mindMeldRestartMenu)
+            } icon: {
+                Image(systemName: "arrow.counterclockwise")
+            }
+        }
+        .disabled(viewModel.isStartingGame)
+        .accessibilityIdentifier("mindMeld.restart")
     }
 }
 

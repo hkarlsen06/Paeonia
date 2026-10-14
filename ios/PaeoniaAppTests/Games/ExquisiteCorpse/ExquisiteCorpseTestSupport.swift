@@ -108,6 +108,7 @@ enum ExquisiteCorpseFixture {
             userID: me,
             partnerUserID: partner,
             coupleID: couple,
+            dataEpoch: "",
             game: game,
             currentFigure: current,
             recentFigures: recent,

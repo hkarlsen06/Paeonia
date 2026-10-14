@@ -186,11 +186,12 @@ enum BoardGameDataFixture {
         )
     }
 
-    static func state(_ games: RemoteBoardGame..., user: UUID = me) -> RemoteBoardGames {
+    static func state(_ games: RemoteBoardGame..., user: UUID = me, epoch: String = "") -> RemoteBoardGames {
         RemoteBoardGames(
             userID: user,
             partnerUserID: user == me ? partner : me,
             coupleID: coupleID,
+            dataEpoch: epoch,
             games: games
         )
     }

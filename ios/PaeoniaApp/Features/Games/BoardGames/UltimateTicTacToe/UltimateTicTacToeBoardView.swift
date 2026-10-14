@@ -126,7 +126,7 @@ struct UltimateTicTacToeBoardView: View {
         let side = geometry.side
         let transform = geometry.transform(focusing: playback.focus)
         return ZStack(alignment: .topLeading) {
-            boardLayer(geometry)
+            boardLayer(geometry, zoomScale: transform.scale)
                 .frame(width: side, height: side)
                 .scaleEffect(transform.scale, anchor: .topLeading)
                 .offset(transform.translation)
@@ -161,7 +161,7 @@ struct UltimateTicTacToeBoardView: View {
         )
     }
 
-    private func boardLayer(_ geometry: UltimateTicTacToeBoardGeometry) -> some View {
+    private func boardLayer(_ geometry: UltimateTicTacToeBoardGeometry, zoomScale: CGFloat) -> some View {
         let look = self.look
         return ZStack(alignment: .topLeading) {
             ForEach(0..<9, id: \.self) { index in
@@ -173,6 +173,7 @@ struct UltimateTicTacToeBoardView: View {
                     content: look.content(of: index),
                     emphasis: emphasis,
                     glowColor: glowColor(for: emphasis.glow),
+                    zoomScale: zoomScale,
                     styles: styles,
                     pulseCount: playback.pulseCounts[index],
                     access: access(for: index)

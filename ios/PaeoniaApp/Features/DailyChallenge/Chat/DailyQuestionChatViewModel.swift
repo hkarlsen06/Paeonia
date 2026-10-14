@@ -16,6 +16,21 @@ final class DailyQuestionChatViewModel {
         case voiceFailed
         /// Picked photos could not be prepared or saved on this phone.
         case photoFailed
+        /// A change to a sent message didn't reach the server. The text stays in the box.
+        case editFailed
+        /// The five minutes to change a message ran out.
+        case editWindowClosed
+    }
+
+    /// How saving an edit went, so the composer knows what to do with its text.
+    enum EditOutcome {
+        /// Saved, or nothing changed. The composer puts back what it held before.
+        case saved
+        /// Not saved. The composer stays in edit mode with the text.
+        case failed
+        /// Too late to edit. The composer leaves edit mode and keeps the text, so it
+        /// can go out as a new message.
+        case windowClosed
     }
 
     static let maximumMessageLength = 4_000
@@ -33,6 +48,8 @@ final class DailyQuestionChatViewModel {
     private(set) var notice: Notice?
     /// The message the next send replies to, shown above the composer.
     private(set) var replyTarget: DailyQuestionChatMessage?
+    /// The user's own message whose text the composer is changing.
+    private(set) var editTarget: DailyQuestionChatMessage?
     /// Changes when the composer should take focus, for example after picking a reply.
     private(set) var composerFocusRequest = 0
     /// Typing dots and read receipts.
@@ -267,7 +284,8 @@ extension DailyQuestionChatViewModel {
     }
 
     func setReplyTarget(_ message: DailyQuestionChatMessage) {
-        guard canReply(to: message) else { return }
+        // The composer holds the edited text, so a reply waits until the edit is done.
+        guard canReply(to: message), editTarget == nil else { return }
         replyTarget = message
         composerFocusRequest += 1
     }
@@ -388,6 +406,8 @@ extension DailyQuestionChatViewModel {
     }
 
     func draftChanged(_ text: String) {
+        // Changing a sent message is not writing a new one, so the partner sees no dots.
+        guard editTarget == nil else { return }
         presence.draftChanged(text)
     }
 
@@ -506,6 +526,56 @@ extension DailyQuestionChatViewModel {
         } catch {
             notice = .voiceFailed
             return false
+        }
+    }
+}
+
+// MARK: - Editing
+
+extension DailyQuestionChatViewModel {
+    func canEdit(_ message: DailyQuestionChatMessage) -> Bool {
+        message.canEdit(by: participants.currentUserID)
+    }
+
+    /// One edit at a time. Switching would throw away the changes typed so far.
+    func startEditing(_ message: DailyQuestionChatMessage) {
+        guard canEdit(message), editTarget == nil else { return }
+        replyTarget = nil
+        editTarget = message
+        composerFocusRequest += 1
+        Task { await presence.stopTyping() }
+    }
+
+    func cancelEdit() {
+        editTarget = nil
+    }
+
+    /// Saves the new text of `editTarget`. The live message query shows the change on
+    /// both phones once the server has it.
+    func saveEdit(_ text: String) async -> EditOutcome {
+        guard let target = editTarget else { return .saved }
+        let body = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !body.isEmpty else { return .failed }
+        guard body.unicodeScalars.count <= Self.maximumMessageLength else {
+            notice = .messageTooLong
+            return .failed
+        }
+        guard body != target.body else {
+            editTarget = nil
+            return .saved
+        }
+        do {
+            try await service.editMessage(messageID: target.id, body: body)
+            editTarget = nil
+            PaeoniaHaptics.selection()
+            return .saved
+        } catch is DailyQuestionChatEditWindowClosedError {
+            editTarget = nil
+            notice = .editWindowClosed
+            return .windowClosed
+        } catch {
+            notice = .editFailed
+            return .failed
         }
     }
 }

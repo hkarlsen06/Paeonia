@@ -43,13 +43,10 @@ struct PaeoniaImageViewerSelection: Identifiable {
     let id = UUID()
     let items: [PaeoniaImageViewerItem]
     let initialItemID: String
-    /// Shows a button that saves the photo on screen to the photo library.
-    var allowsSaving = false
 
-    init(items: [PaeoniaImageViewerItem], initialItemID: String, allowsSaving: Bool = false) {
+    init(items: [PaeoniaImageViewerItem], initialItemID: String) {
         self.items = items
         self.initialItemID = initialItemID
-        self.allowsSaving = allowsSaving
     }
 
     init(id: String = UUID().uuidString, image: UIImage) {
@@ -65,13 +62,14 @@ struct PaeoniaImageViewerSelection: Identifiable {
 struct PaeoniaImageViewerOverlay: View {
     let items: [PaeoniaImageViewerItem]
     let initialItemID: String
-    var allowsSaving = false
     let onDismiss: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.openURL) private var openURL
     @State private var selectedItemID: String
     @State private var savedItemIDs: Set<String> = []
     @State private var isSaving = false
+    @State private var isShowingSavePermissionAlert = false
     @State private var selectedPageIsZoomed = false
     @State private var dragOffset: CGFloat = 0
     @State private var isDismissing = false
@@ -88,12 +86,10 @@ struct PaeoniaImageViewerOverlay: View {
     init(
         items: [PaeoniaImageViewerItem],
         initialItemID: String,
-        allowsSaving: Bool = false,
         onDismiss: @escaping () -> Void
     ) {
         self.items = items
         self.initialItemID = initialItemID
-        self.allowsSaving = allowsSaving
         self.onDismiss = onDismiss
         _selectedItemID = State(initialValue: initialItemID)
     }
@@ -137,6 +133,21 @@ struct PaeoniaImageViewerOverlay: View {
             selectedPageIsZoomed = false
         }
         .statusBarHidden()
+        .alert(Text(.imageViewerSavePermissionTitle), isPresented: $isShowingSavePermissionAlert) {
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    openURL(url)
+                }
+            } label: {
+                Text(.commonOpenSettings)
+            }
+
+            Button(role: .cancel) {} label: {
+                Text(.commonCancel)
+            }
+        } message: {
+            Text(.imageViewerSavePermissionMessage)
+        }
     }
 
     private var pages: some View {
@@ -160,9 +171,7 @@ struct PaeoniaImageViewerOverlay: View {
 
     private var topBar: some View {
         HStack {
-            if allowsSaving {
-                saveButton
-            }
+            saveButton
             Spacer()
 
             Button {
@@ -180,19 +189,27 @@ struct PaeoniaImageViewerOverlay: View {
         .padding(.vertical, PaeoniaSpacing.space4)
     }
 
-    /// Saves the photo on screen to the photo library. The icon turns into a check once
-    /// it's saved, like Tidex's gallery.
+    /// Saves the photo on screen to the photo library. It spins while saving and
+    /// turns into a check once the photo is in Photos, like Tidex's gallery.
     private var saveButton: some View {
         let isSaved = savedItemIDs.contains(selectedItemID)
         return Button {
             Task { await saveSelectedImage() }
         } label: {
-            Image(systemName: isSaved ? "checkmark.circle.fill" : "arrow.down.circle.fill")
-                .font(.system(size: 30))
-                .foregroundStyle(Color.white.opacity(0.88))
-                .frame(width: 44, height: 44)
-                .background(Circle().fill(Color.black.opacity(0.32)))
-                .contentTransition(.symbolEffect(.replace))
+            ZStack {
+                if isSaving {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Image(systemName: isSaved ? "checkmark.circle.fill" : "arrow.down.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundStyle(Color.white.opacity(0.88))
+                        .contentTransition(.symbolEffect(.replace))
+                        .symbolEffect(.bounce, value: isSaved)
+                }
+            }
+            .frame(width: 44, height: 44)
+            .background(Circle().fill(Color.black.opacity(0.32)))
         }
         .buttonStyle(.plain)
         .disabled(isSaving || isSaved)
@@ -205,10 +222,18 @@ struct PaeoniaImageViewerOverlay: View {
         defer { isSaving = false }
         var loaded = item.image
         if loaded == nil { loaded = await item.imageLoader?() }
-        guard let data = loaded?.pngData() else { return }
-        if await PhotoLibrarySaver().savePNG(data) == .saved {
+        guard let data = loaded?.pngData() else {
+            PaeoniaHaptics.validationError()
+            return
+        }
+        switch await PhotoLibrarySaver().savePNG(data) {
+        case .saved:
             savedItemIDs.insert(item.id)
-            PaeoniaHaptics.selection()
+            PaeoniaHaptics.memorySaved()
+        case .permissionDenied:
+            isShowingSavePermissionAlert = true
+        case .failed:
+            PaeoniaHaptics.validationError()
         }
     }
 
@@ -301,8 +326,7 @@ extension View {
         fullScreenCover(item: selection) { viewerSelection in
             PaeoniaImageViewerOverlay(
                 items: viewerSelection.items,
-                initialItemID: viewerSelection.initialItemID,
-                allowsSaving: viewerSelection.allowsSaving
+                initialItemID: viewerSelection.initialItemID
             ) {
                 selection.wrappedValue = nil
             }

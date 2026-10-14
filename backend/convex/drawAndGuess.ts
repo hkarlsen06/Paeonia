@@ -33,7 +33,7 @@ import {
 } from "./lib/drawAndGuess";
 import { fail, uniqueViolation } from "./lib/errors";
 import { DIFFICULTY_POINTS, normalizeCustomWord, normalizeWordText } from "./lib/gameWords";
-import { enqueueGamePush, getGameSettings, requireGameSettings, requirePartnerId, settingsJson } from "./lib/games";
+import { dataEpoch, enqueueGamePush, getGameSettings, requireGameSettings, requirePartnerId, settingsJson } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
 import { gameRoom, onlineUserIds } from "./lib/presence";
 import { applyCoupleActivity } from "./lib/streaks";
@@ -149,6 +149,7 @@ export const get_draw_and_guess = query({
       user_id: userId,
       partner_user_id: partnerId,
       couple_id: coupleId,
+      data_epoch: dataEpoch(),
       settings: settings ? settingsJson(settings) : null,
       game: game ? gameJson(game, userId, partnerId) : null,
       current_round: rounds[0] ?? null,

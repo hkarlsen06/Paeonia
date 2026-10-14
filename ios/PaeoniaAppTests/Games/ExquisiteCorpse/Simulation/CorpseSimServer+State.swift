@@ -11,6 +11,7 @@ extension CorpseSimServer {
             userID: user,
             partnerUserID: partner(of: user),
             coupleID: coupleID,
+            dataEpoch: "",
             game: game.map(gameJSON),
             currentFigure: current.map { json($0, for: user) },
             recentFigures: recent.map { json($0, for: user) },

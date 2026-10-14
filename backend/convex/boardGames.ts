@@ -20,7 +20,7 @@ import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx } from "./lib/db";
 import { getByUuid, omitNulls, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
-import { requireGameSettings, requirePartnerId } from "./lib/games";
+import { dataEpoch, requireGameSettings, requirePartnerId } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
 import { applyCoupleActivity } from "./lib/streaks";
 import { charLength } from "./lib/text";
@@ -50,10 +50,15 @@ async function findPartnerId(ctx: ReaderCtx, coupleId: string, userId: string): 
   return (await listActiveMembers(ctx, coupleId)).find((member) => member.user_id !== userId)?.user_id ?? null;
 }
 
-/** The game, for a caller who may access its couple. Fails with 42501 otherwise. */
+/**
+ * The game, for a caller who may access its couple. Fails with 42501 otherwise. A game that is gone,
+ * such as after a restore of the server, fails with 40001, so the phone drops the action instead of
+ * retrying it forever.
+ */
 async function requireBoardGameById(ctx: ReaderCtx, userId: string, gameId: string): Promise<BoardGame> {
   const game = await getByUuid(ctx, "board_games", gameId);
-  if (!game || !(await canAccessCoupleContent(ctx, userId, game.couple_id))) {
+  if (!game) return fail("40001", "the game has changed");
+  if (!(await canAccessCoupleContent(ctx, userId, game.couple_id))) {
     return fail("42501", "active entitled game access is required");
   }
   return game;
@@ -89,7 +94,7 @@ export const get_board_games = query({
       const game = await getBoardGame(ctx, coupleId, kind);
       if (game) games.push(await boardGameView(ctx, game, userId, partnerId));
     }
-    return { user_id: userId, partner_user_id: partnerId, couple_id: coupleId, games };
+    return { user_id: userId, partner_user_id: partnerId, couple_id: coupleId, data_epoch: dataEpoch(), games };
   },
 });
 
@@ -180,7 +185,7 @@ function normalizeStake(stake: string | null, game: BoardGame, userId: string): 
 /**
  * Plays one move: a column in Connect Four, a line in Dots and Boxes, a cell in Ultimate Tic-Tac-Toe.
  * It fails with 40001 `the game has changed` when `p_expected_version` is not the current version or
- * the game is over, 42501 `it is not your turn`, and 23514 `that move is not allowed` for a move the
+ * the game is over or gone, 42501 `it is not your turn`, and 23514 `that move is not allowed` for a move the
  * rules refuse. The starter can send `p_stake` with the first move only. An empty stake means none.
  * Returns the game in the shape of `get_board_games`, as it is now. A retry of the same operation
  * changes nothing and returns the game as it is now too. Every accepted move counts as the `game_turn_completed` streak activity.

@@ -12,6 +12,10 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 ## Decisions
 
+Decided on 2026-10-14.
+
+- **How to play cards.** Ultimate Tic-Tac-Toe, Dots and Boxes and Mind Meld have three swipeable cards, each with one illustration and one or two sentences. They open by themselves the first time this phone opens the game, and again from "How to play" in the game's toolbar or menu. The other games still teach by playing. The cards are `GameTutorial` and `GameTutorialSheet` in `Features/Games/Shared/Tutorial/`, and the pictures are in the `GameTutorial` asset folder.
+
 Decided on 2026-10-13.
 
 - **Hub with several games.** Every built game gets a full-width card, stacked. The game the partner is in comes first, then games waiting for this person, then catalog order. All cards share one frame (`GameHubCardFrame`): the game's own painting behind the whole card (`docs/games/hub-artwork.md`), the partner-here chip, an optional badge such as the score, the name, a status line, the main button, and optional extras such as "Our drawings". The card glows while the game waits for this person.
@@ -48,7 +52,7 @@ Decided on 2026-10-11.
 
 Check every game design against this list before building it.
 
-1. **Fun within 30 seconds.** The first turn teaches the rules by playing. No tutorial screen.
+1. **Fun within 30 seconds.** The first turn teaches the rules by playing. A game whose rules are hard to learn that way also gets illustrated "How to play" cards (see Decisions).
 2. **Works apart.** Partners are often in different time zones, so every game works async. A game with live play also works when only one partner is online.
 3. **Only in Paeonia.** GamePigeon already offers classic board games inside iMessage. A game earns its place by using what only Paeonia has: the drawing canvas, the couple's shared context, and Memories.
 4. **A designed reveal.** The moment a partner sees the other's move gets the most attention to timing, haptics and animation.
@@ -174,7 +178,7 @@ Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`
 
 ### iOS
 
-1. Data: your gateway protocol and `Live<Prefix>Gateway`, your models, your cache, and your live feed, all in your folder. Register the feed in `Services/Live/LiveFeedRegistry.swift`, and clear your cache in `Storage/Privacy/LocalPrivacyPurgeService.swift` next to `gamesCache.clearAll()`. The feed posts `LocalStoreChanges.post(.games, ...)` after each write, so the tab re-reads. `GamesCache` holds the shared overview plus Draw & Guess's sections, so keep your data in your own cache.
+1. Data: your gateway protocol and `Live<Prefix>Gateway`, your models, your cache, and your live feed, all in your folder. Register the feed in `Services/Live/LiveFeedRegistry.swift`, and clear your cache in `Storage/Privacy/LocalPrivacyPurgeService.swift` next to `gamesCache.clearAll()`. The feed posts `LocalStoreChanges.post(.games, ...)` after each write, so the tab re-reads. `GamesCache` holds the shared overview plus Draw & Guess's sections, so keep your data in your own cache. Return `data_epoch: dataEpoch()` from your state query. Your cache's `isOlder(than:)` must return false when the two states have different `dataEpoch` values, so phones take the server's copy after a restore.
 2. `Features/Games/Data/GamesDependencies.swift`: add your dependency fields after `now`, each with a default that works offline, and set the live ones in `GamesDependencies.live()`.
 3. A hub model that conforms to `GameHubModel` (`Features/Games/Hub/GameHubModel.swift`), such as `DrawAndGuessHubModel`. Its `card` builds a `GameHubCardFrame` with your artwork, status line, action title, and any badge or extras. The artwork follows `docs/games/hub-artwork.md`. Its `screen(for:)` returns your screens. `isYourTurn` drives the tab badge.
 4. `Features/Games/Hub/GamesViewModel.swift`: add `let <camelKind>: <Prefix>HubModel`, its line in `init`, and add it to `games`. From then on the game has its hub card (the partner's game first, then your turn, then catalog order), its part of the tab badge, the Us tab card while the partner is in it, and deep links and pushes that open `.game(.<kind>)`.

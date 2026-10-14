@@ -350,6 +350,7 @@ struct DailyChatProjection {
         let hasLocalVoice: Bool
         let photoAssetIDs: [UUID?]
         let hasLocalPhotos: Bool
+        let isEdited: Bool
         let groupContext: DailyChatGroupContext
         let status: DailyChatMessageStatus?
         let quotedPreview: DailyChatReplyPreview?
@@ -367,6 +368,7 @@ struct DailyChatProjection {
             hasLocalVoice = message.voice?.data != nil
             photoAssetIDs = (message.photos ?? []).map(\.mediaAssetID)
             hasLocalPhotos = (message.photos ?? []).contains { $0.data != nil }
+            isEdited = message.editedAt != nil
             self.groupContext = groupContext
             self.status = status
             self.quotedPreview = quotedPreview

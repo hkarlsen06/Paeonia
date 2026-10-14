@@ -72,12 +72,30 @@ struct BoardGamesCacheTests {
         #expect(await kept(cache)?.version == 2)
     }
 
+    @Test func aStateFromAnotherDataEpochReplacesNewerAndMissingGames() async {
+        let cache = InMemoryBoardGamesCache(
+            state: Fixture.state(
+                Fixture.game(kind: .connectFour, moves: [3, 4]),
+                Fixture.game(kind: .ultimateTicTacToe, id: Fixture.otherGameID, moves: [40])
+            ),
+            ownerUserID: me
+        )
+        // The server was restored to a copy from before the second move and
+        // before the Ultimate Tic-Tac-Toe game.
+        let restored = Fixture.state(Fixture.game(kind: .connectFour, moves: [3]), epoch: "restored")
+
+        await cache.saveState(restored, ownerUserID: me)
+
+        #expect(await cache.document(ownerUserID: me).state == restored)
+    }
+
     @Test func aStateOfAnotherCoupleReplacesTheKeptState() async {
         let cache = InMemoryBoardGamesCache(state: Fixture.state(Fixture.game(moves: [3, 4])), ownerUserID: me)
         let newCouple = RemoteBoardGames(
             userID: me,
             partnerUserID: nil,
             coupleID: UUID(),
+            dataEpoch: "",
             games: [Fixture.game(id: Fixture.otherGameID)]
         )
 

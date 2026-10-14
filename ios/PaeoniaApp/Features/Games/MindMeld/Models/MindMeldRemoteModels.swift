@@ -114,6 +114,9 @@ nonisolated struct RemoteMindMeldState: Codable, Equatable, Sendable {
     let userID: UUID
     let partnerUserID: UUID?
     let coupleID: UUID
+    /// The server's data epoch (`PAEONIA_DATA_EPOCH`). It changes only after a backup
+    /// restore or a hand edit of the games, and then the server's copy wins.
+    let dataEpoch: String
     /// The couple's newest game.
     let current: RemoteMindMeldGame?
     /// The game before `current`, while this person has not seen how it ended.
@@ -124,6 +127,7 @@ nonisolated struct RemoteMindMeldState: Codable, Equatable, Sendable {
         case userID = "user_id"
         case partnerUserID = "partner_user_id"
         case coupleID = "couple_id"
+        case dataEpoch = "data_epoch"
         case current
         case previous
         case stats
@@ -137,8 +141,9 @@ nonisolated extension RemoteMindMeldState {
     /// replace a newer one.
     func isOlder(than other: RemoteMindMeldState) -> Bool {
         // Game numbers only order the games of one couple. A state from another
-        // couple is never older, so it can't win over a purge.
-        guard userID == other.userID, coupleID == other.coupleID else { return false }
+        // couple is never older, so it can't win over a purge. Neither is one
+        // from another data epoch, which follows a restore of the server.
+        guard userID == other.userID, coupleID == other.coupleID, dataEpoch == other.dataEpoch else { return false }
         // A couple's games never go away, so a read from before the first game
         // is behind one that has it.
         guard let game = current else { return other.current != nil }

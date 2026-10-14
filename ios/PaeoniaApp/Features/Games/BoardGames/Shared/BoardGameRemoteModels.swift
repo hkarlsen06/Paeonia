@@ -6,12 +6,16 @@ nonisolated struct RemoteBoardGames: Codable, Equatable, Sendable {
     let userID: UUID
     let partnerUserID: UUID?
     let coupleID: UUID
+    /// The server's data epoch (`PAEONIA_DATA_EPOCH`). It changes only after a backup
+    /// restore or a hand edit of the games, and then the server's copy wins.
+    let dataEpoch: String
     let games: [RemoteBoardGame]
 
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
         case partnerUserID = "partner_user_id"
         case coupleID = "couple_id"
+        case dataEpoch = "data_epoch"
         case games
     }
 
@@ -25,7 +29,13 @@ nonisolated struct RemoteBoardGames: Codable, Equatable, Sendable {
         games.append(game)
         let order = GameKind.allCases
         games.sort { (order.firstIndex(of: $0.kind) ?? 0) < (order.firstIndex(of: $1.kind) ?? 0) }
-        return RemoteBoardGames(userID: userID, partnerUserID: partnerUserID, coupleID: coupleID, games: games)
+        return RemoteBoardGames(
+            userID: userID,
+            partnerUserID: partnerUserID,
+            coupleID: coupleID,
+            dataEpoch: dataEpoch,
+            games: games
+        )
     }
 }
 

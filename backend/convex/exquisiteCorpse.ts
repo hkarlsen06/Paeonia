@@ -29,7 +29,7 @@ import {
   type CorpseFigure,
   type CorpseGame,
 } from "./lib/exquisiteCorpse";
-import { enqueueGamePush, getGameSettings, requireCoupleAccess, requireGameSettings, requirePartnerId } from "./lib/games";
+import { dataEpoch, enqueueGamePush, getGameSettings, requireCoupleAccess, requireGameSettings, requirePartnerId } from "./lib/games";
 import { newUuid, optionalUuidArg, uuidArg } from "./lib/ids";
 import { applyCoupleActivity } from "./lib/streaks";
 import { nowIso } from "./lib/time";
@@ -139,6 +139,7 @@ export const get_exquisite_corpse = query({
       user_id: userId,
       partner_user_id: partnerId,
       couple_id: coupleId,
+      data_epoch: dataEpoch(),
       game: game ? corpseGameJson(game) : null,
       current_figure: current ? await figureJson(ctx, current, userId) : null,
       recent_figures: recent,

@@ -407,6 +407,121 @@ describe("send_thread_message", () => {
   });
 });
 
+describe("edit_thread_message", () => {
+  async function sent(t: TestConvex) {
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first);
+    const [{ thread_id, message_id }] = await memoryThread(couple.first, memoryId, "frist try");
+    return { couple, threadId: thread_id, messageId: message_id };
+  }
+  const edit = (user: TestUser, messageId: string, body: string) =>
+    user.as.mutation(api.threads.edit_thread_message, { p_message_id: messageId, p_body: body });
+  const row = (t: TestConvex, messageId: string) =>
+    t.run((ctx) => ctx.db.query("thread_messages").withIndex("by_uuid", (q) => q.eq("id", messageId)).unique());
+
+  test("the sender changes the text and both partners read the edit", async () => {
+    const t = newTest();
+    const { couple, threadId, messageId } = await sent(t);
+    tick(4 * 60);
+    await edit(couple.first, messageId.toUpperCase(), "  first try  ");
+    expect(await row(t, messageId)).toMatchObject({ body: "first try", edited_at: new Date().toISOString() });
+    const rows = await couple.second.as.query(api.threads.get_thread_messages, { p_thread_id: threadId });
+    expect(rows[0]).toMatchObject({ body: "first try", edited_at: new Date().toISOString() });
+  });
+
+  test("saving the same text leaves the message unedited", async () => {
+    const t = newTest();
+    const { couple, messageId } = await sent(t);
+    await edit(couple.first, messageId, " frist try ");
+    expect((await row(t, messageId))?.edited_at).toBeUndefined();
+  });
+
+  test("closes five minutes after sending", async () => {
+    const t = newTest();
+    const { couple, messageId } = await sent(t);
+    tick(5 * 60 + 1);
+    expect(await failure(edit(couple.first, messageId, "late"))).toEqual({
+      code: "23514",
+      message: "messages can only be edited for 5 minutes after sending",
+    });
+  });
+
+  test("only the sender can edit, and only to some text", async () => {
+    const t = newTest();
+    const { couple, messageId } = await sent(t);
+    expect(await failure(edit(couple.second, messageId, "mine now"))).toEqual({
+      code: "42501",
+      message: "only the sender can edit a message",
+    });
+    expect(await failure(edit(couple.first, messageId, "   "))).toEqual({
+      code: "23514",
+      message: "an edited message must keep its text",
+    });
+    expect(await failure(edit(couple.first, messageId, "x".repeat(4001)))).toEqual({
+      code: "23514",
+      message: "thread message body is too long",
+    });
+  });
+
+  test("a message without text or a hidden message can't be edited", async () => {
+    const t = newTest();
+    const { couple, messageId } = await sent(t);
+    await t.run(async (ctx) => {
+      const message = await ctx.db.query("thread_messages").withIndex("by_uuid", (q) => q.eq("id", messageId)).unique();
+      await ctx.db.patch(message!._id, { body: undefined });
+    });
+    expect(await failure(edit(couple.first, messageId, "words"))).toEqual({
+      code: "23514",
+      message: "only messages with text can be edited",
+    });
+    await t.run(async (ctx) => {
+      const message = await ctx.db.query("thread_messages").withIndex("by_uuid", (q) => q.eq("id", messageId)).unique();
+      await ctx.db.patch(message!._id, { moderation_status: "hidden" });
+    });
+    expect(await failure(edit(couple.first, messageId, "words"))).toEqual({
+      code: "23514",
+      message: "message is not available",
+    });
+  });
+
+  test("a voice message can't be edited even with text", async () => {
+    const t = newTest();
+    const { couple, threadId } = await sent(t);
+    const voice = await uploadAsset(t, couple.first, {
+      kind: "thread_message_media",
+      purpose: "voice_note",
+      mediaType: "voice",
+      extension: "m4a",
+      mime: "audio/mp4",
+      coupleId: couple.coupleId,
+    });
+    await send(couple.first, threadId, { p_body: "words", p_media_asset_ids: [voice.assetId] });
+    expect(await failure(edit(couple.first, voice.parentId, "other words"))).toEqual({
+      code: "23514",
+      message: "only messages with text can be edited",
+    });
+  });
+
+  test("a photo caption can be edited", async () => {
+    const t = newTest();
+    const { couple, threadId } = await sent(t);
+    const a = await uploadAsset(t, couple.first, photo(couple.coupleId, "thread_message_media", "thread_media"));
+    await send(couple.first, threadId, { p_body: "caption", p_media_asset_ids: [a.assetId] });
+    await edit(couple.first, a.parentId, "better caption");
+    expect((await row(t, a.parentId))?.body).toBe("better caption");
+  });
+
+  test("a former partner can't edit", async () => {
+    const t = newTest();
+    const { couple, messageId } = await sent(t);
+    await endCouple(t, couple.coupleId, couple.first.userId);
+    expect(await failure(edit(couple.first, messageId, "still mine"))).toEqual({
+      code: "42501",
+      message: "active entitled thread access is required",
+    });
+  });
+});
+
 describe("reads", () => {
   test("get_conversation_threads lists threads with their last message, empty threads first", async () => {
     const t = newTest();

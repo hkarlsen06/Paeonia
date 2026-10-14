@@ -153,6 +153,7 @@
         userID: me,
         partnerUserID: partner,
         coupleID: DeveloperScenarioFixture.coupleID,
+        dataEpoch: "",
         game: game,
         currentFigure: current,
         recentFigures: recent,

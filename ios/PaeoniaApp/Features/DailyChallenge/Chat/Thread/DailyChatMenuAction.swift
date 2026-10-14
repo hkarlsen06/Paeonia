@@ -6,12 +6,14 @@ import SwiftUI
 /// the server has it yet (see `DailyChatProjection.make`).
 enum DailyChatMenuAction: MessageMenuAction, Sendable {
     case reply
+    case edit
     case copy
     case report
 
     func title() -> String {
         switch self {
         case .reply: String(localized: .dailyChatActionReply)
+        case .edit: String(localized: .dailyChatActionEdit)
         case .copy: String(localized: .dailyChatActionCopy)
         case .report: String(localized: .dailyChatActionReport)
         }
@@ -20,6 +22,7 @@ enum DailyChatMenuAction: MessageMenuAction, Sendable {
     func icon() -> Image {
         switch self {
         case .reply: Image(systemName: "arrowshape.turn.up.left")
+        case .edit: Image(systemName: "pencil")
         case .copy: Image(systemName: "doc.on.doc")
         case .report: Image(systemName: "flag")
         }
@@ -42,6 +45,11 @@ enum DailyChatMenuAction: MessageMenuAction, Sendable {
         let isOnServer = message.status == .sent
         if !isAnswer, isOnServer {
             items.append(.reply)
+        }
+        // Your own text, for five minutes after the server has it. Answers never.
+        if !isAnswer, !isPartner, isOnServer, hasText,
+           Date.now.timeIntervalSince(message.createdAt) <= DailyQuestionChatMessage.editWindow {
+            items.append(.edit)
         }
         if hasText {
             items.append(.copy)

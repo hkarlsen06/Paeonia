@@ -73,7 +73,8 @@ struct MindMeldHubSummaryTests: MindMeldResolverFixtures {
     @Test func theCouplesNumbersComeFromTheStats() {
         let stats = RemoteMindMeldStats(melds: 3, fewestRounds: 2, games: 5)
         let fresh = RemoteMindMeldState(
-            userID: me, partnerUserID: partner, coupleID: UUID(), current: nil, previous: nil, stats: stats
+            userID: me, partnerUserID: partner, coupleID: UUID(), dataEpoch: "",
+            current: nil, previous: nil, stats: stats
         )
         let result = MindMeldHubSummary(state: fresh, resolution: resolve(fresh))
 
@@ -84,7 +85,8 @@ struct MindMeldHubSummaryTests: MindMeldResolverFixtures {
     @Test func aCoupleWithoutFinishedGamesHasNoMeldsLink() {
         let stats = RemoteMindMeldStats(melds: 0, fewestRounds: nil, games: 0)
         let fresh = RemoteMindMeldState(
-            userID: me, partnerUserID: partner, coupleID: UUID(), current: nil, previous: nil, stats: stats
+            userID: me, partnerUserID: partner, coupleID: UUID(), dataEpoch: "",
+            current: nil, previous: nil, stats: stats
         )
         let result = MindMeldHubSummary(state: fresh, resolution: resolve(fresh))
 

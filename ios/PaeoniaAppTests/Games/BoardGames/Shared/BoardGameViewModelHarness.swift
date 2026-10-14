@@ -120,7 +120,7 @@ struct BoardGameHarness {
     }
 
     func state(_ games: RemoteBoardGame...) -> RemoteBoardGames {
-        RemoteBoardGames(userID: me, partnerUserID: partner, coupleID: Fixture.coupleID, games: games)
+        RemoteBoardGames(userID: me, partnerUserID: partner, coupleID: Fixture.coupleID, dataEpoch: "", games: games)
     }
 
     // MARK: Cache

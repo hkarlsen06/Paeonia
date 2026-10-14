@@ -16,6 +16,7 @@ struct MindMeldRemoteModelsTests {
         """
         {"user_id":"\(Self.me)","partner_user_id":"\(Self.partner)",
          "couple_id":"33333333-3333-3333-3333-333333333333",
+         "data_epoch":"",
          "current":{"id":"aaaaaaaa-0000-4000-8000-000000000002","game_number":\(gameNumber),"state":"playing",
            "end_reason":null,"ended_by_user_id":null,"ended_at":null,"max_rounds":10,"my_end_seen_at":null,
            "meld_number":null,"is_record":false,"created_by_user_id":"\(Self.partner)",
@@ -73,6 +74,7 @@ struct MindMeldRemoteModelsTests {
     @Test func decodesACoupleWithNoGame() throws {
         let json = """
         {"user_id":"\(Self.me)","partner_user_id":null,"couple_id":"33333333-3333-3333-3333-333333333333",
+         "data_epoch":"",
          "current":null,"previous":null,"stats":{"melds":0,"fewest_rounds":null,"games":0}}
         """
         let state = try decode(RemoteMindMeldState.self, json)
@@ -186,6 +188,7 @@ struct MindMeldRemoteModelsTests {
         let base = try decode(RemoteMindMeldState.self, stateJSON())
         let empty = try decode(RemoteMindMeldState.self, """
         {"user_id":"\(Self.me)","partner_user_id":null,"couple_id":"33333333-3333-3333-3333-333333333333",
+         "data_epoch":"",
          "current":null,"previous":null,"stats":{"melds":0,"fewest_rounds":null,"games":0}}
         """)
         let otherJSON = stateJSON(gameNumber: 9)
@@ -194,6 +197,12 @@ struct MindMeldRemoteModelsTests {
 
         let otherCouple = try decode(RemoteMindMeldState.self, """
         {"user_id":"\(Self.me)","partner_user_id":null,"couple_id":"44444444-4444-4444-4444-444444444444",
+         "data_epoch":"",
+         "current":null,"previous":null,"stats":{"melds":0,"fewest_rounds":null,"games":0}}
+        """)
+        let restored = try decode(RemoteMindMeldState.self, """
+        {"user_id":"\(Self.me)","partner_user_id":null,"couple_id":"33333333-3333-3333-3333-333333333333",
+         "data_epoch":"restored",
          "current":null,"previous":null,"stats":{"melds":0,"fewest_rounds":null,"games":0}}
         """)
 
@@ -203,5 +212,7 @@ struct MindMeldRemoteModelsTests {
         // A new couple starts with no game, and that is not behind the old couple's.
         #expect(!otherCouple.isOlder(than: base))
         #expect(!base.isOlder(than: other))
+        // After a restore of the server, its state wins even without the game.
+        #expect(!restored.isOlder(than: base))
     }
 }

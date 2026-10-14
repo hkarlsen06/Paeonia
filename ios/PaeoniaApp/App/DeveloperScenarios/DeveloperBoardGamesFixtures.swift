@@ -281,6 +281,7 @@
         userID: DeveloperGamesFixture.me,
         partnerUserID: DeveloperGamesFixture.partner,
         coupleID: DeveloperScenarioFixture.coupleID,
+        dataEpoch: "",
         games: setups(for: scenario).map { $0.remoteGame() }
       )
     }
