@@ -54,7 +54,8 @@ Functions ported from Supabase kept their RPC shapes, which gives the convention
 - Supabase used row level security plus `auth.uid()` checks inside `internal.*` functions. Convex has neither, so every public function must perform the same membership, entitlement, block, and ownership checks explicitly, using the helpers in `lib/access.ts`. When porting, read the RLS policies on every table the function touches and preserve their effect.
 - Never trust a user id, couple id, or role from arguments for authorization. Derive them from the session.
 - Access helpers take the user id explicitly, for example `canAccessCoupleContent(ctx, userId, coupleId)`. The SQL read `auth.uid()` inside. Get `userId` from `requireUserId` once per function and pass it down.
-- `is_admin` was always false, so `isAdmin()` returns false. App users are never admins. Operator work runs through internal functions.
+- `is_admin` was always false, so `isAdmin()` in `lib/access.ts` returns false. It is about content access, and no app user gets more of that. The admin area is separate: `admin.ts` checks the caller's Clerk user id against `PAEONIA_ADMIN_CLERK_USER_IDS` on every call, and only lets admins search users, ban, unban, and read the audit log (`admin_audit_log`). It never shows relationship content.
+- Bans: `users.banned_at` is set by `banUser` in `lib/bans.ts`, which also ends the relationship and turns off push devices. `activeUserIdForSubject` treats a banned user as signed out, so every function refuses them without its own check. `get_access_snapshot` answers `account_status: "banned"`, and the app shows the closed-account screen. Account deletion still works for a banned user. Nobody can ban themselves or an admin.
 - Clerk's default session token has no provider or name claims. `delete_account` asks the Clerk Backend API for linked Apple accounts, so Apple token revocation does not depend on a claim. An optional custom claim `auth_provider` (`apple` or `google`) and the standard name claims, if added to the session token, fill `users.auth_provider` and the initial profile name.
 
 ## Triggers
@@ -150,7 +151,7 @@ Local-first writes from iOS carry `p_client_operation_id`, `p_client_id`, `p_cli
 
 ## Environment variables
 
-Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KEY`, `PAEONIA_MEDIA_URL_SECRET`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY`, `APNS_BUNDLE_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_KEY_ID`, `APPLE_IAP_PRIVATE_KEY`, `APPLE_BUNDLE_ID`, `APPLE_APP_APPLE_ID`, `PAEONIA_LIVE_RELAY_URL`, `PAEONIA_LIVE_RELAY_SECRET`. Never commit values. `PAEONIA_DATA_EPOCH` is optional and reads as an empty string while unset. Change it only after a restore or a hand edit of game rows (see the hosted deployment section).
+Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KEY`, `PAEONIA_MEDIA_URL_SECRET`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY`, `APNS_BUNDLE_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_KEY_ID`, `APPLE_IAP_PRIVATE_KEY`, `APPLE_BUNDLE_ID`, `APPLE_APP_APPLE_ID`, `PAEONIA_LIVE_RELAY_URL`, `PAEONIA_LIVE_RELAY_SECRET`, `PAEONIA_ADMIN_CLERK_USER_IDS` (the Clerk user ids of the admins, comma separated). Never commit values. `PAEONIA_DATA_EPOCH` is optional and reads as an empty string while unset. Change it only after a restore or a hand edit of game rows (see the hosted deployment section).
 
 ## Module map
 
@@ -160,6 +161,7 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `pairing` | `create_pairing_invite`, `preview_pairing_invite`, `validate_my_pairing_invite`, `accept_pairing_invite`, `revoke_pairing_invite`, `rotate_pairing_invite` |
 | `relationship` | `get_relationship_sync_events`, `leave_relationship`, `mark_relationship_ended_notice_seen`, `set_couple_started_on` |
 | `access` | `get_access_snapshot`, `get_or_create_app_account_token`, `verify_purchase` (action), `redeem_streak_restore` (action) |
+| `admin` | `get_admin_status`, `search_users`, `get_user`, `ban_user`, `unban_user`, `get_audit_log`. Operator commands: `operator_ban_user` and `operator_unban_user` (`{ p_user_id, p_reason?, p_operator }`) |
 | `daily` | `start_daily_challenge_snapshot`, `get_today_daily_challenge_snapshot`, `get_daily_challenge_snapshot` (query by `p_couple_day_id`; subscribe to this one, since its rows do not depend on the clock), `shuffle_daily_question_snapshot`, `submit_daily_answer`, `update_daily_answer_text`, `update_daily_answer_partner_choice`, `get_daily_answer_details`, `get_daily_questions_history`, `get_daily_answer_history_details` |
 | `streaks` | `get_couple_streak` |
 | `dailyQuestionChat` | `get_daily_question_chat` (by `p_couple_id` and `p_question_id`: a question's rounds with the reveal rule applied per round, plus the chat's `thread_id`) |

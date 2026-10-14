@@ -16,7 +16,7 @@ import {
   toDatabaseEnvironment,
   verifyTransactionWithApple,
 } from "./lib/appleStoreKit";
-import { activeUserIdForSubject, getCurrentUserId, requireUserId } from "./lib/auth";
+import { activeUserIdForSubject, getCurrentUserId, isCurrentUserBanned, requireUserId } from "./lib/auth";
 import { fail } from "./lib/errors";
 import { newUuid, uuidArg } from "./lib/ids";
 import { getCurrentRelationshipState } from "./lib/relationshipState";
@@ -25,13 +25,22 @@ import { storekitEnvironment } from "./lib/validators";
 
 // ---- App-callable reads and token handling ----
 
-/** Port of `get_access_snapshot`. One row with the three JSON objects the app routes on. */
+/**
+ * Port of `get_access_snapshot`. One row with the JSON objects the app routes on.
+ * A banned account gets `account_status: "banned"` and nothing else, so the app
+ * shows the closed-account screen. The app subscribes to this, so a ban reaches
+ * an open app at once.
+ */
 export const get_access_snapshot = query({
   args: {},
   handler: async (ctx) => {
+    if (await isCurrentUserBanned(ctx)) {
+      return [{ account_status: "banned", user_entitlement: null, couple_entitlement: null, relationship_state: null }];
+    }
     const userId = await requireUserId(ctx);
     return [
       {
+        account_status: "active",
         user_entitlement: await resolveUserEntitlement(ctx, userId),
         couple_entitlement: await resolveCurrentCoupleEntitlement(ctx, userId),
         relationship_state: await getCurrentRelationshipState(ctx, userId),

@@ -51,11 +51,35 @@ export default defineSchema({
     created_at: ts,
     // Last display name seen in the Clerk claims, used to detect provider name changes.
     claim_display_name: optString,
+    // Set while the account is banned. Every session lookup treats a banned user as
+    // signed out, and the access snapshot reports `account_status: "banned"`.
+    banned_at: optTs,
+    // Why, for the admin. The banned person never sees it.
+    ban_reason: optString,
+    // The admin who banned, or missing for an operator command.
+    banned_by_user_id: optUuid,
   })
     .index("by_uuid", ["id"])
-    .index("by_clerk_user_id", ["clerk_user_id"]),
+    .index("by_clerk_user_id", ["clerk_user_id"])
+    .index("by_banned_at", ["banned_at"]),
 
   // ---- internal schema ----
+
+  // What admins and operator commands did, newest first in the admin screen.
+  // FK: admin_user_id, target_user_id -> users (kept after a user is deleted).
+  admin_audit_log: defineTable({
+    id: uuid,
+    action: literals("user_banned", "user_unbanned"),
+    // Missing for an operator command run with `npx convex run`.
+    admin_user_id: optUuid,
+    operator_identifier: optString,
+    target_user_id: uuid,
+    reason: optString,
+    created_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_created_at", ["created_at"])
+    .index("by_target_user_id_created_at", ["target_user_id", "created_at"]),
 
   // FK: request_id -> privacy_requests restrict
   account_deletion_jobs: defineTable({
@@ -988,7 +1012,9 @@ export default defineSchema({
     .index("by_moderation_report_id", ["moderation_report_id"])
     .index("by_profile_photo_asset_id", ["profile_photo_asset_id"])
     .index("by_provider_profile_photo_asset_id", ["provider_profile_photo_asset_id"])
-    .index("by_updated_at_user_id", ["updated_at", "user_id"]),
+    .index("by_updated_at_user_id", ["updated_at", "user_id"])
+    // The admin user search.
+    .searchIndex("search_display_name", { searchField: "display_name" }),
 
   // FK: question_version_id -> question_versions cascade. (question_version_id, answer_kind) is unique.
   question_answer_kinds: defineTable({

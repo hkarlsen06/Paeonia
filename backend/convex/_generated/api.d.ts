@@ -10,6 +10,7 @@
 
 import type * as access from "../access.js";
 import type * as accountDeletion from "../accountDeletion.js";
+import type * as admin from "../admin.js";
 import type * as boardGames from "../boardGames.js";
 import type * as catalog from "../catalog.js";
 import type * as chatPresence from "../chatPresence.js";
@@ -30,6 +31,7 @@ import type * as lib_appleNotificationVerifier from "../lib/appleNotificationVer
 import type * as lib_appleStoreKit from "../lib/appleStoreKit.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_backgroundWorkpool from "../lib/backgroundWorkpool.js";
+import type * as lib_bans from "../lib/bans.js";
 import type * as lib_boardGameBackend from "../lib/boardGameBackend.js";
 import type * as lib_boardGameRules from "../lib/boardGameRules.js";
 import type * as lib_boardGameStore from "../lib/boardGameStore.js";
@@ -113,6 +115,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   access: typeof access;
   accountDeletion: typeof accountDeletion;
+  admin: typeof admin;
   boardGames: typeof boardGames;
   catalog: typeof catalog;
   chatPresence: typeof chatPresence;
@@ -133,6 +136,7 @@ declare const fullApi: ApiFromModules<{
   "lib/appleStoreKit": typeof lib_appleStoreKit;
   "lib/auth": typeof lib_auth;
   "lib/backgroundWorkpool": typeof lib_backgroundWorkpool;
+  "lib/bans": typeof lib_bans;
   "lib/boardGameBackend": typeof lib_boardGameBackend;
   "lib/boardGameRules": typeof lib_boardGameRules;
   "lib/boardGameStore": typeof lib_boardGameStore;

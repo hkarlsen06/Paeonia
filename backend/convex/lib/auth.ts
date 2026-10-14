@@ -18,15 +18,16 @@ async function findUserByClerkSubject(ctx: QueryCtx, subject: string): Promise<D
 }
 
 /**
- * The Paeonia uuid for a Clerk subject, or null when it was never provisioned
- * or its account deletion finished. The `users` row outlives deletion (it
- * blocks re-provisioning), and a Clerk token can stay valid for a short while
- * after the Clerk user is gone. Supabase got this for free from the deleted
- * auth user, so every session lookup must go through here.
+ * The Paeonia uuid for a Clerk subject, or null when it was never provisioned,
+ * its account deletion finished, or it is banned. The `users` row outlives
+ * deletion (it blocks re-provisioning), and a Clerk token can stay valid for a
+ * short while after the Clerk user is gone. Supabase got this for free from the
+ * deleted auth user, so every session lookup must go through here. A ban works
+ * the same way, so no function needs its own ban check.
  */
 export async function activeUserIdForSubject(ctx: QueryCtx, subject: string): Promise<string | null> {
   const user = await findUserByClerkSubject(ctx, subject);
-  if (!user) {
+  if (!user || user.banned_at !== undefined) {
     return null;
   }
   const completedDeletion = await ctx.db
@@ -50,7 +51,14 @@ export async function requireUserIdIncludingDeleted(ctx: QueryCtx): Promise<stri
   return user.id;
 }
 
-/** The signed-in user's Paeonia uuid, or null when signed out, not yet provisioned, or deleted. */
+/** True when the signed-in Clerk user's Paeonia account is banned. */
+export async function isCurrentUserBanned(ctx: QueryCtx): Promise<boolean> {
+  const identity = await ctx.auth.getUserIdentity();
+  const user = identity ? await findUserByClerkSubject(ctx, identity.subject) : null;
+  return user?.banned_at !== undefined;
+}
+
+/** The signed-in user's Paeonia uuid, or null when signed out, not yet provisioned, deleted, or banned. */
 export async function getCurrentUserId(ctx: QueryCtx): Promise<string | null> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {

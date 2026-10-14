@@ -155,7 +155,7 @@ describe("record_verified_storekit_transaction", () => {
     );
 
     const [snapshot] = await second.as.query(api.access.get_access_snapshot, {});
-    expect(snapshot.user_entitlement.is_entitled).toBe(false);
+    expect(snapshot.user_entitlement?.is_entitled).toBe(false);
     expect(snapshot.couple_entitlement).toMatchObject({ couple_id: couple.coupleId, is_entitled: true, covering_user_id: first.userId });
     expect(snapshot.relationship_state).toMatchObject({ couple_id: couple.coupleId, partner_user_id: first.userId });
 
@@ -301,7 +301,7 @@ describe("record_storekit_server_notification", () => {
     );
     const [row] = await transactions(t);
     expect(row).toMatchObject({ status: "refunded", revocation_reason: "customer_refund" });
-    expect((await user.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement.is_entitled).toBe(false);
+    expect((await user.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement?.is_entitled).toBe(false);
   });
 });
 
@@ -474,7 +474,7 @@ describe("expire_stale_entitlements", () => {
       storekitArgs({ userId: couple.first.userId, token: await tokenFor(couple.first), expiresAt: hoursFromNow(1) }),
     );
     vi.setSystemTime(new Date(NOW.getTime() + 2 * 3_600_000));
-    expect((await couple.first.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement.is_entitled).toBe(false);
+    expect((await couple.first.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement?.is_entitled).toBe(false);
     expect((await transactions(t))[0].status).not.toBe("expired");
     await t.mutation(internal.storekit.expire_stale_entitlements, {});
     expect((await transactions(t))[0].status).toBe("expired");

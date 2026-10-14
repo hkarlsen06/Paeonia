@@ -111,7 +111,7 @@ describe("POST /apple/server-notifications", () => {
     const [row] = await t.run((ctx) => ctx.db.query("storekit_transactions").collect());
     expect(row).toMatchObject({ status: "refunded", revocation_reason: "customer_refund" });
     expect(row.revoked_at).toBeDefined();
-    expect((await user.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement.is_entitled).toBe(false);
+    expect((await user.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement?.is_entitled).toBe(false);
   });
 
   test("a streak restore refund is logged on the restore ledger", async () => {

@@ -137,6 +137,7 @@ describe("access snapshot", () => {
     const rows = await user.as.query(api.access.get_access_snapshot, {});
     expect(rows).toEqual([
       {
+        account_status: "active",
         user_entitlement: {
           user_id: user.userId,
           is_entitled: false,
