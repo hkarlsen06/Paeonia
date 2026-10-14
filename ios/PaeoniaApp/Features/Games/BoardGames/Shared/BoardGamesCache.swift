@@ -33,6 +33,8 @@ nonisolated struct BoardGamesLocalDocument: Codable, Equatable, Sendable {
     /// One entry per unexplained server refusal of a queued write, by operation
     /// id. Offline tries and waits behind an earlier action never land here.
     var unexplainedRefusals: [UUID] = []
+    /// The die this person rolled in Ludo and has not played yet.
+    var ludoRoll: LudoSavedRoll?
 
     func shownPosition(of kind: GameKind) -> BoardGameShownPosition? {
         shown[kind.rawValue]
@@ -72,6 +74,8 @@ protocol BoardGamesCaching: Actor {
     func saveFetchedMarks(_ marks: RemoteBoardGameMarks, ownerUserID: UUID, ticket: Int) -> Bool
     /// Remembers how far this phone has shown `kind`.
     func markShown(_ position: BoardGameShownPosition, kind: GameKind, ownerUserID: UUID)
+    /// Keeps the die rolled in Ludo, so reopening the board shows the same roll.
+    func saveLudoRoll(_ roll: LudoSavedRoll, ownerUserID: UUID)
     /// Counts one unexplained server refusal of a queued write and returns how
     /// many that write has had.
     func recordUnexplainedRefusal(operationID: UUID, ownerUserID: UUID) -> Int
@@ -258,6 +262,10 @@ actor FileBoardGamesCache: BoardGamesCaching {
         update(ownerUserID: ownerUserID) { $0.shown[kind.rawValue] = position }
     }
 
+    func saveLudoRoll(_ roll: LudoSavedRoll, ownerUserID: UUID) {
+        update(ownerUserID: ownerUserID) { $0.ludoRoll = roll }
+    }
+
     func recordUnexplainedRefusal(operationID: UUID, ownerUserID: UUID) -> Int {
         var count = 0
         update(ownerUserID: ownerUserID) { count = $0.recordRefusal(of: operationID) }
@@ -359,6 +367,10 @@ actor InMemoryBoardGamesCache: BoardGamesCaching {
 
     func markShown(_ position: BoardGameShownPosition, kind: GameKind, ownerUserID: UUID) {
         documents[ownerUserID, default: BoardGamesLocalDocument()].shown[kind.rawValue] = position
+    }
+
+    func saveLudoRoll(_ roll: LudoSavedRoll, ownerUserID: UUID) {
+        documents[ownerUserID, default: BoardGamesLocalDocument()].ludoRoll = roll
     }
 
     func recordUnexplainedRefusal(operationID: UUID, ownerUserID: UUID) -> Int {

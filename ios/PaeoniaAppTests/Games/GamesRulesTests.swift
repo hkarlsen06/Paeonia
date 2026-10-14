@@ -124,6 +124,7 @@ struct GamesRulesTests {
             #expect(PaeoniaDeepLink(PaeoniaDeepLink.gameURL(kind)) == .game(kind))
         }
         #expect(PaeoniaDeepLink.gameURL(.ultimateTicTacToe).absoluteString == "paeonia://games/ultimate-tic-tac-toe")
+        #expect(PaeoniaDeepLink.gameURL(.ludo).absoluteString == "paeonia://games/ludo")
         #expect(PaeoniaDeepLink(URL(string: "paeonia://games/draw-and-guess")!) == .game(.drawAndGuess))
         #expect(PaeoniaDeepLink(URL(string: "paeonia://games/draw_and_guess")!) == nil)
         #expect(PaeoniaDeepLink(URL(string: "paeonia://games/other")!) == nil)

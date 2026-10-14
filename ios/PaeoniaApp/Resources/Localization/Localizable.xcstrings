@@ -12333,6 +12333,222 @@
         }
       }
     },
+    "ludo.announce.partnerMoved" : {
+      "comment" : "VoiceOver announcement when the partner's Ludo move arrives. %1$@ is the partner's name, %2$lld is the number they rolled, 1 to 6.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ rolled a %2$lld and moved a pawn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ kastet %2$lld og flyttet en brikke"
+          }
+        }
+      }
+    },
+    "ludo.announce.partnerSentHome" : {
+      "comment" : "VoiceOver announcement when the partner's Ludo move lands on this person's pawn and sends it back to its base. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sent your pawn home"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sendte brikken din hjem"
+          }
+        }
+      }
+    },
+    "ludo.board.label" : {
+      "comment" : "VoiceOver label of the whole Ludo board, the 3D picture with the pawns and the die.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ludo board"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ludo-brett"
+          }
+        }
+      }
+    },
+    "ludo.die.roll" : {
+      "comment" : "VoiceOver label of the die on this person's side of the Ludo board while it is their turn to roll. Double-tapping it rolls the die.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roll the die"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kast terningen"
+          }
+        }
+      }
+    },
+    "ludo.die.rolled" : {
+      "comment" : "VoiceOver label of the die after a roll. The number is what the die shows, 1 to 6.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rolled a %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kastet %lld"
+          }
+        }
+      }
+    },
+    "ludo.hint.noMove" : {
+      "comment" : "Line under the Ludo board when the roll leaves no pawn to move, so the turn passes by itself. The number is the die that was rolled, 1 to 6.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No move with a %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen trekk med %lld"
+          }
+        }
+      }
+    },
+    "ludo.hint.rollAgain" : {
+      "comment" : "Line under the Ludo board when this person gets another roll, after a 6, after sending the partner's pawn home, or after getting a pawn home.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roll again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kast en gang til"
+          }
+        }
+      }
+    },
+    "ludo.hint.rollSix" : {
+      "comment" : "Line under the Ludo board while all of this person's pawns are still in the base. A pawn can only leave the base on a 6.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roll a 6 to bring a pawn out"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kast en 6 for å få ut en brikke"
+          }
+        }
+      }
+    },
+    "ludo.hint.tapToRoll" : {
+      "comment" : "Line under the Ludo board on this person's first roll of a game. The die on their side of the board is the thing to tap.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the die to roll"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk på terningen for å kaste"
+          }
+        }
+      }
+    },
+    "ludo.name" : {
+      "comment" : "Name of the Ludo board game, on its card and as the screen title. Norwegians call the game Ludo too.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ludo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ludo"
+          }
+        }
+      }
+    },
+    "ludo.pawn.movable" : {
+      "comment" : "VoiceOver label of one of this person's pawns that can move with the roll. %1$lld is the pawn, 1 or 2. %2$lld is how many squares are left before the pawn is home.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your pawn %1$lld. Squares to home: %2$lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din brikke %1$lld. Ruter til mål: %2$lld"
+          }
+        }
+      }
+    },
+    "ludo.pawn.move" : {
+      "comment" : "VoiceOver action name on a pawn that can move. %lld is the number on the die, so the pawn moves that many squares.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move by %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt %lld"
+          }
+        }
+      }
+    },
     "mainTab.games" : {
       "comment" : "Title for the Games tab in the main tab bar",
       "extractionState" : "manual",

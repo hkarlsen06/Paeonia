@@ -1,7 +1,7 @@
 #if DEBUG
   import SwiftUI
 
-  /// Connect Four, Dots and Boxes and Ultimate Tic-Tac-Toe scenarios. Each one
+  /// Connect Four, Dots and Boxes, Ultimate Tic-Tac-Toe and Ludo scenarios. Each one
   /// opens its game in `DeveloperBoardGamesScenarioView`. The hub with all the
   /// board game cards is `gamesHubBoardGames` in `DeveloperScenario+App.swift`.
   nonisolated extension DeveloperScenario {
@@ -10,6 +10,7 @@
       connectFourMissedEnding, connectFourOffline,
       dotsAndBoxesPhoto, dotsAndBoxesExtraTurn, dotsAndBoxesWonPhoto, dotsAndBoxesPlain,
       ultimateTicTacToeForced, ultimateTicTacToeFree, ultimateTicTacToePartnerMove, ultimateTicTacToeWon,
+      ludoYourTurn, ludoChoosePawn, ludoPartnerCapture, ludoWon,
       boardGameMarkEditor,
     ]
 
@@ -71,6 +72,22 @@
     static let ultimateTicTacToeWon = boardGameScreen(
       "ultimate-tic-tac-toe-won", "Ultimate Tic-Tac-Toe · you win",
       "Your last move wins three boards in a row: the strike line, the petals and the result"
+    )
+    static let ludoYourTurn = boardGameScreen(
+      "ludo-your-turn", "Ludo · your turn",
+      "A new game you start: the die waits on your tray and the status says Tap the die to roll"
+    )
+    static let ludoChoosePawn = boardGameScreen(
+      "ludo-choose-pawn", "Ludo · choose a pawn",
+      "You rolled a 3 earlier and the app was closed: the same roll shows and both pawns can move"
+    )
+    static let ludoPartnerCapture = boardGameScreen(
+      "ludo-partner-capture", "Ludo · Robin sends your pawn home",
+      "Opens two moves behind: Robin's 4 lands on your pawn and it goes back to the base, then it is your turn"
+    )
+    static let ludoWon = boardGameScreen(
+      "ludo-won", "Ludo · you win",
+      "Your last pawn gets home on a 1: the home glows, the petals and the result with your stake"
     )
     static let boardGameMarkEditor = boardGameScreen(
       "board-game-mark-editor", "Board games · your mark",

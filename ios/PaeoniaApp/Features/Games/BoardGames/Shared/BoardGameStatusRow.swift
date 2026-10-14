@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The line under the board. On the left, whether the partner has the game open.
+/// The line under the board. On the left, whether the partner has the game open,
+/// or the game's own hint while it has one (Ludo's "Roll again").
 /// On the right, an "Another turn" chip that pops in each time the extra turn
 /// count goes up and fades after 1.5 seconds. The chip's space is always
 /// reserved, so nothing around the row moves when it shows.
@@ -9,6 +10,7 @@ struct BoardGameStatusRow: View {
     let status: BoardGamePartnerStatus
     /// Goes up with each extra turn of mine (Dots and Boxes).
     let extraTurnCount: Int
+    var hint: LocalizedStringResource?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The extra turn count the visible chip belongs to, or nil while no chip shows.
@@ -25,6 +27,7 @@ struct BoardGameStatusRow: View {
             chipSlot
         }
         .animation(PaeoniaMotion.stateChange, value: status)
+        .animation(PaeoniaMotion.stateChange, value: hint)
         .onChange(of: status) { _, newStatus in
             AccessibilityNotification.Announcement(String(localized: text(for: newStatus))).post()
         }
@@ -38,18 +41,27 @@ struct BoardGameStatusRow: View {
 
     // MARK: Presence
 
+    @ViewBuilder
     private var presence: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            if status == .here {
-                BoardGamePresenceDot()
-                    .transition(.scale.combined(with: .opacity))
-            }
-            Text(text(for: status))
+        if let hint {
+            Text(hint)
                 .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(status == .here ? .paeoniaTextSecondary : .paeoniaTextTertiary)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .transition(.opacity)
+                .accessibilityIdentifier("boardGames.hint")
+        } else {
+            HStack(spacing: PaeoniaSpacing.space8) {
+                if status == .here {
+                    BoardGamePresenceDot()
+                        .transition(.scale.combined(with: .opacity))
+                }
+                Text(text(for: status))
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(status == .here ? .paeoniaTextSecondary : .paeoniaTextTertiary)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("boardGames.status")
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("boardGames.status")
     }
 
     private func text(for status: BoardGamePartnerStatus) -> LocalizedStringResource {

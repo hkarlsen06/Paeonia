@@ -1,6 +1,6 @@
 # Games plan
 
-Plan and decisions for the Games tab. Draw & Guess is built (`backend/convex/drawAndGuess.ts`, `Features/Games/DrawAndGuess/`). The shared Games wiring is kind-based: the backend (`backend/convex/games.ts`, `lib/games.ts`, `lib/gameRegistry.ts`), the relay (`relay/src/ticket.ts`) and Swift (`GameKind`) register all seven kinds below, and each game plugs in at the points in "Adding a game". Sections marked "Decided" were agreed with the developer. Everything else is the current proposal and can change.
+Plan and decisions for the Games tab. Draw & Guess is built (`backend/convex/drawAndGuess.ts`, `Features/Games/DrawAndGuess/`). The shared Games wiring is kind-based: the backend (`backend/convex/games.ts`, `lib/games.ts`, `lib/gameRegistry.ts`), the relay (`relay/src/ticket.ts`) and Swift (`GameKind`) register all eight kinds below, and each game plugs in at the points in "Adding a game". Sections marked "Decided" were agreed with the developer. Everything else is the current proposal and can change.
 
 Keep this file current. When a games decision changes, or games code lands, update the matching section in the same change. Move items from "Open questions" to "Decisions" once the developer settles them, and replace proposals with what was actually built.
 
@@ -9,6 +9,7 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 - `docs/games/draw-and-guess.md`: the first game.
 - `docs/games/mind-meld.md`: the simultaneous word game.
 - `docs/games/hub-artwork.md`: the standard every game's hub picture follows.
+- `docs/games/ludo.md`: Ludo, the fourth board game, on the board game engine.
 
 ## Decisions
 
@@ -140,12 +141,13 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 - **Story Chain.** Built. The partners write one story together, one or two sentences a turn. A writer can dare the partner to use a word in the next line, and the partner who did not write the last line names the story. Live play shows the partner's letters as they are typed. Its design is in `docs/games/story-chain.md`.
 - **Guess my spot.** Send a photo of where you are. The partner drops a pin on a map and scores by distance. The sender's coordinates stay hidden until the guess.
 - **Board games.** Connect Four, Dots and Boxes and Ultimate Tic-Tac-Toe share one turn engine (`make_move` with a pure rules function per kind). Each partner's own drawn mark is on every piece, the starter can play for something, and Dots and Boxes uncovers a random photo from Memories. Built. Design in `docs/games/board-games.md`.
+- **Ludo.** The fourth board game, on the same engine. Two pawns each race round the classic cross board. The phone rolls the die and the roll is part of the move, so a move can still be made offline. Design in `docs/games/ludo.md`.
 - **Battleship with date ideas.** Hide date ideas instead of ships. Sinking one turns it into a plan.
 - **Chess and word games.** Popular but expensive. Chess needs a rules engine. A word game needs licensed English and Norwegian dictionaries. Deferred.
 
 ## Adding a game
 
-The checklist for building a game. All seven kinds are already registered on the backend (`GAME_KINDS` in `lib/validators.ts`), in the relay (`ALLOWED_CHANNELS`) and in Swift (`GameKind`). A kind shows nowhere in the app until its hub model is in `GamesViewModel.games`. Add your lines at the points below and leave other games' lines alone. Draw & Guess is the worked example for every point.
+The checklist for building a game. All eight kinds are already registered on the backend (`GAME_KINDS` in `lib/validators.ts`), in the relay (`ALLOWED_CHANNELS`) and in Swift (`GameKind`). A kind shows nowhere in the app until its hub model is in `GamesViewModel.games`. Add your lines at the points below and leave other games' lines alone. Draw & Guess is the worked example for every point.
 
 ### Names
 
@@ -158,6 +160,7 @@ The checklist for building a game. All seven kinds are already registered on the
 | connect_four | connectFour / ConnectFour | connect-four | BoardGames/ConnectFour | docs/games/board-games.md |
 | dots_and_boxes | dotsAndBoxes / DotsAndBoxes | dots-and-boxes | BoardGames/DotsAndBoxes | docs/games/board-games.md |
 | ultimate_tic_tac_toe | ultimateTicTacToe / UltimateTicTacToe | ultimate-tic-tac-toe | BoardGames/UltimateTicTacToe | docs/games/board-games.md |
+| ludo | ludo / Ludo | ludo | BoardGames/Ludo | docs/games/ludo.md |
 
 - Backend: module `backend/convex/<camelKind>.ts` (function paths `<camelKind>:<name>`), helpers in `backend/convex/lib/<camelKind>.ts`, tests next to them. Tables start with the kind, such as `mind_meld_rounds`. The board games share `boardGames.ts`, `lib/boardGames.ts`, `board_games` and `board_game_*`.
 - Swift: every type, file, `GamesDestination` case, `SyncPendingOperationKind` case and `DeveloperScenario` static member starts with the Swift prefix, such as `MindMeldHubModel` and `mindMeldReveal`. Tests go in `ios/PaeoniaAppTests/Games/<Folder>/`. Board games share `Features/Games/BoardGames/Shared/`.

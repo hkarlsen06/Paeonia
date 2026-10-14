@@ -54,5 +54,44 @@
     /// Player two's last move pointed at the top right board, which player one
     /// already won, so player one may play in any open board.
     static let ultimateTicTacToeFree = Array(ultimateTicTacToeGame.prefix(36))
+
+    // MARK: Ludo
+
+    // A move is `(die - 1) * 3 + choice`: choice 0 is the mover's first pawn, 1 the
+    // second and 2 a pass. Progress is 0 in the base, 1 to 51 on the track, 52 to 56
+    // in the home column and 57 at home. Player one starts on square 0, player two
+    // on square 26. A 6, a pawn sent home and a pawn brought home give another roll.
+
+    /// The integers are 15 (a 6 for the first pawn), 16 (a 6 for the second pawn), 9 (a
+    /// 4 for the first pawn) and 8 (player two passes with a 3). Player one has both
+    /// pawns out, the first on progress 5 and the second on 1, and is to move. A 3
+    /// gives a real choice: the first pawn to progress 8 or the second to progress 4.
+    static let ludoChoice = [15, 16, 9, 8]
+    /// The die player one has rolled and kept in that position.
+    static let ludoChoiceDie = 3
+
+    /// One whole game of 44 moves that player one wins. Moves 1 to 4 are passes.
+    /// - Move 9: player two brings a pawn out with a 6.
+    /// - Move 29: player one's 6 takes the first pawn from progress 44 to 50, square
+    ///   49, where player two's pawn stood on progress 24. It is sent home, and
+    ///   player one rolls again.
+    /// - Move 40: a 6 with pawns on 54 and 52 can't move either one, so it passes and
+    ///   player one rolls again.
+    /// - Move 43: a 3 takes the first pawn from 54 to home. Move 44 is a 1 that takes
+    ///   the second pawn from 56 to home and wins.
+    static let ludoGame = [
+      2, 8, 11, 11, 15, 6, 11, 9, 16, 4, 16, 0, 10, 9, 10, 15, 16, 9, 13, 13, 7, 15, 15, 16,
+      12, 10, 9, 1, 15, 9, 5, 16, 16, 13, 14, 16, 13, 11, 16, 17, 10, 11, 6, 1,
+    ]
+
+    /// Player two is to move, after player one's 5 on the first pawn (move 25).
+    static let ludoPartnerTurn = Array(ludoGame.prefix(25))
+
+    /// 18 moves. After move 16 player one's pawns are on progress 11 and 3 and
+    /// player two's first pawn is on 25. Move 17 is player two's 4, from 25 to 29,
+    /// square 2, where player one's second pawn stood. It is sent home and player two
+    /// rolls again. Move 18 is another 4 that ends player two's turn, so player one
+    /// is to move.
+    static let ludoCapture = [2, 15, 12, 14, 12, 14, 12, 15, 9, 12, 6, 0, 16, 6, 6, 4, 9, 9]
   }
 #endif

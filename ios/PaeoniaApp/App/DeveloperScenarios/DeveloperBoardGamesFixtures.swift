@@ -6,12 +6,14 @@
     case connectFour
     case dotsAndBoxes
     case ultimateTicTacToe
+    case ludo
 
     var kind: GameKind {
       switch self {
       case .connectFour: .connectFour
       case .dotsAndBoxes: .dotsAndBoxes
       case .ultimateTicTacToe: .ultimateTicTacToe
+      case .ludo: .ludo
       }
     }
   }
@@ -60,6 +62,9 @@
     /// last one. They play when the screen opens. Nil means this phone has no
     /// record of showing the game.
     var unseenMoves: Int? = 0
+    /// The die Alex rolled in a Ludo position and has not played yet. The screen
+    /// shows it again, as it does after the app was closed.
+    var keptRoll: Int?
 
     var kind: GameKind { game.kind }
 
@@ -77,6 +82,7 @@
       case .connectFour: Self.replayed(ConnectFourBoard.self, moves)
       case .dotsAndBoxes: Self.replayed(DotsAndBoxesBoard.self, moves)
       case .ultimateTicTacToe: Self.replayed(UltimateTicTacToeBoard.self, moves)
+      case .ludo: Self.replayed(LudoBoard.self, moves)
       }
     }
 
@@ -148,6 +154,17 @@
       return BoardGameShownPosition(gameNumber: gameNumber, moveCount: max(0, onBoard - unseenMoves))
     }
 
+    /// The saved Ludo roll for `keptRoll`, on the position the board shows.
+    func savedRoll() -> LudoSavedRoll? {
+      guard let keptRoll else { return nil }
+      let position = LudoPosition(
+        gameID: DeveloperBoardGamesFixture.gameID(for: game),
+        gameNumber: gameNumber,
+        moveCount: moves.count
+      )
+      return LudoSavedRoll(position: position, die: keptRoll)
+    }
+
     /// The queue entry for `queuedMove`.
     func queuedPayload() -> BoardGameMovePayload? {
       guard let queuedMove else { return nil }
@@ -174,6 +191,7 @@
       case .connectFour: UUID(uuidString: "ffffffff-0000-4000-8000-000000000001") ?? UUID()
       case .dotsAndBoxes: UUID(uuidString: "ffffffff-0000-4000-8000-000000000002") ?? UUID()
       case .ultimateTicTacToe: UUID(uuidString: "ffffffff-0000-4000-8000-000000000003") ?? UUID()
+      case .ludo: UUID(uuidString: "ffffffff-0000-4000-8000-000000000004") ?? UUID()
       }
     }
 
@@ -260,9 +278,37 @@
         tallies: .init(mine: 5, partner: 3, draws: 1),
         unseenMoves: 1
       ),
+      // Alex starts a new game with the die on the tray, waiting for a first tap.
+      .ludoYourTurn: Setup(
+        game: .ludo, moves: [], gameNumber: 1, partnerIsHere: true, tallies: ludoNoGames
+      ),
+      .ludoChoosePawn: Setup(
+        game: .ludo,
+        moves: Moves.ludoChoice,
+        partnerIsHere: true,
+        tallies: ludoTallies,
+        keptRoll: Moves.ludoChoiceDie
+      ),
+      // Robin's last two moves are on the screen unseen: the capture, then a short hop.
+      .ludoPartnerCapture: Setup(
+        game: .ludo, moves: Moves.ludoCapture, partnerIsHere: true, tallies: ludoTallies, unseenMoves: 2
+      ),
+      .ludoWon: Setup(
+        game: .ludo,
+        moves: Moves.ludoGame,
+        stake: coffee,
+        partnerIsHere: true,
+        tallies: .init(mine: 5, partner: 3, draws: 0),
+        unseenMoves: 1
+      ),
     ]
 
-    /// Alex to move, Robin to move with Robin in the game, and a game Robin won.
+    /// Ludo has no draws.
+    private static let ludoTallies = Setup.Tallies(mine: 4, partner: 3, draws: 0)
+    private static let ludoNoGames = Setup.Tallies(mine: 0, partner: 0, draws: 0)
+
+    /// Alex to move, Robin to move with Robin in the game, a game Robin won, and
+    /// a Ludo game waiting for Robin.
     private static let hubSetups = [
       Setup(game: .connectFour, moves: Moves.connectFourMidGame, stake: coffee),
       Setup(game: .dotsAndBoxes, moves: Moves.dotsAndBoxesPartnerTurn, partnerIsHere: true),
@@ -272,6 +318,7 @@
         iStart: false,
         tallies: .init(mine: 3, partner: 4, draws: 1)
       ),
+      Setup(game: .ludo, moves: Moves.ludoPartnerTurn, tallies: ludoTallies),
     ]
 
     // MARK: Cache

@@ -2,6 +2,8 @@
 
 Design for Connect Four, Dots and Boxes and Ultimate Tic-Tac-Toe. The three games share one turn engine, one table, one screen shell and one twist. Shared rules for all games (transports, notifications, play style, game language, the streak) live in `docs/games-plan.md`. This file covers only what is specific to the board games.
 
+Ludo runs on this engine too, with its own design in `docs/games/ludo.md`.
+
 Keep this file current. When a decision lands or the design changes, update it in the same change.
 
 ## Decisions
@@ -162,7 +164,7 @@ Copy keys start with `boardGames.` for the shared shell and `connectFour.`, `dot
 - **Players row.** My avatar on the leading side and my partner's on the trailing side, 44 pt, each with a ring in its piece color and its mark in a small badge. A capsule between them slides toward whoever's turn it is ("Your turn" or "[Name]'s turn") with `PaeoniaMotion.stateChange`. On a finished game it reads "You won", "[Name] won" or "Draw".
 - **Stake row.** The stake capsule, or the "Play for something" button for the starter before the first move. Hidden otherwise, without leaving a gap.
 - **Board.** Square for Dots and Boxes and Ultimate Tic-Tac-Toe, 7 by 6 for Connect Four. It takes the width up to 560 pt and never scrolls on a phone in portrait.
-- **Status row.** Under the board. "[Name] is here" with a green dot while the partner has the game open, "[Name] will see it later" otherwise. On a Dots and Boxes extra turn, "Another turn" pops in for 1.5 seconds.
+- **Status row.** Under the board. "[Name] is here" with a green dot while the partner has the game open, "[Name] will see it later" otherwise. On a Dots and Boxes extra turn, "Another turn" pops in for 1.5 seconds. A game can show its own hint there instead, as Ludo does ("Roll again").
 - **Pinned bottom.** The invite button while it is not my turn and the partner is away. The offline line while a move waits to send.
 - **Score capsule.** Toolbar trailing, as in Draw & Guess (see "Scoring").
 - **Toolbar.** "Your mark" (`scribble.variable`) opens the mark editor.

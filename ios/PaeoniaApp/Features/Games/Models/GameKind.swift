@@ -11,6 +11,7 @@ nonisolated enum GameKind: String, CaseIterable, Codable, Hashable, Sendable {
     case connectFour = "connect_four"
     case dotsAndBoxes = "dots_and_boxes"
     case ultimateTicTacToe = "ultimate_tic_tac_toe"
+    case ludo = "ludo"
 
     /// The deep link path: `paeonia://games/<path>`, such as `draw-and-guess`.
     var path: String {

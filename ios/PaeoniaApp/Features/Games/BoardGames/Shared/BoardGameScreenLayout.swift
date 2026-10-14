@@ -44,6 +44,9 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     @Binding var stakeDraft: String
     let onDrawMark: () -> Void
     let onCommitStake: () -> Void
+    /// A board that fills the screen sideways, past the padding, and takes the
+    /// height that is left. It fills any space it is given.
+    var boardBleeds = false
     @ViewBuilder var board: Board
     /// The invite button, the offline line or the result panel.
     @ViewBuilder var bottom: Bottom
@@ -96,7 +99,8 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         BoardGameStatusRow(
             partnerName: content.partner.name,
             status: content.partnerStatus,
-            extraTurnCount: content.extraTurnCount
+            extraTurnCount: content.extraTurnCount,
+            hint: content.hint
         )
     }
 
@@ -121,8 +125,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
             header
             // Takes the height that is left and centers the board and the status row in it.
             VStack(spacing: PaeoniaSpacing.space12) {
-                board
-                    .frame(maxWidth: BoardGameMetrics.maxBoard)
+                boardSlot
                 statusRow
             }
             .frame(maxHeight: .infinity)
@@ -138,8 +141,8 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         ScrollView {
             VStack(spacing: PaeoniaSpacing.space16) {
                 header
-                board
-                    .frame(maxWidth: BoardGameMetrics.maxBoard)
+                boardSlot
+                    .aspectRatio(boardBleeds ? 1 : nil, contentMode: .fit)
                 statusRow
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -150,6 +153,17 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.interactively)
         .paeoniaBottomBar { bottomBar }
+    }
+
+    /// The board in the narrow layouts. A board that bleeds takes the whole width of
+    /// the screen, past the padding, and all the height the other rows leave.
+    private var boardSlot: some View {
+        board
+            .frame(
+                maxWidth: boardBleeds ? .infinity : BoardGameMetrics.maxBoard,
+                maxHeight: boardBleeds ? .infinity : nil
+            )
+            .padding(.horizontal, boardBleeds ? -PaeoniaSpacing.screenHorizontalPadding : 0)
     }
 
     private var bottomBar: some View {

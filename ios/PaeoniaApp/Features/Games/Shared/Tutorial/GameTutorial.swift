@@ -19,7 +19,7 @@ struct GameTutorial {
         case .ultimateTicTacToe: pages = Self.ultimateTicTacToePages(partnerName: partnerName)
         case .dotsAndBoxes: pages = Self.dotsAndBoxesPages(partnerName: partnerName)
         case .mindMeld: pages = Self.mindMeldPages(partnerName: partnerName)
-        case .drawAndGuess, .exquisiteCorpse, .storyChain, .connectFour: return nil
+        case .drawAndGuess, .exquisiteCorpse, .storyChain, .connectFour, .ludo: return nil
         }
         self.kind = kind
     }

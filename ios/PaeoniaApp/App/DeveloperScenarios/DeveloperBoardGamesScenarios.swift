@@ -3,8 +3,8 @@
   import SwiftUI
   import UIKit
 
-  /// Board game scenarios. They run the real Connect Four, Dots and Boxes and
-  /// Ultimate Tic-Tac-Toe screens on in-memory dependencies.
+  /// Board game scenarios. They run the real Connect Four, Dots and Boxes,
+  /// Ultimate Tic-Tac-Toe and Ludo screens on in-memory dependencies.
   ///
   /// The cache holds a fixed server state, and the gateway fails every read of the
   /// games like a phone without a connection, so the cache is what the board
@@ -22,6 +22,9 @@
             kind: setup.kind,
             ownerUserID: DeveloperGamesFixture.me
           )
+        }
+        if let roll = setup.savedRoll() {
+          await dependencies.boardGamesCache.saveLudoRoll(roll, ownerUserID: DeveloperGamesFixture.me)
         }
         if let payload = setup.queuedPayload() {
           await enqueueFailedMove(payload, dependencies: dependencies)
@@ -69,6 +72,8 @@
         DeveloperBoardGameHost(scenario: scenario, makeHub: DotsAndBoxesGame.hubModel)
       case .ultimateTicTacToe:
         DeveloperBoardGameHost(scenario: scenario, makeHub: UltimateTicTacToeGame.hubModel)
+      case .ludo:
+        DeveloperBoardGameHost(scenario: scenario, makeHub: LudoGame.hubModel)
       case nil:
         EmptyView()
       }

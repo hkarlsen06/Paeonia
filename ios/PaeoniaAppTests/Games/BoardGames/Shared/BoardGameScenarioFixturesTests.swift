@@ -17,7 +17,8 @@ struct BoardGameScenarioFixturesTests {
         "connect-four-won", "connect-four-first-move", "connect-four-missed-ending", "connect-four-offline",
         "dots-and-boxes-photo", "dots-and-boxes-extra-turn", "dots-and-boxes-won-photo", "dots-and-boxes-plain",
         "ultimate-tic-tac-toe-forced", "ultimate-tic-tac-toe-free", "ultimate-tic-tac-toe-partner-move",
-        "ultimate-tic-tac-toe-won", "board-game-mark-editor", "games-hub-board-games",
+        "ultimate-tic-tac-toe-won", "ludo-your-turn", "ludo-choose-pawn", "ludo-partner-capture", "ludo-won",
+        "board-game-mark-editor", "games-hub-board-games",
     ]
 
     private var scenariosWithGames: [DeveloperScenario] {
@@ -234,7 +235,7 @@ struct BoardGameScenarioFixturesTests {
     @Test func theHubScenarioShowsTheThreeGamesInDifferentStates() async throws {
         let scenario = DeveloperScenario.gamesHubBoardGames
         let setups = Fixture.setups(for: scenario)
-        #expect(setups.map(\.game) == [.connectFour, .dotsAndBoxes, .ultimateTicTacToe])
+        #expect(setups.map(\.game) == [.connectFour, .dotsAndBoxes, .ultimateTicTacToe, .ludo])
 
         let viewModel = DeveloperGamesScenarioFactory.gamesViewModel(for: scenario)
         viewModel.configure(participants: DeveloperGamesFixture.participants)
@@ -244,6 +245,7 @@ struct BoardGameScenarioFixturesTests {
         #expect(viewModel.connectFour.game.summary?.status == .yourTurn)
         #expect(viewModel.dotsAndBoxes.game.summary?.status == .partnerTurn)
         #expect(viewModel.ultimateTicTacToe.game.summary?.status == .partnerWon)
+        #expect(viewModel.ludo.game.summary?.status == .partnerTurn)
         #expect(viewModel.isYourTurn)
         // Robin has Dots and Boxes open, so its card comes first. Story Chain and
         // Connect Four wait for Alex, so they come next.
@@ -391,5 +393,91 @@ extension BoardGameScenarioFixturesTests {
         #expect(game.winnerUserID == me)
         #expect(game.winLine == [2, 4, 6])
         #expect(setup.shown == BoardGameShownPosition(gameNumber: 9, moveCount: game.moves.count - 1))
+    }
+}
+
+// MARK: - Ludo
+
+extension BoardGameScenarioFixturesTests {
+    @Test func ludoYourTurnIsAFreshGameWithTheDieWaitingOnMyTray() async throws {
+        let setup = try firstSetup(.ludoYourTurn)
+        let game = setup.remoteGame()
+        #expect(game.moves.isEmpty)
+        #expect(game.firstUserID == me)
+        #expect(game.turnUserID == me)
+        #expect(setup.savedRoll() == nil)
+
+        let model = await openedModel(LudoBoard.self, kind: .ludo, scenario: .ludoYourTurn)
+        #expect(model.canPlay)
+        #expect(model.stakeState == .writable)
+        let hint = LudoRollDecision.hintBeforeRoll(board: model.board, moves: model.displayedMoves, me: model.me)
+        #expect(hint == .tapToRoll)
+    }
+
+    @Test func ludoChoosePawnKeepsTheRollForThisPositionAndOffersTwoPawns() async throws {
+        let scenario = DeveloperScenario.ludoChoosePawn
+        let setup = try firstSetup(scenario)
+        let board = try #require(LudoBoard.replay(setup.moves))
+        #expect(board.next == .one)
+        #expect(board.progress[LudoBoard.pawnIndex(.one, 0)] == 5)
+        #expect(board.progress[LudoBoard.pawnIndex(.one, 1)] == 1)
+
+        let roll = try #require(setup.savedRoll())
+        #expect(roll.die == DeveloperBoardGamesMoves.ludoChoiceDie)
+        #expect(roll.position.gameID == setup.remoteGame().id)
+        #expect(roll.position.moveCount == setup.moves.count)
+        // A 3 moves either pawn, to different squares.
+        #expect(LudoRollDecision.distinctChoices(board: board, die: roll.die) == [.first, .second])
+
+        let dependencies = DeveloperGamesScenarioFactory.dependencies(for: scenario)
+        await DeveloperBoardGamesScenarioFactory.seed(scenario, dependencies: dependencies)
+        let document = await dependencies.boardGamesCache.document(ownerUserID: me)
+        #expect(document.ludoRoll == roll)
+    }
+
+    @Test func ludoPartnerCaptureOpensTwoMovesBehindRobinSendingMyPawnHome() async throws {
+        let setup = try firstSetup(.ludoPartnerCapture)
+        #expect(setup.shown == BoardGameShownPosition(gameNumber: 9, moveCount: setup.moves.count - 2))
+        let movers = try #require(LudoBoard.movers(setup.moves))
+        #expect(movers.suffix(2).map(setup.user) == [partner, partner])
+
+        // Robin's 4 lands on my second pawn, which stood on progress 3.
+        let second = LudoBoard.pawnIndex(.one, 1)
+        let beforeCapture = try #require(LudoBoard.replay(Array(setup.moves.dropLast(2))))
+        let afterCapture = try #require(LudoBoard.replay(Array(setup.moves.dropLast())))
+        #expect(beforeCapture.progress[second] == 3)
+        #expect(afterCapture.progress[second] == 0)
+        #expect(afterCapture.next == .two)
+        // Robin's next 4 ends the turn.
+        let afterFollowUp = try #require(LudoBoard.replay(setup.moves))
+        #expect(afterFollowUp.next == .one)
+
+        let model = await openedModel(LudoBoard.self, kind: .ludo, scenario: .ludoPartnerCapture)
+        #expect(model.displayedMoves == setup.moves)
+        #expect(model.lastMove?.isMine == false)
+        #expect(model.canPlay)
+    }
+
+    @Test func ludoWonEndsOnMyLastPawnGettingHome() async throws {
+        let setup = try firstSetup(.ludoWon)
+        let game = setup.remoteGame()
+        #expect(game.status == .finished)
+        #expect(game.winnerUserID == me)
+        #expect(game.stake != nil)
+        #expect(setup.shown == BoardGameShownPosition(gameNumber: 9, moveCount: game.moves.count - 1))
+        let board = try #require(LudoBoard.replay(setup.moves))
+        #expect(board.progress[LudoBoard.pawnIndex(.one, 0)] == LudoBoard.homeProgress)
+        #expect(board.progress[LudoBoard.pawnIndex(.one, 1)] == LudoBoard.homeProgress)
+
+        let model = await openedModel(LudoBoard.self, kind: .ludo, scenario: .ludoWon)
+        #expect(model.displayedMoves == setup.moves)
+        #expect(model.showsOutcome)
+        #expect(model.result?.winner == .me)
+        #expect(model.summary?.status == .youWon)
+    }
+
+    @Test func ludoPartnerTurnForTheHubWaitsForRobin() throws {
+        let setup = try #require(Fixture.setups(for: .gamesHubBoardGames).first { $0.game == .ludo })
+        #expect(setup.remoteGame().turnUserID == partner)
     }
 }

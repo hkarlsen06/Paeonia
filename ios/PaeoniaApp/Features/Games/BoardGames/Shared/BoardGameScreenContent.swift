@@ -68,6 +68,8 @@ struct BoardGameShellContent: Equatable {
     /// Goes up with each extra turn of mine, so the status row can pop "Another turn".
     let extraTurnCount: Int
     let score: BoardGameScore?
+    /// A game's own line for the status row, shown instead of who is here.
+    var hint: LocalizedStringResource?
 }
 
 // MARK: Turn label
