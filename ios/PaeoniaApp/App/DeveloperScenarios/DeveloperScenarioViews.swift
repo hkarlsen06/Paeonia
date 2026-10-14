@@ -164,4 +164,24 @@
       scenario.makeView()
     }
   }
+
+  /// Opens every scenario in turn, then shows a done marker. One UI test launch
+  /// checks that no scenario crashes on open, without tapping through the menu.
+  struct DeveloperScenarioTour: View {
+    @State private var index = 0
+
+    var body: some View {
+      if DeveloperScenario.allCases.indices.contains(index) {
+        DeveloperScenarioHost(scenario: DeveloperScenario.allCases[index]) {}
+          .id(index)
+          .task(id: index) {
+            try? await Task.sleep(for: .milliseconds(50))
+            index += 1
+          }
+      } else {
+        Text("Opened \(index) scenarios")
+          .accessibilityIdentifier("developer.scenario.tour.done")
+      }
+    }
+  }
 #endif

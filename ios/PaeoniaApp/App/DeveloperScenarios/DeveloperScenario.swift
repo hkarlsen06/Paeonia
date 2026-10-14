@@ -78,6 +78,7 @@
     case production
     case menu
     case scenario(DeveloperScenario)
+    case tour
   }
 
   /// Parses the same launch configuration from Xcode schemes and XCUI tests.
@@ -86,10 +87,12 @@
   /// - `-paeonia-scenarios` opens the catalog.
   /// - `-paeonia-scenario questions` opens one scenario directly.
   /// - `PAEONIA_SCENARIO=questions` is the equivalent environment variable.
+  /// - `-paeonia-scenario-tour` opens every scenario in turn, for a UI test.
   enum DeveloperScenarioLaunch {
     static let environmentKey = "PAEONIA_SCENARIO"
     static let menuArgument = "-paeonia-scenarios"
     static let scenarioArgument = "-paeonia-scenario"
+    static let tourArgument = "-paeonia-scenario-tour"
 
     static func destination(
       arguments: [String] = ProcessInfo.processInfo.arguments,
@@ -107,6 +110,10 @@
 
       if arguments.contains(menuArgument) {
         return .menu
+      }
+
+      if arguments.contains(tourArgument) {
+        return .tour
       }
 
       return .production

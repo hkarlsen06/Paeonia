@@ -19,7 +19,7 @@ struct PaeoniaApp: App {
         // Clerk must be configured before anything reads `Clerk.shared`. An empty
         // publishable key leaves it unconfigured and auth reports itself unavailable.
         // The view models below read it, so they are created after this call.
-        let usesClerk = PaeoniaClerk.configureIfPossible()
+        let usesClerk = !Self.isHostingUnitTests && PaeoniaClerk.configureIfPossible()
         _rootViewModel = State(
             initialValue: RootViewModel(
                 authProviderSessionIsActive: usesClerk ? Self.clerkSessionIsActive : nil
@@ -61,8 +61,22 @@ struct PaeoniaApp: App {
         }
     }
 
+    /// Unit tests run inside this app. The real app would sign in, sync and write
+    /// the same local stores the tests use, and slow every test run down.
+    private static let isHostingUnitTests =
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
     @ViewBuilder
     private var appContent: some View {
+        if Self.isHostingUnitTests {
+            Color.clear
+        } else {
+            launchedContent
+        }
+    }
+
+    @ViewBuilder
+    private var launchedContent: some View {
         #if DEBUG
         switch developerDestination {
         case .production:
@@ -75,6 +89,8 @@ struct PaeoniaApp: App {
             DeveloperScenarioHost(scenario: scenario) {
                 developerDestination = .menu
             }
+        case .tour:
+            DeveloperScenarioTour()
         }
         #else
         productionRoot

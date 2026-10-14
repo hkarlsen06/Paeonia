@@ -15,8 +15,9 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct DrawAndGuessSimulationTests {
-    /// Seeds in the default run. Keep the run under a couple of minutes.
-    static let defaultSeedCount = 6
+    /// Seeds in the default run. `SimReport.play` runs 4 at once, so 4 take one
+    /// seed's time.
+    static let defaultSeedCount = 4
 
     private static func environmentNumber(_ name: String) -> UInt64? {
         ProcessInfo.processInfo.environment[name].flatMap(UInt64.init)
@@ -31,36 +32,38 @@ struct DrawAndGuessSimulationTests {
             let count = Self.environmentNumber("DNG_SIM_SEEDS") ?? UInt64(Self.defaultSeedCount)
             seeds = Array(first..<(first + count))
         }
-        var failures = 0
-        for seed in seeds {
-            var config = SimDriver.Config()
-            if let steps = Self.environmentNumber("DNG_SIM_STEPS") {
-                config.steps = Int(steps)
-            }
-            if let faults = Self.environmentNumber("DNG_SIM_FAULT_SCALE") {
-                config.faultScale = Double(faults)
-            }
-            if let chaos = Self.environmentNumber("DNG_SIM_CHAOS_PERCENT") {
-                config.chaosRate = Double(chaos) / 100
-            }
-            let driver = SimDriver(seed: seed, config: config)
-            do {
-                try await SimReport.run(timeout: .seconds(Double(config.steps) * 0.6)) { try await driver.run() }
-                SimReport.write(await driver.summary())
-                if ProcessInfo.processInfo.environment["DNG_SIM_DUMP"] != nil {
-                    SimReport.write(driver.log.tail(100_000))
-                }
-            } catch {
-                failures += 1
-                SimReport.write("FAILED seed \(seed): \(error)\n\(driver.log.tail())\n\(await driver.ledgerDump())")
-                Issue.record("""
-                Draw & Guess simulation failed with seed \(seed): \(error)
-                Replay with TEST_RUNNER_DNG_SIM_SEED=\(seed). Log:
-                \(driver.log.tail())
-                """)
-                if failures >= 3 { break }
-            }
-        }
+        let failures = await SimReport.play(seeds) { await Self.play(seed: $0) }
         SimReport.write("ran \(seeds.count) seeds, \(failures) failed")
+    }
+
+    /// Plays one seed and returns whether it passed.
+    private static func play(seed: UInt64) async -> Bool {
+        var config = SimDriver.Config()
+        if let steps = environmentNumber("DNG_SIM_STEPS") {
+            config.steps = Int(steps)
+        }
+        if let faults = environmentNumber("DNG_SIM_FAULT_SCALE") {
+            config.faultScale = Double(faults)
+        }
+        if let chaos = environmentNumber("DNG_SIM_CHAOS_PERCENT") {
+            config.chaosRate = Double(chaos) / 100
+        }
+        let driver = SimDriver(seed: seed, config: config)
+        do {
+            try await SimReport.run(timeout: .seconds(Double(config.steps) * 0.6)) { try await driver.run() }
+            SimReport.write(await driver.summary())
+            if ProcessInfo.processInfo.environment["DNG_SIM_DUMP"] != nil {
+                SimReport.write(driver.log.tail(100_000))
+            }
+            return true
+        } catch {
+            SimReport.write("FAILED seed \(seed): \(error)\n\(driver.log.tail())\n\(await driver.ledgerDump())")
+            Issue.record("""
+            Draw & Guess simulation failed with seed \(seed): \(error)
+            Replay with TEST_RUNNER_DNG_SIM_SEED=\(seed). Log:
+            \(driver.log.tail())
+            """)
+            return false
+        }
     }
 }

@@ -159,6 +159,31 @@ enum SimReport {
         }
     }
 
+    /// Plays every seed and returns how many failed. A seed spends most of its
+    /// time waiting for its phones to settle, so a few run side by side. More at
+    /// once starve the main actor, and the phones stop settling in time.
+    static func play(
+        _ seeds: [UInt64],
+        atOnce: Int = 4,
+        _ playSeed: @escaping @MainActor @Sendable (UInt64) async -> Bool
+    ) async -> Int {
+        await withTaskGroup(of: Bool.self) { group in
+            var waiting = seeds[...]
+            var failures = 0
+            for seed in waiting.prefix(atOnce) {
+                group.addTask { await playSeed(seed) }
+            }
+            waiting = waiting.dropFirst(atOnce)
+            for await passed in group {
+                failures += passed ? 0 : 1
+                if let seed = waiting.popFirst() {
+                    group.addTask { await playSeed(seed) }
+                }
+            }
+            return failures
+        }
+    }
+
     /// Runs `body`, and gives up on it after `timeout` instead of hanging the suite.
     static func run(timeout: Duration, _ body: @escaping @MainActor () async throws -> Void) async throws {
         let outcome = AsyncStream<Error?>.makeStream()

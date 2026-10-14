@@ -49,30 +49,32 @@ struct CorpseSimulationTests {
 
     @Test func twoPhonesDrawManySeededFigures() async {
         let seeds = Self.seeds()
-        var failures = 0
-        for seed in seeds {
-            let config = Self.config()
-            let driver = CorpseSimDriver(seed: seed, config: config)
-            do {
-                try await SimReport.run(timeout: .seconds(Double(config.steps) * 0.8)) { try await driver.run() }
-                SimReport.write(await driver.summary(), to: Self.reportPath)
-                if ProcessInfo.processInfo.environment["CORPSE_SIM_DUMP"] != nil {
-                    SimReport.write(driver.log.tail(100_000), to: Self.reportPath)
-                }
-            } catch {
-                failures += 1
-                SimReport.write(
-                    "FAILED seed \(seed): \(error)\n\(driver.log.tail())\n\(await driver.ledgerDump())",
-                    to: Self.reportPath
-                )
-                Issue.record("""
-                Exquisite corpse simulation failed with seed \(seed): \(error)
-                Replay with TEST_RUNNER_CORPSE_SIM_SEED=\(seed). Log:
-                \(driver.log.tail())
-                """)
-                if failures >= 3 { break }
-            }
-        }
+        let failures = await SimReport.play(seeds) { await Self.draw(seed: $0) }
         SimReport.write("ran \(seeds.count) seeds, \(failures) failed", to: Self.reportPath)
+    }
+
+    /// Plays one seed and returns whether it passed.
+    private static func draw(seed: UInt64) async -> Bool {
+        let config = Self.config()
+        let driver = CorpseSimDriver(seed: seed, config: config)
+        do {
+            try await SimReport.run(timeout: .seconds(Double(config.steps) * 0.8)) { try await driver.run() }
+            SimReport.write(await driver.summary(), to: reportPath)
+            if ProcessInfo.processInfo.environment["CORPSE_SIM_DUMP"] != nil {
+                SimReport.write(driver.log.tail(100_000), to: reportPath)
+            }
+            return true
+        } catch {
+            SimReport.write(
+                "FAILED seed \(seed): \(error)\n\(driver.log.tail())\n\(await driver.ledgerDump())",
+                to: reportPath
+            )
+            Issue.record("""
+            Exquisite corpse simulation failed with seed \(seed): \(error)
+            Replay with TEST_RUNNER_CORPSE_SIM_SEED=\(seed). Log:
+            \(driver.log.tail())
+            """)
+            return false
+        }
     }
 }

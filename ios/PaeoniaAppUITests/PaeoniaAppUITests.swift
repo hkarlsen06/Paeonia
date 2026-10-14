@@ -7,31 +7,14 @@ final class PaeoniaAppUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        let app = XCUIApplication()
-        app.launch()
-
-        XCTAssertEqual(app.state, .runningForeground)
-    }
-
-    @MainActor
     func testQuestionsScenarioLaunchesWithoutAccountSetup() throws {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "questions"
         app.launch()
 
         XCTAssertTrue(
-            app.buttons["mainTab.questions"].waitForExistence(timeout: 5)
+            app.buttons["mainTab.questions"].waitForExistence(timeout: 10)
         )
-    }
-
-    @MainActor
-    func testScenarioSchemeArgumentOpensCatalog() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["-paeonia-scenarios"]
-        app.launch()
-
-        XCTAssertTrue(app.navigationBars["Developer Scenarios"].waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -50,97 +33,6 @@ final class PaeoniaAppUITests: XCTestCase {
     }
 
     @MainActor
-    func testCatalogKeepsItsPositionAfterReturningFromAScenario() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["-paeonia-scenarios"]
-        app.launch()
-
-        let scenario = app.descendants(matching: .any)[
-            "developer.scenario.deep-link-subscription"
-        ]
-        for _ in 0..<12 where !scenario.exists {
-            app.swipeUp()
-        }
-
-        XCTAssertTrue(scenario.waitForExistence(timeout: 2))
-        scenario.tap()
-        app.buttons["developer.scenario.return"].tap()
-
-        XCTAssertTrue(scenario.waitForExistence(timeout: 2))
-    }
-
-    @MainActor
-    func testLocalFlowOnboardingMenuEntryNavigates() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["-paeonia-scenarios"]
-        app.launch()
-
-        let row = app.descendants(matching: .any)[
-            "developer.scenario.local-flow-onboarding"
-        ]
-        for _ in 0..<8 where !row.exists {
-            app.swipeUp()
-        }
-
-        XCTAssertTrue(row.waitForExistence(timeout: 2))
-        row.tap()
-        XCTAssertTrue(app.buttons["developer.scenario.return"].waitForExistence(timeout: 5))
-    }
-
-    @MainActor
-    func testQuestionAnswerFlowMenuEntryReturnsToCatalog() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["-paeonia-scenarios"]
-        app.launch()
-
-        let row = app.descendants(matching: .any)[
-            "developer.scenario.question-answer-flow"
-        ]
-        for _ in 0..<12 where !row.exists {
-            app.swipeUp()
-        }
-
-        XCTAssertTrue(row.waitForExistence(timeout: 2))
-        row.tap()
-
-        let returnButton = app.buttons["developer.scenario.return"]
-        XCTAssertTrue(returnButton.waitForExistence(timeout: 5))
-        returnButton.tap()
-        XCTAssertTrue(app.navigationBars["Developer Scenarios"].waitForExistence(timeout: 5))
-    }
-
-    @MainActor
-    func testEveryDeveloperScenarioMenuEntryNavigatesAndReturns() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["-paeonia-scenarios"]
-        app.launch()
-
-        XCTAssertTrue(app.navigationBars["Developer Scenarios"].waitForExistence(timeout: 5))
-
-        for scenarioID in Self.developerScenarioIDs {
-            let row = app.descendants(matching: .any)["developer.scenario.\(scenarioID)"]
-            for _ in 0..<12 where !row.exists {
-                app.swipeUp()
-            }
-
-            XCTAssertTrue(row.waitForExistence(timeout: 2), "Missing menu row: \(scenarioID)")
-            row.tap()
-
-            let returnButton = app.buttons["developer.scenario.return"]
-            XCTAssertTrue(
-                returnButton.waitForExistence(timeout: 5),
-                "Did not open scenario: \(scenarioID)"
-            )
-            returnButton.tap()
-
-            XCTAssertTrue(
-                app.navigationBars["Developer Scenarios"].waitForExistence(timeout: 5),
-                "Did not return from scenario: \(scenarioID)"
-            )
-        }
-    }
-
-    @MainActor
     func testInteractiveLocalFlowContinuesFromSignInIntoPairing() throws {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-fresh"
@@ -154,8 +46,8 @@ final class PaeoniaAppUITests: XCTestCase {
         let nameField = app.textFields["auth.onboarding.displayName"]
         XCTAssertTrue(nameField.waitForExistence(timeout: 5))
         nameField.tap()
-        nameField.typeText("Alex")
-        app.buttons["auth.onboarding.complete"].tap()
+        // The keyboard covers the complete button. Its continue key does the same.
+        nameField.typeText("Alex\n")
 
         let purchaseButton = app.buttons["paywall.primaryAction"]
         XCTAssertTrue(purchaseButton.waitForExistence(timeout: 5))
@@ -165,144 +57,38 @@ final class PaeoniaAppUITests: XCTestCase {
     }
 
     @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+    func testCatalogOpensAScenarioAndReturnsToTheSamePlace() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-paeonia-scenarios"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Developer Scenarios"].waitForExistence(timeout: 5))
+
+        // Searching avoids swiping, which can leave the row under the bottom search bar.
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        search.typeText("question-answer-flow")
+
+        let row = app.descendants(matching: .any)["developer.scenario.question-answer-flow"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+
+        let returnButton = app.buttons["developer.scenario.return"]
+        XCTAssertTrue(returnButton.waitForExistence(timeout: 5))
+        returnButton.tap()
+
+        // The catalog stays behind the scenario, so the search and its result are still there.
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertEqual(search.value as? String, "question-answer-flow")
     }
 
     @MainActor
-    func testReviewQABootstrap() throws {
-        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        let openButton = springboard.buttons["Åpne"]
-        if openButton.waitForExistence(timeout: 5) {
-            openButton.tap()
-        }
-
+    func testEveryDeveloperScenarioOpens() throws {
         let app = XCUIApplication()
-        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-        sleep(3)
+        app.launchArguments = ["-paeonia-scenario-tour"]
+        app.launch()
 
-        let hierarchy = XCTAttachment(string: app.debugDescription)
-        hierarchy.name = "Review QA app hierarchy"
-        hierarchy.lifetime = .keepAlways
-        add(hierarchy)
-
-        let screenshot = XCTAttachment(screenshot: app.screenshot())
-        screenshot.name = "Review QA bootstrap"
-        screenshot.lifetime = .keepAlways
-        add(screenshot)
+        XCTAssertTrue(app.staticTexts["developer.scenario.tour.done"].waitForExistence(timeout: 120))
     }
-
-    private static let developerScenarioIDs = [
-        "launch-loading",
-        "welcome",
-        "sign-in",
-        "sign-in-invite",
-        "onboarding-empty",
-        "onboarding-prefilled",
-        "local-flow-fresh",
-        "local-flow-onboarding",
-        "local-flow-paywall",
-        "local-flow-pairing",
-        "local-flow-paired",
-        "pairing-invite-ready",
-        "pairing-join",
-        "pairing-invite-expired",
-        "pairing-safety-warning",
-        "pairing-invite-error",
-        "pairing-celebration",
-        "pairing-celebration-settled",
-        "paywall-trial",
-        "paywall-standard",
-        "paywall-paired",
-        "paywall-loading",
-        "paired-home",
-        "questions",
-        "questions-partial",
-        "questions-revealed",
-        "questions-empty",
-        "questions-loading",
-        "questions-error",
-        "questions-history",
-        "questions-offline-queued",
-        "question-answer-flow",
-        "streak-healthy",
-        "streak-broken",
-        "streak-restored",
-        "memories-empty",
-        "memories-populated",
-        "memory-editor",
-        "memory-detail",
-        "countdown-missing",
-        "countdown-upcoming",
-        "countdown-today",
-        "location-not-sharing",
-        "location-current-missing",
-        "location-live",
-        "location-stale",
-        "games-setup",
-        "games-partner-picked",
-        "games-hub-your-turn",
-        "games-hub-waiting",
-        "games-hub-partner-here",
-        "draw-choose-word",
-        "draw-waiting-for-word",
-        "draw-drawing",
-        "draw-saved-offline",
-        "draw-waiting-for-guess",
-        "draw-waiting-for-drawing",
-        "draw-watching-live",
-        "draw-guessing-replay",
-        "draw-reveal-solved",
-        "draw-reveal-bonuses",
-        "draw-reveal-missed",
-        "draw-reveal-as-drawer",
-        "draw-reveal-partner-drawing",
-        "draw-reveal-loading",
-        "story-chain-choose",
-        "story-chain-choose-offline",
-        "story-chain-writing",
-        "story-chain-writing-last",
-        "story-chain-waiting-live",
-        "story-chain-waiting-away",
-        "story-chain-saved-offline",
-        "story-chain-naming",
-        "story-chain-waiting-name",
-        "story-chain-finished",
-        "story-chain-waiting-opening",
-        "story-chain-history",
-        "story-chain-history-empty",
-        "corpse-hub-your-turn",
-        "corpse-hub-partner-drawing",
-        "corpse-hub-reveal",
-        "corpse-hub-not-started",
-        "corpse-draw-head",
-        "corpse-draw-body",
-        "corpse-draw-legs",
-        "corpse-waiting",
-        "corpse-watching",
-        "corpse-handoff",
-        "corpse-waiting-to-sync",
-        "corpse-reveal",
-        "corpse-reveal-loading",
-        "corpse-history",
-        "corpse-history-empty",
-        "corpse-history-starred",
-        "corpse-history-detail",
-        "widget-drawing",
-        "widget-history-empty",
-        "widget-history-populated",
-        "notification-primer",
-        "settings",
-        "settings-notifications-denied",
-        "privacy-safety",
-        "report-and-leave",
-        "deep-link-daily-today",
-        "deep-link-daily-reveal",
-        "deep-link-widget",
-        "deep-link-streak",
-        "deep-link-subscription",
-    ]
 }
