@@ -1,13 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Agents in other worktrees share the simulators, so a test run holds the
+# simulator lock (scripts/lock). A worktree that took it with `scripts/lock acquire`
+# runs straight away.
+if [ -z "${PAEONIA_SIMULATOR_LOCK_HELD:-}" ]; then
+  PAEONIA_SIMULATOR_LOCK_HELD=1 exec ./scripts/lock run simulator -- "$0" "$@"
+fi
+
 MODE="text"
+INCLUDE_UI=0
 EXTRA_ARGS=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --json)
       MODE="json"
+      shift
+      ;;
+    --ui)
+      INCLUDE_UI=1
       shift
       ;;
     --)
@@ -21,12 +33,6 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
-
-# Agents in other worktrees share the simulators, so a test run holds the
-# simulator lock (scripts/lock). A worktree that already holds it runs straight away.
-if [ -z "${PAEONIA_SIMULATOR_LOCK_HELD:-}" ]; then
-  PAEONIA_SIMULATOR_LOCK_HELD=1 exec ./scripts/lock run simulator -- "$0" "$@"
-fi
 
 # The pre-commit hook only runs once core.hooksPath points at .githooks.
 git config core.hooksPath >/dev/null || ./scripts/install-git-hooks.sh >&2
@@ -171,8 +177,23 @@ XCODEBUILD_ARGS=(
   -configuration "$CONFIGURATION"
   -destination "$DESTINATION"
   -parallel-testing-enabled NO
+  # A hung test fails after two minutes instead of holding the simulator lock.
+  -test-timeouts-enabled YES
+  -default-test-execution-time-allowance 120
   test
 )
+
+# Only the unit tests run by default. The UI tests take about a minute more, so
+# they run with --ui, or when an -only-testing or -skip-testing argument picks tests.
+PICKS_TESTS=0
+for arg in ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"}; do
+  case "$arg" in
+    -only-testing*|-skip-testing*) PICKS_TESTS=1 ;;
+  esac
+done
+if [ "$INCLUDE_UI" = "0" ] && [ "$PICKS_TESTS" = "0" ]; then
+  XCODEBUILD_ARGS+=(-only-testing:PaeoniaAppTests)
+fi
 
 if [ ${#EXTRA_ARGS[@]} -gt 0 ]; then
   XCODEBUILD_ARGS+=("${EXTRA_ARGS[@]}")

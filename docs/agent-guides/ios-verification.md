@@ -54,9 +54,11 @@ The developer uses these wrappers from the repository root:
 ./scripts/xcode-test-agent.sh
 ```
 
+`xcode-test-agent.sh` runs only the unit tests. Add `--ui` to run the UI tests too, or pick tests with `-- -only-testing:<target>/<suite>`.
+
 `XCODE_BUILD_AGENT_ACTION=build-for-testing ./scripts/xcode-build-agent.sh` also compiles the test targets. The pre-push hook runs it when Swift files change. CI runs it with `XCODE_BUILD_AGENT_FAIL_ON_WARNINGS=1`, so any compiler warning fails the iOS job.
 
-Agents in other worktrees share the connected device and the `Shared iPhone` simulator. `xcode-test-agent.sh` holds the `simulator` lock while it runs, and waits when another worktree holds it. For a simulator session of several commands, such as `sim-sign-in` and end-to-end play, take the lock with `scripts/lock acquire simulator`, release it with `scripts/lock release simulator`, and see who holds what with `scripts/lock status`.
+Agents in other worktrees share the connected device and the `Shared iPhone` simulator. `xcode-test-agent.sh` holds the `simulator` lock while it runs. It waits while any other run holds it, including one from the same worktree, since several agents can share a worktree. For a simulator session of several commands, such as `sim-sign-in` and end-to-end play, take the lock with `scripts/lock acquire simulator`, release it with `scripts/lock release simulator`, and see who holds what with `scripts/lock status`.
 
 ### Signing a simulator in
 

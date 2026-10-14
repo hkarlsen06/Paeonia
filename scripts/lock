@@ -9,6 +9,10 @@
 #   scripts/lock release <name>               give back a lock this worktree took
 #   scripts/lock status                       list held locks
 #
+# `run` waits while another `run` holds the lock, even one in this worktree,
+# because several agents can share a worktree. A worktree's `acquire` session
+# lets its later commands in.
+#
 # A lock taken by `run` is stale once its process has exited. A lock taken by
 # `acquire` is stale after PAEONIA_LOCK_TTL_MINUTES (default 45). A stale lock is
 # taken over with a message. Waiting gives up after PAEONIA_LOCK_WAIT_MINUTES
@@ -23,7 +27,7 @@ WAIT_SECONDS=$(( ${PAEONIA_LOCK_WAIT_MINUTES:-90} * 60 ))
 mkdir -p "$LOCK_ROOT"
 
 usage() {
-  sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' >&2
+  sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//' >&2
   exit 2
 }
 
@@ -61,8 +65,16 @@ held_by_me() {
   [ "$owner" = "$OWNER" ]
 }
 
+# Several agents can share one worktree, so a lock that another `run` in this
+# worktree holds is not ours to enter. Only an `acquire` session is.
+session_held_by_me() {
+  local owner pid
+  IFS='|' read -r owner pid _ <<<"$(read_lock "$1")"
+  [ "$owner" = "$OWNER" ] && [ -z "$pid" ]
+}
+
 # take <name> <pid or empty>. Returns 0 when it took the lock, 3 when this
-# worktree already held it.
+# worktree already holds it through `acquire`.
 take() {
   local name="$1" pid="$2" waited=0
   while true; do
@@ -70,7 +82,7 @@ take() {
       echo "$OWNER|$pid|$(date +%s)" >"$LOCK_ROOT/$name/owner"
       return 0
     fi
-    if held_by_me "$name"; then
+    if session_held_by_me "$name"; then
       return 3
     fi
     if is_stale "$name"; then
