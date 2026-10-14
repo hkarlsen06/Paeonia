@@ -57,6 +57,7 @@ import type * as lib_ids from "../lib/ids.js";
 import type * as lib_json from "../lib/json.js";
 import type * as lib_liveTicket from "../lib/liveTicket.js";
 import type * as lib_lookBack from "../lib/lookBack.js";
+import type * as lib_ludo from "../lib/ludo.js";
 import type * as lib_mediaAssets from "../lib/mediaAssets.js";
 import type * as lib_mediaOrphans from "../lib/mediaOrphans.js";
 import type * as lib_mindMeld from "../lib/mindMeld.js";
@@ -159,6 +160,7 @@ declare const fullApi: ApiFromModules<{
   "lib/json": typeof lib_json;
   "lib/liveTicket": typeof lib_liveTicket;
   "lib/lookBack": typeof lib_lookBack;
+  "lib/ludo": typeof lib_ludo;
   "lib/mediaAssets": typeof lib_mediaAssets;
   "lib/mediaOrphans": typeof lib_mediaOrphans;
   "lib/mindMeld": typeof lib_mindMeld;
