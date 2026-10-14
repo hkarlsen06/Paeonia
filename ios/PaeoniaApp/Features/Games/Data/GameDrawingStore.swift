@@ -33,7 +33,7 @@ nonisolated extension GameDrawingStoring {
     /// permanent loss remove them too.
     func purge(for scope: LocalPrivacyPurgeScope) {
         // The pictures of "Our drawings" held in memory go with the files.
-        DrawAndGuessThumbnails.removeAll()
+        GameDrawingThumbnails.removeAll()
         if scope == .relationshipAccessHidden {
             clearDownloads()
         } else {

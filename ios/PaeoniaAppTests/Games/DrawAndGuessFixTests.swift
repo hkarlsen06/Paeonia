@@ -21,10 +21,9 @@ private final class GatedDrawingTransfer: GameDrawingTransferring, @unchecked Se
         waiting.forEach { $0.resume() }
     }
 
-    func uploadDrawing( // swiftlint:disable:this function_parameter_count
+    func uploadDrawing(
         _: Data,
-        gameID _: UUID,
-        roundID _: UUID,
+        parent _: GameUploadParent,
         coupleID _: UUID,
         reserveOperation _: SyncClientOperation,
         finalizeOperation _: SyncClientOperation

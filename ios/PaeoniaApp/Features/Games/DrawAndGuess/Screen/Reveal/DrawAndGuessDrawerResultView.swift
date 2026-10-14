@@ -40,7 +40,7 @@ struct DrawAndGuessDrawerResultView: View {
     var body: some View {
         // A tap anywhere skips to the settled result. It is a shortcut, and the buttons stay.
         // swiftlint:disable:next accessibility_trait_for_button
-        DrawAndGuessPhaseLayout(
+        GamePhaseLayout(
             scrollTrigger: revealProgress,
             freezesSide: isRevealed,
             sharing: .inherits,
@@ -50,7 +50,7 @@ struct DrawAndGuessDrawerResultView: View {
                 statusRow
             }
         } square: { side in
-            DrawAndGuessSquare(side: side, scale: 0.8, glow: timeline.glow) {
+            GameSquare(side: side, scale: 0.8, glow: timeline.glow) {
                 DrawAndGuessDrawerSquareContent(viewModel: viewModel, partnerGuess: partnerGuess, side: side)
             }
             .drawAndGuessDrawingAccessibility(
@@ -85,7 +85,13 @@ struct DrawAndGuessDrawerResultView: View {
         }
         .animation(PaeoniaMotion.stateChange, value: viewModel.isPartnerChoosingNextWord)
         .simultaneousGesture(TapGesture().onEnded { finishNow() })
-        .drawAndGuessStarToolbar(viewModel, isShown: isRevealed && timeline.actionsShown)
+        .gameStarToolbar(
+            stars: viewModel.stars,
+            id: viewModel.round?.id,
+            isShown: isRevealed && timeline.actionsShown,
+            hintKey: "games.drawAndGuess.starHintShown",
+            identifier: "draw.reveal.star"
+        )
         .onChange(of: viewModel.phase, initial: true) { _, phase in
             if phase == .reveal {
                 if playbackTask == nil, !timeline.hasBegun {
@@ -141,7 +147,7 @@ struct DrawAndGuessDrawerResultView: View {
 
     private var statusRow: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
-            DrawAndGuessAvatar(player: viewModel.partner, isMe: false, size: 40)
+            GameAvatar(player: viewModel.partner, isMe: false, size: 40)
                 .overlay {
                     if viewModel.sentStatus == .looking {
                         Circle().strokeBorder(.paeoniaAccentPrimary, lineWidth: 2).padding(-2)
@@ -168,7 +174,7 @@ struct DrawAndGuessDrawerResultView: View {
     private var footer: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             if viewModel.isHeldOnPhone, !isRevealed {
-                DrawAndGuessOfflineLine()
+                GameOfflineLine(identifier: "draw.pending")
             }
             if let partnerGuess {
                 DrawAndGuessPartnerSlots(guess: partnerGuess, partnerName: viewModel.partnerName)
@@ -177,7 +183,7 @@ struct DrawAndGuessDrawerResultView: View {
             guessArea
                 .overlay {
                     if let start = timeline.bloomStart {
-                        DrawAndGuessPetalBloom(
+                        GamePetalBloom(
                             start: start,
                             seed: viewModel.round?.id.uuidString ?? "",
                             intensity: 0.5

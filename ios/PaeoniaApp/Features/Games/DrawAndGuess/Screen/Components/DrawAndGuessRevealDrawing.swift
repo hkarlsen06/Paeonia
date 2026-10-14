@@ -1,3 +1,4 @@
+import PencilKit
 import SwiftUI
 
 /// The finished drawing on the result screens. While the drawing is not on the
@@ -43,39 +44,20 @@ struct DrawAndGuessDrawingPlaceholder: View {
     let viewModel: DrawAndGuessViewModel
 
     var body: some View {
-        if viewModel.drawingLoadFailed {
-            PaeoniaEmptyStateView(
-                title: .gamesNoticeDrawingUnavailableTitle,
-                message: .gamesNoticeDrawingUnavailableMessage,
-                systemImage: "wifi.slash"
-            ) {
-                Button {
-                    viewModel.retryLoadingDrawing()
-                } label: {
-                    Text(.commonTryAgain)
-                }
-                .buttonStyle(PaeoniaSecondaryButtonStyle())
-            }
-            .padding(PaeoniaSpacing.space16)
-        } else {
-            DrawAndGuessDrawingSpinner()
+        GameDrawingPlaceholder(loadFailed: viewModel.drawingLoadFailed) {
+            viewModel.retryLoadingDrawing()
         }
     }
 }
 
-/// A small spinner that waits a moment before it shows, so a drawing that
-/// arrives quickly never flashes it.
-private struct DrawAndGuessDrawingSpinner: View {
-    @State private var isShown = false
+/// The canonical drawing scaled to the square it is shown in.
+struct DrawAndGuessFinalDrawingView: View {
+    let drawing: DrawAndGuessFinalDrawing?
+    let side: CGFloat
 
     var body: some View {
-        ProgressView()
-            .tint(.paeoniaAccentPrimary)
-            .opacity(isShown ? 1 : 0)
-            .accessibilityLabel(Text(.gamesDrawAndGuessDrawingLoading))
-            .task {
-                try? await Task.sleep(for: .milliseconds(300))
-                withAnimation(PaeoniaMotion.stateChange) { isShown = true }
-            }
+        GameStaticDrawing(drawing: drawing?.fitted(toSide: side) ?? PKDrawing())
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 }

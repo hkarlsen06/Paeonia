@@ -141,7 +141,7 @@ final class SimNetwork {
             log.add("\(name) \(callName) refused: \(error)")
             throw error
         }
-        if ["pick", "submitDrawing", "guess", "giveUp", "reaction", "resultSeen", "upload"].contains(callName) {
+        if ["pick", "submitDrawing", "guess", "giveUp", "reaction", "resultSeen", "upload", "submitPart", "revealSeen", "star"].contains(callName) {
             log.add("\(name) \(callName) applied")
         }
         if fault == .dropAfter {
@@ -292,15 +292,14 @@ final class SimDrawingTransfer: GameDrawingTransferring, @unchecked Sendable {
         incarnation = network.incarnation
     }
 
-    func uploadDrawing( // swiftlint:disable:this function_parameter_count
+    func uploadDrawing(
         _ data: Data,
-        gameID _: UUID,
-        roundID: UUID,
+        parent: GameUploadParent,
         coupleID _: UUID,
         reserveOperation: SyncClientOperation,
         finalizeOperation _: SyncClientOperation
     ) async throws -> UUID {
-        try await upload(data, roundID: roundID, reserveOperation: reserveOperation)
+        try await upload(data, roundID: parent.id, reserveOperation: reserveOperation)
     }
 
     @MainActor

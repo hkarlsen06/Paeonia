@@ -61,7 +61,9 @@ struct DrawAndGuessHistoryTests {
         environment.gateway.setHistory(rounds ?? self.rounds)
         environment.gateway.setRecords(DeveloperGamesFixture.records)
         let dependencies = environment.dependencies()
-        let stars = DrawAndGuessStars(dependencies: dependencies) { GameFixture.me }
+        let stars = GameStars(source: .drawAndGuess(cache: dependencies.cache), dependencies: dependencies) {
+            GameFixture.me
+        }
         return DrawAndGuessHistoryViewModel(
             dependencies: dependencies,
             stars: stars,
@@ -233,7 +235,7 @@ struct DrawAndGuessHistoryTests {
         await history.refresh()
         let first = try #require(history.visibleRounds.first)
 
-        await history.stars.setStarred(false, roundID: first.id)
+        await history.stars.setStarred(false, id: first.id)
 
         #expect(!history.visibleRounds.contains { $0.id == first.id })
     }
@@ -245,7 +247,7 @@ struct DrawAndGuessHistoryTests {
         await history.refresh()
         let unstarred = try #require(rounds.first { !$0.starredByMe })
 
-        await history.stars.setStarred(true, roundID: unstarred.id)
+        await history.stars.setStarred(true, id: unstarred.id)
 
         #expect(history.visibleRounds.contains { $0.id == unstarred.id })
         // Newest first, whichever list a drawing came from.

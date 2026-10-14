@@ -40,12 +40,21 @@ nonisolated enum GameServerRejection {
         of operation: PendingSyncOperationSnapshot,
         cache: any GamesCaching
     ) async -> Bool {
+        await shouldDrop(error, of: operation) { operationID, ownerUserID in
+            await cache.recordUnexplainedRefusal(operationID: operationID, ownerUserID: ownerUserID)
+        }
+    }
+
+    /// The same for a game with its own cache. `recordRefusal` counts one more
+    /// unexplained refusal of the write and returns how many there are now.
+    static func shouldDrop(
+        _ error: PaeoniaConvexError,
+        of operation: PendingSyncOperationSnapshot,
+        recordRefusal: (_ operationID: UUID, _ ownerUserID: UUID) async -> Int
+    ) async -> Bool {
         if isPermanent(error) { return true }
         guard isUnexplained(error) else { return false }
-        let refusals = await cache.recordUnexplainedRefusal(
-            operationID: operation.operation.id,
-            ownerUserID: operation.ownerUserID
-        )
+        let refusals = await recordRefusal(operation.operation.id, operation.ownerUserID)
         return refusals >= unexplainedRefusalLimit
     }
 
@@ -55,14 +64,16 @@ nonisolated enum GameServerRejection {
         return code == "23505"
     }
 
-    /// The upload reserved for a drawing or a memory photo is gone, so replaying
-    /// its reservation can never work. The server deletes an upload nothing used
-    /// within a week, which happens when the phone stays offline that long after
-    /// uploading.
+    /// The upload reserved for a drawing, a strip or a memory photo is gone, so
+    /// replaying its reservation can never work. The server deletes an upload
+    /// nothing used within a week, which happens when the phone stays offline that
+    /// long after uploading.
     static func isUploadGone(_ error: PaeoniaConvexError) -> Bool {
         guard case let .server(code, message) = error else { return false }
         return (code == "42501" && message.contains("media upload reservation is not available"))
             || (code == "23514" && message.contains("game drawing asset is not usable"))
+            || (code == "23514" && message.contains("exquisite corpse drawing asset is not usable"))
+            || (code == "23514" && message.contains("exquisite corpse strip asset is not usable"))
             || (code == "23514" && message.contains("memory media asset is not usable"))
     }
 
@@ -94,8 +105,18 @@ func readStateAfterAcceptedMove(
     gateway: any DrawAndGuessGateway,
     cache: any GamesCaching
 ) async -> PendingSyncOperationSendResult {
-    do {
+    await readStateAfterAcceptedMove(operation) {
         _ = try await cache.fetchState(from: gateway, ownerUserID: operation.ownerUserID)
+    }
+}
+
+/// The same for a game with its own state. `fetch` reads that state and saves it.
+func readStateAfterAcceptedMove(
+    _ operation: PendingSyncOperationSnapshot,
+    fetch: () async throws -> Void
+) async -> PendingSyncOperationSendResult {
+    do {
+        try await fetch()
         return .succeeded
     } catch {
         return .retry(after: readAfterMoveRetryPolicy.nextRetryDate(
@@ -247,8 +268,7 @@ struct SubmitGameDrawingPendingOperationHandler: PendingSyncOperationHandling {
         do {
             let assetID = try await transfer.uploadDrawing(
                 payload.drawingData,
-                gameID: payload.gameID,
-                roundID: payload.roundID,
+                parent: .drawAndGuessRound(gameID: payload.gameID, roundID: payload.roundID),
                 coupleID: payload.coupleID,
                 reserveOperation: payload.reserveOperation,
                 finalizeOperation: payload.finalizeOperation

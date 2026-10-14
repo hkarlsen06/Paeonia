@@ -191,6 +191,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let dailyQuestionChatCache: any DailyQuestionChatCaching
     private let gamesCache: any GamesCaching
     private let storyChainCache: any StoryChainCaching
+    private let exquisiteCorpseCache: any ExquisiteCorpseCaching
     private let gameDrawingStore: any GameDrawingStoring
     private let mindMeldCache: any MindMeldCaching
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
@@ -208,6 +209,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         dailyQuestionChatCache: any DailyQuestionChatCaching = FileDailyQuestionChatCache.shared,
         gamesCache: any GamesCaching = FileGamesCache.shared,
         storyChainCache: any StoryChainCaching = FileStoryChainCache.shared,
+        exquisiteCorpseCache: any ExquisiteCorpseCaching = FileExquisiteCorpseCache.shared,
         gameDrawingStore: any GameDrawingStoring = FileGameDrawingStore.shared,
         mindMeldCache: any MindMeldCaching = FileMindMeldCache.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
@@ -224,6 +226,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.dailyQuestionChatCache = dailyQuestionChatCache
         self.gamesCache = gamesCache
         self.storyChainCache = storyChainCache
+        self.exquisiteCorpseCache = exquisiteCorpseCache
         self.gameDrawingStore = gameDrawingStore
         self.mindMeldCache = mindMeldCache
         self.profilePhotoDiskCache = profilePhotoDiskCache
@@ -248,6 +251,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await gamesCache.clearAll()
         await storyChainCache.clearAll()
         await mindMeldCache.clearAll()
+        await exquisiteCorpseCache.clearAll()
         gameDrawingStore.purge(for: scope)
         try? await profilePhotoDiskCache.removeAllProfilePhotoData()
         removeDirectoryIfPresent(DailyAnswerMediaImageService.defaultDirectoryURL())

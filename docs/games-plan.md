@@ -131,7 +131,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 | Chess | No | No | L |
 | Wordfeud-style word game | Yes, the tile rack | No | L |
 
-- **Exquisite corpse.** Each partner draws one part (head, body, legs) and sees only a thin strip of the part before. The full drawing is revealed at the end.
+- **Exquisite corpse.** Built. Partners take turns drawing the head, body and legs of a figure, and each sees only the bottom 12% of the part before. The whole figure unfolds part by part at the end and goes to "Our creatures". It plays live with a folded paper view and async with pushes. Its full design is in `docs/games/exquisite-corpse.md`.
 - **Story Chain.** Built. The partners write one story together, one or two sentences a turn. A writer can dare the partner to use a word in the next line, and the partner who did not write the last line names the story. Live play shows the partner's letters as they are typed. Its design is in `docs/games/story-chain.md`.
 - **Guess my spot.** Send a photo of where you are. The partner drops a pin on a map and scores by distance. The sender's coordinates stay hidden until the guess.
 - **Board games.** Short classic turns. Connect Four is the proposed first test of the turn engine.
@@ -187,7 +187,7 @@ Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`
 ### Ownership
 
 - Your game owns its iOS folder, its tests, its backend module and helper file, its tables, and its design doc.
-- Do not change Draw & Guess's tables or refactor its code. The one exception is the Exquisite corpse thread, which may move drawing code it reuses (canvas, stroke replay, live stroke messages, stars) into `Features/Games/Shared/` and shared backend helpers, as long as Draw & Guess behaves the same.
+- Do not change Draw & Guess's tables or refactor its code. The one exception is the Exquisite corpse thread, which may move drawing code it reuses (canvas, stroke replay, live stroke messages, stars) into `Features/Games/Shared/` and shared backend helpers, as long as Draw & Guess behaves the same. It has moved the canvas, stroke replay, drawing components, layout, stars and history drawings so far, and a later drawing game reuses them from there (map in `docs/implementation-map.md`).
 - Shared files take small additions at the points above. If a shared seam needs a real change, ask the developer first.
 - In this file, edit only your own catalog bullet and the "Order" and "Open questions" lines about your game. Everything else goes in your design doc.
 
@@ -200,7 +200,7 @@ Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`
 
 ## Order
 
-Draw & Guess comes first. It builds the turn engine, the drawing replay and the history with stars. Exquisite corpse reuses all three, so it is the likely second game. Mind Meld is the cheapest game that tests a simultaneous reveal on Convex. Connect Four fails quality bar item 3 unless it gets a Paeonia-specific twist.
+Draw & Guess comes first. It builds the turn engine, the drawing replay and the history with stars. Exquisite corpse reuses all three from `Features/Games/Shared/` and is built. Mind Meld is the cheapest game that tests a simultaneous reveal on Convex. Connect Four fails quality bar item 3 unless it gets a Paeonia-specific twist.
 
 ## Open questions
 

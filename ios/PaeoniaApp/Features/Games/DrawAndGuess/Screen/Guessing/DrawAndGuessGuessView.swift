@@ -21,7 +21,7 @@ struct DrawAndGuessGuessView: View {
     var body: some View {
         // A tap anywhere skips to the settled result. It is a shortcut, and the buttons stay.
         // swiftlint:disable:next accessibility_trait_for_button
-        DrawAndGuessPhaseLayout(scrollTrigger: revealProgress, freezesSide: isRevealed) {
+        GamePhaseLayout(scrollTrigger: revealProgress, freezesSide: isRevealed) {
             // The rows that only matter while guessing fade out but keep their space,
             // so nothing above or below the square jumps when the guess is right.
             liveRow
@@ -55,14 +55,20 @@ struct DrawAndGuessGuessView: View {
             AccessibilityNotification.Announcement(String(localized: .gamesDrawAndGuessGuessWrong)).post()
         }
         .onDisappear { timeline.stop() }
-        .drawAndGuessStarToolbar(viewModel, isShown: isRevealed && timeline.actionsShown)
+        .gameStarToolbar(
+            stars: viewModel.stars,
+            id: viewModel.round?.id,
+            isShown: isRevealed && timeline.actionsShown,
+            hintKey: "games.drawAndGuess.starHintShown",
+            identifier: "draw.reveal.star"
+        )
     }
 
     // MARK: Square
 
     private func square(side: CGFloat) -> some View {
         VStack(spacing: PaeoniaSpacing.space4) {
-            DrawAndGuessSquare(
+            GameSquare(
                 side: side,
                 scale: timeline.canvasShrunk ? 0.8 : 1,
                 glow: timeline.glow
@@ -153,7 +159,7 @@ struct DrawAndGuessGuessView: View {
         )
         .overlay {
             if let start = timeline.bloomStart {
-                DrawAndGuessPetalBloom(start: start, seed: viewModel.round?.id.uuidString ?? "")
+                GamePetalBloom(start: start, seed: viewModel.round?.id.uuidString ?? "")
                     .frame(width: 560, height: 420)
             }
         }
@@ -285,8 +291,8 @@ extension DrawAndGuessGuessView {
     }
 
     private var liveRow: some View {
-        DrawAndGuessLiveRow {
-            DrawAndGuessPresenceLabel(
+        GameLiveRow {
+            GamePresenceLabel(
                 player: viewModel.partner,
                 text: liveRowText,
                 showsRing: isLive || isWatchedGuessing

@@ -22,8 +22,10 @@ struct DrawAndGuessHistoryDetailTests {
         return DrawAndGuessHistoryDetailViewModel(
             round: round,
             participants: GameFixture.participants,
-            stars: DrawAndGuessStars(dependencies: dependencies) { GameFixture.me },
-            drawings: DrawAndGuessHistoryDrawings(
+            stars: GameStars(source: .drawAndGuess(cache: dependencies.cache), dependencies: dependencies) {
+                GameFixture.me
+            },
+            drawings: GameHistoryDrawings(
                 store: dependencies.drawingStore,
                 transfer: dependencies.drawingTransfer
             ),
@@ -71,8 +73,10 @@ struct DrawAndGuessHistoryDetailTests {
         let viewModel = DrawAndGuessHistoryDetailViewModel(
             round: try #require(rounds.first),
             participants: GameFixture.participants,
-            stars: DrawAndGuessStars(dependencies: dependencies) { GameFixture.me },
-            drawings: DrawAndGuessHistoryDrawings(
+            stars: GameStars(source: .drawAndGuess(cache: dependencies.cache), dependencies: dependencies) {
+                GameFixture.me
+            },
+            drawings: GameHistoryDrawings(
                 store: dependencies.drawingStore,
                 transfer: dependencies.drawingTransfer
             )

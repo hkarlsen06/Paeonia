@@ -12,7 +12,7 @@ struct DrawAndGuessDrawerSquareContent: View {
     var body: some View {
         ZStack {
             if followsReplay {
-                DrawAndGuessReplaySurface(frames: viewModel.partnerReplayFrames, side: side)
+                GameReplaySurface(frames: viewModel.partnerReplayFrames, side: side)
                     .allowsHitTesting(false)
                     .transition(.opacity)
             } else {

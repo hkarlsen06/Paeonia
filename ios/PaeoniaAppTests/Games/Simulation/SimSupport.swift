@@ -146,9 +146,9 @@ enum SimStrokes {
 /// Where a run reports, and the watchdog that stops a seed that hangs.
 @MainActor
 enum SimReport {
-    /// Appends to `/tmp/dng-sim.log` on the Mac, which the simulator can write.
-    nonisolated static func write(_ text: String) {
-        let url = URL(fileURLWithPath: "/tmp/dng-sim.log")
+    /// Appends to `path` on the Mac, which the simulator can write.
+    nonisolated static func write(_ text: String, to path: String = "/tmp/dng-sim.log") {
+        let url = URL(fileURLWithPath: path)
         let line = Data((text + "\n").utf8)
         if let handle = try? FileHandle(forWritingTo: url) {
             handle.seekToEndOfFile()

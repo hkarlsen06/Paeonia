@@ -11,7 +11,7 @@ nonisolated struct DrawAndGuessLiveMessage: GameLiveMessage, Equatable {
     struct Replay: Codable, Equatable, Sendable {
         /// Replay seconds shown when the message was sent.
         var time: TimeInterval
-        /// 1 is the drawn pace, `DrawAndGuessReplayClock.fastForwardRate` while held.
+        /// 1 is the drawn pace, `GameReplayClock.fastForwardRate` while held.
         var rate: Double
     }
 

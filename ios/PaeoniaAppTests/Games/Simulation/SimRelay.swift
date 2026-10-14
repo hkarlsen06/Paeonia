@@ -194,6 +194,9 @@ final class SimRelaySocket: WidgetLiveConnection {
     private var socket: SimRelay.Socket?
     private var wantsConnection = false
     private var isConnecting = false
+    /// Told about everything this phone sends, for tests of what may leave the phone.
+    var onSendMessage: ((WidgetLiveMessage) -> Void)?
+    var onSendGameData: ((Data) -> Void)?
 
     init(
         relay: SimRelay,
@@ -232,11 +235,13 @@ final class SimRelaySocket: WidgetLiveConnection {
     }
 
     override func send(_ message: WidgetLiveMessage) {
+        onSendMessage?(message)
         guard let socket else { return }
         relay.forward(from: socket, message)
     }
 
     override func send(gameData: Data) {
+        onSendGameData?(gameData)
         guard let socket else { return }
         relay.forward(from: socket, gameData: gameData)
     }

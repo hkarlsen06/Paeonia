@@ -6,7 +6,7 @@ struct DrawAndGuessStatusView: View {
     let viewModel: DrawAndGuessViewModel
 
     var body: some View {
-        DrawAndGuessFocusedLayout(fillsHeight: true) {
+        GameFocusedLayout(fillsHeight: true) {
             VStack(spacing: PaeoniaSpacing.space16) {
                 Spacer(minLength: 0)
                 content
@@ -23,7 +23,7 @@ struct DrawAndGuessStatusView: View {
         case .needsSetup:
             PaeoniaEmptyStateView(
                 title: .gamesDrawAndGuessName,
-                message: .gamesDrawAndGuessNeedsSetup,
+                message: .gamesNeedsSetup,
                 systemImage: "gamecontroller.fill"
             )
         case .preparing where viewModel.startFailed:
@@ -41,9 +41,9 @@ struct DrawAndGuessStatusView: View {
             }
         case .waitingToSync where viewModel.isHeldOnPhone:
             PaeoniaEmptyStateView(
-                title: viewModel.isSendFailing ? .gamesDrawAndGuessWaitingToSyncFailedTitle : .gamesPendingSavedOnPhone,
+                title: viewModel.isSendFailing ? .gamesWaitingToSyncFailedTitle : .gamesPendingSavedOnPhone,
                 message: viewModel.isSendFailing
-                    ? .gamesDrawAndGuessWaitingToSyncFailedMessage
+                    ? .gamesWaitingToSyncFailedMessage
                     : .gamesDrawAndGuessWaitingToSyncMessage,
                 systemImage: viewModel.isSendFailing ? "exclamationmark.triangle" : "clock"
             ) {

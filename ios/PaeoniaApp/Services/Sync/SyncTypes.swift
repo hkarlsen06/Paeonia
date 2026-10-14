@@ -157,6 +157,9 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case countMindMeldRound = "count_mind_meld_round"
     case markMindMeldRevealSeen = "mark_mind_meld_reveal_seen"
     case markMindMeldEndSeen = "mark_mind_meld_end_seen"
+    case exquisiteCorpseSubmitPart = "exquisite_corpse_submit_part"
+    case exquisiteCorpseRevealSeen = "exquisite_corpse_reveal_seen"
+    case exquisiteCorpseStar = "exquisite_corpse_star"
 }
 
 nonisolated enum SyncPendingOperationStatus: String, Codable, CaseIterable, Sendable {

@@ -28,6 +28,12 @@ struct GamesDependencies {
     /// The Mind Meld relay room for the couple: presence and typing only.
     var makeMindMeldLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
 
+    // Exquisite corpse
+    var exquisiteCorpseGateway: any ExquisiteCorpseGateway = UnavailableExquisiteCorpseGateway()
+    var exquisiteCorpseCache: any ExquisiteCorpseCaching = InMemoryExquisiteCorpseCache()
+    /// Builds Exquisite corpse's live room for the couple, or nil when there is none.
+    var makeExquisiteCorpseLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
+
     static func live() -> GamesDependencies {
         let client = try? PaeoniaConvexClientProvider.shared.client()
         let pendingStore: any PendingSyncOperationPersisting
@@ -49,7 +55,11 @@ struct GamesDependencies {
             makeStoryChainLive: { StoryChainLive.make(coupleID: $0) },
             mindMeldGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
             mindMeldCache: FileMindMeldCache.shared,
-            makeMindMeldLive: { MindMeldLive.make(coupleID: $0) }
+            makeMindMeldLive: { MindMeldLive.make(coupleID: $0) },
+            exquisiteCorpseGateway: client.map { LiveExquisiteCorpseGateway(client: $0) }
+                ?? UnavailableExquisiteCorpseGateway(),
+            exquisiteCorpseCache: FileExquisiteCorpseCache.shared,
+            makeExquisiteCorpseLive: { ExquisiteCorpseLive.make(coupleID: $0) }
         )
     }
 }
@@ -150,10 +160,9 @@ nonisolated extension UnavailableGamesGateway: DrawAndGuessGateway {
 }
 
 nonisolated struct UnavailableGameDrawingTransfer: GameDrawingTransferring {
-    func uploadDrawing( // swiftlint:disable:this function_parameter_count
+    func uploadDrawing(
         _: Data,
-        gameID _: UUID,
-        roundID _: UUID,
+        parent _: GameUploadParent,
         coupleID _: UUID,
         reserveOperation _: SyncClientOperation,
         finalizeOperation _: SyncClientOperation

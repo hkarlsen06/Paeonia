@@ -140,7 +140,7 @@ struct MindMeldRevealStage: View {
     private var bloom: some View {
         if let bloomStart, !reduceMotion {
             // Bigger than the stage, so the petals can fly past the cards.
-            DrawAndGuessPetalBloom(start: bloomStart, seed: seed, intensity: Self.bloomIntensity)
+            GamePetalBloom(start: bloomStart, seed: seed, intensity: Self.bloomIntensity)
                 .frame(width: cardMaxWidth * 4.5, height: cardMaxWidth * 2.6)
                 .offset(y: cardCenterOffset)
                 .allowsHitTesting(false)

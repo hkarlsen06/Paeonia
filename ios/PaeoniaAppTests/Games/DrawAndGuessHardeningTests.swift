@@ -33,10 +33,9 @@ private final class HeldDownloadTransfer: GameDrawingTransferring, @unchecked Se
         resumed.forEach { $0.resume() }
     }
 
-    func uploadDrawing( // swiftlint:disable:this function_parameter_count
+    func uploadDrawing(
         _: Data,
-        gameID _: UUID,
-        roundID _: UUID,
+        parent _: GameUploadParent,
         coupleID _: UUID,
         reserveOperation _: SyncClientOperation,
         finalizeOperation _: SyncClientOperation
@@ -179,7 +178,7 @@ struct DrawAndGuessHardeningTests {
         let viewModel = env.viewModel()
         await viewModel.reload()
         let umbrella = GameFixture.umbrella()
-        viewModel.board.canvasDidLayout(side: DrawAndGuessCanvas.canonicalSide)
+        viewModel.board.canvasDidLayout(side: GameCanvas.canonicalSide)
         viewModel.board.updateDrawing(umbrella)
         viewModel.board.setStrokeInProgress(true)
 
@@ -204,7 +203,7 @@ struct DrawAndGuessHardeningTests {
         await viewModel.reload()
         let umbrella = GameFixture.umbrella()
         let board = viewModel.board
-        board.canvasDidLayout(side: DrawAndGuessCanvas.canonicalSide)
+        board.canvasDidLayout(side: GameCanvas.canonicalSide)
         board.updateDrawing(umbrella)
         let canvas = PKCanvasView()
         board.bindCanvasView(canvas)

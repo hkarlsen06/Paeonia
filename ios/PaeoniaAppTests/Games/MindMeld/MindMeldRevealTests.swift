@@ -87,7 +87,7 @@ struct MindMeldRevealTests {
     }
 
     @Test func theBloomLengthIsThePetalBloomsDuration() {
-        #expect(MindMeldRevealSchedule.standard.bloomDuration == DrawAndGuessPetalBloom.duration)
+        #expect(MindMeldRevealSchedule.standard.bloomDuration == GamePetalBloom.duration)
     }
 
     @Test func theScriptFromANearMissKeepsTheGapsAfterTheVerdict() {

@@ -18,6 +18,9 @@ nonisolated enum GamesDestination: Hashable, Sendable {
     /// "Our melds".
     case mindMeldHistory
     case mindMeldHistoryDetail(UUID)
+    /// "Our creatures".
+    case exquisiteCorpseHistory
+    case exquisiteCorpseHistoryDetail(UUID)
 }
 
 /// The Games tab: first-time setup, the hub, and the couple's game settings.
@@ -57,10 +60,11 @@ final class GamesViewModel {
     let drawAndGuess: DrawAndGuessHubModel
     let storyChain: StoryChainHubModel
     let mindMeld: MindMeldHubModel
+    let exquisiteCorpse: ExquisiteCorpseHubModel
 
     /// The built games, in `GameKind` order. A kind that is not here shows nowhere.
     var games: [any GameHubModel] {
-        [drawAndGuess, mindMeld, storyChain]
+        [drawAndGuess, mindMeld, exquisiteCorpse, storyChain]
     }
 
     private let dependencies: GamesDependencies
@@ -75,6 +79,7 @@ final class GamesViewModel {
         self.drawAndGuess = DrawAndGuessHubModel(dependencies: dependencies, game: drawAndGuess)
         storyChain = StoryChainHubModel(dependencies: dependencies)
         mindMeld = MindMeldHubModel(dependencies: dependencies)
+        exquisiteCorpse = ExquisiteCorpseHubModel(dependencies: dependencies)
     }
 
     /// A game waits for this person to move. The Games tab shows a badge.

@@ -42,7 +42,7 @@ struct GamesRulesTests {
          "started_at":"2026-10-12T09:50:00.000Z","guesser_first_seen_at":"2026-10-12T10:00:05.000Z",
          "ended_at":"2026-10-12T10:00:20.000Z","solve_ms":15000,"speed_bonus":1,"first_try_bonus":0,
          "hints_used":2,"personal_best":false,"guesser_reaction":"laugh",
-         "drawer_result_seen_at":null,"guesser_result_seen_at":"2026-10-12T10:00:30.000Z","attempt_count":1,
+         "drawer_result_seen_at":null,"guesser_result_seen_at":"2026-10-12T10:00:30.000Z","attempt_count":1,"starred_by_me":false,
          "attempts":[{"id":"dddddddd-0000-4000-8000-000000000001","user_id":"11111111-1111-1111-1111-111111111111",
                       "text":"the cat","correct":false,"created_at":"2026-10-12T10:00:10.000Z"}]}
         """

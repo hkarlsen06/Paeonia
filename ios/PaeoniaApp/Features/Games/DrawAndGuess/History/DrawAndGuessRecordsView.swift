@@ -3,8 +3,8 @@ import SwiftUI
 /// The "Records" section: first-try solves, the average solve time and the
 /// fastest solve of both partners, side by side. It shows in both play styles.
 struct DrawAndGuessRecordsView: View {
-    let me: DrawAndGuessPlayer
-    let partner: DrawAndGuessPlayer
+    let me: GamePlayer
+    let partner: GamePlayer
     let mine: RemoteDrawAndGuessPlayerRecords?
     let theirs: RemoteDrawAndGuessPlayerRecords?
 
@@ -74,9 +74,9 @@ struct DrawAndGuessRecordsView: View {
         return layout { content() }
     }
 
-    private func player(_ player: DrawAndGuessPlayer, name: String, isMe: Bool) -> some View {
+    private func player(_ player: GamePlayer, name: String, isMe: Bool) -> some View {
         HStack(spacing: PaeoniaSpacing.space8) {
-            DrawAndGuessAvatar(player: player, isMe: isMe, size: 28)
+            GameAvatar(player: player, isMe: isMe, size: 28)
             Text(name)
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)

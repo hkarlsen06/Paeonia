@@ -17,10 +17,9 @@ private final class ExpiringUploadTransfer: GameDrawingTransferring, @unchecked 
         lock.withLock { _ = gone.insert(reserveOperationID) }
     }
 
-    func uploadDrawing( // swiftlint:disable:this function_parameter_count
+    func uploadDrawing(
         _ data: Data,
-        gameID _: UUID,
-        roundID _: UUID,
+        parent _: GameUploadParent,
         coupleID _: UUID,
         reserveOperation: SyncClientOperation,
         finalizeOperation _: SyncClientOperation

@@ -20,6 +20,8 @@ nonisolated enum GamesNotice: Equatable, Sendable {
     /// Queueing a move on the phone failed.
     case couldNotSaveMove
     case couldNotSendInvite
+    /// An Exquisite corpse part could not be sent and is back on the canvas.
+    case exquisiteCorpsePartRejected
 
     init(_ stored: GameStoredNotice) {
         switch stored {
@@ -32,10 +34,11 @@ nonisolated enum GamesNotice: Equatable, Sendable {
 
     @MainActor
     var banner: PaeoniaBannerContent {
-        .error(title: String(localized: title), message: String(localized: message))
+        .error(title: title.map { String(localized: $0) }, message: String(localized: message))
     }
 
-    private var title: LocalizedStringResource {
+    /// The banner's bold line. A notice whose message says it all has none.
+    private var title: LocalizedStringResource? {
         switch self {
         case .couldNotSaveSettings: .gamesNoticeSettingsFailedTitle
         case .couldNotStartGame: .gamesNoticeStartFailedTitle
@@ -46,6 +49,7 @@ nonisolated enum GamesNotice: Equatable, Sendable {
         case .moveRejected: .gamesNoticeMoveRejectedTitle
         case .couldNotSaveMove: .gamesNoticeMoveFailedTitle
         case .couldNotSendInvite: .gamesNoticeInviteFailedTitle
+        case .exquisiteCorpsePartRejected: nil
         }
     }
 
@@ -61,6 +65,7 @@ nonisolated enum GamesNotice: Equatable, Sendable {
         case .moveRejected: .gamesNoticeMoveRejectedMessage
         case .couldNotSaveMove: .gamesNoticeMoveFailedMessage
         case .couldNotSendInvite: .gamesNoticeInviteFailedMessage
+        case .exquisiteCorpsePartRejected: .exquisiteCorpseNoticePartRejected
         }
     }
 }

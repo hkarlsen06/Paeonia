@@ -3,22 +3,6 @@ import PencilKit
 import QuartzCore
 import SwiftUI
 
-extension GameParticipants {
-    /// Both people as the avatars show them.
-    var players: (me: DrawAndGuessPlayer, partner: DrawAndGuessPlayer) {
-        (
-            DrawAndGuessPlayer(name: currentName, photoAssetID: currentPhotoAssetID),
-            DrawAndGuessPlayer(name: partnerName, photoAssetID: partnerPhotoAssetID)
-        )
-    }
-}
-
-/// A person as the avatars show them.
-nonisolated struct DrawAndGuessPlayer: Equatable, Sendable {
-    var name: String
-    var photoAssetID: UUID?
-}
-
 /// The whole Draw & Guess flow for one person. Screens bind to the observable
 /// state and call the actions. They hold no game rules.
 ///
@@ -44,8 +28,8 @@ final class DrawAndGuessViewModel {
     var settings: RemoteGameSettings?
     var score: DrawAndGuessScore?
     var partnerName: String
-    var me: DrawAndGuessPlayer
-    var partner: DrawAndGuessPlayer
+    var me: GamePlayer
+    var partner: GamePlayer
     /// The three words, while it is this person's turn to pick one.
     var choices: [DrawAndGuessWordChoice] = []
     /// It is this person's turn to pick, the state has loaded, and it carries no
@@ -108,22 +92,25 @@ final class DrawAndGuessViewModel {
     var startFailed = false
 
     /// The drawer's canvas.
-    let board = DrawAndGuessDrawingBoard()
+    let board = GameDrawingBoard()
     /// The relay room, nil when the couple has none.
     var live: WidgetLiveDrawing?
     /// The game's own messages in the relay room.
     @ObservationIgnored var liveGuessChannel: GameLiveChannel<DrawAndGuessLiveMessage>?
     @ObservationIgnored var lastSentGuessScreen: DrawAndGuessSentGuessScreen?
     @ObservationIgnored var receivedGuessScreen: DrawAndGuessReceivedGuessScreen?
-    @ObservationIgnored var partnerReplayTimelineCache: (roundID: UUID, timeline: DrawAndGuessReplayTimeline)?
+    @ObservationIgnored var partnerReplayTimelineCache: (roundID: UUID, timeline: GameReplayTimeline)?
 
     // MARK: - Dependencies
 
     @ObservationIgnored let dependencies: GamesDependencies
     @ObservationIgnored var gateway: any DrawAndGuessGateway { dependencies.gateway }
     /// This person's private stars on finished rounds. The result screens and
-    /// "Our drawings" share it: `stars.isStarred(roundID)` and `stars.toggle(roundID:)`.
-    @ObservationIgnored lazy var stars = DrawAndGuessStars(dependencies: dependencies) { [weak self] in
+    /// "Our drawings" share it: `stars.isStarred(roundID)` and `stars.toggle(id:)`.
+    @ObservationIgnored lazy var stars = GameStars(
+        source: .drawAndGuess(cache: dependencies.cache),
+        dependencies: dependencies
+    ) { [weak self] in
         self?.currentUserID
     }
     @ObservationIgnored let heartbeatInterval: Duration
@@ -131,7 +118,7 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored let monotonicNow: @Sendable () -> TimeInterval
     @ObservationIgnored let sleep: @Sendable (Duration) async throws -> Void
     /// The square's side from the drawing screen, for the result screen that follows it.
-    @ObservationIgnored let squareMemory = DrawAndGuessSideMemory()
+    @ObservationIgnored let squareMemory = GameSideMemory()
     @ObservationIgnored var syncAfterLocalChange: (@MainActor @Sendable () async -> Void)?
 
     // MARK: - Internal state
@@ -182,8 +169,8 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var loadedAssetID: UUID?
     @ObservationIgnored var loadingAssetID: UUID?
     @ObservationIgnored var downloadedDrawing: PKDrawing?
-    @ObservationIgnored var replayTimeline: DrawAndGuessReplayTimeline?
-    @ObservationIgnored var replayClock: DrawAndGuessReplayClock? {
+    @ObservationIgnored var replayTimeline: GameReplayTimeline?
+    @ObservationIgnored var replayClock: GameReplayClock? {
         didSet { sendGuessScreen() }
     }
 

@@ -27,7 +27,7 @@ struct DrawAndGuessChooseWordView: View {
     }
 
     var body: some View {
-        DrawAndGuessFocusedLayout {
+        GameFocusedLayout {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 DrawAndGuessScoreHeader(viewModel: viewModel)
                 if !(isWritingOwn && verticalSizeClass == .compact) {

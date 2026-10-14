@@ -18,7 +18,7 @@ nonisolated struct GamePickWordPayload: Codable, Equatable, Sendable {
 }
 
 /// Sends a finished drawing. The bytes are the drawing at the canonical canvas
-/// size (`DrawAndGuessCanvas.canonicalSide`).
+/// size (`GameCanvas.canonicalSide`).
 nonisolated struct GameSubmitDrawingPayload: Codable, Equatable, Sendable {
     let gameID: UUID
     let roundID: UUID

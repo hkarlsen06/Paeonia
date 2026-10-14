@@ -1,27 +1,10 @@
 import SwiftUI
 
-/// One partner's avatar. Colors are fixed: the first partner color for me, the
-/// second for the partner.
-struct DrawAndGuessAvatar: View {
-    let player: DrawAndGuessPlayer
-    let isMe: Bool
-    let size: CGFloat
-
-    var body: some View {
-        PaeoniaProfilePhotoAvatar(
-            mediaAssetID: player.photoAssetID,
-            name: player.name,
-            tint: isMe ? .paeoniaPartnerOne : .paeoniaPartnerTwo,
-            size: size
-        )
-    }
-}
-
 /// The score as the couple's play style shows it, in a capsule that takes no taps.
 struct DrawAndGuessScoreCapsule: View {
     let score: DrawAndGuessScore
-    let me: DrawAndGuessPlayer
-    let partner: DrawAndGuessPlayer
+    let me: GamePlayer
+    let partner: GamePlayer
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
@@ -33,11 +16,11 @@ struct DrawAndGuessScoreCapsule: View {
                 Text(.gamesDrawAndGuessPoints(total))
             case let .against(mine, theirs):
                 HStack(spacing: PaeoniaSpacing.space4) {
-                    DrawAndGuessAvatar(player: me, isMe: true, size: 22)
+                    GameAvatar(player: me, isMe: true, size: 22)
                     Text(verbatim: "\(mine)")
                 }
                 HStack(spacing: PaeoniaSpacing.space4) {
-                    DrawAndGuessAvatar(player: partner, isMe: false, size: 22)
+                    GameAvatar(player: partner, isMe: false, size: 22)
                     Text(verbatim: "\(theirs)")
                 }
             }

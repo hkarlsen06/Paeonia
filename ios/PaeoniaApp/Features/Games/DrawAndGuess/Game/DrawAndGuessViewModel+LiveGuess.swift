@@ -12,7 +12,7 @@ struct DrawAndGuessPartnerGuess: Equatable {
     let wrongCount: Int
     /// Nil while the guesser looks at the live canvas, which already shows the
     /// whole drawing, or their drawing is still loading.
-    let replayClock: DrawAndGuessReplayClock?
+    let replayClock: GameReplayClock?
 }
 
 /// The partner's latest guess screen, as it arrived on the drawer's phone.
@@ -29,7 +29,7 @@ struct DrawAndGuessSentGuessScreen: Equatable {
     let round: UUID
     let letters: [String?]
     let isWrong: Bool
-    let clock: DrawAndGuessReplayClock?
+    let clock: GameReplayClock?
 }
 
 // The guess screen over the live room. The guesser's phone sends it with
@@ -111,7 +111,7 @@ extension DrawAndGuessViewModel {
         // Anchored at arrival, so a drawing that loads later picks up where the replay is now.
         let clock = message.replay.flatMap { replay in
             partnerReplayTimeline(for: round).map { timeline in
-                DrawAndGuessReplayClock(
+                GameReplayClock(
                     duration: timeline.duration,
                     replayTime: replay.time,
                     rate: replay.rate,
@@ -131,24 +131,24 @@ extension DrawAndGuessViewModel {
 
     /// The drawer's own drawing on the replay's time line. It is the drawing the
     /// guesser downloaded, so both replays take the same time.
-    private func partnerReplayTimeline(for round: DrawAndGuessRoundView) -> DrawAndGuessReplayTimeline? {
+    private func partnerReplayTimeline(for round: DrawAndGuessRoundView) -> GameReplayTimeline? {
         if let cached = partnerReplayTimelineCache, cached.roundID == round.id {
             return cached.timeline
         }
         guard let drawing = finalDrawing?.drawing else { return nil }
-        let timeline = DrawAndGuessReplayTimeline(drawing: drawing)
+        let timeline = GameReplayTimeline(drawing: drawing)
         partnerReplayTimelineCache = (round.id, timeline)
         return timeline
     }
 
-    /// The partner's replay for `DrawAndGuessReplaySurface`.
-    var partnerReplayFrames: DrawAndGuessReplayFrames {
-        DrawAndGuessReplayFrames(
+    /// The partner's replay for `GameReplaySurface`.
+    var partnerReplayFrames: GameReplayFrames {
+        GameReplayFrames(
             drawing: { [weak self] wall, side in
                 guard let self, let clock = partnerGuess?.replayClock, let round,
                       let timeline = partnerReplayTimeline(for: round)
                 else { return nil }
-                return DrawAndGuessCanvas.fitted(timeline.drawing(at: clock.replayTime(at: wall)), toSide: side)
+                return GameCanvas.fitted(timeline.drawing(at: clock.replayTime(at: wall)), toSide: side)
             },
             isFinished: { [weak self] wall in
                 self?.partnerGuess?.replayClock?.isFinished(at: wall) ?? false

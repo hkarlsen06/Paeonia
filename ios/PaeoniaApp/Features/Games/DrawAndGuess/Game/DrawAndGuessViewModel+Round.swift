@@ -289,6 +289,6 @@ struct DrawAndGuessFinalDrawing {
     let drawing: PKDrawing
 
     func fitted(toSide side: CGFloat) -> PKDrawing {
-        DrawAndGuessCanvas.fitted(drawing, toSide: side)
+        GameCanvas.fitted(drawing, toSide: side)
     }
 }

@@ -5,8 +5,8 @@ import SwiftUI
 struct DrawAndGuessHubCard: View {
     let summary: DrawAndGuessHubSummary
     let context: GameHubCardContext
-    let me: DrawAndGuessPlayer
-    let partner: DrawAndGuessPlayer
+    let me: GamePlayer
+    let partner: GamePlayer
     let open: () -> Void
     /// Opens "Our drawings". Nil where the card has no room for the link.
     var openHistory: (() -> Void)?

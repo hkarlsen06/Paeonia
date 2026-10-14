@@ -22,11 +22,11 @@ final class DrawAndGuessHistoryViewModel {
 
     var filter: Filter = .all
     private(set) var records: RemoteDrawAndGuessRecords?
-    private(set) var me: DrawAndGuessPlayer
-    private(set) var partner: DrawAndGuessPlayer
+    private(set) var me: GamePlayer
+    private(set) var partner: GamePlayer
 
-    let stars: DrawAndGuessStars
-    let drawings: DrawAndGuessHistoryDrawings
+    let stars: GameStars
+    let drawings: GameHistoryDrawings
 
     nonisolated static let defaultPageSize = 30
     /// A cell this close to the end of the list loads the next page.
@@ -40,7 +40,7 @@ final class DrawAndGuessHistoryViewModel {
 
     init(
         dependencies: GamesDependencies,
-        stars: DrawAndGuessStars,
+        stars: GameStars,
         participants: GameParticipants = GameParticipants(),
         pageSize: Int = DrawAndGuessHistoryViewModel.defaultPageSize
     ) {
@@ -49,7 +49,7 @@ final class DrawAndGuessHistoryViewModel {
         self.participants = participants
         self.pageSize = pageSize
         (me, partner) = participants.players
-        drawings = DrawAndGuessHistoryDrawings(store: dependencies.drawingStore, transfer: dependencies.drawingTransfer)
+        drawings = GameHistoryDrawings(store: dependencies.drawingStore, transfer: dependencies.drawingTransfer)
     }
 
     var currentUserID: UUID? {

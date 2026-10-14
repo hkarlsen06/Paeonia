@@ -27,7 +27,7 @@ nonisolated struct MindMeldRevealSchedule: Sendable {
     /// The stats line, for a meld only.
     var stats: TimeInterval = 2.90
     var actions: TimeInterval = 3.00
-    /// How long the petal bloom runs. It is `DrawAndGuessPetalBloom.duration`,
+    /// How long the petal bloom runs. It is `GamePetalBloom.duration`,
     /// which is main-actor isolated, and a test keeps the two equal.
     var bloomDuration: TimeInterval = 0.9
 

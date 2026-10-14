@@ -87,7 +87,7 @@ extension DrawAndGuessViewModel {
             dependencies.drawingStore.removeLiveSnapshot(ownerUserID: ownerUserID, roundID: round.id)
         }
         loadedDrawingVersion += 1
-        replayTimeline = DrawAndGuessReplayTimeline(drawing: decoded)
+        replayTimeline = GameReplayTimeline(drawing: decoded)
         startReplayIfNeeded()
         markSeenIfNeeded()
         // The drawer may already follow the partner's replay, which needed this drawing.
@@ -110,7 +110,7 @@ extension DrawAndGuessViewModel {
         guard replayClock == nil, let timeline = replayTimeline,
               loadedAssetID == round.drawingMediaAssetID
         else { return }
-        replayClock = DrawAndGuessReplayClock(duration: timeline.duration, startingAt: monotonicNow())
+        replayClock = GameReplayClock(duration: timeline.duration, startingAt: monotonicNow())
         isReplayReady = true
         isFastForwarding = false
     }
@@ -148,16 +148,16 @@ extension DrawAndGuessViewModel {
     func replayDrawing(atWall wall: TimeInterval, side: CGFloat) -> PKDrawing {
         guard let timeline = replayTimeline, let clock = replayClock else { return PKDrawing() }
         let drawing = timeline.drawing(at: clock.replayTime(at: wall))
-        return DrawAndGuessCanvas.fitted(drawing, toSide: side)
+        return GameCanvas.fitted(drawing, toSide: side)
     }
 
     func isReplayFinished(atWall wall: TimeInterval) -> Bool {
         replayClock?.isFinished(at: wall) ?? false
     }
 
-    /// The guesser's replay for `DrawAndGuessReplaySurface`.
-    var replayFrames: DrawAndGuessReplayFrames {
-        DrawAndGuessReplayFrames(
+    /// The guesser's replay for `GameReplaySurface`.
+    var replayFrames: GameReplayFrames {
+        GameReplayFrames(
             drawing: { [weak self] wall, side in
                 guard let self, isReplayReady else { return nil }
                 return replayDrawing(atWall: wall, side: side)
@@ -169,7 +169,7 @@ extension DrawAndGuessViewModel {
     /// Hold to fast-forward, release to go back to the drawn pace.
     func setFastForward(_ isOn: Bool) {
         guard var clock = replayClock, isFastForwarding != isOn else { return }
-        clock.setRate(isOn ? DrawAndGuessReplayClock.fastForwardRate : 1, at: monotonicNow())
+        clock.setRate(isOn ? GameReplayClock.fastForwardRate : 1, at: monotonicNow())
         replayClock = clock
         isFastForwarding = isOn
     }

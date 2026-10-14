@@ -8,7 +8,7 @@ struct DrawAndGuessHistoryCell: View {
     /// The partner's name, or "you".
     let drawerName: String
     let isStarred: Bool
-    let drawings: DrawAndGuessHistoryDrawings
+    let drawings: GameHistoryDrawings
 
     @State private var image: UIImage?
     @State private var didFail = false
@@ -17,14 +17,14 @@ struct DrawAndGuessHistoryCell: View {
         round: RemoteDrawAndGuessHistoryRound,
         drawerName: String,
         isStarred: Bool,
-        drawings: DrawAndGuessHistoryDrawings
+        drawings: GameHistoryDrawings
     ) {
         self.round = round
         self.drawerName = drawerName
         self.isStarred = isStarred
         self.drawings = drawings
         // A picture seen before shows from the first frame, so scrolling back never flashes.
-        _image = State(initialValue: DrawAndGuessThumbnails.cachedImage(for: round.drawingMediaAssetID))
+        _image = State(initialValue: GameDrawingThumbnails.cachedImage(for: round.drawingMediaAssetID))
     }
 
     var body: some View {

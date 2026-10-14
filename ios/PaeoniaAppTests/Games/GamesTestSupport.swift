@@ -333,13 +333,12 @@ final class ScriptedDrawingTransfer: GameDrawingTransferring, @unchecked Sendabl
 
     func uploadDrawing(
         _ data: Data,
-        gameID _: UUID,
-        roundID: UUID,
+        parent: GameUploadParent,
         coupleID _: UUID,
         reserveOperation _: SyncClientOperation,
         finalizeOperation _: SyncClientOperation
     ) async throws -> UUID {
-        lock.withLock { recordedUploads.append((roundID, data.count)) }
+        lock.withLock { recordedUploads.append((parent.id, data.count)) }
         return GameFixture.assetID
     }
 

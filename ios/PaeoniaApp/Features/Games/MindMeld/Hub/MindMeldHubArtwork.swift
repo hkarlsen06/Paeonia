@@ -50,7 +50,7 @@ struct MindMeldHubArtwork: View {
             try await Task.sleep(for: .seconds(Self.driftDuration * 0.85))
             bloomStart = .now
             withAnimation(PaeoniaMotion.celebrationReveal) { isMerged = true }
-            try await Task.sleep(for: .seconds(DrawAndGuessPetalBloom.duration + 0.1))
+            try await Task.sleep(for: .seconds(GamePetalBloom.duration + 0.1))
             bloomStart = nil
         } catch {
             // The card left the screen. It shows the finished picture when it comes back.
@@ -104,7 +104,7 @@ struct MindMeldHubArtwork: View {
                 mergedTile
                     .position(middle)
                 if let bloomStart {
-                    DrawAndGuessPetalBloom(start: bloomStart, seed: Self.bloomSeed, intensity: 0.7)
+                    GamePetalBloom(start: bloomStart, seed: Self.bloomSeed, intensity: 0.7)
                         .frame(width: 300, height: Self.height)
                         .position(middle)
                 }

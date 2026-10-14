@@ -179,7 +179,7 @@
       )
       // Each built game sets its own dependency fields on this value, so the hub
       // scenarios show its card next to Draw & Guess.
-      return GamesDependencies(
+      var dependencies = GamesDependencies(
         gateway: DeveloperGamesGateway(historyIsEmpty: scenario == .drawHistoryEmpty),
         cache: cache,
         pendingOperationStore: InMemoryPendingSyncOperationRepository(),
@@ -197,6 +197,8 @@
         mindMeldCache: DeveloperMindMeldScenarioFactory.cache(for: scenario),
         makeMindMeldLive: { coupleID in DeveloperMindMeldScenarioFactory.makeLive(for: scenario, coupleID: coupleID) }
       )
+      ExquisiteCorpseDeveloperScenarioFactory.configure(&dependencies, for: scenario)
+      return dependencies
     }
 
     static func gamesViewModel(for scenario: DeveloperScenario) -> GamesViewModel {
@@ -231,7 +233,7 @@
       if let canvas {
         connection.onMessage?(WidgetLiveMessage(
           type: .ops,
-          side: Double(DrawAndGuessCanvas.canonicalSide),
+          side: Double(GameCanvas.canonicalSide),
           upserts: canvas.dataRepresentation().base64EncodedString(),
           snapshot: true
         ))
@@ -351,8 +353,7 @@
 
     func uploadDrawing(
       _: Data,
-      gameID _: UUID,
-      roundID _: UUID,
+      parent _: GameUploadParent,
       coupleID _: UUID,
       reserveOperation _: SyncClientOperation,
       finalizeOperation _: SyncClientOperation

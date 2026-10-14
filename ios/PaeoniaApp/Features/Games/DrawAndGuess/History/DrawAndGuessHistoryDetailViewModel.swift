@@ -14,21 +14,21 @@ final class DrawAndGuessHistoryDetailViewModel {
     }
 
     let round: RemoteDrawAndGuessHistoryRound
-    let stars: DrawAndGuessStars
+    let stars: GameStars
     private(set) var drawingState: DrawingState = .loading
     private(set) var isFastForwarding = false
 
     @ObservationIgnored private let participants: GameParticipants
-    @ObservationIgnored private let drawings: DrawAndGuessHistoryDrawings
+    @ObservationIgnored private let drawings: GameHistoryDrawings
     @ObservationIgnored private let monotonicNow: @Sendable () -> TimeInterval
-    @ObservationIgnored private var timeline: DrawAndGuessReplayTimeline?
-    @ObservationIgnored private var clock: DrawAndGuessReplayClock?
+    @ObservationIgnored private var timeline: GameReplayTimeline?
+    @ObservationIgnored private var clock: GameReplayClock?
 
     init(
         round: RemoteDrawAndGuessHistoryRound,
         participants: GameParticipants,
-        stars: DrawAndGuessStars,
-        drawings: DrawAndGuessHistoryDrawings,
+        stars: GameStars,
+        drawings: GameHistoryDrawings,
         monotonicNow: @escaping @Sendable () -> TimeInterval = { CACurrentMediaTime() }
     ) {
         self.round = round
@@ -98,7 +98,7 @@ final class DrawAndGuessHistoryDetailViewModel {
     // MARK: - Star
 
     func toggleStar() async {
-        await stars.toggle(roundID: round.id)
+        await stars.toggle(id: round.id)
     }
 
     // MARK: - Replay
@@ -115,7 +115,7 @@ final class DrawAndGuessHistoryDetailViewModel {
             return
         }
         guard !Task.isCancelled else { return }
-        timeline = DrawAndGuessReplayTimeline(drawing: drawing)
+        timeline = GameReplayTimeline(drawing: drawing)
         drawingState = .ready
         startReplay(showsAtOnce: showsAtOnce)
     }
@@ -132,7 +132,7 @@ final class DrawAndGuessHistoryDetailViewModel {
     private func startReplay(showsAtOnce: Bool) {
         guard let timeline else { return }
         let wall = monotonicNow()
-        var fresh = DrawAndGuessReplayClock(duration: timeline.duration, startingAt: wall)
+        var fresh = GameReplayClock(duration: timeline.duration, startingAt: wall)
         if showsAtOnce {
             fresh.finish(at: wall)
         }
@@ -143,7 +143,7 @@ final class DrawAndGuessHistoryDetailViewModel {
     /// Hold to speed up, release to go back to the drawn pace.
     func setFastForward(_ isOn: Bool) {
         guard var clock, isFastForwarding != isOn else { return }
-        clock.setRate(isOn ? DrawAndGuessReplayClock.fastForwardRate : 1, at: monotonicNow())
+        clock.setRate(isOn ? GameReplayClock.fastForwardRate : 1, at: monotonicNow())
         self.clock = clock
         isFastForwarding = isOn
     }
@@ -156,13 +156,13 @@ final class DrawAndGuessHistoryDetailViewModel {
         isFastForwarding = false
     }
 
-    /// What `DrawAndGuessReplaySurface` draws on each screen frame.
-    var frames: DrawAndGuessReplayFrames {
-        DrawAndGuessReplayFrames(
+    /// What `GameReplaySurface` draws on each screen frame.
+    var frames: GameReplayFrames {
+        GameReplayFrames(
             drawing: { [weak self] wall, side in
                 guard let self, let timeline, let clock else { return nil }
                 let drawing = timeline.drawing(at: clock.replayTime(at: wall))
-                return DrawAndGuessCanvas.fitted(drawing, toSide: side)
+                return GameCanvas.fitted(drawing, toSide: side)
             },
             isFinished: { [weak self] wall in self?.clock?.isFinished(at: wall) ?? false }
         )

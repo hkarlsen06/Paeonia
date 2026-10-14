@@ -181,6 +181,14 @@
         .mindMeldRevealRecord, .mindMeldRevealGotAway, .mindMeldOver, .mindMeldPartnerRestarted,
         .mindMeldHistory, .mindMeldHistoryEmpty:
         DeveloperMindMeldScenarioView(scenario: scenario)
+      case .exquisiteCorpseHubYourTurn, .exquisiteCorpseHubPartnerDrawing, .exquisiteCorpseHubReveal,
+        .exquisiteCorpseHubNotStarted:
+        DeveloperPairedScenarioHost(scenario: scenario)
+      case .exquisiteCorpseDrawHead, .exquisiteCorpseDrawBody, .exquisiteCorpseDrawLegs, .exquisiteCorpseWaiting,
+        .exquisiteCorpseWatching, .exquisiteCorpseHandoff, .exquisiteCorpseWaitingToSync, .exquisiteCorpseReveal,
+        .exquisiteCorpseRevealLoading, .exquisiteCorpseHistory, .exquisiteCorpseHistoryEmpty,
+        .exquisiteCorpseHistoryStarred, .exquisiteCorpseHistoryDetail:
+        ExquisiteCorpseDeveloperScenarioView(scenario: scenario)
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         DeveloperWidgetScenarioView(scenario: scenario)
       case .notificationPrimer, .settings, .settingsNotificationsDenied, .privacySafety,

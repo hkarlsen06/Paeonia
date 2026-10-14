@@ -113,6 +113,23 @@
     case mindMeldPartnerRestarted = "mind-meld-partner-restarted"
     case mindMeldHistory = "mind-meld-history"
     case mindMeldHistoryEmpty = "mind-meld-history-empty"
+    case exquisiteCorpseHubYourTurn = "corpse-hub-your-turn"
+    case exquisiteCorpseHubPartnerDrawing = "corpse-hub-partner-drawing"
+    case exquisiteCorpseHubReveal = "corpse-hub-reveal"
+    case exquisiteCorpseHubNotStarted = "corpse-hub-not-started"
+    case exquisiteCorpseDrawHead = "corpse-draw-head"
+    case exquisiteCorpseDrawBody = "corpse-draw-body"
+    case exquisiteCorpseDrawLegs = "corpse-draw-legs"
+    case exquisiteCorpseWaiting = "corpse-waiting"
+    case exquisiteCorpseWatching = "corpse-watching"
+    case exquisiteCorpseHandoff = "corpse-handoff"
+    case exquisiteCorpseWaitingToSync = "corpse-waiting-to-sync"
+    case exquisiteCorpseReveal = "corpse-reveal"
+    case exquisiteCorpseRevealLoading = "corpse-reveal-loading"
+    case exquisiteCorpseHistory = "corpse-history"
+    case exquisiteCorpseHistoryEmpty = "corpse-history-empty"
+    case exquisiteCorpseHistoryStarred = "corpse-history-starred"
+    case exquisiteCorpseHistoryDetail = "corpse-history-detail"
 
     case notificationPrimer = "notification-primer"
     case settings
@@ -245,6 +262,23 @@
       case .mindMeldPartnerRestarted: "Mind Meld · partner started over"
       case .mindMeldHistory: "Mind Meld · our melds"
       case .mindMeldHistoryEmpty: "Mind Meld · our melds, none yet"
+      case .exquisiteCorpseHubYourTurn: "Exquisite corpse · hub, your turn"
+      case .exquisiteCorpseHubPartnerDrawing: "Exquisite corpse · hub, Robin is drawing"
+      case .exquisiteCorpseHubReveal: "Exquisite corpse · hub, creature is ready"
+      case .exquisiteCorpseHubNotStarted: "Exquisite corpse · hub, not started"
+      case .exquisiteCorpseDrawHead: "Exquisite corpse · drawing the head"
+      case .exquisiteCorpseDrawBody: "Exquisite corpse · drawing the body"
+      case .exquisiteCorpseDrawLegs: "Exquisite corpse · drawing the legs"
+      case .exquisiteCorpseWaiting: "Exquisite corpse · waiting for Robin"
+      case .exquisiteCorpseWatching: "Exquisite corpse · watching Robin draw"
+      case .exquisiteCorpseHandoff: "Exquisite corpse · hand-off to your turn"
+      case .exquisiteCorpseWaitingToSync: "Exquisite corpse · legs saved offline"
+      case .exquisiteCorpseReveal: "Exquisite corpse · reveal"
+      case .exquisiteCorpseRevealLoading: "Exquisite corpse · reveal, drawings still loading"
+      case .exquisiteCorpseHistory: "Exquisite corpse · our creatures"
+      case .exquisiteCorpseHistoryEmpty: "Exquisite corpse · our creatures, none yet"
+      case .exquisiteCorpseHistoryStarred: "Exquisite corpse · our creatures, starred"
+      case .exquisiteCorpseHistoryDetail: "Exquisite corpse · one creature"
       case .notificationPrimer: "Notifications · primer"
       case .settings: "Settings"
       case .settingsNotificationsDenied: "Settings · notifications denied"
@@ -456,6 +490,40 @@
         "Records and five finished games: three melds, one got away, one started over. Open one for its trail"
       case .mindMeldHistoryEmpty:
         "Our melds before the first game has finished"
+      case .exquisiteCorpseHubYourTurn:
+        "Hub card when you draw the body of creature 2, with 12 creatures made and the Our creatures link"
+      case .exquisiteCorpseHubPartnerDrawing:
+        "Hub card while Robin draws the legs, with Robin in the game"
+      case .exquisiteCorpseHubReveal:
+        "Hub card when a finished creature waits for you to look at it"
+      case .exquisiteCorpseHubNotStarted:
+        "Hub card before the couple has drawn anything"
+      case .exquisiteCorpseDrawHead:
+        "The first head of a new game, with the line that explains the fold"
+      case .exquisiteCorpseDrawBody:
+        "The canvas with the bottom of Robin's head above it as a strip"
+      case .exquisiteCorpseDrawLegs:
+        "The legs with the bottom of Robin's body above them and an idea chip"
+      case .exquisiteCorpseWaiting:
+        "Robin is not in the game: the progress paper and the invite button"
+      case .exquisiteCorpseWatching:
+        "Robin draws the body live: the folded paper, a glow where the pen moves, and the strip"
+      case .exquisiteCorpseHandoff:
+        "Watch Robin finish the body, then the strip slides into your canvas for the legs"
+      case .exquisiteCorpseWaitingToSync:
+        "Your legs are saved on the phone and not sent yet"
+      case .exquisiteCorpseReveal:
+        "A finished creature unfolds part by part, with the credits"
+      case .exquisiteCorpseRevealLoading:
+        "Robin's parts are still downloading: the folded paper waits"
+      case .exquisiteCorpseHistory:
+        "Twelve creatures in a grid, some starred. Open one to unfold it again"
+      case .exquisiteCorpseHistoryEmpty:
+        "Our creatures before the first creature is finished"
+      case .exquisiteCorpseHistoryStarred:
+        "Our creatures with the Starred filter on"
+      case .exquisiteCorpseHistoryDetail:
+        "One creature opened from the grid: unfold, credits, star and Play again"
       case .notificationPrimer:
         "Pre-permission notification explanation"
       case .settings:
@@ -514,7 +582,13 @@
         .storyChainHistoryEmpty, .mindMeldFirstRound,
         .mindMeldWrite, .mindMeldWriteTyping, .mindMeldWaiting, .mindMeldWaitingOffline, .mindMeldRevealMiss,
         .mindMeldRevealNear, .mindMeldRevealMeld, .mindMeldRevealRecord, .mindMeldRevealGotAway, .mindMeldOver,
-        .mindMeldPartnerRestarted, .mindMeldHistory, .mindMeldHistoryEmpty:
+        .mindMeldPartnerRestarted, .mindMeldHistory, .mindMeldHistoryEmpty,
+        .exquisiteCorpseHubYourTurn, .exquisiteCorpseHubPartnerDrawing, .exquisiteCorpseHubReveal,
+        .exquisiteCorpseHubNotStarted, .exquisiteCorpseDrawHead, .exquisiteCorpseDrawBody,
+        .exquisiteCorpseDrawLegs, .exquisiteCorpseWaiting, .exquisiteCorpseWatching, .exquisiteCorpseHandoff,
+        .exquisiteCorpseWaitingToSync, .exquisiteCorpseReveal, .exquisiteCorpseRevealLoading,
+        .exquisiteCorpseHistory, .exquisiteCorpseHistoryEmpty, .exquisiteCorpseHistoryStarred,
+        .exquisiteCorpseHistoryDetail:
         .games
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         .widget

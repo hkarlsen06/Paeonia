@@ -16,7 +16,7 @@ struct DrawAndGuessWaitingView: View {
     }
 
     var body: some View {
-        DrawAndGuessFocusedLayout(fillsHeight: true) {
+        GameFocusedLayout(fillsHeight: true) {
             VStack(spacing: PaeoniaSpacing.space24) {
                 DrawAndGuessScoreHeader(viewModel: viewModel)
                 Spacer(minLength: PaeoniaSpacing.space16)
@@ -45,7 +45,12 @@ struct DrawAndGuessWaitingView: View {
             }
             .frame(maxWidth: .infinity)
         } bottom: {
-            DrawAndGuessInviteButton(viewModel: viewModel)
+            GameInviteButton(
+                invite: viewModel.invite,
+                partnerName: viewModel.partnerName,
+                send: viewModel.sendInvite,
+                identifier: "draw.invite"
+            )
         }
         // The partner's phone changes the title, hint, ring, and invite button
         // while this screen is open. Everything moves to its new place together.
@@ -103,7 +108,7 @@ struct DrawAndGuessWaitingView: View {
     // MARK: Avatar
 
     private var avatar: some View {
-        DrawAndGuessAvatar(player: viewModel.partner, isMe: false, size: 96)
+        GameAvatar(player: viewModel.partner, isMe: false, size: 96)
             .background { ring }
             .padding(PaeoniaSpacing.space8)
     }
@@ -165,48 +170,5 @@ struct DrawAndGuessWaitingView: View {
             if slot.isGap { lengths.append(0) } else { lengths[lengths.count - 1] += 1 }
         }
         return lengths.filter { $0 > 0 }.flatMap { DrawAndGuessSlotSizing.split($0, maxCount: 10) }
-    }
-}
-
-/// "Tell [Name] you want to play". It shows only while the partner is not in the
-/// game, reads "Sent" after a send with the time the next one can go, and comes
-/// back 15 minutes after the last invite. The view model's tick brings it back.
-struct DrawAndGuessInviteButton: View {
-    let viewModel: DrawAndGuessViewModel
-
-    var body: some View {
-        switch viewModel.invite {
-        case .hidden:
-            EmptyView()
-        case .available:
-            sendButton
-        case let .sent(until):
-            VStack(spacing: PaeoniaSpacing.space8) {
-                Button {} label: {
-                    Label {
-                        Text(.gamesInviteSent)
-                    } icon: {
-                        Image(systemName: "checkmark").accessibilityHidden(true)
-                    }
-                }
-                .buttonStyle(PaeoniaSecondaryButtonStyle())
-                .disabled(true)
-                .accessibilityIdentifier("draw.invite.sent")
-                Text(.gamesInviteSentUntil(until.formatted(date: .omitted, time: .shortened)))
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-    }
-
-    private var sendButton: some View {
-        Button {
-            Task { await viewModel.sendInvite() }
-        } label: {
-            Text(.gamesInviteButton(viewModel.partnerName))
-        }
-        .buttonStyle(PaeoniaSecondaryButtonStyle())
-        .accessibilityIdentifier("draw.invite")
     }
 }

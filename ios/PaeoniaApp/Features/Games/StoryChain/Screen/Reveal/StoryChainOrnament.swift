@@ -30,7 +30,7 @@ struct StoryChainOrnament: View {
             .frame(height: Self.frameHeight)
             .background {
                 if let bloomStart {
-                    DrawAndGuessPetalBloom(start: bloomStart, seed: seed)
+                    GamePetalBloom(start: bloomStart, seed: seed)
                         .frame(width: Self.bloomSize, height: Self.bloomSize)
                 }
             }

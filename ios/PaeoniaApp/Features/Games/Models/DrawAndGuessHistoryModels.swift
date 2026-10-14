@@ -26,7 +26,7 @@ nonisolated struct RemoteDrawAndGuessHistoryRound: Codable, Equatable, Identifia
     let attemptCount: Int
     let guesserReaction: DrawAndGuessReaction?
     let personalBest: Bool
-    /// The server's value. `DrawAndGuessStars` adds this phone's unsent changes.
+    /// The server's value. `GameStars` adds this phone's unsent changes.
     let starredByMe: Bool
     let startedAt: Date
     let endedAt: Date?

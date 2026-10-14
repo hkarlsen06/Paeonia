@@ -9,7 +9,7 @@ import PencilKit
 final class SimCanvas {
     let view: PKCanvasView
     let side: CGFloat
-    private let board: DrawAndGuessDrawingBoard
+    private let board: GameDrawingBoard
     private var appliedRevision = -1
 
     init(viewModel: DrawAndGuessViewModel, side: CGFloat) {

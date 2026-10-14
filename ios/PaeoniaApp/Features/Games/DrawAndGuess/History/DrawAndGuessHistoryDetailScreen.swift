@@ -38,7 +38,7 @@ struct DrawAndGuessHistoryDetailScreen: View {
                 drawing
                 replayRow
                 details
-                Text(.gamesDrawAndGuessHistoryStarPrivacy)
+                Text(.gamesStarPrivacy)
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextTertiary)
                     .multilineTextAlignment(.center)
@@ -69,7 +69,7 @@ struct DrawAndGuessHistoryDetailScreen: View {
     // MARK: - Star
 
     private var starTitle: LocalizedStringResource {
-        viewModel.isStarred ? .gamesDrawAndGuessHistoryStarred : .gamesDrawAndGuessHistoryStar
+        viewModel.isStarred ? .gamesStarButtonStarred : .gamesStarButton
     }
 
     private var starButton: some View {
@@ -100,11 +100,11 @@ struct DrawAndGuessHistoryDetailScreen: View {
     }
 
     private func square(side: CGFloat) -> some View {
-        DrawAndGuessSquare(side: side) {
+        GameSquare(side: side) {
             ZStack {
                 switch viewModel.drawingState {
                 case .ready:
-                    DrawAndGuessReplaySurface(frames: viewModel.frames, side: side)
+                    GameReplaySurface(frames: viewModel.frames, side: side)
                         .allowsHitTesting(false)
                     if viewModel.isFastForwarding {
                         Image(systemName: "forward.fill")
@@ -117,7 +117,7 @@ struct DrawAndGuessHistoryDetailScreen: View {
                 case .loading:
                     ProgressView()
                         .tint(.paeoniaAccentPrimary)
-                        .accessibilityLabel(Text(.gamesDrawAndGuessDrawingLoading))
+                        .accessibilityLabel(Text(.gamesDrawingLoading))
                 case .failed:
                     failedState
                 }

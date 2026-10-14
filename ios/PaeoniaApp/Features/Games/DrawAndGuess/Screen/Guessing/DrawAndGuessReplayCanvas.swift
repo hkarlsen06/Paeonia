@@ -46,7 +46,7 @@ struct DrawAndGuessReplayCanvas: View {
             WidgetLiveOverlayView(live: live)
                 .allowsHitTesting(false)
         } else if viewModel.isReplayReady {
-            DrawAndGuessReplaySurface(frames: viewModel.replayFrames, side: side)
+            GameReplaySurface(frames: viewModel.replayFrames, side: side)
                 .allowsHitTesting(false)
         } else if viewModel.phase != .reveal {
             // On the reveal, `DrawAndGuessRevealDrawing` shows the spinner or the error.
@@ -89,81 +89,6 @@ struct DrawAndGuessReplayCanvas: View {
                 .frame(width: side * progress, height: 2)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .opacity(progress >= 1 ? 0 : 1)
-        }
-    }
-}
-
-/// What a replay surface draws on each screen frame.
-struct DrawAndGuessReplayFrames {
-    /// The drawing at a wall time, scaled to `side`. Nil while there is nothing to play.
-    let drawing: @MainActor (_ wall: TimeInterval, _ side: CGFloat) -> PKDrawing?
-    let isFinished: @MainActor (_ wall: TimeInterval) -> Bool
-}
-
-/// Draws a replay on a canvas that takes no touches, on every screen frame while
-/// the drawing is still moving. The guesser's own replay and the drawer's view of
-/// it both use it.
-struct DrawAndGuessReplaySurface: UIViewRepresentable {
-    let frames: DrawAndGuessReplayFrames
-    let side: CGFloat
-
-    func makeUIView(context: Context) -> PKCanvasView {
-        let canvasView = PKCanvasView()
-        canvasView.configureForPaeoniaDrawingCanvas()
-        canvasView.isUserInteractionEnabled = false
-        context.coordinator.start(canvasView)
-        return canvasView
-    }
-
-    func updateUIView(_: PKCanvasView, context: Context) {
-        context.coordinator.side = side
-        context.coordinator.frames = frames
-    }
-
-    static func dismantleUIView(_: PKCanvasView, coordinator: Coordinator) {
-        coordinator.stop()
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(frames: frames, side: side)
-    }
-
-    @MainActor
-    final class Coordinator: NSObject {
-        var frames: DrawAndGuessReplayFrames
-        var side: CGFloat
-        private weak var canvasView: PKCanvasView?
-        private var displayLink: CADisplayLink?
-        private var drawnSide: CGFloat = 0
-        private var finishedDrawing = false
-
-        init(frames: DrawAndGuessReplayFrames, side: CGFloat) {
-            self.frames = frames
-            self.side = side
-        }
-
-        func start(_ canvasView: PKCanvasView) {
-            self.canvasView = canvasView
-            let link = CADisplayLink(target: self, selector: #selector(step))
-            link.add(to: .main, forMode: .common)
-            displayLink = link
-        }
-
-        func stop() {
-            displayLink?.invalidate()
-            displayLink = nil
-        }
-
-        @objc private func step(_: CADisplayLink) {
-            guard let canvasView else { return }
-            let wall = CACurrentMediaTime()
-            let isFinished = frames.isFinished(wall)
-            // Once the last stroke is drawn there is nothing left to redraw.
-            if isFinished, finishedDrawing, drawnSide == side { return }
-            guard let drawing = frames.drawing(wall, side) else { return }
-            canvasView.drawing = drawing
-            finishedDrawing = isFinished
-            drawnSide = side
         }
     }
 }

@@ -21,8 +21,14 @@ actor SimPendingStore: PendingSyncOperationPersisting {
     }
 
     private let base = InMemoryPendingSyncOperationRepository()
+    /// The kinds of write the game queues, for the queue counts.
+    private let gameKinds: [SyncPendingOperationKind]
     /// Told about every new write, for the action log.
     private var onEnqueue: (@Sendable (SyncPendingOperationKind, Data?) -> Void)?
+
+    init(gameKinds: [SyncPendingOperationKind] = SimPendingStore.gameKinds) {
+        self.gameKinds = gameKinds
+    }
 
     func setOnEnqueue(_ handler: @escaping @Sendable (SyncPendingOperationKind, Data?) -> Void) {
         onEnqueue = handler
@@ -99,7 +105,7 @@ actor SimPendingStore: PendingSyncOperationPersisting {
     /// Every write still waiting, of any game kind.
     func inFlightCount(ownerUserID: UUID) async -> Int {
         var count = 0
-        for kind in SimPendingStore.gameKinds {
+        for kind in gameKinds {
             count += (try? await base.inFlightOperations(ownerUserID: ownerUserID, kind: kind).count) ?? 0
         }
         return count
@@ -108,13 +114,14 @@ actor SimPendingStore: PendingSyncOperationPersisting {
     /// The status of each waiting write, so the driver can tell when the queue stopped changing.
     func fingerprint(ownerUserID: UUID) async -> String {
         var parts: [String] = []
-        for kind in SimPendingStore.gameKinds {
+        for kind in gameKinds {
             let operations = (try? await base.inFlightOperations(ownerUserID: ownerUserID, kind: kind)) ?? []
             parts += operations.map { "\($0.operation.id.uuidString.prefix(6)):\($0.status.rawValue):\($0.attemptCount)" }
         }
         return parts.joined(separator: ",") + "#\(order.count)"
     }
 
+    /// The Draw & Guess kinds, which a store uses unless it is given others.
     static let gameKinds: [SyncPendingOperationKind] = [
         .pickDrawWord, .submitGameDrawing, .submitGameGuess, .giveUpGameRound, .setGameRoundReaction,
         .markGameRoundResultSeen,

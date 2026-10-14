@@ -6,6 +6,8 @@ nonisolated enum GamesPendingOperationRegistry {
     static func handlers(client: PaeoniaConvexClient) -> [any PendingSyncOperationHandling] {
         let gateway = LiveGamesGateway(client: client)
         let cache = FileGamesCache.shared
+        let corpseGateway = LiveExquisiteCorpseGateway(client: client)
+        let corpseCache = FileExquisiteCorpseCache.shared
 
         // Each built game appends its handlers below, built from `gateway` (which
         // conforms to the game's own gateway protocol) and `cache`. Its
@@ -39,6 +41,15 @@ nonisolated enum GamesPendingOperationRegistry {
             CountMindMeldPendingOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
             MindMeldRevealSeenOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
             MindMeldEndSeenOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
+            // Exquisite corpse
+            ExquisiteCorpseSubmitPartHandler(
+                gateway: corpseGateway,
+                transfer: LiveGameDrawingTransfer(client: client),
+                cache: corpseCache,
+                drawingStore: FileGameDrawingStore.shared
+            ),
+            ExquisiteCorpseRevealSeenHandler(gateway: corpseGateway, cache: corpseCache),
+            ExquisiteCorpseStarHandler(gateway: corpseGateway, cache: corpseCache),
         ]
     }
 }

@@ -5,12 +5,11 @@ import SwiftUI
 struct DrawAndGuessDrawingView: View {
     @Bindable var viewModel: DrawAndGuessViewModel
 
-    @State private var isClearConfirmationPresented = false
     @State private var shownGuess: DrawAndGuessAttemptView?
     @State private var partnerPulse: CGFloat = 1
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var board: DrawAndGuessDrawingBoard { viewModel.board }
+    private var board: GameDrawingBoard { viewModel.board }
 
     /// The newest wrong guess, which the live row shows for a few seconds.
     private var newestWrongGuessID: UUID? {
@@ -18,19 +17,20 @@ struct DrawAndGuessDrawingView: View {
     }
 
     var body: some View {
-        DrawAndGuessPhaseLayout(sharing: .publishes, sideMemory: viewModel.squareMemory) {
+        GamePhaseLayout(sharing: .publishes, sideMemory: viewModel.squareMemory) {
             VStack(spacing: PaeoniaSpacing.space8) {
                 DrawAndGuessWordLine(word: DrawAndGuessAnswer.display(viewModel.round?.word ?? ""))
                 liveRow
             }
         } square: { side in
-            canvas(side: side)
+            GameDrawingCanvas(
+                board: board,
+                side: side,
+                onCanvasReady: viewModel.canvasReady,
+                identifier: "draw.canvas"
+            )
         } footer: {
-            VStack(spacing: PaeoniaSpacing.space8) {
-                WidgetDrawingToolControlsView(viewModel: board)
-                WidgetDrawingColorControlsView(viewModel: board)
-                WidgetDrawingSizeControlsView(viewModel: board)
-            }
+            GameDrawingTools(board: board)
         } bottom: {
             Button {
                 PaeoniaHaptics.drawingSent()
@@ -44,30 +44,7 @@ struct DrawAndGuessDrawingView: View {
             .accessibilityIdentifier("draw.done")
         }
         .modifier(WidgetDrawingPencilDoubleTap(viewModel: board))
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    isClearConfirmationPresented = true
-                } label: {
-                    Text(.widgetDrawingClearButton)
-                }
-                .disabled(board.isEmpty)
-                .accessibilityIdentifier("draw.clear")
-            }
-        }
-        .alert(Text(.gamesDrawAndGuessDrawClearTitle), isPresented: $isClearConfirmationPresented) {
-            Button(role: .destructive) {
-                board.clear()
-                PaeoniaHaptics.destructiveActionConfirmed()
-            } label: {
-                Text(.gamesDrawAndGuessDrawClearAction)
-            }
-            Button(role: .cancel) {} label: {
-                Text(.gamesDrawAndGuessDrawClearCancel)
-            }
-        } message: {
-            Text(.gamesDrawAndGuessDrawClearMessage)
-        }
+        .gameClearDrawingToolbar(board: board, identifier: "draw.clear")
         .onChange(of: newestWrongGuessID) { _, id in
             guard id != nil, let attempt = viewModel.round?.attempts.last(where: { $0.id == id }) else { return }
             showGuess(attempt)
@@ -84,36 +61,12 @@ struct DrawAndGuessDrawingView: View {
         }
     }
 
-    // MARK: Canvas
-
-    private func canvas(side: CGFloat) -> some View {
-        DrawAndGuessSquare(side: side) {
-            PencilKitCanvasView(
-                drawing: board.drawing,
-                drawingRevision: board.drawingRevision,
-                tool: board.pencilKitTool,
-                toolConfigurationRevision: board.toolConfigurationRevision,
-                onCanvasReady: viewModel.canvasReady,
-                onDrawingChange: board.updateDrawing,
-                onStrokeInProgressChange: board.setStrokeInProgress,
-                isFillToolSelected: board.selectedTool.isFill,
-                onFill: board.fill,
-                onDrawingApplied: board.canvasDidApplyDrawing,
-                onFinishRendering: board.canvasDidFinishRendering
-            )
-            .task { board.canvasDidLayout(side: side) }
-            .onChange(of: side) { _, newSide in board.canvasDidLayout(side: newSide) }
-        }
-        .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
-        .accessibilityIdentifier("draw.canvas")
-    }
-
     // MARK: Live row
 
     private var liveRow: some View {
-        DrawAndGuessLiveRow {
+        GameLiveRow {
             if viewModel.partnerPresence.isHere {
-                DrawAndGuessPresenceLabel(
+                GamePresenceLabel(
                     player: viewModel.partner,
                     text: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName),
                     showsRing: viewModel.partnerPresence == .watching,

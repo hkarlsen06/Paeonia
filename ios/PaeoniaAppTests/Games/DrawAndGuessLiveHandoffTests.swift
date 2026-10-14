@@ -8,7 +8,7 @@ import Testing
 func sendPartnerCanvasSnapshot(on connection: WidgetLiveConnection) {
     connection.onMessage?(WidgetLiveMessage(
         type: .ops,
-        side: Double(DrawAndGuessCanvas.canonicalSide),
+        side: Double(GameCanvas.canonicalSide),
         upserts: GameFixture.umbrella().dataRepresentation().base64EncodedString(),
         snapshot: true
     ))

@@ -111,7 +111,7 @@ struct DrawAndGuessLiveGuessTests {
 
         viewModel.setFastForward(true)
 
-        #expect(connection.sentGuessScreens.last?.replay?.rate == DrawAndGuessReplayClock.fastForwardRate)
+        #expect(connection.sentGuessScreens.last?.replay?.rate == GameReplayClock.fastForwardRate)
     }
 
     @Test func thePartnerJoiningGetsTheScreenAgain() async {

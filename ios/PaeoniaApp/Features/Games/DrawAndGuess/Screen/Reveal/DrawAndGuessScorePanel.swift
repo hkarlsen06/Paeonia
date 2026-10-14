@@ -5,8 +5,8 @@ import SwiftUI
 /// for each partner, with no winner banner.
 struct DrawAndGuessScorePanel: View {
     let score: DrawAndGuessRevealScore
-    let me: DrawAndGuessPlayer
-    let partner: DrawAndGuessPlayer
+    let me: GamePlayer
+    let partner: GamePlayer
     let isCounting: Bool
     let animates: Bool
     let showsSpeedBonus: Bool
@@ -49,9 +49,9 @@ struct DrawAndGuessScorePanel: View {
     private func together(_ column: DrawAndGuessRevealScore.Column) -> some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             HStack(spacing: PaeoniaSpacing.space12) {
-                DrawAndGuessAvatar(player: me, isMe: true, size: 44)
+                GameAvatar(player: me, isMe: true, size: 44)
                 PaeoniaHeartDivider(width: 72)
-                DrawAndGuessAvatar(player: partner, isMe: false, size: 44)
+                GameAvatar(player: partner, isMe: false, size: 44)
             }
             HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8) {
                 DrawAndGuessCountingNumber(
@@ -85,13 +85,13 @@ struct DrawAndGuessScorePanel: View {
     }
 
     private func column(
-        player: DrawAndGuessPlayer,
+        player: GamePlayer,
         isMe: Bool,
         name: Text,
         data: DrawAndGuessRevealScore.Column
     ) -> some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            DrawAndGuessAvatar(player: player, isMe: isMe, size: 44)
+            GameAvatar(player: player, isMe: isMe, size: 44)
             name
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)

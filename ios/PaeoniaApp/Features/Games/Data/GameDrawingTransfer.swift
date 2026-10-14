@@ -7,15 +7,32 @@ nonisolated enum GameDrawingTransferError: Error, Equatable, Sendable {
     case downloadUnavailable
 }
 
+/// What an uploaded drawing hangs on: the move or part it belongs to, the kind
+/// of file it is, and the game whose folder holds it. The backend checks the
+/// kind and the purpose together (`create_pending_media_upload` in `media.ts`).
+nonisolated struct GameUploadParent: Equatable, Sendable {
+    /// `reserved_parent_kind`, such as `game_move`.
+    var kind: String
+    /// `reserved_parent_id`, such as the round id.
+    var id: UUID
+    /// `upload_purpose`, such as `game_drawing_payload`.
+    var purpose: String
+    var gameID: UUID
+
+    /// The finished drawing of a Draw & Guess round.
+    static func drawAndGuessRound(gameID: UUID, roundID: UUID) -> GameUploadParent {
+        GameUploadParent(kind: "game_move", id: roundID, purpose: "game_drawing_payload", gameID: gameID)
+    }
+}
+
 /// Sends a finished drawing to the game bucket and fetches the partner's.
 nonisolated protocol GameDrawingTransferring: Sendable {
-    /// Reserves, uploads, and finalizes the `.pkdrawing` for a round, and returns
-    /// the media asset id for `drawAndGuess:submit_drawing`. A retry with the same
+    /// Reserves, uploads, and finalizes the `.pkdrawing` for `parent`, and returns
+    /// the media asset id for the game's submit call. A retry with the same
     /// operations returns the same asset, so a lost response never uploads twice.
-    func uploadDrawing( // swiftlint:disable:this function_parameter_count
+    func uploadDrawing(
         _ data: Data,
-        gameID: UUID,
-        roundID: UUID,
+        parent: GameUploadParent,
         coupleID: UUID,
         reserveOperation: SyncClientOperation,
         finalizeOperation: SyncClientOperation
@@ -37,10 +54,9 @@ nonisolated struct LiveGameDrawingTransfer: GameDrawingTransferring {
         self.isSignedIn = isSignedIn
     }
 
-    func uploadDrawing( // swiftlint:disable:this function_parameter_count
+    func uploadDrawing(
         _ data: Data,
-        gameID: UUID,
-        roundID: UUID,
+        parent: GameUploadParent,
         coupleID: UUID,
         reserveOperation: SyncClientOperation,
         finalizeOperation: SyncClientOperation
@@ -51,8 +67,7 @@ nonisolated struct LiveGameDrawingTransfer: GameDrawingTransferring {
             "media:create_pending_media_upload",
             args: ReserveGameDrawingRequest(
                 operation: reserveOperation,
-                gameID: gameID,
-                roundID: roundID,
+                parent: parent,
                 coupleID: coupleID
             )
         )
@@ -67,7 +82,7 @@ nonisolated struct LiveGameDrawingTransfer: GameDrawingTransferring {
                 storageID: storageID,
                 reservedByOperationID: reserveOperation.id,
                 operation: finalizeOperation,
-                roundID: roundID,
+                parent: parent,
                 data: data
             )
         )
@@ -94,9 +109,9 @@ nonisolated struct LiveGameDrawingTransfer: GameDrawingTransferring {
 
 nonisolated private struct ReserveGameDrawingRequest: Encodable {
     let operation: GameClientOperationFields
-    let reservedParentKind = "game_move"
+    let reservedParentKind: String
     let reservedParentID: UUID
-    let uploadPurpose = "game_drawing_payload"
+    let uploadPurpose: String
     let mediaType = "drawing_payload"
     let fileExtension = LiveGameDrawingTransfer.payloadFileExtension
     let coupleID: UUID
@@ -110,11 +125,13 @@ nonisolated private struct ReserveGameDrawingRequest: Encodable {
         }
     }
 
-    init(operation: SyncClientOperation, gameID: UUID, roundID: UUID, coupleID: UUID) {
+    init(operation: SyncClientOperation, parent: GameUploadParent, coupleID: UUID) {
         self.operation = GameClientOperationFields(operation)
-        reservedParentID = roundID
+        reservedParentKind = parent.kind
+        reservedParentID = parent.id
+        uploadPurpose = parent.purpose
         self.coupleID = coupleID
-        pathContext = PathContext(gameID: gameID)
+        pathContext = PathContext(gameID: parent.gameID)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -147,9 +164,9 @@ nonisolated private struct FinalizeGameDrawingRequest: Encodable {
     let bucket: String
     let storagePath: String
     let storageID: String
-    let reservedParentKind = "game_move"
+    let reservedParentKind: String
     let reservedParentID: UUID
-    let uploadPurpose = "game_drawing_payload"
+    let uploadPurpose: String
     let mediaType = "drawing_payload"
     let mimeType = LiveGameDrawingTransfer.payloadMimeType
     let byteSize: Int64
@@ -160,7 +177,7 @@ nonisolated private struct FinalizeGameDrawingRequest: Encodable {
         storageID: String,
         reservedByOperationID: UUID,
         operation: SyncClientOperation,
-        roundID: UUID,
+        parent: GameUploadParent,
         data: Data
     ) {
         self.operation = GameClientOperationFields(operation)
@@ -169,7 +186,9 @@ nonisolated private struct FinalizeGameDrawingRequest: Encodable {
         bucket = reservation.bucket
         storagePath = reservation.storagePath
         self.storageID = storageID
-        reservedParentID = roundID
+        reservedParentKind = parent.kind
+        reservedParentID = parent.id
+        uploadPurpose = parent.purpose
         byteSize = Int64(data.count)
         sha256Hex = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
