@@ -7,6 +7,7 @@ Keep this file current. When a games decision changes, or games code lands, upda
 Each game gets its own design doc in `docs/games/` once the developer picks it. That doc owns the game's rules, scoring and content. This file owns what all games share.
 
 - `docs/games/draw-and-guess.md`: the first game.
+- `docs/games/mind-meld.md`: the simultaneous word game.
 
 ## Decisions
 
@@ -107,13 +108,13 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 | Game | Transport | Own history | Effort |
 |---|---|---|---|
 | Draw & Guess | Relay strokes, Convex round state | Yes, the drawings with stars | S |
-| Mind Meld | Convex only | No | S |
+| Mind Meld | Convex, relay for presence and typing | Yes, the word trails | S |
 | Touch | Relay | No | S |
 | Reaction duel | Relay, Convex for results | No | S |
 | Air hockey | Relay | No | M |
 
 - **Draw & Guess.** The first game. It plays async, with live watching when both are online. Its full design is in `docs/games/draw-and-guess.md`.
-- **Mind Meld.** Both type a word at the same time and the words are revealed together. Each next round, both try to name a word that connects the last two. You win when you say the same word.
+- **Mind Meld.** Built. Both type a word at the same time and the words are revealed together. Each next round, both try to name a word that connects the last two. You win when you say the same word. Live play shows when the partner is here, typing or locked in. Its design is in `docs/games/mind-meld.md`.
 - **Touch.** Both put a finger on the screen and see the partner's finger as a glow. When they overlap, both phones buzz and a flower opens.
 - **Reaction duel.** Tap when the flower opens. Uses the fairness rule above.
 - **Air hockey.** Each phone is half of the table and the puck crosses between them.
