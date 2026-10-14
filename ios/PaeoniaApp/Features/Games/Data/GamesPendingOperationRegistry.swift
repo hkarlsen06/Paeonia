@@ -32,11 +32,19 @@ nonisolated enum GamesPendingOperationRegistry {
             GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
             GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
             // Story Chain
-            StoryChainStartPendingOperationHandler(gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache),
-            StoryChainLinePendingOperationHandler(gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache),
-            StoryChainNamePendingOperationHandler(gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache),
+            StoryChainStartPendingOperationHandler(
+                gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
+            ),
+            StoryChainLinePendingOperationHandler(
+                gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
+            ),
+            StoryChainNamePendingOperationHandler(
+                gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
+            ),
             StoryChainSeenPendingOperationHandler(gateway: gateway, cache: FileStoryChainCache.shared),
-            StoryChainStarPendingOperationHandler(gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache),
+            StoryChainStarPendingOperationHandler(
+                gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
+            ),
             // Mind Meld
             LockMindMeldWordPendingOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
             CountMindMeldPendingOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),

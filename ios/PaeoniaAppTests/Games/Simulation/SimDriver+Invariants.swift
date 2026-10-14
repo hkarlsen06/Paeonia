@@ -345,6 +345,8 @@ extension SimDriver {
     /// the draft. Once the drawer is back in the game, that drawing is the one
     /// the round keeps.
     private func checkUnsentDrawingWentOut(_ phone: SimPhone) throws {
+        // `count` is a stroke count, not a collection, so there is no `isEmpty`.
+        // swiftlint:disable:next empty_count
         guard let record = boardStrokes[phone.name], record.count > 0,
               let round = server.round(record.roundID), round.state.isFinished
         else { return }
