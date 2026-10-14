@@ -36,7 +36,7 @@ struct SettingsView: View {
     let onPurchasesRestored: @MainActor @Sendable () async -> Void
     /// Builds the sheet for this person's mark in the board games. Without it
     /// the row is hidden.
-    let loadMarkEditor: (@MainActor @Sendable () async -> BoardMarkEditorModel?)?
+    let loadMarkEditor: (@MainActor () async -> BoardMarkEditorModel?)?
     private let privacySafetyService: (any PrivacySafetyServicing)?
     private let privacyOperationProvider: (any SyncClientOperationProviding)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -71,7 +71,7 @@ struct SettingsView: View {
         onUpdateProfile: @escaping @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool =
             { _, _ in false },
         onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {},
-        loadMarkEditor: (@MainActor @Sendable () async -> BoardMarkEditorModel?)? = nil,
+        loadMarkEditor: (@MainActor () async -> BoardMarkEditorModel?)? = nil,
         privacySafetyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
         privacyOperationProvider: (any SyncClientOperationProviding)? = nil
     ) {
@@ -289,7 +289,7 @@ extension SettingsView {
             }
 
             if let loadMarkEditor {
-                SettingsMarkRow(loadEditor: loadMarkEditor)
+                SettingsMarkRow(loadEditor: { await loadMarkEditor() })
             }
 
             NavigationLink {

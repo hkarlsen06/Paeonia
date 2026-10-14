@@ -30,10 +30,12 @@ struct PaywallContentView: View {
 
     private var header: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            Text(audience.headline)
-                .font(PaeoniaTypography.title)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .accessibilityAddTraits(.isHeader)
+            if let headline = audience.headline {
+                Text(headline)
+                    .font(PaeoniaTypography.title)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .accessibilityAddTraits(.isHeader)
+            }
 
             Text(audience.message)
                 .font(PaeoniaTypography.body)

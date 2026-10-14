@@ -3,7 +3,7 @@ import SwiftUI
 /// Opens the sheet for the mark on this person's pieces in every board game.
 /// Games asks for it once after setup, and this row is where it changes later.
 struct SettingsMarkRow: View {
-    let loadEditor: @MainActor @Sendable () async -> BoardMarkEditorModel?
+    let loadEditor: @MainActor () async -> BoardMarkEditorModel?
 
     @State private var editor: BoardMarkEditorModel?
     @State private var isLoading = false

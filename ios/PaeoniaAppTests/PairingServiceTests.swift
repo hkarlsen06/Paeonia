@@ -830,14 +830,14 @@ struct PaywallAudienceTests {
     @Test func unpairedAudienceUsesTheOfferCopy() {
         let audience = PaywallAudience.unpaired
 
-        #expect(String(localized: audience.headline) == String(localized: .paywallTitle))
+        #expect(audience.headline == nil)
         #expect(String(localized: audience.message) == String(localized: .paywallSubtitle))
     }
 
     @Test func pairedAudienceNamesThePartnerInTheMessage() {
         let audience = PaywallAudience.paired(partnerName: "  Riley  ")
 
-        #expect(String(localized: audience.headline) == String(localized: .paywallPairedHeadline))
+        #expect(audience.headline.map { String(localized: $0) } == String(localized: .paywallPairedHeadline))
         #expect(String(localized: audience.message) == String(localized: .paywallPairedMessage("Riley")))
     }
 }

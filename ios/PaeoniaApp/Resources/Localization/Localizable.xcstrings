@@ -17206,37 +17206,19 @@
       }
     },
     "paywall.subtitle" : {
-      "comment" : "Paywall line under the headline. The partner who got the code never pays.",
+      "comment" : "Paywall line above the feature list for someone not paired yet. One short sentence. The partner who gets the code never pays.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "One subscription covers both of you. Your partner joins for free with your code."
+            "value" : "One subscription covers both of you."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ett abonnement gjelder for dere begge. Partneren din blir med gratis via koden din."
-          }
-        }
-      }
-    },
-    "paywall.title" : {
-      "comment" : "Paywall headline for someone not paired yet. Says what Paeonia is for, not that it costs money. Keep it short enough for one line.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Closer every day"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nærmere hver dag"
+            "value" : "Ett abonnement gjelder for dere begge."
           }
         }
       }
