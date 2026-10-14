@@ -14,6 +14,7 @@ import {
 } from "./notifications";
 import { enqueueGamePush } from "./games";
 import { GAME_PUSH_COPY, notificationAlertTitle } from "./notificationCopy";
+import { GAME_KINDS } from "./validators";
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -94,7 +95,9 @@ describe("notification copy", () => {
     test("a game without copy gets the app name, and turn and result pushes use the reminder body", async () => {
       const t = newTest();
       const couple = await createCouple(t);
-      for (const gameKind of ["mind_meld", "constructor", undefined]) {
+      // A kind that has no copy yet, while there is one.
+      const uncopied = GAME_KINDS.find((kind) => !GAME_PUSH_COPY[kind]);
+      for (const gameKind of [uncopied, "constructor", undefined]) {
         const payload = { game_kind: gameKind, actor_user_id: couple.first.userId };
         for (const kind of pushKinds) {
           expect(await t.run((ctx) => notificationAlertTitle(ctx, kind, payload, "en"))).toBe("Paeonia");

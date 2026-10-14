@@ -7,6 +7,7 @@ import { hmacSha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
 import { deleteCoupleGameRows, GAME_BACKENDS, gamePushStillWanted, type GameBackend } from "./lib/gameRegistry";
 import { gameDeepLink } from "./lib/games";
+import { GAME_PUSH_COPY } from "./lib/notificationCopy";
 import { GAME_KINDS } from "./lib/validators";
 import { endCouple, failure } from "./media.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex } from "./test.setup";
@@ -40,6 +41,12 @@ const nullBackend: GameBackend = {
   pushStillWanted: async () => false,
   deleteCoupleRows: async () => 0,
 };
+
+// Some tests swap registry entries. Put the registered games back after each one.
+const registeredBackends = { ...GAME_BACKENDS };
+afterEach(() => {
+  Object.assign(GAME_BACKENDS, registeredBackends);
+});
 
 describe("access", () => {
   test("a user without a couple cannot use the shared game functions", async () => {
@@ -181,29 +188,31 @@ describe("presence and invites for every kind", () => {
 
   test("an invite for another kind is stored per kind, limited to one every 15 minutes, and has no copy yet", async () => {
     const s = await startCouple();
-    const sent = await s.a.as.mutation(api.games.send_game_invite, { p_kind: "mind_meld" });
+    // A kind that has no push copy yet.
+    const kind = GAME_KINDS.find((item) => item !== "story_chain" && !GAME_PUSH_COPY[item])!;
+    const sent = await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind });
     expect(sent.sent_at).toBe(new Date(START).toISOString());
     const [row] = await outbox(s.t);
     expect(row).toMatchObject({
       recipient_user_id: s.b.userId,
       title: "Paeonia",
       body: "Open Paeonia to join in.",
-      payload: { type: "game_invite", game_kind: "mind_meld", couple_id: s.couple.coupleId, route: "games", deeplink: "paeonia://games/mind-meld" },
+      payload: { type: "game_invite", game_kind: kind, couple_id: s.couple.coupleId, route: "games", deeplink: gameDeepLink(kind) },
     });
     expect(row.payload).not.toHaveProperty("game_id");
 
     tick(14 * 60 + 59);
-    expect((await failure(s.a.as.mutation(api.games.send_game_invite, { p_kind: "mind_meld" }))).code).toBe("53300");
+    expect((await failure(s.a.as.mutation(api.games.send_game_invite, { p_kind: kind }))).code).toBe("53300");
     // The limit is per sender and per kind.
-    await s.b.as.mutation(api.games.send_game_invite, { p_kind: "mind_meld" });
+    await s.b.as.mutation(api.games.send_game_invite, { p_kind: kind });
     await s.a.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
     tick(1);
-    expect((await s.a.as.mutation(api.games.send_game_invite, { p_kind: "mind_meld" })).sent_at > sent.sent_at).toBe(true);
+    expect((await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind })).sent_at > sent.sent_at).toBe(true);
     expect((await s.t.run((ctx) => ctx.db.query("game_invites").collect())).map((invite) => invite.kind).sort()).toEqual([
-      "mind_meld",
-      "mind_meld",
+      kind,
+      kind,
       "story_chain",
-    ]);
+    ].sort());
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -282,6 +291,7 @@ describe("registry", () => {
   test("every kind has a registry entry, and each built game has a backend", () => {
     // Each built game adds its line here.
     expect(GAME_BACKENDS.draw_and_guess).not.toBeNull();
+    expect(GAME_BACKENDS.mind_meld).not.toBeNull();
     expect(GAME_BACKENDS.story_chain).not.toBeNull();
     expect(Object.keys(GAME_BACKENDS)).toEqual([...GAME_KINDS]);
   });

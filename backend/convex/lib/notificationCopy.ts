@@ -43,6 +43,20 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
       resultBody: "Åpne Paeonia for å se hvordan det gikk.",
     },
   },
+  mind_meld: {
+    en: {
+      name: "Mind Meld",
+      turnReadyBody: "Open Paeonia to pick your word.",
+      resultTitle: () => "Your words are in",
+      resultBody: "Open Paeonia to see what you both said.",
+    },
+    nb: {
+      name: "Tenk likt",
+      turnReadyBody: "Åpne Paeonia for å velge ordet ditt.",
+      resultTitle: () => "Ordene deres er klare",
+      resultBody: "Åpne Paeonia for å se hva dere sa.",
+    },
+  },
   story_chain: {
     en: {
       name: "Story Chain",

@@ -19,6 +19,7 @@ import {
   locationSource,
   wordDifficulty,
 } from "./lib/validators";
+import { mindMeldTables } from "./lib/mindMeld";
 
 // Conventions (see backend/AGENTS.md):
 // - Field names match the SQL columns. uuid columns are lowercase strings.
@@ -1565,6 +1566,8 @@ export default defineSchema({
   })
     .index("by_game_id_language_kind", ["game_id", "language", "kind"])
     .index("by_couple_id", ["couple_id"]),
+  // Mind Meld: mind_meld_games, mind_meld_rounds, mind_meld_words (lib/mindMeld.ts, docs/games/mind-meld.md).
+  ...mindMeldTables,
 
   // FK: user_id -> users cascade. (widget_push_token_hash, apns_environment, widget_kind) is unique while disabled_at is null.
   widget_push_devices: defineTable({
