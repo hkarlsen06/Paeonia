@@ -279,8 +279,10 @@ describe("live ticket", () => {
 describe("registry", () => {
   const payload = (coupleId: string, kind: string) => ({ couple_id: coupleId, game_kind: kind, round_id: newUuid(), game_id: newUuid() });
 
-  test("only Draw & Guess has a backend so far", () => {
-    expect(Object.entries(GAME_BACKENDS).filter(([, backend]) => backend !== null).map(([kind]) => kind)).toEqual(["draw_and_guess"]);
+  test("every kind has a registry entry, and each built game has a backend", () => {
+    // Each built game adds its line here.
+    expect(GAME_BACKENDS.draw_and_guess).not.toBeNull();
+    expect(GAME_BACKENDS.story_chain).not.toBeNull();
     expect(Object.keys(GAME_BACKENDS)).toEqual([...GAME_KINDS]);
   });
 

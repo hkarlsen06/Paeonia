@@ -43,6 +43,26 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
       resultBody: "Åpne Paeonia for å se hvordan det gikk.",
     },
   },
+  story_chain: {
+    en: {
+      name: "Story Chain",
+      turnReadyBody: "Open Paeonia to read the newest line.",
+      resultTitle: (actor) => `${actor} named your story`,
+      resultBody: "Open Paeonia to read it.",
+      steps: {
+        last_line: { title: (actor) => `${actor} wrote the last line`, body: "Open Paeonia to give your story a title." },
+      },
+    },
+    nb: {
+      name: "Skrivestafett",
+      turnReadyBody: "Åpne Paeonia for å lese den nyeste linjen.",
+      resultTitle: (actor) => `${actor} ga historien deres en tittel`,
+      resultBody: "Åpne Paeonia for å lese den.",
+      steps: {
+        last_line: { title: (actor) => `${actor} skrev den siste linjen`, body: "Åpne Paeonia for å gi historien en tittel." },
+      },
+    },
+  },
 };
 
 /** The copy of the game a push names in `payload.game_kind`, or null when the game has no entry. */

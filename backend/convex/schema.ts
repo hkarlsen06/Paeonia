@@ -1483,6 +1483,89 @@ export default defineSchema({
     sent_at: ts,
   }).index("by_couple_id_kind_sender_user_id", ["couple_id", "kind", "sender_user_id"]),
 
+  // Story Chain (storyChain.ts, lib/storyChain.ts). Rows are deleted with the couple's other game
+  // rows through the game registry.
+
+  // FK: couple_id -> couples cascade. couple_id is unique: one game per couple.
+  story_chain_games: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    state: literals("choosing_opening", "writing", "titling"),
+    turn_user_id: uuid,
+    turn_number: v.number(),
+    current_story_id: optUuid,
+    story_count: v.number(),
+    finished_count: v.number(),
+    turn_started_at: ts,
+    turn_reminder_sent_at: optTs,
+    version: v.number(),
+    created_by_user_id: uuid,
+    created_at: ts,
+    updated_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_couple_id", ["couple_id"])
+    .index("by_turn_reminder_sent_at_turn_started_at", ["turn_reminder_sent_at", "turn_started_at"]),
+
+  // FK: game_id -> story_chain_games cascade, couple_id -> couples cascade. (game_id, story_number) is unique.
+  // `lines` holds at most 20 lines of at most 240 characters, so a story stays small.
+  story_chain_stories: defineTable({
+    id: uuid,
+    game_id: uuid,
+    couple_id: uuid,
+    story_number: v.number(),
+    starter_user_id: uuid,
+    opening_id: optString,
+    opening_text: optString,
+    state: literals("writing", "titling", "finished"),
+    lines: v.array(
+      v.object({
+        id: uuid,
+        number: v.number(),
+        author_user_id: uuid,
+        text: v.string(),
+        // The word this line gave to the next line.
+        dare_word: optString,
+        dare_word_id: optString,
+        created_at: ts,
+      }),
+    ),
+    last_line_user_id: optUuid,
+    title: optString,
+    titled_by_user_id: optUuid,
+    finished_at: optTs,
+    // The partners who have seen the finished story.
+    seen_by: v.array(uuid),
+    created_at: ts,
+    updated_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_game_id_story_number", ["game_id", "story_number"])
+    .index("by_couple_id_story_number", ["couple_id", "story_number"]),
+
+  // FK: story_id -> story_chain_stories cascade. (story_id, user_id) is unique. Private to user_id.
+  story_chain_stars: defineTable({
+    couple_id: uuid,
+    story_id: uuid,
+    user_id: uuid,
+    story_number: v.number(),
+    created_at: ts,
+  })
+    .index("by_story_id_user_id", ["story_id", "user_id"])
+    .index("by_couple_id_user_id_story_number", ["couple_id", "user_id", "story_number"]),
+
+  // The openings and dare words a couple has used, per language. A kind starts over when used up.
+  story_chain_used: defineTable({
+    game_id: uuid,
+    couple_id: uuid,
+    language: gameLanguage,
+    kind: literals("opening", "word"),
+    content_id: v.string(),
+    created_at: ts,
+  })
+    .index("by_game_id_language_kind", ["game_id", "language", "kind"])
+    .index("by_couple_id", ["couple_id"]),
+
   // FK: user_id -> users cascade. (widget_push_token_hash, apns_environment, widget_kind) is unique while disabled_at is null.
   widget_push_devices: defineTable({
     id: uuid,
