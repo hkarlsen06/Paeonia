@@ -160,6 +160,9 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case exquisiteCorpseSubmitPart = "exquisite_corpse_submit_part"
     case exquisiteCorpseRevealSeen = "exquisite_corpse_reveal_seen"
     case exquisiteCorpseStar = "exquisite_corpse_star"
+    // Board games (Connect Four, Dots and Boxes, Ultimate Tic-Tac-Toe)
+    case boardGameMove = "board_game_move"
+    case boardGameRematch = "board_game_rematch"
 }
 
 nonisolated enum SyncPendingOperationStatus: String, Codable, CaseIterable, Sendable {

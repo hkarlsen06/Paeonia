@@ -33,6 +33,11 @@ struct GamesDependencies {
     var exquisiteCorpseCache: any ExquisiteCorpseCaching = InMemoryExquisiteCorpseCache()
     /// Builds Exquisite corpse's live room for the couple, or nil when there is none.
     var makeExquisiteCorpseLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
+    // Board games
+    var boardGamesGateway: any BoardGamesGateway = UnavailableBoardGamesGateway()
+    var boardGamesCache: any BoardGamesCaching = InMemoryBoardGamesCache()
+    /// Loads the hidden photo under Dots and Boxes, the way Memories loads photos.
+    var memoryPhotos: (any MemoryMediaImageProviding)?
 
     static func live() -> GamesDependencies {
         let client = try? PaeoniaConvexClientProvider.shared.client()
@@ -59,7 +64,10 @@ struct GamesDependencies {
             exquisiteCorpseGateway: client.map { LiveExquisiteCorpseGateway(client: $0) }
                 ?? UnavailableExquisiteCorpseGateway(),
             exquisiteCorpseCache: FileExquisiteCorpseCache.shared,
-            makeExquisiteCorpseLive: { ExquisiteCorpseLive.make(coupleID: $0) }
+            makeExquisiteCorpseLive: { ExquisiteCorpseLive.make(coupleID: $0) },
+            boardGamesGateway: client.map { LiveBoardGamesGateway(client: $0) } ?? UnavailableBoardGamesGateway(),
+            boardGamesCache: FileBoardGamesCache.shared,
+            memoryPhotos: MemoryMediaImageProviderFactory.shared
         )
     }
 }

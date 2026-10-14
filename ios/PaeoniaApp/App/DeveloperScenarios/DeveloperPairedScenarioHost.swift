@@ -78,7 +78,7 @@
         .memories
       case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting,
         .gamesHubPartnerHere, .exquisiteCorpseHubYourTurn, .exquisiteCorpseHubPartnerDrawing,
-        .exquisiteCorpseHubReveal, .exquisiteCorpseHubNotStarted:
+        .exquisiteCorpseHubReveal, .exquisiteCorpseHubNotStarted, .gamesHubBoardGames:
         .games
       default:
         .home

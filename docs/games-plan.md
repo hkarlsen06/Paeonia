@@ -134,7 +134,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 - **Exquisite corpse.** Built. Partners take turns drawing the head, body and legs of a figure, and each sees only the bottom 12% of the part before. The whole figure unfolds part by part at the end and goes to "Our creatures". It plays live with a folded paper view and async with pushes. Its full design is in `docs/games/exquisite-corpse.md`.
 - **Story Chain.** Built. The partners write one story together, one or two sentences a turn. A writer can dare the partner to use a word in the next line, and the partner who did not write the last line names the story. Live play shows the partner's letters as they are typed. Its design is in `docs/games/story-chain.md`.
 - **Guess my spot.** Send a photo of where you are. The partner drops a pin on a map and scores by distance. The sender's coordinates stay hidden until the guess.
-- **Board games.** Short classic turns. Connect Four is the proposed first test of the turn engine.
+- **Board games.** Connect Four, Dots and Boxes and Ultimate Tic-Tac-Toe share one turn engine (`make_move` with a pure rules function per kind). Each partner's own drawn mark is on every piece, the starter can play for something, and Dots and Boxes uncovers a random photo from Memories. Built. Design in `docs/games/board-games.md`.
 - **Battleship with date ideas.** Hide date ideas instead of ships. Sinking one turns it into a plan.
 - **Chess and word games.** Popular but expensive. Chess needs a rules engine. A word game needs licensed English and Norwegian dictionaries. Deferred.
 
@@ -200,7 +200,7 @@ Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`
 
 ## Order
 
-Draw & Guess comes first. It builds the turn engine, the drawing replay and the history with stars. Exquisite corpse reuses all three from `Features/Games/Shared/` and is built. Mind Meld is the cheapest game that tests a simultaneous reveal on Convex. Connect Four fails quality bar item 3 unless it gets a Paeonia-specific twist.
+Draw & Guess comes first. It builds the turn engine, the drawing replay and the history with stars. Exquisite corpse reuses all three from `Features/Games/Shared/` and is built. Mind Meld is the cheapest game that tests a simultaneous reveal on Convex. The board games are built with their Paeonia twist: a drawn mark, a stake and a hidden photo.
 
 ## Open questions
 

@@ -61,10 +61,13 @@ final class GamesViewModel {
     let storyChain: StoryChainHubModel
     let mindMeld: MindMeldHubModel
     let exquisiteCorpse: ExquisiteCorpseHubModel
+    let connectFour: BoardGameHubModel<ConnectFourBoard>
+    let dotsAndBoxes: BoardGameHubModel<DotsAndBoxesBoard>
+    let ultimateTicTacToe: BoardGameHubModel<UltimateTicTacToeBoard>
 
     /// The built games, in `GameKind` order. A kind that is not here shows nowhere.
     var games: [any GameHubModel] {
-        [drawAndGuess, mindMeld, exquisiteCorpse, storyChain]
+        [drawAndGuess, mindMeld, exquisiteCorpse, storyChain, connectFour, dotsAndBoxes, ultimateTicTacToe]
     }
 
     private let dependencies: GamesDependencies
@@ -80,6 +83,9 @@ final class GamesViewModel {
         storyChain = StoryChainHubModel(dependencies: dependencies)
         mindMeld = MindMeldHubModel(dependencies: dependencies)
         exquisiteCorpse = ExquisiteCorpseHubModel(dependencies: dependencies)
+        connectFour = ConnectFourGame.hubModel(dependencies: dependencies)
+        dotsAndBoxes = DotsAndBoxesGame.hubModel(dependencies: dependencies)
+        ultimateTicTacToe = UltimateTicTacToeGame.hubModel(dependencies: dependencies)
     }
 
     /// A game waits for this person to move. The Games tab shows a badge.

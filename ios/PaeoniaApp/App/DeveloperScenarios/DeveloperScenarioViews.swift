@@ -161,7 +161,7 @@
         .locationCurrentMissing, .locationLive, .locationStale:
         DeveloperRelationshipScenarioView(scenario: scenario)
       case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting,
-        .gamesHubPartnerHere:
+        .gamesHubPartnerHere, .gamesHubBoardGames:
         DeveloperPairedScenarioHost(scenario: scenario)
       case .drawChooseWord, .drawWaitingForWord, .drawDrawing, .drawSavedOffline,
         .drawWaitingForGuess, .drawWaitingForDrawing, .drawWatchingLive, .drawGuessingReplay,
@@ -189,6 +189,11 @@
         .exquisiteCorpseRevealLoading, .exquisiteCorpseHistory, .exquisiteCorpseHistoryEmpty,
         .exquisiteCorpseHistoryStarred, .exquisiteCorpseHistoryDetail:
         ExquisiteCorpseDeveloperScenarioView(scenario: scenario)
+      case .connectFourYourTurn, .connectFourPartnerTurn, .connectFourPartnerMove, .connectFourWon,
+        .connectFourFirstMove, .connectFourMissedEnding, .connectFourOffline, .dotsAndBoxesPhoto,
+        .dotsAndBoxesExtraTurn, .dotsAndBoxesWonPhoto, .dotsAndBoxesPlain, .ultimateTicTacToeForced,
+        .ultimateTicTacToeFree, .ultimateTicTacToePartnerMove, .ultimateTicTacToeWon, .boardGameMarkEditor:
+        DeveloperBoardGamesScenarioView(scenario: scenario)
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         DeveloperWidgetScenarioView(scenario: scenario)
       case .notificationPrimer, .settings, .settingsNotificationsDenied, .privacySafety,

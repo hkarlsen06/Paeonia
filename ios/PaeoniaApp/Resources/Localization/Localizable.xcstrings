@@ -884,6 +884,1098 @@
         }
       }
     },
+    "boardGames.hub.action.look" : {
+      "comment" : "Button on a board game's card while the partner is making their move.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Look at the board"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se på brettet"
+          }
+        }
+      }
+    },
+    "boardGames.hub.action.play" : {
+      "comment" : "Button on a board game's card when it is this person's move.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill"
+          }
+        }
+      }
+    },
+    "boardGames.hub.action.playAgain" : {
+      "comment" : "Button on a board game's card after a game ended.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill igjen"
+          }
+        }
+      }
+    },
+    "boardGames.hub.action.start" : {
+      "comment" : "Button on a board game's card that opens the game the first time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start"
+          }
+        }
+      }
+    },
+    "boardGames.hub.status.draw" : {
+      "comment" : "Status line on a board game's card after a draw.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The last game was a draw"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forrige spill ble uavgjort"
+          }
+        }
+      }
+    },
+    "boardGames.hub.status.notStarted" : {
+      "comment" : "Status line on a board game's card on the Games tab before the couple has played it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play your first game together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill deres første spill sammen."
+          }
+        }
+      }
+    },
+    "boardGames.hub.status.partnerTurn" : {
+      "comment" : "Status line on a board game's card when it is the partner's move. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s turn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sin tur"
+          }
+        }
+      }
+    },
+    "boardGames.hub.status.partnerWon" : {
+      "comment" : "Status line on a board game's card after the partner won. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ won the last game"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ vant forrige spill"
+          }
+        }
+      }
+    },
+    "boardGames.hub.status.yourTurn" : {
+      "comment" : "Status line on a board game's card when it is this person's move.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur"
+          }
+        }
+      }
+    },
+    "boardGames.hub.status.youWon" : {
+      "comment" : "Status line on a board game's card after this person won.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You won the last game"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du vant forrige spill"
+          }
+        }
+      }
+    },
+    "boardGames.mark.canvas.a11y" : {
+      "comment" : "VoiceOver label for the square drawing area on the mark sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing canvas for your mark"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegneflate for merket ditt"
+          }
+        }
+      }
+    },
+    "boardGames.mark.intro" : {
+      "comment" : "Short line under the title of the mark sheet. Pieces are the discs, boxes and cells in the board games.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw something small. It shows on every piece you play."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn noe lite. Det vises på hver brikke du spiller."
+          }
+        }
+      }
+    },
+    "boardGames.mark.save" : {
+      "comment" : "Main button on the mark sheet that saves the drawing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        }
+      }
+    },
+    "boardGames.mark.saveError" : {
+      "comment" : "Banner shown when saving the mark failed, usually because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save your mark. Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke lagre merket ditt. Sjekk nettet og prøv igjen."
+          }
+        }
+      }
+    },
+    "boardGames.mark.title" : {
+      "comment" : "Title of the sheet where a player draws a small mark that is printed on their game pieces.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your mark"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ditt merke"
+          }
+        }
+      }
+    },
+    "boardGames.mark.tooBig" : {
+      "comment" : "Message under the canvas when the drawing holds more data than can be saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The drawing is too big. Try fewer strokes."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen er for stor. Prøv med færre streker."
+          }
+        }
+      }
+    },
+    "boardGames.mark.useInitial" : {
+      "comment" : "Quiet button that removes the drawn mark so the first letter of the player's name is shown on their pieces.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use my initial"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk forbokstaven min"
+          }
+        }
+      }
+    },
+    "boardGames.notice.moveRejected.message" : {
+      "comment" : "Banner message after a board game move was refused. The board then shows the current game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The game changed before it arrived. The board shows the game as it is now."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spillet endret seg før det kom fram. Brettet viser spillet slik det er nå."
+          }
+        }
+      }
+    },
+    "boardGames.notice.moveRejected.title" : {
+      "comment" : "Banner title when the server refused a board game move, for example because the game changed first.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your move wasn't sent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trekket ditt ble ikke sendt"
+          }
+        }
+      }
+    },
+    "boardGames.offline.failed" : {
+      "comment" : "Shown with a \"Try again\" button when the last try to send a board game move failed while online.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't send your move yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke sendt trekket ditt ennå"
+          }
+        }
+      }
+    },
+    "boardGames.player.you" : {
+      "comment" : "Name under this person's own avatar on a board game screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du"
+          }
+        }
+      }
+    },
+    "boardGames.player.yourTurn.a11y" : {
+      "comment" : "VoiceOver label of this person's avatar when it is their turn.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You, your turn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du, din tur"
+          }
+        }
+      }
+    },
+    "boardGames.players.drawMark" : {
+      "comment" : "Quiet link under this person's avatar until they have drawn the small mark shown on their pieces.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw your mark"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn merket ditt"
+          }
+        }
+      }
+    },
+    "boardGames.result.continue" : {
+      "comment" : "Main button on the result of a game this person missed the end of. Goes on to the new game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      }
+    },
+    "boardGames.result.gamesTogether" : {
+      "comment" : "Caption under the big number on a board game result when the couple has finished more than one game together. The number is shown above it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "games together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spill sammen"
+          }
+        }
+      }
+    },
+    "boardGames.result.gameTogether" : {
+      "comment" : "Caption under the big number 1 on a board game result: the couple has finished one game together. The number is shown above it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "game together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spill sammen"
+          }
+        }
+      }
+    },
+    "boardGames.result.hide" : {
+      "comment" : "VoiceOver label of the button that folds the result panel so the board is visible.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide the result"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skjul resultatet"
+          }
+        }
+      }
+    },
+    "boardGames.result.playAgain" : {
+      "comment" : "Main button on the result. Starts a new game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill igjen"
+          }
+        }
+      }
+    },
+    "boardGames.result.show" : {
+      "comment" : "VoiceOver label of the button that unfolds the result panel.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the result"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis resultatet"
+          }
+        }
+      }
+    },
+    "boardGames.result.stake.nobody" : {
+      "comment" : "Result line after a draw, so nobody won the stake. %@ is the stake.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nobody claimed: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen vant: %@"
+          }
+        }
+      }
+    },
+    "boardGames.result.stake.partner" : {
+      "comment" : "Result line when the partner won the stake. %1$@ is the partner's name, %2$@ the stake.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ claimed: %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ vant: %2$@"
+          }
+        }
+      }
+    },
+    "boardGames.result.stake.you" : {
+      "comment" : "Result line when this person won the stake. %@ is the stake, such as \"Loser makes coffee\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You claimed: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du vant: %@"
+          }
+        }
+      }
+    },
+    "boardGames.result.title.draw" : {
+      "comment" : "Result title when the game ended without a winner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's a draw"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uavgjort"
+          }
+        }
+      }
+    },
+    "boardGames.result.title.partnerWon" : {
+      "comment" : "Result title after the partner won, in the \"against each other\" style. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ won"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ vant"
+          }
+        }
+      }
+    },
+    "boardGames.result.title.partnerWonThis" : {
+      "comment" : "Result title after the partner won, in the \"together\" style. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ won this one"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ vant denne"
+          }
+        }
+      }
+    },
+    "boardGames.result.title.youWon" : {
+      "comment" : "Result title after this person won, in the \"against each other\" style.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You won!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du vant!"
+          }
+        }
+      }
+    },
+    "boardGames.result.title.youWonThis" : {
+      "comment" : "Result title after this person won, in the \"together\" style, which keeps no score.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You won this one"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du vant denne"
+          }
+        }
+      }
+    },
+    "boardGames.score.against.a11y" : {
+      "comment" : "VoiceOver label of the score in the \"against each other\" style. %1$@ is this person's wins such as \"3 wins\", %2$@ the partner's name, %3$@ the partner's wins.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You %1$@, %2$@ %3$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du %1$@, %2$@ %3$@"
+          }
+        }
+      }
+    },
+    "boardGames.score.games" : {
+      "comment" : "Toolbar score in the \"together\" play style: how many board games the couple has finished.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld game"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld games"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld spill"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld spill"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "boardGames.score.together.a11y" : {
+      "comment" : "VoiceOver label of the score in the \"together\" style. %@ is a phrase such as \"12 games\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together, %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen, %@"
+          }
+        }
+      }
+    },
+    "boardGames.score.wins" : {
+      "comment" : "Number of wins, used in the VoiceOver score label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld win"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld wins"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld seier"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld seiere"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "boardGames.stake.button" : {
+      "comment" : "Button above the board that lets the player who starts write what the game is played for. Also the text field's VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play for something"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill om noe"
+          }
+        }
+      }
+    },
+    "boardGames.stake.count" : {
+      "comment" : "Character counter under the stake field. First the characters typed, then the most allowed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "boardGames.stake.count.a11y" : {
+      "comment" : "VoiceOver label of the stake character counter.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld characters"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld av %2$lld tegn"
+          }
+        }
+      }
+    },
+    "boardGames.stake.edit.hint" : {
+      "comment" : "VoiceOver hint on the stake capsule while it can still be edited.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change what you play for"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre hva dere spiller om"
+          }
+        }
+      }
+    },
+    "boardGames.stake.hint" : {
+      "comment" : "Hint under the stake field. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sees it with your first move."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser det når du gjør første trekk."
+          }
+        }
+      }
+    },
+    "boardGames.stake.placeholder" : {
+      "comment" : "Example text in the empty stake field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loser makes coffee"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Taperen lager kaffe"
+          }
+        }
+      }
+    },
+    "boardGames.stake.playingFor" : {
+      "comment" : "Capsule above the board. %@ is the stake the starter wrote, such as \"Loser makes coffee\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playing for: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi spiller om: %@"
+          }
+        }
+      }
+    },
+    "boardGames.status.anotherTurn" : {
+      "comment" : "Chip after this person closed a box in Dots and Boxes, which gives them another move.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another turn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En tur til"
+          }
+        }
+      }
+    },
+    "boardGames.status.here" : {
+      "comment" : "Status under the board while the partner has the same game open. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is here"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er her"
+          }
+        }
+      }
+    },
+    "boardGames.status.later" : {
+      "comment" : "Status under the board while the partner does not have the game open. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will see it later"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser det senere"
+          }
+        }
+      }
+    },
+    "boardGames.turn.draw" : {
+      "comment" : "Capsule between the avatars when the game ended without a winner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uavgjort"
+          }
+        }
+      }
+    },
+    "boardGames.turn.partner" : {
+      "comment" : "Capsule between the avatars when it is the partner's turn. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s turn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sin tur"
+          }
+        }
+      }
+    },
+    "boardGames.turn.partnerWon" : {
+      "comment" : "Capsule between the avatars after the partner won. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ won"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ vant"
+          }
+        }
+      }
+    },
+    "boardGames.turn.yours" : {
+      "comment" : "Capsule between the two avatars on a board game screen when it is this person's turn.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur"
+          }
+        }
+      }
+    },
+    "boardGames.turn.youWon" : {
+      "comment" : "Capsule between the avatars after this person won the game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You won"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du vant"
+          }
+        }
+      }
+    },
+    "boardGames.unavailable.message" : {
+      "comment" : "Message under the offline title on a board game screen that has never been started.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to start the game."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å starte spillet."
+          }
+        }
+      }
+    },
+    "boardGames.unavailable.title" : {
+      "comment" : "Title shown when a board game can't be started because the phone has no connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett"
+          }
+        }
+      }
+    },
     "common.cancel" : {
       "comment" : "Generic button title for cancelling the current sheet or action.",
       "extractionState" : "manual",
@@ -988,6 +2080,210 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prøv igjen"
+          }
+        }
+      }
+    },
+    "connectFour.board.label" : {
+      "comment" : "VoiceOver label for the whole board.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Four board"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fire på rad-brett"
+          }
+        }
+      }
+    },
+    "connectFour.column.discs" : {
+      "comment" : "Number of discs in a column, in a VoiceOver description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld disc"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld discs"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld brikke"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld brikker"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "connectFour.column.drop" : {
+      "comment" : "VoiceOver action name on a column.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop a disc"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slipp en brikke"
+          }
+        }
+      }
+    },
+    "connectFour.column.empty" : {
+      "comment" : "Follows \"Column 3,\". The column has no discs.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "empty"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tom"
+          }
+        }
+      }
+    },
+    "connectFour.column.full" : {
+      "comment" : "Follows \"Column 3,\". The column cannot take another disc.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "full"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "full"
+          }
+        }
+      }
+    },
+    "connectFour.column.label" : {
+      "comment" : "Starts a column's VoiceOver description. %lld is the column number from the left, starting at 1.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Column %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kolonne %lld"
+          }
+        }
+      }
+    },
+    "connectFour.column.topMine" : {
+      "comment" : "The highest disc in the column is the user's.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "yours on top"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "din ligger øverst"
+          }
+        }
+      }
+    },
+    "connectFour.column.topPartner" : {
+      "comment" : "The highest disc in the column is the partner's.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your partner's on top"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "partnerens ligger øverst"
+          }
+        }
+      }
+    },
+    "connectFour.name" : {
+      "comment" : "Name of the Connect Four board game, on its card and as the screen title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Four"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fire på rad"
+          }
+        }
+      }
+    },
+    "connectFour.partnerDropped" : {
+      "comment" : "Announcement when the partner's move arrives. %1$@ is their name, %2$lld the column from the left starting at 1.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ dropped a disc in column %2$lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ slapp en brikke i kolonne %2$lld"
           }
         }
       }
@@ -3256,6 +4552,330 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ har ikke svart ennå. Dere kan prate når begge har svart."
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.action.bottom" : {
+      "comment" : "VoiceOver action on a box that draws its bottom line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw the bottom line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn streken nederst"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.action.left" : {
+      "comment" : "VoiceOver action on a box that draws its left line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw the left line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn streken til venstre"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.action.right" : {
+      "comment" : "VoiceOver action on a box that draws its right line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw the right line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn streken til høyre"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.action.top" : {
+      "comment" : "VoiceOver action on a box that draws its top line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw the top line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn streken øverst"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.announce.mineOne" : {
+      "comment" : "VoiceOver announcement after this person closed one box, which gives another move.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You closed a box. Another turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du fullførte en rute. Du spiller igjen."
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.announce.mineTwo" : {
+      "comment" : "VoiceOver announcement after this person closed two boxes with one line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You closed two boxes. Another turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du fullførte to ruter. Du spiller igjen."
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.announce.partnerOne" : {
+      "comment" : "VoiceOver announcement after the partner closed one box. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ closed a box."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ fullførte en rute."
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.announce.partnerTwo" : {
+      "comment" : "VoiceOver announcement after the partner closed two boxes. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ closed two boxes."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ fullførte to ruter."
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.box.empty" : {
+      "comment" : "VoiceOver label for a box with no drawn sides.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Box row %1$lld, column %2$lld, no sides drawn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rute rad %1$lld, kolonne %2$lld, ingen streker tegnet"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.box.mine" : {
+      "comment" : "VoiceOver label for one box on the 4 by 4 Dots and Boxes grid that this person closed. %1$lld is the row and %2$lld the column, counted from 1.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Box row %1$lld, column %2$lld, yours"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rute rad %1$lld, kolonne %2$lld, din"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.box.partner" : {
+      "comment" : "VoiceOver label for a box the partner closed. %1$lld row, %2$lld column, %3$@ the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Box row %1$lld, column %2$lld, closed by %3$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rute rad %1$lld, kolonne %2$lld, fullført av %3$@"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.box.sides" : {
+      "comment" : "VoiceOver label for an open box. %3$@ lists the drawn sides, such as \"top and left\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Box row %1$lld, column %2$lld, %3$@ drawn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rute rad %1$lld, kolonne %2$lld, tegnet %3$@"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.name" : {
+      "comment" : "Name of the Dots and Boxes board game, on its card and as the screen title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dots and Boxes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prikker og streker"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.partnerFallback" : {
+      "comment" : "Used for VoiceOver when the partner's name is not known.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.side.bottom" : {
+      "comment" : "Side word used in a list of a box's drawn sides.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bottom"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nederst"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.side.left" : {
+      "comment" : "Side word used in a list of a box's drawn sides.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "til venstre"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.side.right" : {
+      "comment" : "Side word used in a list of a box's drawn sides.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "right"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "til høyre"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.side.top" : {
+      "comment" : "Side word used in a list of a box's drawn sides, such as \"top and left\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "top"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "øverst"
           }
         }
       }
@@ -10813,6 +12433,348 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lagret på denne telefonen"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.board.full.a11y" : {
+      "comment" : "VoiceOver label of a small board that is full with no winner. %lld is 1 to 9.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board %lld, full"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brett %lld, fullt"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.board.hint.a11y" : {
+      "comment" : "VoiceOver hint on the small boards the next move may use.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can play here"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan spille her"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.board.open.a11y" : {
+      "comment" : "VoiceOver label of an open small board. %1$lld is 1 to 9, %2$@ is its position such as \"center\".",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board %1$lld, %2$@, open"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brett %1$lld, %2$@, åpent"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.board.wonByPartner.a11y" : {
+      "comment" : "VoiceOver label of a small board the partner won. %1$lld is 1 to 9, %2$@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board %1$lld, won by %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brett %1$lld, vunnet av %2$@"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.board.wonByYou.a11y" : {
+      "comment" : "VoiceOver label of a small board this person won. %lld is 1 to 9.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board %lld, won by you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brett %lld, vunnet av deg"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.cell.empty.a11y" : {
+      "comment" : "VoiceOver label of an empty cell inside a small board. Row and column count from 1.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Row %1$lld, column %2$lld, empty"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rad %1$lld, kolonne %2$lld, tom"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.cell.partner.a11y" : {
+      "comment" : "VoiceOver label of a cell the partner played. %3$@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Row %1$lld, column %2$lld, %3$@'s"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rad %1$lld, kolonne %2$lld, %3$@ sin"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.cell.yours.a11y" : {
+      "comment" : "VoiceOver label of a cell this person played.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Row %1$lld, column %2$lld, yours"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rad %1$lld, kolonne %2$lld, din"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.name" : {
+      "comment" : "Name of the Ultimate Tic-Tac-Toe board game, on its card and as the screen title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ultimate Tic-Tac-Toe"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ultimat bondesjakk"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.position.bottom" : {
+      "comment" : "Position of a small board in the 3 by 3 grid, spoken in the board's VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bottom"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nederst"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.position.bottomLeft" : {
+      "comment" : "Position of a small board in the 3 by 3 grid, spoken in the board's VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bottom left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nederst til venstre"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.position.bottomRight" : {
+      "comment" : "Position of a small board in the 3 by 3 grid, spoken in the board's VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bottom right"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "nederst til høyre"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.position.center" : {
+      "comment" : "Position of a small board in the 3 by 3 grid, spoken in the board's VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "center"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "i midten"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.position.left" : {
+      "comment" : "Position of a small board in the 3 by 3 grid, spoken in the board's VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "til venstre"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.position.right" : {
+      "comment" : "Position of a small board in the 3 by 3 grid, spoken in the board's VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "right"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "til høyre"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.position.top" : {
+      "comment" : "Position of a small board in the 3 by 3 grid, spoken in the board's VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "top"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "øverst"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.position.topLeft" : {
+      "comment" : "Position of a small board in the 3 by 3 grid, spoken in the board's VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "top left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "øverst til venstre"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.position.topRight" : {
+      "comment" : "Position of a small board in the 3 by 3 grid, spoken in the board's VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "top right"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "øverst til høyre"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.wholeBoard.a11y" : {
+      "comment" : "VoiceOver label of the button that zooms out to all nine small boards in Ultimate Tic-Tac-Toe.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whole board"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hele brettet"
           }
         }
       }

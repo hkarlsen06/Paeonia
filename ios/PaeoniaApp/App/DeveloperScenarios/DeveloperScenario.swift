@@ -69,6 +69,7 @@
     case gamesHubYourTurn = "games-hub-your-turn"
     case gamesHubWaiting = "games-hub-waiting"
     case gamesHubPartnerHere = "games-hub-partner-here"
+    case gamesHubBoardGames = "games-hub-board-games"
     case drawChooseWord = "draw-choose-word"
     case drawWaitingForWord = "draw-waiting-for-word"
     case drawDrawing = "draw-drawing"
@@ -130,6 +131,22 @@
     case exquisiteCorpseHistoryEmpty = "corpse-history-empty"
     case exquisiteCorpseHistoryStarred = "corpse-history-starred"
     case exquisiteCorpseHistoryDetail = "corpse-history-detail"
+    case connectFourYourTurn = "connect-four-your-turn"
+    case connectFourPartnerTurn = "connect-four-partner-turn"
+    case connectFourPartnerMove = "connect-four-partner-move"
+    case connectFourWon = "connect-four-won"
+    case connectFourFirstMove = "connect-four-first-move"
+    case connectFourMissedEnding = "connect-four-missed-ending"
+    case connectFourOffline = "connect-four-offline"
+    case dotsAndBoxesPhoto = "dots-and-boxes-photo"
+    case dotsAndBoxesExtraTurn = "dots-and-boxes-extra-turn"
+    case dotsAndBoxesWonPhoto = "dots-and-boxes-won-photo"
+    case dotsAndBoxesPlain = "dots-and-boxes-plain"
+    case ultimateTicTacToeForced = "ultimate-tic-tac-toe-forced"
+    case ultimateTicTacToeFree = "ultimate-tic-tac-toe-free"
+    case ultimateTicTacToePartnerMove = "ultimate-tic-tac-toe-partner-move"
+    case ultimateTicTacToeWon = "ultimate-tic-tac-toe-won"
+    case boardGameMarkEditor = "board-game-mark-editor"
 
     case notificationPrimer = "notification-primer"
     case settings
@@ -218,6 +235,7 @@
       case .gamesHubYourTurn: "Games · hub, your turn"
       case .gamesHubWaiting: "Games · hub, waiting for partner"
       case .gamesHubPartnerHere: "Games · hub, partner is here"
+      case .gamesHubBoardGames: "Games · hub with the board games"
       case .drawChooseWord: "Draw & Guess · choose a word"
       case .drawWaitingForWord: "Draw & Guess · partner picks a word"
       case .drawDrawing: "Draw & Guess · drawing"
@@ -279,6 +297,22 @@
       case .exquisiteCorpseHistoryEmpty: "Exquisite corpse · our creatures, none yet"
       case .exquisiteCorpseHistoryStarred: "Exquisite corpse · our creatures, starred"
       case .exquisiteCorpseHistoryDetail: "Exquisite corpse · one creature"
+      case .connectFourYourTurn: "Connect Four · your turn"
+      case .connectFourPartnerTurn: "Connect Four · Robin's turn"
+      case .connectFourPartnerMove: "Connect Four · Robin's disc arrives"
+      case .connectFourWon: "Connect Four · you win"
+      case .connectFourFirstMove: "Connect Four · first move"
+      case .connectFourMissedEnding: "Connect Four · missed ending"
+      case .connectFourOffline: "Connect Four · move saved offline"
+      case .dotsAndBoxesPhoto: "Dots and Boxes · hidden photo"
+      case .dotsAndBoxesExtraTurn: "Dots and Boxes · box ready to close"
+      case .dotsAndBoxesWonPhoto: "Dots and Boxes · last box, photo reveal"
+      case .dotsAndBoxesPlain: "Dots and Boxes · no photo"
+      case .ultimateTicTacToeForced: "Ultimate Tic-Tac-Toe · sent to one board"
+      case .ultimateTicTacToeFree: "Ultimate Tic-Tac-Toe · free choice"
+      case .ultimateTicTacToePartnerMove: "Ultimate Tic-Tac-Toe · Robin's move arrives"
+      case .ultimateTicTacToeWon: "Ultimate Tic-Tac-Toe · you win"
+      case .boardGameMarkEditor: "Board games · your mark"
       case .notificationPrimer: "Notifications · primer"
       case .settings: "Settings"
       case .settingsNotificationsDenied: "Settings · notifications denied"
@@ -402,6 +436,8 @@
         "Hub while Robin has the next move"
       case .gamesHubPartnerHere:
         "Hub with Robin's drawing waiting and Robin in the game"
+      case .gamesHubBoardGames:
+        "All four cards: Connect Four on your move, Dots and Boxes with Robin in it, Ultimate Tic-Tac-Toe won by Robin"
       case .drawChooseWord:
         "Three words and the draw-your-own field"
       case .drawWaitingForWord:
@@ -524,6 +560,38 @@
         "Our creatures with the Starred filter on"
       case .exquisiteCorpseHistoryDetail:
         "One creature opened from the grid: unfold, credits, star and Play again"
+      case .connectFourYourTurn:
+        "Ten discs in, Robin in the game, a stake above the board, and both marks are initials"
+      case .connectFourPartnerTurn:
+        "Robin is away, so Tell Robin you want to play shows under the board"
+      case .connectFourPartnerMove:
+        "Opens one disc behind: Robin's last disc hovers over its column, then drops"
+      case .connectFourWon:
+        "Your last disc makes four on a diagonal: the line, the petals and the result with your stake"
+      case .connectFourFirstMove:
+        "A new game you start, with Play for something above the board"
+      case .connectFourMissedEnding:
+        "Robin won and started the next game before you looked: the ending plays first, then Continue"
+      case .connectFourOffline:
+        "Your move is on the board and waits on this phone: Saved on this phone"
+      case .dotsAndBoxesPhoto:
+        "Six boxes closed by both of you, each uncovering a piece of the hidden photo"
+      case .dotsAndBoxesExtraTurn:
+        "A box has three sides drawn. Close it for another turn"
+      case .dotsAndBoxesWonPhoto:
+        "Opens one line before the end: the last box closes, then the whole photo shows"
+      case .dotsAndBoxesPlain:
+        "A couple with no photos: plain boxes with the initials"
+      case .ultimateTicTacToeForced:
+        "Robin's last move sent you to the bottom left board, which zooms in"
+      case .ultimateTicTacToeFree:
+        "The board you were sent to is already won, so you may play in any open board"
+      case .ultimateTicTacToePartnerMove:
+        "Opens one move behind: Robin's move plays, then the board you are sent to zooms in"
+      case .ultimateTicTacToeWon:
+        "Your last move wins three boards in a row: the strike line, the petals and the result"
+      case .boardGameMarkEditor:
+        "The Your mark sheet over Connect Four. Saving takes about a second, then the mark shows on your discs"
       case .notificationPrimer:
         "Pre-permission notification explanation"
       case .settings:
@@ -588,7 +656,12 @@
         .exquisiteCorpseDrawLegs, .exquisiteCorpseWaiting, .exquisiteCorpseWatching, .exquisiteCorpseHandoff,
         .exquisiteCorpseWaitingToSync, .exquisiteCorpseReveal, .exquisiteCorpseRevealLoading,
         .exquisiteCorpseHistory, .exquisiteCorpseHistoryEmpty, .exquisiteCorpseHistoryStarred,
-        .exquisiteCorpseHistoryDetail:
+        .exquisiteCorpseHistoryDetail,
+        .gamesHubBoardGames, .connectFourYourTurn, .connectFourPartnerTurn, .connectFourPartnerMove,
+        .connectFourWon, .connectFourFirstMove, .connectFourMissedEnding, .connectFourOffline,
+        .dotsAndBoxesPhoto, .dotsAndBoxesExtraTurn, .dotsAndBoxesWonPhoto, .dotsAndBoxesPlain,
+        .ultimateTicTacToeForced, .ultimateTicTacToeFree, .ultimateTicTacToePartnerMove,
+        .ultimateTicTacToeWon, .boardGameMarkEditor:
         .games
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         .widget

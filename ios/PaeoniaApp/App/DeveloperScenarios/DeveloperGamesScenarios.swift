@@ -27,7 +27,7 @@
           game: Fixture.game(state: .choosingWord, turn: Fixture.me, roundID: nil),
           choices: Fixture.choices
         )
-      case .gamesHubWaiting, .drawWaitingForGuess:
+      case .gamesHubWaiting, .drawWaitingForGuess, .gamesHubBoardGames:
         return Fixture.state(
           settings: mine,
           game: Fixture.game(state: .guessing, turn: Fixture.partner),
@@ -169,7 +169,8 @@
       let drawState = state(for: scenario)
       let cache = InMemoryGamesCache(
         state: drawState,
-        overview: DeveloperMindMeldScenarioFactory.overview(for: scenario, drawAndGuess: drawState),
+        overview: DeveloperMindMeldScenarioFactory.overview(for: scenario, drawAndGuess: drawState)
+          ?? DeveloperBoardGamesFixture.overview(for: scenario, drawAndGuess: drawState),
         ownerUserID: DeveloperGamesFixture.me,
         hasSeenSettings: scenario != .gamesPartnerPicked
       )
@@ -195,7 +196,10 @@
         },
         mindMeldGateway: DeveloperMindMeldGateway(historyIsEmpty: scenario == .mindMeldHistoryEmpty),
         mindMeldCache: DeveloperMindMeldScenarioFactory.cache(for: scenario),
-        makeMindMeldLive: { coupleID in DeveloperMindMeldScenarioFactory.makeLive(for: scenario, coupleID: coupleID) }
+        makeMindMeldLive: { coupleID in DeveloperMindMeldScenarioFactory.makeLive(for: scenario, coupleID: coupleID) },
+        boardGamesGateway: DeveloperBoardGamesGateway(),
+        boardGamesCache: DeveloperBoardGamesFixture.cache(for: scenario),
+        memoryPhotos: DeveloperBoardPhotoProvider()
       )
       ExquisiteCorpseDeveloperScenarioFactory.configure(&dependencies, for: scenario)
       return dependencies

@@ -192,6 +192,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let gamesCache: any GamesCaching
     private let storyChainCache: any StoryChainCaching
     private let exquisiteCorpseCache: any ExquisiteCorpseCaching
+    private let boardGamesCache: any BoardGamesCaching
     private let gameDrawingStore: any GameDrawingStoring
     private let mindMeldCache: any MindMeldCaching
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
@@ -210,6 +211,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         gamesCache: any GamesCaching = FileGamesCache.shared,
         storyChainCache: any StoryChainCaching = FileStoryChainCache.shared,
         exquisiteCorpseCache: any ExquisiteCorpseCaching = FileExquisiteCorpseCache.shared,
+        boardGamesCache: any BoardGamesCaching = FileBoardGamesCache.shared,
         gameDrawingStore: any GameDrawingStoring = FileGameDrawingStore.shared,
         mindMeldCache: any MindMeldCaching = FileMindMeldCache.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
@@ -227,6 +229,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.gamesCache = gamesCache
         self.storyChainCache = storyChainCache
         self.exquisiteCorpseCache = exquisiteCorpseCache
+        self.boardGamesCache = boardGamesCache
         self.gameDrawingStore = gameDrawingStore
         self.mindMeldCache = mindMeldCache
         self.profilePhotoDiskCache = profilePhotoDiskCache
@@ -252,6 +255,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await storyChainCache.clearAll()
         await mindMeldCache.clearAll()
         await exquisiteCorpseCache.clearAll()
+        await boardGamesCache.clearAll()
+        BoardMarkRenderer.removeAll()
         gameDrawingStore.purge(for: scope)
         try? await profilePhotoDiskCache.removeAllProfilePhotoData()
         removeDirectoryIfPresent(DailyAnswerMediaImageService.defaultDirectoryURL())
