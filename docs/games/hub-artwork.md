@@ -57,6 +57,7 @@ A painting is the final frame of the game's moment, with one element left out. T
 | Dots and Boxes | The board with its sunset boxes | A gold glow swells behind the board |
 | Ultimate Tic-Tac-Toe | The boards with their hearts and rings | A gold line strikes through three hearts |
 | Exquisite Corpse | The folded strip with its creature | A pink glow swells behind the sweater's heart |
+| Ludo | The board with every pawn but the last | The last pink pawn hops home onto the dome, and the dome glows gold |
 
 - Leave the beat's spot clear and simple in the painting, and measure its position in the painting's pixels. The beat is laid out in those pixels (`GameHubArtwork`, `GameHubBeatPop`, `GameHubBeatGlow`), so it lands on the spot at every card width.
 - The beat plays once when the card appears, within about 2 seconds. With Reduce Motion it shows the last frame.
