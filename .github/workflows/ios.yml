@@ -20,18 +20,18 @@ on:
 
 jobs:
   ios:
-    runs-on: macos-26
+    # The app builds against the iOS 27 SDK, which only this preview image has.
+    runs-on: xcode-27
     timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # The project needs the newest Xcode on the runner. See "Toolchain Requirement"
-      # in docs/agent-guides/ios-verification.md.
-      - name: Select the newest Xcode
+      # The same Xcode as the developer's Mac. See "Toolchain Requirement" in
+      # docs/agent-guides/ios-verification.md.
+      - name: Select Xcode 27.0
         run: |
-          xcode="$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
-          sudo xcode-select -s "$xcode/Contents/Developer"
+          sudo xcode-select -s /Applications/Xcode_27.app/Contents/Developer
           xcodebuild -version
 
       - name: SwiftLint
