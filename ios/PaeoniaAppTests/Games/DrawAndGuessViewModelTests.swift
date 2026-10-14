@@ -190,13 +190,14 @@ struct DrawAndGuessViewModelTests {
         #expect(viewModel.solvedCount == 1)
         #expect(viewModel.reveal?.outcome == .iSolvedIt)
         #expect(viewModel.reveal?.isConfirmed == false)
-        #expect(viewModel.reveal?.speedBonus == nil)
         let guess = try JSONDecoder().decode(
             GameGuessPayload.self,
             from: try #require(await env.queued(.submitGameGuess).first?.requestData)
         )
         #expect(guess.guess == "umbrella")
         #expect(guess.isCorrect)
+        // Until the server answers, the reveal shows the bonus the phone claimed.
+        #expect(viewModel.reveal?.speedBonus == guess.speedBonus)
     }
 
     @Test func aWrongGuessShakesThenReturnsTheTilesAndIsStillSent() async throws {

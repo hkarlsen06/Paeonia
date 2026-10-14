@@ -214,8 +214,10 @@ struct DrawAndGuessHintTests {
         viewModel.showLetter()
         viewModel.showLetter()
 
-        for letter in "BRELLA" {
-            viewModel.placeTile(try tile(letter, in: viewModel))
+        // The hints showed two random letters. The rest of the answer fills the other slots.
+        let answer = Array(viewModel.slots.answer)
+        for index in answer.indices where answer[index] != " " && !viewModel.slots.hintedIndexes.contains(index) {
+            viewModel.placeTile(try tile(answer[index], in: viewModel))
         }
 
         var queued: [PendingSyncOperationSnapshot] = []
