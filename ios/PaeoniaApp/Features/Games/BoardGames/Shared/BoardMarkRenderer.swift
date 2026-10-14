@@ -15,6 +15,11 @@ nonisolated enum BoardMarkRenderer {
     static let pixelSide: CGFloat = 256
     /// The most raw drawing data the server keeps for a mark (`set_board_game_mark`).
     static let maximumByteCount = 48 * 1_024
+    /// The smallest square a mark is cropped to, so a tiny mark is enlarged at
+    /// most twice and its strokes stay thin.
+    static let minimumCropSide: CGFloat = canvasSide / 2
+    /// Room left around the strokes, as a share of the cropped square's side.
+    static let cropPadding: CGFloat = 0.06
 
     /// NSCache is thread safe, so sharing this one instance across actors is safe.
     nonisolated(unsafe) private static let cache: NSCache<NSString, UIImage> = {
@@ -44,9 +49,9 @@ nonisolated enum BoardMarkRenderer {
     }
 
     /// The drawing as a template image, or nil when `data` is not a drawing or has
-    /// no strokes. The image has no background and shows the whole canvas square,
-    /// so a view that scales it to its own square keeps the mark where it was
-    /// drawn. A `cacheKey` such as "<userID>:<updatedAt>" keeps the image in
+    /// no strokes. The image has no background and is a square cropped around the
+    /// strokes, so a mark drawn small or off to one side still fills its piece.
+    /// A `cacheKey` such as "<userID>:<updatedAt>" keeps the image in
     /// memory and returns it on the next call without drawing again.
     @concurrent
     static func image(from data: Data, cacheKey: String? = nil) async -> UIImage? {
@@ -57,15 +62,20 @@ nonisolated enum BoardMarkRenderer {
         var rendered: UIImage?
         // The canvas is always light, so literal ink colors render as drawn.
         UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-            rendered = drawing.image(
-                from: CGRect(x: 0, y: 0, width: canvasSide, height: canvasSide),
-                scale: pixelSide / canvasSide
-            )
+            let crop = cropRect(around: drawing.bounds)
+            rendered = drawing.image(from: crop, scale: pixelSide / crop.width)
         }
         guard let image = rendered?.withRenderingMode(.alwaysTemplate) else { return nil }
         if let cacheKey {
             cache.setObject(image, forKey: cacheKey as NSString, cost: Int(pixelSide * pixelSide) * 4)
         }
         return image
+    }
+
+    /// A square centered on `bounds`, with padding, no smaller than
+    /// `minimumCropSide`.
+    static func cropRect(around bounds: CGRect) -> CGRect {
+        let side = max(max(bounds.width, bounds.height) / (1 - 2 * cropPadding), minimumCropSide)
+        return CGRect(x: bounds.midX - side / 2, y: bounds.midY - side / 2, width: side, height: side)
     }
 }

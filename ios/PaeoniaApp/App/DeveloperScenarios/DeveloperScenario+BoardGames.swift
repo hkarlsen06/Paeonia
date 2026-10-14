@@ -32,7 +32,7 @@
     )
     static let connectFourFirstMove = boardGameScreen(
       "connect-four-first-move", "Connect Four · first move",
-      "A new game you start, with Play for something above the board"
+      "A new game you start, with Add a bet under the board"
     )
     static let connectFourMissedEnding = boardGameScreen(
       "connect-four-missed-ending", "Connect Four · missed ending",

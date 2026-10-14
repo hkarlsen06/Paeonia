@@ -38,12 +38,23 @@ struct PaeoniaWidgetTimelineProvider: TimelineProvider {
         let family = context.family
         Task {
             await Self.refreshWithinDeadline()
-            let entry = PaeoniaWidgetEntry(
-                date: .now,
-                content: PaeoniaWidgetStore.loadContent(for: family)
+            let content = PaeoniaWidgetStore.loadContent(for: family)
+            let now = Date.now
+            // A second entry at midnight turns today's "9:41" into a date
+            // without spending a reload from the budget.
+            let calendar = Calendar.current
+            let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now))
+                ?? now.addingTimeInterval(24 * 60 * 60)
+            let nextRefresh = now.addingTimeInterval(Self.fallbackPollInterval)
+            completion(
+                Timeline(
+                    entries: [
+                        PaeoniaWidgetEntry(date: now, content: content),
+                        PaeoniaWidgetEntry(date: tomorrow, content: content),
+                    ],
+                    policy: .after(nextRefresh)
+                )
             )
-            let nextRefresh = entry.date.addingTimeInterval(Self.fallbackPollInterval)
-            completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
         }
     }
 

@@ -25,17 +25,19 @@ enum BoardGameMetrics {
     }
 }
 
-/// The arrangement of a board game screen: the players, the stake, the board and
-/// the status row, with the bottom content pinned.
+/// The arrangement of a board game screen: the players, the board, the status row
+/// and the stake, with the bottom content pinned.
 ///
 /// The board gets up to `BoardGameMetrics.maxBoard` points of width, or a square
 /// of the wide layout's side, and fits itself inside that space, for example
 /// with `aspectRatio(_:contentMode: .fit)`.
 ///
 /// - A phone and a narrow window show one column that never scrolls. The board
-///   shrinks first when the screen is short. The keyboard covers the column
-///   instead of squeezing it, because the stake field is near the top.
-/// - At accessibility text sizes the column scrolls and the board keeps its size.
+///   shrinks first when the screen is short. The stake sits under the column,
+///   above the bottom content, and rises with the keyboard while the starter
+///   writes it. The keyboard covers the column instead of squeezing the board.
+/// - At accessibility text sizes the column scrolls, the board keeps its size and
+///   the stake comes after the status row.
 /// - A wide window puts the board on the left and everything else in a column on
 ///   the right, with the bottom content at the column's bottom.
 struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
@@ -105,14 +107,12 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         BoardGameScoreHeader(score: content.score, me: content.me, partner: content.partner)
     }
 
-    /// The rows above the board in the narrow layouts.
+    /// The rows above the board.
     private var header: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             scoreHeader
             playersRow
-            stakeRow
         }
-        .animation(PaeoniaMotion.stateChange, value: content.stake)
     }
 
     // MARK: Narrow
@@ -131,6 +131,16 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         .padding(.vertical, PaeoniaSpacing.space8)
         .paeoniaReadableWidth()
         .ignoresSafeArea(.keyboard, edges: .bottom)
+        // Outside the bottom bar, which hides while the keyboard is up.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            stakeRow
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.top, PaeoniaSpacing.space8)
+                .paeoniaReadableWidth()
+                // The board can be under it while the keyboard is up.
+                .background(.paeoniaBackgroundSecondary)
+                .animation(PaeoniaMotion.stateChange, value: content.stake)
+        }
         .paeoniaBottomBar { bottomBar }
     }
 
@@ -141,7 +151,9 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                 boardSlot
                     .aspectRatio(boardBleeds ? 1 : nil, contentMode: .fit)
                 statusRow
+                stakeRow
             }
+            .animation(PaeoniaMotion.stateChange, value: content.stake)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space8)
             .padding(.bottom, PaeoniaSpacing.space16)
@@ -191,12 +203,14 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                 ScrollView {
                     VStack(spacing: PaeoniaSpacing.space12) {
                         header
+                        stakeRow
                         statusRow
                         if scrollsBottom {
                             wideBottom
                         }
                     }
                     .padding(.vertical, PaeoniaSpacing.space8)
+                    .animation(PaeoniaMotion.stateChange, value: content.stake)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { wideRowsHeight = $0 }
                 }
                 .scrollBounceBehavior(.basedOnSize)

@@ -10,8 +10,8 @@ Keep this file current. When a decision lands or the design changes, update it i
 
 Decided on 2026-10-13.
 
-- **Your own mark.** Each partner draws a small mark once on the Paeonia canvas. It is printed on every Connect Four disc they drop, fills every box they close in Dots and Boxes, and replaces X and O in Ultimate Tic-Tac-Toe. Until a partner draws one, their initial is their mark, so the first game starts at once. Either partner can redraw their own mark at any time.
-- **Play for something.** The partner who starts a game can write a small stake, such as "Loser makes coffee". It sits above the board while they play, and the result says who claimed it.
+- **Your own mark.** Each partner draws a mark once on the Paeonia canvas. It is printed on every Connect Four disc they drop, fills every box they close in Dots and Boxes, and replaces X and O in Ultimate Tic-Tac-Toe. Until a partner draws one, their initial is their mark, so the first game starts at once. Either partner can redraw their own mark at any time.
+- **A bet.** The partner who starts a game can write a small bet, such as "Loser makes coffee". It sits under the board while they play, and the result says who claimed it.
 - **A hidden photo under Dots and Boxes.** The board sits over a random photo from the couple's Memories. Each closed box uncovers its piece of the photo, tinted in the color of the partner who closed it, and the last box shows the whole picture. A couple with no photos gets plain boxes.
 - **Play style changes only the score.** The board is always head to head. "Against each other" shows each partner's wins, which grow forever. "Together" hides the tally and shows how many games the couple has finished together, and the result says who won this one without keeping score.
 - **Dots and Boxes is 4 by 4 boxes.** That is 5 by 5 dots and 40 lines.
@@ -83,6 +83,7 @@ Player one started the game and always moves first. Each game has a pure rules f
 ### Your mark
 
 - A mark is a small drawing made with the PencilKit pen in one ink. It is stored per partner in the couple, not per game, so one mark shows in every board game.
+- The phone crops the mark to a square around its strokes, so a mark drawn small or off center still fills its piece. The crop is at least half the canvas, so a tiny mark grows at most 2x.
 - The board tints the mark in its owner's color. On this phone, my pieces use `.paeoniaPartnerOne` and my partner's use `.paeoniaInkLavender` (`Color.boardGameMine` and `Color.boardGamePartner`).
 - Without a drawn mark, a partner's mark is the first letter of their display name.
 - The first time a partner opens any game, the first-time sheet ends on the mark editor for someone with no mark, after setup or the partner's choices. Cancel skips it, and the game opens either way.
@@ -90,12 +91,12 @@ Player one started the game and always moves first. Each game has a pure rules f
 - Saving needs a connection. A failed save keeps the drawing in the editor and shows "We couldn't save your mark. Check your connection and try again."
 - The partner's new mark shows on their pieces the next time the board renders. Nobody gets a push for it.
 
-### Play for something
+### A bet
 
 - Only the partner who starts the game can write the stake, and only before their first move. It goes to the server with that first move, so it is fixed from then on, and the other partner sees both together.
-- Before the first move the starter sees a quiet "Play for something" button above the board. Tapping it opens a one-line text field with the keyboard's Done button. The text can be changed until the first move.
+- Before the first move the starter sees a quiet "Add a bet" button ("Legg til et veddemål") under the board, above the pinned bottom. Tapping it opens a one-line text field that rises with the keyboard, with the keyboard's Done button. The text can be changed until the first move. The code calls the bet a stake.
 - A stake holds 1 to 60 characters on one line. It is optional.
-- While playing, the stake shows above the board in a capsule: "Playing for: Loser makes coffee".
+- While playing, the stake shows under the board in a capsule: "Bet: Loser makes coffee".
 - The result names who claimed it (see "Result"). A draw says nobody claimed it.
 - Push notifications and the lock screen never show the stake.
 
@@ -162,8 +163,8 @@ Copy keys start with `boardGames.` for the shared shell and `connectFour.`, `dot
 
 - One screen per game, built on `BoardGameScreen` in `Features/Games/BoardGames/Shared/`. It opens from the hub card, the turn and invite pushes and the deep link.
 - Look. The Draw & Guess shell: `.paeoniaBackgroundSecondary`, dark color scheme, inline title with the game's name, no tab bar on iPhone.
-- **Players row.** My avatar on the leading side and my partner's on the trailing side, 44 pt, each with a ring in its piece color and its mark in a small badge. A capsule between them slides toward whoever's turn it is ("Your turn" or "[Name]'s turn") with `PaeoniaMotion.stateChange`. On a finished game it reads "You won", "[Name] won" or "Draw".
-- **Stake row.** The stake capsule, or the "Play for something" button for the starter before the first move. Hidden otherwise, without leaving a gap.
+- **Players row.** My avatar on the leading side and my partner's on the trailing side, 44 pt, each with a ring in its piece color and its mark in a small badge. Whoever's turn it is gets a glowing ring and a bold name in their piece color. On a finished game the winner's ring stays lit, and a draw lights neither. VoiceOver reads "Your turn", "[Name]'s turn", "You won" or "[Name] won" on the lit avatar.
+- **Stake row.** Under the status row, above the pinned bottom. The stake capsule, or the "Add a bet" button for the starter before the first move. Hidden otherwise, without leaving a gap. In the wide layout it sits under the players row.
 - **Board.** Square for Dots and Boxes and Ultimate Tic-Tac-Toe, 7 by 6 for Connect Four. It takes the width up to 560 pt and never scrolls on a phone in portrait.
 - **Status row.** Under the board. "[Name] is here" with a green dot while the partner has the game open, "[Name] will see it later" otherwise. On a Dots and Boxes extra turn, "Another turn" pops in for 1.5 seconds. A game can show its own hint there instead, as Ludo does ("Roll again").
 - **Pinned bottom.** The invite button while it is not my turn and the partner is away. The offline line while a move waits to send.
@@ -214,7 +215,7 @@ The moment the last move lands.
 
 ### Mark editor
 
-- A sheet with the title "Your mark" and the line "Draw something small. It shows on every piece you play."
+- A sheet with the title "Your mark" and the line "Draw your mark. It shows on your pieces in every board game."
 - A square canvas with the PencilKit pen in one color and one width, plus Undo and Clear. Under it, a live preview of the mark on a Connect Four disc, a Dots and Boxes box and an Ultimate Tic-Tac-Toe cell, in my color.
 - Save is the primary action. "Use my initial" removes the drawn mark.
 

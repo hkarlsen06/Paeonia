@@ -2475,24 +2475,6 @@
         }
       }
     },
-    "boardGames.hub.status.notStarted" : {
-      "comment" : "Status line on a board game's card on the Games tab before the couple has played it.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Play your first game together."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spill deres første spill sammen."
-          }
-        }
-      }
-    },
     "boardGames.hub.status.partnerTurn" : {
       "comment" : "Status line on a board game's card when it is the partner's move. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -2590,13 +2572,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Draw something small. It shows on your pieces in every board game."
+            "value" : "Draw your mark. It shows on your pieces in every board game."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegn noe lite. Det vises på brikkene dine i alle brettspill."
+            "value" : "Tegn merket ditt. Det vises på brikkene dine i alle brettspill."
           }
         }
       }
@@ -2759,24 +2741,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du"
-          }
-        }
-      }
-    },
-    "boardGames.player.yourTurn.a11y" : {
-      "comment" : "VoiceOver label of this person's avatar when it is their turn.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You, your turn"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du, din tur"
           }
         }
       }
@@ -3154,19 +3118,19 @@
       }
     },
     "boardGames.stake.button" : {
-      "comment" : "Button above the board that lets the player who starts write what the game is played for. Also the text field's VoiceOver label.",
+      "comment" : "Button under the board that lets the player who starts write a small bet, such as who makes coffee. Also the text field's VoiceOver label.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Play for something"
+            "value" : "Add a bet"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spill om noe"
+            "value" : "Legg til et veddemål"
           }
         }
       }
@@ -3208,19 +3172,19 @@
       }
     },
     "boardGames.stake.edit.hint" : {
-      "comment" : "VoiceOver hint on the stake capsule while it can still be edited.",
+      "comment" : "VoiceOver hint on the bet capsule while it can still be edited.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Change what you play for"
+            "value" : "Change the bet"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Endre hva dere spiller om"
+            "value" : "Endre veddemålet"
           }
         }
       }
@@ -3262,19 +3226,19 @@
       }
     },
     "boardGames.stake.playingFor" : {
-      "comment" : "Capsule above the board. %@ is the stake the starter wrote, such as \"Loser makes coffee\".",
+      "comment" : "Capsule under the board. %@ is the bet the starter wrote, such as \"Loser makes coffee\".",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Playing for: %@"
+            "value" : "Bet: %@"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi spiller om: %@"
+            "value" : "Veddemål: %@"
           }
         }
       }
@@ -3333,26 +3297,8 @@
         }
       }
     },
-    "boardGames.turn.draw" : {
-      "comment" : "Capsule between the avatars when the game ended without a winner.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Draw"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uavgjort"
-          }
-        }
-      }
-    },
     "boardGames.turn.partner" : {
-      "comment" : "Capsule between the avatars when it is the partner's turn. %@ is the partner's name.",
+      "comment" : "VoiceOver value on the partner's avatar when it is their turn. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -3370,7 +3316,7 @@
       }
     },
     "boardGames.turn.partnerWon" : {
-      "comment" : "Capsule between the avatars after the partner won. %@ is the partner's name.",
+      "comment" : "VoiceOver value on the partner's avatar after they won. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -3388,7 +3334,7 @@
       }
     },
     "boardGames.turn.yours" : {
-      "comment" : "Capsule between the two avatars on a board game screen when it is this person's turn.",
+      "comment" : "VoiceOver value on this person's avatar on a board game screen when it is their turn.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -3406,7 +3352,7 @@
       }
     },
     "boardGames.turn.youWon" : {
-      "comment" : "Capsule between the avatars after this person won the game.",
+      "comment" : "VoiceOver value on this person's avatar after they won the game.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -3731,6 +3677,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "partnerens ligger øverst"
+          }
+        }
+      }
+    },
+    "connectFour.hub.subtitle" : {
+      "comment" : "Connect Four card on the Games tab before the couple has played it: what the game is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop discs and get four in a row first."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slipp brikker og få fire på rad først."
           }
         }
       }
@@ -7061,6 +7025,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rute rad %1$lld, kolonne %2$lld, tegnet %3$@"
+          }
+        }
+      }
+    },
+    "dotsAndBoxes.hub.subtitle" : {
+      "comment" : "Dots and Boxes card on the Games tab before the couple has played it: what the game is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take turns drawing lines. Close the most boxes to win."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn streker på tur. Den som lukker flest ruter, vinner."
           }
         }
       }
@@ -14477,6 +14459,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trykk på terningen for å kaste"
+          }
+        }
+      }
+    },
+    "ludo.hub.subtitle" : {
+      "comment" : "Ludo card on the Games tab before the couple has played it: what the game is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roll the die and race all your pieces home."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kast terningen og få alle brikkene dine hjem først."
           }
         }
       }
@@ -24626,6 +24626,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rad %1$lld, kolonne %2$lld, din"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.hub.subtitle" : {
+      "comment" : "Ultimate Tic-Tac-Toe card on the Games tab before the couple has played it: what the game is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tic-tac-toe inside tic-tac-toe. Win three boards in a row."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bondesjakk inni bondesjakk. Vinn tre brett på rad."
           }
         }
       }

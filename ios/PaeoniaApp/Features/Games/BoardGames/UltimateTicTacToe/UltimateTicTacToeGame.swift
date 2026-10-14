@@ -6,6 +6,7 @@ enum UltimateTicTacToeGame {
         BoardGameHubModel(
             kind: .ultimateTicTacToe,
             name: .ultimateTicTacToeName,
+            subtitle: .ultimateTicTacToeHubSubtitle,
             timing: UltimateTicTacToeBoardView.moveTiming,
             dependencies: dependencies,
             artwork: { AnyView(UltimateTicTacToeHubArtwork()) },

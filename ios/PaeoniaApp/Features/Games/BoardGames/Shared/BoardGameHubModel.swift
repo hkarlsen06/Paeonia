@@ -11,12 +11,14 @@ final class BoardGameHubModel<Board: BoardGameRules>: GameHubModel {
     let game: BoardGameViewModel<Board>
 
     @ObservationIgnored private let name: LocalizedStringResource
+    @ObservationIgnored private let subtitle: LocalizedStringResource
     @ObservationIgnored private let artwork: () -> AnyView
     @ObservationIgnored private let makeScreen: (BoardGameViewModel<Board>) -> AnyView
 
     init(
         kind: GameKind,
         name: LocalizedStringResource,
+        subtitle: LocalizedStringResource,
         timing: BoardGameMoveTiming,
         dependencies: GamesDependencies,
         artwork: @escaping () -> AnyView,
@@ -24,6 +26,7 @@ final class BoardGameHubModel<Board: BoardGameRules>: GameHubModel {
     ) {
         self.kind = kind
         self.name = name
+        self.subtitle = subtitle
         self.artwork = artwork
         makeScreen = screen
         game = BoardGameViewModel(kind: kind, timing: timing, dependencies: dependencies)
@@ -59,6 +62,7 @@ final class BoardGameHubModel<Board: BoardGameRules>: GameHubModel {
         return AnyView(BoardGameHubCard(
             kind: kind,
             name: name,
+            subtitle: subtitle,
             summary: summary,
             context: context,
             me: game.meInfo,
@@ -78,6 +82,8 @@ final class BoardGameHubModel<Board: BoardGameRules>: GameHubModel {
 struct BoardGameHubCard: View {
     let kind: GameKind
     let name: LocalizedStringResource
+    /// What the game is, shown until the couple first plays it.
+    let subtitle: LocalizedStringResource
     let summary: BoardGameHubSummary
     let context: GameHubCardContext
     let me: BoardGamePlayerInfo
@@ -106,7 +112,7 @@ struct BoardGameHubCard: View {
 
     private var status: LocalizedStringResource {
         switch summary.status {
-        case .notStarted: .boardGamesHubStatusNotStarted
+        case .notStarted: subtitle
         case .yourTurn: .boardGamesHubStatusYourTurn
         case .partnerTurn: .boardGamesHubStatusPartnerTurn(context.partnerName)
         case .youWon: .boardGamesHubStatusYouWon

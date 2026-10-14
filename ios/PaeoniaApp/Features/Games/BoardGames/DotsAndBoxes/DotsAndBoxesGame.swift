@@ -9,6 +9,7 @@ enum DotsAndBoxesGame {
         BoardGameHubModel(
             kind: .dotsAndBoxes,
             name: .dotsAndBoxesName,
+            subtitle: .dotsAndBoxesHubSubtitle,
             timing: timing,
             dependencies: dependencies,
             artwork: { AnyView(DotsAndBoxesHubArtwork()) },

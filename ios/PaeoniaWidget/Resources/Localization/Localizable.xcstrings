@@ -8,13 +8,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A private widget for the two of you."
+            "value" : "See the latest drawing you two sent each other."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "En privat widget for dere to."
+            "value" : "Se den siste tegningen dere har sendt hverandre."
           }
         }
       }

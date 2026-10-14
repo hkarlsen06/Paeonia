@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Both players, and a capsule between them that slides toward whoever's turn it
-/// is. My avatar is on the leading side, my partner's on the trailing side. At
-/// accessibility text sizes the row stacks.
+/// Both players. My avatar is on the leading side, my partner's on the trailing
+/// side. Whoever's turn it is, or whoever won, gets a lit ring and a bold name in
+/// their piece color. At accessibility text sizes the row stacks.
 struct BoardGamePlayersRow: View {
     let me: BoardGamePlayerInfo
     let partner: BoardGamePlayerInfo
@@ -31,9 +31,7 @@ struct BoardGamePlayersRow: View {
     private var sideBySide: some View {
         HStack(alignment: .top, spacing: PaeoniaSpacing.space8) {
             column(for: me, isMe: true)
-            BoardGameTurnCapsule(turn: turn, partnerName: partnerName)
-                .padding(.horizontal, PaeoniaSpacing.space8)
-                .frame(maxWidth: .infinity, minHeight: Self.avatarSize, alignment: turn.capsuleAlignment)
+            Spacer(minLength: 0)
             column(for: partner, isMe: false)
         }
         .frame(maxWidth: .infinity)
@@ -42,7 +40,6 @@ struct BoardGamePlayersRow: View {
     private var stacked: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             row(for: me, isMe: true)
-            BoardGameTurnCapsule(turn: turn, partnerName: partnerName)
             row(for: partner, isMe: false)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -52,14 +49,13 @@ struct BoardGamePlayersRow: View {
     private func column(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
         VStack(spacing: PaeoniaSpacing.space4) {
             BoardGamePlayerAvatar(player: player, ring: ringState(isMe: isMe), size: Self.avatarSize)
-            name(isMe: isMe)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(isActive(isMe: isMe) ? .paeoniaTextPrimary : .paeoniaTextSecondary)
+            styledName(for: player, isMe: isMe)
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spokenName(isMe: isMe))
+        .accessibilityLabel(name(isMe: isMe))
+        .accessibilityValue(spokenTurn(isMe: isMe))
         .frame(width: Self.columnWidth)
     }
 
@@ -67,12 +63,11 @@ struct BoardGamePlayersRow: View {
     private func row(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
         HStack(spacing: PaeoniaSpacing.space12) {
             BoardGamePlayerAvatar(player: player, ring: ringState(isMe: isMe), size: Self.avatarSize)
-            name(isMe: isMe)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(isActive(isMe: isMe) ? .paeoniaTextPrimary : .paeoniaTextSecondary)
+            styledName(for: player, isMe: isMe)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spokenName(isMe: isMe))
+        .accessibilityLabel(name(isMe: isMe))
+        .accessibilityValue(spokenTurn(isMe: isMe))
     }
 
     // MARK: Pieces
@@ -89,40 +84,21 @@ struct BoardGamePlayersRow: View {
         isMe ? Text(.boardGamesPlayerYou) : Text(verbatim: partnerName)
     }
 
-    /// "You, your turn" while it is my turn, otherwise just the name.
-    private func spokenName(isMe: Bool) -> Text {
-        isMe && turn == .yourTurn ? Text(.boardGamesPlayerYourTurnA11Y) : name(isMe: isMe)
-    }
-}
-
-/// "Your turn", "[Name]'s turn", "You won", "[Name] won" or "Draw".
-private struct BoardGameTurnCapsule: View {
-    let turn: BoardGameTurnLabel
-    let partnerName: String
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    var body: some View {
-        Text(turn.text(partnerName: partnerName))
-            .font(PaeoniaTypography.caption.weight(.semibold))
-            .foregroundStyle(textColor)
-            // The stacked layout has the full width, so the turn never ends in "…" there.
-            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
-            .minimumScaleFactor(0.8)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, PaeoniaSpacing.space12)
-            .padding(.vertical, PaeoniaSpacing.space8)
-            .background(fillColor, in: Capsule(style: .continuous))
-            .contentTransition(.opacity)
-            .accessibilityIdentifier("boardGames.turn")
+    /// The name, bold and in the piece color while it is this player's turn or they won.
+    private func styledName(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
+        let active = isActive(isMe: isMe)
+        return name(isMe: isMe)
+            .font(PaeoniaTypography.caption.weight(active ? .bold : .regular))
+            .foregroundStyle(active ? player.style.color : .paeoniaTextSecondary)
     }
 
-    private var fillColor: Color {
-        turn == .yourTurn ? .paeoniaAccentPrimary : .paeoniaSurfaceSecondary
-    }
-
-    private var textColor: Color {
-        turn == .yourTurn ? .paeoniaTextInverse : .paeoniaTextPrimary
+    /// "Your turn", "[Name]'s turn", "You won" or "[Name] won" for the active
+    /// player, so VoiceOver hears what the lit ring shows. Nothing for the other.
+    private func spokenTurn(isMe: Bool) -> Text {
+        guard isActive(isMe: isMe), let spoken = turn.spoken(partnerName: partnerName) else {
+            return Text(verbatim: "")
+        }
+        return Text(spoken)
     }
 }
 

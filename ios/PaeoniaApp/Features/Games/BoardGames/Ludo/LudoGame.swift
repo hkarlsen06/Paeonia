@@ -11,6 +11,7 @@ enum LudoGame {
         BoardGameHubModel(
             kind: .ludo,
             name: .ludoName,
+            subtitle: .ludoHubSubtitle,
             timing: timing,
             dependencies: dependencies,
             artwork: { AnyView(LudoHubArtwork()) },

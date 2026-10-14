@@ -9,6 +9,7 @@ enum ConnectFourGame {
         BoardGameHubModel(
             kind: .connectFour,
             name: .connectFourName,
+            subtitle: .connectFourHubSubtitle,
             timing: timing,
             dependencies: dependencies,
             artwork: { AnyView(ConnectFourHubArtwork()) },

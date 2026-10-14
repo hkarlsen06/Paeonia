@@ -48,15 +48,7 @@ struct BoardGameShellTests {
         #expect(BoardGameStake.committed("") == nil)
     }
 
-    // MARK: Turn capsule and rings
-
-    @Test func capsuleSlidesTowardWhoseTurnItIs() {
-        #expect(BoardGameTurnLabel.yourTurn.capsuleAlignment == .leading)
-        #expect(BoardGameTurnLabel.partnerTurn.capsuleAlignment == .trailing)
-        for label in [BoardGameTurnLabel.youWon, .partnerWon, .draw] {
-            #expect(label.capsuleAlignment == .center)
-        }
-    }
+    // MARK: Rings
 
     @Test func onlyTheActivePlayerGlows() {
         #expect(BoardGameTurnLabel.yourTurn.ringState(forMe: true) == .breathing)
@@ -72,6 +64,9 @@ struct BoardGameShellTests {
         #expect(BoardGameTurnLabel.partnerWon.ringState(forMe: true) == .resting)
         #expect(BoardGameTurnLabel.draw.ringState(forMe: true) == .resting)
         #expect(BoardGameTurnLabel.draw.ringState(forMe: false) == .resting)
+        // VoiceOver reads the turn on the lit avatar, so a draw has nothing to read.
+        #expect(BoardGameTurnLabel.draw.spoken(partnerName: "Robin") == nil)
+        #expect(BoardGameTurnLabel.yourTurn.spoken(partnerName: "Robin") != nil)
     }
 
     @Test func ringPulseStartsDimPeaksHalfwayAndRepeats() {

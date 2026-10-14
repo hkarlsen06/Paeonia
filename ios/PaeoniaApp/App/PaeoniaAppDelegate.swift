@@ -61,8 +61,9 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         _ application: UIApplication,
         didReceiveRemoteNotification userInfo: [AnyHashable: Any]
     ) async -> UIBackgroundFetchResult {
+        // The canvas service reloads the widget when it writes new files. An
+        // extra reload here would spend the widget's daily budget on every push.
         await widgetSync.sync(identity: identityStore.load())
-        await WidgetCenterReloader().reloadWidget()
         return .newData
     }
 

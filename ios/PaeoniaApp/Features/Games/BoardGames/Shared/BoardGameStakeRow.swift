@@ -32,10 +32,10 @@ nonisolated enum BoardGameStake {
     }
 }
 
-/// The line above the board for what the couple plays for. The starter sees a
-/// quiet button before the first move, then a one-line field, then the stake in
-/// a capsule with a pencil to change it. After the first move everyone sees the
-/// stake in a capsule. It takes no space when `state` is `.hidden`.
+/// The line under the board for the couple's bet. The starter sees a quiet
+/// button before the first move, then a one-line field, then the bet in a
+/// capsule with a pencil to change it. After the first move everyone sees the
+/// bet in a capsule. It takes no space when `state` is `.hidden`.
 struct BoardGameStakeRow: View {
     let state: BoardGameStakeState
     /// The text the starter writes. It goes to the server with the first move.
@@ -167,7 +167,7 @@ struct BoardGameStakeRow: View {
             .accessibilityHidden(true)
     }
 
-    /// "Playing for: <text>" on one line. A long stake shortens in the middle.
+    /// "Bet: <text>" on one line. A long stake shortens in the middle.
     /// VoiceOver reads all of it.
     private func capsule(_ text: String, showsPencil: Bool) -> some View {
         HStack(spacing: PaeoniaSpacing.space8) {

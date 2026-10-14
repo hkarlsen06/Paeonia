@@ -10,49 +10,22 @@ struct PaeoniaWidgetEntryView: View {
     @Environment(\.redactionReasons) private var redactionReasons
 
     var body: some View {
-        overlayContent
-            .widgetURL(PaeoniaWidgetURL.drawing)
-            .accessibilityElement(children: .contain)
-    }
-
-    private var overlayContent: some View {
-        VStack(alignment: .leading, spacing: PaeoniaWidgetSpacing.space6) {
-            header
-
+        // System content margins (16 pt on iPhone, tighter on StandBy and the
+        // Mac) frame the drawing like the widgets around it. The app name shows
+        // under the widget, so there is no logo row and the drawing gets the room.
+        VStack(alignment: .leading, spacing: PaeoniaWidgetSpacing.space8) {
             middleContent
 
             footer
         }
-        .padding(contentPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var header: some View {
-        HStack(alignment: .center, spacing: PaeoniaWidgetSpacing.space8) {
-            HStack(alignment: .center, spacing: PaeoniaWidgetSpacing.space6) {
-                Image(.paeoniaMark)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: markWidth, height: markHeight)
-                    .accessibilityHidden(true)
-
-                Text(.widgetTitle)
-                    .font(PaeoniaWidgetTypography.wordmark(family: family))
-                    .foregroundStyle(.paeoniaWidgetTextPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
-            }
-            .layoutPriority(1)
-
-            Spacer(minLength: PaeoniaWidgetSpacing.space8)
-
-            refreshButton
-        }
+        .widgetURL(PaeoniaWidgetURL.drawing)
+        .accessibilityElement(children: .contain)
     }
 
     /// The square PencilKit raster sits centered on the plum widget background,
-    /// with the header above and metadata below it, so artwork never reads as a
-    /// full-bleed background and metadata never floats over a stroke.
+    /// with the metadata below it, so artwork never reads as a full-bleed
+    /// background and metadata never floats over a stroke.
     @ViewBuilder
     private var middleContent: some View {
         PaeoniaWidgetDrawingArea {
@@ -70,6 +43,8 @@ struct PaeoniaWidgetEntryView: View {
                 redactedContent
             }
         }
+        // Dims while a refresh tap is running, so the tap visibly does something.
+        .invalidatableContent()
     }
 
     private func drawingImageView(_ content: PaeoniaWidgetDrawingContent) -> some View {
@@ -106,31 +81,37 @@ struct PaeoniaWidgetEntryView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    @ViewBuilder
+    /// The title and the time or action stack on the left, so neither has to
+    /// shrink to share one line in the small widget.
     private var footer: some View {
-        HStack(alignment: .firstTextBaseline, spacing: PaeoniaWidgetSpacing.space8) {
-            footerLeadingContent
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .layoutPriority(1)
+        HStack(alignment: .center, spacing: PaeoniaWidgetSpacing.space8) {
+            VStack(alignment: .leading, spacing: 2) {
+                footerLeadingContent
 
-            footerTrailingLabel
-                .font(PaeoniaWidgetTypography.metadata(family: family))
-                .foregroundStyle(footerTrailingColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.68)
+                footerDetailLabel
+                    .font(PaeoniaWidgetTypography.metadata(family: family))
+                    .foregroundStyle(footerDetailColor)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            refreshButton
         }
     }
 
     @ViewBuilder
-    private var footerTrailingLabel: some View {
+    private var footerDetailLabel: some View {
         if let savedAt = drawingContent?.savedAt {
-            Text(Self.timestampText(savedAt))
-        } else {
+            Text(timestampText(savedAt))
+                .invalidatableContent()
+        } else if family != .systemSmall {
+            // The whole widget opens the app, so the small one skips the hint
+            // and gives the title its two lines.
             Text(footerAction)
         }
     }
 
-    private var footerTrailingColor: Color {
+    private var footerDetailColor: Color {
         drawingContent?.savedAt == nil
             ? .paeoniaWidgetAccentPrimary
             : .paeoniaWidgetTextSecondary
@@ -140,8 +121,8 @@ struct PaeoniaWidgetEntryView: View {
         footerLeadingLabel
             .font(PaeoniaWidgetTypography.title(family: family))
             .foregroundStyle(.paeoniaWidgetTextPrimary)
+            // No shrinking: widget text stays at 11 pt or larger.
             .lineLimit(family == .systemSmall ? 2 : 1)
-            .minimumScaleFactor(0.7)
     }
 
     @ViewBuilder
@@ -196,23 +177,13 @@ struct PaeoniaWidgetEntryView: View {
         family == .systemSmall ? 36 : 40
     }
 
-    private static func timestampText(_ date: Date) -> String {
-        if Calendar.current.isDateInToday(date) {
+    /// Compares against the entry date, not the clock: WidgetKit renders every
+    /// entry when the timeline is built, so "today" must mean the entry's day.
+    private func timestampText(_ date: Date) -> String {
+        if Calendar.current.isDate(date, inSameDayAs: entry.date) {
             return date.formatted(date: .omitted, time: .shortened)
         }
         return date.formatted(date: .abbreviated, time: .omitted)
-    }
-
-    private var contentPadding: CGFloat {
-        family == .systemSmall ? PaeoniaWidgetSpacing.space10 : PaeoniaWidgetSpacing.space12
-    }
-
-    private var markWidth: CGFloat {
-        family == .systemSmall ? 24 : 28
-    }
-
-    private var markHeight: CGFloat {
-        family == .systemSmall ? 13 : 15
     }
 
     private var redactedIconSize: CGFloat {

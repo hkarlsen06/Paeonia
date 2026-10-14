@@ -10,7 +10,7 @@ struct BoardGamePlayerInfo: Equatable {
     let style: BoardPieceStyle
 }
 
-/// What the capsule in the players row says.
+/// Whose turn it is, or how the game ended, for the players row.
 nonisolated enum BoardGameTurnLabel: Equatable, Hashable, Sendable {
     case yourTurn
     case partnerTurn
@@ -83,15 +83,6 @@ nonisolated enum BoardGameRingState: Equatable, Sendable {
 }
 
 extension BoardGameTurnLabel {
-    /// Where the capsule sits between the avatars: next to whoever's turn it is, in the middle once the game is over.
-    var capsuleAlignment: Alignment {
-        switch self {
-        case .yourTurn: .leading
-        case .partnerTurn: .trailing
-        case .youWon, .partnerWon, .draw: .center
-        }
-    }
-
     func ringState(forMe isMe: Bool) -> BoardGameRingState {
         switch self {
         case .yourTurn: isMe ? .breathing : .resting
@@ -102,13 +93,14 @@ extension BoardGameTurnLabel {
         }
     }
 
-    func text(partnerName: String) -> LocalizedStringResource {
+    /// What VoiceOver reads on the lit avatar. A draw lights none.
+    func spoken(partnerName: String) -> LocalizedStringResource? {
         switch self {
         case .yourTurn: .boardGamesTurnYours
         case .partnerTurn: .boardGamesTurnPartner(partnerName)
         case .youWon: .boardGamesTurnYouWon
         case .partnerWon: .boardGamesTurnPartnerWon(partnerName)
-        case .draw: .boardGamesTurnDraw
+        case .draw: nil
         }
     }
 }
