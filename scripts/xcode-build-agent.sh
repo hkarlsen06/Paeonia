@@ -190,4 +190,11 @@ else:
             print(e)
 PY
 
+# CI sets this so a compiler warning fails the build. Local builds keep warnings.
+if [ "${XCODE_BUILD_AGENT_FAIL_ON_WARNINGS:-0}" = "1" ] && [ "$EXIT_CODE" -eq 0 ] &&
+  python3 -c 'import json, sys; sys.exit(0 if json.load(open(sys.argv[1]))["warnings"] else 1)' "$PARSED_FILE"; then
+  echo "[xcode-build-agent] failing: the build has warnings" >&2
+  EXIT_CODE=1
+fi
+
 exit "$EXIT_CODE"

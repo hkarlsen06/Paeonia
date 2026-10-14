@@ -112,7 +112,7 @@
       )
     }
 
-    static let choices = [
+    nonisolated static let choices = [
       RemoteDrawAndGuessChoice(difficulty: .easy, wordID: "en-easy-pizza", word: "pizza", points: 1),
       RemoteDrawAndGuessChoice(difficulty: .medium, wordID: "en-medium-umbrella", word: "umbrella", points: 2),
       RemoteDrawAndGuessChoice(difficulty: .hard, wordID: "en-hard-volcano", word: "volcano", points: 3),

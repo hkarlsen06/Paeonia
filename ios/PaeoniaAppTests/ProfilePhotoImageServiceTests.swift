@@ -58,7 +58,7 @@ struct ProfilePhotoImageServiceTests {
         let mediaAssetID = UUID()
         let cache = FakeProfilePhotoCache(seed: [mediaAssetID: TestImage.png])
         let urlProvider = FakeProfilePhotoURLProvider(
-            signedURL: try #require(URL(string: "https://example.com/profile.jpg"))
+            signedURL: URL(string: "https://example.com/profile.jpg") ?? URL(fileURLWithPath: "/")
         )
         let service = ProfilePhotoImageService(cache: cache, urlProvider: urlProvider)
 
@@ -75,7 +75,7 @@ struct ProfilePhotoImageServiceTests {
         let cache = FakeProfilePhotoCache()
         let downloader = SuspendingProfilePhotoDownloader(data: TestImage.png)
         let urlProvider = FakeProfilePhotoURLProvider(
-            signedURL: try #require(URL(string: "https://example.com/profile.jpg"))
+            signedURL: URL(string: "https://example.com/profile.jpg") ?? URL(fileURLWithPath: "/")
         )
         let service = ProfilePhotoImageService(
             cache: cache,
@@ -165,7 +165,7 @@ struct ProfilePhotoImageServiceTests {
         ProfilePhotoImageService(
             cache: cache,
             urlProvider: FakeProfilePhotoURLProvider(
-                signedURL: try #require(URL(string: "https://example.com/profile.jpg"))
+                signedURL: URL(string: "https://example.com/profile.jpg") ?? URL(fileURLWithPath: "/")
             ),
             downloader: downloader
         )

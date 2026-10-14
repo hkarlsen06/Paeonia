@@ -40,7 +40,7 @@ jobs:
           swiftlint lint --quiet
 
       - name: Build the app and the test targets
-        run: XCODE_BUILD_AGENT_ACTION=build-for-testing ./scripts/xcode-build-agent.sh
+        run: XCODE_BUILD_AGENT_ACTION=build-for-testing XCODE_BUILD_AGENT_FAIL_ON_WARNINGS=1 ./scripts/xcode-build-agent.sh
 
       - name: Unit tests
         run: ./scripts/xcode-test-agent.sh -- -only-testing:PaeoniaAppTests

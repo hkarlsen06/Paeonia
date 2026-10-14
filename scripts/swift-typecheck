@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Type-checks small Swift files with the app target's language settings, in
+# seconds and without a build. Use it to reproduce a compiler warning or error
+# in a scratch file and try fixes. The files must stand alone: they can import
+# SDK frameworks but not the app's own code.
+set -euo pipefail
+
+if [ $# -eq 0 ]; then
+  echo "usage: $0 <file.swift>..." >&2
+  exit 2
+fi
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+PBXPROJ="$ROOT_DIR/ios/Paeonia.xcodeproj/project.pbxproj"
+
+# The flags below copy these app target settings. Fail loudly when the
+# project changes them, so the script never checks with the wrong rules.
+for setting in \
+  "SWIFT_VERSION = 5.0;" \
+  "SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;" \
+  "SWIFT_APPROACHABLE_CONCURRENCY = YES;" \
+  "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;" \
+  "IPHONEOS_DEPLOYMENT_TARGET = 26.5;"; do
+  if ! grep -qF "$setting" "$PBXPROJ"; then
+    echo "swift-typecheck: the project no longer has '$setting'. Update this script to match." >&2
+    exit 2
+  fi
+done
+if grep -q "SWIFT_STRICT_CONCURRENCY\|OTHER_SWIFT_FLAGS" "$PBXPROJ"; then
+  echo "swift-typecheck: the project sets SWIFT_STRICT_CONCURRENCY or OTHER_SWIFT_FLAGS. Update this script to match." >&2
+  exit 2
+fi
+
+# SWIFT_APPROACHABLE_CONCURRENCY turns on these upcoming features.
+exec xcrun swiftc -typecheck \
+  -swift-version 5 \
+  -default-isolation MainActor \
+  -enable-upcoming-feature DisableOutwardActorInference \
+  -enable-upcoming-feature GlobalActorIsolatedTypesUsability \
+  -enable-upcoming-feature InferIsolatedConformances \
+  -enable-upcoming-feature InferSendableFromCaptures \
+  -enable-upcoming-feature NonisolatedNonsendingByDefault \
+  -enable-upcoming-feature MemberImportVisibility \
+  -target arm64-apple-ios26.5 \
+  -sdk "$(xcrun --sdk iphoneos --show-sdk-path)" \
+  "$@"

@@ -41,6 +41,8 @@ Prefer small focused unit tests over broad UI tests unless behavior is UI-only.
 
 Agents do not build just to check that a change compiles. The developer runs several agents in parallel and builds on their own device, which catches compile errors and warnings. Extra agent builds slow that loop down and fight over the simulator and DerivedData. Do not work around this with scratch copies of the repo or loops that wait for another agent's build.
 
+To fix a compiler warning or error that reading the code can't settle, reproduce it in a small standalone file and run `scripts/swift-typecheck <file>`. It uses the app target's Swift settings and finishes in seconds. Try candidate fixes in the same file.
+
 Building and running the app on a device is fine when the task needs to see runtime behavior that reading the code can't settle, such as a layout, animation, or navigation bug. Use a connected device, or the shared simulator when none is connected, as [Devices And Simulators](../../AGENTS.md#devices-and-simulators) describes.
 
 Do not run tests without asking. If you think a test run is needed, ask the developer. They run tests once all agents have finished. In the handoff, list what you did not verify and what to check on the device.
@@ -52,7 +54,7 @@ The developer uses these wrappers from the repository root:
 ./scripts/xcode-test-agent.sh
 ```
 
-`XCODE_BUILD_AGENT_ACTION=build-for-testing ./scripts/xcode-build-agent.sh` also compiles the test targets. The pre-push hook runs it when Swift files change.
+`XCODE_BUILD_AGENT_ACTION=build-for-testing ./scripts/xcode-build-agent.sh` also compiles the test targets. The pre-push hook runs it when Swift files change. CI runs it with `XCODE_BUILD_AGENT_FAIL_ON_WARNINGS=1`, so any compiler warning fails the iOS job.
 
 Agents in other worktrees share the connected device and the `Shared iPhone` simulator. `xcode-test-agent.sh` holds the `simulator` lock while it runs, and waits when another worktree holds it. For a simulator session of several commands, such as `sim-sign-in` and end-to-end play, take the lock with `scripts/lock acquire simulator`, release it with `scripts/lock release simulator`, and see who holds what with `scripts/lock status`.
 

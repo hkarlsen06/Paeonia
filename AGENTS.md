@@ -145,7 +145,7 @@ The developer may run multiple agents in parallel in the same worktree.
 ## Development Defaults
 
 - Run commands from the repository root unless explicitly stated otherwise.
-- Do not build just to check that your change compiles. The developer runs several agents at once and builds on their own device, which catches compile errors and warnings. A 10-minute agent build after a 10-minute change doubles the wait, and parallel builds fight over the simulator and DerivedData. Do not work around this with scratch copies of the repo or loops that wait for another agent's build.
+- Do not build just to check that your change compiles. The developer runs several agents at once and builds on their own device, which catches compile errors and warnings. A 10-minute agent build after a 10-minute change doubles the wait, and parallel builds fight over the simulator and DerivedData. Do not work around this with scratch copies of the repo or loops that wait for another agent's build. To settle a compiler warning or error, reproduce it in a small file with `scripts/swift-typecheck`.
 - Building and running the app on a device is fine when the task needs to see runtime behavior that reading the code can't settle, such as a layout, animation, or navigation bug. Keep those runs to what the investigation needs, and use the device or simulator that [Devices And Simulators](#devices-and-simulators) allows.
 - Do not run tests without asking. If you think a test run is needed, ask the developer. They run tests themselves once all agents have finished. Still write or update tests for changed behavior.
 - `swiftlint --quiet` on the files you touched is fine. In the handoff, list what you did not verify and what the developer should check on the device.

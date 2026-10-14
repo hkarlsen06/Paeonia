@@ -92,6 +92,10 @@ Default to local-first behavior:
 - Avoid heavy work in SwiftUI `body` or computed properties.
 - Use `Sendable` for values crossing concurrency boundaries when appropriate.
 
+#### Pass stored `@MainActor` closures through a closure literal
+
+Passing a stored `@MainActor () async -> T` property straight into another view's closure parameter warns "converting non-Sendable function value ... may introduce data races". Adding `@Sendable` to both types does not stop it. Pass a closure that calls it instead: `Row(load: { await load() })`. This happens with Xcode 27 and this project's approachable-concurrency settings.
+
 #### `.task(id:)` keys must be load-bearing only
 
 `SwiftUI`'s `.task(id:)` cancels its running task and restarts it whenever the `id` value changes. So the `id` must contain *only* the inputs that determine what the task loads — never cosmetic data that arrives or refreshes shortly after launch.
