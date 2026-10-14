@@ -59,6 +59,8 @@ struct LudoScreen: View {
             roll.update()
         }
         .onDisappear { roll.stop() }
+        // A drag turns the board, so only the edge swipe goes back.
+        .background(LudoEdgeSwipeOnly())
     }
 }
 
