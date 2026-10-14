@@ -155,14 +155,18 @@ struct PaeoniaWidgetEntryView: View {
         }
     }
 
+    /// Plain style with its own circle: the default widget button style pads
+    /// the label, which made the circle about 64 pt and squeezed the drawing.
     private var refreshButton: some View {
         Button(intent: PaeoniaWidgetRefreshIntent()) {
             Image(systemName: "arrow.clockwise")
-                .font(.system(size: family == .systemSmall ? 12 : 14, weight: .semibold))
-                .frame(width: refreshHitTargetSize, height: refreshHitTargetSize)
+                .font(.system(size: family == .systemSmall ? 11 : 13, weight: .semibold))
+                .foregroundStyle(.paeoniaWidgetAccentPrimary)
+                .frame(width: refreshButtonSize, height: refreshButtonSize)
+                .background(Color.paeoniaWidgetAccentPrimary.opacity(0.18), in: Circle())
+                .contentShape(Circle())
         }
-        .tint(.paeoniaWidgetAccentPrimary)
-        .buttonBorderShape(.circle)
+        .buttonStyle(.plain)
         .accessibilityLabel(Text(.widgetRefresh))
     }
 
@@ -173,8 +177,8 @@ struct PaeoniaWidgetEntryView: View {
         return nil
     }
 
-    private var refreshHitTargetSize: CGFloat {
-        family == .systemSmall ? 36 : 40
+    private var refreshButtonSize: CGFloat {
+        family == .systemSmall ? 28 : 32
     }
 
     /// Compares against the entry date, not the clock: WidgetKit renders every

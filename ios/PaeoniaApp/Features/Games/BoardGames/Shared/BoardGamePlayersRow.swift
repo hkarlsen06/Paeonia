@@ -1,13 +1,15 @@
 import SwiftUI
 
 /// Both players. My avatar is on the leading side, my partner's on the trailing
-/// side. Whoever's turn it is, or whoever won, gets a lit ring and a bold name in
-/// their piece color. At accessibility text sizes the row stacks.
+/// side. Whoever's turn it is, or whoever won, gets a glow, a slightly larger
+/// avatar and a bold name in their piece color. A green dot on my partner's
+/// avatar shows they have the game open. At accessibility text sizes the row stacks.
 struct BoardGamePlayersRow: View {
     let me: BoardGamePlayerInfo
     let partner: BoardGamePlayerInfo
     let turn: BoardGameTurnLabel
     let partnerName: String
+    let partnerIsHere: Bool
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -24,6 +26,7 @@ struct BoardGamePlayersRow: View {
             }
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: turn)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: partnerIsHere)
     }
 
     // MARK: Layouts
@@ -48,13 +51,13 @@ struct BoardGamePlayersRow: View {
     /// Avatar over name.
     private func column(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
         VStack(spacing: PaeoniaSpacing.space4) {
-            BoardGamePlayerAvatar(player: player, ring: ringState(isMe: isMe), size: Self.avatarSize)
+            avatar(for: player, isMe: isMe)
             styledName(for: player, isMe: isMe)
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(name(isMe: isMe))
+        .accessibilityLabel(spokenName(isMe: isMe))
         .accessibilityValue(spokenTurn(isMe: isMe))
         .frame(width: Self.columnWidth)
     }
@@ -62,22 +65,31 @@ struct BoardGamePlayersRow: View {
     /// Avatar beside name, for accessibility text sizes.
     private func row(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
         HStack(spacing: PaeoniaSpacing.space12) {
-            BoardGamePlayerAvatar(player: player, ring: ringState(isMe: isMe), size: Self.avatarSize)
+            avatar(for: player, isMe: isMe)
             styledName(for: player, isMe: isMe)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(name(isMe: isMe))
+        .accessibilityLabel(spokenName(isMe: isMe))
         .accessibilityValue(spokenTurn(isMe: isMe))
     }
 
     // MARK: Pieces
 
-    private func ringState(isMe: Bool) -> BoardGameRingState {
-        turn.ringState(forMe: isMe)
+    private func avatar(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
+        BoardGamePlayerAvatar(
+            player: player,
+            glow: glowState(isMe: isMe),
+            isHere: !isMe && partnerIsHere,
+            size: Self.avatarSize
+        )
+    }
+
+    private func glowState(isMe: Bool) -> BoardGameGlowState {
+        turn.glowState(forMe: isMe)
     }
 
     private func isActive(isMe: Bool) -> Bool {
-        ringState(isMe: isMe) != .resting
+        glowState(isMe: isMe) != .resting
     }
 
     private func name(isMe: Bool) -> Text {
@@ -92,8 +104,13 @@ struct BoardGamePlayersRow: View {
             .foregroundStyle(active ? player.style.color : .paeoniaTextSecondary)
     }
 
+    /// "[Name] is here" while my partner has the game open, otherwise the name.
+    private func spokenName(isMe: Bool) -> Text {
+        !isMe && partnerIsHere ? Text(.boardGamesStatusHere(partnerName)) : name(isMe: isMe)
+    }
+
     /// "Your turn", "[Name]'s turn", "You won" or "[Name] won" for the active
-    /// player, so VoiceOver hears what the lit ring shows. Nothing for the other.
+    /// player, so VoiceOver hears what the glow shows. Nothing for the other.
     private func spokenTurn(isMe: Bool) -> Text {
         guard isActive(isMe: isMe), let spoken = turn.spoken(partnerName: partnerName) else {
             return Text(verbatim: "")
@@ -102,21 +119,35 @@ struct BoardGamePlayersRow: View {
     }
 }
 
-/// An avatar with a ring in the player's piece color and their mark in a small
-/// badge at the bottom trailing edge.
+/// An avatar with their mark in a small badge at the bottom trailing edge. It
+/// glows in the player's piece color on their turn and grows a little. A green
+/// dot at the top trailing edge shows the player has the game open.
 struct BoardGamePlayerAvatar: View {
     let player: BoardGamePlayerInfo
-    let ring: BoardGameRingState
+    let glow: BoardGameGlowState
+    var isHere = false
     var size: CGFloat = 44
 
     private static let badgeSize: CGFloat = 20
+    private static let activeScale: CGFloat = 1.1
 
     var body: some View {
         BoardGameAvatar(player: player, size: size)
-            .overlay { BoardGameRing(color: player.style.color, state: ring) }
+            .background { BoardGameGlow(color: player.style.color, state: glow) }
             .overlay(alignment: .bottomTrailing) {
                 badge.offset(x: 4, y: 4)
             }
+            .overlay(alignment: .topTrailing) {
+                if isHere {
+                    BoardGamePresenceDot(size: 12)
+                        .overlay {
+                            Circle().strokeBorder(.paeoniaBackgroundSecondary, lineWidth: PaeoniaRadius.strokeEmphasis)
+                        }
+                        .offset(x: 2, y: -2)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .scaleEffect(glow == .resting ? 1 : Self.activeScale)
     }
 
     private var badge: some View {
@@ -133,30 +164,29 @@ struct BoardGamePlayerAvatar: View {
     }
 }
 
-/// A ring just outside the avatar. It rests faintly, glows and fades on the
-/// player's turn, and stays lit for the winner.
-private struct BoardGameRing: View {
+/// A soft glow behind the avatar in the player's piece color. It breathes on the
+/// player's turn, stays lit for the winner, and is gone otherwise.
+private struct BoardGameGlow: View {
     let color: Color
-    let state: BoardGameRingState
+    let state: BoardGameGlowState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private static let lineWidth: CGFloat = 2
-    private static let outset: CGFloat = 5
+    /// How far the glow reaches past the avatar before the blur.
+    private static let spread: CGFloat = 6
+    private static let blur: CGFloat = 12
 
     var body: some View {
         ZStack {
-            Circle().strokeBorder(color.opacity(0.28), lineWidth: Self.lineWidth)
             switch state {
             case .resting:
                 EmptyView()
             case .steady:
-                glow(opacity: BoardGameRingPulse.high)
+                glow(opacity: BoardGameGlowPulse.high)
                     .transition(.opacity)
             case .breathing:
                 breathing
             }
         }
-        .padding(-Self.outset)
         .animation(PaeoniaMotion.stateChange, value: state)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
@@ -165,11 +195,11 @@ private struct BoardGameRing: View {
     @ViewBuilder
     private var breathing: some View {
         if reduceMotion {
-            glow(opacity: BoardGameRingPulse.still)
+            glow(opacity: BoardGameGlowPulse.still)
                 .transition(.opacity)
         } else {
             TimelineView(.animation) { timeline in
-                glow(opacity: BoardGameRingPulse.opacity(at: timeline.date.timeIntervalSinceReferenceDate))
+                glow(opacity: BoardGameGlowPulse.opacity(at: timeline.date.timeIntervalSinceReferenceDate))
             }
             .transition(.opacity)
         }
@@ -177,7 +207,9 @@ private struct BoardGameRing: View {
 
     private func glow(opacity: Double) -> some View {
         Circle()
-            .strokeBorder(color, lineWidth: Self.lineWidth)
+            .fill(color)
+            .padding(-Self.spread)
+            .blur(radius: Self.blur)
             .opacity(opacity)
     }
 }
@@ -190,7 +222,8 @@ private struct BoardGameRing: View {
                 me: BoardGamePreviewData.me,
                 partner: BoardGamePreviewData.partner,
                 turn: turn,
-                partnerName: BoardGamePreviewData.partner.name
+                partnerName: BoardGamePreviewData.partner.name,
+                partnerIsHere: turn == .yourTurn
             )
         }
     }
@@ -205,7 +238,8 @@ private struct BoardGameRing: View {
         me: BoardGamePreviewData.me,
         partner: BoardGamePreviewData.partner,
         turn: .partnerTurn,
-        partnerName: BoardGamePreviewData.partner.name
+        partnerName: BoardGamePreviewData.partner.name,
+        partnerIsHere: true
     )
     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
     .frame(maxHeight: .infinity)

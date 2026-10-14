@@ -37,7 +37,7 @@ Made on 2026-10-14 while the developer was away. Each is the option that was rec
 - **"Whole board" also shows in a forced zoom** in Ultimate Tic-Tac-Toe, so a player who was sent to a board can still look at the whole game.
 - **A Connect Four draw** dims the discs to 60% and brings them back.
 - **Marks are drawn in blush** on boxes and cells, so both partners' marks read the same on their colors.
-- **The partner's pieces are lavender.** Draw & Guess's second partner color is a pink close to the first, and on a full board the two sides were hard to tell apart, so the partner's pieces, ring and badge use `.paeoniaInkLavender`.
+- **The partner's pieces are lavender.** Draw & Guess's second partner color is a pink close to the first, and on a full board the two sides were hard to tell apart, so the partner's pieces, glow and badge use `.paeoniaInkLavender`.
 
 ## Why these games
 
@@ -110,7 +110,7 @@ Player one started the game and always moves first. Each game has a pure rules f
 ## Live and async
 
 - **Convex only.** Moves go through Convex and reach the other phone through its subscription within a few hundred milliseconds. Board games use no relay room.
-- **Presence.** The open board screen sends the game's presence heartbeat, as Draw & Guess does. "[Name] is here" shows while the partner has the same game open.
+- **Presence.** The open board screen sends the game's presence heartbeat, as Draw & Guess does. While the partner has the same game open, a green dot sits on their avatar, and the status row says "[Name] is here" unless the game shows a hint there.
 - **Invite.** While the partner is not in the game, the board shows "Tell [Name] you want to play" (see `docs/games-plan.md`).
 - **The partner's moves arrive animated.** A move that arrives while the board is open plays its animation. When the board opens after the partner moved, the moves since this phone last showed the board play in order, 0.45 seconds apart, and the whole sequence takes 3 seconds at most. A tap on the board skips to the end.
 - **Offline.** A move made offline shows on the board at once and is saved on the phone as a pending operation. The screen says "Saved on this phone. We'll send it when you're online." Moves leave in order. A move the server refuses as stale or illegal is dropped with "Your move wasn't sent", and the board shows the server's state again.
@@ -163,7 +163,7 @@ Copy keys start with `boardGames.` for the shared shell and `connectFour.`, `dot
 
 - One screen per game, built on `BoardGameScreen` in `Features/Games/BoardGames/Shared/`. It opens from the hub card, the turn and invite pushes and the deep link.
 - Look. The Draw & Guess shell: `.paeoniaBackgroundSecondary`, dark color scheme, inline title with the game's name, no tab bar on iPhone.
-- **Players row.** My avatar on the leading side and my partner's on the trailing side, 44 pt, each with a ring in its piece color and its mark in a small badge. Whoever's turn it is gets a glowing ring and a bold name in their piece color. On a finished game the winner's ring stays lit, and a draw lights neither. VoiceOver reads "Your turn", "[Name]'s turn", "You won" or "[Name] won" on the lit avatar.
+- **Players row.** My avatar on the leading side and my partner's on the trailing side, 44 pt, each with its mark in a small badge. Whoever's turn it is gets a soft glow behind the avatar in their piece color that brightens and fades, an avatar 10 percent larger, and a bold name in their piece color. The other avatar has no outline. On a finished game the winner's glow stays lit, and a draw lights neither. A green dot at the top of my partner's avatar shows they have the game open. VoiceOver reads "Your turn", "[Name]'s turn", "You won" or "[Name] won" on the glowing avatar, and "[Name] is here" as my partner's name while they are.
 - **Stake row.** Under the status row, above the pinned bottom. The stake capsule, or the "Add a bet" button for the starter before the first move. Hidden otherwise, without leaving a gap. In the wide layout it sits under the players row.
 - **Board.** Square for Dots and Boxes and Ultimate Tic-Tac-Toe, 7 by 6 for Connect Four. It takes the width up to 560 pt and never scrolls on a phone in portrait.
 - **Status row.** Under the board. "[Name] is here" with a green dot while the partner has the game open, "[Name] will see it later" otherwise. On a Dots and Boxes extra turn, "Another turn" pops in for 1.5 seconds. A game can show its own hint there instead, as Ludo does ("Roll again").

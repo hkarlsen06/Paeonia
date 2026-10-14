@@ -1,13 +1,16 @@
+import CoreGraphics
 import RealityKit
 
 /// The person's hands on the camera: a one-finger drag orbits the board, a pinch
-/// zooms, and a double tap glides back to the default view. The camera orbits a
-/// point at the middle of the board, so the board stays where the person leaves it.
+/// zooms toward the fingers, and a double tap glides back to the default view. The
+/// camera orbits the board point in the middle of the view, so the board stays
+/// where the person leaves it.
 extension LudoStage {
-    /// Fits the camera to a view of this shape.
-    func setAspect(_ aspect: Double) {
-        guard fit == nil || abs(aspect - (fit?.aspect ?? 0)) > 0.001 else { return }
-        fit = LudoCameraFit.make(aspect: aspect)
+    /// Fits the camera to a view of this shape, letting the board's near edge run
+    /// `overshoot` past each side.
+    func setAspect(_ aspect: Double, overshoot: Double) {
+        guard fit == nil || abs(aspect - (fit?.aspect ?? 0)) > 0.001 || overshoot != fit?.overshoot else { return }
+        fit = LudoCameraFit.make(aspect: aspect, overshoot: overshoot)
         cameraNeedsUpdate = true
         applyCamera()
         notifyCameraSettled()
@@ -55,21 +58,32 @@ extension LudoStage {
 
     // MARK: Zoom
 
-    func beginZoom() {
+    /// Two fingers went down at `point`, from 0 to 1 across and down the view. The
+    /// board point under them stays under them for the whole pinch.
+    func beginZoom(at point: CGPoint) {
         glide = nil
+        yawVelocity = 0
+        pitchVelocity = 0
         zoomStart = pose.zoom
+        zoomAnchor = rig?.boardPoint(at: point)
     }
 
-    /// A pinch of `scale` times the start. Spreading the fingers moves the camera closer.
-    func zoom(scale: Double) {
-        guard let start = zoomStart, scale > 0 else { return }
-        pose.zoom = start / scale
-        pose = pose.clamped
+    /// A pinch of `scale` times the start, with the fingers' middle now at `point`.
+    /// Spreading the fingers moves the camera closer, and moving them slides the board along.
+    func zoom(scale: Double, at point: CGPoint) {
+        guard let start = zoomStart, let fit, scale > 0 else { return }
+        if let anchor = zoomAnchor {
+            pose = fit.pose(pose, zoom: start / scale, keeping: anchor, at: point)
+        } else {
+            pose.zoom = start / scale
+            pose = pose.clamped
+        }
         cameraNeedsUpdate = true
     }
 
     func endZoom() {
         zoomStart = nil
+        zoomAnchor = nil
         notifyCameraSettled()
     }
 
@@ -80,6 +94,7 @@ extension LudoStage {
         yawVelocity = 0
         pitchVelocity = 0
         zoomStart = nil
+        zoomAnchor = nil
         guard !reduceMotion, pose != .home else {
             pose = .home
             cameraNeedsUpdate = true

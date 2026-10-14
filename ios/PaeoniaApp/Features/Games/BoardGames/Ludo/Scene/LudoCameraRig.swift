@@ -2,10 +2,10 @@ import CoreGraphics
 import Foundation
 import simd
 
-/// How far the camera has been turned and zoomed by the person's hands. The
-/// camera orbits a point at the middle of the board. Yaw is free. Pitch is the
-/// angle above the board and stays inside the orbit range. Zoom is a share of
-/// the default distance. Pure math, so the camera is testable.
+/// How far the camera has been turned, zoomed and slid by the person's hands. The
+/// camera orbits a point on the board, the middle unless a pinch slid it. Yaw is
+/// free. Pitch is the angle above the board and stays inside the orbit range. Zoom
+/// is a share of the default distance. Pure math, so the camera is testable.
 nonisolated struct LudoCameraPose: Equatable, Sendable {
     /// Radians around the vertical axis. 0 looks at the board from the front.
     var yaw = 0.0
@@ -13,6 +13,8 @@ nonisolated struct LudoCameraPose: Equatable, Sendable {
     var pitch = LudoCameraPose.defaultPitch
     /// 1 is the default distance.
     var zoom = 1.0
+    /// How far the orbit point has slid from the middle of the board, in cells across (x) and toward the viewer (y).
+    var pan = SIMD2<Double>.zero
 
     static let defaultPitch = LudoSceneStyle.cameraPitchDegrees * .pi / 180
     static let pitchRange = (LudoSceneStyle.orbitPitchRangeDegrees.lowerBound * .pi / 180)...(
@@ -21,12 +23,17 @@ nonisolated struct LudoCameraPose: Equatable, Sendable {
 
     static let home = LudoCameraPose()
 
-    /// The same pose with pitch and zoom inside their limits and yaw within one turn.
+    /// The same pose with pitch, zoom and pan inside their limits and yaw within one turn.
+    /// The pan may reach further the closer the camera is, and none at zoom 1 or out,
+    /// so zooming out brings the board back to the middle.
     var clamped: LudoCameraPose {
         var pose = self
         pose.pitch = min(max(pitch, Self.pitchRange.lowerBound), Self.pitchRange.upperBound)
         pose.zoom = min(max(zoom, LudoSceneStyle.zoomRange.lowerBound), LudoSceneStyle.zoomRange.upperBound)
         pose.yaw = yaw.remainder(dividingBy: 2 * .pi)
+        let closeness = (1 - pose.zoom) / (1 - LudoSceneStyle.zoomRange.lowerBound)
+        let reach = LudoSceneStyle.panReach * max(closeness, 0)
+        pose.pan = simd_clamp(pan, SIMD2(repeating: -reach), SIMD2(repeating: reach))
         return pose
     }
 
@@ -36,7 +43,8 @@ nonisolated struct LudoCameraPose: Equatable, Sendable {
         return LudoCameraPose(
             yaw: yaw + turn * amount,
             pitch: pitch + (other.pitch - pitch) * amount,
-            zoom: zoom + (other.zoom - zoom) * amount
+            zoom: zoom + (other.zoom - zoom) * amount,
+            pan: pan + (other.pan - pan) * amount
         )
     }
 }
@@ -47,21 +55,28 @@ nonisolated struct LudoCameraPose: Equatable, Sendable {
 nonisolated struct LudoCameraFit: Equatable, Sendable {
     /// Distance from the target at zoom 1.
     let distance: Double
-    /// Depth of the point the camera looks at and orbits, so the board sits in the middle of the view.
+    /// Depth of the point the camera looks at and orbits at zero pan, so the board sits in the middle of the view.
     let targetZ: Double
     /// Width divided by height of the view.
     let aspect: Double
+    /// How far the near edge may run past each side, as a share of half the view.
+    let overshoot: Double
 
-    static func make(aspect rawAspect: Double) -> LudoCameraFit {
-        let setup = Fit(aspect: max(rawAspect, 0.2))
+    static func make(aspect rawAspect: Double, overshoot: Double = LudoSceneStyle.cameraOvershoot) -> LudoCameraFit {
+        let setup = Fit(aspect: max(rawAspect, 0.2), overshoot: overshoot)
         let targetZ = setup.centeredTargetZ()
-        return LudoCameraFit(distance: setup.fittingDistance(targetZ: targetZ), targetZ: targetZ, aspect: setup.aspect)
+        return LudoCameraFit(
+            distance: setup.fittingDistance(targetZ: targetZ),
+            targetZ: targetZ,
+            aspect: setup.aspect,
+            overshoot: overshoot
+        )
     }
 
     /// Where the camera stands and looks for a pose.
     func rig(for pose: LudoCameraPose) -> LudoCameraRig {
         let pose = pose.clamped
-        let target = SIMD3<Double>(0, 0, targetZ)
+        let target = SIMD3<Double>(pose.pan.x, 0, targetZ + pose.pan.y)
         let position = target + Self.offset(yaw: pose.yaw, pitch: pose.pitch) * (distance * pose.zoom)
         return LudoCameraRig(
             position: SIMD3<Float>(Float(position.x), Float(position.y), Float(position.z)),
@@ -69,6 +84,25 @@ nonisolated struct LudoCameraFit: Equatable, Sendable {
             fieldOfViewDegrees: Float(LudoSceneStyle.cameraFieldOfViewDegrees),
             aspect: aspect
         )
+    }
+
+    /// The pose at `zoom`, slid so the board point `anchor` shows at `point` (0 to 1
+    /// across and down). A pinch uses it to keep the board under the fingers. The pan
+    /// limit wins when the two disagree.
+    func pose(
+        _ pose: LudoCameraPose,
+        zoom: Double,
+        keeping anchor: SIMD2<Double>,
+        at point: CGPoint
+    ) -> LudoCameraPose {
+        var result = pose
+        result.zoom = zoom
+        result = result.clamped
+        // Sliding the camera along the board slides every board point under it by the same amount.
+        if let now = rig(for: result).boardPoint(at: point) {
+            result.pan += anchor - now
+        }
+        return result.clamped
     }
 
     /// The unit direction from the target to the camera.
@@ -79,6 +113,7 @@ nonisolated struct LudoCameraFit: Equatable, Sendable {
     /// The numbers of one fit: the lens, the shape of the view and the corners to keep in view.
     private struct Fit {
         let aspect: Double
+        let overshoot: Double
         let tanHalf = tan(LudoSceneStyle.cameraFieldOfViewDegrees / 2 * .pi / 180)
         let corners = Fit.fitPoints()
 
@@ -116,7 +151,7 @@ nonisolated struct LudoCameraFit: Equatable, Sendable {
                 ) else { return (.infinity, 0) }
                 largest = max(
                     largest,
-                    abs(ndc.x) / (1 + LudoSceneStyle.cameraOvershoot),
+                    abs(ndc.x) / (1 + overshoot),
                     abs(ndc.y) / (1 - LudoSceneStyle.cameraMargin)
                 )
                 lowest = min(lowest, ndc.y)
@@ -175,8 +210,8 @@ nonisolated struct LudoCameraRig: Equatable, Sendable {
     let aspect: Double
 
     /// The default camera for a view `aspect` wide for each unit of height.
-    static func fitting(aspect: Double) -> LudoCameraRig {
-        LudoCameraFit.make(aspect: aspect).rig(for: .home)
+    static func fitting(aspect: Double, overshoot: Double = LudoSceneStyle.cameraOvershoot) -> LudoCameraRig {
+        LudoCameraFit.make(aspect: aspect, overshoot: overshoot).rig(for: .home)
     }
 
     /// Where a point of the scene shows in the view, from 0 to 1 across and down,
@@ -192,6 +227,34 @@ nonisolated struct LudoCameraRig: Equatable, Sendable {
         return CGPoint(x: (ndc.x + 1) / 2, y: (1 - ndc.y) / 2)
     }
 
+    /// The point on the board's surface (y 0) that shows at `point` in the view, from
+    /// 0 to 1 across and down, as (x, z). Nil when that spot of the view shows sky.
+    func boardPoint(at point: CGPoint) -> SIMD2<Double>? {
+        let tanHalf = tan(Double(fieldOfViewDegrees) / 2 * .pi / 180)
+        let camera = SIMD3<Double>(Double(position.x), Double(position.y), Double(position.z))
+        let focus = SIMD3<Double>(Double(target.x), Double(target.y), Double(target.z))
+        let axes = Axes(camera: camera, target: focus)
+        let ray = axes.forward
+            + axes.right * ((Double(point.x) * 2 - 1) * tanHalf * aspect)
+            + axes.up * ((1 - Double(point.y) * 2) * tanHalf)
+        guard ray.y < -0.0001 else { return nil }
+        let hit = camera + ray * (-camera.y / ray.y)
+        return SIMD2(hit.x, hit.z)
+    }
+
+    /// The camera's forward, right and up directions when it looks from `camera` at `target`.
+    private struct Axes {
+        let forward: SIMD3<Double>
+        let right: SIMD3<Double>
+        let up: SIMD3<Double>
+
+        init(camera: SIMD3<Double>, target: SIMD3<Double>) {
+            forward = simd_normalize(target - camera)
+            right = simd_normalize(simd_cross(forward, SIMD3(0, 1, 0)))
+            up = simd_cross(right, forward)
+        }
+    }
+
     /// Position in the view from -1 to 1 on each side, y up, for a camera that looks
     /// from `camera` at `target` with the vertical axis up. Nil behind the camera.
     fileprivate static func normalized(
@@ -201,15 +264,13 @@ nonisolated struct LudoCameraRig: Equatable, Sendable {
         tanHalf: Double,
         aspect: Double
     ) -> SIMD2<Double>? {
-        let forward = simd_normalize(target - camera)
-        let right = simd_normalize(simd_cross(forward, SIMD3(0, 1, 0)))
-        let up = simd_cross(right, forward)
+        let axes = Axes(camera: camera, target: target)
         let offset = point - camera
-        let depth = simd_dot(offset, forward)
+        let depth = simd_dot(offset, axes.forward)
         guard depth > 0.01 else { return nil }
         return SIMD2(
-            simd_dot(offset, right) / depth / (tanHalf * aspect),
-            simd_dot(offset, up) / depth / tanHalf
+            simd_dot(offset, axes.right) / depth / (tanHalf * aspect),
+            simd_dot(offset, axes.up) / depth / tanHalf
         )
     }
 }

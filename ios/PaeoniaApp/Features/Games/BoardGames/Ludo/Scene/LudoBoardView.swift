@@ -60,7 +60,8 @@ private struct LudoBoardScene: View {
         GeometryReader { proxy in
             let size = proxy.size
             let aspect = size.height > 0 ? Double(size.width / size.height) : LudoSceneStyle.viewAspect
-            let rig = currentRig(aspect: aspect)
+            let overshoot = LudoSceneStyle.cameraOvershoot(forViewWidth: Double(size.width))
+            let rig = currentRig(aspect: aspect, overshoot: overshoot)
             ZStack {
                 LudoSceneView(
                     stage: stage,
@@ -83,7 +84,7 @@ private struct LudoBoardScene: View {
                 )
             }
             .frame(width: size.width, height: size.height)
-            .onChange(of: aspect, initial: true) { stage.setAspect(aspect) }
+            .onChange(of: [aspect, overshoot], initial: true) { stage.setAspect(aspect, overshoot: overshoot) }
         }
         .onChange(of: stageInput, initial: true) { sync() }
         .onChange(of: inputs.showsOutcome) {
@@ -92,9 +93,9 @@ private struct LudoBoardScene: View {
     }
 
     /// The camera the person has left, or the default one while the view's shape is new.
-    private func currentRig(aspect: Double) -> LudoCameraRig {
+    private func currentRig(aspect: Double, overshoot: Double) -> LudoCameraRig {
         if let settledRig, abs(settledRig.aspect - aspect) < 0.001 { return settledRig }
-        return LudoCameraRig.fitting(aspect: aspect)
+        return LudoCameraRig.fitting(aspect: aspect, overshoot: overshoot)
     }
 
     private var stageInput: LudoStage.Input {
@@ -273,14 +274,23 @@ private struct LudoSceneView: UIViewRepresentable {
         @objc private func handlePinch(_ recognizer: UIPinchGestureRecognizer) {
             switch recognizer.state {
             case .began:
-                stage.beginZoom()
+                stage.beginZoom(at: unitLocation(of: recognizer))
             case .changed:
-                stage.zoom(scale: Double(recognizer.scale))
+                // With one finger lifted the place jumps to the other finger, so hold still until the pinch ends.
+                guard recognizer.numberOfTouches == 2 else { return }
+                stage.zoom(scale: Double(recognizer.scale), at: unitLocation(of: recognizer))
             case .ended, .cancelled, .failed:
                 stage.endZoom()
             default:
                 break
             }
+        }
+
+        /// Where the gesture is, from 0 to 1 across and down the view.
+        private func unitLocation(of recognizer: UIGestureRecognizer) -> CGPoint {
+            guard let view, view.bounds.width > 0, view.bounds.height > 0 else { return CGPoint(x: 0.5, y: 0.5) }
+            let location = recognizer.location(in: view)
+            return CGPoint(x: location.x / view.bounds.width, y: location.y / view.bounds.height)
         }
 
         @objc private func handleDoubleTap(_ recognizer: UITapGestureRecognizer) {

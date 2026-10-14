@@ -177,12 +177,22 @@ nonisolated enum LudoSceneStyle {
     /// Space kept free above and below the board, as a share of half the view.
     static let cameraMargin: Double = 0.03
     /// How far past the left and right edges of the view the near edge of the board
-    /// may run, as a share of half the view. The board fills the screen sideways.
+    /// may run, as a share of half the view. The board fills a phone sideways.
     static let cameraOvershoot: Double = 0.3
+    /// A view at least this wide, such as on an iPad, has room for the whole board,
+    /// so its edges stay in view.
+    static let cameraOvershootMaxWidth: Double = 600
+
+    static func cameraOvershoot(forViewWidth width: Double) -> Double {
+        width < cameraOvershootMaxWidth ? cameraOvershoot : 0
+    }
     /// The orbit keeps the camera between these angles above the board.
     static let orbitPitchRangeDegrees: ClosedRange<Double> = 35...80
     /// Pinch limits, as a share of the default distance.
     static let zoomRange: ClosedRange<Double> = 0.55...1.35
+    /// At the closest zoom the camera may look this many cells from the middle of the
+    /// board each way, enough to center a base yard. The reach shrinks to none at zoom 1.
+    static let panReach: Double = 4.5
     /// Radians of yaw and pitch for each point of a one-finger drag.
     static let orbitYawPerPoint: Double = 0.008
     static let orbitPitchPerPoint: Double = 0.006

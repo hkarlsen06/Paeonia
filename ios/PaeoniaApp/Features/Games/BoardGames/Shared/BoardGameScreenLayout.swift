@@ -5,7 +5,7 @@ import SwiftUI
 enum BoardGameMetrics {
     /// The board never grows past this on a phone or in a narrow window.
     static let maxBoard: CGFloat = 560
-    /// The board never grows past this in the wide layout.
+    /// A board that doesn't bleed never grows past this in the wide layout.
     static let maxWideBoard: CGFloat = 640
     /// The widest the column beside the board grows in the wide layout.
     static let sideColumnWidth: CGFloat = 420
@@ -17,11 +17,13 @@ enum BoardGameMetrics {
         size.width >= wideMinWidth && size.width > size.height
     }
 
-    /// The side of the square the board gets in the wide layout.
-    static func wideBoardSide(in size: CGSize) -> CGFloat {
+    /// The side of the square the board gets in the wide layout. A board that
+    /// bleeds has no cap and takes all the width beside the column.
+    static func wideBoardSide(in size: CGSize, bleeds: Bool = false) -> CGFloat {
         let padding = PaeoniaSpacing.screenHorizontalPadding * 2
         let beside = size.width - sideColumnWidth - PaeoniaSpacing.space32 - padding
-        return max(minWideBoard, min(maxWideBoard, beside, size.height - PaeoniaSpacing.space24 * 2))
+        let cap = bleeds ? beside : maxWideBoard
+        return max(minWideBoard, min(cap, beside, size.height - PaeoniaSpacing.space24 * 2))
     }
 }
 
@@ -33,7 +35,8 @@ enum BoardGameMetrics {
 /// with `aspectRatio(_:contentMode: .fit)`.
 ///
 /// - A phone and a narrow window show one column that never scrolls. The board
-///   shrinks first when the screen is short. The stake sits under the column,
+///   shrinks first when the screen is short. The rows keep to a readable width,
+///   and a board that bleeds still takes the whole width of the screen. The stake sits under the column,
 ///   above the bottom content, and rises with the keyboard while the starter
 ///   writes it. The keyboard covers the column instead of squeezing the board.
 /// - At accessibility text sizes the column scrolls, the board keeps its size and
@@ -78,7 +81,8 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
             me: content.me,
             partner: content.partner,
             turn: content.turn,
-            partnerName: content.partner.name
+            partnerName: content.partner.name,
+            partnerIsHere: content.partnerStatus == .here
         )
     }
 
@@ -120,16 +124,17 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     private var fixed: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             header
+                .paeoniaReadableWidth()
             // Takes the height that is left and centers the board and the status row in it.
             VStack(spacing: PaeoniaSpacing.space12) {
                 boardSlot
                 statusRow
+                    .paeoniaReadableWidth()
             }
             .frame(maxHeight: .infinity)
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space8)
-        .paeoniaReadableWidth()
         .ignoresSafeArea(.keyboard, edges: .bottom)
         // Outside the bottom bar, which hides while the keyboard is up.
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -188,7 +193,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     // MARK: Wide
 
     private func wide(size: CGSize) -> some View {
-        let side = BoardGameMetrics.wideBoardSide(in: size)
+        let side = BoardGameMetrics.wideBoardSide(in: size, bleeds: boardBleeds)
         // A tall bottom, such as a result panel on a landscape phone, would leave
         // the rows above it no room. It then scrolls with them.
         let scrollsBottom = wideBottomHeight > size.height * 0.55
@@ -197,8 +202,9 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         // board's edges. It grows only when the rows need more room.
         let columnHeight = min(size.height, max(side, rowsHeight))
         return HStack(alignment: .center, spacing: PaeoniaSpacing.space32) {
+            // A board that bleeds draws its own space around itself, so it takes the whole height.
             board
-                .frame(width: side, height: side)
+                .frame(width: side, height: boardBleeds ? size.height : side)
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(spacing: PaeoniaSpacing.space12) {

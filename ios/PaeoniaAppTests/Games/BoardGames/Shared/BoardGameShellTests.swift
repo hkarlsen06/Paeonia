@@ -3,8 +3,8 @@ import SwiftUI
 import Testing
 @testable import PaeoniaApp
 
-/// The decisions behind the shared board game shell: the stake text, the turn
-/// capsule and rings, the counts on the result panel and the wide layout.
+/// The decisions behind the shared board game shell: the stake text, the
+/// glow, the counts on the result panel and the wide layout.
 @MainActor
 struct BoardGameShellTests {
     // MARK: Stake
@@ -48,40 +48,40 @@ struct BoardGameShellTests {
         #expect(BoardGameStake.committed("") == nil)
     }
 
-    // MARK: Rings
+    // MARK: Glow
 
     @Test func onlyTheActivePlayerGlows() {
-        #expect(BoardGameTurnLabel.yourTurn.ringState(forMe: true) == .breathing)
-        #expect(BoardGameTurnLabel.yourTurn.ringState(forMe: false) == .resting)
-        #expect(BoardGameTurnLabel.partnerTurn.ringState(forMe: true) == .resting)
-        #expect(BoardGameTurnLabel.partnerTurn.ringState(forMe: false) == .breathing)
+        #expect(BoardGameTurnLabel.yourTurn.glowState(forMe: true) == .breathing)
+        #expect(BoardGameTurnLabel.yourTurn.glowState(forMe: false) == .resting)
+        #expect(BoardGameTurnLabel.partnerTurn.glowState(forMe: true) == .resting)
+        #expect(BoardGameTurnLabel.partnerTurn.glowState(forMe: false) == .breathing)
     }
 
-    @Test func theWinnersRingStaysLitAndADrawLightsNone() {
-        #expect(BoardGameTurnLabel.youWon.ringState(forMe: true) == .steady)
-        #expect(BoardGameTurnLabel.youWon.ringState(forMe: false) == .resting)
-        #expect(BoardGameTurnLabel.partnerWon.ringState(forMe: false) == .steady)
-        #expect(BoardGameTurnLabel.partnerWon.ringState(forMe: true) == .resting)
-        #expect(BoardGameTurnLabel.draw.ringState(forMe: true) == .resting)
-        #expect(BoardGameTurnLabel.draw.ringState(forMe: false) == .resting)
+    @Test func theWinnersGlowStaysLitAndADrawLightsNone() {
+        #expect(BoardGameTurnLabel.youWon.glowState(forMe: true) == .steady)
+        #expect(BoardGameTurnLabel.youWon.glowState(forMe: false) == .resting)
+        #expect(BoardGameTurnLabel.partnerWon.glowState(forMe: false) == .steady)
+        #expect(BoardGameTurnLabel.partnerWon.glowState(forMe: true) == .resting)
+        #expect(BoardGameTurnLabel.draw.glowState(forMe: true) == .resting)
+        #expect(BoardGameTurnLabel.draw.glowState(forMe: false) == .resting)
         // VoiceOver reads the turn on the lit avatar, so a draw has nothing to read.
         #expect(BoardGameTurnLabel.draw.spoken(partnerName: "Robin") == nil)
         #expect(BoardGameTurnLabel.yourTurn.spoken(partnerName: "Robin") != nil)
     }
 
-    @Test func ringPulseStartsDimPeaksHalfwayAndRepeats() {
-        let period = BoardGameRingPulse.period
-        #expect(abs(BoardGameRingPulse.opacity(at: 0) - BoardGameRingPulse.low) < 0.0001)
-        #expect(abs(BoardGameRingPulse.opacity(at: period / 2) - BoardGameRingPulse.high) < 0.0001)
-        #expect(abs(BoardGameRingPulse.opacity(at: period) - BoardGameRingPulse.low) < 0.0001)
-        #expect(abs(BoardGameRingPulse.opacity(at: 5 * period + 0.3) - BoardGameRingPulse.opacity(at: 0.3)) < 0.0001)
+    @Test func glowPulseStartsDimPeaksHalfwayAndRepeats() {
+        let period = BoardGameGlowPulse.period
+        #expect(abs(BoardGameGlowPulse.opacity(at: 0) - BoardGameGlowPulse.low) < 0.0001)
+        #expect(abs(BoardGameGlowPulse.opacity(at: period / 2) - BoardGameGlowPulse.high) < 0.0001)
+        #expect(abs(BoardGameGlowPulse.opacity(at: period) - BoardGameGlowPulse.low) < 0.0001)
+        #expect(abs(BoardGameGlowPulse.opacity(at: 5 * period + 0.3) - BoardGameGlowPulse.opacity(at: 0.3)) < 0.0001)
     }
 
-    @Test func ringPulseStaysBetweenItsBounds() {
+    @Test func glowPulseStaysBetweenItsBounds() {
         for step in 0..<100 {
-            let opacity = BoardGameRingPulse.opacity(at: Double(step) * 0.07)
-            #expect(opacity >= BoardGameRingPulse.low - 0.0001)
-            #expect(opacity <= BoardGameRingPulse.high + 0.0001)
+            let opacity = BoardGameGlowPulse.opacity(at: Double(step) * 0.07)
+            #expect(opacity >= BoardGameGlowPulse.low - 0.0001)
+            #expect(opacity <= BoardGameGlowPulse.high + 0.0001)
         }
     }
 
@@ -159,5 +159,12 @@ struct BoardGameShellTests {
         #expect(BoardGameMetrics.wideBoardSide(in: CGSize(width: 1_024, height: 768)) == 532)
         // A landscape phone is limited by its height less 24 points above and below.
         #expect(BoardGameMetrics.wideBoardSide(in: CGSize(width: 844, height: 390)) == 342)
+    }
+
+    @Test func aBleedingBoardTakesAllTheWidthBesideTheColumn() {
+        // 1366 wide leaves 874 beside the 420 point column, the gap and the padding.
+        #expect(BoardGameMetrics.wideBoardSide(in: CGSize(width: 1_366, height: 1_024), bleeds: true) == 874)
+        // The height still limits it.
+        #expect(BoardGameMetrics.wideBoardSide(in: CGSize(width: 1_366, height: 600), bleeds: true) == 552)
     }
 }

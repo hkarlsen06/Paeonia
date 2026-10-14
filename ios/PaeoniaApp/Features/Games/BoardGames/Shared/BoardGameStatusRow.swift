@@ -119,14 +119,16 @@ struct BoardGameStatusRow: View {
 }
 
 /// A small green dot that dims and brightens slowly. Reduce Motion keeps it still.
-private struct BoardGamePresenceDot: View {
+struct BoardGamePresenceDot: View {
+    var size: CGFloat = 8
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isDim = false
 
     var body: some View {
         Circle()
             .fill(.paeoniaSuccess)
-            .frame(width: 8, height: 8)
+            .frame(width: size, height: size)
             .opacity(isDim ? 0.45 : 1)
             .scaleEffect(isDim ? 0.85 : 1)
             .animation(pulse, value: isDim)

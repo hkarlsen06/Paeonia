@@ -72,18 +72,18 @@ struct BoardGameShellContent: Equatable {
 
 // MARK: Turn label
 
-/// How a player's ring in the players row looks.
-nonisolated enum BoardGameRingState: Equatable, Sendable {
-    /// A faint ring in the piece color.
+/// How a player's glow in the players row looks.
+nonisolated enum BoardGameGlowState: Equatable, Sendable {
+    /// No glow.
     case resting
-    /// The player's turn. The ring glows and fades in a slow rhythm.
+    /// The player's turn. The glow brightens and fades in a slow rhythm.
     case breathing
-    /// The player won. The ring stays lit.
+    /// The player won. The glow stays lit.
     case steady
 }
 
 extension BoardGameTurnLabel {
-    func ringState(forMe isMe: Bool) -> BoardGameRingState {
+    func glowState(forMe isMe: Bool) -> BoardGameGlowState {
         switch self {
         case .yourTurn: isMe ? .breathing : .resting
         case .partnerTurn: isMe ? .resting : .breathing
@@ -93,7 +93,7 @@ extension BoardGameTurnLabel {
         }
     }
 
-    /// What VoiceOver reads on the lit avatar. A draw lights none.
+    /// What VoiceOver reads on the glowing avatar. A draw lights none.
     func spoken(partnerName: String) -> LocalizedStringResource? {
         switch self {
         case .yourTurn: .boardGamesTurnYours
@@ -123,15 +123,15 @@ extension BoardGameScore {
     }
 }
 
-// MARK: Ring pulse
+// MARK: Glow pulse
 
-/// The opacity of the glowing ring over time. It starts dim, rises to its peak
+/// The opacity of the glow over time. It starts dim, rises to its peak
 /// halfway through each period and falls back.
-nonisolated enum BoardGameRingPulse {
+nonisolated enum BoardGameGlowPulse {
     static let period: TimeInterval = 2.4
     static let low = 0.45
     static let high = 0.9
-    /// Reduce Motion holds the ring still at this opacity.
+    /// Reduce Motion holds the glow still at this opacity.
     static let still = 0.7
 
     static func opacity(at time: TimeInterval) -> Double {

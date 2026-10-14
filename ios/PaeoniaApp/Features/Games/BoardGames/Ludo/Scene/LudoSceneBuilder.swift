@@ -161,6 +161,9 @@ enum LudoSceneBuilder {
             let center = LudoBoardGeometry.yardCenter(corner: corner, viewer: viewer)
             plate.position = LudoWorld.position(center, height: LudoSceneStyle.yardHeight / 2)
             root.addChild(plate)
+            // Only the two players' yards hold pawns, so the two empty corners get no dents.
+            let role = LudoBoardGeometry.role(ofCorner: corner, viewer: viewer)
+            guard role == .mine || role == .partner else { continue }
             let floor = color.ludoLightened(LudoSceneStyle.yardLightening)
             let slotColor = floor.ludoDarkened(LudoSceneStyle.slotDarkening)
             let slotMaterial = LudoMaterials.satin(slotColor)

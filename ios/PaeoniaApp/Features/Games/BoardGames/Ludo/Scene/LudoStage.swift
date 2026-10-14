@@ -64,6 +64,8 @@ final class LudoStage {
     var yawVelocity = 0.0
     var pitchVelocity = 0.0
     var zoomStart: Double?
+    /// The board point (x, z) under the fingers when the pinch began.
+    var zoomAnchor: SIMD2<Double>?
     var glide: CameraGlide?
     var cameraNeedsUpdate = true
     /// Called when the camera stops moving, so VoiceOver can follow it.
@@ -143,8 +145,11 @@ final class LudoStage {
             MainActor.assumeIsolated { self?.tick(event.deltaTime) }
         }
         isBuilt = true
-        // The screen may have sent newer state while the scene was building.
-        return receive(self.input ?? input)
+        // The screen may have sent newer state while the scene was building. Compare
+        // it with what the scene was built from, so new marks still reach the pawns.
+        let latest = self.input ?? input
+        self.input = input
+        return receive(latest)
     }
 
     // MARK: Input

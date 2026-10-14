@@ -287,6 +287,18 @@ struct LudoSceneMathTests {
         }
     }
 
+    @Test func aWideViewKeepsTheWholeSlabInView() {
+        #expect(LudoSceneStyle.cameraOvershoot(forViewWidth: 400) == LudoSceneStyle.cameraOvershoot)
+        #expect(LudoSceneStyle.cameraOvershoot(forViewWidth: 834) == 0)
+        for aspect in [0.7, 1.0, LudoSceneStyle.viewAspect] {
+            let rig = LudoCameraRig.fitting(aspect: aspect, overshoot: 0)
+            let half = LudoWorld.halfSlab
+            for corner in [SIMD3(-half, 0, -half), SIMD3(-half, 0, half), SIMD3(half, 0, -half), SIMD3(half, 0, half)] {
+                #expect((-0.001...1.001).contains(Double(rig.project(corner)?.x ?? -1)), "aspect \(aspect)")
+            }
+        }
+    }
+
     @Test func theOrbitKeepsThePitchAndZoomInsideTheirLimits() {
         let steep = LudoCameraPose(yaw: 8, pitch: 3, zoom: 9).clamped
         let flat = LudoCameraPose(yaw: -8, pitch: -1, zoom: 0.01).clamped
@@ -315,6 +327,26 @@ struct LudoSceneMathTests {
 
         #expect(abs(Double(middle?.x ?? 0) - 0.5) < 0.001)
         #expect(abs(Double(middle?.y ?? 0) - 0.5) < 0.001)
+    }
+
+    @Test func aPinchKeepsTheBoardUnderTheFingers() {
+        let fit = LudoCameraFit.make(aspect: 0.7)
+        let fingers = CGPoint(x: 0.3, y: 0.4)
+        let anchor = fit.rig(for: .home).boardPoint(at: fingers)
+        let closer = fit.pose(.home, zoom: 0.7, keeping: anchor ?? .zero, at: fingers)
+        let after = fit.rig(for: closer).boardPoint(at: fingers)
+
+        #expect(closer.pan != .zero)
+        #expect(simd_distance(anchor ?? .zero, after ?? SIMD2(99, 99)) < 0.001)
+    }
+
+    @Test func thePanReachesNoFurtherThanTheZoomAllows() {
+        let far = LudoCameraPose(pan: SIMD2(40, -40))
+
+        #expect(far.clamped.pan == .zero)
+        var closest = far
+        closest.zoom = LudoSceneStyle.zoomRange.lowerBound
+        #expect(closest.clamped.pan == SIMD2(LudoSceneStyle.panReach, -LudoSceneStyle.panReach))
     }
 
     @Test func theResetGlideTakesTheShortWayRound() {

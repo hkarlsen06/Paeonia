@@ -9,7 +9,6 @@ struct PaeoniaPlaceholderDrawing: View {
             .interpolation(.high)
             .scaledToFit()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(PaeoniaWidgetSpacing.space12)
             .accessibilityHidden(true)
     }
 }

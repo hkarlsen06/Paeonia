@@ -3,7 +3,6 @@ import WidgetKit
 
 enum PaeoniaWidgetSpacing {
     static let space8: CGFloat = 8
-    static let space12: CGFloat = 12
 }
 
 enum PaeoniaWidgetTypography {
