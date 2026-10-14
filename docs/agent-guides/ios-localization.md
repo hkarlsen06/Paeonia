@@ -55,7 +55,9 @@ For ordinary plain string entries, use the repo helper instead of hand-editing `
 ```
 
 - New keys must include English, Norwegian Bokmal, and a translator comment.
-- The helper writes the catalog exactly as Xcode saves it, with keys in case-insensitive order, so a later save in Xcode leaves no diff. Edit catalogs with the helper or Xcode, not by hand or with other JSON tools.
+- The helper writes the catalog exactly as Xcode's String Catalog editor saves it, so a later save in Xcode leaves no diff. Edit catalogs with the helper or Xcode, not by hand or with other JSON tools. Another script that writes a catalog should pipe its JSON through `scripts/xcstrings-set --format-stdin`.
+- Changing a key's English or Norwegian text marks its other existing translations `needs_review`, except locales passed in the same command, so a later translation pass knows to redo them.
+- The helper locks the catalog while it edits, so parallel agents can add keys at the same time. If the edited catalog fails `xcstringstool` validation, it restores the original.
 - Use `--locale <code>=<value>` for additional languages if the catalog grows beyond `en` and `nb`.
 - Use Xcode's String Catalog editor or XLIFF export/import for pluralization, substitutions, device variants, or bulk translator workflows.
 - After catalog changes, verify generated symbols in Swift code still match the key names. Use the repository build wrapper when generated-symbol correctness needs verification; avoid duplicating a build the user is already running.
