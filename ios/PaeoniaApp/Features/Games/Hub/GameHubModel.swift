@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// One built game as the Games tab, its badge, and the Us tab see it. A game's
+/// One built game as the Games tab, its badge, and the Home tab see it. A game's
 /// hub model conforms, and `GamesViewModel.games` lists it. A kind that is not
-/// listed shows nowhere: no hub card, no Us card, and a deep link to it opens
+/// listed shows nowhere: no hub card, no Home card, and a deep link to it opens
 /// the hub.
 @MainActor
 protocol GameHubModel: AnyObject {
@@ -39,6 +39,6 @@ struct GameHubCardContext {
     let partnerName: String
     /// The partner has this game open right now.
     let partnerIsHere: Bool
-    /// False on the Us tab, which has no room for extra links such as "Our drawings".
+    /// False on the Home tab, which has no room for extra links such as "Our drawings".
     let isOnHub: Bool
 }

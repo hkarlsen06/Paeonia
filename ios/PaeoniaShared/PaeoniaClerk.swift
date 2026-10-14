@@ -72,6 +72,17 @@ nonisolated enum PaeoniaClerk {
         return Clerk.shared.user?.id
     }
 
+    /// The signed-in account's primary email, for display only. Apple users who
+    /// hid their email get the private relay address. Returns `nil` before
+    /// `configureIfPossible()`.
+    @MainActor
+    static func currentEmail() -> String? {
+        guard currentAccountID() != nil else {
+            return nil
+        }
+        return Clerk.shared.user?.primaryEmailAddress?.emailAddress
+    }
+
     /// The Clerk user id once Clerk has read its saved session, waiting up to
     /// `timeout`. Work started by a launch in the background can run before
     /// Clerk has loaded.

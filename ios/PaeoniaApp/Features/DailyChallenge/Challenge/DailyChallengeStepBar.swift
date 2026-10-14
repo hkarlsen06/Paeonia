@@ -2,7 +2,7 @@ import SwiftUI
 
 /// A segmented progress bar for the daily challenge. Each segment is one of the
 /// day's questions: filled segments are answered, an optional `current` segment
-/// is highlighted while the user is on it. Shared between the compact Us-tab card
+/// is highlighted while the user is on it. Shared between the compact Home tab card
 /// and the full answering flow so the steps read identically in both.
 struct DailyChallengeStepBar: View {
     let total: Int

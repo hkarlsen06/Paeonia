@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Draw & Guess on the hub: artwork, whose turn it is, who is here, and the score.
-/// The Us tab shows the same card while the partner is in the game.
+/// The Home tab shows the same card while the partner is in the game.
 struct DrawAndGuessHubCard: View {
     let summary: DrawAndGuessHubSummary
     let context: GameHubCardContext

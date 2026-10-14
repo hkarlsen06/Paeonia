@@ -9,7 +9,6 @@ struct MindMeldScreen: View {
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var isConfirmingRestart = false
 
     var body: some View {
@@ -91,38 +90,14 @@ struct MindMeldScreen: View {
 
     // MARK: Toolbar
 
-    private var melds: Int {
-        viewModel.stats?.melds ?? 0
-    }
-
-    /// The capsule sits in the toolbar on the writing and waiting screens. At
-    /// accessibility text sizes it moves into the content instead.
-    private var showsStatsInToolbar: Bool {
-        guard melds > 0, !dynamicTypeSize.isAccessibilitySize else { return false }
-        switch viewModel.phase {
-        case .write, .waiting: return true
-        default: return false
-        }
-    }
-
+    /// The melds capsule, which opens "Our melds", and the menu. Nothing else,
+    /// so the title keeps its room.
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
-        if showsStatsInToolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                MindMeldStatsCapsule(melds: melds)
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
         ToolbarItem(placement: .topBarTrailing) {
-            NavigationLink(value: GamesDestination.mindMeldHistory) {
-                Label {
-                    Text(.mindMeldHistoryTitle)
-                } icon: {
-                    Image(systemName: "point.3.connected.trianglepath.dotted")
-                }
-            }
-            .accessibilityIdentifier("mindMeld.history.open")
+            MindMeldMeldsLink(melds: viewModel.stats?.melds ?? 0, me: viewModel.me, partner: viewModel.partner)
         }
+        .sharedBackgroundVisibility(.hidden)
         if viewModel.game?.state == .playing {
             ToolbarItem(placement: .topBarTrailing) {
                 moreMenu

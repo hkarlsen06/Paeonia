@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The signed-out entry screen. One screen says what Paeonia does and lets the
-/// person sign in right away; there is no carousel to page through first. It is
-/// the first surface the cold-launch intro uncovers, so its parts cascade in
-/// with `View.launchEntrance(order:)`.
+/// The signed-out entry screen. The lockup, one picture, and one line say what
+/// Paeonia is, and the person can sign in right away. There is no carousel to
+/// page through first. It is the first surface the cold-launch intro uncovers,
+/// so its parts cascade in with `View.launchEntrance(order:)`.
 ///
 /// "Have an invite code?" is for a partner who was sent a code. The code is
 /// saved before sign-in, then joined on the next screen.
@@ -18,27 +18,18 @@ struct WelcomeView: View {
     @State private var isInviteSheetPresented = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: PaeoniaSpacing.space32) {
-                // Same size and place as the lockup in `RootBrandedFrame`, so the
-                // logo stays still while the screens after sign-in fade in under it.
-                PaeoniaBrandLockup(wordmarkSize: 36, taglineSize: 17)
-                    .frame(maxWidth: .infinity)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityAddTraits(.isHeader)
-                    .launchEntrance(order: 0)
+        // The hero sits centered between the lockup and the buttons. When it
+        // does not fit, such as at large text sizes, the same content scrolls
+        // and the spacers shrink to their minimum.
+        ViewThatFits(in: .vertical) {
+            content
 
-                WelcomeFeatureList()
-                    .launchEntrance(order: 1)
+            ScrollView {
+                content
             }
-            .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.screenTopSpacing)
-            .padding(.bottom, PaeoniaSpacing.space24)
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .scrollIndicators(.hidden)
-        .scrollBounceBehavior(.basedOnSize)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             SignInView(
                 isWorking: isWorking,
@@ -77,69 +68,40 @@ struct WelcomeView: View {
             }
         }
     }
-}
 
-/// What the two of you can do in Paeonia, one short row per feature.
-private struct WelcomeFeatureList: View {
-    private struct Feature: Identifiable {
-        let systemImage: String
-        let title: LocalizedStringResource
-        let message: LocalizedStringResource
-
-        var id: String { systemImage }
-    }
-
-    private let features = [
-        Feature(
-            systemImage: "scribble.variable",
-            title: .welcomeFeatureDrawingTitle,
-            message: .welcomeFeatureDrawingMessage
-        ),
-        Feature(
-            systemImage: "bubble.left.and.bubble.right.fill",
-            title: .welcomeFeatureQuestionsTitle,
-            message: .welcomeFeatureQuestionsMessage
-        ),
-        Feature(
-            systemImage: "photo.on.rectangle.angled",
-            title: .welcomeFeatureMemoriesTitle,
-            message: .welcomeFeatureMemoriesMessage
-        ),
-        Feature(
-            systemImage: "calendar.badge.clock",
-            title: .welcomeFeatureMilestonesTitle,
-            message: .welcomeFeatureMilestonesMessage
-        ),
-    ]
-
-    @ScaledMetric(relativeTo: .title3) private var iconSize: CGFloat = 44
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space20) {
-            ForEach(features) { feature in
-                HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
-                    Image(systemName: feature.systemImage)
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.paeoniaAccentPrimary)
-                        .frame(width: iconSize, height: iconSize)
-                        .background(.paeoniaAccentPrimary.opacity(0.14), in: Circle())
-                        .accessibilityHidden(true)
-
-                    VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                        Text(feature.title)
-                            .font(PaeoniaTypography.bodyEmphasis)
-                            .foregroundStyle(.paeoniaTextPrimary)
-
-                        Text(feature.message)
-                            .font(PaeoniaTypography.body)
-                            .foregroundStyle(.paeoniaTextSecondary)
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
+    private var content: some View {
+        VStack(spacing: 0) {
+            // Same size and place as the lockup in `RootBrandedFrame`, so the
+            // logo stays still while the screens after sign-in fade in under it.
+            PaeoniaBrandLockup(wordmarkSize: 36, taglineSize: 17)
+                .frame(maxWidth: .infinity)
                 .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
+                .launchEntrance(order: 0)
+
+            Spacer(minLength: PaeoniaSpacing.space24)
+
+            VStack(spacing: PaeoniaSpacing.space16) {
+                WelcomeHero()
+
+                Text(.welcomeSummary)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    // Narrower than the column, so the two lines come out
+                    // close in length under the picture.
+                    .frame(maxWidth: 300)
             }
+            .launchEntrance(order: 1)
+
+            Spacer(minLength: PaeoniaSpacing.space24)
         }
+        .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.top, PaeoniaSpacing.screenTopSpacing)
+        .padding(.bottom, PaeoniaSpacing.space24)
     }
 }
 

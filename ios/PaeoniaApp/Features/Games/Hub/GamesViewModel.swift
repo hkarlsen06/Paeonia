@@ -3,7 +3,7 @@ import SwiftUI
 
 /// A screen the Games tab can open.
 nonisolated enum GamesDestination: Hashable, Sendable {
-    /// A game's main screen. Hub cards, the Us tab card, deep links and pushes open it.
+    /// A game's main screen. Hub cards, the Home tab card, deep links and pushes open it.
     case game(GameKind)
 
     // Each game adds its other screens below, named with its Swift prefix.
@@ -104,7 +104,7 @@ final class GamesViewModel {
     }
 
     /// The game the partner opened most recently, while they have it open. The
-    /// Us tab shows its card.
+    /// Home tab shows its card.
     var partnerGame: (any GameHubModel)? {
         partnerGameKinds.first.flatMap { game($0) }
     }

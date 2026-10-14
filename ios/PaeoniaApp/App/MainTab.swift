@@ -2,8 +2,8 @@ import Foundation
 
 /// The high-level destinations shown in the paired tab bar.
 ///
-/// The first and last tabs use relationship-aware names: `home` is the shared
-/// couple space ("Us") and `you` is the personal corner ("You"). Countdown is
+/// `home` holds what is happening between the couple right now, and `us` is the
+/// couple's page: both partners, their relationship, and the settings. Countdown is
 /// intentionally not a tab — for MVP it is a derived value (anniversary/monthly
 /// milestone) that lives on Home, not a feature with its own surface.
 ///
@@ -15,27 +15,27 @@ enum MainTab: String, CaseIterable, Identifiable {
     case questions
     case games
     case memories
-    case you
+    case us
 
     var id: String { rawValue }
 
     var title: LocalizedStringResource {
         switch self {
-        case .home: .mainTabHomeUs
+        case .home: .mainTabHome
         case .questions: .mainTabQuestions
         case .games: .mainTabGames
         case .memories: .mainTabMemories
-        case .you: .mainTabYou
+        case .us: .mainTabUs
         }
     }
 
     var systemImage: String {
         switch self {
-        case .home: "heart.fill"
+        case .home: "house.fill"
         case .questions: "bubble.left.and.bubble.right.fill"
         case .games: "gamecontroller.fill"
         case .memories: "memories"
-        case .you: "person.crop.circle"
+        case .us: "heart.fill"
         }
     }
 }

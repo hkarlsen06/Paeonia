@@ -74,7 +74,7 @@ final class BoardGameHubModel<Board: BoardGameRules>: GameHubModel {
     }
 }
 
-/// A board game's card on the hub and the Us tab.
+/// A board game's card on the hub and the Home tab.
 struct BoardGameHubCard: View {
     let kind: GameKind
     let name: LocalizedStringResource

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-/// Covers the contextual milestone schedule shown on the Us-tab countdown card. The
+/// Covers the contextual milestone schedule shown on the Home tab countdown card. The
 /// kind of milestone has to change as a relationship ages — months while it's new,
 /// then anniversaries and round day counts — so these pin down which milestone is
 /// "next" at each stage and how many days are left.

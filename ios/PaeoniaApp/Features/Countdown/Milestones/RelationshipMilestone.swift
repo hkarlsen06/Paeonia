@@ -5,7 +5,7 @@ import Foundation
 ///
 /// The *kind* of milestone changes with how long they've been together: monthly
 /// markers while the relationship is new, then yearly anniversaries and the round
-/// day counts that fall in between. That's what keeps the Us-tab card feeling
+/// day counts that fall in between. That's what keeps the Home tab card feeling
 /// current instead of stuck on a single hard-coded "6-month" value — for a brand new
 /// couple it counts down to their first month, and for a couple of several years it
 /// counts down to their next anniversary or their 1,000-days mark.

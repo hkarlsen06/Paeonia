@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// The "Me" tab: the couple member's personal corner, and a menu rather than a
-/// control panel.
+/// The Us tab: the couple at the top, then a menu rather than a control panel.
 ///
 /// Every switch lives one push away on its own screen, so this stays short enough
 /// to scan. The account actions sit last, and each one only opens a centered
@@ -14,6 +13,7 @@ struct SettingsView: View {
     let currentProviderProfilePhotoAssetID: UUID?
     let currentAuthProvider: AuthProvider?
     let partnerUserID: UUID?
+    let partnerProfilePhotoAssetID: UUID?
     let relationshipStartedOn: String?
     let milestoneIsSaving: Bool
     let onSaveRelationshipStartedOn: (Date) async -> Bool
@@ -37,6 +37,8 @@ struct SettingsView: View {
     private let privacySafetyService: (any PrivacySafetyServicing)?
     private let privacyOperationProvider: (any SyncClientOperationProviding)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .title) private var profileAvatarSize: CGFloat = 56
 
     @State private var selectedRelationshipDate = Date()
     @State private var isEditingRelationshipDate = false
@@ -53,6 +55,7 @@ struct SettingsView: View {
         currentProviderProfilePhotoAssetID: UUID? = nil,
         currentAuthProvider: AuthProvider? = nil,
         partnerUserID: UUID? = nil,
+        partnerProfilePhotoAssetID: UUID? = nil,
         relationshipStartedOn: String? = nil,
         milestoneIsSaving: Bool = false,
         onSaveRelationshipStartedOn: @escaping (Date) async -> Bool = { _ in false },
@@ -74,6 +77,7 @@ struct SettingsView: View {
         self.currentProviderProfilePhotoAssetID = currentProviderProfilePhotoAssetID
         self.currentAuthProvider = currentAuthProvider
         self.partnerUserID = partnerUserID
+        self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.relationshipStartedOn = relationshipStartedOn
         self.milestoneIsSaving = milestoneIsSaving
         self.onSaveRelationshipStartedOn = onSaveRelationshipStartedOn
@@ -94,6 +98,9 @@ struct SettingsView: View {
 
     var body: some View {
         List {
+            Section {
+                coupleHeader
+            }
             Group {
                 Section {
                     profileRow
@@ -106,7 +113,7 @@ struct SettingsView: View {
         }
         .listStyle(.insetGrouped)
         .paeoniaGroupedList()
-        .navigationTitle(Text(.mainTabYou))
+        .navigationTitle(Text(.mainTabUs))
         .navigationBarTitleDisplayMode(.large)
         // The notices come from screens pushed on top of this one, but this view
         // owns the view model and stays alive underneath them, so the banner keeps
@@ -140,9 +147,23 @@ struct SettingsView: View {
 // MARK: - Menu
 
 extension SettingsView {
-    /// The tab opens on the user's own identity. Name and photo are edited on the
-    /// screen behind it, above the account actions. Those are serious enough to
-    /// sit one deliberate step away instead of on the menu.
+    /// Sits on the plum background instead of in a card, so it reads as the top of
+    /// the page rather than a row.
+    private var coupleHeader: some View {
+        SettingsCoupleHeader(
+            currentName: currentDisplayName?.trimmedNonEmpty ?? String(localized: .pairingCelebrationYouName),
+            currentProfilePhotoAssetID: currentCustomProfilePhotoAssetID ?? currentProviderProfilePhotoAssetID,
+            partnerName: partnerName,
+            partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+            relationshipStartedOn: relationshipStartedOn
+        )
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets())
+    }
+
+    /// Name and photo are edited on the screen behind this row, above the account
+    /// actions. Those are serious enough to sit one deliberate step away instead
+    /// of on the menu.
     private var profileRow: some View {
         NavigationLink {
             ProfileSettingsView(
@@ -164,18 +185,45 @@ extension SettingsView {
                 )
             )
         } label: {
-            SettingsProfileRow(
-                displayName: currentDisplayName,
-                customProfilePhotoAssetID: currentCustomProfilePhotoAssetID,
-                providerProfilePhotoAssetID: currentProviderProfilePhotoAssetID
-            )
+            HStack(spacing: PaeoniaSpacing.space16) {
+                PaeoniaProfilePhotoAvatar(
+                    mediaAssetID: currentCustomProfilePhotoAssetID ?? currentProviderProfilePhotoAssetID,
+                    name: profileRowName,
+                    tint: .paeoniaPartnerOne,
+                    size: min(profileAvatarSize, 72)
+                )
+                .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                    Text(profileRowName)
+                        .font(PaeoniaTypography.title)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    // Clerk keeps the email with its saved session, so this works offline.
+                    if let email = PaeoniaClerk.currentEmail() {
+                        Text(email)
+                            .font(PaeoniaTypography.caption)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                            .truncationMode(.middle)
+                    }
+                }
+                .layoutPriority(1)
+            }
+            .padding(.vertical, PaeoniaSpacing.space4)
         }
+    }
+
+    private var profileRowName: String {
+        currentDisplayName?.trimmedNonEmpty ?? String(localized: .settingsProfileFallbackName)
     }
 
     private var relationshipSection: some View {
         Section {
             // The date editor is a modal task (Cancel/Save), so it presents as a
-            // sheet, same as from the Us-tab milestone tile, instead of a push
+            // sheet, same as from the Home tab milestone tile, instead of a push
             // that would nest the editor's own navigation stack.
             Button {
                 selectedRelationshipDate = relationshipStartDate ?? Date()

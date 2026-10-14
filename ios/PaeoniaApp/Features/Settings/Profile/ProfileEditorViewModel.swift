@@ -3,7 +3,7 @@ import UIKit
 
 /// The name and photo editor's state and async work.
 ///
-/// The Me tab owns one instance, so a save keeps running and keeps showing its
+/// The Us tab owns one instance, so a save keeps running and keeps showing its
 /// progress if the user leaves the profile screen and comes back.
 @MainActor
 @Observable

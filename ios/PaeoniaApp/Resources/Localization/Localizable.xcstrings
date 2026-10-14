@@ -10462,7 +10462,7 @@
       }
     },
     "home.dailyPrompt.eyebrow" : {
-      "comment" : "Small overline above today's shared questions on the Us tab; the couple answers three each day",
+      "comment" : "Small overline above today's shared questions on the Home tab; the couple answers three each day",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -10714,7 +10714,7 @@
       }
     },
     "home.map.openHint" : {
-      "comment" : "Accessibility hint for the map tile on the Us tab; tapping opens the locations in the Maps app.",
+      "comment" : "Accessibility hint for the map tile on the Home tab; tapping opens the locations in the Maps app.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11182,7 +11182,7 @@
       }
     },
     "home.milestone.setup.title" : {
-      "comment" : "Title on the Us-tab milestone setup tile when the couple has not chosen their relationship start date",
+      "comment" : "Title on the Home tab milestone setup tile when the couple has not chosen their relationship start date",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11200,7 +11200,7 @@
       }
     },
     "home.milestone.timeline.accessibilityHint" : {
-      "comment" : "Accessibility hint on the Us-tab milestone card; tapping opens the milestone timeline sheet",
+      "comment" : "Accessibility hint on the Home tab milestone card; tapping opens the milestone timeline sheet",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11326,7 +11326,7 @@
       }
     },
     "home.milestone.title.days" : {
-      "comment" : "Milestone name shown under the day count on the Us-tab countdown card for a round day-count marker. %@ is the day count (e.g. 100, 1,000). Must wrap across lines; avoid long unbreakable compounds.",
+      "comment" : "Milestone name shown under the day count on the Home tab countdown card for a round day-count marker. %@ is the day count (e.g. 100, 1,000). Must wrap across lines; avoid long unbreakable compounds.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11344,7 +11344,7 @@
       }
     },
     "home.milestone.title.firstAnniversary" : {
-      "comment" : "Milestone name shown under the day count on the Us-tab countdown card: the couple's first one-year anniversary",
+      "comment" : "Milestone name shown under the day count on the Home tab countdown card: the couple's first one-year anniversary",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11362,7 +11362,7 @@
       }
     },
     "home.milestone.title.firstMonth" : {
-      "comment" : "Milestone name shown under the day count on the Us-tab countdown card: the couple's first whole month together",
+      "comment" : "Milestone name shown under the day count on the Home tab countdown card: the couple's first whole month together",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11380,7 +11380,7 @@
       }
     },
     "home.milestone.title.halfYear" : {
-      "comment" : "Milestone name shown under the day count on the Us-tab countdown card: six months, phrased as half a year",
+      "comment" : "Milestone name shown under the day count on the Home tab countdown card: six months, phrased as half a year",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11398,7 +11398,7 @@
       }
     },
     "home.milestone.title.months" : {
-      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …'. %@ is the number of months (2–11, never 6).",
+      "comment" : "Milestone countdown subject on the Home tab, reads after 'X days until …'. %@ is the number of months (2–11, never 6).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11416,7 +11416,7 @@
       }
     },
     "home.milestone.title.years" : {
-      "comment" : "Milestone countdown subject on the Us tab, reads after 'X days until …'. %@ is the number of years (2 or more).",
+      "comment" : "Milestone countdown subject on the Home tab, reads after 'X days until …'. %@ is the number of years (2 or more).",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11488,7 +11488,7 @@
       }
     },
     "home.streak.label" : {
-      "comment" : "Label under the streak number on the Us tab, e.g. 12 day streak",
+      "comment" : "Label under the streak number on the Home tab, e.g. 12 day streak",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11775,20 +11775,20 @@
         }
       }
     },
-    "mainTab.home.us" : {
-      "comment" : "Title for the shared couple Home tab in the main tab bar",
+    "mainTab.home" : {
+      "comment" : "Title for the Home tab in the main tab bar. It shows what is happening between the couple right now.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Us"
+            "value" : "Home"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Oss"
+            "value" : "Hjem"
           }
         }
       }
@@ -11829,20 +11829,20 @@
         }
       }
     },
-    "mainTab.you" : {
-      "comment" : "Title for the personal profile/settings tab in the main tab bar",
+    "mainTab.us" : {
+      "comment" : "Title for the couple's tab in the main tab bar and of the screen it opens. It shows both partners at the top, then the relationship, profile, and app settings.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Me"
+            "value" : "Us"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Meg"
+            "value" : "Oss"
           }
         }
       }
@@ -13133,60 +13133,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Treffene våre"
-          }
-        }
-      }
-    },
-    "mindMeld.hub.artwork.first" : {
-      "comment" : "Short word in capitals on the first player's card in the picture on the Games tab card. It is decoration only, and VoiceOver skips it. With the second word it should lead to the shared word.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SEA"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "HAV"
-          }
-        }
-      }
-    },
-    "mindMeld.hub.artwork.match" : {
-      "comment" : "Short word in capitals that both players pick in the second round of the picture on the Games tab card. It links the first two words, like sea + salt = water. Decoration only, and VoiceOver skips it. Keep it short so it fits a small card.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "WATER"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VANN"
-          }
-        }
-      }
-    },
-    "mindMeld.hub.artwork.second" : {
-      "comment" : "Short word in capitals on the second player's card in the picture on the Games tab card. It is decoration only, and VoiceOver skips it. With the first word it should lead to the shared word.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SALT"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SALT"
           }
         }
       }
@@ -17596,7 +17542,7 @@
       }
     },
     "settings.account.logoutButton" : {
-      "comment" : "Me tab: sign out of the app on this device",
+      "comment" : "Us tab: sign out of the app on this device",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -18548,24 +18494,6 @@
         }
       }
     },
-    "settings.profile.row.message" : {
-      "comment" : "Subtitle under the user's name at the top of the Me tab. The row opens the screen with their name, photo, and account actions (log out, leave the relationship, delete the account).",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Name, photo, and account"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Navn, bilde og konto"
-          }
-        }
-      }
-    },
     "settings.profile.save" : {
       "comment" : "Save changes",
       "extractionState" : "manual",
@@ -18675,7 +18603,7 @@
       }
     },
     "settings.profile.sectionTitle" : {
-      "comment" : "Your profile",
+      "comment" : "Title of the Us tab row that opens the user's own profile, and of the screen it opens",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -19197,7 +19125,7 @@
       }
     },
     "settings.purchases.sectionTitle" : {
-      "comment" : "Title of the Me tab row and screen for the subscription: manage it in the App Store or restore a purchase.",
+      "comment" : "Title of the Us tab row and screen for the subscription: manage it in the App Store or restore a purchase.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -19956,20 +19884,20 @@
         }
       }
     },
-    "storyChain.hub.status.partnerWriting" : {
-      "comment" : "Story Chain card status. %@ is the partner's name.",
+    "storyChain.hub.status.partnerTurn" : {
+      "comment" : "Story Chain card status: it is your partner's turn to add a line. They may not be writing right now. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ is writing"
+            "value" : "%@'s turn to write"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ skriver"
+            "value" : "%@ sin tur til å skrive"
           }
         }
       }
@@ -22068,24 +21996,6 @@
         }
       }
     },
-    "welcome.feature.drawing.message" : {
-      "comment" : "Welcome screen feature description for the drawing widget",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your drawing shows up in the Paeonia widget on their phone."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tegningen din dukker opp i Paeonia-widgeten på telefonen til partneren din."
-          }
-        }
-      }
-    },
     "welcome.feature.drawing.title" : {
       "comment" : "Welcome screen feature title: send drawings to the partner's Home Screen widget",
       "extractionState" : "manual",
@@ -22100,24 +22010,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tegn på hjemskjermen til partneren din"
-          }
-        }
-      }
-    },
-    "welcome.feature.memories.message" : {
-      "comment" : "Welcome screen feature description for shared memories",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save photos and moments from your time together in one place."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Samle bilder og øyeblikk fra tiden sammen på ett sted."
           }
         }
       }
@@ -22140,24 +22032,6 @@
         }
       }
     },
-    "welcome.feature.milestones.message" : {
-      "comment" : "Welcome screen feature description for relationship milestones",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See how long you have been together and what is coming up next."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se hvor lenge dere har vært sammen, og hva som kommer snart."
-          }
-        }
-      }
-    },
     "welcome.feature.milestones.title" : {
       "comment" : "Welcome screen feature title for relationship milestones and countdown",
       "extractionState" : "manual",
@@ -22172,24 +22046,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tell ned til de store dagene"
-          }
-        }
-      }
-    },
-    "welcome.feature.questions.message" : {
-      "comment" : "Welcome screen feature description for the daily questions",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer a few questions each day, then see what your partner said."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar på noen spørsmål hver dag, og se hva partneren din svarte."
           }
         }
       }
@@ -22316,6 +22172,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skriv inn invitasjonskoden"
+          }
+        }
+      }
+    },
+    "welcome.summary" : {
+      "comment" : "One line under the picture on the welcome screen, before sign-in. Says what couples do in the app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send drawings, answer questions together and keep your memories in one place."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send tegninger, svar på spørsmål sammen og samle minnene deres på ett sted."
           }
         }
       }

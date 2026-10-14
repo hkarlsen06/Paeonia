@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The Questions tab: a calm overview of today's challenge. The hero card mirrors
-/// the Us-tab prompt card and opens the focused answering flow (zooming into it).
+/// the Home tab prompt card and opens the focused answering flow (zooming into it).
 /// Once the user has answered today's questions it shrinks to a one-row card.
 /// Below it, every question — the user's own and the partner's — sits in one list:
 /// questions still waiting for the user's answer are pinned on top so they're never

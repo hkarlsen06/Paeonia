@@ -4,7 +4,7 @@ import SwiftUI
 /// The focused, full-screen answering experience for today's daily challenge.
 ///
 /// It is presented as a full-screen cover that zooms out of the card that opened it
-/// (the Us-tab prompt card or the Questions overview hero card), so the card appears to
+/// (the Home tab prompt card or the Questions overview hero card), so the card appears to
 /// grow into the screen. The body steps through one question at a time, a quiet "Skip"
 /// swaps an unanswered question for a fresh one (the backend caps swaps per day), and
 /// the Close button — or a drag-down — shrinks it back into the card.

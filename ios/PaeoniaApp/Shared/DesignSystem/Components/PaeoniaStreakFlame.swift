@@ -8,7 +8,7 @@ import SwiftUI
 /// The component is purely presentational. Pass the streak `count` and it plays
 /// the count-up on appear. It is deliberately reusable: the answer-flow
 /// completion screen uses it as a hero now, and a calmer `playsCelebration:
-/// false` form is ready for a static surface (e.g. the Us-tab streak label,
+/// false` form is ready for a static surface (e.g. the Home tab streak label,
 /// `home.streak.label`) when that lands.
 ///
 /// Everything is time-driven and deterministic (no external animation state), so

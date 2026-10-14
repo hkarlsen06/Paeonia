@@ -301,7 +301,7 @@ The star strings are the shared keys `games.star.button`, `games.star.buttonStar
 
 ### Hub card
 
-The shared card frame from the foundation, with its own artwork: a strip of paper in three parts, tilted toward the viewer, with a dashed crease at each fold. On first appear the parts swing open from the top one by one, and each part draws itself line by line before the next one opens: a cat's head, a striped sweater body, chicken legs, in widget ink colors. Then a glow comes up behind the creature and it hops. It plays once, and starts finished under Reduce Motion.
+The shared card frame from the foundation, with its own artwork: a strip of light paper in three parts with a dashed crease at each fold, and a pink and a blue crayon beside it, one for each partner. On first appear the parts swing open from the top one by one, and the crayon whose turn it is wiggles as its part opens. The parts show a lavender kitten's head, a blue sweater with a heart, and duck feet, drawn as outlined stickers. The raised paw, the hem and the legs cross the folds. Then a glow comes up behind the creature, it hops, waves and blinks, and two hearts pop up. It plays once, and starts finished under Reduce Motion.
 
 | Status | English | Norwegian |
 |---|---|---|

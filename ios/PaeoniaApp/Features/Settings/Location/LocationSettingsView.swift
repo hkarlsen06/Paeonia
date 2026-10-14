@@ -3,7 +3,7 @@ import UIKit
 
 /// Location sharing on its own screen, so the one switch that decides whether a
 /// partner can see where you are is a deliberate stop rather than something you
-/// pass on the way down the Me tab.
+/// pass on the way down the Us tab.
 struct LocationSettingsView: View {
     let viewModel: LocationMapViewModel
     /// Names the partner in the copy instead of saying "your partner".

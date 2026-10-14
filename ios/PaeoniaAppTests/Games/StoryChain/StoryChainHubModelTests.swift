@@ -81,7 +81,7 @@ struct StoryChainHubModelTests {
             TurnCase(Env.state(game(.choosingOpening, turn: Fixture.me, current: nil)), .yourTurnToStart, true),
             TurnCase(Env.state(game(.choosingOpening, turn: Fixture.partner, current: nil)), .waitingForPartner, false),
             TurnCase(Env.writing(turn: Fixture.me, lines: myLine), .yourTurnToWrite, true),
-            TurnCase(Env.writing(turn: Fixture.partner, lines: theirLine), .partnerWriting, false),
+            TurnCase(Env.writing(turn: Fixture.partner, lines: theirLine), .partnerTurn, false),
             TurnCase(Env.titling(turn: Fixture.me, lines: myLines), .yourTurnToName, true),
             TurnCase(Env.titling(turn: Fixture.partner, lines: partnerLines), .waitingForPartner, false),
         ]
@@ -117,7 +117,7 @@ struct StoryChainHubModelTests {
             .addLine(Fixture.queuedLine(), ownerUserID: Fixture.me)
         await hub.reload()
 
-        #expect(hub.summary?.status == .partnerWriting)
+        #expect(hub.summary?.status == .partnerTurn)
         #expect(!hub.isYourTurn)
     }
 

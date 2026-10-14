@@ -321,7 +321,7 @@ The reveal. It should feel like closing a book you wrote together.
 
 ### Hub card
 
-- Artwork: a ruled notebook page tilted toward the viewer, where a story writes itself in looping handwriting. The ink changes where one partner's sentence ends and the other's begins, a dot of wet ink rides the tip of the line, one word gets the gold dare underline, and the flower pops in after the last word.
+- Artwork: a painting of a notebook page with lines in both partners' inks, one word underlined in gold, the fountain pen and an ink bottle. A peony bud pops up after the last line. It follows `docs/games/hub-artwork.md`.
 - Status: "Your turn to write", "Start a new story", "Give your story a title", "[Name] is writing", "Waiting for [Name]".
 - Detail line: "3 stories finished" once one exists.
 - The badge counts any of my turns: choosing an opening, writing, naming, or an unseen finished story.
@@ -334,7 +334,7 @@ The reveal. It should feel like closing a book you wrote together.
 | `hub.status.start` | Start a new story | Start en ny historie |
 | `hub.status.name` | Give your story a title | Gi historien en tittel |
 | `hub.status.read` | Read how your story ended | Les hvordan historien endte |
-| `hub.status.partnerWriting` | [Name] is writing | [Name] skriver |
+| `hub.status.partnerTurn` | [Name]'s turn to write | [Name] sin tur til å skrive |
 | `hub.finishedCount` | %lld stories finished | %lld historier ferdige |
 | `hub.action.write` | Write | Skriv |
 | `hub.action.open` | Open | Åpne |

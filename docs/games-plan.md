@@ -8,12 +8,13 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 - `docs/games/draw-and-guess.md`: the first game.
 - `docs/games/mind-meld.md`: the simultaneous word game.
+- `docs/games/hub-artwork.md`: the standard every game's hub picture follows.
 
 ## Decisions
 
 Decided on 2026-10-13.
 
-- **Hub with several games.** Every built game gets a full-width card, stacked. The game the partner is in comes first, then games waiting for this person, then catalog order. All cards share one frame (`GameHubCardFrame`): the game's own artwork, the partner-here chip, an optional badge such as the score, the name, a status line, the main button, and optional extras such as "Our drawings". The card glows while the game waits for this person.
+- **Hub with several games.** Every built game gets a full-width card, stacked. The game the partner is in comes first, then games waiting for this person, then catalog order. All cards share one frame (`GameHubCardFrame`): the game's own painting behind the whole card (`docs/games/hub-artwork.md`), the partner-here chip, an optional badge such as the score, the name, a status line, the main button, and optional extras such as "Our drawings". The card glows while the game waits for this person.
 - **Us tab with several games.** The Us tab shows one card: the game the partner opened most recently, while they have it open. It is the hub card without hub-only links.
 
 - **Games don't save to Memories.** A creative game keeps its own history instead, such as the finished drawings of Draw & Guess. Each partner can star rounds in that history, and stars are private: the partner isn't told and a star doesn't change the game. This replaces the opt-in save prompt from 2026-10-11 and the save prompt details from 2026-10-12. Board games and quick duels keep no history.
@@ -175,7 +176,7 @@ Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`
 
 1. Data: your gateway protocol and `Live<Prefix>Gateway`, your models, your cache, and your live feed, all in your folder. Register the feed in `Services/Live/LiveFeedRegistry.swift`, and clear your cache in `Storage/Privacy/LocalPrivacyPurgeService.swift` next to `gamesCache.clearAll()`. The feed posts `LocalStoreChanges.post(.games, ...)` after each write, so the tab re-reads. `GamesCache` holds the shared overview plus Draw & Guess's sections, so keep your data in your own cache.
 2. `Features/Games/Data/GamesDependencies.swift`: add your dependency fields after `now`, each with a default that works offline, and set the live ones in `GamesDependencies.live()`.
-3. A hub model that conforms to `GameHubModel` (`Features/Games/Hub/GameHubModel.swift`), such as `DrawAndGuessHubModel`. Its `card` builds a `GameHubCardFrame` with your artwork, status line, action title, and any badge or extras. Its `screen(for:)` returns your screens. `isYourTurn` drives the tab badge.
+3. A hub model that conforms to `GameHubModel` (`Features/Games/Hub/GameHubModel.swift`), such as `DrawAndGuessHubModel`. Its `card` builds a `GameHubCardFrame` with your artwork, status line, action title, and any badge or extras. The artwork follows `docs/games/hub-artwork.md`. Its `screen(for:)` returns your screens. `isYourTurn` drives the tab badge.
 4. `Features/Games/Hub/GamesViewModel.swift`: add `let <camelKind>: <Prefix>HubModel`, its line in `init`, and add it to `games`. From then on the game has its hub card (the partner's game first, then your turn, then catalog order), its part of the tab badge, the Us tab card while the partner is in it, and deep links and pushes that open `.game(.<kind>)`.
 5. `GamesDestination` (same file): your extra screens, such as a history, get cases with your prefix. Your main screen is `.game(.<kind>)`.
 6. Settings: read play style and language from the overview, `dependencies.cache.document(ownerUserID:).overview?.settings`. Setup is shared, so never ask for them in your game.

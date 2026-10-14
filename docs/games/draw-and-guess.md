@@ -490,7 +490,7 @@ Purpose. Find a drawing again. Every finished round that holds a drawing is here
 
 Entry points.
 - A `square.grid.2x2` button in the trailing toolbar of `DrawAndGuessScreen`, labelled "Our drawings".
-- A quiet link on the Games hub's Draw & Guess card, under the main button. It shows once the cached game state holds a finished round with a drawing. The card on the Us tab has no link.
+- A quiet link on the Games hub's Draw & Guess card, under the main button. It shows once the cached game state holds a finished round with a drawing. The card on the Home tab has no link.
 
 Look. The screen follows the shell above: `.paeoniaBackgroundSecondary`, dark toolbar, inline title, no cards. Only the drawing cells get a fill (`.paeoniaSurfaceSecondary`, `radius16`). Icons are plum and text is white. Nothing is red, because nothing here is destructive.
 

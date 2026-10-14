@@ -25,7 +25,6 @@ struct MindMeldWaitingView: View {
     var body: some View {
         GameFocusedLayout(fillsHeight: true) {
             VStack(spacing: PaeoniaSpacing.space24) {
-                MindMeldStatsHeader(melds: viewModel.stats?.melds ?? 0)
                 Spacer(minLength: PaeoniaSpacing.space16)
                 cards
                 text

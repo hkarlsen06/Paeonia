@@ -159,11 +159,11 @@ Copy keys start with `mindMeld.`, so their Swift symbols start with `mindMeld`. 
 
 - One screen, `MindMeldScreen`, opened from the Games tab and from the pushes. It shows one phase at a time, picked by `MindMeldResolver` from the server's state, the queued moves, and what this person has seen. The view body holds no rules.
 - Look. `.paeoniaScreenBackground(.paeoniaBackgroundSecondary)`, `.preferredColorScheme(.dark)`, inline title "Mind Meld" / "Tenk likt", dark toolbar. No cards except the two word cards and the trail chips.
-- Toolbar trailing. "Our melds" (`point.3.connected.trianglepath.dotted`) and a `…` menu with "Start over" while a game is in play.
+- Toolbar trailing. The melds capsule and a `…` menu with "Start over" while a game is in play. The capsule has both avatars, slightly overlapping (mine first), and the meld count, in the same capsule as the other games' scores. Tapping it opens "Our melds". It shows in every phase, at 0 melds too. VoiceOver: "Our melds, 3 melds together".
 - Phase change. Cross-fade plus a 12 pt rise over `PaeoniaMotion.meaningfulMoment`. Reduce Motion: cross-fade over `motionFast`.
 - The pinned bottom uses `paeoniaBottomBar`, capped with `.paeoniaReadableWidth()`. The text-led phases use `.paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)`.
 - Avatars are `PaeoniaProfilePhotoAvatar`, `.paeoniaPartnerOne` for me and `.paeoniaPartnerTwo` for the partner. My card is always on the leading side.
-- Stats capsule in the trailing toolbar on the write and waiting phases. It is a non-tappable capsule with the petal glyph (`camera.macro`) and "3 melds". VoiceOver: "3 melds together". Hidden at 0 melds.
+- The hub card has its own non-tappable stats capsule with the petal glyph (`camera.macro`) and "3 melds". VoiceOver: "3 melds together". Hidden at 0 melds.
 
 **Haptics used.** Existing tokens only.
 
@@ -184,22 +184,21 @@ Copy keys start with `mindMeld.`, so their Swift symbols start with `mindMeld`. 
 
 Purpose. Think of one word and lock it in, with the partner's progress in view.
 
-Layout, top to bottom.
+Layout, top to bottom. At normal text sizes the whole phase is meant to fit above the keyboard on a 6.1 inch phone, without scrolling.
 
-1. Eyebrow "Round 3 of 10" (`caption` bold, uppercase, tracking 1.4, `.paeoniaTextTertiary`).
-2. Round 1: title "Say any word" (`heroTitle`) and subtitle "[Name] does the same. Then you try to meet in the middle." Later rounds: the last two words as a pair of chips (`MindMeldWordPair`), mine leading, with a small `plus` between, and the title "Find a word that connects them".
-3. The trail so far, when round 3 or later: a compact column of earlier pairs above the last pair, at `caption` size in `.paeoniaTextTertiary`, so the narrowing shows.
+1. One line (`GameLiveRow`): partner status on the leading side (see below), and "Round 3 of 10" on the trailing side (`caption` bold, uppercase, tracking 1.4, `.paeoniaTextTertiary`).
+2. Round 1: title "Say any word" (`title`) and subtitle "[Name] does the same. Then you try to meet in the middle." Later rounds: the title "Find a word that connects them", then the last two words as a pair of chips (`MindMeldWordPair`), mine leading, with a small `plus` between.
+3. The trail so far, when round 3 or later: the two rounds before the last pair, in a compact column above it, at `caption` size in `.paeoniaTextTertiary`, so the narrowing shows. "Our melds" keeps the whole trail.
 4. The field. One large centered text field in `PaeoniaTypography.title`, `radius16`, `.paeoniaSurfaceSecondary`, 64 pt tall, `autocorrectionDisabled`, no autocapitalization, `submitLabel(.done)`. It takes focus when the phase opens. Placeholder "Type a word".
 5. Under the field, one line: a validation message (`exclamationmark.circle`, `caption`, `.paeoniaErrorText`) or, in round 1, the quiet "Surprise me" button (`dice`).
-6. Partner status, one fixed line (24 pt). See below.
-7. Pinned bottom, above the keyboard while it is open: primary "Lock in" (`lock.fill`). Disabled while the field is empty or a message shows. Return only closes the keyboard, because a locked word is final and a stray tap on Done must not lock it in.
+6. Pinned bottom, above the keyboard while it is open: the invite button while the partner is away, then primary "Lock in" (`lock.fill`). Lock in is disabled while the field is empty or a message shows. Return only closes the keyboard, because a locked word is final and a stray tap on Done must not lock it in.
 
 Partner status. A 24 pt avatar and one line:
 
 - "[Name] locked in" with `lock.fill` in `.paeoniaAccentPrimary`, when the server says so. It arrives with `cardReveal`, a pulse of the avatar (1 to 1.12 and back) and `partnerDrawingReceived()`. VoiceOver announces it.
 - "[Name] is typing" with three dots that rise in turn (`motionDefault`, repeating). Reduce Motion: still dots.
 - "[Name] is here" when the partner has the game open but isn't typing.
-- "[Name] will answer later" in `.paeoniaTextTertiary` when the partner is away. The invite button shows under the field, secondary style, until the partner arrives.
+- "[Name] will answer later" in `.paeoniaTextTertiary` when the partner is away. The invite button shows above Lock in, secondary style, until the partner arrives.
 
 Validation. Too long, too many words, no letter, and repeats show inline as the person types, with an announcement. Lock in on an invalid word fires `validationError()`.
 
@@ -331,7 +330,7 @@ When a person opens a game whose ending they have already seen, the screen shows
 
 ### 5. Our melds
 
-Entry points: the toolbar button on `MindMeldScreen`, "See our melds" on a finished reveal, and a quiet link on the hub card once the couple has a finished game.
+Entry points: the melds capsule in the toolbar of `MindMeldScreen`, "See our melds" on a finished reveal, and a quiet link on the hub card once the couple has a finished game.
 
 Layout, in one scroll view.
 
@@ -361,9 +360,9 @@ Empty states use `PaeoniaEmptyStateView`: no finished games yet (`point.3.connec
 
 ### Hub card
 
-`MindMeldHubCard` follows the Draw & Guess card: artwork on top with the partner-here chip and the stats capsule, then the title, a status line, the primary button and the "Our melds" link.
+`MindMeldHubCard` follows the Draw & Guess card: the painting behind the whole card, with the partner-here chip and the stats capsule over its scene, then the title, a status line, the primary button and the "Our melds" link.
 
-Artwork (`MindMeldHubArtwork`, 200 pt tall). A short game told with word cards drawn like the game's own. Round one deals in from the sides: SEA in `.paeoniaPartnerOne` and SALT in `.paeoniaInkLavender`, which then fade back. Two cards drop in face down and flip one after the other. Both say WATER, so they slide together, their borders turn green, and a petal mark pops over them. It runs over 4.6 s and plays once on appear. Reduce Motion: the final frame. Drawn in SwiftUI shapes, hidden from VoiceOver.
+Artwork (`MindMeldHubArtwork`). A painting of two blank word cards leaning together, one glowing in each partner's color, with a green light where they touch. The beat opens a peony where they meet. It follows `docs/games/hub-artwork.md`.
 
 | State | Status line | Button |
 |---|---|---|
@@ -389,8 +388,6 @@ Artwork (`MindMeldHubArtwork`, 200 pt tall). A short game told with word cards d
 | `hub.pick` | Pick your word | Velg ordet ditt |
 | `hub.open` | Open | Åpne |
 | `hub.seeWords` | See your words | Se ordene |
-| `hub.artwork.first` / `hub.artwork.second` | SEA / SALT (the artwork's first round) | HAV / SALT |
-| `hub.artwork.match` | WATER (the artwork's matching cards) | VANN |
 
 ### Wide layouts and Dynamic Type
 

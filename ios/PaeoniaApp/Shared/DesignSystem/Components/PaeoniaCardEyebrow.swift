@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A small uppercase overline used at the top of cards to name a section without
-/// competing with the card's main content. Keeps the Us tab cards visually
+/// competing with the card's main content. Keeps the Home tab cards visually
 /// consistent.
 struct PaeoniaCardEyebrow: View {
     private let title: LocalizedStringResource

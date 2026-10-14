@@ -27,7 +27,7 @@ struct PaeoniaAppTests {
     }
 
     @Test func mainTabsRemainInVisibleOrder() {
-        #expect(MainTab.allCases == [.home, .questions, .games, .memories, .you])
+        #expect(MainTab.allCases == [.home, .questions, .games, .memories, .us])
     }
 
     @MainActor
@@ -258,7 +258,7 @@ struct PaeoniaAppTests {
 
         // The drawing lives on the Home tab, so opening it from another tab must
         // also bring the user there or the screen would open hidden behind it.
-        pairedViewModel.selectMainTab(.you)
+        pairedViewModel.selectMainTab(.us)
         pairedViewModel.openWidgetDrawing()
 
         #expect(pairedViewModel.presentedDestination == .widgetDrawing)
@@ -288,7 +288,7 @@ struct PaeoniaAppTests {
             accessRouteService: StaticAccessRouteService(route: .paired)
         )
 
-        pairedViewModel.selectMainTab(.you)
+        pairedViewModel.selectMainTab(.us)
         pairedViewModel.openWidgetDrawing()
 
         #expect(pairedViewModel.presentedDestination == nil)

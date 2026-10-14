@@ -11,7 +11,7 @@ struct DrawAndGuessScoreCapsule: View {
             switch score {
             case let .together(total):
                 Image(systemName: "heart.fill")
-                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .gameCapsuleIconStyle()
                     .accessibilityHidden(true)
                 Text(.gamesDrawAndGuessPoints(total))
             case let .against(mine, theirs):
@@ -27,10 +27,9 @@ struct DrawAndGuessScoreCapsule: View {
         }
         .font(PaeoniaTypography.caption.weight(.semibold))
         .monospacedDigit()
-        .foregroundStyle(.paeoniaTextPrimary)
         .padding(horizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space4)
-        .background(.paeoniaSurfaceSecondary, in: Capsule(style: .continuous))
+        .gameCapsuleStyle()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
         .accessibilityIdentifier("draw.score")

@@ -3,6 +3,10 @@ import SwiftUI
 /// Think of one word and lock it in, with the partner's progress in view. Round 1
 /// asks for any word. Later rounds show the last two words and ask for one that
 /// connects them. The word checks run in the view model as the person types.
+///
+/// At normal text sizes the phase fits above the keyboard without scrolling. The
+/// partner and the round share the top line, the invite sits in the bar with
+/// Lock in, and only the last rounds of the trail show.
 struct MindMeldWriteView: View {
     @Bindable var viewModel: MindMeldViewModel
 
@@ -12,18 +16,25 @@ struct MindMeldWriteView: View {
     /// How long the screen waits before it opens the keyboard, so the phase change finishes first.
     private static let focusDelay: Duration = .milliseconds(350)
 
+    /// Earlier rounds shown above the pair to connect.
+    private static let earlierRoundsShown = 2
+
     var body: some View {
         GameFocusedLayout(barRidesKeyboard: true) {
-            VStack(spacing: PaeoniaSpacing.space24) {
-                MindMeldStatsHeader(melds: viewModel.stats?.melds ?? 0)
+            VStack(spacing: PaeoniaSpacing.space20) {
+                topLine
                 heading
                 earlierWords
                 fieldBlock
-                partnerBlock
             }
             .frame(maxWidth: .infinity)
-            .padding(.top, PaeoniaSpacing.space8)
         } bottom: {
+            GameInviteButton(
+                invite: viewModel.invite,
+                partnerName: viewModel.partnerName,
+                send: viewModel.sendInvite,
+                identifier: "mindMeld.invite"
+            )
             lockInButton
         }
         .animation(stateChange, value: viewModel.draftIssue)
@@ -44,6 +55,22 @@ struct MindMeldWriteView: View {
         reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.stateChange
     }
 
+    // MARK: Top line
+
+    /// The partner on the left and the round on the right.
+    private var topLine: some View {
+        GameLiveRow {
+            MindMeldPartnerStatusRow(partner: viewModel.partner, status: viewModel.partnerStatus)
+        } trailing: {
+            Text(.mindMeldRound(viewModel.resolution.roundNumber, viewModel.maxRounds))
+                .font(PaeoniaTypography.caption.weight(.bold))
+                .tracking(1.4)
+                .textCase(.uppercase)
+                .foregroundStyle(.paeoniaTextTertiary)
+                .lineLimit(1)
+        }
+    }
+
     // MARK: Heading
 
     private var heading: some View {
@@ -60,13 +87,8 @@ struct MindMeldWriteView: View {
                 .transition(.opacity)
                 .accessibilityIdentifier("mindMeld.partnerRestarted")
             }
-            Text(.mindMeldRound(viewModel.resolution.roundNumber, viewModel.maxRounds))
-                .font(PaeoniaTypography.caption.weight(.bold))
-                .tracking(1.4)
-                .textCase(.uppercase)
-                .foregroundStyle(.paeoniaTextTertiary)
             Text(viewModel.isFirstRound ? .mindMeldWriteFirstTitle : .mindMeldWriteConnectTitle)
-                .font(PaeoniaTypography.heroTitle)
+                .font(PaeoniaTypography.title)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
@@ -81,11 +103,12 @@ struct MindMeldWriteView: View {
     }
 
     /// The pair to connect, with the rounds before it in small type above, so the
-    /// couple sees the words come closer.
+    /// couple sees the words come closer. Only the last earlier rounds show, so a
+    /// long game still fits above the keyboard. "Our melds" keeps the whole trail.
     @ViewBuilder
     private var earlierWords: some View {
         if let pair = viewModel.resolution.connectingPair {
-            let earlier = viewModel.resolution.trail.dropLast().map {
+            let earlier = viewModel.resolution.trail.dropLast().suffix(Self.earlierRoundsShown).map {
                 (mine: $0.mine, theirs: $0.theirs, isMeld: false, isCounted: false)
             }
             VStack(spacing: PaeoniaSpacing.space12) {
@@ -144,8 +167,8 @@ struct MindMeldWriteView: View {
     }
 
     /// One line: what is wrong with the word, or in round 1 the Surprise me button.
-    /// It keeps its height, so nothing below it moves. The height fits a button or
-    /// a message that wraps to two lines.
+    /// Round 1 keeps the button's height, so a message and the button swap in
+    /// place. Later rounds take no room until a message shows.
     private var underFieldLine: some View {
         ZStack {
             if let issue = viewModel.draftIssue {
@@ -176,22 +199,7 @@ struct MindMeldWriteView: View {
                 .accessibilityIdentifier("mindMeld.surprise")
             }
         }
-        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-    }
-
-    // MARK: Partner
-
-    private var partnerBlock: some View {
-        VStack(spacing: PaeoniaSpacing.space16) {
-            MindMeldPartnerStatusRow(partner: viewModel.partner, status: viewModel.partnerStatus)
-                .padding(.horizontal, PaeoniaSpacing.space8)
-            GameInviteButton(
-                invite: viewModel.invite,
-                partnerName: viewModel.partnerName,
-                send: viewModel.sendInvite,
-                identifier: "mindMeld.invite"
-            )
-        }
+        .frame(maxWidth: .infinity, minHeight: viewModel.isFirstRound ? PaeoniaSpacing.compactButtonHeight : 0)
     }
 
     // MARK: Lock in

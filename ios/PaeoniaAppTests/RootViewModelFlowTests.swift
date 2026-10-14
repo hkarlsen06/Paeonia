@@ -171,7 +171,7 @@ struct RootViewModelFlowTests {
         )
         await viewModel.start()
         #expect(viewModel.state == .paired)
-        viewModel.selectMainTab(.you)
+        viewModel.selectMainTab(.us)
 
         await viewModel.refreshAfterPairingChange()
 

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Exquisite corpse on the hub: artwork, whose turn it is, who is here, and how
-/// many creatures the couple has made. The Us tab shows the same card while the
+/// many creatures the couple has made. The Home tab shows the same card while the
 /// partner is in the game.
 struct ExquisiteCorpseHubCard: View {
     let summary: ExquisiteCorpseHubSummary
@@ -56,10 +56,9 @@ struct ExquisiteCorpseCountCapsule: View {
         Text(.exquisiteCorpseHubCount(count))
             .font(PaeoniaTypography.caption.weight(.semibold))
             .monospacedDigit()
-            .foregroundStyle(.paeoniaTextPrimary)
             .padding(.horizontal, PaeoniaSpacing.space12)
             .padding(.vertical, PaeoniaSpacing.space4)
-            .background(.paeoniaSurfaceSecondary, in: Capsule(style: .continuous))
+            .gameCapsuleStyle()
             .accessibilityIdentifier("games.hub.exquisiteCorpse.count")
     }
 }

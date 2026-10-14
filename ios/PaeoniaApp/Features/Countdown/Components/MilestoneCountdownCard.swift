@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The countdown to the couple's next milestone on the Us tab. Countdown is not a
+/// The countdown to the couple's next milestone on the Home tab. Countdown is not a
 /// tab of its own — it lives here as a derived value computed from when the couple
 /// started (`couples.started_on`).
 ///
@@ -273,7 +273,7 @@ struct MilestoneCountdownCard: View {
 }
 
 private extension View {
-    /// The Us-tab tile treatment shared with the widget drawing card in the same
+    /// The Home tab tile treatment shared with the widget drawing card in the same
     /// row: square footprint, tile fill, rounded corners, hairline stroke, and
     /// lift. Content is centred both ways so it reads as one group with even
     /// space around it.

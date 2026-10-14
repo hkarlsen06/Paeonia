@@ -42,14 +42,13 @@ struct StoryChainHubCard: View {
                 Text(.storyChainHubFinishedCount(summary.finishedCount))
             } icon: {
                 Image(systemName: "books.vertical")
-                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .gameCapsuleIconStyle()
                     .accessibilityHidden(true)
             }
             .font(PaeoniaTypography.caption.weight(.semibold))
-            .foregroundStyle(.paeoniaTextPrimary)
             .padding(.horizontal, PaeoniaSpacing.space12)
             .padding(.vertical, PaeoniaSpacing.space8)
-            .background(.paeoniaSurfaceSecondary, in: Capsule(style: .continuous))
+            .gameCapsuleStyle()
             .accessibilityIdentifier("games.hub.storyChain.finished")
         }
     }
@@ -91,7 +90,7 @@ extension StoryChainHubSummary.Status {
         case .yourTurnToWrite: .storyChainHubStatusWrite
         case .yourTurnToName: .storyChainHubStatusName
         case .readEnding: .storyChainHubStatusRead
-        case .partnerWriting: .storyChainHubStatusPartnerWriting(partnerName)
+        case .partnerTurn: .storyChainHubStatusPartnerTurn(partnerName)
         case .waitingForPartner: .gamesHubStatusWaiting(partnerName)
         }
     }
@@ -100,7 +99,7 @@ extension StoryChainHubSummary.Status {
     var actionTitle: LocalizedStringResource {
         switch self {
         case .yourTurnToStart, .yourTurnToWrite, .yourTurnToName: .storyChainHubActionWrite
-        case .notStarted, .readEnding, .partnerWriting, .waitingForPartner: .storyChainHubActionOpen
+        case .notStarted, .readEnding, .partnerTurn, .waitingForPartner: .storyChainHubActionOpen
         }
     }
 }

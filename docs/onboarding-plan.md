@@ -22,7 +22,7 @@ Cold-launch intro → `SignInView` (single screen) → `AuthOnboardingView` (nam
 - Access states live in `ios/PaeoniaApp/Services/Access/AccessRoute.swift` (`AccessRouteResolver`). The paywall shows at `.limitedAuthenticated` and `.pairedPaywalled`.
 - The paywall already sells a **14-day free trial** (introductory offer live in App Store Connect) and embeds invite-code entry (`ios/PaeoniaApp/Features/Paywall/Components/PaywallInviteCodeView.swift`), so the joining partner pays nothing — one `coupleEntitlement` covers the couple.
 - Post-auth setup collects only display name (single word, prefilled from Apple/Google) plus an optional photo (`ios/PaeoniaApp/Features/Auth/AuthBaselineViews.swift`, `AuthOnboardingView`). Timezone is captured silently.
-- **Relationship dates are contextual and truthful.** Ordinary invite acceptance leaves `couples.started_on` unset. The Us-tab milestone tile shows an honest setup state, either entitled partner can set or edit the date, and the local-first queue preserves the newest choice until both clients refresh.
+- **Relationship dates are contextual and truthful.** Ordinary invite acceptance leaves `couples.started_on` unset. The Home tab milestone tile shows an honest setup state, either entitled partner can set or edit the date, and the local-first queue preserves the newest choice until both clients refresh.
 - **Permissions are contextual asks.** Push keeps its post-pairing timing, but `RootView` first presents a persisted one-benefit primer and requests the iOS permission only after an explicit continue. Location remains lazy at the map surface, where the empty state explains latest-location-only, foreground-only, no-history behavior before the system request.
 
 ## Pre-Auth vs Post-Auth
@@ -43,7 +43,7 @@ These are two different jobs and should feel different.
    - **Copy reframe** — center the paywall on "start your free trial and open your shared space with {partner}" rather than a feature/price gate. Same offer; the payment gains an emotional, concrete purpose.
    - **Waiting-room first gift (optional, fast-follow)** — after the inviter starts the trial and sends the invite, let them write the first note / draw the first doodle / answer the first question while they wait, so the partner arrives to something waiting for them. Highest-leverage lever against the "one partner alone" failure. Not a v1 blocker.
 2. **Pre-auth hook: 3 shared-artifact screens** (swipeable, skippable) before the sign-in wall — daily-question reveal, home-screen doodle, countdown. One benefit per screen. Also surface a first-class "Joining a partner? Enter your code" path so a texted-a-code joiner never lands on the paywall by accident.
-3. **Anniversary is not collected during onboarding.** Make `couples.started_on` nullable; stop hard-coding it at pairing. Add a setup state to the Us-tab milestone card that asks the couple to set the day they got together, written by either partner and editable later.
+3. **Anniversary is not collected during onboarding.** Make `couples.started_on` nullable; stop hard-coding it at pairing. Add a setup state to the Home tab milestone card that asks the couple to set the day they got together, written by either partner and editable later.
 4. **Permissions get priming.** Push keeps its `.paired` timing but gains a one-benefit primer with a "Not now"; location stays lazy at the map surface with one line of context. Neither is asked during onboarding.
 
 ## Target Flow
@@ -71,7 +71,7 @@ Collect each item at the latest moment it is actually needed, tied to the benefi
 | Timezone | Yes | Silent, at onboarding | Couple-day rituals need it; never ask |
 | Profile photo | Optional | Same setup step, skippable | Warms celebration + paired header |
 | The pairing link | Yes | After paywall (A); via link (B) | The activation gate |
-| Anniversary (`started_on`) | Deferred | Us-tab milestone setup card | Makes the countdown truthful; contextual moment |
+| Anniversary (`started_on`) | Deferred | Home tab milestone setup card | Makes the countdown truthful; contextual moment |
 | Push permission | Core loop | Primed, at/just-after pairing | Tie to "when {partner} draws or replies" |
 | Location permission | Optional | Lazy + primed, at the map surface | Both partners must opt in |
 | Photo library | Optional | Lazy, at first save | Already correct |
@@ -85,7 +85,7 @@ Turns a faked value into an honest, contextual moment and unblocks accurate coun
 - [x] Make `couples.started_on` optional in `backend/convex/schema.ts`.
 - [x] Add the public `relationship:set_couple_started_on` mutation in `backend/convex/relationship.ts`. Either partner in the couple can write it. The function checks membership and entitlement from the session, never from arguments (see `backend/AGENTS.md`).
 - [x] Pairing: drop the hard-coded `PairingStartDate(date: Date())` in `ios/PaeoniaApp/Features/Paywall/Offer/PaywallViewModel.swift`; make `PairingStartDate` / the `p_started_on` param optional through `PairingService.acceptInvite` and `PairingGateway` so accept no longer sets a date.
-- [x] Us tab: give `MilestoneCountdownCard` a setup state when `startedOn == nil` — a calm "Set the day you got together" prompt with a date picker — instead of hiding or faking. The card already takes `startedOn: String?`, so this is additive (`ios/PaeoniaApp/Features/Countdown/Components/MilestoneCountdownCard.swift`).
+- [x] Home tab: give `MilestoneCountdownCard` a setup state when `startedOn == nil` — a calm "Set the day you got together" prompt with a date picker — instead of hiding or faking. The card already takes `startedOn: String?`, so this is additive (`ios/PaeoniaApp/Features/Countdown/Components/MilestoneCountdownCard.swift`).
 - [x] Wire the write through local-first sync so both partners see the update, and keep it editable later.
 - [x] Tests: milestone card nil → setup → set transition; function scoping and authorization; sync propagation to the partner; `RelationshipMilestoneCalculator` with a set date (existing coverage in `ios/PaeoniaAppTests/RelationshipMilestoneTests.swift`).
 

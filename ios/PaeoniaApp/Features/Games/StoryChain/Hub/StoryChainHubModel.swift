@@ -13,14 +13,14 @@ nonisolated struct StoryChainHubSummary: Equatable, Sendable {
         case yourTurnToName
         /// The partner named a finished story that this person has not read yet.
         case readEnding
-        case partnerWriting
+        case partnerTurn
         case waitingForPartner
 
         /// The game waits for this person. The hub card glows and the tab shows a badge.
         var isYourTurn: Bool {
             switch self {
             case .yourTurnToStart, .yourTurnToWrite, .yourTurnToName, .readEnding: true
-            case .notStarted, .partnerWriting, .waitingForPartner: false
+            case .notStarted, .partnerTurn, .waitingForPartner: false
             }
         }
     }
@@ -57,7 +57,7 @@ nonisolated struct StoryChainHubSummary: Equatable, Sendable {
         case .chooseOpening: .yourTurnToStart
         case .writing: .yourTurnToWrite
         case .naming: .yourTurnToName
-        case .waitingForLine: .partnerWriting
+        case .waitingForLine: .partnerTurn
         case .waitingForOpening, .waitingForName, .waitingToSync, .finished: .waitingForPartner
         }
     }

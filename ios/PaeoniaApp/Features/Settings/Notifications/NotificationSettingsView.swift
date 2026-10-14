@@ -3,7 +3,7 @@ import UIKit
 
 /// Everything Paeonia can tell you about, grouped by who it comes from.
 ///
-/// Each switch saves on its own. A failed save puts the switch back and the Me tab
+/// Each switch saves on its own. A failed save puts the switch back and the Us tab
 /// shows the banner, so the screen never claims a setting stuck when it did not.
 struct NotificationSettingsView: View {
     let viewModel: SettingsViewModel

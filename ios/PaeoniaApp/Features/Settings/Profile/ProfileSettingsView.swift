@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// The screen behind the Me tab's identity row: the user's name and photo, and
+/// The screen behind the Us tab's profile row: the user's name and photo, and
 /// the account actions below them.
 ///
 /// While there are unsaved edits the back button steps aside for Cancel, so a
 /// stray swipe can never throw away a new name or photo. Save sits at the bottom
-/// within thumb reach, and the keyboard covers it while the name is typed. The Me tab shows the banner
+/// within thumb reach, and the keyboard covers it while the name is typed. The Us tab shows the banner
 /// for the result, so it still appears if the user has moved on.
 struct ProfileSettingsView: View {
     let editor: ProfileEditorViewModel
@@ -65,7 +65,7 @@ struct ProfileSettingsView: View {
     }
 
     /// Edits or a photo still loading keep the user here until they save or
-    /// cancel. A running save does not: it finishes on its own and the Me tab
+    /// cancel. A running save does not: it finishes on its own and the Us tab
     /// shows how it went.
     private var holdsUnsavedEdits: Bool {
         (editor.draft.hasChanges || editor.isLoadingPhoto) && !editor.isSaving

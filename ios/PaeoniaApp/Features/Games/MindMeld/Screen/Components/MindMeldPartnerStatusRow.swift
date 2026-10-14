@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The partner's avatar and one line about what they are doing. The row keeps one
-/// height, so the field above it never moves when the line changes.
+/// The partner's avatar and one line about what they are doing, on the leading
+/// side of the write phase's top line. It keeps one height, so the content under
+/// it never moves when the line changes.
 ///
 /// - Locked in: the line arrives with a spring, the avatar pulses once, the phone
 ///   taps and VoiceOver says it.
@@ -34,7 +35,7 @@ struct MindMeldPartnerStatusRow: View {
                 .id(String(describing: status))
                 .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 6)))
         }
-        .frame(maxWidth: .infinity, minHeight: Self.avatarSize)
+        .frame(minHeight: Self.avatarSize)
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.cardReveal, value: status)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("mindMeld.partnerStatus")

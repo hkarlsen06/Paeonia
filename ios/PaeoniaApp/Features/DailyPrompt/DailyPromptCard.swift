@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Compact entry point for today's Daily Challenge on the Us tab.
+/// Compact entry point for today's Daily Challenge on the Home tab.
 ///
 /// The card is the source the answering flow zooms out of; its parent marks it with
 /// `.matchedTransitionSource`, so the card itself appears to grow into the full-screen

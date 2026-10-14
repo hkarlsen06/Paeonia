@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// The card every game shows on the hub and, while the partner is in the game,
-/// on the Us tab: the game's artwork with the partner chip and a trailing badge
-/// over it, the name, a status line, the main button, and optional extras below.
+/// on the Home tab. The game's painting runs behind the whole card: the scene at the
+/// top with the partner chip and a trailing badge over it, then the name, a status line,
+/// the main button, and optional extras on a blurred, darkened part of the painting.
 /// The card glows while the game waits for this person.
 struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
     let name: LocalizedStringResource
@@ -23,18 +24,15 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // The art opens the game too. VoiceOver uses the button below instead.
+            // The scene part of the painting opens the game too. VoiceOver uses the button
+            // below instead.
             Button(action: open) {
-                artwork()
-                    .overlay(alignment: .bottom) {
-                        // Fades the art into the card below it.
-                        LinearGradient(colors: [.clear, .paeoniaSurfacePrimary], startPoint: .top, endPoint: .bottom)
-                            .frame(height: PaeoniaSpacing.space40)
-                    }
+                Color.clear
+                    .aspectRatio(1 / GameHubArtworkLayout.sceneShare, contentMode: .fit)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityHidden(true)
-            .overlay(alignment: .top) { badges }
 
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
@@ -55,11 +53,15 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
             }
             .padding([.horizontal, .bottom], PaeoniaSpacing.space20)
             .padding(.top, PaeoniaSpacing.space4)
+            .background(alignment: .top) { textScrim }
         }
+        // The painting runs behind the whole card, text included.
+        .background(alignment: .top) { artwork() }
+        .overlay(alignment: .top) { badges }
         .clipShape(shape)
         .background {
             shape
-                .fill(.paeoniaSurfacePrimary)
+                .fill(.paeoniaBackgroundSecondary)
                 .shadow(color: .paeoniaAccentPrimary.opacity(isYourTurn ? 0.25 : 0), radius: 24, y: 8)
         }
         .overlay {
@@ -70,7 +72,30 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
         }
     }
 
-    /// The partner chip on the left and the badge on the right, over the art.
+    /// Blurs and darkens the painting under the text, fading in over 40 pt from just above
+    /// the name, so the scene stays sharp and the text keeps more than 4.5:1 on the
+    /// brightest part of any painting (5.8:1 for the name on a pink field, where the fade
+    /// is still at 70 percent).
+    private var textScrim: some View {
+        let fadeIn = PaeoniaSpacing.space40
+        return ZStack {
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .environment(\.colorScheme, .dark)
+            Color.paeoniaBackgroundSecondary.opacity(0.7)
+        }
+        .mask {
+            VStack(spacing: 0) {
+                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                    .frame(height: fadeIn)
+                Color.black
+            }
+        }
+        .padding(.top, -PaeoniaSpacing.space24)
+    }
+
+    /// The partner chip on the left and the badge on the right, over the painting. The
+    /// badge turns blush there (`gameCapsuleStyle()`).
     private var badges: some View {
         HStack(alignment: .top, spacing: PaeoniaSpacing.space8) {
             if context.partnerIsHere {
@@ -78,9 +103,10 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
             }
             Spacer(minLength: 0)
             badge()
+                .environment(\.gameCapsuleIsOnArtwork, true)
         }
         .padding(PaeoniaSpacing.space12)
-        // The art has a fixed height, so the chips stop growing before they cover it.
+        // The scene is only so tall, so the chips stop growing before they cover it.
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 

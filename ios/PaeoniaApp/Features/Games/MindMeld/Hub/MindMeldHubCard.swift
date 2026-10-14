@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Mind Meld on the hub: artwork, whose turn it is, how many times the couple has
-/// melded, and a quiet link to "Our melds". The Us tab shows the same card while
+/// melded, and a quiet link to "Our melds". The Home tab shows the same card while
 /// the partner is in the game.
 struct MindMeldHubCard: View {
     let summary: MindMeldHubSummary

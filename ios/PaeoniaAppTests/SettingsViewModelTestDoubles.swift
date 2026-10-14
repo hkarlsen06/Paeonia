@@ -2,7 +2,7 @@ import Foundation
 import StoreKit
 @testable import PaeoniaApp
 
-// Test doubles for SettingsViewModelTests. Fakes implement only what the Me tab
+// Test doubles for SettingsViewModelTests. Fakes implement only what the Us tab
 // uses, so unused protocol requirements trap and sync bodies need no await.
 // swiftlint:disable async_without_await unavailable_function
 

@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 /// The inputs a rendered map depends on. `.task` restarts each time the tile
-/// reappears (e.g. switching back to the Us tab), so the snapshot view keeps the
+/// reappears (e.g. switching back to the Home tab), so the snapshot view keeps the
 /// request its map was rendered for and skips the work on an identical re-entry.
 private struct SnapshotRequest: Hashable {
     let width: CGFloat
@@ -386,7 +386,7 @@ extension CoupleMapSnapshot {
         }
 
         // The .task restarts whenever this tile reappears, not only when its inputs
-        // change, so re-entering the Us tab would otherwise re-render an identical
+        // change, so re-entering the Home tab would otherwise re-render an identical
         // map. Skip the work when we already hold the image for this exact request.
         let request = snapshotRequest(size: size)
         if snapshot != nil || incoming != nil, lastRenderedRequest == request {

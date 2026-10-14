@@ -94,7 +94,7 @@ struct GamesViewModelTests {
         #expect(viewModel.partnerIsHere(in: .drawAndGuess))
         #expect(viewModel.drawAndGuess.summary?.score == .against(mine: 8, partner: 5))
         #expect(viewModel.isYourTurn)
-        // The Us tab shows the game the partner is in.
+        // The Home tab shows the game the partner is in.
         #expect(viewModel.partnerGame?.kind == .drawAndGuess)
     }
 

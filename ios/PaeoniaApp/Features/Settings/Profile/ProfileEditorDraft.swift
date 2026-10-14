@@ -1,6 +1,6 @@
 import Foundation
 
-/// The edit state behind the profile editor at the top of the Me tab.
+/// The edit state behind the profile editor, one step in from the Us tab.
 ///
 /// The saved values stay upstream in the session — they can refresh while the tab
 /// is open — so this pairs the last known saved profile with whatever the user has

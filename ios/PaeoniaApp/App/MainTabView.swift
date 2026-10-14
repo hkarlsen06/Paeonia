@@ -14,7 +14,7 @@ struct MainTabIdentity: Equatable {
     /// The active couple, needed to create new memories. Cosmetic for the rest of the
     /// tabs, so it must not be part of any load-bearing `.task(id:)` key.
     var coupleID: UUID?
-    /// The day the relationship started (`yyyy-MM-dd`), used by the Us-tab milestone
+    /// The day the relationship started (`yyyy-MM-dd`), used by the Home tab milestone
     /// countdown. Display-only, so it never keys a load.
     var relationshipStartedOn: String?
 }
@@ -121,7 +121,6 @@ struct MainTabView: View {
     /// What the Games tab has open. A notification about a game sets it.
     @State var gamesPath: [GamesDestination] = []
     /// The signed-in user's photo, cropped to a circle for the You tab icon.
-    @State var youTabIcon: UIImage?
     @Namespace var zoomNamespace
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -170,17 +169,8 @@ struct MainTabView: View {
                     .tag(tab)
                     .badge(badgeCount(for: tab))
                     .tabItem {
-                        Label {
-                            Text(tab.title)
-                        } icon: {
-                            if tab == .you, let youTabIcon {
-                                Image(uiImage: youTabIcon)
-                                    .renderingMode(.original)
-                            } else {
-                                Image(systemName: tab.systemImage)
-                            }
-                        }
-                        .accessibilityIdentifier("mainTab.\(tab.rawValue)")
+                        Label(tab.title, systemImage: tab.systemImage)
+                            .accessibilityIdentifier("mainTab.\(tab.rawValue)")
                     }
             }
         }
@@ -237,9 +227,6 @@ struct MainTabView: View {
         .task(id: deepLink.wrappedValue) {
             await handleDeepLink(deepLink.wrappedValue)
         }
-        .task(id: identity.currentProfilePhotoAssetID) {
-            youTabIcon = await Self.youTabIcon(for: identity.currentProfilePhotoAssetID)
-        }
     }
 
     /// Both partners' identity, used by the daily challenge to label partner-choice
@@ -265,8 +252,8 @@ struct MainTabView: View {
             questionsTab
         case .games:
             gamesTab
-        case .you:
-            youTab
+        case .us:
+            usTab
         case .memories:
             memoriesTab
         }
@@ -276,7 +263,7 @@ struct MainTabView: View {
         switch tab {
         case .questions: dailyChallengeViewModel.unreadChats.count
         case .games: gamesViewModel.isYourTurn ? 1 : 0
-        case .home, .you, .memories: 0
+        case .home, .us, .memories: 0
         }
     }
 
@@ -385,7 +372,7 @@ struct MainTabView: View {
         }
     }
 
-    private var youTab: some View {
+    private var usTab: some View {
         NavigationStack {
             SettingsView(
                 viewModel: models.settings(userID: identity.currentUserID),
@@ -395,6 +382,7 @@ struct MainTabView: View {
                 currentProviderProfilePhotoAssetID: identity.currentProviderProfilePhotoAssetID,
                 currentAuthProvider: identity.currentAuthProvider,
                 partnerUserID: identity.partnerUserID,
+                partnerProfilePhotoAssetID: identity.partnerProfilePhotoAssetID,
                 relationshipStartedOn: milestoneViewModel.startedOn,
                 milestoneIsSaving: milestoneViewModel.isSaving,
                 onSaveRelationshipStartedOn: { date in

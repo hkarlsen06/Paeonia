@@ -149,6 +149,6 @@ struct GamesRulesTests {
     }
 
     @Test func gamesSitsBetweenQuestionsAndMemoriesInTheTabBar() {
-        #expect(MainTab.allCases == [.home, .questions, .games, .memories, .you])
+        #expect(MainTab.allCases == [.home, .questions, .games, .memories, .us])
     }
 }

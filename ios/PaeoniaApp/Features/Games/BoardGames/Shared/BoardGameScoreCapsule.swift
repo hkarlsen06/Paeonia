@@ -26,7 +26,7 @@ struct BoardGameScoreCapsule: View {
             switch score {
             case let .together(games):
                 Image(systemName: "heart.fill")
-                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .gameCapsuleIconStyle()
                     .accessibilityHidden(true)
                 Text(.boardGamesScoreGames(games))
             case let .against(mine, theirs):
@@ -42,10 +42,9 @@ struct BoardGameScoreCapsule: View {
         }
         .font(PaeoniaTypography.caption.weight(.semibold))
         .monospacedDigit()
-        .foregroundStyle(.paeoniaTextPrimary)
         .padding(horizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space4)
-        .background(.paeoniaSurfaceSecondary, in: Capsule(style: .continuous))
+        .gameCapsuleStyle()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(score.spoken(partnerName: partner.name)))
         .accessibilityIdentifier("boardGames.score")

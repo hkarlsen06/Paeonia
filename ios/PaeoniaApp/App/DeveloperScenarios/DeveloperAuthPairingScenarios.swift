@@ -5,7 +5,7 @@
     let prefilled: Bool
 
     var body: some View {
-      NavigationStack {
+      RootBrandedFrame {
         onboarding
       }
     }
@@ -25,10 +25,6 @@
         onSignOut: {},
         onDeleteAccount: {}
       )
-      .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-      .padding(.vertical, PaeoniaSpacing.space16)
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(.paeoniaBackgroundPrimary)
     }
   }
 
@@ -59,18 +55,16 @@
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.paeoniaBackgroundPrimary)
       default:
-        PairingInviteView(
-          session: DeveloperScenarioFixture.completeSession,
-          viewModel: inviteViewModel,
-          pendingJoinCode: nil,
-          onClearPendingJoinCode: {},
-          onInviteAccepted: {},
-          onRefreshAccess: {}
-        )
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.vertical, PaeoniaSpacing.space16)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.paeoniaBackgroundPrimary)
+        RootBrandedFrame {
+          PairingInviteView(
+            session: DeveloperScenarioFixture.completeSession,
+            viewModel: inviteViewModel,
+            pendingJoinCode: nil,
+            onClearPendingJoinCode: {},
+            onInviteAccepted: {},
+            onRefreshAccess: {}
+          )
+        }
       }
     }
 

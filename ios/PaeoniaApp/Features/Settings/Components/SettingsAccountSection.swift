@@ -3,7 +3,7 @@ import SwiftUI
 /// The account actions on the profile screen: log out, leave the relationship,
 /// and delete the account.
 ///
-/// They sit one step away from the Me tab, below the name and photo, and each one
+/// They sit one step away from the Us tab, below the name and photo, and each one
 /// only opens a centered confirmation. Nothing happens until the user confirms.
 /// The footer names the sign-in provider.
 struct SettingsAccountSection: View {

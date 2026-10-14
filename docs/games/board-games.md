@@ -217,11 +217,11 @@ The moment the last move lands.
 
 ### Hub cards
 
-Each game has its own card on the Games tab with its own artwork, drawn in SwiftUI like the Draw & Guess card.
+Each game has its own card on the Games tab with its own painting, made to `docs/games/hub-artwork.md`.
 
-- Connect Four. A tilted board where discs in both partner colors drop in and bounce, once on appear.
-- Dots and Boxes. Dots where lines snap in and boxes open onto a soft sunset gradient.
-- Ultimate Tic-Tac-Toe. The big grid zooms into one small board where hand-drawn marks appear.
+- Connect Four. A cream board with both partners' discs. The last pink disc drops into its hole and the row glows gold.
+- Dots and Boxes. A board of pearls whose closed boxes show a sunset photo. A warm light swells behind it.
+- Ultimate Tic-Tac-Toe. Nine small boards of hearts and rings. A gold line strikes through three hearts.
 - The card shows "Your turn", "[Name]'s turn", "You won", "[Name] won", "It's a draw" or "Start a game", with "Play", "Look at the board", "Play again" or "Start". The partner-here chip and the score capsule match Draw & Guess.
 
 ## iOS

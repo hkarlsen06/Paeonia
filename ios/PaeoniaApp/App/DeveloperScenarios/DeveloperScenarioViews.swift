@@ -6,41 +6,42 @@
     // Scenarios open full screen, not pushed. Several screens own a NavigationStack, and
     // one nested inside the menu's stack can cancel the push (the Games tab binds a path).
     @State private var openScenario: DeveloperScenario?
+    @State private var collapsedCategories: Set<DeveloperScenario.Category> = []
+    @State private var searchText = ""
 
     var body: some View {
       NavigationStack {
         List {
-          ForEach(DeveloperScenario.Category.allCases) { category in
-            Section(category.rawValue) {
-              ForEach(scenarios(in: category)) { scenario in
-                Button {
-                  openScenario = scenario
-                } label: {
-                  HStack {
-                    scenarioLabel(scenario)
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right")
-                      .font(.footnote.weight(.semibold))
-                      .foregroundStyle(.paeoniaTextTertiary)
-                  }
-                  .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("developer.scenario.\(scenario.rawValue)")
-              }
+          ForEach(visibleCategories) { category in
+            let scenarios = scenarios(in: category)
+            Section("\(category.rawValue) (\(scenarios.count))", isExpanded: isExpanded(category)) {
+              ForEach(scenarios, content: scenarioRow)
             }
           }
 
-          Section {
-            Button("Run production app") {
-              runProductionApp()
+          if searchText.isEmpty {
+            Section {
+              Button("Run production app") {
+                runProductionApp()
+              }
+              .accessibilityIdentifier("developer.scenario.production")
             }
-            .accessibilityIdentifier("developer.scenario.production")
           }
         }
+        .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle("Developer Scenarios")
+        .searchable(text: $searchText, prompt: "Title, detail or id")
+        .toolbar {
+          ToolbarItem(placement: .topBarTrailing) {
+            let allCollapsed = collapsedCategories.count == DeveloperScenario.Category.allCases.count
+            Button(allCollapsed ? "Expand all" : "Collapse all") {
+              collapsedCategories = allCollapsed ? [] : Set(DeveloperScenario.Category.allCases)
+            }
+            .disabled(!searchText.isEmpty)
+          }
+        }
       }
       .fullScreenCover(item: $openScenario) { scenario in
         DeveloperScenarioHost(scenario: scenario) {
@@ -49,6 +50,24 @@
       }
       .preferredColorScheme(.dark)
       .accessibilityIdentifier("developer.scenario.menu")
+    }
+
+    private func scenarioRow(_ scenario: DeveloperScenario) -> some View {
+      Button {
+        openScenario = scenario
+      } label: {
+        HStack {
+          scenarioLabel(scenario)
+          Spacer(minLength: 0)
+          Image(systemName: "chevron.right")
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(.paeoniaTextTertiary)
+            .accessibilityHidden(true)
+        }
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .accessibilityIdentifier("developer.scenario.\(scenario.rawValue)")
     }
 
     private func scenarioLabel(_ scenario: DeveloperScenario) -> some View {
@@ -65,8 +84,31 @@
       .padding(.vertical, PaeoniaSpacing.space4)
     }
 
+    private var visibleCategories: [DeveloperScenario.Category] {
+      DeveloperScenario.Category.allCases.filter { !scenarios(in: $0).isEmpty }
+    }
+
     private func scenarios(in category: DeveloperScenario.Category) -> [DeveloperScenario] {
-      DeveloperScenario.allCases.filter { $0.category == category }
+      DeveloperScenario.allCases.filter { scenario in
+        scenario.category == category
+          && (searchText.isEmpty
+            || [scenario.title, scenario.detail, scenario.rawValue].contains {
+              $0.localizedStandardContains(searchText)
+            })
+      }
+    }
+
+    // Search results ignore collapsed state so a match is never hidden.
+    private func isExpanded(_ category: DeveloperScenario.Category) -> Binding<Bool> {
+      Binding {
+        !searchText.isEmpty || !collapsedCategories.contains(category)
+      } set: { expanded in
+        if expanded {
+          collapsedCategories.remove(category)
+        } else {
+          collapsedCategories.insert(category)
+        }
+      }
     }
   }
 

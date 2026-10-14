@@ -280,7 +280,7 @@ extension MainTabView {
         self.deepLink.wrappedValue = nil
     }
 
-    /// A game card on Us, shown while the partner is in the game. A partner who
+    /// A game card on Home, shown while the partner is in the game. A partner who
     /// has not seen the couple's settings yet lands on the Games tab to see them first.
     func openGameFromHome(_ destination: GamesDestination) {
         selection.wrappedValue = .games

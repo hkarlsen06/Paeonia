@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The compact card shown on the Us tab when there is no map: an icon, a short
+/// The compact card shown on the Home tab when there is no map: an icon, a short
 /// explanation, and either one action button or a spinner. The icon leads, the text
 /// fills the rest with the action button under it, and a spinner trails. At
 /// accessibility text sizes the icon moves above the text.
