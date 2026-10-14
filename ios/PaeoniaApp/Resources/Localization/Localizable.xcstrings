@@ -18463,6 +18463,1686 @@
           }
         }
       }
+    },
+    "mindMeld.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mind Meld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tenk likt"
+          }
+        }
+      },
+      "comment" : "Navigation title of the Mind Meld word game. Mind Meld is the game's name; the Norwegian name is Tenk likt."
+    },
+    "mindMeld.round" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Round %1$lld of %2$lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runde %1$lld av %2$lld"
+          }
+        }
+      },
+      "comment" : "Small label above the word field. %1$lld is the current round number, %2$lld is the most rounds one game can have."
+    },
+    "mindMeld.write.firstTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Say any word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si et hvilket som helst ord"
+          }
+        }
+      },
+      "comment" : "Title of the first round of Mind Meld, where each partner types any word."
+    },
+    "mindMeld.write.firstSubtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ does the same. Then you try to meet in the middle."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gjør det samme. Så prøver dere å møtes på midten."
+          }
+        }
+      },
+      "comment" : "Subtitle under the first-round title. %@ is the partner's name."
+    },
+    "mindMeld.write.connectTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find a word that connects them"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finn et ord som binder dem sammen"
+          }
+        }
+      },
+      "comment" : "Title from round 2 on. The two last words are shown above it, and both partners type one word that connects them."
+    },
+    "mindMeld.write.placeholder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type a word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv et ord"
+          }
+        }
+      },
+      "comment" : "Placeholder in the text field where the player types a word."
+    },
+    "mindMeld.write.surprise" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Surprise me"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overrask meg"
+          }
+        }
+      },
+      "comment" : "Quiet button in round 1 that fills the word field with a random word."
+    },
+    "mindMeld.write.lockIn" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lock in"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås inn"
+          }
+        }
+      },
+      "comment" : "Primary button that locks in the typed word. A locked word cannot change."
+    },
+    "mindMeld.write.error.tooLong" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That's a bit long. Use 30 characters at most."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det er litt langt. Bruk høyst 30 tegn."
+          }
+        }
+      },
+      "comment" : "Message under the word field when the word is longer than 30 characters."
+    },
+    "mindMeld.write.error.tooManyWords" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use 3 words at most."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk høyst 3 ord."
+          }
+        }
+      },
+      "comment" : "Message under the word field when the word has more than three words."
+    },
+    "mindMeld.write.error.noLetters" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use at least one letter."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk minst én bokstav."
+          }
+        }
+      },
+      "comment" : "Message under the word field when the word has no letters."
+    },
+    "mindMeld.write.error.characters" : {
+      "comment" : "Message under the word field when the word has a character that is not allowed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use only letters, numbers, spaces, hyphens and apostrophes."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk bare bokstaver, tall, mellomrom, bindestrek og apostrof."
+          }
+        }
+      }
+    },
+    "mindMeld.write.error.repeat" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've already used %@ in this game."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere har allerede brukt %@ i dette spillet."
+          }
+        }
+      },
+      "comment" : "Message under the word field when the word was already used in this game. %@ is the word in capitals."
+    },
+    "mindMeld.partner.locked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ locked in"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har låst inn"
+          }
+        }
+      },
+      "comment" : "Partner status line: the partner has locked in a word. %@ is the partner's name."
+    },
+    "mindMeld.partner.typing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is typing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ skriver"
+          }
+        }
+      },
+      "comment" : "Partner status line shown next to three moving dots: the partner is typing. %@ is the partner's name."
+    },
+    "mindMeld.partner.here" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is here"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er her"
+          }
+        }
+      },
+      "comment" : "Partner status line: the partner has the game open but is not typing. %@ is the partner's name."
+    },
+    "mindMeld.partner.later" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will answer later"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ svarer senere"
+          }
+        }
+      },
+      "comment" : "Partner status line: the partner is away and will answer later. %@ is the partner's name."
+    },
+    "mindMeld.wait.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@"
+          }
+        }
+      },
+      "comment" : "Title of the waiting screen, after the player locked in a word. %@ is the partner's name."
+    },
+    "mindMeld.wait.hintLive" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll show both words at the same time."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi viser begge ordene samtidig."
+          }
+        }
+      },
+      "comment" : "Hint on the waiting screen while the partner has the game open."
+    },
+    "mindMeld.wait.hintLater" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll tell you when %@ locks in."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi sier fra når %@ har låst inn."
+          }
+        }
+      },
+      "comment" : "Hint on the waiting screen while the partner is away. %@ is the partner's name."
+    },
+    "mindMeld.wait.yourWord.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your word, %@, locked in"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordet ditt, %@, er låst inn"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the player's own face-up card after locking in. %@ is their word in capitals."
+    },
+    "mindMeld.wait.partnerCard.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s word, hidden until you both lock in"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordet til %@, skjult til dere begge har låst inn"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of the partner's face-down card on the waiting screen. %@ is the partner's name."
+    },
+    "mindMeld.offline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved on this phone. We'll send it when you're online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret på telefonen. Vi sender det når du er på nett."
+          }
+        }
+      },
+      "comment" : "Shown under the waiting card when the locked-in word is saved on the phone and has not been sent yet."
+    },
+    "mindMeld.offline.title" : {
+      "comment" : "Title of the Mind Meld screen when a game cannot be started because the phone has no connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett"
+          }
+        }
+      }
+    },
+    "mindMeld.offline.message" : {
+      "comment" : "Message under the offline title. Shown with a Try again button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to start a game."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å starte et spill."
+          }
+        }
+      }
+    },
+    "mindMeld.reveal.you" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du"
+          }
+        }
+      },
+      "comment" : "Label for the current player on the reveal. VoiceOver reads it before their word, as in 'You, OCEAN'."
+    },
+    "mindMeld.reveal.card.facedown.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s word, hidden"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordet til %@, skjult"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of a face-down word card on the reveal. %@ is the name of the person whose word it is."
+    },
+    "mindMeld.reveal.meld.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You melded!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere tenkte likt!"
+          }
+        }
+      },
+      "comment" : "Reveal title when both partners said the same word. To meld means to think the same word."
+    },
+    "mindMeld.reveal.meld.counted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ counted it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ telte det med."
+          }
+        }
+      },
+      "comment" : "Reveal line when the partner counted a near miss as a match. %@ is the partner's name."
+    },
+    "mindMeld.reveal.meld.countedByYou" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You counted it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du telte det med."
+          }
+        }
+      },
+      "comment" : "Reveal line when the player counted a near miss as a match."
+    },
+    "mindMeld.reveal.meld.number" : {
+      "comment" : "First part of the stats line after a meld. %lld is how many times the couple has melded. A second sentence follows it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meld number %lld."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treff nummer %lld."
+          }
+        }
+      }
+    },
+    "mindMeld.reveal.meld.fewest" : {
+      "comment" : "Second part of the stats line after a meld. %lld is the fewest rounds a meld has taken the couple.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Your fewest is %lld round."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Your fewest is %lld rounds."
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Det raskeste dere har klart er %lld runde."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Det raskeste dere har klart er %lld runder."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mindMeld.reveal.meld.record" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your fewest rounds yet."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det raskeste dere har klart så langt."
+          }
+        }
+      },
+      "comment" : "Reveal line, shown in the accent color, when this meld took fewer rounds than any earlier one."
+    },
+    "mindMeld.reveal.near.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "So close!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Så nære!"
+          }
+        }
+      },
+      "comment" : "Reveal title when the two words are almost the same, for example OCEAN and OCEANS."
+    },
+    "mindMeld.reveal.near.line" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ and %2$@ are almost the same word."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ og %2$@ er nesten samme ord."
+          }
+        }
+      },
+      "comment" : "Reveal line for a near miss. %1$@ is the player's word and %2$@ the partner's word, both in capitals."
+    },
+    "mindMeld.reveal.near.count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Count it"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell det med"
+          }
+        }
+      },
+      "comment" : "Quiet button on a near miss. Tapping it counts the two words as a match, and the couple wins the game."
+    },
+    "mindMeld.reveal.miss.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now find the link"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finn det som binder dem"
+          }
+        }
+      },
+      "comment" : "Reveal title when the two words are different. The next round asks for a word that connects them."
+    },
+    "mindMeld.reveal.miss.line" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What connects %1$@ and %2$@?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hva binder %1$@ og %2$@ sammen?"
+          }
+        }
+      },
+      "comment" : "Reveal line when the words are different. %1$@ is the player's word and %2$@ the partner's word, both in capitals."
+    },
+    "mindMeld.reveal.gotAway.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This one got away"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne gangen gikk det ikke"
+          }
+        }
+      },
+      "comment" : "Reveal title when the last round (round 10) ends without a match."
+    },
+    "mindMeld.reveal.gotAway.line" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You came close. Want to try another?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere var nære. Vil dere prøve igjen?"
+          }
+        }
+      },
+      "comment" : "Reveal line under the 'got away' title. It invites the couple to start a new game."
+    },
+    "mindMeld.reveal.next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next round"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste runde"
+          }
+        }
+      },
+      "comment" : "Primary button on the reveal that starts the next round."
+    },
+    "mindMeld.reveal.playAgain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill igjen"
+          }
+        }
+      },
+      "comment" : "Primary button after a game ended that starts a new game."
+    },
+    "mindMeld.reveal.seeMelds" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See our melds"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se treffene våre"
+          }
+        }
+      },
+      "comment" : "Quiet button after a game ended that opens the list of finished games."
+    },
+    "mindMeld.reveal.missAnnouncement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You said %1$@. %2$@ said %3$@. Not a match yet."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du sa %1$@. %2$@ sa %3$@. Ikke likt ennå."
+          }
+        }
+      },
+      "comment" : "VoiceOver announcement when the words differ. %1$@ is the player's word, %2$@ the partner's name, %3$@ the partner's word."
+    },
+    "mindMeld.reveal.meldAnnouncement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You both said %@. You melded!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere sa begge %@. Dere tenkte likt!"
+          }
+        }
+      },
+      "comment" : "VoiceOver announcement when the words match. %@ is the shared word in capitals."
+    },
+    "mindMeld.reveal.card.a11y" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      },
+      "comment" : "VoiceOver label of a face-up word card on the reveal. %1$@ is who said it ('You' or the partner's name), %2$@ is the word in capitals."
+    },
+    "mindMeld.restart.menu" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start over"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begynn på nytt"
+          }
+        }
+      },
+      "comment" : "Menu item in the game screen's toolbar menu that ends the game in play and starts a new one."
+    },
+    "mindMeld.restart.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start a new game?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begynne et nytt spill?"
+          }
+        }
+      },
+      "comment" : "Title of the alert that asks whether to start a new game."
+    },
+    "mindMeld.restart.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This game ends, and you both start again at round 1."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette spillet slutter, og dere begynner på runde 1 igjen."
+          }
+        }
+      },
+      "comment" : "Message of the start-over alert. It says what happens to the game in play."
+    },
+    "mindMeld.restart.confirm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start over"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begynn på nytt"
+          }
+        }
+      },
+      "comment" : "Destructive button of the start-over alert."
+    },
+    "mindMeld.restart.cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep playing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett å spille"
+          }
+        }
+      },
+      "comment" : "Cancel button of the start-over alert."
+    },
+    "mindMeld.restart.partnerNote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ started a new game."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ begynte på et nytt spill."
+          }
+        }
+      },
+      "comment" : "One-time line above the title when the partner started a new game. %@ is the partner's name."
+    },
+    "mindMeld.menu.a11y" : {
+      "comment" : "Accessibility label for the three-dot menu button in the Mind Meld toolbar. The menu holds Start over.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More options"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere valg"
+          }
+        }
+      }
+    },
+    "mindMeld.history.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Our melds"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treffene våre"
+          }
+        }
+      },
+      "comment" : "Title of the list of finished Mind Meld games. 'Melds' are games the couple won."
+    },
+    "mindMeld.history.records.melds" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Melds"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treff"
+          }
+        }
+      },
+      "comment" : "Label under the number of games the couple has won."
+    },
+    "mindMeld.history.records.fewest" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fewest rounds"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Færrest runder"
+          }
+        }
+      },
+      "comment" : "Label under the fewest rounds a meld has taken the couple."
+    },
+    "mindMeld.history.records.none" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke ennå"
+          }
+        }
+      },
+      "comment" : "Shown instead of the fewest-rounds number when the couple has no meld yet."
+    },
+    "mindMeld.history.row.gotAway" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Got away"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gikk ikke"
+          }
+        }
+      },
+      "comment" : "Headline of a list row for a game that ended after round 10 without a match."
+    },
+    "mindMeld.history.row.startedOver" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Started over"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begynt på nytt"
+          }
+        }
+      },
+      "comment" : "Headline of a list row for a game that a partner ended early to start a new one."
+    },
+    "mindMeld.history.detail.counted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Counted"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telt med"
+          }
+        }
+      },
+      "comment" : "Small caption on a game's last round when a partner counted a near miss as a match."
+    },
+    "mindMeld.history.empty.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No melds yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen treff ennå"
+          }
+        }
+      },
+      "comment" : "Title of the empty state when the couple has no finished games."
+    },
+    "mindMeld.history.empty.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your finished games will show up here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spillene dere har fullført, dukker opp her."
+          }
+        }
+      },
+      "comment" : "Message of the empty state when the couple has no finished games."
+    },
+    "mindMeld.history.offline.message" : {
+      "comment" : "Message under the offline title on Our melds when nothing is saved on the phone yet. Shown with a Try again button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to see your finished games."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å se spillene dere har fullført."
+          }
+        }
+      }
+    },
+    "mindMeld.history.loadMore.failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load older games."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke laste eldre spill."
+          }
+        }
+      },
+      "comment" : "Shown at the end of the list when older games could not be loaded."
+    },
+    "mindMeld.hub.status.new" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Say a word at the same time. Meet in the middle."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si et ord samtidig. Møtes på midten."
+          }
+        }
+      },
+      "comment" : "Status line on the Games tab card when the couple has no Mind Meld game yet."
+    },
+    "mindMeld.hub.status.open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Round %lld. Pick your word."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runde %lld. Velg ordet ditt."
+          }
+        }
+      },
+      "comment" : "Status line on the Games tab card when a round is open and nobody has locked in. %lld is the round number."
+    },
+    "mindMeld.hub.status.partnerLocked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ locked in. Your turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har låst inn. Din tur."
+          }
+        }
+      },
+      "comment" : "Status line on the Games tab card when the partner locked in first. %@ is the partner's name."
+    },
+    "mindMeld.hub.status.waiting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@."
+          }
+        }
+      },
+      "comment" : "Status line on the Games tab card after the player locked in. %@ is the partner's name."
+    },
+    "mindMeld.hub.status.reveal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your words are in."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordene deres er klare."
+          }
+        }
+      },
+      "comment" : "Status line on the Games tab card when a reveal waits to be seen."
+    },
+    "mindMeld.hub.status.gotAway" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This one got away."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne gangen gikk det ikke."
+          }
+        }
+      },
+      "comment" : "Status line on the Games tab card after a game ended without a match."
+    },
+    "mindMeld.hub.play" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill"
+          }
+        }
+      },
+      "comment" : "Primary button on the Games tab card to open Mind Meld."
+    },
+    "mindMeld.hub.pick" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick your word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg ordet ditt"
+          }
+        }
+      },
+      "comment" : "Primary button on the Games tab card when the partner locked in first."
+    },
+    "mindMeld.hub.open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne"
+          }
+        }
+      },
+      "comment" : "Primary button on the Games tab card when the player locked in and waits for the partner."
+    },
+    "mindMeld.hub.seeWords" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See your words"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se ordene"
+          }
+        }
+      },
+      "comment" : "Primary button on the Games tab card when a reveal waits to be seen."
+    },
+    "mindMeld.stats.melds" : {
+      "comment" : "Toolbar capsule with the number of times the couple melded (said the same word). %lld is the count.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld meld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld melds"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld treff"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld treff"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mindMeld.stats.melds.a11y" : {
+      "comment" : "VoiceOver label of the melds capsule. %lld is the number of times the couple melded.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld meld together"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld melds together"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld treff sammen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld treff sammen"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mindMeld.reveal.meld.rounds" : {
+      "comment" : "Reveal line after a meld. %lld is the number of rounds it took.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "In %lld round"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "In %lld rounds"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "På %lld runde"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "På %lld runder"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mindMeld.history.row.rounds" : {
+      "comment" : "Small line under a finished game in the list. %lld is the number of rounds played.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld round"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rounds"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld runde"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld runder"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mindMeld.history.detail.melded" : {
+      "comment" : "Header of a finished game's detail when the couple melded. %lld is the number of rounds it took.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melded in %lld round"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Melded in %lld rounds"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Likt på %lld runde"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Likt på %lld runder"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mindMeld.hub.status.melded" : {
+      "comment" : "Status line on the Games tab card after a meld. %lld is the number of rounds it took.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "You melded in %lld round."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "You melded in %lld rounds."
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Dere tenkte likt på %lld runde."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Dere tenkte likt på %lld runder."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mindMeld.history.detail.round" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Round %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runde %lld"
+          }
+        }
+      },
+      "comment" : "Small label above one round of a finished game in the detail view. %lld is the round number."
+    },
+    "mindMeld.hub.artwork.first" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SEA"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HAV"
+          }
+        }
+      },
+      "comment" : "Short word in capitals on the first tile of the picture on the Games tab card. It is decoration only, and VoiceOver skips it. Pick a common word that fits a small tile."
+    },
+    "mindMeld.hub.artwork.second" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SALT"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SALT"
+          }
+        }
+      },
+      "comment" : "Short word in capitals on the second tile of the picture on the Games tab card. It is decoration only, and VoiceOver skips it. Pick a common word that fits a small tile."
+    },
+    "mindMeld.reveal.meld.first" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your first meld."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deres første treff."
+          }
+        }
+      },
+      "comment" : "Mind Meld reveal: line under 'You melded!' for the couple's very first meld"
     }
   },
   "version" : "1.0"

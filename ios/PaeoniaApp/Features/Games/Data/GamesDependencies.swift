@@ -22,6 +22,12 @@ struct GamesDependencies {
     /// Builds the Story Chain relay room for the couple, or nil when there is none.
     var makeStoryChainLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
 
+    // Mind Meld
+    var mindMeldGateway: any MindMeldGateway = UnavailableGamesGateway()
+    var mindMeldCache: any MindMeldCaching = InMemoryMindMeldCache()
+    /// The Mind Meld relay room for the couple: presence and typing only.
+    var makeMindMeldLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
+
     static func live() -> GamesDependencies {
         let client = try? PaeoniaConvexClientProvider.shared.client()
         let pendingStore: any PendingSyncOperationPersisting
@@ -40,7 +46,10 @@ struct GamesDependencies {
             makeLive: { DrawAndGuessLive.make(coupleID: $0) },
             storyChainGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
             storyChainCache: FileStoryChainCache.shared,
-            makeStoryChainLive: { StoryChainLive.make(coupleID: $0) }
+            makeStoryChainLive: { StoryChainLive.make(coupleID: $0) },
+            mindMeldGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
+            mindMeldCache: FileMindMeldCache.shared,
+            makeMindMeldLive: { MindMeldLive.make(coupleID: $0) }
         )
     }
 }

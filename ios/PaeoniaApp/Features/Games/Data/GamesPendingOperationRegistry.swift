@@ -34,6 +34,11 @@ nonisolated enum GamesPendingOperationRegistry {
             StoryChainNamePendingOperationHandler(gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache),
             StoryChainSeenPendingOperationHandler(gateway: gateway, cache: FileStoryChainCache.shared),
             StoryChainStarPendingOperationHandler(gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache),
+            // Mind Meld
+            LockMindMeldWordPendingOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
+            CountMindMeldPendingOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
+            MindMeldRevealSeenOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
+            MindMeldEndSeenOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
         ]
     }
 }

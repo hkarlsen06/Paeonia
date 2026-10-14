@@ -153,6 +153,10 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case storyChainNameStory = "story_chain_name_story"
     case storyChainMarkSeen = "story_chain_mark_seen"
     case storyChainSetStar = "story_chain_set_star"
+    case lockMindMeldWord = "lock_mind_meld_word"
+    case countMindMeldRound = "count_mind_meld_round"
+    case markMindMeldRevealSeen = "mark_mind_meld_reveal_seen"
+    case markMindMeldEndSeen = "mark_mind_meld_end_seen"
 }
 
 nonisolated enum SyncPendingOperationStatus: String, Codable, CaseIterable, Sendable {

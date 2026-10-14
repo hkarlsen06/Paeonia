@@ -192,6 +192,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let gamesCache: any GamesCaching
     private let storyChainCache: any StoryChainCaching
     private let gameDrawingStore: any GameDrawingStoring
+    private let mindMeldCache: any MindMeldCaching
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
     private let temporaryDirectory: URL
 
@@ -208,6 +209,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         gamesCache: any GamesCaching = FileGamesCache.shared,
         storyChainCache: any StoryChainCaching = FileStoryChainCache.shared,
         gameDrawingStore: any GameDrawingStoring = FileGameDrawingStore.shared,
+        mindMeldCache: any MindMeldCaching = FileMindMeldCache.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
         temporaryDirectory: URL = FileManager.default.temporaryDirectory
     ) {
@@ -223,6 +225,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.gamesCache = gamesCache
         self.storyChainCache = storyChainCache
         self.gameDrawingStore = gameDrawingStore
+        self.mindMeldCache = mindMeldCache
         self.profilePhotoDiskCache = profilePhotoDiskCache
         self.temporaryDirectory = temporaryDirectory
     }
@@ -244,6 +247,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await dailyQuestionChatCache.clearAll()
         await gamesCache.clearAll()
         await storyChainCache.clearAll()
+        await mindMeldCache.clearAll()
         gameDrawingStore.purge(for: scope)
         try? await profilePhotoDiskCache.removeAllProfilePhotoData()
         removeDirectoryIfPresent(DailyAnswerMediaImageService.defaultDirectoryURL())

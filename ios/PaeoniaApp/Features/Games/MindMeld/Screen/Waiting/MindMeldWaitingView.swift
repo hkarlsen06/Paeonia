@@ -1,0 +1,123 @@
+import SwiftUI
+
+/// This person's word is locked in and the partner's is not. It says the word is
+/// safe, shows two cards (mine face up with a lock, theirs face down), and makes
+/// the wait feel shared. When the partner locks in, the screen gives way to the reveal.
+struct MindMeldWaitingView: View {
+    let viewModel: MindMeldViewModel
+
+    /// A little smaller than on the reveal, where the cards grow.
+    private static let cardWidth: CGFloat = 128
+
+    private var partnerIsHere: Bool {
+        viewModel.partnerStatus != .away
+    }
+
+    private var isTyping: Bool {
+        viewModel.partnerStatus == .typing
+    }
+
+    private var myWord: String {
+        viewModel.round?.myWord ?? ""
+    }
+
+    var body: some View {
+        MindMeldPhaseLayout(fillsHeight: true) {
+            VStack(spacing: PaeoniaSpacing.space24) {
+                MindMeldStatsHeader(melds: viewModel.stats?.melds ?? 0)
+                Spacer(minLength: PaeoniaSpacing.space16)
+                cards
+                text
+                if viewModel.showsOfflineLine {
+                    offlineLine
+                        .transition(.opacity)
+                }
+                Spacer(minLength: PaeoniaSpacing.space16)
+            }
+            .frame(maxWidth: .infinity)
+        } bottom: {
+            MindMeldInviteButton(viewModel: viewModel)
+        }
+        // The partner's phone changes the title, the hint, the glow and the invite
+        // button while this screen is open. Everything moves to its new place together.
+        .animation(PaeoniaMotion.stateChange, value: viewModel.partnerStatus)
+        .animation(PaeoniaMotion.stateChange, value: viewModel.invite)
+        .animation(PaeoniaMotion.stateChange, value: viewModel.showsOfflineLine)
+        .onChange(of: viewModel.partnerStatus) { old, new in
+            if old == .away, new != .away {
+                PaeoniaHaptics.partnerDrawingReceived()
+            }
+        }
+        .accessibilityIdentifier("mindMeld.waiting")
+    }
+
+    // MARK: Cards
+
+    private var cards: some View {
+        HStack(spacing: PaeoniaSpacing.space24) {
+            MindMeldWordCard(
+                word: myWord,
+                isFaceUp: true,
+                faceDownLabel: .mindMeldWaitYourWordA11Y(myWord),
+                isLocked: true,
+                maxWidth: Self.cardWidth
+            )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(.mindMeldWaitYourWordA11Y(myWord)))
+            MindMeldWordCard(
+                word: nil,
+                isFaceUp: false,
+                faceDownLabel: .mindMeldWaitPartnerCardA11Y(viewModel.partnerName),
+                breathes: partnerIsHere,
+                maxWidth: Self.cardWidth
+            )
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: Text
+
+    private var text: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            HStack(spacing: PaeoniaSpacing.space8) {
+                Text(title)
+                    .font(PaeoniaTypography.title)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .contentTransition(.opacity)
+                if isTyping {
+                    MindMeldTypingDots()
+                        .transition(.opacity)
+                }
+            }
+            Text(hint)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .contentTransition(.opacity)
+        }
+        .multilineTextAlignment(.center)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var title: LocalizedStringResource {
+        isTyping ? .mindMeldPartnerTyping(viewModel.partnerName) : .mindMeldWaitTitle(viewModel.partnerName)
+    }
+
+    private var hint: LocalizedStringResource {
+        partnerIsHere ? .mindMeldWaitHintLive : .mindMeldWaitHintLater(viewModel.partnerName)
+    }
+
+    /// "Saved on this phone. We'll send it when you're online."
+    private var offlineLine: some View {
+        Label {
+            Text(.mindMeldOffline)
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            Image(systemName: "clock")
+                .accessibilityHidden(true)
+        }
+        .font(PaeoniaTypography.caption)
+        .foregroundStyle(.paeoniaSyncPending)
+        .multilineTextAlignment(.center)
+        .accessibilityIdentifier("mindMeld.pending")
+    }
+}

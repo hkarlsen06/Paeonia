@@ -166,8 +166,10 @@
           mediaAssetID: DeveloperGamesFixture.assetID
         )
       }
+      let drawState = state(for: scenario)
       let cache = InMemoryGamesCache(
-        state: state(for: scenario),
+        state: drawState,
+        overview: DeveloperMindMeldScenarioFactory.overview(for: scenario, drawAndGuess: drawState),
         ownerUserID: DeveloperGamesFixture.me,
         hasSeenSettings: scenario != .gamesPartnerPicked
       )
@@ -190,7 +192,10 @@
         storyChainCache: storyChainCache,
         makeStoryChainLive: { coupleID in
           DeveloperStoryChainScenarios.makeLive(for: scenario, coupleID: coupleID, cache: storyChainCache)
-        }
+        },
+        mindMeldGateway: DeveloperMindMeldGateway(historyIsEmpty: scenario == .mindMeldHistoryEmpty),
+        mindMeldCache: DeveloperMindMeldScenarioFactory.cache(for: scenario),
+        makeMindMeldLive: { coupleID in DeveloperMindMeldScenarioFactory.makeLive(for: scenario, coupleID: coupleID) }
       )
     }
 

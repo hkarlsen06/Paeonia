@@ -99,6 +99,20 @@
     case storyChainWaitingOpening = "story-chain-waiting-opening"
     case storyChainHistory = "story-chain-history"
     case storyChainHistoryEmpty = "story-chain-history-empty"
+    case mindMeldFirstRound = "mind-meld-first-round"
+    case mindMeldWrite = "mind-meld-write"
+    case mindMeldWriteTyping = "mind-meld-write-typing"
+    case mindMeldWaiting = "mind-meld-waiting"
+    case mindMeldWaitingOffline = "mind-meld-waiting-offline"
+    case mindMeldRevealMiss = "mind-meld-reveal-miss"
+    case mindMeldRevealNear = "mind-meld-reveal-near"
+    case mindMeldRevealMeld = "mind-meld-reveal-meld"
+    case mindMeldRevealRecord = "mind-meld-reveal-record"
+    case mindMeldRevealGotAway = "mind-meld-reveal-got-away"
+    case mindMeldOver = "mind-meld-over"
+    case mindMeldPartnerRestarted = "mind-meld-partner-restarted"
+    case mindMeldHistory = "mind-meld-history"
+    case mindMeldHistoryEmpty = "mind-meld-history-empty"
 
     case notificationPrimer = "notification-primer"
     case settings
@@ -217,6 +231,20 @@
       case .storyChainWaitingOpening: "Story Chain · Robin picks an opening"
       case .storyChainHistory: "Story Chain · our stories"
       case .storyChainHistoryEmpty: "Story Chain · our stories, none yet"
+      case .mindMeldFirstRound: "Mind Meld · first round"
+      case .mindMeldWrite: "Mind Meld · write, partner locked in"
+      case .mindMeldWriteTyping: "Mind Meld · write, partner typing"
+      case .mindMeldWaiting: "Mind Meld · waiting for partner"
+      case .mindMeldWaitingOffline: "Mind Meld · waiting, saved on the phone"
+      case .mindMeldRevealMiss: "Mind Meld · reveal, miss"
+      case .mindMeldRevealNear: "Mind Meld · reveal, so close"
+      case .mindMeldRevealMeld: "Mind Meld · reveal, meld"
+      case .mindMeldRevealRecord: "Mind Meld · reveal, record meld"
+      case .mindMeldRevealGotAway: "Mind Meld · reveal, got away"
+      case .mindMeldOver: "Mind Meld · game over"
+      case .mindMeldPartnerRestarted: "Mind Meld · partner started over"
+      case .mindMeldHistory: "Mind Meld · our melds"
+      case .mindMeldHistoryEmpty: "Mind Meld · our melds, none yet"
       case .notificationPrimer: "Notifications · primer"
       case .settings: "Settings"
       case .settingsNotificationsDenied: "Settings · notifications denied"
@@ -400,6 +428,34 @@
         "Three finished stories, two starred. Open one to read it"
       case .storyChainHistoryEmpty:
         "Our stories before the first story has finished"
+      case .mindMeldFirstRound:
+        "Round 1 of a new couple: nobody has locked in and Robin is away, so the invite button shows"
+      case .mindMeldWrite:
+        "Round 4 with three earlier pairs above the field. Robin is here and has locked in"
+      case .mindMeldWriteTyping:
+        "Round 2 with Robin here and typing. The dots repeat until the screen closes"
+      case .mindMeldWaiting:
+        "Your word is locked in for round 3 and Robin is here, typing"
+      case .mindMeldWaitingOffline:
+        "Your word is only queued on the phone and a send failed: saved on this phone, sent later"
+      case .mindMeldRevealMiss:
+        "Round 3 revealed with two different words. The button reads Next round"
+      case .mindMeldRevealNear:
+        "Round 3 is a near miss: So close, with Count it on offer"
+      case .mindMeldRevealMeld:
+        "Round 4 melds. Meld number 3, not a record"
+      case .mindMeldRevealRecord:
+        "A meld in round 2 that beats the couple's fewest rounds"
+      case .mindMeldRevealGotAway:
+        "Round 10 without a match: This one got away"
+      case .mindMeldOver:
+        "A melded game whose reveal and ending you have seen: settled, with Play again"
+      case .mindMeldPartnerRestarted:
+        "Robin ended the last game with Start over. Round 1 of the new game shows a note"
+      case .mindMeldHistory:
+        "Records and five finished games: three melds, one got away, one started over. Open one for its trail"
+      case .mindMeldHistoryEmpty:
+        "Our melds before the first game has finished"
       case .notificationPrimer:
         "Pre-permission notification explanation"
       case .settings:
@@ -455,7 +511,10 @@
         .storyChainChoose, .storyChainChooseOffline, .storyChainWriting, .storyChainWritingLast,
         .storyChainWaitingLive, .storyChainWaitingAway, .storyChainSavedOffline, .storyChainNaming,
         .storyChainWaitingName, .storyChainFinished, .storyChainWaitingOpening, .storyChainHistory,
-        .storyChainHistoryEmpty:
+        .storyChainHistoryEmpty, .mindMeldFirstRound,
+        .mindMeldWrite, .mindMeldWriteTyping, .mindMeldWaiting, .mindMeldWaitingOffline, .mindMeldRevealMiss,
+        .mindMeldRevealNear, .mindMeldRevealMeld, .mindMeldRevealRecord, .mindMeldRevealGotAway, .mindMeldOver,
+        .mindMeldPartnerRestarted, .mindMeldHistory, .mindMeldHistoryEmpty:
         .games
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         .widget

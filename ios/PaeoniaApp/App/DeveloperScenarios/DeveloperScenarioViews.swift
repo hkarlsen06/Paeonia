@@ -176,6 +176,11 @@
         DeveloperStoryChainScenarioView(scenario: scenario)
       case .storyChainHistory, .storyChainHistoryEmpty:
         DeveloperStoryChainHistoryScenarioView(scenario: scenario)
+      case .mindMeldFirstRound, .mindMeldWrite, .mindMeldWriteTyping, .mindMeldWaiting,
+        .mindMeldWaitingOffline, .mindMeldRevealMiss, .mindMeldRevealNear, .mindMeldRevealMeld,
+        .mindMeldRevealRecord, .mindMeldRevealGotAway, .mindMeldOver, .mindMeldPartnerRestarted,
+        .mindMeldHistory, .mindMeldHistoryEmpty:
+        DeveloperMindMeldScenarioView(scenario: scenario)
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         DeveloperWidgetScenarioView(scenario: scenario)
       case .notificationPrimer, .settings, .settingsNotificationsDenied, .privacySafety,
