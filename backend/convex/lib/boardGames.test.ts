@@ -3,6 +3,7 @@ import { BOARD_RULES } from "./boardGameRules";
 import { BOARD_GAME_KINDS, isMoveInRange, movers, otherPlayer, replay, type BoardRules } from "./boardGames";
 import { connectFourRules } from "./connectFour";
 import { dotsAndBoxesRules } from "./dotsAndBoxes";
+import { ludoRules } from "./ludo";
 import { ultimateTicTacToeRules } from "./ultimateTicTacToe";
 
 describe("rules map", () => {
@@ -11,12 +12,14 @@ describe("rules map", () => {
     expect(BOARD_RULES.connect_four).toBe(connectFourRules);
     expect(BOARD_RULES.dots_and_boxes).toBe(dotsAndBoxesRules);
     expect(BOARD_RULES.ultimate_tic_tac_toe).toBe(ultimateTicTacToeRules);
+    expect(BOARD_RULES.ludo).toBe(ludoRules);
   });
 
   test("move limits", () => {
     expect(BOARD_RULES.connect_four.moveLimit).toBe(7);
     expect(BOARD_RULES.dots_and_boxes.moveLimit).toBe(40);
     expect(BOARD_RULES.ultimate_tic_tac_toe.moveLimit).toBe(81);
+    expect(BOARD_RULES.ludo.moveLimit).toBe(18);
   });
 });
 

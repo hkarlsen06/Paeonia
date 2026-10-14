@@ -40,6 +40,7 @@ export const GAME_BACKENDS: Record<GameKind, GameBackend | null> = {
   connect_four: boardGameBackend,
   dots_and_boxes: boardGameBackend,
   ultimate_tic_tac_toe: boardGameBackend,
+  ludo: boardGameBackend,
 };
 
 const registered = (): GameBackend[] => GAME_KINDS.flatMap((kind) => GAME_BACKENDS[kind] ?? []);

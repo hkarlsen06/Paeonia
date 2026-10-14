@@ -73,7 +73,7 @@ function assertCurrentVersion(game: BoardGame, expectedVersion: number): void {
 
 /**
  * The couple's board games for the caller, in the order connect_four, dots_and_boxes,
- * ultimate_tic_tac_toe. A game the couple has not started is missing from `games`. The query does
+ * ultimate_tic_tac_toe, ludo. A game the couple has not started is missing from `games`. The query does
  * not read the clock, so subscribe to it after `ensure_board_game`.
  *
  * Each game: `{ id, kind, game_number, status, version, first_user_id, moves, turn_user_id,

@@ -19,7 +19,7 @@ export interface BoardRules<S> {
   apply(state: S, move: number): S | null;
 }
 
-export const BOARD_GAME_KINDS = ["connect_four", "dots_and_boxes", "ultimate_tic_tac_toe"] as const;
+export const BOARD_GAME_KINDS = ["connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo"] as const;
 export type BoardGameKind = (typeof BOARD_GAME_KINDS)[number];
 
 export function otherPlayer(player: BoardPlayer): BoardPlayer {

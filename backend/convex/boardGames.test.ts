@@ -103,6 +103,14 @@ const ULTIMATE_WIN = [
   27, 6, 55, 11, 26, 74, 25, 71, 75, 31, 38, 18, 4, 40, 37, 10, 13, 39, 34, 65, 22, 41, 53, 79, 66, 33, 56, 20, 19, 9, 3, 28, 73, 50, 52,
   68,
 ];
+// From the shared Ludo fixtures (lib/ludo.test.ts). Player one gets both pawns home on the last move.
+const LUDO_WIN = [
+  15, 3, 11, 3, 11, 6, 14, 6, 5, 3, 14, 12, 15, 3, 12, 6, 3, 0, 12, 16, 9, 6, 0, 0, 16, 4, 9, 15, 0, 13, 9, 13, 12, 16, 4, 6, 5, 13, 2, 13, 14, 10,
+  14, 15, 7, 16, 16, 4, 1, 16, 1, 6, 10, 9, 7, 10, 13, 14, 9, 5, 1, 16, 7, 12, 4, 15, 0, 1, 15, 12, 1, 0, 16, 7, 15, 6, 1, 3, 7, 10, 4, 8, 10, 14,
+  13, 15, 9, 13, 9, 13, 6, 10, 0, 13, 12, 4, 0, 17, 4,
+];
+// Every kind has a move that is legal on an empty board. Ludo's is a 6 for the first pawn.
+const OPENING_MOVE = { connect_four: 0, dots_and_boxes: 0, ultimate_tic_tac_toe: 0, ludo: 15 } as const;
 
 describe("access", () => {
   test("a user without a couple cannot use board games", async () => {
@@ -232,16 +240,17 @@ describe("ensure_board_game", () => {
   test("get_board_games lists the started games in a fixed order and skips the others", async () => {
     const s = await startCouple();
     expect(await list(s.a)).toEqual({ user_id: s.a.userId, partner_user_id: s.b.userId, couple_id: s.couple.coupleId, data_epoch: "", games: [] });
+    await ensure(s.b, "ludo");
     await ensure(s.b, "ultimate_tic_tac_toe");
     await ensure(s.a, "dots_and_boxes");
     await ensure(s.a, "connect_four");
     const mine = await list(s.a);
-    expect(mine.games.map((game) => game.kind)).toEqual(["connect_four", "dots_and_boxes", "ultimate_tic_tac_toe"]);
+    expect(mine.games.map((game) => game.kind)).toEqual(["connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo"]);
     const theirs = await list(s.b);
     expect(theirs.user_id).toBe(s.b.userId);
     expect(theirs.partner_user_id).toBe(s.a.userId);
     expect(theirs.games.map((game) => game.id)).toEqual(mine.games.map((game) => game.id));
-    expect(mine.games.map((game) => game.first_user_id)).toEqual([s.a.userId, s.a.userId, s.b.userId]);
+    expect(mine.games.map((game) => game.first_user_id)).toEqual([s.a.userId, s.a.userId, s.b.userId, s.b.userId]);
   });
 
   test("each kind has its own game", async () => {
@@ -373,6 +382,36 @@ describe("refused moves", () => {
     expect(await failure(move(s.a, current, 4))).toEqual({ code: "23514", message: "that move is not allowed" });
     expect(await gameOf(s.a, "connect_four")).toEqual(current);
     expect(await activity(s.t)).toHaveLength(6);
+  });
+
+  test("Ludo: player one gets both pawns home", async () => {
+    const s = await startCouple();
+    const outcome = outcomeOf("ludo", LUDO_WIN);
+    expect(outcome).toEqual({ winner: 1, line: [] });
+    await playMoves(s, await ensure(s.a, "ludo"), LUDO_WIN);
+    expect(await gameOf(s.a, "ludo")).toMatchObject({
+      status: "finished",
+      turn_user_id: null,
+      winner_user_id: s.a.userId,
+      win_line: [],
+      my_wins: 1,
+      partner_wins: 0,
+      games_finished: 1,
+      previous: null,
+    });
+  });
+
+  test("Ludo: a pass is legal only when no pawn can move, and a 6 keeps the turn", async () => {
+    const s = await startCouple();
+    const game = await ensure(s.a, "ludo");
+    // With both pawns in the base, a 1 can't move a pawn, so only the pass (move 2) is legal.
+    expect((await failure(move(s.a, game, 0))).code).toBe("23514");
+    const passed = await move(s.a, game, 2);
+    expect(passed.turn_user_id).toBe(s.b.userId);
+    // A 6 brings a pawn out and rolls again. A pass on a 6 is illegal while a pawn can leave the base.
+    const out = await move(s.b, passed, 15);
+    expect(out.turn_user_id).toBe(s.b.userId);
+    expect((await failure(move(s.b, out, 17))).code).toBe("23514");
   });
 
   test("a taken line in Dots and Boxes and a wrong board in Ultimate Tic-Tac-Toe are refused", async () => {
@@ -793,10 +832,10 @@ describe("hidden photo", () => {
 
   test("a couple without photos gets none, in every kind", async () => {
     const s = await startCouple();
-    for (const kind of ["connect_four", "dots_and_boxes", "ultimate_tic_tac_toe"] as const) {
+    for (const kind of ["connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo"] as const) {
       expect((await ensure(s.a, kind)).photo_media_asset_id).toBeNull();
     }
-    expect((await gameRows(s.t)).map((row) => row.photo_media_asset_id)).toEqual([undefined, undefined, undefined]);
+    expect((await gameRows(s.t)).map((row) => row.photo_media_asset_id)).toEqual([undefined, undefined, undefined, undefined]);
   });
 
   test("a new Dots and Boxes game gets a photo from the couple's memories, and both partners see it", async () => {
@@ -985,7 +1024,7 @@ describe("marks", () => {
 
 // --- Pushes -------------------------------------------------------------------
 
-const ALL_KINDS = ["connect_four", "dots_and_boxes", "ultimate_tic_tac_toe"] as const;
+const ALL_KINDS = ["connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo"] as const;
 const deepLink = (kind: BoardGameKind) => `paeonia://games/${kind.replaceAll("_", "-")}`;
 
 /** A couple whose partners both have a push device, so pushes reach the outbox. `locale` is the second partner's. */
@@ -1065,6 +1104,7 @@ describe("pushes", () => {
     ["connect_four", CONNECT_FOUR_WIN, "Your game of Connect Four is over"],
     ["dots_and_boxes", DOTS_AND_BOXES_WIN, "Your game of Dots and Boxes is over"],
     ["ultimate_tic_tac_toe", ULTIMATE_WIN, "Your game of Ultimate Tic-Tac-Toe is over"],
+    ["ludo", LUDO_WIN, "Your game of Ludo is over"],
   ] as const)("%s: the move that ends the game queues one result push for the partner instead of a turn push", async (kind, moves, title) => {
     const s = await startPushCouple();
     const players = movers(rulesFor(kind), moves)!;
@@ -1327,7 +1367,7 @@ describe("turn reminder", () => {
     const s = await startPushCouple();
     for (const kind of ALL_KINDS) await ensure(s.a, kind);
     hours(73);
-    expect(await runReminders(s)).toBe(3);
+    expect(await runReminders(s)).toBe(ALL_KINDS.length);
     expect(await runReminders(s)).toBe(0);
     expect((await reminders(s)).map((row) => row.payload.game_kind).sort()).toEqual([...ALL_KINDS].sort());
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -1431,7 +1471,7 @@ describe("relationship end", () => {
 
   async function playedCouple() {
     const s = await startCouple();
-    for (const kind of ALL_KINDS) await move(s.a, await ensure(s.a, kind), 0);
+    for (const kind of ALL_KINDS) await move(s.a, await ensure(s.a, kind), OPENING_MOVE[kind]);
     await s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: "aGVsbG8=" });
     await s.b.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: "AAAA" });
     return s;
@@ -1439,11 +1479,11 @@ describe("relationship end", () => {
 
   test("cleanup deletes the games and marks of the couple", async () => {
     const s = await playedCouple();
-    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 3, board_game_marks: 2 });
+    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 4, board_game_marks: 2 });
 
     await s.a.as.mutation(api.relationship.leave_relationship, op());
     // The rows stay until the content is cleaned up.
-    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 3, board_game_marks: 2 });
+    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 4, board_game_marks: 2 });
     await s.t.mutation(internal.relationship.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
     expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 0, board_game_marks: 0 });
   });
@@ -1458,14 +1498,14 @@ describe("relationship end", () => {
     expect(await count(s.t, other.coupleId)).toEqual({ board_games: 1, board_game_marks: 0 });
   });
 
-  test("the game row count is exact although the backend is registered for three kinds", async () => {
+  test("the game row count is exact although the backend is registered for four kinds", async () => {
     const s = await playedCouple();
-    // 1 settings row, 3 games and 2 marks.
+    // 1 settings row, 4 games and 2 marks.
     const deleted = await s.t.run(async (ctx) => {
       const { deleteCoupleGameRows } = await import("./lib/gameRegistry");
       return await deleteCoupleGameRows(ctx, s.couple.coupleId);
     });
-    expect(deleted).toBe(6);
+    expect(deleted).toBe(7);
     expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 0, board_game_marks: 0 });
   });
 
@@ -1485,6 +1525,7 @@ describe("push copy", () => {
     connect_four: { en: "Connect Four", nb: "Fire på rad" },
     dots_and_boxes: { en: "Dots and Boxes", nb: "Prikker og streker" },
     ultimate_tic_tac_toe: { en: "Ultimate Tic-Tac-Toe", nb: "Ultimat bondesjakk" },
+    ludo: { en: "Ludo", nb: "Ludo" },
   } as const;
   // The exact lock-screen text of every board game push. "First Partner" is the partner's profile name.
   const WORDING = {

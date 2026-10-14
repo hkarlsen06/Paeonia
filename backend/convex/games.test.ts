@@ -260,6 +260,7 @@ describe("presence and invites for every kind", () => {
       connect_four: "paeonia://games/connect-four",
       dots_and_boxes: "paeonia://games/dots-and-boxes",
       ultimate_tic_tac_toe: "paeonia://games/ultimate-tic-tac-toe",
+      ludo: "paeonia://games/ludo",
     });
     for (const kind of GAME_KINDS) expect(links[kind]).toBe(gameDeepLink(kind));
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -324,6 +325,7 @@ describe("registry", () => {
     expect(GAME_BACKENDS.connect_four).not.toBeNull();
     expect(GAME_BACKENDS.dots_and_boxes).not.toBeNull();
     expect(GAME_BACKENDS.ultimate_tic_tac_toe).not.toBeNull();
+    expect(GAME_BACKENDS.ludo).not.toBeNull();
     expect(Object.keys(GAME_BACKENDS)).toEqual([...GAME_KINDS]);
   });
 

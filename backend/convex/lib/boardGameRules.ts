@@ -1,6 +1,7 @@
 import type { BoardGameKind, BoardRules } from "./boardGames";
 import { connectFourRules } from "./connectFour";
 import { dotsAndBoxesRules } from "./dotsAndBoxes";
+import { ludoRules } from "./ludo";
 import { ultimateTicTacToeRules } from "./ultimateTicTacToe";
 
 /**
@@ -13,4 +14,5 @@ export const BOARD_RULES = {
   connect_four: connectFourRules,
   dots_and_boxes: dotsAndBoxesRules,
   ultimate_tic_tac_toe: ultimateTicTacToeRules,
+  ludo: ludoRules,
 } as const satisfies Record<BoardGameKind, BoardRules<any>>;

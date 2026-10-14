@@ -139,6 +139,20 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
       resultBody: "Åpne Paeonia for å se hvordan det endte.",
     },
   },
+  ludo: {
+    en: {
+      name: "Ludo",
+      turnReadyBody: "Open Paeonia to make your move.",
+      resultTitle: () => "Your game of Ludo is over",
+      resultBody: "Open Paeonia to see how it ended.",
+    },
+    nb: {
+      name: "Ludo",
+      turnReadyBody: "Åpne Paeonia for å gjøre trekket ditt.",
+      resultTitle: () => "Spillet deres i Ludo er ferdig",
+      resultBody: "Åpne Paeonia for å se hvordan det endte.",
+    },
+  },
 };
 
 /** The copy of the game a push names in `payload.game_kind`, or null when the game has no entry. */

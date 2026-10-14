@@ -1562,7 +1562,7 @@ export default defineSchema({
   board_games: defineTable({
     id: uuid,
     couple_id: uuid,
-    kind: literals("connect_four", "dots_and_boxes", "ultimate_tic_tac_toe"),
+    kind: literals("connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo"),
     // Starts at 1 and goes up with every rematch.
     game_number: v.number(),
     status: literals("playing", "finished"),
