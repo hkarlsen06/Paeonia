@@ -23,8 +23,8 @@ extension RootView {
     }
 
     /// One pass per activation. Our location refresh runs next to the
-    /// foreground sync, so new content never waits on a GPS fix. Then a pending
-    /// primer is offered and the partner's widget drawing is pulled. The map
+    /// foreground sync, so new content never waits on a GPS fix, and the
+    /// partner's widget drawing is pulled. The map
     /// follows store changes itself. Quickly leaving and returning to the app
     /// while a pass runs does not start a second one.
     func runForegroundActivation() {
@@ -44,9 +44,6 @@ extension RootView {
             )
             async let widgetSync: Void = performWidgetSyncIfPaired(viewModel.state)
             await viewModel.refreshAfterForegroundActivation()
-            if let identity = stablePairedLocationIdentity {
-                presentLocationPrimerIfNeeded(for: identity)
-            }
             _ = await (locationRefresh, widgetSync)
         }
     }

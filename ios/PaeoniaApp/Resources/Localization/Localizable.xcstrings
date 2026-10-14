@@ -1287,24 +1287,6 @@
         }
       }
     },
-    "boardGames.players.drawMark" : {
-      "comment" : "Quiet link under this person's avatar until they have drawn the small mark shown on their pieces.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Draw your mark"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tegn merket ditt"
-          }
-        }
-      }
-    },
     "boardGames.result.continue" : {
       "comment" : "Main button on the result of a game this person missed the end of. Goes on to the new game.",
       "extractionState" : "manual",
@@ -3058,13 +3040,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ answered: %@"
+            "value" : "%@ answered \"%@\""
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ svarte: %@"
+            "value" : "%@ svarte på «%@»"
           }
         }
       }
@@ -10587,6 +10569,24 @@
         }
       }
     },
+    "games.settings.mark.detail" : {
+      "comment" : "Line under \"Your mark\" in the game settings sheet. The row opens the sheet where the person draws the small mark shown on their game pieces.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It shows on your pieces in every board game."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det vises på brikkene dine i alle brettspill."
+          }
+        }
+      }
+    },
     "games.settings.save" : {
       "comment" : "Button that saves the Games settings",
       "extractionState" : "manual",
@@ -11626,13 +11626,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia shares only your latest location while the app is open. We never keep a location history."
+            "value" : "Paeonia shares only your latest location. We never keep a location history."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia deler bare den nyeste posisjonen din mens appen er åpen. Vi lagrer aldri posisjonshistorikk."
+            "value" : "Paeonia deler bare den nyeste posisjonen din. Vi lagrer aldri posisjonshistorikk."
           }
         }
       }

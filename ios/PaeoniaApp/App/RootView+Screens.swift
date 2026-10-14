@@ -207,7 +207,7 @@ extension RootView {
         MainTabActions(
             openWidgetDrawing: { viewModel.openWidgetDrawing() },
             shareLocation: { await shareLocation() },
-            sentSomethingToPartner: offerNotificationsAfterSharing,
+            sentSomethingToPartner: offerPrimersAfterSharing,
             refreshHome: { await refreshHomeSurfacesFromPull() },
             refreshDailyChallenge: { await viewModel.refreshFromHomePull() },
             syncAfterLocalChange: { await viewModel.syncAfterLocalChange() },

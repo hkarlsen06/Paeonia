@@ -24,7 +24,7 @@ extension LocationMapViewModel {
             return isLocating ? .locatingCurrent : visibility == nil ? .loading : .currentUnknown
         }
         guard let current = ownLocation?.location else {
-            return isLocating ? .locatingCurrent : .currentLocationMissing
+            return ownLocationMissingState(authorization: authorization, isLocating: isLocating)
         }
 
         switch visibility.visibilityState {
@@ -55,5 +55,17 @@ extension LocationMapViewModel {
             return .partnerUnknown(visibility.visibilityState)
         }
     }
-}
 
+    /// Sharing is on but this phone has no location yet. When iOS has not
+    /// asked this phone yet, as after a fresh install, the card asks to share,
+    /// which leads to that question.
+    private static func ownLocationMissingState(
+        authorization: ForegroundLocationAuthorizationState,
+        isLocating: Bool
+    ) -> CoupleMapState {
+        if isLocating {
+            return .locatingCurrent
+        }
+        return authorization == .notDetermined ? .currentUnknown : .currentLocationMissing
+    }
+}

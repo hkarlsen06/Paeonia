@@ -61,8 +61,6 @@ struct BoardGameShellContent: Equatable {
     let me: BoardGamePlayerInfo
     let partner: BoardGamePlayerInfo
     let turn: BoardGameTurnLabel
-    /// True while I have not drawn a mark.
-    let showsDrawMarkLink: Bool
     let stake: BoardGameStakeState
     let partnerStatus: BoardGamePartnerStatus
     /// Goes up with each extra turn of mine, so the status row can pop "Another turn".

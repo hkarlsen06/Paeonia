@@ -61,7 +61,6 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     var failedWhileOnline = false
     /// The hidden photo of a Dots and Boxes game.
     var photo: UIImage?
-    var hasDrawnMark = false
     var notice: BoardGamesNotice?
     /// The open mark editor sheet.
     var markEditor: BoardMarkEditorModel?
@@ -196,7 +195,6 @@ final class BoardGameViewModel<Board: BoardGameRules> {
         failedWhileOnline = queue.failedWhileOnline
         hasFailedAttempt = queue.hasFailedAttempt
         markImages = marks
-        hasDrawnMark = document.marks?.mine != nil
         updatePeople()
         recompute()
         // Only this game's open board takes its notices, so a refusal waits for

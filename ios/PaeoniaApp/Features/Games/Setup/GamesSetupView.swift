@@ -164,6 +164,7 @@ struct GamesSettingsSheet: View {
                         .font(PaeoniaTypography.caption)
                         .foregroundStyle(.paeoniaTextTertiary)
                         .fixedSize(horizontal: false, vertical: true)
+                    GameMarkSettingsRow(viewModel: viewModel)
                 }
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.top, PaeoniaSpacing.space16)

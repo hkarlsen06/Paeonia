@@ -9,7 +9,7 @@ extension DailyFlowZoom {
 }
 
 /// The partner's questions that wait for the user's answer, shown inside a daily
-/// question card as locked rows: "Robin answered: A memory that stayed". A row shows
+/// question card as locked rows: Robin answered "**A memory that stayed**". A row shows
 /// only the question's short prompt, never the partner's answer. Once the user's own
 /// questions are done, a row opens that question's answer flow. Before that it only
 /// says the partner has answered, and the card's main button stays on the user's own
@@ -63,7 +63,7 @@ struct LockedPartnerQuestionRows: View {
         HStack(spacing: PaeoniaSpacing.space12) {
             lockedAvatar
 
-            Text(.dailyChallengeLockedRow(partnerName, question.shortPrompt))
+            Text(rowText(question.shortPrompt))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .lineLimit(2)
@@ -81,6 +81,16 @@ struct LockedPartnerQuestionRows: View {
         .background(.paeoniaSurfaceSecondary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
         .contentShape(Rectangle())
+    }
+
+    /// The row's sentence with the question's short prompt in bold.
+    private func rowText(_ shortPrompt: String) -> AttributedString {
+        var text = AttributedString(localized: .dailyChallengeLockedRow(partnerName, shortPrompt))
+        // Search from the end so a partner name that contains the prompt stays plain.
+        if let range = text.range(of: shortPrompt, options: .backwards) {
+            text[range].inlinePresentationIntent = .stronglyEmphasized
+        }
+        return text
     }
 
     /// The partner's avatar with a small lock on its bottom-right edge: they answered,

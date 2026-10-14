@@ -18,14 +18,12 @@ enum BoardGamePreviewData {
     static func shell(
         turn: BoardGameTurnLabel = .yourTurn,
         stake: BoardGameStakeState = .fixed("Loser makes coffee"),
-        partnerStatus: BoardGamePartnerStatus = .here,
-        showsDrawMarkLink: Bool = true
+        partnerStatus: BoardGamePartnerStatus = .here
     ) -> BoardGameShellContent {
         BoardGameShellContent(
             me: me,
             partner: partner,
             turn: turn,
-            showsDrawMarkLink: showsDrawMarkLink,
             stake: stake,
             partnerStatus: partnerStatus,
             extraTurnCount: 0,

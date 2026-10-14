@@ -16,7 +16,7 @@ struct DailyChallengeScreen: View {
     /// answerable partner card mark themselves as zoom sources in it, so the tapped
     /// card appears to grow into its full-screen answer flow.
     var zoomNamespace: Namespace.ID?
-    var focusedQuestionID: Binding<UUID?> = .constant(nil)
+    var focusedQuestionIDs: Binding<[UUID]> = .constant([])
     var chatQuestion: Binding<DailyChallengeQuestion?> = .constant(nil)
     var onOpenAnswerFlow: () -> Void = {}
     var onTapStreak: () -> Void = {}
@@ -33,7 +33,7 @@ struct DailyChallengeScreen: View {
     /// The earlier days under today's list. Built once the signed-in user is known, and
     /// kept while a chat is open on top of this screen.
     @State private var historyViewModel: DailyChallengeHistoryViewModel?
-    @State private var highlightedQuestionID: UUID?
+    @State private var highlightedQuestionIDs: Set<UUID> = []
     @State private var reportTarget: PrivacyReportTarget?
     /// Hides the tab bar while a chat is about to open, before the push starts. Hiding
     /// it from the pushed chat instead would bring it back only after the back swipe
@@ -58,7 +58,7 @@ struct DailyChallengeScreen: View {
                 .paeoniaReadableWidth(alignment: .leading)
             }
             .refreshable { await refresh() }
-            .task(id: focusedQuestionID.wrappedValue) {
+            .task(id: focusedQuestionIDs.wrappedValue) {
                 await focusQuestionIfNeeded(proxy)
             }
             .task(id: viewModel.participants.currentUserID) {
@@ -138,7 +138,7 @@ struct DailyChallengeScreen: View {
                         sending: viewModel.sendingPreview(for: question),
                         isOwnChallengeComplete: viewModel.hasCompletedRequiredDailyQuestions,
                         zoomNamespace: zoomNamespace,
-                        isHighlighted: highlightedQuestionID == question.id,
+                        isHighlighted: highlightedQuestionIDs.contains(question.id),
                         onAnswer: { onAnswerPartnerQuestion(question) },
                         lastMessagePreview: viewModel.threadPreview(for: question.questionID),
                         hasUnreadChat: viewModel.hasUnreadChat(for: question.questionID),
@@ -289,34 +289,37 @@ struct DailyChallengeScreen: View {
         viewModel.dismissNotice()
     }
 
+    /// Scrolls to the first focused question that is in the list and outlines all
+    /// of them for a moment.
     @MainActor
     private func focusQuestionIfNeeded(_ proxy: ScrollViewProxy) async {
-        guard let questionID = focusedQuestionID.wrappedValue else {
+        let focusedIDs = focusedQuestionIDs.wrappedValue
+        guard !focusedIDs.isEmpty else {
             return
         }
 
-        guard readQuestions.contains(where: { $0.id == questionID }) else {
-            focusedQuestionID.wrappedValue = nil
+        let shownIDs = Set(readQuestions.map(\.id))
+        let questionIDs = focusedIDs.filter(shownIDs.contains)
+        guard let firstID = questionIDs.first else {
+            focusedQuestionIDs.wrappedValue = []
             return
         }
 
         withAnimation(PaeoniaMotion.stateChange) {
-            proxy.scrollTo(questionID, anchor: .center)
-            highlightedQuestionID = questionID
+            proxy.scrollTo(firstID, anchor: .center)
+            highlightedQuestionIDs = Set(questionIDs)
         }
 
-        // Clearing the focused id changes this task's id and cancels it, so keep
-        // the id until the highlight time is over.
+        // Clearing the focused ids changes this task's id and cancels it, so keep
+        // the ids until the highlight time is over.
         try? await Task.sleep(for: .seconds(2))
         guard !Task.isCancelled else {
             return
         }
 
         withAnimation(PaeoniaMotion.stateChange) {
-            if highlightedQuestionID == questionID {
-                highlightedQuestionID = nil
-            }
-            focusedQuestionID.wrappedValue = nil
+            highlightedQuestionIDs.subtract(questionIDs)
+            focusedQuestionIDs.wrappedValue = []
         }
     }
 }

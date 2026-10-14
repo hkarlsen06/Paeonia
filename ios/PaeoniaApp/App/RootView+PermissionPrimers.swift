@@ -30,9 +30,8 @@ extension RootView {
         !Task.isCancelled && stablePairedLocationIdentity == identity
     }
 
-    /// Runs when Home becomes the stable paired surface. The location primer
-    /// needs the server-backed sharing preference, which the sync pass below
-    /// restores, and waits until Home has finished sliding in.
+    /// Runs when Home becomes the stable paired surface. Restores the
+    /// server-backed sharing preference that the location primer needs.
     func restorePairedLocationPresentation(for identity: LocationIdentity) async {
         do {
             try await Task.sleep(for: .milliseconds(600))
@@ -54,38 +53,16 @@ extension RootView {
             source: .foregroundOpen,
             mayPromptForAuthorization: false
         )
-        guard isCurrentStableIdentity(identity) else { return }
-
-        presentLocationPrimerIfNeeded(for: identity)
     }
 
-    /// Offers at most one primer per visit. Two permission asks close together
-    /// feel pushy, so after the notification primer the location primer waits
-    /// until the person next comes back to the app.
-    func presentLocationPrimerIfNeeded(for identity: LocationIdentity) {
+    /// Nothing asks for permission when the app opens. The primers wait until
+    /// the person has answered a question or sent a drawing, and show once the
+    /// answer cover or the drawing screen has gone away. Notifications come
+    /// first. At most one primer shows per visit, so the location primer waits
+    /// for a later visit after the notification one.
+    func offerPrimersAfterSharing() {
         guard allowsSystemIntegrations,
               !primerShownThisVisit,
-              isCurrentStableIdentity(identity)
-        else {
-            return
-        }
-
-        permissionPrimerCoordinator.presentLocationPrimerIfNeeded(
-            identity: identity,
-            sharingStateIsKnown: locationViewModel.hasResolvedSharingPreference,
-            sharingEnabled: locationViewModel.sharingEnabled,
-            locationAuthorizationState: locationViewModel.authorizationState
-        )
-        if permissionPrimerCoordinator.presentedPrimer != nil {
-            primerShownThisVisit = true
-        }
-    }
-
-    /// The notification primer waits until the person has answered a question
-    /// or sent a drawing, so the ask comes when its reason is clear. It shows
-    /// once the answer cover or the drawing screen has gone away.
-    func offerNotificationsAfterSharing() {
-        guard allowsSystemIntegrations,
               let identity = stablePairedLocationIdentity
         else {
             return
@@ -96,6 +73,14 @@ extension RootView {
                 identity: identity,
                 pushAuthorization: pushAuthorization
             )
+            if permissionPrimerCoordinator.presentedPrimer == nil, isCurrentStableIdentity(identity) {
+                permissionPrimerCoordinator.presentLocationPrimerIfNeeded(
+                    identity: identity,
+                    sharingStateIsKnown: locationViewModel.hasResolvedSharingPreference,
+                    sharingEnabled: locationViewModel.sharingEnabled,
+                    locationAuthorizationState: locationViewModel.authorizationState
+                )
+            }
 
             // The authorization status read can outlive the paired identity.
             // Never let that stale result resurrect a primer after unpair/sign-out.
@@ -151,10 +136,12 @@ extension RootView {
 
     /// Turns sharing on, asking iOS for While Using first. Once that is
     /// allowed, iOS asks right away whether Paeonia may also share while closed.
+    /// A plain retry, with sharing and access already on, asks nothing.
     func shareLocation() async {
-        let wasSharing = locationViewModel.sharingEnabled
+        let wasAlreadyAllowed = locationViewModel.sharingEnabled
+            && locationViewModel.authorizationState == .authorized
         await locationViewModel.promptForCurrentLocation()
-        guard !wasSharing,
+        guard !wasAlreadyAllowed,
               locationViewModel.sharingEnabled,
               locationViewModel.authorizationState == .authorized
         else {

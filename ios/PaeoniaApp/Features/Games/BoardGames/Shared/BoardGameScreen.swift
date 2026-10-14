@@ -82,7 +82,6 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             BoardGameScreenLayout(
                 content: shellContent,
                 stakeDraft: $viewModel.stakeDraft,
-                onDrawMark: viewModel.openMarkEditor,
                 onCommitStake: {},
                 boardBleeds: boardBleeds
             ) {
@@ -103,7 +102,6 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             me: viewModel.meInfo,
             partner: viewModel.partnerInfo,
             turn: viewModel.turnLabel,
-            showsDrawMarkLink: !viewModel.hasDrawnMark,
             stake: viewModel.stakeState,
             partnerStatus: viewModel.partnerStatus,
             extraTurnCount: hint == nil ? viewModel.extraTurnCount : 0,

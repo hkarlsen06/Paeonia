@@ -127,8 +127,9 @@ struct MainTabView: View {
     /// The partner-answer flow was opened from a locked row on the Home card, so it
     /// zooms out of that row and not out of the Questions tab list.
     @State var partnerAnswerOpenedFromHome = false
-    /// Question to scroll to and briefly highlight after a notification deep link.
-    @State var focusedDailyQuestionID: UUID?
+    /// Questions to scroll to and briefly highlight, after a notification deep link
+    /// or a button that sends the user to answer the partner's questions.
+    @State var focusedDailyQuestionIDs: [UUID] = []
     @State var dailyChatQuestion: DailyChallengeQuestion?
     /// The Memories tab's stack, so the Home look-back card can open a memory in it.
     @State var memoriesPath: [UUID] = []
@@ -388,7 +389,7 @@ struct MainTabView: View {
             DailyChallengeScreen(
                 viewModel: dailyChallengeViewModel,
                 zoomNamespace: zoomNamespace,
-                focusedQuestionID: $focusedDailyQuestionID,
+                focusedQuestionIDs: $focusedDailyQuestionIDs,
                 chatQuestion: $dailyChatQuestion,
                 onOpenAnswerFlow: { openAnswerFlow(source: .questions) },
                 onTapStreak: openStreakDetails,

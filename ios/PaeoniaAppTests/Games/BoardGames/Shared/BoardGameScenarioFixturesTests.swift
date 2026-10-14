@@ -123,7 +123,6 @@ struct BoardGameScenarioFixturesTests {
         #expect(model.partnerStatus == .here)
         #expect(model.invite == .hidden)
         #expect(model.canPlay)
-        #expect(!model.hasDrawnMark)
     }
 
     @Test func connectFourPartnerTurnHasRobinAwayAndTheInviteButton() async throws {

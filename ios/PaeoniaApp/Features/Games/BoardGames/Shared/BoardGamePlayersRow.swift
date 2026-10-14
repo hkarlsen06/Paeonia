@@ -8,9 +8,6 @@ struct BoardGamePlayersRow: View {
     let partner: BoardGamePlayerInfo
     let turn: BoardGameTurnLabel
     let partnerName: String
-    /// A quiet "Draw your mark" link under my avatar, while I have no mark.
-    let showsDrawMarkLink: Bool
-    let onDrawMark: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -27,7 +24,6 @@ struct BoardGamePlayersRow: View {
             }
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: turn)
-        .animation(PaeoniaMotion.stateChange, value: showsDrawMarkLink)
     }
 
     // MARK: Layouts
@@ -52,41 +48,31 @@ struct BoardGamePlayersRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Avatar over name, with the link under it.
+    /// Avatar over name.
     private func column(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
         VStack(spacing: PaeoniaSpacing.space4) {
-            VStack(spacing: PaeoniaSpacing.space4) {
-                BoardGamePlayerAvatar(player: player, ring: ringState(isMe: isMe), size: Self.avatarSize)
-                name(isMe: isMe)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(isActive(isMe: isMe) ? .paeoniaTextPrimary : .paeoniaTextSecondary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(spokenName(isMe: isMe))
-            if isMe, showsDrawMarkLink {
-                drawMarkLink
-            }
+            BoardGamePlayerAvatar(player: player, ring: ringState(isMe: isMe), size: Self.avatarSize)
+            name(isMe: isMe)
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(isActive(isMe: isMe) ? .paeoniaTextPrimary : .paeoniaTextSecondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spokenName(isMe: isMe))
         .frame(width: Self.columnWidth)
     }
 
     /// Avatar beside name, for accessibility text sizes.
     private func row(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            HStack(spacing: PaeoniaSpacing.space12) {
-                BoardGamePlayerAvatar(player: player, ring: ringState(isMe: isMe), size: Self.avatarSize)
-                name(isMe: isMe)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(isActive(isMe: isMe) ? .paeoniaTextPrimary : .paeoniaTextSecondary)
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(spokenName(isMe: isMe))
-            if isMe, showsDrawMarkLink {
-                drawMarkLink
-            }
+        HStack(spacing: PaeoniaSpacing.space12) {
+            BoardGamePlayerAvatar(player: player, ring: ringState(isMe: isMe), size: Self.avatarSize)
+            name(isMe: isMe)
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(isActive(isMe: isMe) ? .paeoniaTextPrimary : .paeoniaTextSecondary)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spokenName(isMe: isMe))
     }
 
     // MARK: Pieces
@@ -106,24 +92,6 @@ struct BoardGamePlayersRow: View {
     /// "You, your turn" while it is my turn, otherwise just the name.
     private func spokenName(isMe: Bool) -> Text {
         isMe && turn == .yourTurn ? Text(.boardGamesPlayerYourTurnA11Y) : name(isMe: isMe)
-    }
-
-    /// Small to look at, 44 points tall to tap. The negative padding gives the
-    /// extra height back to the layout.
-    private var drawMarkLink: some View {
-        Button(action: onDrawMark) {
-            Text(.boardGamesPlayersDrawMark)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .multilineTextAlignment(.center)
-                // One line, wider than the avatar above it if it needs to be.
-                .fixedSize(horizontal: true, vertical: false)
-                .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.vertical, -PaeoniaSpacing.space12)
-        .accessibilityIdentifier("boardGames.players.drawMark")
     }
 }
 
@@ -246,9 +214,7 @@ private struct BoardGameRing: View {
                 me: BoardGamePreviewData.me,
                 partner: BoardGamePreviewData.partner,
                 turn: turn,
-                partnerName: BoardGamePreviewData.partner.name,
-                showsDrawMarkLink: turn == .yourTurn,
-                onDrawMark: {}
+                partnerName: BoardGamePreviewData.partner.name
             )
         }
     }
@@ -263,9 +229,7 @@ private struct BoardGameRing: View {
         me: BoardGamePreviewData.me,
         partner: BoardGamePreviewData.partner,
         turn: .partnerTurn,
-        partnerName: BoardGamePreviewData.partner.name,
-        showsDrawMarkLink: true,
-        onDrawMark: {}
+        partnerName: BoardGamePreviewData.partner.name
     )
     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
     .frame(maxHeight: .infinity)

@@ -285,6 +285,12 @@ extension LocationSharingFlowTests {
             visibility: snapshot(.visible, partner: partnerLocation),
             ownLocation: nil
         ) == .currentLocationMissing)
+        // A fresh install keeps sharing on, but iOS has not asked yet.
+        #expect(LocationMapViewModel.resolveMapState(
+            visibility: snapshot(.visible, partner: partnerLocation),
+            ownLocation: nil,
+            authorization: .notDetermined
+        ) == .currentUnknown)
         #expect(LocationMapViewModel.resolveMapState(
             visibility: snapshot(.visible, partner: partnerLocation),
             ownLocation: own,

@@ -202,7 +202,7 @@ extension MainTabView {
     func openDailyChallengeFromHome() {
         let state = dailyChallengeViewModel.homeCardState
         if state.kind == .complete, state.hasAnswerablePartnerQuestions {
-            selection.wrappedValue = .questions
+            openPartnerQuestionsInQuestionsTab()
             return
         }
 
@@ -227,8 +227,15 @@ extension MainTabView {
     }
 
     private func openQuestionsTabFromAnswerFlow() {
-        selection.wrappedValue = .questions
+        openPartnerQuestionsInQuestionsTab()
         isAnswerFlowPresented = false
+    }
+
+    /// Lands on the Questions tab with the partner's waiting questions outlined, so
+    /// the user can see which rows the button meant.
+    private func openPartnerQuestionsInQuestionsTab() {
+        selection.wrappedValue = .questions
+        focusedDailyQuestionIDs = dailyChallengeViewModel.snapshot.answerablePartnerQuestions.map(\.id)
     }
 
     /// The note about an earlier answer: closes the flow and opens the question's chat,
@@ -332,7 +339,7 @@ extension MainTabView {
 
         switch deepLink {
         case .dailyReveal(let instanceID, _):
-            focusedDailyQuestionID = instanceID
+            focusedDailyQuestionIDs = [instanceID]
         case .dailyChat(let questionID):
             await openDailyChat(questionID: questionID)
             guard isCurrent(deepLink) else { return }

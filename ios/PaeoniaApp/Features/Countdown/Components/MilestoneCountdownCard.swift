@@ -12,8 +12,8 @@ import SwiftUI
 /// `RelationshipMilestoneCalculator`, so it stays current: a new couple counts down
 /// to their first month, while a couple of years counts down to their next
 /// anniversary or their next round day count. A small "Together for 394 days" line
-/// above the count shows how long the couple has been together, and is left out on
-/// the first day.
+/// at the top of the tile shows how long the couple has been together, and is left
+/// out on the first day.
 ///
 /// Tapping the card opens `RelationshipTimelineView` (days together, the milestones
 /// ahead, and the date editor). The heart burst is reserved for the milestone day
@@ -90,29 +90,14 @@ struct MilestoneCountdownCard: View {
 
     private func card(for milestone: RelationshipMilestone) -> some View {
         Button(action: { isTimelinePresented = true }) {
-            VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
+            // The "Together for" line is pinned to the top so it sits on the same
+            // line as the drawing card's header next to it. The countdown is
+            // centred in the space below.
+            VStack(alignment: .center, spacing: PaeoniaSpacing.space8) {
                 togetherForLine
 
-                VStack(alignment: .center, spacing: PaeoniaSpacing.space4) {
-                    countdown(for: milestone)
-
-                    // The target date sits right under the count, so "25 days until"
-                    // and "Saturday 25 July" read together as the countdown.
-                    Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextTertiary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                        .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
-                }
-
-                // The milestone name follows as part of the same group.
-                Text(milestone.kind.displayName)
-                    .font(PaeoniaTypography.sectionTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                countdownBody(for: milestone)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .accessibilityElement(children: .combine)
             .milestoneTileChrome()
@@ -129,6 +114,31 @@ struct MilestoneCountdownCard: View {
         .onAppear { celebrateIfMilestoneDay(milestone) }
         .onChange(of: milestone) { _, milestone in
             celebrateIfMilestoneDay(milestone)
+        }
+    }
+
+    private func countdownBody(for milestone: RelationshipMilestone) -> some View {
+        VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
+            VStack(alignment: .center, spacing: PaeoniaSpacing.space4) {
+                countdown(for: milestone)
+
+                // The target date sits right under the count, so "25 days until"
+                // and "Saturday 25 July" read together as the countdown.
+                Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextTertiary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
+            }
+
+            // The milestone name follows as part of the same group.
+            Text(milestone.kind.displayName)
+                .font(PaeoniaTypography.sectionTitle)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -275,11 +285,12 @@ struct MilestoneCountdownCard: View {
 private extension View {
     /// The Home tab tile treatment shared with the widget drawing card in the same
     /// row: square footprint, tile fill, rounded corners, hairline stroke, and
-    /// lift. Content is centred both ways so it reads as one group with even
-    /// space around it.
+    /// lift. The vertical inset matches the drawing card's padding so the top lines
+    /// of both tiles line up.
     func milestoneTileChrome() -> some View {
         frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .padding(PaeoniaSpacing.space16)
+            .padding(.horizontal, PaeoniaSpacing.space16)
+            .padding(.vertical, PaeoniaSpacing.space12)
             .aspectRatio(1, contentMode: .fit)
             .background(.paeoniaBackgroundPrimary)
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))

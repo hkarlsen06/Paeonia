@@ -42,7 +42,6 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     let content: BoardGameShellContent
     /// The text the starter writes before the first move.
     @Binding var stakeDraft: String
-    let onDrawMark: () -> Void
     let onCommitStake: () -> Void
     /// A board that fills the screen sideways, past the padding, and takes the
     /// height that is left. It fills any space it is given.
@@ -77,9 +76,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
             me: content.me,
             partner: content.partner,
             turn: content.turn,
-            partnerName: content.partner.name,
-            showsDrawMarkLink: content.showsDrawMarkLink,
-            onDrawMark: onDrawMark
+            partnerName: content.partner.name
         )
     }
 
@@ -235,7 +232,6 @@ private struct BoardGameLayoutPreview: View {
         BoardGameScreenLayout(
             content: shell,
             stakeDraft: $draft,
-            onDrawMark: {},
             onCommitStake: {},
             board: { BoardGamePreviewData.board },
             bottom: {
@@ -276,7 +272,7 @@ private struct BoardGameLayoutPreview: View {
 #Preview("Phone, result") {
     NavigationStack {
         BoardGameLayoutPreview(
-            shell: BoardGamePreviewData.shell(turn: .youWon, showsDrawMarkLink: false),
+            shell: BoardGamePreviewData.shell(turn: .youWon),
             showsResult: true
         )
         .navigationBarTitleDisplayMode(.inline)
