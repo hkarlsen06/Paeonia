@@ -34,7 +34,15 @@ struct ProfilePhotoImageServiceTests {
         }
 
         async let second = service.profilePhotoData(for: mediaAssetID)
-        await Task.yield()
+        // The second call reads the cache before it joins the download. Releasing
+        // the download before that read would end it, and the second call would
+        // then rightly start its own.
+        while await cache.reads < 2 {
+            await Task.yield()
+        }
+        for _ in 0..<10 {
+            await Task.yield()
+        }
 
         #expect(await urlProvider.requestedMediaAssetIDs == [mediaAssetID])
 
@@ -192,13 +200,15 @@ private actor StubProfilePhotoDownloader: ProfilePhotoDataDownloading {
 
 private actor FakeProfilePhotoCache: ProfilePhotoImageCaching {
     private var storedData: [UUID: Data]
+    private(set) var reads = 0
 
     init(seed: [UUID: Data] = [:]) {
         self.storedData = seed
     }
 
     func profilePhotoData(for mediaAssetID: UUID) async -> Data? {
-        storedData[mediaAssetID]
+        reads += 1
+        return storedData[mediaAssetID]
     }
 
     func storeProfilePhotoData(_ data: Data, for mediaAssetID: UUID) async throws {

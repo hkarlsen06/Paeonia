@@ -184,14 +184,34 @@ Run from `backend/`:
 
 - `npm run typecheck`
 - `npm test`
-- `npx convex dev`: pushes to the deployment in `.env.local`. Without one, `CONVEX_AGENT_MODE=anonymous npx convex dev` starts a local backend on `127.0.0.1:3210` (HTTP actions on `3211`).
+- `npx convex dev`: pushes to the deployment in `.env.local`. Without one, `CONVEX_AGENT_MODE=anonymous npx convex dev` starts a local backend on the first free ports from `127.0.0.1:3210`. To test a branch on a simulator, use `scripts/local-backend` instead (see below).
 - `npx convex run <module>:<function> '<json args>'`
 
-Deploys to `api.paeonia.no` need `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_KEY` in the shell environment, never in a committed file.
+Commands against `api.paeonia.no` need `CONVEX_SELF_HOSTED_URL` and `CONVEX_SELF_HOSTED_ADMIN_KEY` in the shell environment, never in a committed file.
+
+## Testing a branch on a local backend
+
+A deploy replaces every function on `api.paeonia.no`, so a branch never deploys there. Each worktree runs its own local backend instead, and only `main` is deployed. From the repository root of the worktree:
+
+```sh
+scripts/local-backend            # keep it running; Ctrl-C or kill stops it
+scripts/local-backend --reseed   # copy api.paeonia.no's data again first
+```
+
+The script does the following:
+
+- It runs `convex dev` against a local backend at `http://127.0.0.1:<port>`, with HTTP actions on the next port. It pushes this worktree's `backend/convex` and pushes again on every change. The port comes from a hash of the worktree path, so it is different per worktree and the same across restarts.
+- It copies `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KEY`, `INVITE_CODE_PEPPER`, `PAEONIA_MEDIA_URL_SECRET`, `PAEONIA_LIVE_RELAY_URL` and `PAEONIA_LIVE_RELAY_SECRET` from `api.paeonia.no` on every run. It leaves out the APNs and Apple keys, so a local backend sends no pushes, verifies no purchases and revokes no Apple tokens. Push drains log `push delivery is not configured` and leave the rows pending.
+- On the first run, or with `--reseed`, it replaces all local data with a snapshot of `api.paeonia.no` (`npx convex export --include-file-storage`, then `npx convex import --replace-all`). The two test accounts are then paired, entitled and have their media. It only reads the hosted deployment. If the hosted data does not fit the branch's schema, the import fails. Fix the schema or the data, then run it again with `--reseed`.
+- It writes the untracked `ios/local.xcconfig`, which `ios/debug.xcconfig` includes, so Debug builds of this worktree use the local backend. Release builds ignore it. Delete the file to point Debug builds back at `api.paeonia.no`.
+
+The data lives in `backend/.convex/` of the worktree and survives restarts. While the script runs, plain `npx convex run`, `npx convex data` and `npx convex import` from `backend/` go to the local backend (through `backend/.env.local`), so edit local data freely there. Do not set `CONVEX_SELF_HOSTED_URL` in that shell, because the CLI then targets the hosted deployment instead. Clerk session tokens of the test accounts work on the local backend, since it trusts the same Clerk issuer.
+
+Live games still go through `relay.paeonia.no`. Its rooms are keyed by couple, so two worktrees that test live play with the same couple at the same time hear each other's strokes.
 
 ## Hosted deployment
 
-There is no production yet. The hosted deployment at `api.paeonia.no` holds only the developer's two test accounts. Deploying to it and editing its data for testing are pre-approved, so deploy after tests pass and say so in your summary. Schema changes do not need migrations or backfills. If old test rows block a deploy or no longer fit, delete or edit them.
+There is no production yet. The hosted deployment at `api.paeonia.no` holds only the developer's two test accounts. Deploying `main` to it and editing its data for testing are pre-approved, so deploy after tests pass and say so in your summary. Deploy only from `main`, and test a branch on a local backend (see above). Schema changes do not need migrations or backfills. If old test rows block a deploy or no longer fit, delete or edit them.
 
 The hosted Convex is self-hosted on the `one-s` server (`ssh one-s`). The stack lives in `/srv/paeonia/convex` and runs with docker compose: the Convex backend and the dashboard. Data is SQLite in `./data`. Both containers bind to localhost, and Caddy terminates TLS.
 
@@ -205,15 +225,9 @@ Agents have docker access on `one-s` through passwordless `sudo`. The `administr
 
 The admin key is in `/srv/paeonia/convex/admin-key` on `one-s` (owner-only). Never commit it, paste it into a file in the repository, or print it into logs.
 
-Deploy from `backend/`:
+Deploy with `scripts/deploy-backend` from the repository root of a clean checkout of local `main`. It refuses any other commit and holds the hosted-backend lock from `scripts/lock` while it deploys.
 
-```sh
-CONVEX_SELF_HOSTED_URL=https://api.paeonia.no \
-CONVEX_SELF_HOSTED_ADMIN_KEY="$(ssh one-s cat /srv/paeonia/convex/admin-key)" \
-npx convex deploy
-```
-
-`backend/.env.local` sets `CONVEX_DEPLOYMENT` for local development. The CLI refuses to run when that variable is set next to `CONVEX_SELF_HOSTED_URL`, so add `CONVEX_DEPLOYMENT=` (empty) to the command when the file exists.
+`backend/.env.local` sets `CONVEX_DEPLOYMENT` for local development. The CLI refuses to run when that variable is set next to `CONVEX_SELF_HOSTED_URL`, so add `CONVEX_DEPLOYMENT=` (empty) to hosted commands when the file exists.
 
 Operator functions (`internalMutation`/`internalQuery`/`internalAction`) run with the same two variables and `npx convex run <module>:<function> '<json args>'`. The App Review scripts `ios/Scripts/mint-review-codes.mjs` and `revoke-review-codes.mjs` use this path.
 

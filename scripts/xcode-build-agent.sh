@@ -10,6 +10,8 @@ DEFAULT_HEARTBEAT_INTERVAL=20
 MIN_HEARTBEAT_INTERVAL=15
 HEARTBEAT_INTERVAL="${XCODE_BUILD_AGENT_HEARTBEAT_INTERVAL:-$DEFAULT_HEARTBEAT_INTERVAL}"
 CONFIGURATION="${XCODE_BUILD_AGENT_CONFIGURATION:-Debug}"
+# build-for-testing also compiles the test targets.
+ACTION="${XCODE_BUILD_AGENT_ACTION:-build}"
 RESULT_BUNDLE="${TMPDIR:-/tmp}/Paeonia-build-$(date +%s)-$$.xcresult"
 LOG_FILE="$(mktemp "${TMPDIR:-/tmp}/Paeonia-build-log.XXXXXX")"
 JSON_FILE="$(mktemp "${TMPDIR:-/tmp}/Paeonia-build-json.XXXXXX")"
@@ -60,6 +62,9 @@ stop_heartbeat() {
   fi
 }
 
+# The pre-commit hook only runs once core.hooksPath points at .githooks.
+git config core.hooksPath >/dev/null || ./scripts/install-git-hooks.sh >&2
+
 ./scripts/generate-ios-build-number.sh >&2
 
 set +e
@@ -70,7 +75,7 @@ xcodebuild \
   -scheme App \
   -configuration "$CONFIGURATION" \
   -destination 'generic/platform=iOS Simulator' \
-  build >"$LOG_FILE" 2>&1 &
+  "$ACTION" >"$LOG_FILE" 2>&1 &
 XCODEBUILD_PID=$!
 start_heartbeat
 wait "$XCODEBUILD_PID"

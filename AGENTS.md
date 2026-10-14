@@ -8,7 +8,7 @@ Paeonia is in active development and has not launched. There are no users and no
 
 - Breaking changes are fine. Rename or remove backend functions, arguments, return fields, tables, and local storage formats when that makes the code better. Update every caller in the same change.
 - Do not write backward compatibility code. That means no support for older app builds, no deprecated aliases, no dual-read or dual-write paths, no data backfills or migrations, and no fallbacks for old data shapes. If test data no longer fits, wipe or edit it.
-- Deploying the backend to `api.paeonia.no` and editing its data for testing are pre-approved. Mention it in your summary.
+- Deploying local `main` to `api.paeonia.no` with `scripts/deploy-backend` and editing its data for testing are pre-approved. Mention it in your summary. Test a branch on a local backend instead (`scripts/local-backend`).
 - Where docs say "production" or "release", they describe the setup for the future App Store launch. They do not mean live users exist. `docs/mvp-release-checklist.md` tracks what must be true before launch.
 
 The data-safety rules in this file are about how the app treats a user's content at runtime. They do not ask you to preserve today's test data.

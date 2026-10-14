@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Deploys backend/ to the hosted Convex at api.paeonia.no.
+#
+# A deploy replaces every function on the deployment, so only local main is
+# deployed: the checkout must be clean and at main's commit. Test a branch on a
+# local backend instead (backend/AGENTS.md). The deploy holds the hosted-backend
+# lock (scripts/lock), so two worktrees never deploy at once.
+#
+#   scripts/deploy-backend
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR"
+
+if [ -n "$(git status --porcelain -- backend)" ]; then
+  echo "[deploy-backend] backend/ has uncommitted changes. Commit them on main first." >&2
+  exit 1
+fi
+
+if [ "$(git rev-parse HEAD)" != "$(git rev-parse main)" ]; then
+  echo "[deploy-backend] HEAD is not local main. Merge into main and deploy from there." >&2
+  exit 1
+fi
+
+# Convex Node actions fail on Node 26 (backend/AGENTS.md).
+if [ -d /opt/homebrew/opt/node@22/bin ]; then
+  export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+fi
+
+deploy() {
+  set -euo pipefail
+  cd "$ROOT_DIR/backend"
+  # backend/.env.local sets CONVEX_DEPLOYMENT, which the CLI refuses next to the self-hosted URL.
+  CONVEX_DEPLOYMENT= \
+    CONVEX_SELF_HOSTED_URL=https://api.paeonia.no \
+    CONVEX_SELF_HOSTED_ADMIN_KEY="$(ssh one-s cat /srv/paeonia/convex/admin-key)" \
+    npx convex deploy -y
+  echo "[deploy-backend] deployed $(git rev-parse --short HEAD) to api.paeonia.no"
+}
+
+export -f deploy
+export ROOT_DIR
+./scripts/lock run hosted-backend -- bash -c deploy

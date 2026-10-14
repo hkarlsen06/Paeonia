@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+# Shared locks for agents working in parallel worktrees of this repo, such as
+# the simulators and the hosted backend. Locks live in the git common dir, so
+# every worktree sees the same ones. A lock belongs to the worktree that took it,
+# and only that worktree can release it.
+#
+#   scripts/lock run <name> -- <command...>   wait for the lock, run, release
+#   scripts/lock acquire <name>               take it for a session of several commands
+#   scripts/lock release <name>               give back a lock this worktree took
+#   scripts/lock status                       list held locks
+#
+# A lock taken by `run` is stale once its process has exited. A lock taken by
+# `acquire` is stale after PAEONIA_LOCK_TTL_MINUTES (default 45). A stale lock is
+# taken over with a message. Waiting gives up after PAEONIA_LOCK_WAIT_MINUTES
+# (default 90).
+set -euo pipefail
+
+LOCK_ROOT="$(git rev-parse --path-format=absolute --git-common-dir)/paeonia-locks"
+OWNER="$(git rev-parse --show-toplevel)"
+TTL_SECONDS=$(( ${PAEONIA_LOCK_TTL_MINUTES:-45} * 60 ))
+WAIT_SECONDS=$(( ${PAEONIA_LOCK_WAIT_MINUTES:-90} * 60 ))
+
+mkdir -p "$LOCK_ROOT"
+
+usage() {
+  sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' >&2
+  exit 2
+}
+
+# Prints "owner|pid|started" for a held lock.
+read_lock() {
+  cat "$LOCK_ROOT/$1/owner" 2>/dev/null || echo "unknown||0"
+}
+
+describe() {
+  local owner pid started
+  IFS='|' read -r owner pid started <<<"$(read_lock "$1")"
+  local age=$(( ($(date +%s) - ${started:-0}) / 60 ))
+  if [ -n "$pid" ]; then
+    echo "$1: held by $owner (process $pid) for ${age} min"
+  else
+    echo "$1: held by $owner (session) for ${age} min"
+  fi
+}
+
+is_stale() {
+  # The taker writes the owner file right after mkdir. Until then, it is not stale.
+  [ -f "$LOCK_ROOT/$1/owner" ] || return 1
+  local owner pid started
+  IFS='|' read -r owner pid started <<<"$(read_lock "$1")"
+  if [ -n "$pid" ]; then
+    ! kill -0 "$pid" 2>/dev/null
+  else
+    [ $(( $(date +%s) - ${started:-0} )) -gt "$TTL_SECONDS" ]
+  fi
+}
+
+held_by_me() {
+  local owner
+  IFS='|' read -r owner _ _ <<<"$(read_lock "$1")"
+  [ "$owner" = "$OWNER" ]
+}
+
+# take <name> <pid or empty>. Returns 0 when it took the lock, 3 when this
+# worktree already held it.
+take() {
+  local name="$1" pid="$2" waited=0
+  while true; do
+    if mkdir "$LOCK_ROOT/$name" 2>/dev/null; then
+      echo "$OWNER|$pid|$(date +%s)" >"$LOCK_ROOT/$name/owner"
+      return 0
+    fi
+    if held_by_me "$name"; then
+      return 3
+    fi
+    if is_stale "$name"; then
+      echo "[lock] taking over a stale lock. $(describe "$name")" >&2
+      rm -rf "${LOCK_ROOT:?}/$name"
+      continue
+    fi
+    if [ "$waited" -ge "$WAIT_SECONDS" ]; then
+      echo "[lock] gave up waiting. $(describe "$name")" >&2
+      exit 1
+    fi
+    if [ $(( waited % 60 )) -eq 0 ]; then
+      echo "[lock] waiting. $(describe "$name")" >&2
+    fi
+    sleep 5
+    waited=$(( waited + 5 ))
+  done
+}
+
+release() {
+  local name="$1"
+  [ -d "$LOCK_ROOT/$name" ] || return 0
+  if held_by_me "$name"; then
+    rm -rf "${LOCK_ROOT:?}/$name"
+  else
+    echo "[lock] not releasing a lock this worktree does not hold. $(describe "$name")" >&2
+    return 1
+  fi
+}
+
+case "${1:-}" in
+  run)
+    [ $# -ge 4 ] && [ "$3" = "--" ] || usage
+    name="$2"
+    shift 3
+    status=0
+    take "$name" "$$" || status=$?
+    if [ "$status" -eq 0 ]; then
+      trap 'release "$name"' EXIT
+    elif [ "$status" -ne 3 ]; then
+      exit "$status"
+    fi
+    "$@"
+    ;;
+  acquire)
+    [ $# -eq 2 ] || usage
+    status=0
+    take "$2" "" || status=$?
+    [ "$status" -eq 0 ] || [ "$status" -eq 3 ] || exit "$status"
+    echo "[lock] $2 is held by this worktree. Release it with: scripts/lock release $2" >&2
+    ;;
+  release)
+    [ $# -eq 2 ] || usage
+    release "$2"
+    ;;
+  status)
+    found=0
+    for dir in "$LOCK_ROOT"/*/; do
+      [ -d "$dir" ] || continue
+      found=1
+      name="$(basename "$dir")"
+      if is_stale "$name"; then
+        echo "$(describe "$name") (stale)"
+      else
+        describe "$name"
+      fi
+    done
+    [ "$found" -eq 1 ] || echo "no locks held"
+    ;;
+  *)
+    usage
+    ;;
+esac

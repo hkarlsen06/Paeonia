@@ -33,6 +33,9 @@ ios/build/
 # Generated at build time - never commit
 ios/BuildNumber.xcconfig
 
+# Written by scripts/local-backend, per worktree
+ios/local.xcconfig
+
 # generated/design archive outputs
 design/app-icon/exports/png/
 design/brand/originals/

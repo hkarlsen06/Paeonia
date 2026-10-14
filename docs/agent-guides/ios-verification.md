@@ -52,6 +52,10 @@ The developer uses these wrappers from the repository root:
 ./scripts/xcode-test-agent.sh
 ```
 
+`XCODE_BUILD_AGENT_ACTION=build-for-testing ./scripts/xcode-build-agent.sh` also compiles the test targets. The pre-push hook runs it when Swift files change.
+
+Agents in other worktrees share the simulators. `xcode-test-agent.sh` holds the `simulator` lock while it runs, and waits when another worktree holds it. For a simulator session of several commands, such as `sim-sign-in` and end-to-end play, take the lock with `scripts/lock acquire simulator`, release it with `scripts/lock release simulator`, and see who holds what with `scripts/lock status`.
+
 ### Signing a simulator in
 
 The app offers only Apple and Google sign-in. To sign the Debug build on a simulator into one of the two test accounts on `api.paeonia.no`, install the app, then run:
@@ -62,16 +66,17 @@ scripts/sim-sign-in "<simulator name or UDID>" <first|second>
 
 `first` is Hjalmar and `second` is Elena, the test couple. The session stays in the simulator's keychain, so this is needed once per simulator. Add `--reset` to switch a simulator to the other account.
 
-### Sharing the hosted backend
+### Testing a branch's backend changes
 
-A deploy replaces every function on `api.paeonia.no`, so a deploy from one branch removes what another branch deployed. Only one thread deploys and tests against it at a time. Before deploying, create the lock with noclobber, then rebase onto local `main`, deploy, test, and delete the lock:
+A deploy replaces every function on `api.paeonia.no`, so a deploy from one branch removes what another branch deployed. Never deploy a branch there. Test it end to end against a local backend started from its own worktree:
 
-```bash
-set -o noclobber
-echo "<thread> $(date -u +%FT%TZ)" > "$(git rev-parse --git-common-dir)/paeonia-hosted-backend.lock"
-```
+1. Run `scripts/local-backend` from the worktree root and keep it running, for example as a background command. The first run copies the hosted data, so both test accounts are paired. It writes the untracked `ios/local.xcconfig`, which points Debug builds of this worktree at the local backend. `backend/AGENTS.md` has the details.
+2. Build the Debug app from this worktree and install it on a simulator that no other worktree uses. The backend URL is fixed at build time, so a build from another worktree or from before step 1 still talks to `api.paeonia.no`. Installing over an earlier build keeps the app's local data, so run `xcrun simctl erase <simulator>` first when the simulator last ran against a different backend.
+3. Sign in with `scripts/sim-sign-in`. It only talks to Clerk to sign in, so the same command works for a local backend.
 
-Keep a session to about 20 minutes. If the lock exists, wait and do other work. Ask the developer about a lock older than 45 minutes instead of removing it.
+The simulator reaches the Mac's `127.0.0.1` directly, and App Transport Security allows plain `http` to it, so the app needs no exception. Delete `ios/local.xcconfig` and rebuild to point the worktree's Debug builds back at `api.paeonia.no`.
+
+Only `main` is deployed to `api.paeonia.no`, with `scripts/deploy-backend`, after the branch is merged.
 
 ### Toolchain Requirement
 

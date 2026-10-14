@@ -5,6 +5,6 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 cd "$ROOT_DIR"
 
 git config core.hooksPath .githooks
-chmod +x .githooks/pre-commit scripts/check-swift-file-lengths.sh
+chmod +x .githooks/pre-commit .githooks/pre-push scripts/check-swift-file-lengths.sh
 
 echo "Git hooks installed: core.hooksPath=.githooks"

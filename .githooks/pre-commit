@@ -13,11 +13,9 @@ if [ -z "$STAGED_SWIFT_FILES" ]; then
   exit 0
 fi
 
-echo "[pre-commit] Running SwiftLint"
-(
-  cd ios
-  swiftlint --quiet
-)
+# Only the staged files, so the tree's existing warnings don't bury the new ones.
+echo "[pre-commit] Running SwiftLint on staged files"
+echo "$STAGED_SWIFT_FILES" | tr '\n' '\0' | xargs -0 swiftlint lint --quiet
 
 echo "[pre-commit] Checking Swift file length advisory"
 scripts/check-swift-file-lengths.sh

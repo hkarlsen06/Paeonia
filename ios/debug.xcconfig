@@ -10,3 +10,7 @@ PAEONIA_CONVEX_URL = https:/$()/api.paeonia.no
 // under API keys. This is the development instance; switch to pk_live_ when the
 // production Clerk instance exists. An empty key disables sign-in.
 PAEONIA_CLERK_PUBLISHABLE_KEY = pk_test_dmVyaWZpZWQtYmFkZ2VyLTEwLmNsZXJrLmFjY291bnRzLmRldiQ
+
+// Optional and untracked. scripts/local-backend writes it to point Debug builds
+// of a worktree at that worktree's local Convex backend. Last, so it overrides.
+#include? "local.xcconfig"

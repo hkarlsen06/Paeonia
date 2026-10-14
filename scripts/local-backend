@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# Runs this worktree's backend/convex on a local Convex backend, so a branch can
+# be tested end to end on a simulator without deploying to api.paeonia.no.
+#
+#   scripts/local-backend [--reseed]
+#
+# It runs `convex dev`, which pushes the functions again whenever a file in
+# backend/convex changes. Stop it with Ctrl-C or kill. The data stays in
+# backend/.convex, and the next run reuses it.
+#
+# Each worktree gets its own pair of ports, picked from a hash of the worktree
+# path, so the URL stays the same across restarts. The script writes the
+# untracked ios/local.xcconfig, which points Debug builds of this worktree at
+# the local backend. Delete that file to use api.paeonia.no again.
+#
+# Every run copies the env vars in copy_vars from api.paeonia.no. The values go
+# through pipes, so they never show in the process list or land in a file. APNs
+# and Apple keys are left out, so a local backend sends no pushes and never
+# talks to Apple. On the first run, or with --reseed, it also replaces all local
+# data with a snapshot of api.paeonia.no (every table and stored file), so the
+# two test accounts are paired and entitled. Reading the hosted deployment needs
+# the admin key (CONVEX_SELF_HOSTED_ADMIN_KEY, or read from one-s over ssh).
+set -euo pipefail
+
+reseed=false
+case ${1:-} in
+  "") ;;
+  --reseed) reseed=true ;;
+  *) echo "usage: scripts/local-backend [--reseed]" >&2; exit 64 ;;
+esac
+
+copy_vars=(CLERK_JWT_ISSUER_DOMAIN CLERK_SECRET_KEY INVITE_CODE_PEPPER
+  PAEONIA_MEDIA_URL_SECRET PAEONIA_LIVE_RELAY_URL PAEONIA_LIVE_RELAY_SECRET)
+
+root=$(git rev-parse --show-toplevel)
+cd "$root/backend"
+# The Convex CLI needs Node 20 to 24 (backend/AGENTS.md).
+export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+[[ -d node_modules ]] || npm ci --silent
+
+admin_key=${CONVEX_SELF_HOSTED_ADMIN_KEY:-$(ssh one-s cat /srv/paeonia/convex/admin-key)}
+# Every command below without hosted() goes to the local backend, never to
+# api.paeonia.no, even when the caller's shell points the CLI there.
+unset CONVEX_SELF_HOSTED_URL CONVEX_SELF_HOSTED_ADMIN_KEY CONVEX_DEPLOYMENT
+hosted() {
+  CONVEX_DEPLOYMENT= CONVEX_SELF_HOSTED_URL=https://api.paeonia.no \
+    CONVEX_SELF_HOSTED_ADMIN_KEY=$admin_key npx convex "$@"
+}
+
+# ponytail: ports from a path hash, 300 pairs. Two worktrees can collide, and
+# the second then stops at the check below. Store a chosen port per worktree if
+# that ever happens.
+port=$((3300 + $(printf %s "$root" | cksum | cut -d' ' -f1) % 300 * 2))
+site_port=$((port + 1))
+if pid=$(lsof -ti "tcp:$port" -sTCP:LISTEN); then
+  echo "Port $port is in use by pid $pid. If it is a leftover backend of this worktree, stop it with: kill $pid" >&2
+  exit 1
+fi
+
+[[ -f .convex/local/default/config.json ]] || reseed=true
+
+cat >"$root/ios/local.xcconfig" <<EOF
+// Written by scripts/local-backend. Debug builds of this worktree use its local
+// Convex backend. Delete this file to use api.paeonia.no again.
+PAEONIA_CONVEX_URL = http:/\$()/127.0.0.1:$port
+EOF
+
+work=$(mktemp -d)
+log=$work/dev.log
+set -m # own process group, so convex dev gets the SIGINT it needs to stop the backend
+CONVEX_AGENT_MODE=anonymous ./node_modules/.bin/convex dev \
+  --local-cloud-port "$port" --local-site-port "$site_port" > >(tee "$log") 2>&1 &
+dev_pid=$!
+stop() {
+  kill -INT "$dev_pid" 2>/dev/null || true
+  wait "$dev_pid" 2>/dev/null || true
+  rm -rf "$work"
+}
+trap stop EXIT
+trap 'exit 130' INT TERM
+
+wait_for() {
+  for _ in $(seq 1 180); do
+    kill -0 "$dev_pid" 2>/dev/null || { echo "convex dev exited" >&2; exit 1; }
+    "$@" && return 0
+    sleep 1
+  done
+  echo "Timed out waiting for the local backend" >&2
+  exit 1
+}
+
+wait_for curl -fs -o /dev/null "http://127.0.0.1:$port/instance_name"
+# The first push of a new backend fails until CLERK_JWT_ISSUER_DOMAIN is set.
+# convex dev retries on its own once the env vars change.
+for name in "${copy_vars[@]}"; do
+  hosted env get "$name" | npx convex env set "$name" >/dev/null 2>&1 ||
+    { echo "Could not copy $name from api.paeonia.no" >&2; exit 1; }
+done
+wait_for grep -q "Convex functions ready" "$log"
+
+if $reseed; then
+  echo "Copying the data on api.paeonia.no to the local backend..."
+  hosted export --include-file-storage --path "$work/hosted.zip" >/dev/null
+  if ! npx convex import --replace-all -y "$work/hosted.zip" 2>&1 | tail -3; then
+    echo "The hosted data does not fit this branch's schema. Fix the schema or the data, then run again with --reseed." >&2
+    exit 1
+  fi
+  rm -f "$work/hosted.zip"
+fi
+
+cat <<EOF
+
+Local backend for $root
+  Client API:   http://127.0.0.1:$port
+  HTTP actions: http://127.0.0.1:$site_port
+ios/local.xcconfig points Debug builds of this worktree here. Build and install
+the app from this worktree, then sign in with scripts/sim-sign-in.
+EOF
+wait "$dev_pid"

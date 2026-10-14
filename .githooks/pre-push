@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Compiles the app and the test targets before Swift changes leave this machine.
+# The pre-commit hook only lints, so a test file that does not compile would
+# otherwise go unnoticed until someone runs the tests.
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR"
+
+zero="0000000000000000000000000000000000000000"
+needs_build=0
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue
+  if [ "$remote_sha" = "$zero" ]; then
+    range="$local_sha --not --remotes"
+  else
+    range="$remote_sha..$local_sha"
+  fi
+  # shellcheck disable=SC2086
+  if git log --format= --name-only $range -- 'ios/*.swift' | grep -q .; then
+    needs_build=1
+  fi
+done
+
+[ "$needs_build" -eq 1 ] || exit 0
+
+echo "[pre-push] Building the app and the test targets"
+XCODE_BUILD_AGENT_ACTION=build-for-testing ./scripts/xcode-build-agent.sh

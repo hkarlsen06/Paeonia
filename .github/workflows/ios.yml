@@ -1,0 +1,46 @@
+name: iOS
+
+on:
+  pull_request:
+    paths:
+      - "ios/**"
+      - "scripts/xcode-*-agent.sh"
+      - "scripts/lock"
+      - ".swiftlint.yml"
+      - ".github/workflows/ios.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "ios/**"
+      - "scripts/xcode-*-agent.sh"
+      - "scripts/lock"
+      - ".swiftlint.yml"
+      - ".github/workflows/ios.yml"
+
+jobs:
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The project needs the newest Xcode on the runner. See "Toolchain Requirement"
+      # in docs/agent-guides/ios-verification.md.
+      - name: Select the newest Xcode
+        run: |
+          xcode="$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+          sudo xcode-select -s "$xcode/Contents/Developer"
+          xcodebuild -version
+
+      - name: SwiftLint
+        run: |
+          command -v swiftlint >/dev/null || brew install swiftlint
+          swiftlint lint --quiet
+
+      - name: Build the app and the test targets
+        run: XCODE_BUILD_AGENT_ACTION=build-for-testing ./scripts/xcode-build-agent.sh
+
+      - name: Unit tests
+        run: ./scripts/xcode-test-agent.sh -- -only-testing:PaeoniaAppTests
