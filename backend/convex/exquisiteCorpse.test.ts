@@ -388,7 +388,7 @@ describe("submit_exquisite_corpse_part", () => {
     const head = await send(s, s.a, { figureId: newUuid(), index: 0, ideaId: EXQUISITE_CORPSE_IDEAS.en.head[0].id });
     expect(Object.keys(head.result).sort()).toEqual(["created_at", "figure_finished", "figure_id", "part_id", "part_index"]);
     const data = await view(s.b);
-    expect(Object.keys(data).sort()).toEqual(["couple_id", "current_figure", "game", "ideas", "partner_user_id", "recent_figures", "user_id"]);
+    expect(Object.keys(data).sort()).toEqual(["couple_id", "current_figure", "data_epoch", "game", "ideas", "partner_user_id", "recent_figures", "user_id"]);
     expect(Object.keys(data.game!).sort()).toEqual([
       "created_at",
       "figure_id",
