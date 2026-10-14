@@ -72,8 +72,8 @@ struct PaywallPresentation {
         return .paywallCtaSubscribe
     }
 
-    /// Price, period, trial, and auto-renewal in one sentence under the purchase
-    /// button, as App Store review expects next to the button that buys.
+    /// Price, period, and trial in one sentence under the purchase button, as App
+    /// Store review expects next to the button that buys.
     var billingDisclosure: String? {
         guard let renewalPrice else {
             return nil

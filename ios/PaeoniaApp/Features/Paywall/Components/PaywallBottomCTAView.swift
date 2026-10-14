@@ -4,8 +4,7 @@ import SwiftUI
 /// under it, and, for someone not paired yet, a way to join a partner instead.
 struct PaywallBottomCTAView: View {
     let title: LocalizedStringResource
-    /// Billing terms (price, period, trial, auto-renewal) shown right under the
-    /// button that buys.
+    /// Billing terms (price, period, trial) shown right under the button that buys.
     let caption: String?
     let isEnabled: Bool
     let isBusy: Bool

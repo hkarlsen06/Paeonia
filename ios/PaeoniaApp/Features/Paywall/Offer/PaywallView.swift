@@ -27,6 +27,8 @@ struct PaywallView: View {
     /// way. The buttons wait instead of offering to buy again. If the access check
     /// ends with the paywall still up, they come back.
     @State private var isOpening = false
+    /// The scroll view's height between the logo and the buy button.
+    @State private var visibleHeight: CGFloat = 0
 
     init(
         session: AuthSession?,
@@ -69,6 +71,9 @@ struct PaywallView: View {
                     showsTrialReminder: selectedPresentation.hasFreeTrial,
                     billingPeriod: $viewModel.billingPeriod
                 )
+                // The offer fills the first screen, so restore, legal links and
+                // account actions only show once someone scrolls to them.
+                .frame(minHeight: visibleHeight, alignment: .top)
 
                 footerActions
                     .padding(.top, PaeoniaSpacing.space40)
@@ -78,6 +83,13 @@ struct PaywallView: View {
         }
         .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize)
+        // The container already stops at the top of the bottom bar, even though
+        // the content insets also count the bar.
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.containerSize.height
+        } action: { _, height in
+            visibleHeight = height
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomBar
         }

@@ -18076,13 +18076,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@. Renews automatically until you cancel in your App Store settings."
+            "value" : "%@."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@. Fornyes automatisk til du avslutter i App Store-innstillingene."
+            "value" : "%@."
           }
         }
       }
@@ -18094,13 +18094,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ free, then %2$@. Renews automatically until you cancel in your App Store settings."
+            "value" : "%1$@ free, then %2$@."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ gratis, deretter %2$@. Fornyes automatisk til du avslutter i App Store-innstillingene."
+            "value" : "%1$@ gratis, deretter %2$@."
           }
         }
       }
