@@ -6,7 +6,7 @@ struct StoryChainStatusView: View {
     let viewModel: StoryChainViewModel
 
     var body: some View {
-        StoryChainFocusedLayout(fillsHeight: true) {
+        GameFocusedLayout(fillsHeight: true) {
             VStack(spacing: PaeoniaSpacing.space16) {
                 Spacer(minLength: 0)
                 content

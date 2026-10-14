@@ -32,7 +32,7 @@ struct MindMeldRevealView: View {
     var body: some View {
         // A tap anywhere skips to the settled result. It is a shortcut, and the buttons stay.
         // swiftlint:disable:next accessibility_trait_for_button
-        MindMeldPhaseLayout(contentWidth: PaeoniaSpacing.readableContentWidth) {
+        GameFocusedLayout(contentWidth: PaeoniaSpacing.readableContentWidth) {
             VStack(spacing: PaeoniaSpacing.space32) {
                 earlierRounds
                 stage

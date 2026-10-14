@@ -30,7 +30,7 @@ nonisolated struct UltimateTicTacToeZoom: Equatable {
 
     var board: UltimateTicTacToeBoard
     var canPlay: Bool
-    /// False for Reduce Motion and VoiceOver, which never zoom.
+    /// False for VoiceOver, which never zooms.
     var zoomEnabled: Bool
     var choice = Choice.automatic
 

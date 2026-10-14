@@ -93,8 +93,9 @@ struct UltimateTicTacToeSmallBoardView: View {
                 path.addLine(to: CGPoint(x: side - layout.inset, y: offset))
             }
         }
+        // 0.4 keeps the lines at about 3:1 on the board, so the cells read clearly.
         .stroke(
-            Color.paeoniaTextPrimary.opacity(0.18),
+            Color.paeoniaTextPrimary.opacity(0.4),
             style: StrokeStyle(lineWidth: max(1, side * 0.014), lineCap: .round)
         )
     }

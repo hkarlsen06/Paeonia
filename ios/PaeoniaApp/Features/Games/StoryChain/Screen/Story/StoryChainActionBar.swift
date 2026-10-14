@@ -14,9 +14,9 @@ struct StoryChainActionBar: View {
         VStack(spacing: PaeoniaSpacing.space12) {
             content
         }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, hasContent ? PaeoniaSpacing.space8 : 0)
         .paeoniaReadableWidth(StoryChainPageStyle.measure)
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .background(hasContent ? Color.paeoniaBackgroundSecondary : Color.clear)
         .animation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal, value: viewModel.phase)
         .animation(PaeoniaMotion.stateChange, value: viewModel.invite)
@@ -40,7 +40,12 @@ struct StoryChainActionBar: View {
     private var content: some View {
         switch viewModel.phase {
         case .waitingForLine, .waitingForName:
-            StoryChainInviteButton(viewModel: viewModel)
+            GameInviteButton(
+                invite: viewModel.invite,
+                partnerName: viewModel.partnerName,
+                send: viewModel.sendInvite,
+                identifier: "storyChain.invite"
+            )
                 .transition(.opacity)
         case .naming:
             Button {

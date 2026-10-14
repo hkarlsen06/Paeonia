@@ -59,21 +59,28 @@ struct GamesRootView: View {
         }
     }
 
+    /// Centered, and it scrolls when large text makes it taller than the screen.
     private var unavailable: some View {
-        PaeoniaEmptyStateView(
-            title: .gamesUnavailableTitle,
-            message: .gamesUnavailableMessage,
-            systemImage: "wifi.slash"
-        ) {
-            Button {
-                Task { await viewModel.refresh() }
-            } label: {
-                Text(.commonTryAgain)
+        GeometryReader { proxy in
+            ScrollView {
+                PaeoniaEmptyStateView(
+                    title: .gamesUnavailableTitle,
+                    message: .gamesUnavailableMessage,
+                    systemImage: "wifi.slash"
+                ) {
+                    Button {
+                        Task { await viewModel.refresh() }
+                    } label: {
+                        Text(.commonTryAgain)
+                    }
+                    .buttonStyle(PaeoniaSecondaryButtonStyle())
+                    .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
+                }
+                .padding(PaeoniaSpacing.screenHorizontalPadding)
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
-            .buttonStyle(PaeoniaSecondaryButtonStyle())
-            .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .padding(PaeoniaSpacing.screenHorizontalPadding)
         .navigationTitle(Text(.mainTabGames))
         .navigationBarTitleDisplayMode(.inline)
     }

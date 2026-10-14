@@ -5,6 +5,7 @@ import SwiftUI
 /// the wait feel shared. When the partner locks in, the screen gives way to the reveal.
 struct MindMeldWaitingView: View {
     let viewModel: MindMeldViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// A little smaller than on the reveal, where the cards grow.
     private static let cardWidth: CGFloat = 128
@@ -22,33 +23,43 @@ struct MindMeldWaitingView: View {
     }
 
     var body: some View {
-        MindMeldPhaseLayout(fillsHeight: true) {
+        GameFocusedLayout(fillsHeight: true) {
             VStack(spacing: PaeoniaSpacing.space24) {
                 MindMeldStatsHeader(melds: viewModel.stats?.melds ?? 0)
                 Spacer(minLength: PaeoniaSpacing.space16)
                 cards
                 text
                 if viewModel.showsOfflineLine {
-                    offlineLine
+                    GameOfflineLine(identifier: "mindMeld.pending")
+                        .multilineTextAlignment(.center)
                         .transition(.opacity)
                 }
                 Spacer(minLength: PaeoniaSpacing.space16)
             }
             .frame(maxWidth: .infinity)
         } bottom: {
-            MindMeldInviteButton(viewModel: viewModel)
+            GameInviteButton(
+                invite: viewModel.invite,
+                partnerName: viewModel.partnerName,
+                send: viewModel.sendInvite,
+                identifier: "mindMeld.invite"
+            )
         }
         // The partner's phone changes the title, the hint, the glow and the invite
         // button while this screen is open. Everything moves to its new place together.
-        .animation(PaeoniaMotion.stateChange, value: viewModel.partnerStatus)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.invite)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.showsOfflineLine)
+        .animation(stateChange, value: viewModel.partnerStatus)
+        .animation(stateChange, value: viewModel.invite)
+        .animation(stateChange, value: viewModel.showsOfflineLine)
         .onChange(of: viewModel.partnerStatus) { old, new in
             if old == .away, new != .away {
                 PaeoniaHaptics.partnerDrawingReceived()
             }
         }
         .accessibilityIdentifier("mindMeld.waiting")
+    }
+
+    private var stateChange: Animation {
+        reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.stateChange
     }
 
     // MARK: Cards
@@ -104,20 +115,5 @@ struct MindMeldWaitingView: View {
 
     private var hint: LocalizedStringResource {
         partnerIsHere ? .mindMeldWaitHintLive : .mindMeldWaitHintLater(viewModel.partnerName)
-    }
-
-    /// "Saved on this phone. We'll send it when you're online."
-    private var offlineLine: some View {
-        Label {
-            Text(.mindMeldOffline)
-                .fixedSize(horizontal: false, vertical: true)
-        } icon: {
-            Image(systemName: "clock")
-                .accessibilityHidden(true)
-        }
-        .font(PaeoniaTypography.caption)
-        .foregroundStyle(.paeoniaSyncPending)
-        .multilineTextAlignment(.center)
-        .accessibilityIdentifier("mindMeld.pending")
     }
 }

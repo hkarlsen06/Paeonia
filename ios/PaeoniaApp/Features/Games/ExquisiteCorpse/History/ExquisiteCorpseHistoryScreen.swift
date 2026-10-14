@@ -5,8 +5,9 @@ import SwiftUI
 struct ExquisiteCorpseHistoryScreen: View {
     @Bindable var viewModel: ExquisiteCorpseHistoryViewModel
 
-    /// Three columns on a phone, more where there is room.
-    private static let columnMinimum: CGFloat = 104
+    /// Three columns on a phone, more where there is room. It grows with the
+    /// caption, so large text gets fewer, wider cells.
+    @ScaledMetric(relativeTo: .caption) private var columnMinimum: CGFloat = 104
 
     var body: some View {
         ScrollView {
@@ -84,7 +85,7 @@ struct ExquisiteCorpseHistoryScreen: View {
         VStack(spacing: PaeoniaSpacing.space16) {
             LazyVGrid(
                 columns: [
-                    GridItem(.adaptive(minimum: Self.columnMinimum), spacing: PaeoniaSpacing.space12, alignment: .top),
+                    GridItem(.adaptive(minimum: columnMinimum), spacing: PaeoniaSpacing.space12, alignment: .top),
                 ],
                 spacing: PaeoniaSpacing.space16
             ) {

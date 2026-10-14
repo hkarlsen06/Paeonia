@@ -1,12 +1,20 @@
 import SwiftUI
 
-/// A phase without the square: choose a word, waiting, status. One column at the
-/// focused width, with the bottom cluster pinned.
+/// A phase without the square or page: choose, waiting, status. Content that
+/// scrolls at one width, and a bar of buttons pinned at the bottom.
+/// `paeoniaBottomBar` lets the keyboard cover the bar instead of lifting it. A
+/// bar whose button belongs to the field, like Lock in, rides above the keyboard
+/// instead.
 struct GameFocusedLayout<Content: View, Bottom: View>: View {
-    /// The content fills the screen height, so it can place itself with spacers.
+    /// The content grows to the height the bar leaves, so it can center itself
+    /// with spacers. It still scrolls when it is taller.
     var fillsHeight = false
+    var contentWidth = PaeoniaSpacing.focusedContentWidth
+    var barRidesKeyboard = false
     @ViewBuilder var content: Content
     @ViewBuilder var bottom: Bottom
+
+    @State private var barHeight: CGFloat = 0
 
     var body: some View {
         GeometryReader { proxy in
@@ -14,26 +22,46 @@ struct GameFocusedLayout<Content: View, Bottom: View>: View {
                 content
                     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                     .padding(.vertical, PaeoniaSpacing.space16)
-                    .frame(minHeight: fillsHeight ? max(0, proxy.size.height - 120) : 0, alignment: .top)
-                    .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+                    .frame(minHeight: fillsHeight ? max(0, proxy.size.height - barHeight) : 0, alignment: .top)
+                    .paeoniaReadableWidth(contentWidth)
             }
             .scrollBounceBehavior(.basedOnSize)
             .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                VStack(spacing: PaeoniaSpacing.space12) {
-                    bottom
-                }
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.vertical, PaeoniaSpacing.space8)
-                .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
-                .background(.paeoniaBackgroundSecondary)
-            }
+            .modifier(BottomBar(ridesKeyboard: barRidesKeyboard) { bar })
+        }
+    }
+
+    private var bar: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            bottom
+        }
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.vertical, PaeoniaSpacing.space8)
+        .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+        .background(.paeoniaBackgroundSecondary)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
+    }
+}
+
+private struct BottomBar<Bar: View>: ViewModifier {
+    let ridesKeyboard: Bool
+    @ViewBuilder let bar: () -> Bar
+
+    func body(content: Content) -> some View {
+        if ridesKeyboard {
+            content.safeAreaInset(edge: .bottom, spacing: 0) { bar() }
+        } else {
+            content.paeoniaBottomBar(spacing: 0) { bar() }
         }
     }
 }
 
 extension GameFocusedLayout where Bottom == EmptyView {
-    init(fillsHeight: Bool = false, @ViewBuilder content: () -> Content) {
-        self.init(fillsHeight: fillsHeight, content: content, bottom: { EmptyView() })
+    init(
+        fillsHeight: Bool = false,
+        contentWidth: CGFloat = PaeoniaSpacing.focusedContentWidth,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.init(fillsHeight: fillsHeight, contentWidth: contentWidth, content: content, bottom: { EmptyView() })
     }
 }

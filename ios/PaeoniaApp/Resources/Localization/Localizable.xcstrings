@@ -13431,24 +13431,6 @@
         }
       }
     },
-    "mindMeld.offline" : {
-      "comment" : "Shown under the waiting card when the locked-in word is saved on the phone and has not been sent yet.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved on this phone. We'll send it when you're online."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret på telefonen. Vi sender det når du er på nett."
-          }
-        }
-      }
-    },
     "mindMeld.offline.message" : {
       "comment" : "Message under the offline title. Shown with a Try again button.",
       "extractionState" : "manual",

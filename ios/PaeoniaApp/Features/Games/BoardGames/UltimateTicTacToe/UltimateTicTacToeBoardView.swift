@@ -9,7 +9,9 @@ import SwiftUI
 ///   A tap outside it, a pinch in, or the "Whole board" button zooms out.
 /// - My partner's move zooms to the board they played, draws their mark in,
 ///   rests, and then moves to the board I play in next.
-/// - Reduce Motion and VoiceOver never zoom. A tap on any cell plays it.
+/// - Reduce Motion still zooms, so the cells stay large enough to tap, but the
+///   camera cuts instead of gliding and skips the trip to my partner's move.
+/// - VoiceOver never zooms. A tap on any cell plays it.
 ///
 /// The screen decides what is on the board. This view animates changes to it.
 struct UltimateTicTacToeBoardView: View {
@@ -80,7 +82,13 @@ struct UltimateTicTacToeBoardView: View {
     }
 
     private var zoomEnabled: Bool {
-        !reduceMotion && !voiceOverEnabled
+        !voiceOverEnabled
+    }
+
+    /// The beats of a move: zoom to it, hold it back, draw it in. Reduce Motion
+    /// shows the move at once.
+    private var playsMoveBeats: Bool {
+        zoomEnabled && !reduceMotion
     }
 
     private var playbackInput: UltimateTicTacToePlayback.Input {
@@ -123,7 +131,9 @@ struct UltimateTicTacToeBoardView: View {
                 .scaleEffect(transform.scale, anchor: .topLeading)
                 .offset(transform.translation)
                 .frame(width: side, height: side, alignment: .topLeading)
-                .clipped()
+                // A little past the edge, so a glowing or pulsing board at the edge
+                // keeps its whole glow. The neighbors of a zoomed board stay hidden.
+                .clipShape(Rectangle().inset(by: -geometry.glowBleed))
                 .contentShape(Rectangle())
                 .gesture(SpatialTapGesture().onEnded { value in
                     handleTap(at: transform.invert(value.location), geometry: geometry)
@@ -140,7 +150,7 @@ struct UltimateTicTacToeBoardView: View {
             lastMove: lastMove,
             handled: playback.handledMoveNumber,
             board: board,
-            enabled: zoomEnabled
+            enabled: playsMoveBeats
         )
         return UltimateTicTacToeLook(
             board: board,
@@ -289,7 +299,7 @@ extension UltimateTicTacToeBoardView {
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(.ultimateTicTacToeWholeBoardA11Y))
                 .accessibilityIdentifier("ultimateTicTacToe.wholeBoard")
-                .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.8)))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)

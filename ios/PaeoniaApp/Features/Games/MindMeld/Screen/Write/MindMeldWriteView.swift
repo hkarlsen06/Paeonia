@@ -7,12 +7,13 @@ struct MindMeldWriteView: View {
     @Bindable var viewModel: MindMeldViewModel
 
     @FocusState private var isFieldFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// How long the screen waits before it opens the keyboard, so the phase change finishes first.
     private static let focusDelay: Duration = .milliseconds(350)
 
     var body: some View {
-        MindMeldPhaseLayout(barRidesKeyboard: true) {
+        GameFocusedLayout(barRidesKeyboard: true) {
             VStack(spacing: PaeoniaSpacing.space24) {
                 MindMeldStatsHeader(melds: viewModel.stats?.melds ?? 0)
                 heading
@@ -25,9 +26,9 @@ struct MindMeldWriteView: View {
         } bottom: {
             lockInButton
         }
-        .animation(PaeoniaMotion.stateChange, value: viewModel.draftIssue)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.invite)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.showsPartnerRestartedNote)
+        .animation(stateChange, value: viewModel.draftIssue)
+        .animation(stateChange, value: viewModel.invite)
+        .animation(stateChange, value: viewModel.showsPartnerRestartedNote)
         .task {
             try? await Task.sleep(for: Self.focusDelay)
             guard !Task.isCancelled else { return }
@@ -37,6 +38,10 @@ struct MindMeldWriteView: View {
             guard let issue else { return }
             AccessibilityNotification.Announcement(String(localized: issue.message)).post()
         }
+    }
+
+    private var stateChange: Animation {
+        reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.stateChange
     }
 
     // MARK: Heading
@@ -139,7 +144,8 @@ struct MindMeldWriteView: View {
     }
 
     /// One line: what is wrong with the word, or in round 1 the Surprise me button.
-    /// It keeps its height, so nothing below it moves.
+    /// It keeps its height, so nothing below it moves. The height fits a button or
+    /// a message that wraps to two lines.
     private var underFieldLine: some View {
         ZStack {
             if let issue = viewModel.draftIssue {
@@ -170,11 +176,7 @@ struct MindMeldWriteView: View {
                 .accessibilityIdentifier("mindMeld.surprise")
             }
         }
-        .frame(maxWidth: .infinity, minHeight: lineHeight)
-    }
-
-    private var lineHeight: CGFloat {
-        viewModel.isFirstRound ? PaeoniaSpacing.compactButtonHeight : PaeoniaSpacing.space24
+        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
     }
 
     // MARK: Partner
@@ -183,7 +185,12 @@ struct MindMeldWriteView: View {
         VStack(spacing: PaeoniaSpacing.space16) {
             MindMeldPartnerStatusRow(partner: viewModel.partner, status: viewModel.partnerStatus)
                 .padding(.horizontal, PaeoniaSpacing.space8)
-            MindMeldInviteButton(viewModel: viewModel)
+            GameInviteButton(
+                invite: viewModel.invite,
+                partnerName: viewModel.partnerName,
+                send: viewModel.sendInvite,
+                identifier: "mindMeld.invite"
+            )
         }
     }
 

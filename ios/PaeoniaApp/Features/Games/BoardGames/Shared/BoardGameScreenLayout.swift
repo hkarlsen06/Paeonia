@@ -234,7 +234,7 @@ private struct BoardGameLayoutPreview: View {
                         onPrimary: {}
                     )
                 } else {
-                    BoardGameInviteButton(state: .available, partnerName: shell.partner.name, onSend: {})
+                    GameInviteButton(invite: .available, partnerName: shell.partner.name, send: {})
                 }
             }
         )

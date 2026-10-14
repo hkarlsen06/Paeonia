@@ -13,7 +13,10 @@ struct ExquisiteCorpseScreenHost: View {
     var body: some View {
         ExquisiteCorpseScreen(viewModel: game, openHistory: { showsHistory = true })
             .navigationDestination(isPresented: $showsHistory) {
+                // The game keeps going while its history is open over it.
                 ExquisiteCorpseHistoryScreen(viewModel: history)
+                    .onAppear { game.screenAppeared() }
+                    .onDisappear { game.screenDisappeared() }
             }
     }
 }

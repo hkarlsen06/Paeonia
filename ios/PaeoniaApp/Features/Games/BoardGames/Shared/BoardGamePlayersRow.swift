@@ -132,11 +132,14 @@ private struct BoardGameTurnCapsule: View {
     let turn: BoardGameTurnLabel
     let partnerName: String
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         Text(turn.text(partnerName: partnerName))
             .font(PaeoniaTypography.caption.weight(.semibold))
             .foregroundStyle(textColor)
-            .lineLimit(2)
+            // The stacked layout has the full width, so the turn never ends in "…" there.
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
             .minimumScaleFactor(0.8)
             .multilineTextAlignment(.center)
             .padding(.horizontal, PaeoniaSpacing.space12)
@@ -177,7 +180,7 @@ struct BoardGamePlayerAvatar: View {
             .fill(player.style.color)
             .frame(width: Self.badgeSize, height: Self.badgeSize)
             .overlay {
-                BoardMarkView(style: player.style, tint: .paeoniaTextPrimary)
+                BoardMarkView(style: player.style, tint: .paeoniaTextInverse)
                     .padding(3)
             }
             .overlay {

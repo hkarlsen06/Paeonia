@@ -51,6 +51,8 @@ struct ExquisiteCorpseDrawingSurface: View {
             accessibilityLabel: .exquisiteCorpseDrawStripA11Y(partnerName)
         )
         .overlay {
+            // The whole strip is the button. The strip is shorter than a
+            // button's minimum height, so a capsule would spill onto the canvas.
             if stripLoadFailed, strip == nil {
                 Button(action: onRetryStrip) {
                     Label {
@@ -60,8 +62,11 @@ struct ExquisiteCorpseDrawingSurface: View {
                             .accessibilityHidden(true)
                     }
                     .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
                 }
-                .buttonStyle(PaeoniaQuietButtonStyle())
+                .buttonStyle(.plain)
                 .accessibilityIdentifier("corpse.strip.retry")
             }
         }

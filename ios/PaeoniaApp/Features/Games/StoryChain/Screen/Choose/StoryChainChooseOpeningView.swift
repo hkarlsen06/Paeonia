@@ -24,7 +24,7 @@ struct StoryChainChooseOpeningView: View {
     }
 
     var body: some View {
-        StoryChainFocusedLayout {
+        GameFocusedLayout {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 heading
                 if viewModel.openingsUnavailable {

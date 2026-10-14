@@ -114,12 +114,14 @@ struct MindMeldTrailView: View {
         return HStack(spacing: gap) {
             Text(verbatim: pair.mine.localizedUppercase)
             Image(systemName: "plus")
-                .font(.system(size: 8, weight: .bold))
+                .imageScale(.small)
+                .fontWeight(.bold)
                 .accessibilityHidden(true)
             Text(verbatim: pair.theirs.localizedUppercase)
         }
         .font(PaeoniaTypography.caption)
-        .lineLimit(1)
+        // Long words wrap instead of ending in "…", so the whole trail stays readable.
+        .multilineTextAlignment(.center)
         .foregroundStyle(.paeoniaTextTertiary)
         .accessibilityElement(children: .combine)
     }

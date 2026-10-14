@@ -27,14 +27,14 @@ struct ExquisiteCorpseHistoryDetailScreen: View {
     let viewModel: ExquisiteCorpseHistoryDetailViewModel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// Measured, so the figure gets the height that is left under the text.
+    /// The details and the note about stars, measured, so the figure gets the
+    /// height that is left under them.
     @State private var textHeight: CGFloat = 0
 
     /// The figure never grows past this, so strokes keep their weight.
     private static let maxSide: CGFloat = 320
     private static let minSide: CGFloat = 96
     private static let replayRowHeight: CGFloat = 44
-    private static let noteHeight: CGFloat = 16
 
     var body: some View {
         GeometryReader { proxy in
@@ -42,13 +42,15 @@ struct ExquisiteCorpseHistoryDetailScreen: View {
                 VStack(spacing: PaeoniaSpacing.space16) {
                     figure(side: side(in: proxy.size))
                     replayRow
-                    details
-                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textHeight = $0 }
-                    Text(.gamesStarPrivacy)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextTertiary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
+                    VStack(spacing: PaeoniaSpacing.space16) {
+                        details
+                        Text(.gamesStarPrivacy)
+                            .font(PaeoniaTypography.caption)
+                            .foregroundStyle(.paeoniaTextTertiary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textHeight = $0 }
                 }
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.vertical, PaeoniaSpacing.space16)
@@ -83,9 +85,9 @@ struct ExquisiteCorpseHistoryDetailScreen: View {
     /// A tall text block (large text sizes) makes the screen scroll instead.
     private func side(in size: CGSize) -> CGFloat {
         let width = size.width - PaeoniaSpacing.screenHorizontalPadding * 2
-        // Three gaps between the four rows, the padding above and below, the replay
-        // button and the note about stars.
-        let chrome = PaeoniaSpacing.space16 * 5 + Self.replayRowHeight + Self.noteHeight
+        // Two gaps between the three rows, the padding above and below, the replay
+        // button and the figure's margin.
+        let chrome = PaeoniaSpacing.space16 * 4 + Self.replayRowHeight + ExquisiteCorpseRevealCamera.margin * 2
         let fitting = (size.height - textHeight - chrome) / CGFloat(ExquisiteCorpsePartKind.allCases.count)
         return max(Self.minSide, min(Self.maxSide, width, fitting))
     }

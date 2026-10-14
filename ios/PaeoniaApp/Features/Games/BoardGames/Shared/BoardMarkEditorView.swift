@@ -214,12 +214,12 @@ private struct BoardMarkPreviews: View {
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space24) {
-            BoardMarkView(style: style, tint: .white)
+            BoardMarkView(style: style, tint: .paeoniaTextInverse)
                 .padding(inset)
                 .frame(width: side, height: side)
                 .background(color, in: Circle())
 
-            BoardMarkView(style: style, tint: .white)
+            BoardMarkView(style: style, tint: .paeoniaTextPrimary)
                 .padding(inset)
                 .frame(width: side, height: side)
                 .background(

@@ -161,7 +161,7 @@ private struct MindMeldStatusView: View {
     @State private var showsSpinner = false
 
     var body: some View {
-        MindMeldPhaseLayout(fillsHeight: true) {
+        GameFocusedLayout(fillsHeight: true) {
             VStack(spacing: PaeoniaSpacing.space16) {
                 Spacer(minLength: 0)
                 if viewModel.startFailed {

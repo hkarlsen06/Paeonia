@@ -14,16 +14,29 @@ struct GamePetalBloom: View {
     static let duration: TimeInterval = 0.9
     private static let petalCount = 40
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// True once the burst is over, so the timeline stops asking for frames.
+    @State private var isFinished = false
+
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let elapsed = timeline.date.timeIntervalSince(start)
-            Canvas(opaque: false, rendersAsynchronously: false) { context, size in
-                guard elapsed >= 0, elapsed < Self.duration else { return }
-                draw(in: &context, size: size, progress: elapsed / Self.duration)
+        if !reduceMotion {
+            TimelineView(.animation(paused: isFinished)) { timeline in
+                let elapsed = timeline.date.timeIntervalSince(start)
+                Canvas(opaque: false, rendersAsynchronously: false) { context, size in
+                    guard !isFinished, elapsed >= 0, elapsed < Self.duration else { return }
+                    draw(in: &context, size: size, progress: elapsed / Self.duration)
+                }
             }
+            .task(id: start) {
+                isFinished = false
+                let remaining = start.addingTimeInterval(Self.duration).timeIntervalSinceNow
+                try? await Task.sleep(for: .seconds(max(0, remaining)))
+                guard !Task.isCancelled else { return }
+                isFinished = true
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
     }
 
     private func draw(in context: inout GraphicsContext, size: CGSize, progress: Double) {

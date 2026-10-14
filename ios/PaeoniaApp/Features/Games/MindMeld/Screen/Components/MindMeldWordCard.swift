@@ -114,6 +114,8 @@ struct MindMeldWordCard: View {
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .minimumScaleFactor(0.5)
+                // The card has a fixed width, so the word stops growing before it breaks mid-word.
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .padding(.horizontal, PaeoniaSpacing.space12)
                 .padding(.vertical, PaeoniaSpacing.space24)

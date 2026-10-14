@@ -206,7 +206,7 @@ The moment the last move lands.
 - Zoom. When I must play in one board, the board zooms in on it so its cells are large, then I tap a cell. When I may choose, the whole board shows, I tap a small board to zoom into it, and a tap outside it or a pinch zooms back out. After my move the board zooms out and the board my partner is sent to pulses once.
 - The partner's move. The board zooms into the small board they played, their mark draws in, then the view moves to the board I am sent to.
 - A won small board gets a strike line through its three cells, its cells fade to 30%, and the winner's mark draws large over it. A full small board without a winner fades to 30%.
-- Reduce Motion. No zoom. The whole board shows and a tap on a cell plays it. The board I am sent to keeps its glow.
+- Reduce Motion. The board still zooms, so the cells stay large enough to tap, but the view cuts to the new board instead of gliding. My partner's move shows at once, without the trip to their board. VoiceOver never zooms. The board I am sent to keeps its glow.
 - VoiceOver. Each small board is a group, "Board 5, center, open" or "Board 5, won by [Name]". Each cell reads "Row 1, column 2, empty".
 
 ### Mark editor

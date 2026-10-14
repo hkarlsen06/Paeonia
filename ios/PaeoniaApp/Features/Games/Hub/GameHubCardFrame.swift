@@ -80,6 +80,8 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
             badge()
         }
         .padding(PaeoniaSpacing.space12)
+        // The art has a fixed height, so the chips stop growing before they cover it.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private var statusLine: some View {

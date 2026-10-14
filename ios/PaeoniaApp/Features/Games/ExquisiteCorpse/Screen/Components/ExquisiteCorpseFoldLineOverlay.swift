@@ -31,8 +31,9 @@ struct ExquisiteCorpseFoldLineOverlay: View {
                 .offset(y: foldY + PaeoniaSpacing.space4)
         }
         .frame(width: side, height: side, alignment: .topLeading)
-        // It sits on a picture, so it stays small enough to fit the strip.
-        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+        // It sits on a picture, so it stays small enough for two lines to fit
+        // the strip under the line, which is 12% of the canvas.
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .allowsHitTesting(false)
     }
 }

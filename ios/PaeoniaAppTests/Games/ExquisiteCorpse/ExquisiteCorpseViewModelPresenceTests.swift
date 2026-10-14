@@ -158,6 +158,28 @@ struct ExquisiteCorpseViewModelPresenceTests {
         #expect(Set(env.gamesGateway.presenceKinds) == [.exquisiteCorpse])
     }
 
+    @Test func openingOurCreaturesKeepsTheGameGoingUntilBothScreensAreGone() async {
+        let env = environment()
+        let viewModel = env.viewModel()
+        viewModel.screenAppeared()
+        await viewModel.start()
+        let opened = await waitUntil { env.gamesGateway.presence.contains(true) }
+        #expect(opened)
+
+        // "Our creatures" appears over the game, then the game screen goes away.
+        viewModel.screenAppeared()
+        viewModel.screenDisappeared()
+        // Gives the deferred check time to run.
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(viewModel.isRunning)
+        #expect(!env.gamesGateway.presence.contains(false))
+
+        viewModel.screenDisappeared()
+        let closed = await waitUntil { env.gamesGateway.presence.contains(false) }
+        #expect(closed)
+        #expect(!viewModel.isRunning)
+    }
+
     @Test func goingToTheBackgroundSendsNotHereAndComingBackSendsHereAgain() async {
         let env = environment()
         let viewModel = env.viewModel()

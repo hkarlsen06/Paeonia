@@ -30,8 +30,9 @@ final class UltimateTicTacToePlayback {
         var lastMove: BoardMoveEvent?
         var canPlay: Bool
         var showsOutcome: Bool
-        /// False for Reduce Motion and VoiceOver, which never zoom.
+        /// False for VoiceOver, which never zooms.
         var zoomEnabled: Bool
+        /// The camera cuts instead of gliding, and a move shows without its beats.
         var reduceMotion: Bool
     }
 
@@ -176,7 +177,8 @@ extension UltimateTicTacToePlayback {
     private func handle(_ event: BoardMoveEvent) {
         handledMoveNumber = event.number
         cancelSequence()
-        guard input.zoomEnabled, let arriving = UltimateTicTacToeHold.arriving(event, on: input.board) else {
+        guard input.zoomEnabled, !input.reduceMotion,
+              let arriving = UltimateTicTacToeHold.arriving(event, on: input.board) else {
             withAnimation(UltimateTicTacToeMotion.snap) {
                 hold = .none
                 glowHeld = false
@@ -263,7 +265,7 @@ extension UltimateTicTacToePlayback {
     /// The camera waits for the opening zoom into the board I must play in, so
     /// the whole board shows for a moment first.
     private func startIntro() {
-        guard zoom.restingFocus != nil else { return }
+        guard !input.reduceMotion, zoom.restingFocus != nil else { return }
         run { [weak self] id in
             _ = await self?.pause(UltimateTicTacToeTiming.intro, id: id)
         }
@@ -329,7 +331,7 @@ extension UltimateTicTacToePlayback {
     private func applyFocus(_ target: Int?, animation: Animation) {
         deferredFocus = nil
         guard focus != target else { return }
-        withAnimation(animation) {
+        withAnimation(input.reduceMotion ? nil : animation) {
             focus = target
         }
     }

@@ -37,8 +37,9 @@ struct ExquisiteCorpseScreen: View {
             identifier: "corpse.reveal.star"
         )
         .preferredColorScheme(.dark)
+        .onAppear { viewModel.screenAppeared() }
         .task { await viewModel.start() }
-        .onDisappear { viewModel.stop() }
+        .onDisappear { viewModel.screenDisappeared() }
         .onChange(of: scenePhase) { _, phase in
             viewModel.scenePhaseChanged(isActive: phase == .active)
         }

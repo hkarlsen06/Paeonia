@@ -16,9 +16,9 @@ struct StoryChainComposerBar: View {
             }
             controls
         }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space8)
         .paeoniaReadableWidth(StoryChainPageStyle.measure)
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .background(.paeoniaBackgroundSecondary)
     }
 
@@ -59,7 +59,7 @@ struct StoryChainComposerBar: View {
                 } label: {
                     Label {
                         Text(.storyChainWriteGiveWord(viewModel.partnerName))
-                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                             .minimumScaleFactor(0.8)
                     } icon: {
                         Image(systemName: "textformat.abc")
@@ -91,7 +91,7 @@ struct StoryChainComposerBar: View {
         } label: {
             Label {
                 Text(.storyChainWriteDareChip(viewModel.partnerName, dare.word.uppercased()))
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                     .minimumScaleFactor(0.8)
             } icon: {
                 Image(systemName: "textformat")

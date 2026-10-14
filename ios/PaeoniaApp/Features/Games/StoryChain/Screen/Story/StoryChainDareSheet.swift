@@ -7,6 +7,7 @@ struct StoryChainDareSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var ownWord = ""
     @State private var showsError = false
     @State private var detent = PresentationDetent.medium
@@ -87,7 +88,11 @@ struct StoryChainDareSheet: View {
 
     private var ownWordField: some View {
         let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-        return HStack(spacing: PaeoniaSpacing.space8) {
+        // At the largest text sizes the button goes under the field, so the field keeps its width.
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space8))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space8))
+        return layout {
             TextField(text: $ownWord) {
                 Text(.storyChainDareOwnPlaceholder)
             }
@@ -108,6 +113,7 @@ struct StoryChainDareSheet: View {
         }
         .padding(.leading, PaeoniaSpacing.cardContentPadding)
         .padding(.trailing, PaeoniaSpacing.space4)
+        .padding(.vertical, dynamicTypeSize.isAccessibilitySize ? PaeoniaSpacing.space8 : 0)
         .frame(minHeight: 64)
         .background(.paeoniaSurfaceSecondary)
         .clipShape(shape)

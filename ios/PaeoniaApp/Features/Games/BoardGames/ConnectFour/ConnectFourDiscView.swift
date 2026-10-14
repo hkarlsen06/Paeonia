@@ -27,9 +27,12 @@ struct ConnectFourDiscView: View {
             Circle()
                 .strokeBorder(Color.paeoniaBackgroundSecondary.opacity(0.2), lineWidth: max(1, diameter * 0.025))
                 .padding(diameter * 0.14)
-            BoardMarkView(style: style, tint: Color.paeoniaTextPrimary.opacity(0.9))
+            // Dark on the solid disc. A light mark reads at only about 2.3:1 on
+            // either piece color, and the mark is what tells the players apart for
+            // someone who can't tell the colors apart.
+            BoardMarkView(style: style, tint: .paeoniaTextInverse)
                 .frame(width: diameter * 0.55, height: diameter * 0.55)
-                .shadow(color: Color.paeoniaBackgroundSecondary.opacity(0.3), radius: 0.8, y: 0.8)
+                .shadow(color: Color.paeoniaTextPrimary.opacity(0.35), radius: 0.8, y: 0.8)
         }
         .frame(width: diameter, height: diameter)
     }

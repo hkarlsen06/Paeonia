@@ -181,6 +181,7 @@ struct ConnectFourInputLayer: View {
         if canPlay, board.landingRow(column: column) != nil {
             element
                 .accessibilityAddTraits(.isButton)
+                .accessibilityAction { drop(in: column) }
                 .accessibilityAction(named: Text(.connectFourColumnDrop)) { drop(in: column) }
         } else {
             element

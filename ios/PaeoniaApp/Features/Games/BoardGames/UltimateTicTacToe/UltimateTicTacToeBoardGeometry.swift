@@ -11,10 +11,15 @@ nonisolated struct UltimateTicTacToeBoardGeometry: Equatable {
     static let gapFraction: CGFloat = 0.04
     /// How much of the view a focused small board fills.
     static let focusFill: CGFloat = 0.9
+    /// How far past its edge the view draws, as a fraction of the side, so the
+    /// glow and pulse of an edge board are not cut off. A focused board's
+    /// neighbors start about 0.07 of the side past the edge, so they stay hidden.
+    static let glowBleedFraction: CGFloat = 0.05
 
     let side: CGFloat
 
     var margin: CGFloat { side * Self.marginFraction }
+    var glowBleed: CGFloat { side * Self.glowBleedFraction }
     var gap: CGFloat { side * Self.gapFraction }
     var smallSide: CGFloat { (side - 2 * margin - 2 * gap) / 3 }
     var small: UltimateTicTacToeSmallBoardGeometry { UltimateTicTacToeSmallBoardGeometry(side: smallSide) }
@@ -57,7 +62,8 @@ nonisolated struct UltimateTicTacToeBoardGeometry: Equatable {
     }
 
     /// The move a point stands for: the nearest board, then the cell under it.
-    /// Reduce Motion plays this directly, so every point of the board is a cell.
+    /// Without the zoom (VoiceOver) a tap plays this directly, so every point of
+    /// the board is a cell.
     func move(at point: CGPoint) -> Int {
         let board = nearestBoard(to: point)
         return UltimateTicTacToeBoard.move(board: board, cell: cell(in: board, at: point))

@@ -127,6 +127,9 @@ final class ExquisiteCorpseViewModel {
     /// downloads or server calls until it starts again.
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
+    /// The game screen and "Our creatures" pushed over it, while they are on
+    /// screen. The game stops when this reaches zero.
+    @ObservationIgnored var visibleScreens = 0
     @ObservationIgnored var reloadGate = GameReloadGate()
 
     @ObservationIgnored var observationTask: Task<Void, Never>?

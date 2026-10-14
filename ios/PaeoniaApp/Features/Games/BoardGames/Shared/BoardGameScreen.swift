@@ -126,9 +126,12 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
                 Task { await viewModel.retrySending() }
             }
         } else if !viewModel.canPlay, viewModel.board.outcome == nil, viewModel.invite != .hidden {
-            BoardGameInviteButton(state: viewModel.invite, partnerName: viewModel.partnerName) {
-                Task { await viewModel.sendInvite() }
-            }
+            GameInviteButton(
+                invite: viewModel.invite,
+                partnerName: viewModel.partnerName,
+                send: viewModel.sendInvite,
+                identifier: "boardGames.invite"
+            )
         }
     }
 

@@ -39,6 +39,23 @@ extension ExquisiteCorpseViewModel {
         saveDraftNow()
     }
 
+    /// The game screen, or "Our creatures" pushed over it, appeared.
+    func screenAppeared() {
+        visibleScreens += 1
+    }
+
+    /// The game screen, or "Our creatures" pushed over it, went away. Opening
+    /// "Our creatures" keeps the game going, so the partner still sees this person
+    /// in the game. Leaving both, switching tabs or going back to the hub stops it.
+    /// The check waits a moment, in case the other screen is about to appear.
+    func screenDisappeared() {
+        visibleScreens = max(0, visibleScreens - 1)
+        Task { [weak self] in
+            guard let self, visibleScreens == 0 else { return }
+            stop()
+        }
+    }
+
     /// The app moved to the background or came back while the screen is open.
     func scenePhaseChanged(isActive newValue: Bool) {
         guard isRunning, newValue != isActive else { return }

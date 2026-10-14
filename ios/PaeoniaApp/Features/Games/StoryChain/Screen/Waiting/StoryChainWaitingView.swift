@@ -8,7 +8,7 @@ struct StoryChainWaitingView: View {
     private var presence: StoryChainPartnerPresence { viewModel.partnerPresence }
 
     var body: some View {
-        StoryChainFocusedLayout(fillsHeight: true) {
+        GameFocusedLayout(fillsHeight: true) {
             VStack(spacing: PaeoniaSpacing.space24) {
                 Spacer(minLength: PaeoniaSpacing.space16)
                 VStack(spacing: PaeoniaSpacing.space16) {
@@ -32,7 +32,12 @@ struct StoryChainWaitingView: View {
             }
             .frame(maxWidth: .infinity)
         } bottom: {
-            StoryChainInviteButton(viewModel: viewModel)
+            GameInviteButton(
+                invite: viewModel.invite,
+                partnerName: viewModel.partnerName,
+                send: viewModel.sendInvite,
+                identifier: "storyChain.invite"
+            )
         }
         // The partner's phone changes the title, hint, ring, and invite button
         // while this screen is open. Everything moves to its new place together.

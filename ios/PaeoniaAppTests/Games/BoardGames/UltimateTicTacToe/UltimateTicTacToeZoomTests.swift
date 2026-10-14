@@ -220,7 +220,7 @@ struct UltimateTicTacToeZoomTests {
         #expect(zoom(forced, canPlay: false).restingFocus == nil)
     }
 
-    @Test func reduceMotionAndVoiceOverNeverZoom() throws {
+    @Test func voiceOverNeverZooms() throws {
         let forced = try played(forcedMoves)
 
         #expect(zoom(forced, zoomEnabled: false).restingFocus == nil)
