@@ -10,6 +10,8 @@ struct DailyPromptCard: View {
     /// The partner's display name, used by the "See %@'s answers" CTA so it names the
     /// partner instead of saying "partner".
     var partnerName: String
+    /// The partner's profile photo, shown on the locked partner-question rows.
+    var partnerPhotoAssetID: UUID?
     var prefersPartnerAnswersWhenComplete = false
     /// Set on Home so a tapped locked row is the source its answer flow zooms out of.
     var zoomNamespace: Namespace.ID?
@@ -37,6 +39,7 @@ struct DailyPromptCard: View {
                 LockedPartnerQuestionRows(
                     state: state,
                     partnerName: partnerName,
+                    partnerPhotoAssetID: partnerPhotoAssetID,
                     zoomNamespace: zoomNamespace,
                     onOpen: onOpenPartnerQuestion
                 )

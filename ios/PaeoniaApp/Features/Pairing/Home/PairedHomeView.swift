@@ -262,6 +262,7 @@ struct PairedHomeView: View {
         DailyPromptCard(
             state: dailyChallengeCardState,
             partnerName: partnerName,
+            partnerPhotoAssetID: partnerProfilePhotoAssetID,
             prefersPartnerAnswersWhenComplete: true,
             zoomNamespace: zoomNamespace,
             onAnswer: onOpenDailyChallenge,

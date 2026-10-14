@@ -8,6 +8,8 @@ import SwiftUI
 struct DailyChallengeDoneCard: View {
     let state: DailyChallengeCardState
     let partnerName: String
+    /// The partner's profile photo, shown on the locked partner-question rows.
+    var partnerPhotoAssetID: UUID?
     var onOpen: () -> Void = {}
     /// Opens the answer flow of a partner question shown as a locked row.
     var onOpenPartnerQuestion: (UUID) -> Void = { _ in }
@@ -23,6 +25,7 @@ struct DailyChallengeDoneCard: View {
                 LockedPartnerQuestionRows(
                     state: state,
                     partnerName: partnerName,
+                    partnerPhotoAssetID: partnerPhotoAssetID,
                     onOpen: onOpenPartnerQuestion
                 )
             }

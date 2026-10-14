@@ -198,6 +198,7 @@ struct DailyChallengeScreen: View {
                 DailyChallengeDoneCard(
                     state: state,
                     partnerName: viewModel.participants.partnerName,
+                    partnerPhotoAssetID: viewModel.participants.partnerProfilePhotoAssetID,
                     onOpen: onOpenAnswerFlow,
                     onOpenPartnerQuestion: openLockedPartnerQuestion
                 )
@@ -206,6 +207,7 @@ struct DailyChallengeScreen: View {
                 DailyPromptCard(
                     state: state,
                     partnerName: viewModel.participants.partnerName,
+                    partnerPhotoAssetID: viewModel.participants.partnerProfilePhotoAssetID,
                     onAnswer: onOpenAnswerFlow,
                     onOpenPartnerQuestion: openLockedPartnerQuestion
                 )

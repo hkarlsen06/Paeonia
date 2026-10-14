@@ -17,6 +17,7 @@ extension DailyFlowZoom {
 struct LockedPartnerQuestionRows: View {
     let state: DailyChallengeCardState
     let partnerName: String
+    let partnerPhotoAssetID: UUID?
     /// Set on Home so a tapped row is the source its answer flow zooms out of.
     var zoomNamespace: Namespace.ID?
     var onOpen: (UUID) -> Void = { _ in }
@@ -60,10 +61,7 @@ struct LockedPartnerQuestionRows: View {
         showsChevron: Bool
     ) -> some View {
         HStack(spacing: PaeoniaSpacing.space12) {
-            Image(systemName: "lock.fill")
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .accessibilityHidden(true)
+            lockedAvatar
 
             Text(.dailyChallengeLockedRow(partnerName, question.shortPrompt))
                 .font(PaeoniaTypography.caption)
@@ -84,6 +82,31 @@ struct LockedPartnerQuestionRows: View {
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
         .contentShape(Rectangle())
     }
+
+    /// The partner's avatar with a small lock on its bottom-right edge: they answered,
+    /// and the answer opens once the user answers too.
+    private var lockedAvatar: some View {
+        PaeoniaProfilePhotoAvatar(
+            mediaAssetID: partnerPhotoAssetID,
+            name: partnerName,
+            tint: .paeoniaPartnerTwo,
+            size: Self.avatarSize
+        )
+        .overlay(alignment: .bottomTrailing) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: Self.lockSize * 0.55, weight: .bold))
+                .foregroundStyle(.paeoniaTextInverse)
+                .frame(width: Self.lockSize, height: Self.lockSize)
+                .background(.paeoniaAccentPrimary, in: Circle())
+                // A ring in the row's color keeps the badge apart from the photo.
+                .overlay(Circle().strokeBorder(.paeoniaSurfaceSecondary, lineWidth: 1.5))
+                .offset(x: 3, y: 3)
+        }
+        .accessibilityHidden(true)
+    }
+
+    private static let avatarSize: CGFloat = 32
+    private static let lockSize: CGFloat = 16
 }
 
 #if DEBUG
@@ -102,7 +125,8 @@ struct LockedPartnerQuestionRows: View {
                 lockedPartnerQuestions: questions,
                 moreLockedPartnerQuestionCount: 3
             ),
-            partnerName: "Oda"
+            partnerName: "Oda",
+            partnerPhotoAssetID: nil
         )
         LockedPartnerQuestionRows(
             state: DailyChallengeCardState(
@@ -112,7 +136,8 @@ struct LockedPartnerQuestionRows: View {
                 hasAnswerablePartnerQuestions: true,
                 lockedPartnerQuestions: questions
             ),
-            partnerName: "Oda"
+            partnerName: "Oda",
+            partnerPhotoAssetID: nil
         )
     }
     .padding(PaeoniaSpacing.screenHorizontalPadding)
