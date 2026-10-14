@@ -1,5 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 import { deleteCoupleGameRows } from "./gameRegistry";
+import { deleteHeartsForCouple } from "./hearts";
 import { deleteLatestLocationsForCouple } from "./relationshipEnd";
 import { withTouch, withUpdatedAt, type WriterCtx } from "./db";
 import { tombstoneReportTargets } from "./reports";
@@ -167,6 +168,7 @@ export async function cleanupCoupleContent(
   }
 
   await deleteLatestLocationsForCouple(ctx, couple.id);
+  await deleteHeartsForCouple(ctx, couple.id);
   const current = (await ctx.db.get(couple._id))!;
   if (current.status === "ended") {
     await ctx.db.patch(couple._id, withUpdatedAt({ status: "deleted" as const }));
@@ -215,12 +217,11 @@ export async function purgeCoupleContent(
       for (const row of rows) await remove(row);
     }
   }
-  for (const instance of instances) {
-    const links = await ctx.db
-      .query("daily_question_threads")
-      .withIndex("by_instance_id", (q) => q.eq("instance_id", instance.id))
-      .collect();
-    for (const link of links) await remove(link);
+  for (const link of await ctx.db
+    .query("daily_question_threads")
+    .withIndex("by_couple_id_question_id", (q) => q.eq("couple_id", couple.id))
+    .collect()) {
+    await remove(link);
   }
   for (const state of await ctx.db
     .query("daily_answer_seen_states")
@@ -308,6 +309,7 @@ export async function purgeCoupleContent(
 
   // Normally gone since cleanup. This covers a purge that runs without it.
   contentDeleted += await deleteCoupleGameRows(ctx, couple.id);
+  contentDeleted += await deleteHeartsForCouple(ctx, couple.id);
 
   for (const day of days) {
     for (const event of await ctx.db

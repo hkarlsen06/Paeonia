@@ -2385,6 +2385,78 @@
         }
       }
     },
+    "dailyChallenge.earlierAnswer.date" : {
+      "comment" : "Second line of the small note about an earlier answer. %@ is the earlier day, such as March 3.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last time: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sist: %@"
+          }
+        }
+      }
+    },
+    "dailyChallenge.earlierAnswer.dismiss" : {
+      "comment" : "VoiceOver label on the button that hides the small note about an earlier answer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skjul"
+          }
+        }
+      }
+    },
+    "dailyChallenge.earlierAnswer.hint" : {
+      "comment" : "VoiceOver hint on the small note about an earlier answer. Tapping it opens the question's chat.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens both of your answers, then and now."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpner begge svarene deres, da og nå."
+          }
+        }
+      }
+    },
+    "dailyChallenge.earlierAnswer.title" : {
+      "comment" : "Title of a small note in the answer flow, shown after the user answers a question they have answered on an earlier day.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You answered this before"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du har svart på dette før"
+          }
+        }
+      }
+    },
     "dailyChallenge.editFailed.message" : {
       "comment" : "Message shown when saving an edit to an answer did not work",
       "extractionState" : "manual",
@@ -2817,24 +2889,6 @@
         }
       }
     },
-    "dailyChallenge.home.partnerAnsweredNote" : {
-      "comment" : "Small note on the Home daily card while the user is still answering. The argument is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ has answered. Finish yours to see their answers."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ har svart. Fullfør dine for å se svarene."
-          }
-        }
-      }
-    },
     "dailyChallenge.kind.choice" : {
       "comment" : "Kind-picker pill: answer by picking a person",
       "extractionState" : "manual",
@@ -2939,6 +2993,150 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi kunne ikke laste dagens spørsmål"
+          }
+        }
+      }
+    },
+    "dailyChallenge.locked.a11y.ready" : {
+      "comment" : "VoiceOver label for a tappable locked partner question row. First %@ is the partner's name, second %@ is the short question text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ answered %2$@. Answer it to see theirs."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ svarte på %2$@. Svar selv for å se svaret."
+          }
+        }
+      }
+    },
+    "dailyChallenge.locked.a11y.waiting" : {
+      "comment" : "VoiceOver label for a locked partner question row that cannot be opened yet because the user still has their own questions. First %@ is the partner's name, second %@ is the short question text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ answered %2$@. Finish your own questions to see theirs."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ svarte på %2$@. Fullfør dine egne spørsmål for å se svaret."
+          }
+        }
+      }
+    },
+    "dailyChallenge.locked.more" : {
+      "comment" : "Last line under the locked partner question rows. %lld is how many more partner questions are waiting.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "and %lld more"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "og %lld til"
+          }
+        }
+      }
+    },
+    "dailyChallenge.locked.row" : {
+      "comment" : "Locked row on the daily question cards. First %@ is the partner's name, second %@ is the short question text. Never shows the partner's answer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ answered: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ svarte: %@"
+          }
+        }
+      }
+    },
+    "dailyChallenge.match.bothPickedPartner" : {
+      "comment" : "Playful line under a 'who is more likely' reveal when both partners picked the partner. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You both picked %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere valgte begge %@"
+          }
+        }
+      }
+    },
+    "dailyChallenge.match.bothPickedViewer" : {
+      "comment" : "Playful line under a 'who is more likely' reveal when both partners picked the person reading this. Shown to that person.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You both picked you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere valgte begge deg"
+          }
+        }
+      }
+    },
+    "dailyChallenge.match.eachPickedThemselves" : {
+      "comment" : "Playful line under a 'who is more likely' reveal when each partner picked themselves.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You each picked yourselves"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere valgte hver dere selv"
+          }
+        }
+      }
+    },
+    "dailyChallenge.match.eachPickedTheOther" : {
+      "comment" : "Playful line under a 'who is more likely' reveal when each partner picked the other one.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You each picked each other"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere valgte hverandre"
           }
         }
       }
@@ -4973,6 +5171,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Denne meldingen er ikke her lenger."
+          }
+        }
+      }
+    },
+    "dailyChat.round.waitingPartner" : {
+      "comment" : "Note under a day's answers in a question's chat, shown when the partner has not answered that day but the chat is already open from an earlier day. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hasn't answered this one yet."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har ikke svart på denne ennå."
+          }
+        }
+      }
+    },
+    "dailyChat.round.waitingYou" : {
+      "comment" : "Note under a day's answers in a question's chat, shown when the partner has answered that day but the user has not. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ has answered this one. Answer it to see their answer."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har svart på denne. Svar selv for å se svaret."
           }
         }
       }
@@ -11001,6 +11235,102 @@
         }
       }
     },
+    "hearts.count" : {
+      "comment" : "Number of hearts, used inside hearts.incoming.line, such as '14 hearts'. %lld is the number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld heart"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hearts"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hjerte"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hjerter"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "hearts.incoming.line" : {
+      "comment" : "Short line on the Home card when the partner's hearts arrive. %1$@ is the partner's name. %2$@ is the number of hearts with its unit, such as '14 hearts' (see hearts.count).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ sent you %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ sendte deg %2$@"
+          }
+        }
+      }
+    },
+    "hearts.send.action" : {
+      "comment" : "VoiceOver action and button label that sends the partner a heart from the Home card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send a heart"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send et hjerte"
+          }
+        }
+      }
+    },
+    "hearts.send.hint" : {
+      "comment" : "VoiceOver hint for the send a heart button on the Home card. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sends a heart to %@. Tap again to send more."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sender et hjerte til %@. Trykk igjen for å sende flere."
+          }
+        }
+      }
+    },
     "home.dailyPrompt.eyebrow" : {
       "comment" : "Small overline above today's shared questions on the Home tab; the couple answers three each day",
       "extractionState" : "manual",
@@ -11015,6 +11345,132 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dagens spørsmål"
+          }
+        }
+      }
+    },
+    "home.lookBack.drawing.partners" : {
+      "comment" : "Title on the Home look-back card for a widget drawing the partner made. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen til %@"
+          }
+        }
+      }
+    },
+    "home.lookBack.drawing.yours" : {
+      "comment" : "Title on the Home look-back card for a widget drawing the signed-in person made.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tegning"
+          }
+        }
+      }
+    },
+    "home.lookBack.eyebrow.earlier" : {
+      "comment" : "Small heading on the Home card that brings back something older the couple shared, such as a question, a drawing or a memory. The time since is shown beside it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From your earlier days"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra tidligere dager"
+          }
+        }
+      }
+    },
+    "home.lookBack.eyebrow.onThisDay" : {
+      "comment" : "Small heading on the Home card that brings back something from this same day in an earlier year. The year is shown beside it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On this day"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På denne dagen"
+          }
+        }
+      }
+    },
+    "home.lookBack.memory.accessibility" : {
+      "comment" : "VoiceOver text for a memory on the Home look-back card. %@ is the memory title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Memory: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minne: %@"
+          }
+        }
+      }
+    },
+    "home.lookBack.open.action" : {
+      "comment" : "VoiceOver action name on the Home look-back card. It opens the question chat, the drawing history or the memory.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne"
+          }
+        }
+      }
+    },
+    "home.lookBack.question.accessibility" : {
+      "comment" : "VoiceOver text for a daily question on the Home look-back card. %@ is the short question.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmål: %@"
           }
         }
       }
@@ -18869,6 +19325,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fra %@"
+          }
+        }
+      }
+    },
+    "settings.notifications.questionTime.subtitle" : {
+      "comment" : "Explains the question time toggle: a reminder at the chosen time, only if the user has not started today's questions",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get a reminder at a time you choose if you haven't started today's questions."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Få en påminnelse til et tidspunkt du velger hvis du ikke har startet på dagens spørsmål."
+          }
+        }
+      }
+    },
+    "settings.notifications.questionTime.timeLabel" : {
+      "comment" : "Label of the time picker row under the question time toggle. The picker shows the time in the user's locale format",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder time"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidspunkt for påminnelse"
+          }
+        }
+      }
+    },
+    "settings.notifications.questionTime.title" : {
+      "comment" : "Toggle title in Notifications settings: a daily reminder at a time the user picks to start the day's questions",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question time"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmålstid"
           }
         }
       }

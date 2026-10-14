@@ -18,6 +18,8 @@ const LIMITS = {
   threadMessage: { kind: "token bucket", rate: 600, period: HOUR, capacity: 300 },
   memoryCreate: { kind: "token bucket", rate: 100, period: HOUR, capacity: 100 },
   mediaUpload: { kind: "token bucket", rate: 300, period: HOUR, capacity: 300 },
+  // One call per batch of Home heart taps, so a person tapping for a minute uses a few.
+  heartsSend: { kind: "token bucket", rate: 120, period: HOUR, capacity: 60 },
   contentReport: { kind: "token bucket", rate: 10, period: HOUR, capacity: 10 },
 } as const;
 

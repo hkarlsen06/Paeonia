@@ -97,8 +97,44 @@ struct NotificationSettingsView: View {
                 title: .settingsNotificationsStreakRemindersTitle,
                 subtitle: .settingsNotificationsStreakRemindersSubtitle
             )
+            questionTimeRows
         } header: {
             Text(.settingsNotificationsRemindersSectionTitle)
+        }
+    }
+
+    /// The switch, and the time picker once it is on. The picker shows the time in the
+    /// phone's own format. The reminder uses the time zone of the phone used last.
+    @ViewBuilder
+    private var questionTimeRows: some View {
+        Toggle(
+            isOn: Binding(
+                get: { viewModel.questionTime.isEnabled },
+                set: { newValue in
+                    Task { await viewModel.setQuestionTime(isEnabled: newValue) }
+                }
+            )
+        ) {
+            Text(.settingsNotificationsQuestionTimeTitle)
+            Text(.settingsNotificationsQuestionTimeSubtitle)
+        }
+        .disabled(!viewModel.isNotificationSettingsLoaded)
+
+        if viewModel.questionTime.isEnabled {
+            DatePicker(
+                selection: Binding(
+                    get: { viewModel.questionTime.time(on: Date()) },
+                    set: { newValue in
+                        Task {
+                            await viewModel.setQuestionTime(minutes: QuestionTimeReminder.minutes(of: newValue))
+                        }
+                    }
+                ),
+                displayedComponents: .hourAndMinute
+            ) {
+                Text(.settingsNotificationsQuestionTimeTimeLabel)
+            }
+            .disabled(!viewModel.isNotificationSettingsLoaded)
         }
     }
 

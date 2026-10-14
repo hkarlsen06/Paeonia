@@ -699,13 +699,16 @@ export default defineSchema({
     .index("by_skipped_instance_id", ["skipped_instance_id"])
     .index("by_user_id_question_id_exclude_until", ["user_id", "question_id", "exclude_until"]),
 
-  // FK: instance_id -> daily_question_instances cascade; thread_id -> conversation_threads cascade. Both unique.
+  // One chat per question and couple, whatever version or instance the question comes back as.
+  // FK: couple_id -> couples cascade; question_id -> questions cascade; thread_id -> conversation_threads cascade.
+  // (couple_id, question_id) and thread_id are unique.
   daily_question_threads: defineTable({
-    instance_id: uuid,
+    couple_id: uuid,
+    question_id: uuid,
     thread_id: uuid,
     created_at: ts,
   })
-    .index("by_instance_id", ["instance_id"])
+    .index("by_couple_id_question_id", ["couple_id", "question_id"])
     .index("by_thread_id", ["thread_id"]),
 
   // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.
@@ -725,6 +728,20 @@ export default defineSchema({
   })
     .index("by_couple_id_user_id", ["couple_id", "user_id"])
     .index("by_user_id_updated_at", ["user_id", "updated_at"]),
+
+  // Hearts one partner sent the other from Home. One row per (couple_id, sender_user_id).
+  // The recipient's unseen count is sent_total - seen_total. FK: couple_id -> couples cascade;
+  // sender_user_id -> users cascade. (couple_id, sender_user_id) is unique.
+  couple_hearts: defineTable({
+    couple_id: uuid,
+    sender_user_id: uuid,
+    sent_total: v.number(),
+    seen_total: v.number(),
+    last_sent_at: ts,
+    created_at: ts,
+    updated_at: ts,
+  })
+    .index("by_couple_id_sender_user_id", ["couple_id", "sender_user_id"]),
 
   // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.
   location_sharing_preferences: defineTable({
@@ -904,7 +921,12 @@ export default defineSchema({
     memories_enabled: v.boolean(),
     messages_enabled: v.boolean(),
     games_enabled: v.boolean(),
-  }).index("by_user_id", ["user_id"]),
+    // Opt-in "question time" reminder. `question_time_minutes` counts minutes after local midnight (0 to 1439).
+    question_time_enabled: v.boolean(),
+    question_time_minutes: v.number(),
+  })
+    .index("by_user_id", ["user_id"])
+    .index("by_question_time_enabled", ["question_time_enabled"]),
 
   // FK: couple_id -> couples cascade
   pairing_invites: defineTable({

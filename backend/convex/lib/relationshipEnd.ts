@@ -1,6 +1,7 @@
 import type { WriterCtx } from "./db";
 import { withUpdatedAt } from "./db";
 import { fail } from "./errors";
+import { deleteHeartsForCouple } from "./hearts";
 import { removePresenceRooms } from "./presence";
 import { createRelationshipSyncEvent } from "./syncEvents";
 import { addDaysToInstant, nowIso } from "./time";
@@ -55,6 +56,7 @@ export async function endRelationshipForPair(
 
   await ctx.db.patch(couple._id, withUpdatedAt({ status: "ended" as const, ended_at: now, delete_after: cleanupDeadline }));
   await deleteLatestLocationsForCouple(ctx, couple.id);
+  await deleteHeartsForCouple(ctx, couple.id);
   // Open game screens and typing dots of both partners go at once.
   await removePresenceRooms(ctx, members.map((member) => member.user_id), `${couple.id}:`);
   await ctx.db.patch(initiator._id, withUpdatedAt({ status: "left" as const, left_at: now }));

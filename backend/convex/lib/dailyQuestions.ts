@@ -51,6 +51,12 @@ export type DailyQuestionRow = {
   partner_answer_seen_at?: string | null;
   /** When the partner first saw the viewer's answer. */
   own_answer_seen_by_partner_at?: string | null;
+  /** Earlier days on which the viewer answered this question, in this couple. Set by `addRoundInfo`. */
+  earlier_round_count?: number;
+  /** The couple-local date of the viewer's latest earlier answer to this question. */
+  latest_earlier_round_local_date?: string | null;
+  /** Some day of this question has answers from both partners, so its chat can start. */
+  chat_available?: boolean;
 };
 
 export function isVisibleAnswer(answer: Doc<"daily_question_answers"> | null | undefined): answer is Doc<"daily_question_answers"> {
@@ -107,7 +113,7 @@ export class QuestionContentReader {
   }
 }
 
-function questionRow(
+export function questionRow(
   day: Doc<"couple_days">,
   instance: Doc<"daily_question_instances">,
   content: QuestionContent,
@@ -144,7 +150,7 @@ function questionRow(
 }
 
 /** Fills in who has seen whose answer. Only an exchange both people answered can have been seen. */
-async function addSeenStates(ctx: ReaderCtx, currentUserId: string, rows: DailyQuestionRow[]): Promise<void> {
+export async function addSeenStates(ctx: ReaderCtx, currentUserId: string, rows: DailyQuestionRow[]): Promise<void> {
   for (const row of rows) {
     row.partner_answer_seen_at = null;
     row.own_answer_seen_by_partner_at = null;
@@ -171,7 +177,7 @@ async function instancesOfDay(ctx: ReaderCtx, coupleDayId: string): Promise<Doc<
     .collect();
 }
 
-function isLive(instance: Doc<"daily_question_instances">): boolean {
+export function isLive(instance: Doc<"daily_question_instances">): boolean {
   return instance.status === "active" || instance.status === "answered";
 }
 

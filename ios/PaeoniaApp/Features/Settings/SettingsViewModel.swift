@@ -64,6 +64,9 @@ final class SettingsViewModel {
     /// Switches with a save running. Each kind has at most one request in flight,
     /// so rapid taps can never reach the server out of order.
     private var savingKinds = Set<NotificationPreferenceKind>()
+    /// True while a question time save is running. The switch and the time save together,
+    /// so they share one request in flight.
+    private var isSavingQuestionTime = false
     /// Goes up whenever newer server values arrive: a live update or a save the
     /// server accepted. A one-shot read that started earlier is then ignored.
     private var serverValuesRevision = 0
@@ -97,6 +100,10 @@ final class SettingsViewModel {
 
     func isEnabled(_ kind: NotificationPreferenceKind) -> Bool {
         notificationPreferences[kind]
+    }
+
+    var questionTime: QuestionTimeReminder {
+        notificationPreferences.questionTime
     }
 
     func loadNotificationSettings() async {
@@ -201,6 +208,44 @@ final class SettingsViewModel {
         }
     }
 
+    /// Turns the question time reminder on or off, or moves its time. Follows the same rules as
+    /// `setNotificationPreference`: the screen shows the new value at once, one request is in
+    /// flight, and a failed save puts back the last value the server confirmed.
+    func setQuestionTime(isEnabled: Bool? = nil, minutes: Int? = nil) async {
+        var reminder = notificationPreferences.questionTime
+        reminder.isEnabled = isEnabled ?? reminder.isEnabled
+        reminder.minutes = minutes ?? reminder.minutes
+        guard reminder != notificationPreferences.questionTime else {
+            return
+        }
+
+        notificationPreferences.questionTime = reminder
+
+        guard let preferences else {
+            confirmedPreferences.questionTime = reminder
+            return
+        }
+
+        guard !isSavingQuestionTime else {
+            return
+        }
+        isSavingQuestionTime = true
+        defer { isSavingQuestionTime = false }
+
+        while notificationPreferences.questionTime != confirmedPreferences.questionTime {
+            let desired = notificationPreferences.questionTime
+            do {
+                try await preferences.setQuestionTimeReminder(desired)
+                confirmedPreferences.questionTime = desired
+                serverValuesRevision += 1
+            } catch {
+                notificationPreferences.questionTime = confirmedPreferences.questionTime
+                notice = .saveFailed
+                return
+            }
+        }
+    }
+
     /// Ends the current pairing from the You tab. On success the root re-resolves
     /// access and the user lands back in the unpaired flow; the caller is
     /// responsible for asking the root to refresh.
@@ -286,6 +331,10 @@ final class SettingsViewModel {
             if !savingKinds.contains(kind) {
                 notificationPreferences[kind] = values[kind]
             }
+        }
+        confirmedPreferences.questionTime = values.questionTime
+        if !isSavingQuestionTime {
+            notificationPreferences.questionTime = values.questionTime
         }
         notificationLoadState = .loaded
     }

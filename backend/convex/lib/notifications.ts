@@ -29,6 +29,7 @@ const NOTIFICATION_KINDS = [
   "game_result",
   "game_invite",
   "game_turn_reminder",
+  "question_time_reminder",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -153,6 +154,8 @@ function preferenceAllows(
   switch (kind) {
     case "streak_reminder":
       return preference.streak_reminders_enabled;
+    case "question_time_reminder":
+      return preference.question_time_enabled;
     case "daily_challenge_completed":
       return preference.daily_challenge_enabled;
     case "partner_answered":

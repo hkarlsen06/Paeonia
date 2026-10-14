@@ -3,7 +3,9 @@ import SwiftUI
 /// The compact card shown on the Home tab when there is no map: an icon, a short
 /// explanation, and either one action button or a spinner. The icon leads, the text
 /// fills the rest with the action button under it, and a spinner trails. At
-/// accessibility text sizes the icon moves above the text.
+/// accessibility text sizes the icon moves above the text. Couples who are paired
+/// also get the heart row (`MapHeartsButton`) at the trailing edge, and a line above
+/// the title while the partner's hearts play.
 /// `CoupleMapCard` adds the rounded frame, stroke, and shadow around it.
 struct MapEmptyState: View {
     let title: LocalizedStringResource
@@ -14,8 +16,12 @@ struct MapEmptyState: View {
     var action: (() -> Void)?
     /// Shows a spinner where the action button would be.
     var showsProgress = false
+    var hearts: MapHeartsButton?
+    /// "Robin sent you 14 hearts" while the partner's hearts play.
+    var incomingLine: String?
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         layout {
@@ -31,7 +37,12 @@ struct MapEmptyState: View {
                 ProgressView()
                     .tint(.paeoniaAccentPrimary)
             }
+
+            if let hearts {
+                hearts
+            }
         }
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: incomingLine)
         .padding(PaeoniaSpacing.cardContentPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.paeoniaBackgroundSecondary)
@@ -45,6 +56,11 @@ struct MapEmptyState: View {
 
     private var textBlock: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+            if let incomingLine {
+                HeartsIncomingLine(text: incomingLine)
+                    .transition(.opacity)
+            }
+
             Text(title)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextPrimary)

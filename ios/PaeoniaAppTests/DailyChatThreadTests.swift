@@ -10,7 +10,20 @@ struct DailyChatProjectionTests {
     private let me = UUID()
     private let partner = UUID()
     private let threadID = UUID()
+    private let questionID = UUID()
     private let instanceID = UUID()
+
+    private func round(answers: [DailyQuestionAnswerDetail] = [], seenByPartner: Bool = false) -> DailyChatRound {
+        DailyChatRound(
+            instanceID: instanceID,
+            prompt: "What made you smile?",
+            startsAt: Date(timeIntervalSince1970: 0),
+            answers: answers,
+            ownAnswerSeenByPartner: seenByPartner,
+            waiting: nil,
+            match: nil
+        )
+    }
 
     private func message(
         _ body: String,
@@ -22,7 +35,7 @@ struct DailyChatProjectionTests {
         DailyQuestionChatMessage(
             id: UUID(),
             threadID: threadID,
-            instanceID: instanceID,
+            questionID: questionID,
             senderUserID: sender,
             body: body,
             createdAt: Date(timeIntervalSince1970: 1_000 + seconds),
@@ -34,9 +47,7 @@ struct DailyChatProjectionTests {
 
     private func input(_ messages: [DailyQuestionChatMessage]) -> DailyChatProjection.Input {
         DailyChatProjection.Input(
-            prompt: "What made you smile?",
-            questionStartsAt: Date(timeIntervalSince1970: 0),
-            answers: [],
+            rounds: [round()],
             messages: messages,
             currentUserID: me,
             partnerName: "Oda",
@@ -85,12 +96,12 @@ struct DailyChatProjectionTests {
         let again = DailyChatProjection.make(input: input([first]))
         let edited = DailyChatProjection.make(input: input([
             DailyQuestionChatMessage(
-                id: first.id, threadID: threadID, instanceID: instanceID, senderUserID: partner,
+                id: first.id, threadID: threadID, questionID: questionID, senderUserID: partner,
                 body: "Hi there", createdAt: first.createdAt, clientOperationID: nil, isSending: false
             ),
         ]))
 
-        #expect(same.exyteMessages.first?.id == DailyChatProjection.questionRowID)
+        #expect(same.exyteMessages.first?.id == DailyChatProjection.questionRowID(for: instanceID))
         #expect(same.exyteMessages == again.exyteMessages)
         #expect(same.exyteMessages.last != edited.exyteMessages.last)
     }
@@ -104,7 +115,7 @@ struct DailyChatProjectionTests {
             projection.exyteMessages.first { $0.id == id }.map(DailyChatMenuAction.menuItems(for:)) ?? []
         }
 
-        #expect(items(DailyChatProjection.questionRowID) == [.copy])
+        #expect(items(DailyChatProjection.questionRowID(for: instanceID)) == [.copy])
         #expect(items(partnerMessage.id.uuidString) == [.reply, .copy, .report])
         #expect(items(mine.id.uuidString) == [.reply, .copy])
         #expect(items(sending.id.uuidString) == [.copy])
@@ -116,17 +127,15 @@ struct DailyChatProjectionTests {
             canViewAnswer: true, textBody: "My answer", selectedUserID: nil, mediaAssetIDs: []
         )
         let fresh = DailyQuestionChatMessage(
-            id: UUID(), threadID: threadID, instanceID: instanceID, senderUserID: me,
+            id: UUID(), threadID: threadID, questionID: questionID, senderUserID: me,
             body: "Just now", createdAt: .now, clientOperationID: nil, isSending: false
         )
         let partners = DailyQuestionChatMessage(
-            id: UUID(), threadID: threadID, instanceID: instanceID, senderUserID: partner,
+            id: UUID(), threadID: threadID, questionID: questionID, senderUserID: partner,
             body: "Me too", createdAt: .now, clientOperationID: nil, isSending: false
         )
         let projection = DailyChatProjection.make(input: DailyChatProjection.Input(
-            prompt: "What made you smile?",
-            questionStartsAt: Date(timeIntervalSince1970: 0),
-            answers: [answer],
+            rounds: [round(answers: [answer])],
             messages: [fresh, partners],
             currentUserID: me,
             partnerName: "Oda",
@@ -192,7 +201,7 @@ struct DailyChatReceiptAndTypingRowTests {
 
     private func message(_ sender: UUID, at seconds: TimeInterval) -> DailyQuestionChatMessage {
         DailyQuestionChatMessage(
-            id: UUID(), threadID: UUID(), instanceID: UUID(), senderUserID: sender, body: "Hi",
+            id: UUID(), threadID: UUID(), questionID: UUID(), senderUserID: sender, body: "Hi",
             createdAt: Date(timeIntervalSince1970: 1_000 + seconds), clientOperationID: nil, isSending: false
         )
     }
@@ -203,7 +212,11 @@ struct DailyChatReceiptAndTypingRowTests {
         readThrough: UUID? = nil
     ) -> DailyChatProjection.Input {
         DailyChatProjection.Input(
-            prompt: "Q", questionStartsAt: Date(timeIntervalSince1970: 0), answers: [], messages: messages,
+            rounds: [DailyChatRound(
+                instanceID: UUID(), prompt: "Q", startsAt: Date(timeIntervalSince1970: 0), answers: [],
+                ownAnswerSeenByPartner: false, waiting: nil, match: nil
+            )],
+            messages: messages,
             currentUserID: me, partnerName: "Oda", youName: "You",
             partnerIsTyping: typing, partnerLastReadMessageID: readThrough
         )
@@ -234,8 +247,12 @@ struct DailyChatReceiptAndTypingRowTests {
         let answerRowID = DailyChatProjection.answerRowPrefix + answer.answerID.uuidString
         func projection(_ messages: [DailyQuestionChatMessage]) -> DailyChatProjection {
             DailyChatProjection.make(input: DailyChatProjection.Input(
-                prompt: "Q", questionStartsAt: Date(timeIntervalSince1970: 0), answers: [answer], messages: messages,
-                currentUserID: me, partnerName: "Oda", youName: "You", ownAnswerSeenByPartner: true
+                rounds: [DailyChatRound(
+                    instanceID: UUID(), prompt: "Q", startsAt: Date(timeIntervalSince1970: 0), answers: [answer],
+                    ownAnswerSeenByPartner: true, waiting: nil, match: nil
+                )],
+                messages: messages,
+                currentUserID: me, partnerName: "Oda", youName: "You"
             ))
         }
 
@@ -280,19 +297,19 @@ struct DailyChatPresenceModelTests {
         private(set) var typingCalls: [Bool] = []
         private(set) var readMarks: [UUID] = []
 
-        func setTyping(instanceID _: UUID, isTyping: Bool) async { typingCalls.append(isTyping) }
+        func setTyping(coupleID _: UUID, questionID _: UUID, isTyping: Bool) async { typingCalls.append(isTyping) }
         func markThreadReadOnServer(threadID _: UUID, messageID: UUID) async { readMarks.append(messageID) }
 
         func cachedThreadSummaries(ownerUserID _: UUID) async -> [DailyQuestionThreadSummary] { [] }
         func refreshThreadSummaries(ownerUserID _: UUID) async throws -> [DailyQuestionThreadSummary] { [] }
-        func cachedMessages(ownerUserID _: UUID, instanceID _: UUID) async -> [DailyQuestionChatMessage] { [] }
-        func refreshMessages(ownerUserID _: UUID, instanceID _: UUID, threadID _: UUID) async throws
+        func cachedMessages(ownerUserID _: UUID, questionID _: UUID) async -> [DailyQuestionChatMessage] { [] }
+        func refreshMessages(ownerUserID _: UUID, questionID _: UUID, threadID _: UUID) async throws
             -> [DailyQuestionChatMessage] { [] }
-        func pendingMessages(ownerUserID _: UUID, instanceID _: UUID) async -> [DailyQuestionChatMessage] { [] }
-        func hasPendingThreadCreation(ownerUserID _: UUID, instanceID _: UUID) async -> Bool { false }
+        func pendingMessages(ownerUserID _: UUID, coupleID _: UUID, questionID _: UUID) async -> [DailyQuestionChatMessage] { [] }
+        func hasPendingThreadCreation(ownerUserID _: UUID, coupleID _: UUID, questionID _: UUID) async -> Bool { false }
         func discardFailedMessage(ownerUserID _: UUID, clientOperationID _: UUID) async {}
         func queueMessage(
-            ownerUserID _: UUID, coupleID _: UUID, instanceID _: UUID, threadID _: UUID?, body _: String,
+            ownerUserID _: UUID, coupleID _: UUID, questionID _: UUID, threadID _: UUID?, body _: String,
             photos _: DailyQuestionChatPhotosPayload?, createThread _: Bool, replyToMessageID _: UUID?,
             operation _: SyncClientOperation
         ) async throws -> DailyQuestionChatMessage { throw DailyQuestionChatServiceError.unavailable }
@@ -305,7 +322,7 @@ struct DailyChatPresenceModelTests {
     @Test func typingSendsOneHeartbeatEveryFewSecondsAndStopsOnAnEmptyField() async {
         let service = TypingRecorder()
         let clock = Clock()
-        let model = DailyChatPresenceModel(instanceID: UUID(), service: service, now: { clock.now })
+        let model = DailyChatPresenceModel(coupleID: UUID(), questionID: UUID(), service: service, now: { clock.now })
 
         model.draftChanged("H")
         model.draftChanged("He")
@@ -320,7 +337,7 @@ struct DailyChatPresenceModelTests {
     }
 
     @Test func thePartnersDotsShowWhileTheyTypeAndHideWhenTheirMessageArrives() {
-        let model = DailyChatPresenceModel(instanceID: UUID(), service: TypingRecorder())
+        let model = DailyChatPresenceModel(coupleID: UUID(), questionID: UUID(), service: TypingRecorder())
 
         model.apply(DailyChatPresence(partnerIsTyping: true))
         #expect(model.partnerIsTyping)
@@ -330,7 +347,7 @@ struct DailyChatPresenceModelTests {
     }
 
     @Test func aReadMarkWhileThePartnerStillTypesDoesNotBringBackHiddenDots() {
-        let model = DailyChatPresenceModel(instanceID: UUID(), service: TypingRecorder())
+        let model = DailyChatPresenceModel(coupleID: UUID(), questionID: UUID(), service: TypingRecorder())
 
         model.apply(DailyChatPresence(partnerIsTyping: true))
         model.partnerMessageArrived()
@@ -341,7 +358,7 @@ struct DailyChatPresenceModelTests {
 
     @Test func readMarksWaitBrieflyAndSendOnceForABurst() async throws {
         let service = TypingRecorder()
-        let model = DailyChatPresenceModel(instanceID: UUID(), service: service)
+        let model = DailyChatPresenceModel(coupleID: UUID(), questionID: UUID(), service: service)
         let thread = UUID()
         let first = UUID()
         let second = UUID()
@@ -366,7 +383,7 @@ struct DailyChatRowGestureAreaTests {
         let message = DailyQuestionChatMessage(
             id: UUID(),
             threadID: UUID(),
-            instanceID: UUID(),
+            questionID: UUID(),
             senderUserID: me,
             body: body,
             createdAt: Date(timeIntervalSince1970: 1_000),
@@ -385,7 +402,6 @@ struct DailyChatRowGestureAreaTests {
         let view = DailyChatMessageRow(
             row: row,
             participants: DailyChallengeParticipants(currentUserID: me, partnerDisplayName: "Oda"),
-            mediaKind: .text,
             isHighlighted: false,
             onReply: {},
             onRetry: {},

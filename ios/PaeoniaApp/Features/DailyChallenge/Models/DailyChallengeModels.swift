@@ -318,10 +318,10 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     let prompt: String
     let shortPrompt: String
     let answerKinds: [DailyChallengeAnswerKind]
-    let ownAnswer: DailyQuestionAnswerSummary?
+    var ownAnswer: DailyQuestionAnswerSummary?
     let partnerAnswer: DailyQuestionAnswerSummary?
     let canViewPartnerAnswer: Bool
-    let ownAnswerDetail: DailyQuestionAnswerDetail?
+    var ownAnswerDetail: DailyQuestionAnswerDetail?
     let partnerAnswerDetail: DailyQuestionAnswerDetail?
     let origin: DailyQuestionOrigin
     /// Whether this row belongs to the active day returned by the backend. Carried
@@ -332,6 +332,12 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     var partnerAnswerSeenAt: Date?
     /// When the partner first saw the user's answer.
     var ownAnswerSeenByPartnerAt: Date?
+    /// How many earlier days the user answered this question, in this couple.
+    var earlierRoundCount = 0
+    /// The couple-local date (`yyyy-MM-dd`) of the user's latest earlier answer to it.
+    var latestEarlierRoundLocalDate: String?
+    /// Some day of this question has answers from both partners, so its chat can start.
+    var hasSharedRound = false
 
     /// The single person both partners picked when a partner-choice exchange has the
     /// *same* viewable pick on both sides and nothing else to show. When set, the two
@@ -469,7 +475,7 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     /// hears about it). Opening the question's page or the answer flow's reveal marks
     /// it seen.
     func hasNewPartnerAnswer(seen: Set<UUID>) -> Bool {
-        isChatAvailable && partnerAnswerSeenAt == nil && !seen.contains(id)
+        hasRevealedPartnerAnswer && partnerAnswerSeenAt == nil && !seen.contains(id)
     }
 }
 
@@ -535,7 +541,10 @@ extension DailyChallengeQuestion {
                     origin: row.seededForUserID == currentUserID ? .own : .partner,
                     isCurrentDay: row.isCurrentDay,
                     partnerAnswerSeenAt: row.partnerAnswerSeenAt,
-                    ownAnswerSeenByPartnerAt: row.ownAnswerSeenByPartnerAt
+                    ownAnswerSeenByPartnerAt: row.ownAnswerSeenByPartnerAt,
+                    earlierRoundCount: row.earlierRoundCount ?? 0,
+                    latestEarlierRoundLocalDate: row.latestEarlierRoundLocalDate,
+                    hasSharedRound: row.chatAvailable ?? false
                 )
             }
             .filter(\.isVisibleToCurrentUser)
@@ -576,18 +585,43 @@ nonisolated struct DailyChallengeCardState: Equatable, Sendable {
     /// action) from "everything is already answered" (pure review).
     let hasAnswerablePartnerQuestions: Bool
 
+    /// A question the partner answered that the user can answer to unlock. The cards
+    /// show it as a locked row with its short prompt. It carries no answer content.
+    nonisolated struct LockedPartnerQuestion: Equatable, Identifiable, Sendable {
+        let id: UUID
+        let shortPrompt: String
+    }
+
+    /// The most locked rows a card shows. Any others collapse into "and N more".
+    static let maxLockedPartnerQuestions = 2
+
+    /// The first waiting partner questions, in `answerablePartnerQuestions` order.
+    let lockedPartnerQuestions: [LockedPartnerQuestion]
+    /// How many waiting partner questions come after the rows above.
+    let moreLockedPartnerQuestionCount: Int
+
     init(
         kind: Kind,
         answeredCount: Int,
         totalCount: Int,
         hasPartnerAnswersForToday: Bool = false,
-        hasAnswerablePartnerQuestions: Bool = false
+        hasAnswerablePartnerQuestions: Bool = false,
+        lockedPartnerQuestions: [LockedPartnerQuestion] = [],
+        moreLockedPartnerQuestionCount: Int = 0
     ) {
         self.kind = kind
         self.answeredCount = answeredCount
         self.totalCount = totalCount
         self.hasPartnerAnswersForToday = hasPartnerAnswersForToday
         self.hasAnswerablePartnerQuestions = hasAnswerablePartnerQuestions
+        self.lockedPartnerQuestions = lockedPartnerQuestions
+        self.moreLockedPartnerQuestionCount = moreLockedPartnerQuestionCount
+    }
+
+    /// Locked rows open their answer flow only once the user's own questions are done,
+    /// like the Questions tab list. Until then they only say the partner has answered.
+    var lockedPartnerQuestionsAreOpenable: Bool {
+        kind == .complete
     }
 
     var isActionEnabled: Bool {
@@ -832,23 +866,11 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
 
     var homeCardState: DailyChallengeCardState {
         if !hasAnyCurrentDayQuestions {
-            return DailyChallengeCardState(
-                kind: .noChallenge,
-                answeredCount: progress.ownAnsweredCount,
-                totalCount: progress.requiredQuestionCount,
-                hasPartnerAnswersForToday: hasPartnerAnswersForToday,
-                hasAnswerablePartnerQuestions: hasAnswerablePartnerQuestions
-            )
+            return cardState(.noChallenge)
         }
 
         if progress.isComplete {
-            return DailyChallengeCardState(
-                kind: .complete,
-                answeredCount: progress.ownAnsweredCount,
-                totalCount: progress.requiredQuestionCount,
-                hasPartnerAnswersForToday: hasPartnerAnswersForToday,
-                hasAnswerablePartnerQuestions: hasAnswerablePartnerQuestions
-            )
+            return cardState(.complete)
         }
 
         let prompt = ownQuestions.first(where: { !$0.hasOwnAnswer })?.shortPrompt
@@ -857,12 +879,25 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
             ?? visibleQuestions.first?.prompt
             ?? ""
 
+        return cardState(.active(prompt: prompt))
+    }
+
+    private func cardState(_ kind: DailyChallengeCardState.Kind) -> DailyChallengeCardState {
+        let waiting = answerablePartnerQuestions
+        let shown = waiting.prefix(DailyChallengeCardState.maxLockedPartnerQuestions)
         return DailyChallengeCardState(
-            kind: .active(prompt: prompt),
+            kind: kind,
             answeredCount: progress.ownAnsweredCount,
             totalCount: progress.requiredQuestionCount,
             hasPartnerAnswersForToday: hasPartnerAnswersForToday,
-            hasAnswerablePartnerQuestions: hasAnswerablePartnerQuestions
+            hasAnswerablePartnerQuestions: !waiting.isEmpty,
+            lockedPartnerQuestions: shown.map {
+                DailyChallengeCardState.LockedPartnerQuestion(
+                    id: $0.id,
+                    shortPrompt: $0.shortPrompt.isEmpty ? $0.prompt : $0.shortPrompt
+                )
+            },
+            moreLockedPartnerQuestionCount: waiting.count - shown.count
         )
     }
 

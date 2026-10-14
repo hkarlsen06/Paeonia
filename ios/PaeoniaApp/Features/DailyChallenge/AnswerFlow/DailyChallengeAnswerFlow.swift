@@ -23,6 +23,8 @@ struct DailyChallengeAnswerFlow: View {
     /// Claims the streak milestone the finished day reaches, if this phone has not
     /// celebrated it yet. See `StreakMilestoneStore.claim`.
     var claimStreakMilestone: @MainActor (Int) -> Int? = { _ in nil }
+    /// Closes the flow and opens a question's chat, for the note about an earlier answer.
+    var onOpenQuestionChat: (DailyChallengeQuestion) -> Void = { _ in }
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -41,6 +43,10 @@ struct DailyChallengeAnswerFlow: View {
     /// this cover to completion before the reveal appeared.
     @State private var partnerRevealQuestion: DailyChallengeQuestion?
     @State private var isAwaitingPartnerReveal = false
+    /// The question the user just answered that they had answered on an earlier day. The
+    /// note offers their old answers, and goes away on its own. It waits for the chat to be
+    /// available, which can come a moment after the send, when the partner's answer opens.
+    @State private var earlierCandidate: DailyChallengeQuestion?
     @FocusState private var isComposerFocused: Bool
 
     private enum Phase {
@@ -150,6 +156,19 @@ struct DailyChallengeAnswerFlow: View {
         // black showed through the keyboard's rounded top corners.
         .background { PaeoniaGlowBackground() }
         .animation(celebrateAnimation, value: didCelebrate)
+        .overlay(alignment: .top) {
+            if let earlierAnswer, !showsEarlierAnswerInline {
+                earlierAnswerNote(earlierAnswer)
+                    .padding(.top, PaeoniaSpacing.screenTopSpacing)
+                    .transition(.opacity)
+            }
+        }
+        .task(id: earlierCandidate?.id) {
+            guard earlierCandidate != nil else { return }
+            try? await Task.sleep(for: Self.earlierAnswerNoteDuration)
+            guard !Task.isCancelled else { return }
+            withAnimation(PaeoniaMotion.stateChange) { earlierCandidate = nil }
+        }
         .onAppear { setInitialIndexIfNeeded() }
         .onChange(of: questions.count) { _, newCount in
             setInitialIndexIfNeeded()
@@ -169,6 +188,32 @@ struct DailyChallengeAnswerFlow: View {
             }
         }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
+    }
+
+    // MARK: - Earlier answer
+
+    /// How long the note about an earlier answer stays.
+    private static let earlierAnswerNoteDuration: Duration = .seconds(12)
+
+    /// The note sits under the progress bar while questions are being answered, and
+    /// over the top of the other screens, such as the completion celebration.
+    private var showsEarlierAnswerInline: Bool {
+        partnerRevealQuestion == nil && phase == .answering
+    }
+
+    /// The note, from the live copy of the question so it sees the chat open after the send.
+    private var earlierAnswer: DailyChallengeEarlierAnswer? {
+        guard let earlierCandidate else { return nil }
+        let live = viewModel.snapshot.questions.first { $0.id == earlierCandidate.id }
+        return DailyChallengeEarlierAnswer(question: live ?? earlierCandidate)
+    }
+
+    private func earlierAnswerNote(_ earlierAnswer: DailyChallengeEarlierAnswer) -> some View {
+        DailyChallengeEarlierAnswerNote(
+            earlierAnswer: earlierAnswer,
+            onOpen: { onOpenQuestionChat(earlierAnswer.question) },
+            onDismiss: { withAnimation(PaeoniaMotion.stateChange) { earlierCandidate = nil } }
+        )
     }
 
     // MARK: - States
@@ -200,6 +245,11 @@ struct DailyChallengeAnswerFlow: View {
             // composer-and-bar cluster simply rides up above the keyboard via SwiftUI's
             // keyboard avoidance, with nothing resizing, rather than the top moving.
             header
+
+            if let earlierAnswer, showsEarlierAnswerInline {
+                earlierAnswerNote(earlierAnswer)
+                    .transition(.opacity)
+            }
 
             if let question = currentQuestion {
                 DailyChallengeAnswerStep(
@@ -498,6 +548,9 @@ struct DailyChallengeAnswerFlow: View {
         }
 
         isComposerFocused = false
+        withAnimation(PaeoniaMotion.stateChange) {
+            earlierCandidate = question.earlierRoundCount > 0 ? question : nil
+        }
 
         if question.origin == .partner {
             partnerRevealQuestion = question

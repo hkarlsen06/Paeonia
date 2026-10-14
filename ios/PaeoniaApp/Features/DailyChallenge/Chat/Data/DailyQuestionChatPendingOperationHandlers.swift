@@ -31,6 +31,10 @@ struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOpera
             CreateDailyQuestionThreadMessageOperationPayload.self,
             from: data
         )
+        guard isInCurrentCouple(payload.coupleID, context: context) else {
+            await markChatMessageFailed(operation, cache: cache)
+            return .terminalFailure("The chat belongs to an earlier relationship")
+        }
         let mediaAssetIDs = try await uploadAttachments(
             voice: payload.voice,
             photos: payload.photos,
@@ -48,12 +52,12 @@ struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOpera
         } catch {
             guard isPermanentChatFailure(error) else { throw error }
             await markChatMessageFailed(operation, cache: cache)
-            try await failMessagesWaitingForThread(of: payload.instanceID, operation, context: context)
+            try await failMessagesWaitingForThread(of: payload.questionID, operation, context: context)
             return .terminalFailure("Daily question chat is no longer available")
         }
         await cache.confirm(
             ownerUserID: operation.ownerUserID,
-            instanceID: payload.instanceID,
+            questionID: payload.questionID,
             coupleID: payload.coupleID,
             clientOperationID: operation.operation.id,
             threadID: response.threadID,
@@ -70,7 +74,7 @@ struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOpera
     /// thread will never exist now, so they would wait forever. Show them as failed,
     /// so the person can send them again.
     private func failMessagesWaitingForThread(
-        of instanceID: UUID,
+        of questionID: UUID,
         _ operation: PendingSyncOperationSnapshot,
         context: SyncContext
     ) async throws {
@@ -82,7 +86,7 @@ struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOpera
                     SendDailyQuestionThreadMessageOperationPayload.self,
                     from: data
                   ),
-                  payload.instanceID == instanceID,
+                  payload.questionID == questionID,
                   payload.threadID == nil
             else { continue }
             await markChatMessageFailed(waiting, cache: cache)
@@ -117,7 +121,7 @@ struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperati
 
     func send(
         _ operation: PendingSyncOperationSnapshot,
-        context _: SyncContext
+        context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
         guard let data = operation.requestData else {
             return .terminalFailure("Missing thread message payload")
@@ -126,8 +130,12 @@ struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperati
             SendDailyQuestionThreadMessageOperationPayload.self,
             from: data
         )
+        guard isInCurrentCouple(payload.coupleID, context: context) else {
+            await markChatMessageFailed(operation, cache: cache)
+            return .terminalFailure("The chat belongs to an earlier relationship")
+        }
         let cachedThreadID = await cache.summaries(ownerUserID: operation.ownerUserID)
-            .first(where: { $0.instanceID == payload.instanceID })?.threadID
+            .first(where: { $0.questionID == payload.questionID && $0.coupleID == payload.coupleID })?.threadID
         guard let threadID = payload.threadID ?? cachedThreadID else {
             return .retry(after: nil)
         }
@@ -155,7 +163,7 @@ struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperati
         }
         await cache.confirm(
             ownerUserID: operation.ownerUserID,
-            instanceID: payload.instanceID,
+            questionID: payload.questionID,
             coupleID: payload.coupleID,
             clientOperationID: operation.operation.id,
             threadID: response.threadID,
@@ -167,6 +175,13 @@ struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperati
         LocalStoreChanges.post(.dailyChat, ownerUserID: operation.ownerUserID)
         return .succeeded
     }
+}
+
+/// A message belongs to the couple it was written in. Once the user is in another couple, it
+/// is refused here instead of being sent to the new one. While no couple is active, such as
+/// a lapsed subscription, the server decides.
+private nonisolated func isInCurrentCouple(_ coupleID: UUID, context: SyncContext) -> Bool {
+    context.session.activeCoupleID.map { $0 == coupleID } ?? true
 }
 
 /// Uploads a message's photos, or its voice recording, and returns the media asset ids
@@ -229,7 +244,7 @@ private nonisolated func isPermanentChatFailure(_ error: any Error) -> Bool {
     return [
         "you must answer this daily question",
         "daily question thread requires both partners",
-        "daily question instance was not found",
+        "daily question was not found",
         "message sender must be an active visible thread member",
         "thread message body is too long",
         "reply target must be in the same thread",

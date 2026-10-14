@@ -109,6 +109,9 @@ private struct DailyStatusLine: View {
 struct DailyAnswerDetailsView: View {
     let question: DailyChallengeQuestion
     var participants = DailyChallengeParticipants()
+    /// False keeps the partner's answer blurred behind a lock. The reveal turns it true
+    /// to unlock the answer. Every other screen shows the answer clear.
+    var partnerAnswerIsClear = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
@@ -122,6 +125,7 @@ struct DailyAnswerDetailsView: View {
                     participants: participants,
                     mediaKind: question.mediaAnswerKind
                 )
+                .partnerAnswerUnlock(isClear: partnerAnswerIsClear)
             } else {
                 // Partner always on top, then you — so once you reply you read their
                 // answer first, not what you just wrote.
@@ -131,6 +135,9 @@ struct DailyAnswerDetailsView: View {
                         detail: block.detail,
                         participants: participants,
                         mediaKind: question.mediaAnswerKind
+                    )
+                    .partnerAnswerUnlock(
+                        isClear: partnerAnswerIsClear || block.id != question.partnerAnswerDetail?.answerID
                     )
                 }
 

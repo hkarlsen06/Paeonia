@@ -77,7 +77,7 @@ final class DailyChallengeViewModel {
     /// The couple's shared streak, shown on the completion celebration. Loaded on
     /// demand and kept across failures so a transient error never blanks it.
     private(set) var streak = CoupleStreak.none
-    private(set) var threadSummariesByInstanceID: [UUID: DailyQuestionThreadSummary] = [:]
+    private(set) var threadSummariesByQuestionID: [UUID: DailyQuestionThreadSummary] = [:]
     /// When the user last saw each chat on this phone, keyed by thread id.
     private(set) var chatReadMarks: [UUID: Date] = [:]
     /// Questions whose page the user has opened since the partner's answer showed up.
@@ -225,7 +225,7 @@ final class DailyChallengeViewModel {
         answerDrafts = newUserID.map { draftStore.drafts(for: $0) } ?? [:]
         snapshot = .empty(currentUserID: newUserID)
         sendingAnswers = [:]
-        threadSummariesByInstanceID = [:]
+        threadSummariesByQuestionID = [:]
         chatReadMarks = [:]
         seenPartnerAnswerIDs = []
 
@@ -383,8 +383,8 @@ final class DailyChallengeViewModel {
     }
 
     func applyThreadSummaries(_ summaries: [DailyQuestionThreadSummary]) {
-        threadSummariesByInstanceID = Dictionary(
-            summaries.map { ($0.instanceID, $0) },
+        threadSummariesByQuestionID = Dictionary(
+            summaries.map { ($0.questionID, $0) },
             uniquingKeysWith: { _, latest in latest }
         )
     }

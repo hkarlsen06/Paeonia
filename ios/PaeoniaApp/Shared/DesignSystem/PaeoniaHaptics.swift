@@ -46,6 +46,12 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    /// Both partners picked the same person on a "who is more likely" question.
+    /// A small tap that sits next to the reveal's own success haptic.
+    static func partnerChoiceMatched() {
+        impact(.soft, intensity: 0.8)
+    }
+
     static func memorySaved() {
         notify(.success)
     }
@@ -99,6 +105,11 @@ enum PaeoniaHaptics {
     }
 
     static func partnerDrawingReceived() {
+        impact(.soft)
+    }
+
+    /// The partner's hearts start flying across the Home card.
+    static func heartsReceived() {
         impact(.soft)
     }
 

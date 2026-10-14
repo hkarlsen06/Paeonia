@@ -2,7 +2,7 @@ import SwiftUI
 
 /// One question chat with a partner message the user has not opened yet.
 struct UnreadChatRow: Identifiable, Equatable {
-    /// The question instance the chat belongs to.
+    /// The question the chat is about. A couple has one chat per question.
     let id: UUID
     /// The question text, when today's questions include it.
     let prompt: String?

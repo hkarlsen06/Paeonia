@@ -11,7 +11,11 @@ struct DailyPromptCard: View {
     /// partner instead of saying "partner".
     var partnerName: String
     var prefersPartnerAnswersWhenComplete = false
+    /// Set on Home so a tapped locked row is the source its answer flow zooms out of.
+    var zoomNamespace: Namespace.ID?
     var onAnswer: () -> Void = {}
+    /// Opens the answer flow of a partner question shown as a locked row.
+    var onOpenPartnerQuestion: (UUID) -> Void = { _ in }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -29,6 +33,13 @@ struct DailyPromptCard: View {
                 titleBlock
 
                 actionButton
+
+                LockedPartnerQuestionRows(
+                    state: state,
+                    partnerName: partnerName,
+                    zoomNamespace: zoomNamespace,
+                    onOpen: onOpenPartnerQuestion
+                )
             }
             // Crossfade the changing content when the state changes — the title and
             // button label swap via `.contentTransition(.opacity)` and the message
@@ -101,28 +112,7 @@ struct DailyPromptCard: View {
                     .accessibilityHidden(isLoading)
             }
             .redacted(reason: isLoading ? .placeholder : [])
-
-            if let partnerNote {
-                Label {
-                    Text(partnerNote)
-                        .fixedSize(horizontal: false, vertical: true)
-                } icon: {
-                    Image(systemName: "heart.circle.fill")
-                        .foregroundStyle(.paeoniaAccentPrimary)
-                        .accessibilityHidden(true)
-                }
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .transition(.opacity)
-            }
         }
-    }
-
-    /// While the user is still answering, a gentle note that the partner has already
-    /// answered, so the card says there's something waiting without any pressure.
-    private var partnerNote: LocalizedStringResource? {
-        guard case .active = state.kind, state.hasAnswerablePartnerQuestions else { return nil }
-        return .dailyChallengeHomePartnerAnsweredNote(partnerName)
     }
 
     private var title: LocalizedStringResource {
@@ -206,9 +196,32 @@ struct DailyPromptCard: View {
             answeredCount: 1,
             totalCount: 2,
             hasPartnerAnswersForToday: true,
-            hasAnswerablePartnerQuestions: true
+            hasAnswerablePartnerQuestions: true,
+            lockedPartnerQuestions: [
+                .init(id: UUID(), shortPrompt: "A memory that stayed"),
+                .init(id: UUID(), shortPrompt: "Something small you love"),
+            ],
+            moreLockedPartnerQuestionCount: 1
         ),
         partnerName: "Oda"
+    )
+    .padding(PaeoniaSpacing.screenHorizontalPadding)
+    .background(.paeoniaBackgroundPrimary)
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Complete · partner questions waiting") {
+    DailyPromptCard(
+        state: DailyChallengeCardState(
+            kind: .complete,
+            answeredCount: 2,
+            totalCount: 2,
+            hasPartnerAnswersForToday: true,
+            hasAnswerablePartnerQuestions: true,
+            lockedPartnerQuestions: [.init(id: UUID(), shortPrompt: "A memory that stayed")]
+        ),
+        partnerName: "Oda",
+        prefersPartnerAnswersWhenComplete: true
     )
     .padding(PaeoniaSpacing.screenHorizontalPadding)
     .background(.paeoniaBackgroundPrimary)

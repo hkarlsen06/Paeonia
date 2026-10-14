@@ -20,10 +20,17 @@ struct PairedHomeView: View {
     var onOpenChat: (UUID) -> Void = { _ in }
     /// Shows a game's card while the partner has the game open, so an invite is one tap away.
     var games: GamesViewModel?
+    /// Sends and receives the hearts on the map card.
+    var hearts: HeartsViewModel?
     var onOpenGame: (GamesDestination) -> Void = { _ in }
     var onTapStreak: (() -> Void)?
     var onOpenDailyChallenge: () -> Void = {}
+    /// Opens the answer flow of a partner question shown as a locked row on the daily card.
+    var onOpenPartnerQuestion: (UUID) -> Void = { _ in }
     var onOpenWidgetDrawing: () -> Void = {}
+    /// The old question, drawing or memory shown under the daily card. Hidden when there is none.
+    var lookBack: LookBackViewModel?
+    var onOpenLookBack: (LookBackItem) -> Void = { _ in }
     var onRefresh: () async -> Void = {}
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -63,10 +70,14 @@ struct PairedHomeView: View {
         unreadChats: [UnreadChatRow] = [],
         onOpenChat: @escaping (UUID) -> Void = { _ in },
         games: GamesViewModel? = nil,
+        hearts: HeartsViewModel? = nil,
         onOpenGame: @escaping (GamesDestination) -> Void = { _ in },
         onTapStreak: (() -> Void)? = nil,
         onOpenDailyChallenge: @escaping () -> Void = {},
+        onOpenPartnerQuestion: @escaping (UUID) -> Void = { _ in },
         onOpenWidgetDrawing: @escaping () -> Void = {},
+        lookBack: LookBackViewModel? = nil,
+        onOpenLookBack: @escaping (LookBackItem) -> Void = { _ in },
         onRefresh: @escaping () async -> Void = {}
     ) {
         self.currentUserID = currentUserID
@@ -86,10 +97,14 @@ struct PairedHomeView: View {
         self.unreadChats = unreadChats
         self.onOpenChat = onOpenChat
         self.games = games
+        self.hearts = hearts
         self.onOpenGame = onOpenGame
         self.onTapStreak = onTapStreak
         self.onOpenDailyChallenge = onOpenDailyChallenge
+        self.onOpenPartnerQuestion = onOpenPartnerQuestion
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
+        self.lookBack = lookBack
+        self.onOpenLookBack = onOpenLookBack
         self.onRefresh = onRefresh
     }
 
@@ -113,6 +128,7 @@ struct PairedHomeView: View {
                 )
                 .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
                 .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: lookBack?.item)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardsHeight = $0 }
 
                 spareSpaceArt
@@ -123,7 +139,9 @@ struct PairedHomeView: View {
             viewportHeight = height
         }
         .paeoniaWideLayout($isWideLayout)
+        .heartsLifecycle(hearts, ownerUserID: currentUserID, partnerName: partnerName)
         .scrollIndicators(.hidden)
+        .lookBackRefresh(lookBack, userID: currentUserID, coupleID: coupleID)
         .refreshable {
             await onRefresh()
         }
@@ -183,7 +201,8 @@ struct PairedHomeView: View {
                 partnerName: partnerName,
                 partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
                 state: locationMapState,
-                onPromptCurrentLocation: onPromptCurrentLocation
+                onPromptCurrentLocation: onPromptCurrentLocation,
+                hearts: hearts
             )
             if !unreadChats.isEmpty {
                 HomeUnreadChatsCard(
@@ -202,6 +221,22 @@ struct PairedHomeView: View {
                     .transition(.opacity)
             }
             dailyPromptCard
+            lookBackCard
+        }
+    }
+
+    /// An old question, drawing or memory, directly under today's questions.
+    @ViewBuilder
+    private var lookBackCard: some View {
+        if let lookBack, let item = lookBack.item {
+            HomeLookBackCard(
+                item: item,
+                currentUserID: currentUserID,
+                partnerName: partnerName,
+                thumbnailLoader: lookBack.thumbnailLoader,
+                onOpen: { onOpenLookBack(item) }
+            )
+            .transition(.opacity)
         }
     }
 
@@ -228,7 +263,9 @@ struct PairedHomeView: View {
             state: dailyChallengeCardState,
             partnerName: partnerName,
             prefersPartnerAnswersWhenComplete: true,
-            onAnswer: onOpenDailyChallenge
+            zoomNamespace: zoomNamespace,
+            onAnswer: onOpenDailyChallenge,
+            onOpenPartnerQuestion: onOpenPartnerQuestion
         )
         .zoomSource(DailyFlowZoom.home, in: zoomNamespace)
     }

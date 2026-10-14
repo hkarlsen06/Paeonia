@@ -45,11 +45,11 @@ struct PaeoniaDeepLinkTests {
     }
 
     @Test func parsesDailyChatURL() throws {
-        let instanceID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
-        let url = PaeoniaDeepLink.dailyChatURL(instanceID: instanceID)
+        let questionID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let url = PaeoniaDeepLink.dailyChatURL(questionID: questionID)
 
-        #expect(url.absoluteString == "paeonia://daily/chat?instanceId=11111111-1111-1111-1111-111111111111")
-        #expect(PaeoniaDeepLink(url) == .dailyChat(instanceID: instanceID))
+        #expect(url.absoluteString == "paeonia://daily/chat?questionId=11111111-1111-1111-1111-111111111111")
+        #expect(PaeoniaDeepLink(url) == .dailyChat(questionID: questionID))
     }
 
     @Test func parsesStreakURL() {
@@ -76,6 +76,7 @@ struct PaeoniaDeepLinkTests {
     @Test func notificationPayloadParsesDeeplink() throws {
         let instanceID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let coupleDayID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let questionID = try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333"))
 
         #expect(
             PaeoniaDeepLink(notificationUserInfo: [
@@ -85,8 +86,8 @@ struct PaeoniaDeepLinkTests {
         )
         #expect(
             PaeoniaDeepLink(notificationUserInfo: [
-                "deeplink": "paeonia://daily/chat?instanceId=\(instanceID.uuidString)",
-            ]) == .dailyChat(instanceID: instanceID)
+                "deeplink": "paeonia://daily/chat?questionId=\(questionID.uuidString)",
+            ]) == .dailyChat(questionID: questionID)
         )
         #expect(
             PaeoniaDeepLink(notificationUserInfo: [
@@ -121,16 +122,16 @@ struct PaeoniaDeepLinkTests {
 
     @MainActor
     @Test func notificationRouterRoutesThreadMessagesToQuestionChat() throws {
-        let instanceID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let questionID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let router = PaeoniaNotificationRouter.shared
         router.consumePendingDeepLink()
 
         router.routeNotification(userInfo: [
             "type": "thread_message_sent",
-            "deeplink": "paeonia://daily/chat?instanceId=\(instanceID.uuidString)",
+            "deeplink": "paeonia://daily/chat?questionId=\(questionID.uuidString)",
         ])
 
-        #expect(router.pendingDeepLink == .dailyChat(instanceID: instanceID))
+        #expect(router.pendingDeepLink == .dailyChat(questionID: questionID))
         router.consumePendingDeepLink()
     }
 }

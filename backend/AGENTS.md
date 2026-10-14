@@ -90,7 +90,9 @@ Import these instead of re-porting the SQL.
 | `entitlements.ts`, `access.ts` | membership, entitlement, block, and pair helpers |
 | `coupleDays.ts` | couple day anchors, `getOrCreateCoupleDayAt`, `userLocalDate` |
 | `syncEvents.ts` | `createRelationshipSyncEvent` |
+| `hearts.ts` | `MAX_HEARTS_PER_SEND`, `seenTotalAfterMark`, `deleteHeartsForCouple` for the `couple_hearts` table (one row per couple and sender, with `sent_total` and `seen_total`). The relationship end and the couple cleanup and purge delete a couple's rows |
 | `relationshipEnd.ts` | `endRelationshipForPair` (used by leave, block, report, and account deletion), `deleteLatestLocationsForCouple` |
+| `dailyQuestionRounds.ts` | a couple has one chat per question and each day the question came back is a round: `loadCoupleRounds`, `isSharedRound`, `dailyQuestionThreadLink`, and `addRoundInfo` (the round fields on question rows) |
 | `streaks.ts`, `streakDeadlines.ts` | streak core, restore, and the zone-change refreshes |
 | `notifications.ts`, `notificationCopy.ts` | outbox inserts, enqueue helpers, notification copy |
 | `reports.ts` | `tombstoneReportTargets` |
@@ -160,6 +162,8 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `access` | `get_access_snapshot`, `get_or_create_app_account_token`, `verify_purchase` (action), `redeem_streak_restore` (action) |
 | `daily` | `start_daily_challenge_snapshot`, `get_today_daily_challenge_snapshot`, `get_daily_challenge_snapshot` (query by `p_couple_day_id`; subscribe to this one, since its rows do not depend on the clock), `shuffle_daily_question_snapshot`, `submit_daily_answer`, `update_daily_answer_text`, `update_daily_answer_partner_choice`, `get_daily_answer_details`, `get_daily_questions_history`, `get_daily_answer_history_details` |
 | `streaks` | `get_couple_streak` |
+| `dailyQuestionChat` | `get_daily_question_chat` (by `p_couple_id` and `p_question_id`: a question's rounds with the reveal rule applied per round, plus the chat's `thread_id`) |
+| `chatPresence` | `set_daily_chat_typing`, `get_daily_chat_presence` (both by `p_couple_id` and `p_question_id`), `mark_thread_read`, `mark_daily_answer_seen` (by `p_instance_id`) |
 | `threads` | `get_conversation_threads`, `get_thread_messages`, `send_thread_message`, `edit_thread_message`, `create_daily_question_thread_with_message`, `create_memory_thread_with_message` |
 | `memories` | `create_memory`, `update_memory`, `hide_memory`, `get_memories`, `upsert_memory_note`, `attach_memory_media`, `remove_memory_media` |
 | `media` | `create_pending_media_upload`, `finalize_media_upload`, `get_media_signed_url`, `mark_media_for_deletion` |
@@ -170,13 +174,14 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `boardGames` | `get_board_games`, `get_board_game_marks`, `ensure_board_game`, `make_move`, `start_rematch`, `set_board_game_mark` (Connect Four, Dots and Boxes and Ultimate Tic-Tac-Toe, each by `p_kind`) |
 | `widget` | `get_or_create_widget_canvas`, `get_widget_canvas`, `get_widget_drawing_revisions`, `submit_widget_drawing_revision`, `register_widget_push_device`, `create_widget_live_ticket` |
 | `location` | `update_latest_partner_location`, `update_location_sharing_preference`, `get_partner_location_visibility` |
+| `hearts` | `send_hearts`, `mark_hearts_seen`, `get_hearts` (the Home map hearts) |
 
 | `reports` | `submit_leave_and_report` |
 
 These functions replace direct PostgREST table access from iOS. They return full rows with SQL column names and apply the old RLS rules:
 
 - `identity:complete_profile_onboarding` `{p_time_zone_id, p_profile_photo_asset_id?}` sets `time_zone_id`, `time_zone_updated_at`, `onboarding_completed_at`, and optionally `profile_photo_asset_id`, then returns the profile row.
-- `identity:get_notification_preferences` `{}` returns the caller's `notification_preferences` row. `identity:set_notification_preference` `{p_column, p_enabled}` updates one boolean column (`streak_reminders_enabled`, `daily_challenge_enabled`, `partner_answered_enabled`, `messages_enabled`, `widget_updates_enabled`, `memories_enabled`, `games_enabled`).
+- `identity:get_notification_preferences` `{}` returns the caller's `notification_preferences` row. `identity:set_notification_preference` `{p_column, p_enabled}` updates one boolean column (`streak_reminders_enabled`, `daily_challenge_enabled`, `partner_answered_enabled`, `messages_enabled`, `widget_updates_enabled`, `memories_enabled`, `games_enabled`). `identity:set_question_time_reminder` `{p_enabled, p_minutes}` saves the opt-in question time reminder (`question_time_enabled`, off by default, and `question_time_minutes`, minutes after local midnight, 0 to 1439, default 1200) and returns the row. The generic switch endpoint refuses `question_time_enabled`.
 - `identity:get_privacy_requests` `{}` returns the caller's `privacy_requests`, newest `requested_at` first, at most 100. `identity:create_privacy_request` `{p_id, p_kind, p_requester_note?}` inserts one and returns the row.
 - `relationship:get_relationship_sync_events` `{p_after_created_at?, p_after_id?, p_limit}` returns the caller's events ordered by `created_at`, then `id`, strictly after the cursor.
 
@@ -276,6 +281,7 @@ A new game adds its entries at these points and edits no other game:
 - Pushes use the kinds `game_turn_ready`, `game_result`, `game_invite`, and `game_turn_reminder`. `game_result` means the partner finished something you wait to see, such as a solved drawing. All four follow `games_enabled`. The payload carries `type`, `game_kind`, `couple_id`, `game_id` and `round_id` when the game passes them (never on invites), `step` when the game passes one, `actor_user_id`, `route: "games"`, and `deeplink: "paeonia://games/<kind with dashes>"`, for example `paeonia://games/draw-and-guess`. It never carries the word, a drawing, or written content. The turn and result pushes are skipped while the recipient has that game open (`isGamePresent`). The title and body come from `GAME_PUSH_COPY` in `lib/notificationCopy.ts` by `payload.game_kind`, or from the entry's `steps` when `payload.step` names one. `step` is a fixed token the game picks, never content. A kind without an entry gets the title "Paeonia".
 - Mind Meld (`docs/games/mind-meld.md`) has its own tables `mind_meld_games`, `mind_meld_rounds` and `mind_meld_words`. `get_mind_meld` returns the partner's word only for a revealed round, so a word stays hidden until both partners locked in. `lock_mind_meld_word` uses `runClientOperation`, and the second lock-in reveals the round in the same mutation. Each lock-in counts as `game_turn_completed` with the dedupe key `game_turn_completed:<round id>:<user id>`. Every write bumps the version of the game it touches and of the couple's newest game, so the app can tell an older read from a newer one.
 - Board games (`docs/games/board-games.md`) keep one `board_games` row per couple and kind with the move list, and `board_game_marks` with each partner's drawn mark. `make_move` and `start_rematch` check the version, so a stale move fails with 40001. `backend/scripts/boardGames/play.mjs` plays either account from the command line.
+- Question time reminder: `enqueue-question-time-reminders` (every 5 minutes, `questionTime.ts`) reads the users with `question_time_enabled` through the `by_question_time_enabled` index and queues a `question_time_reminder` push when the chosen time came in the last 15 minutes of the user's current local date (`questionTimeDue` in `lib/questionTime.ts`; a window never crosses local midnight). The time zone is the one the streak reminders use (`resolveMemberStreakTimeZone`). It skips users without an entitled couple, with an answer on any question of the running couple day or a completed day, and without a device. The dedupe key is user, local date, and device. `prepare_notification` asks `hasStartedToday` (`lib/questionTimeStatus.ts`) again before every send attempt, so a retry after an answer is dropped. The payload carries `expires_at` (the end of the local date), which `notificationStaleAt` turns into `apns-expiration`. The push is not a streak event. Its tap opens `paeonia://daily/today`.
 - Crons: `send-due-game-turn-reminders` (one reminder per turn after 72 hours). The reminder cron calls `sendDueTurnReminders` of every game in `GAME_BACKENDS` that has turns. Changing the game language calls `onLanguageChanged` of every game that has it.
 
 ## Live drawing relay

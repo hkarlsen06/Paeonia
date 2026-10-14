@@ -6,6 +6,7 @@ import { newUuid } from "./ids";
 import { withTouch } from "./db";
 import { nowIso } from "./time";
 import { assertNoPendingAccountDeletion } from "./accountDeletion";
+import { DEFAULT_QUESTION_TIME_MINUTES } from "./questionTime";
 
 type AuthProvider = "apple" | "google" | "unknown";
 
@@ -161,6 +162,8 @@ export async function ensureCurrentUser(ctx: MutationCtx): Promise<string> {
     memories_enabled: true,
     messages_enabled: true,
     games_enabled: true,
+    question_time_enabled: false,
+    question_time_minutes: DEFAULT_QUESTION_TIME_MINUTES,
   });
   return userId;
 }

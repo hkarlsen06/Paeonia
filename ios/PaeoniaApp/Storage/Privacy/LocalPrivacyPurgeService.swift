@@ -195,6 +195,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let boardGamesCache: any BoardGamesCaching
     private let gameDrawingStore: any GameDrawingStoring
     private let mindMeldCache: any MindMeldCaching
+    private let lookBackCache: any LookBackCaching
+    private let heartsCache: any HeartsCaching
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
     private let temporaryDirectory: URL
 
@@ -214,6 +216,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         boardGamesCache: any BoardGamesCaching = FileBoardGamesCache.shared,
         gameDrawingStore: any GameDrawingStoring = FileGameDrawingStore.shared,
         mindMeldCache: any MindMeldCaching = FileMindMeldCache.shared,
+        lookBackCache: any LookBackCaching = FileLookBackCache.shared,
+        heartsCache: any HeartsCaching = FileHeartsCache.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
         temporaryDirectory: URL = FileManager.default.temporaryDirectory
     ) {
@@ -232,6 +236,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.boardGamesCache = boardGamesCache
         self.gameDrawingStore = gameDrawingStore
         self.mindMeldCache = mindMeldCache
+        self.lookBackCache = lookBackCache
+        self.heartsCache = heartsCache
         self.profilePhotoDiskCache = profilePhotoDiskCache
         self.temporaryDirectory = temporaryDirectory
     }
@@ -254,8 +260,10 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await gamesCache.clearAll()
         await storyChainCache.clearAll()
         await mindMeldCache.clearAll()
+        await heartsCache.clearAll()
         await exquisiteCorpseCache.clearAll()
         await boardGamesCache.clearAll()
+        lookBackCache.clearAll()
         BoardMarkRenderer.removeAll()
         gameDrawingStore.purge(for: scope)
         try? await profilePhotoDiskCache.removeAllProfilePhotoData()

@@ -29,7 +29,8 @@ extension MainTabView {
                     onClose: closeAnswerFlow,
                     makeStreakRestoreViewModel: makeStreakRestoreViewModel,
                     onOpenPartnerQuestions: openQuestionsTabFromAnswerFlow,
-                    claimStreakMilestone: claimStreakMilestone
+                    claimStreakMilestone: claimStreakMilestone,
+                    onOpenQuestionChat: openQuestionChatFromAnswerFlow
                 )
                 .zoomTransition(dailyFlowSource.zoomSourceID, in: zoomNamespace, enabled: !reduceMotion)
                 .environment(bannerCenter)
@@ -69,9 +70,17 @@ extension MainTabView {
             onReportedAndLeft: actions.leftRelationship,
             onClose: closePartnerAnswerFlow
         )
-        .zoomTransition(question.id, in: zoomNamespace, enabled: !reduceMotion)
+        .zoomTransition(partnerAnswerZoomSourceID(for: question), in: zoomNamespace, enabled: !reduceMotion)
         .environment(bannerCenter)
         .paeoniaTopBanner(bannerCenter)
+    }
+
+    /// The row the partner-answer flow zooms out of: the locked row on the Home card
+    /// when it opened from there, otherwise the question's row in the Questions tab.
+    private func partnerAnswerZoomSourceID(for question: DailyChallengeQuestion) -> AnyHashable {
+        partnerAnswerOpenedFromHome
+            ? AnyHashable(DailyFlowZoom.homePartnerQuestion(question.id))
+            : AnyHashable(question.id)
     }
 
     /// The milestone moment sheet, and the check that opens it.
@@ -211,6 +220,13 @@ extension MainTabView {
         isAnswerFlowPresented = false
     }
 
+    /// The note about an earlier answer: closes the flow and opens the question's chat,
+    /// scrolled to the day the user just answered, with the earlier days above it.
+    private func openQuestionChatFromAnswerFlow(_ question: DailyChallengeQuestion) {
+        isAnswerFlowPresented = false
+        startOpeningDailyChat(instanceID: question.id)
+    }
+
     private func closeAnswerFlow() {
         if returnsToQuestionsOnClose {
             selection.wrappedValue = .questions
@@ -219,6 +235,16 @@ extension MainTabView {
     }
 
     func openPartnerAnswerFlow(_ question: DailyChallengeQuestion) {
+        partnerAnswerOpenedFromHome = false
+        withAnimation(zoomPresentationAnimation) {
+            partnerAnswerQuestion = question
+        }
+    }
+
+    /// A locked row on the Home card opens the same single-question flow.
+    func openPartnerQuestionFromHome(_ id: UUID) {
+        guard let question = dailyChallengeViewModel.snapshot.questions.first(where: { $0.id == id }) else { return }
+        partnerAnswerOpenedFromHome = true
         withAnimation(zoomPresentationAnimation) {
             partnerAnswerQuestion = question
         }
@@ -298,8 +324,8 @@ extension MainTabView {
         switch deepLink {
         case .dailyReveal(let instanceID, _):
             focusedDailyQuestionID = instanceID
-        case .dailyChat(let instanceID):
-            await openDailyChat(instanceID: instanceID)
+        case .dailyChat(let questionID):
+            await openDailyChat(questionID: questionID)
             guard isCurrent(deepLink) else { return }
         case .dailyToday:
             if dailyChallengeViewModel.homeCardState.kind != .complete {
@@ -311,13 +337,27 @@ extension MainTabView {
         self.deepLink.wrappedValue = nil
     }
 
-    /// Opens a question's chat on the Questions tab, from a notification or the
-    /// Home unread chats card.
+    /// Opens a question's chat on the Questions tab at its newest day, from a
+    /// notification or the Home unread chats card. A couple has one chat per question.
+    func openDailyChat(questionID: UUID) async {
+        await presentDailyChat(
+            await dailyChallengeViewModel.questionForChat(questionID: questionID),
+            focusesNewest: true
+        )
+    }
+
+    /// Opens the chat of the question that one day belongs to, scrolled to that day.
     func openDailyChat(instanceID: UUID) async {
+        await presentDailyChat(
+            await dailyChallengeViewModel.questionForChat(instanceID: instanceID),
+            focusesNewest: false
+        )
+    }
+
+    private func presentDailyChat(_ question: DailyChallengeQuestion?, focusesNewest: Bool) async {
         selection.wrappedValue = .questions
-        let question = await dailyChallengeViewModel.questionForChat(instanceID: instanceID)
         if let question {
-            await dailyChallengeViewModel.prepareChat(for: question)
+            await dailyChallengeViewModel.prepareChat(for: question, focusesNewest: focusesNewest)
         }
         guard !Task.isCancelled else { return }
 
@@ -330,6 +370,10 @@ extension MainTabView {
                 )
             )
         }
+    }
+
+    func startOpeningDailyChat(questionID: UUID) {
+        Task { await openDailyChat(questionID: questionID) }
     }
 
     func startOpeningDailyChat(instanceID: UUID) {

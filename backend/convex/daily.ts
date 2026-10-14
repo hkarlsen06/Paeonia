@@ -25,6 +25,7 @@ import {
   insertDailyQuestionInstance,
   pickDailyQuestionVersion,
 } from "./lib/dailyQuestions";
+import { addRoundInfo } from "./lib/dailyQuestionRounds";
 import { fail } from "./lib/errors";
 import { newUuid, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
 import {
@@ -209,6 +210,7 @@ async function snapshotRow(
     source.kind === "day"
       ? await getDailyQuestionsForCoupleDay(ctx, userId, source.day)
       : await getTodayDailyQuestionsForContext(ctx, userId, coupleId);
+  await addRoundInfo(ctx, userId, coupleId, questions);
   const answerDetails = await getDailyAnswerDetailsForContext(
     ctx,
     questions.map((row) => row.couple_day_id),
@@ -365,7 +367,10 @@ export const get_daily_questions_history = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
-    return await getDailyQuestionsHistory(ctx, userId, await getCurrentEntitledCoupleId(ctx, userId));
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+    const rows = await getDailyQuestionsHistory(ctx, userId, coupleId);
+    await addRoundInfo(ctx, userId, coupleId, rows);
+    return rows;
   },
 });
 

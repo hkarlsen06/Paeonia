@@ -312,6 +312,15 @@ struct DailyPartnerAnswerRevealView: View {
     /// The exchange as last seen unlocked. After the couple's day ends, today's
     /// snapshot can drop a finished exchange, and an open reveal must not lose it.
     @State private var lastRevealed: DailyChallengeQuestion?
+    /// The partner's answer starts blurred behind a lock and clears a moment after it
+    /// shows. This is the unlock the reveal plays.
+    @State private var isPartnerAnswerClear = false
+
+    /// How long the lock shows before the answer clears. Short with Reduce Motion,
+    /// which has no lock to look at.
+    private var lockHold: Duration {
+        .milliseconds(reduceMotion ? 100 : 350)
+    }
 
     private static func isUnlocked(_ question: DailyChallengeQuestion?) -> Bool {
         question?.canViewPartnerAnswer == true && question?.partnerAnswerDetail?.canViewAnswer == true
@@ -335,9 +344,7 @@ struct DailyPartnerAnswerRevealView: View {
                     }
 
                     if let shownQuestion {
-                        DailyQuestionStatusView(question: shownQuestion, participants: participants)
-                        DailyAnswerDetailsView(question: shownQuestion, participants: participants)
-                            .transition(.opacity)
+                        revealedContent(shownQuestion)
                     } else {
                         waitingContent
                     }
@@ -364,6 +371,37 @@ struct DailyPartnerAnswerRevealView: View {
         }
         .onChange(of: isRevealed) { _, revealed in
             if revealed { PaeoniaHaptics.answerRevealed() }
+        }
+        .task(id: shownQuestion?.id) {
+            guard shownQuestion != nil else { return }
+            try? await Task.sleep(for: lockHold)
+            guard !Task.isCancelled else { return }
+            withAnimation(PaeoniaMotion.standardCurve(duration: reduceMotion ? PaeoniaMotion.motionDefault : 0.7)) {
+                isPartnerAnswerClear = true
+            }
+        }
+    }
+
+    /// The partner's answer, unlocking from blurred to clear, then a line about how
+    /// the two picks lined up when this is a "who is more likely" question.
+    @ViewBuilder
+    private func revealedContent(_ shownQuestion: DailyChallengeQuestion) -> some View {
+        DailyQuestionStatusView(question: shownQuestion, participants: participants)
+        DailyAnswerDetailsView(
+            question: shownQuestion,
+            participants: participants,
+            partnerAnswerIsClear: isPartnerAnswerClear
+        )
+        .transition(.opacity)
+
+        if isPartnerAnswerClear,
+           let match = shownQuestion.partnerChoiceMatch(participants: participants) {
+            PartnerChoiceMatchBanner(
+                match: match,
+                partnerName: participants.partnerName,
+                celebrates: true
+            )
+            .transition(.opacity)
         }
     }
 

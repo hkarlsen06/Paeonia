@@ -142,6 +142,9 @@ struct KissLayer: View {
     let start: CGPoint
     let end: CGPoint
     let tapKisses: [TapKiss]
+    /// Whether the low-frequency ambient heart drifts between the avatars too. The
+    /// small heart row leaves it out.
+    var showsAmbient = true
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -164,7 +167,7 @@ struct KissLayer: View {
             TimelineView(.animation(minimumInterval: nil, paused: isIdle)) { context in
                 let now = context.date
                 ZStack {
-                    if let state = ambientState(at: now) {
+                    if showsAmbient, let state = ambientState(at: now) {
                         heart(state)
                     }
                     ForEach(tapKisses) { kiss in
@@ -174,7 +177,9 @@ struct KissLayer: View {
                     }
                 }
             }
-            .task { await trackAmbientWindow() }
+            .task {
+                if showsAmbient { await trackAmbientWindow() }
+            }
         }
     }
 

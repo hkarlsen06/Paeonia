@@ -10,7 +10,7 @@ import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
-import { visibleAnswersOf } from "./lib/dailyQuestions";
+import { dailyQuestionThreadLink, isSharedRound, loadCoupleRounds } from "./lib/dailyQuestionRounds";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { getByUuid, orNull } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
@@ -31,14 +31,11 @@ async function assertConversationThreadAllowed(ctx: ReaderCtx, coupleId: string,
 }
 
 /** Port of `assert_daily_question_thread_allowed`. */
-async function assertDailyQuestionThreadAllowed(ctx: ReaderCtx, instanceId: string, threadId: string): Promise<void> {
+async function assertDailyQuestionThreadAllowed(ctx: ReaderCtx, coupleId: string, threadId: string): Promise<void> {
   const thread = await getByUuid(ctx, "conversation_threads", threadId);
   if (!thread) fail("23503", "thread was not found");
   if (thread.kind !== "daily_question") fail("23514", "daily question thread must use daily_question kind");
-  const instance = await getByUuid(ctx, "daily_question_instances", instanceId);
-  const day = instance ? await getByUuid(ctx, "couple_days", instance.couple_day_id) : null;
-  if (!day) fail("23503", "daily question instance was not found");
-  if (day.couple_id !== thread.couple_id) fail("23514", "daily question thread couple mismatch");
+  if (coupleId !== thread.couple_id) fail("23514", "daily question thread couple mismatch");
 }
 
 /** Port of `assert_memory_thread_allowed`. */
@@ -141,8 +138,8 @@ export async function handleThreadMessageCreated(ctx: WriterCtx, message: Doc<"t
   if (dailyLink) {
     Object.assign(payload, {
       route: "daily",
-      deeplink: `paeonia://daily/chat?instanceId=${dailyLink.instance_id}`,
-      instance_id: dailyLink.instance_id,
+      deeplink: `paeonia://daily/chat?questionId=${dailyLink.question_id}`,
+      question_id: dailyLink.question_id,
     });
   } else {
     Object.assign(payload, { route: "memories", deeplink: "paeonia://memories", memory_id: memoryLink!.memory_id });
@@ -337,16 +334,25 @@ export const edit_thread_message = mutation({
   },
 });
 
+/**
+ * Starts the chat about a question with its first message, or adds to the chat that
+ * already exists. A couple has one chat per question, whatever day the question came
+ * back on. Starting it needs a day on which both partners answered the question.
+ * The caller names the couple, so a message queued offline in one couple can never land
+ * in the chat of a couple the user joined later.
+ */
 export const create_daily_question_thread_with_message = mutation({
   args: {
-    p_instance_id: v.string(),
+    p_couple_id: v.string(),
+    p_question_id: v.string(),
     p_body: v.optional(v.union(v.null(), v.string())),
     p_media_asset_ids: nullableMediaIds,
     ...clientOperationArgs,
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
-    const instanceId = uuidArg(args.p_instance_id);
+    const coupleId = uuidArg(args.p_couple_id);
+    const questionId = uuidArg(args.p_question_id);
     const stored = await runClientOperation(
       ctx,
       userId,
@@ -355,48 +361,40 @@ export const create_daily_question_thread_with_message = mutation({
         scope: "conversation_threads",
         request: [
           "create_daily_question_thread_with_message",
-          instanceId,
+          coupleId,
+          questionId,
           ...mediaFingerprint(args.p_body, args.p_media_asset_ids),
         ],
       }),
       async () => {
         await consumeRateLimit(ctx, "threadMessage", userId);
-        const instance = await getByUuid(ctx, "daily_question_instances", instanceId);
-        if (!instance || instance.status === "shuffled") {
-          return fail("22023", "daily question instance was not found");
-        }
-        const day = await getByUuid(ctx, "couple_days", instance.couple_day_id);
-        if (!day || !(await canAccessCoupleContent(ctx, userId, day.couple_id))) {
+        if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
           return fail("42501", "active entitled couple access is required");
         }
+        if (!(await getByUuid(ctx, "questions", questionId))) {
+          return fail("22023", "daily question was not found");
+        }
 
-        const answers = (
-          await ctx.db
-            .query("daily_question_answers")
-            .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id))
-            .collect()
-        ).filter((answer) => answer.deleted_at === undefined && answer.moderation_status === "visible");
-        if (!answers.some((answer) => answer.user_id === userId)) {
+        const rounds = (await loadCoupleRounds(ctx, coupleId)).get(questionId) ?? [];
+        if (!rounds.some((round) => round.answers.some((answer) => answer.user_id === userId))) {
           fail("42501", "you must answer this daily question before starting its thread");
         }
-        if (new Set(answers.map((answer) => answer.user_id)).size < 2) {
+        if (!rounds.some(isSharedRound)) {
           fail("23514", "daily question thread requires both partners to answer");
         }
 
-        const existing = await ctx.db
-          .query("daily_question_threads")
-          .withIndex("by_instance_id", (q) => q.eq("instance_id", instance.id))
-          .unique();
+        const existing = await dailyQuestionThreadLink(ctx, coupleId, questionId);
         let threadId = existing?.thread_id;
         if (!threadId) {
           threadId = await insertConversationThread(ctx, {
-            couple_id: day.couple_id,
+            couple_id: coupleId,
             kind: "daily_question",
             created_by_user_id: userId,
           });
-          await assertDailyQuestionThreadAllowed(ctx, instance.id, threadId);
+          await assertDailyQuestionThreadAllowed(ctx, coupleId, threadId);
           await ctx.db.insert("daily_question_threads", {
-            instance_id: instance.id,
+            couple_id: coupleId,
+            question_id: questionId,
             thread_id: threadId,
             created_at: nowIso(),
           });
@@ -475,15 +473,18 @@ export const get_conversation_threads = query({
       .collect();
 
     const rows = [];
+    let rounds: Awaited<ReturnType<typeof loadCoupleRounds>> | null = null;
     for (const thread of threads) {
       const daily = await ctx.db
         .query("daily_question_threads")
         .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
         .unique();
-      // A question chat opens only while both answers are visible. Leave it out once one is
-      // deleted or hidden, so the app never lists a chat the user can't open.
-      if (daily && new Set((await visibleAnswersOf(ctx, daily.instance_id)).map((answer) => answer.user_id)).size < 2) {
-        continue;
+      // A question chat opens only while some day of the question has both answers visible.
+      // Leave it out once they are deleted or hidden, so the app never lists a chat the
+      // user can't open.
+      if (daily) {
+        rounds ??= await loadCoupleRounds(ctx, coupleId);
+        if (!(rounds.get(daily.question_id) ?? []).some(isSharedRound)) continue;
       }
       const memory = await ctx.db
         .query("memory_threads")
@@ -518,7 +519,7 @@ export const get_conversation_threads = query({
         thread_id: thread.id,
         couple_id: thread.couple_id,
         kind: thread.kind,
-        daily_question_instance_id: orNull(daily?.instance_id),
+        daily_question_id: orNull(daily?.question_id),
         memory_id: orNull(memory?.memory_id),
         created_by_user_id: thread.created_by_user_id,
         created_at: thread.created_at,

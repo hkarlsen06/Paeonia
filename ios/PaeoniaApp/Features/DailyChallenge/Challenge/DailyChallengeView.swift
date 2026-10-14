@@ -74,6 +74,7 @@ struct DailyChallengeScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .paeoniaScreenBackground()
+        .clearsDeliveredQuestionTimeReminders()
         .navigationTitle(Text(.mainTabQuestions))
         .toolbar(chatQuestion.wrappedValue != nil || isOpeningChat ? .hidden : .visible, for: .tabBar)
         .onChange(of: chatQuestion.wrappedValue == nil) { _, isClosed in
@@ -139,8 +140,8 @@ struct DailyChallengeScreen: View {
                         zoomNamespace: zoomNamespace,
                         isHighlighted: highlightedQuestionID == question.id,
                         onAnswer: { onAnswerPartnerQuestion(question) },
-                        lastMessagePreview: viewModel.threadPreview(for: question.id),
-                        hasUnreadChat: viewModel.hasUnreadChat(for: question.id),
+                        lastMessagePreview: viewModel.threadPreview(for: question.questionID),
+                        hasUnreadChat: viewModel.hasUnreadChat(for: question.questionID),
                         hasNewPartnerAnswer: viewModel.hasNewPartnerAnswer(question),
                         onOpen: { openChat(question) }
                     )
@@ -197,19 +198,28 @@ struct DailyChallengeScreen: View {
                 DailyChallengeDoneCard(
                     state: state,
                     partnerName: viewModel.participants.partnerName,
-                    onOpen: onOpenAnswerFlow
+                    onOpen: onOpenAnswerFlow,
+                    onOpenPartnerQuestion: openLockedPartnerQuestion
                 )
                 .transition(.opacity)
             } else {
                 DailyPromptCard(
                     state: state,
                     partnerName: viewModel.participants.partnerName,
-                    onAnswer: onOpenAnswerFlow
+                    onAnswer: onOpenAnswerFlow,
+                    onOpenPartnerQuestion: openLockedPartnerQuestion
                 )
                 .transition(.opacity)
             }
         }
         .zoomSource(DailyFlowZoom.questions, in: zoomNamespace)
+    }
+
+    /// A locked row on the hero card opens the same single-question flow as the
+    /// question's own row in the list below.
+    private func openLockedPartnerQuestion(_ id: UUID) {
+        guard let question = viewModel.snapshot.questions.first(where: { $0.id == id }) else { return }
+        onAnswerPartnerQuestion(question)
     }
 
     /// Pull to refresh reloads today's questions and the earlier days together.

@@ -87,8 +87,9 @@ export function buildAppApsPayload(notification: PreparedNotification): Record<s
 
 /**
  * When a reminder stops being true: a streak reminder at its deadline, a trial
- * reminder when the trial ends. `prepare_notification` drops a row past this time, and APNs
- * drops it on a phone that stays offline past it. Null for everything else.
+ * reminder when the trial ends, a question time reminder at the end of the user's local day.
+ * `prepare_notification` drops a row past this time, and APNs drops it on a phone that stays
+ * offline past it. Null for everything else.
  */
 export function notificationStaleAt(payload: Record<string, unknown>): string | null {
   const value =
@@ -96,7 +97,9 @@ export function notificationStaleAt(payload: Record<string, unknown>): string | 
       ? payload.next_activity_deadline_at
       : payload.type === "subscription_trial_reminder"
         ? payload.trial_ends_at
-        : null;
+        : payload.type === "question_time_reminder"
+          ? payload.expires_at
+          : null;
   return typeof value === "string" && !Number.isNaN(Date.parse(value)) ? value : null;
 }
 

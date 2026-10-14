@@ -21,7 +21,8 @@ final class DailyChatPresenceModel {
     private(set) var partnerIsTyping = false
     private(set) var partnerLastReadMessageID: UUID?
 
-    private let instanceID: UUID
+    private let coupleID: UUID
+    private let questionID: UUID
     private let service: any DailyQuestionChatServicing
     private let now: () -> Date
 
@@ -33,8 +34,9 @@ final class DailyChatPresenceModel {
     private var lastMarkedMessageID: UUID?
     private var readTask: Task<Void, Never>?
 
-    init(instanceID: UUID, service: any DailyQuestionChatServicing, now: @escaping () -> Date = Date.init) {
-        self.instanceID = instanceID
+    init(coupleID: UUID, questionID: UUID, service: any DailyQuestionChatServicing, now: @escaping () -> Date = Date.init) {
+        self.coupleID = coupleID
+        self.questionID = questionID
         self.service = service
         self.now = now
     }
@@ -62,7 +64,7 @@ final class DailyChatPresenceModel {
         guard didSendTypingStart else { return }
         didSendTypingStart = false
         lastTypingStartSentAt = nil
-        await service.setTyping(instanceID: instanceID, isTyping: false)
+        await service.setTyping(coupleID: coupleID, questionID: questionID, isTyping: false)
     }
 
     private func sendTypingStartIfNeeded() {
@@ -71,14 +73,14 @@ final class DailyChatPresenceModel {
         }
         lastTypingStartSentAt = now()
         didSendTypingStart = true
-        Task { await service.setTyping(instanceID: instanceID, isTyping: true) }
+        Task { await service.setTyping(coupleID: coupleID, questionID: questionID, isTyping: true) }
     }
 
     // MARK: - Partner
 
     /// Follows the partner's typing and read state until the calling task ends.
     func observe() async {
-        for await presence in service.livePresence(instanceID: instanceID) {
+        for await presence in service.livePresence(coupleID: coupleID, questionID: questionID) {
             apply(presence)
         }
         remoteTypingTask?.cancel()

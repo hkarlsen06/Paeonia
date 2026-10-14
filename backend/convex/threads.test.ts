@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
-import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
+import { answeredRound, seedQuestion } from "./dailyChat.setup";
+import type { SeededQuestion } from "./daily.setup";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
@@ -35,37 +36,26 @@ async function memoryThread(user: TestUser, memoryId: string, body = "Secret mes
   return await user.as.mutation(api.threads.create_memory_thread_with_message, { ...op(), p_memory_id: memoryId, p_body: body });
 }
 
-/** A daily question instance both partners answered (or only the listed users). */
-async function dailyInstance(t: TestConvex, couple: TestCouple, answeredBy: TestUser[] = [couple.first, couple.second]) {
-  const instanceId = newUuid();
-  await t.run(async (ctx) => {
-    const now = new Date().toISOString();
-    const dayId = await getOrCreateCoupleDayAt(ctx, couple.coupleId, now);
-    await ctx.db.insert("daily_question_instances", {
-      id: instanceId,
-      couple_day_id: dayId,
-      question_version_id: newUuid(),
-      seeded_for_user_id: couple.first.userId,
-      slot_number: 1,
-      status: "active",
-      created_at: now,
-    });
-    for (const user of answeredBy) {
-      await ctx.db.insert("daily_question_answers", {
-        id: newUuid(),
-        instance_id: instanceId,
-        user_id: user.userId,
-        moderation_status: "visible",
-        created_at: now,
-        updated_at: now,
-      });
-    }
-  });
-  return instanceId;
+/** A round of a daily question that both partners answered (or only the listed users). */
+async function dailyInstance(
+  t: TestConvex,
+  couple: TestCouple,
+  answeredBy: TestUser[] = [couple.first, couple.second],
+  question?: SeededQuestion,
+  at?: string,
+) {
+  const seeded = question ?? (await seedQuestion(t));
+  const instanceId = await answeredRound(t, couple, seeded, { answeredBy, at });
+  return { instanceId, questionId: seeded.id };
 }
 
-const dailyThread = (user: TestUser, instanceId: string, body = "Secret message text two") =>
-  user.as.mutation(api.threads.create_daily_question_thread_with_message, { ...op(), p_instance_id: instanceId, p_body: body });
+const dailyThread = (user: TestUser, coupleId: string, questionId: string, body = "Secret message text two") =>
+  user.as.mutation(api.threads.create_daily_question_thread_with_message, {
+    ...op(),
+    p_couple_id: coupleId,
+    p_question_id: questionId,
+    p_body: body,
+  });
 
 const send = (user: TestUser, threadId: string, args: Record<string, unknown> = {}) =>
   user.as.mutation(api.threads.send_thread_message, { ...op(), p_thread_id: threadId, p_body: "hi", ...args });
@@ -184,10 +174,10 @@ describe("daily question threads", () => {
     const t = newTest();
     const couple = await createCouple(t);
     await addDevice(t, couple.second.userId, { locale: "en" });
-    const instanceId = await dailyInstance(t, couple);
-    const [result] = await dailyThread(couple.first, instanceId);
+    const { questionId } = await dailyInstance(t, couple);
+    const [result] = await dailyThread(couple.first, couple.coupleId, questionId);
     expect(await t.run((ctx) => ctx.db.query("daily_question_threads").collect())).toMatchObject([
-      { instance_id: instanceId, thread_id: result.thread_id },
+      { couple_id: couple.coupleId, question_id: questionId, thread_id: result.thread_id },
     ]);
     expect(await t.run((ctx) => ctx.db.query("conversation_threads").first())).toMatchObject({ kind: "daily_question" });
     const row = (await outbox(t)).find((item) => item.kind === "thread_message_sent")!;
@@ -198,57 +188,111 @@ describe("daily question threads", () => {
       message_id: result.message_id,
       actor_user_id: couple.first.userId,
       route: "daily",
-      deeplink: `paeonia://daily/chat?instanceId=${instanceId}`,
-      instance_id: instanceId,
+      deeplink: `paeonia://daily/chat?questionId=${questionId}`,
+      question_id: questionId,
     });
-    const [again] = await dailyThread(couple.second, instanceId, "reply");
+    const [again] = await dailyThread(couple.second, couple.coupleId, questionId, "reply");
     expect(again.thread_id).toBe(result.thread_id);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a question that comes back keeps one chat for every round", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const question = await seedQuestion(t);
+    await dailyInstance(t, couple, undefined, question, "2026-03-03T12:00:00.000Z");
+    const [first] = await dailyThread(couple.first, couple.coupleId, question.id);
+    // The question returns months later and both answer again.
+    await dailyInstance(t, couple, undefined, question, "2026-10-09T12:00:00.000Z");
+    const [second] = await dailyThread(couple.second, couple.coupleId, question.id, "again");
+    expect(second.thread_id).toBe(first.thread_id);
+    expect(await t.run((ctx) => ctx.db.query("daily_question_threads").collect())).toHaveLength(1);
+    expect(await t.run((ctx) => ctx.db.query("conversation_threads").collect())).toHaveLength(1);
+  });
+
+  test("another question gets its own chat", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const a = await dailyInstance(t, couple);
+    const b = await dailyInstance(t, couple);
+    const [first] = await dailyThread(couple.first, couple.coupleId, a.questionId);
+    const [second] = await dailyThread(couple.first, couple.coupleId, b.questionId);
+    expect(second.thread_id).not.toBe(first.thread_id);
   });
 
   test("needs the caller's answer and the partner's answer", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     const onlyPartner = await dailyInstance(t, couple, [couple.second]);
-    expect(await failure(dailyThread(couple.first, onlyPartner))).toEqual({
+    expect(await failure(dailyThread(couple.first, couple.coupleId, onlyPartner.questionId))).toEqual({
       code: "42501",
       message: "you must answer this daily question before starting its thread",
     });
     const onlyMe = await dailyInstance(t, couple, [couple.first]);
-    expect(await failure(dailyThread(couple.first, onlyMe))).toEqual({
+    expect(await failure(dailyThread(couple.first, couple.coupleId, onlyMe.questionId))).toEqual({
       code: "23514",
       message: "daily question thread requires both partners to answer",
     });
     expect(await t.run((ctx) => ctx.db.query("conversation_threads").collect())).toHaveLength(0);
   });
 
-  test("refuses unknown and shuffled questions", async () => {
+  test("answers from two different rounds do not start a chat", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const missing = { code: "22023", message: "daily question instance was not found" };
-    expect(await failure(dailyThread(couple.first, newUuid()))).toEqual(missing);
-    const instanceId = await dailyInstance(t, couple);
+    const question = await seedQuestion(t);
+    await dailyInstance(t, couple, [couple.first], question, "2026-03-03T12:00:00.000Z");
+    await dailyInstance(t, couple, [couple.second], question, "2026-10-09T12:00:00.000Z");
+    expect(await failure(dailyThread(couple.first, couple.coupleId, question.id))).toEqual({
+      code: "23514",
+      message: "daily question thread requires both partners to answer",
+    });
+  });
+
+  test("refuses unknown questions and rounds that were shuffled away", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    expect(await failure(dailyThread(couple.first, couple.coupleId, newUuid()))).toEqual({
+      code: "22023",
+      message: "daily question was not found",
+    });
+    const { questionId } = await dailyInstance(t, couple);
     await t.run(async (ctx) => {
       const instance = await ctx.db.query("daily_question_instances").first();
       await ctx.db.patch(instance!._id, { status: "shuffled" });
     });
-    expect(await failure(dailyThread(couple.first, instanceId))).toEqual(missing);
+    expect(await failure(dailyThread(couple.first, couple.coupleId, questionId))).toEqual({
+      code: "42501",
+      message: "you must answer this daily question before starting its thread",
+    });
+  });
+
+  test("a message queued for one couple is refused once the user is in another", async () => {
+    const t = newTest();
+    const first = await createCouple(t);
+    const { questionId } = await dailyInstance(t, first);
+    const second = await createCouple(t);
+    const denied = { code: "42501", message: "active entitled couple access is required" };
+    // The user of the first couple names the other couple, or the couple they have left.
+    expect(await failure(dailyThread(first.first, second.coupleId, questionId))).toEqual(denied);
+    await endCouple(t, first.coupleId, first.first.userId);
+    expect(await failure(dailyThread(first.first, first.coupleId, questionId))).toEqual(denied);
+    expect(await t.run((ctx) => ctx.db.query("conversation_threads").collect())).toHaveLength(0);
   });
 
   test("strangers, former partners, and unentitled couples are refused", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const instanceId = await dailyInstance(t, couple);
+    const { questionId } = await dailyInstance(t, couple);
     const stranger = await createSignedInUser(t);
     const denied = { code: "42501", message: "active entitled couple access is required" };
-    expect(await failure(dailyThread(stranger, instanceId))).toEqual(denied);
+    expect(await failure(dailyThread(stranger, couple.coupleId, questionId))).toEqual(denied);
 
     const unentitled = await createCouple(t, { entitled: false });
-    expect(await failure(dailyThread(unentitled.first, await dailyInstance(t, unentitled)))).toEqual(denied);
+    expect(await failure(dailyThread(unentitled.first, unentitled.coupleId, (await dailyInstance(t, unentitled)).questionId))).toEqual(denied);
 
     await endCouple(t, couple.coupleId, couple.first.userId);
-    expect(await failure(dailyThread(couple.first, instanceId))).toEqual(denied);
-    expect(await failure(dailyThread(couple.second, instanceId))).toEqual(denied);
+    expect(await failure(dailyThread(couple.first, couple.coupleId, questionId))).toEqual(denied);
+    expect(await failure(dailyThread(couple.second, couple.coupleId, questionId))).toEqual(denied);
   });
 });
 
@@ -529,8 +573,8 @@ describe("reads", () => {
     const memoryId = await createMemory(couple.first);
     const [{ thread_id: memoryThreadId, message_id }] = await memoryThread(couple.first, memoryId, "memory hello");
     tick();
-    const instanceId = await dailyInstance(t, couple);
-    const [daily] = await dailyThread(couple.second, instanceId, "daily hello");
+    const { questionId } = await dailyInstance(t, couple);
+    const [daily] = await dailyThread(couple.second, couple.coupleId, questionId, "daily hello");
     tick();
     const [last] = await send(couple.first, memoryThreadId, { p_body: "latest" });
     // A thread without messages sorts before the others, like a descending order with nulls first.
@@ -557,7 +601,7 @@ describe("reads", () => {
       thread_id: memoryThreadId,
       couple_id: couple.coupleId,
       kind: "memory",
-      daily_question_instance_id: null,
+      daily_question_id: null,
       memory_id: memoryId,
       created_by_user_id: couple.first.userId,
       created_at: expect.any(String),
@@ -573,23 +617,23 @@ describe("reads", () => {
       last_message_media_type: null,
       viewer_read_through_at: null,
     });
-    expect(rows[2]).toMatchObject({ kind: "daily_question", daily_question_instance_id: instanceId, memory_id: null, last_message_body: "daily hello" });
+    expect(rows[2]).toMatchObject({ kind: "daily_question", daily_question_id: questionId, memory_id: null, last_message_body: "daily hello" });
     expect(rows[0]).toMatchObject({ last_message_id: null, last_message_at: null, last_message_body: null });
     expect(message_id).toBeTruthy();
   });
 
-  test("get_conversation_threads leaves out a question chat once an answer is deleted or hidden", async () => {
+  test("get_conversation_threads leaves out a question chat once no round has both answers", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const deletedInstanceId = await dailyInstance(t, couple);
-    await dailyThread(couple.second, deletedInstanceId);
-    const hiddenInstanceId = await dailyInstance(t, couple);
-    await dailyThread(couple.second, hiddenInstanceId);
-    const instanceIds = async () =>
+    const deleted = await dailyInstance(t, couple);
+    await dailyThread(couple.second, couple.coupleId, deleted.questionId);
+    const hidden = await dailyInstance(t, couple);
+    await dailyThread(couple.second, couple.coupleId, hidden.questionId);
+    const questionIds = async () =>
       (await couple.first.as.query(api.threads.get_conversation_threads, {})).map(
-        (row: { daily_question_instance_id: string | null }) => row.daily_question_instance_id,
+        (row: { daily_question_id: string | null }) => row.daily_question_id,
       );
-    expect(await instanceIds()).toHaveLength(2);
+    expect(await questionIds()).toHaveLength(2);
 
     await t.run(async (ctx) => {
       const answerOf = async (instanceId: string) =>
@@ -597,10 +641,28 @@ describe("reads", () => {
           .query("daily_question_answers")
           .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instanceId).eq("user_id", couple.second.userId))
           .unique())!;
-      await ctx.db.patch((await answerOf(deletedInstanceId))._id, { deleted_at: new Date().toISOString() });
-      await ctx.db.patch((await answerOf(hiddenInstanceId))._id, { moderation_status: "hidden" });
+      await ctx.db.patch((await answerOf(deleted.instanceId))._id, { deleted_at: new Date().toISOString() });
+      await ctx.db.patch((await answerOf(hidden.instanceId))._id, { moderation_status: "hidden" });
     });
-    expect(await instanceIds()).toEqual([]);
+    expect(await questionIds()).toEqual([]);
+  });
+
+  test("get_conversation_threads keeps a question chat while another round still has both answers", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const question = await seedQuestion(t);
+    const early = await dailyInstance(t, couple, undefined, question, "2026-03-03T12:00:00.000Z");
+    await dailyInstance(t, couple, undefined, question, "2026-10-09T12:00:00.000Z");
+    await dailyThread(couple.second, couple.coupleId, question.id);
+    await t.run(async (ctx) => {
+      const answers = await ctx.db
+        .query("daily_question_answers")
+        .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", early.instanceId))
+        .collect();
+      for (const answer of answers) await ctx.db.patch(answer._id, { deleted_at: new Date().toISOString() });
+    });
+    const rows = await couple.first.as.query(api.threads.get_conversation_threads, {});
+    expect(rows.map((row: { daily_question_id: string | null }) => row.daily_question_id)).toEqual([question.id]);
   });
 
   test("get_thread_messages orders by time and hides the text of removed messages", async () => {

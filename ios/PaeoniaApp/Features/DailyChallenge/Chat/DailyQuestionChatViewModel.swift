@@ -35,7 +35,17 @@ final class DailyQuestionChatViewModel {
 
     static let maximumMessageLength = 4_000
 
+    /// The day the page was opened from. The page shows every day of this question.
     private(set) var question: DailyChallengeQuestion
+    /// The days of the question as the server last sent them, oldest first. Nil until
+    /// this phone has any copy of that list.
+    private(set) var loadedRounds: [DailyChallengeQuestion]?
+    /// The server has answered in this visit, so its list is up to date.
+    private var roundsAreConfirmed = false
+    /// The page opens on the question's newest day instead of on `question`'s own day.
+    private let focusesNewest: Bool
+    /// The day the page scrolls to when it opens. Nil means the newest day.
+    private var focusedInstanceID: UUID? { focusesNewest ? nil : question.id }
     private let service: any DailyQuestionChatServicing
     private let operationProvider: any SyncClientOperationProviding
     private var syncAfterLocalChange: (@MainActor () async -> Void)?
@@ -56,10 +66,10 @@ final class DailyQuestionChatViewModel {
     let presence: DailyChatPresenceModel
     /// True while the chat is on screen and the app is in front, so reading counts.
     private var isScreenActive = false
-    /// The server heard during this visit that the partner's answer was seen, or is
-    /// hearing it now.
-    private var answerSeenUpload: AnswerSeenUpload = .notSent
-    private enum AnswerSeenUpload { case notSent, sending, sent }
+    /// Which days the server has heard, during this visit, that the partner's answer was
+    /// seen, or is hearing it now.
+    private var answerSeenUploads: [UUID: AnswerSeenUpload] = [:]
+    private enum AnswerSeenUpload { case sending, sent }
     private var newestPartnerMessageID: UUID?
     private var hasQueuedThreadCreation = false
     private var isQueueing = false
@@ -70,48 +80,61 @@ final class DailyQuestionChatViewModel {
     /// a failure from an earlier visit shows its red icon but raises no banner.
     private var seenFailedOperationIDs: Set<UUID>?
 
+    /// `focusesNewest` opens the page on the question's newest day instead of on
+    /// `question`'s own day, for a chat opened from a message or the Home card.
     init(
         question: DailyChallengeQuestion,
         participants: DailyChallengeParticipants,
+        focusesNewest: Bool = false,
         service: (any DailyQuestionChatServicing)? = nil,
         operationProvider: (any SyncClientOperationProviding)? = nil,
         syncAfterLocalChange: (@MainActor () async -> Void)? = nil
     ) {
         self.question = question
         self.participants = participants
+        self.focusesNewest = focusesNewest
         let service = service ?? DailyQuestionChatServiceFactory.makeDefault()
         self.service = service
-        presence = DailyChatPresenceModel(instanceID: question.id, service: service)
+        presence = DailyChatPresenceModel(coupleID: question.coupleID, questionID: question.questionID, service: service)
         self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.syncAfterLocalChange = syncAfterLocalChange
     }
 
+    /// Every day of the question, oldest first. The server's list decides what exists and
+    /// what is readable. The day the page was opened from fills in until it has answered.
+    var rounds: [DailyChallengeQuestion] {
+        DailyChatRounds.merged(loaded: loadedRounds, entry: question, serverConfirmed: roundsAreConfirmed)
+    }
+
+    /// The chat opens once any day of the question has both answers.
     var isChatAvailable: Bool {
-        question.isChatAvailable && participants.currentUserID != nil
+        DailyChatRounds.isChatAvailable(rounds) && participants.currentUserID != nil
+    }
+
+    /// The days as the page draws them. `celebratingInstanceID` is the day whose
+    /// partner-choice match plays its small celebration.
+    func chatRounds(celebrating celebratingInstanceID: UUID? = nil) -> [DailyChatRound] {
+        let chatIsOpen = DailyChatRounds.isChatAvailable(rounds)
+        return rounds.map {
+            DailyChatRound(
+                question: $0,
+                participants: participants,
+                chatIsOpen: chatIsOpen,
+                celebratesMatch: $0.id == celebratingInstanceID
+            )
+        }
+    }
+
+    /// Where the page opens: the newest message when people have written after the day
+    /// it opens on, otherwise the start of that day.
+    var openingScroll: DailyChatRounds.OpeningScroll {
+        DailyChatRounds.openingScroll(rounds: rounds, focusing: focusedInstanceID, messages: messages)
     }
 
     /// A message failed to send at least once. Only then does the screen say it is
     /// saved on this phone, so a normal send never flashes that line.
     var hasHeldMessages: Bool {
         messages.contains { $0.isSending && $0.isHeldOnPhone }
-    }
-
-    /// The answers that open the conversation, oldest first. The partner's shows only
-    /// once it is revealed.
-    var answers: [DailyQuestionAnswerDetail] {
-        let partnerAnswer = question.partnerAnswerDetail.flatMap { $0.canViewAnswer ? $0 : nil }
-        return [question.ownAnswerDetail, partnerAnswer]
-            .compactMap(\.self)
-            .sorted { $0.answeredAt < $1.answeredAt }
-    }
-
-    /// Why the chat can't start yet, shown under the answers instead of the composer.
-    var waitingMessage: LocalizedStringResource? {
-        guard !isChatAvailable else { return nil }
-        if question.partnerAnswer == nil {
-            return .dailyChatWaitingPartner(participants.partnerName)
-        }
-        return .dailyChallengePartnerRevealWaiting(participants.partnerName)
     }
 
     func refreshParticipants(_ participants: DailyChallengeParticipants) {
@@ -125,29 +148,47 @@ final class DailyQuestionChatViewModel {
         self.question = question
     }
 
+    /// The server's list of days has arrived.
+    var hasLoadedRounds: Bool { loadedRounds != nil }
+
+    /// The question's newest day. It is the one just answered when the page opens
+    /// straight from the answer flow.
+    var newestRoundID: UUID? { rounds.last?.id }
+
     /// Reads this phone's copy of the chat. Called before the screen opens, so its
     /// first frame already shows every message and nothing moves in after it appears.
     func prepare() async {
-        guard let ownerUserID = participants.currentUserID, question.isChatAvailable else { return }
+        guard let ownerUserID = participants.currentUserID, isChatAvailable else { return }
         await readStore(ownerUserID: ownerUserID)
     }
 
     func load() async {
         defer { isLoading = false }
-        guard let ownerUserID = participants.currentUserID, question.isChatAvailable else {
+        guard let ownerUserID = participants.currentUserID, isChatAvailable else {
             notice = .unavailable
             return
         }
 
         await readStore(ownerUserID: ownerUserID)
 
+        // The days come first, so an earlier day shows before the messages arrive. A failed
+        // read keeps the days already on screen.
+        if (try? await service.refreshRounds(
+            ownerUserID: ownerUserID,
+            coupleID: question.coupleID,
+            questionID: question.questionID
+        )) != nil {
+            roundsAreConfirmed = true
+            await readStore(ownerUserID: ownerUserID)
+        }
+
         do {
             let summaries = try await service.refreshThreadSummaries(ownerUserID: ownerUserID)
-            threadID = summaries.first(where: { $0.instanceID == question.id })?.threadID ?? threadID
+            threadID = chatThreadID(in: summaries) ?? threadID
             if let threadID {
                 _ = try await service.refreshMessages(
                     ownerUserID: ownerUserID,
-                    instanceID: question.id,
+                    questionID: question.questionID,
                     threadID: threadID
                 )
                 await readStore(ownerUserID: ownerUserID)
@@ -167,14 +208,24 @@ final class DailyQuestionChatViewModel {
         let generation = readGeneration
         let cachedSummaries = await service.cachedThreadSummaries(ownerUserID: ownerUserID)
         // The thread never goes back to nil, so a late read may still set it.
-        threadID = cachedSummaries.first(where: { $0.instanceID == question.id })?.threadID ?? threadID
-        let cached = await service.cachedMessages(ownerUserID: ownerUserID, instanceID: question.id)
-        let pending = await service.pendingMessages(ownerUserID: ownerUserID, instanceID: question.id)
+        threadID = chatThreadID(in: cachedSummaries) ?? threadID
+        let cachedRounds = await service.cachedRounds(ownerUserID: ownerUserID, questionID: question.questionID)
+        let cached = await service.cachedMessages(ownerUserID: ownerUserID, questionID: question.questionID)
+        let pending = await service.pendingMessages(
+            ownerUserID: ownerUserID,
+            coupleID: question.coupleID,
+            questionID: question.questionID
+        )
         let isCreatingThread = await service.hasPendingThreadCreation(
             ownerUserID: ownerUserID,
-            instanceID: question.id
+            coupleID: question.coupleID,
+            questionID: question.questionID
         )
         guard generation == readGeneration else { return }
+        if let cachedRounds, cachedRounds.isForCouple(question.coupleID) {
+            loadedRounds = cachedRounds.rounds(currentUserID: ownerUserID)
+            threadID = cachedRounds.threadID ?? threadID
+        }
         hasQueuedThreadCreation = isCreatingThread
         messages = DailyQuestionChatMessage.visibleOrdered(remote: cached, optimistic: pending)
         hasReadStore = true
@@ -184,13 +235,16 @@ final class DailyQuestionChatViewModel {
             if newestPartnerMessageID != nil || newestPartner != nil { presence.partnerMessageArrived() }
             newestPartnerMessageID = newestPartner
         }
-        // The screen is open, so everything it shows counts as seen, the partner's
-        // answer included.
-        await service.markPartnerAnswerSeen(ownerUserID: ownerUserID, instanceID: question.id)
+        // The screen is open, so everything it shows counts as seen, every revealed
+        // partner answer included.
+        for round in rounds where round.hasRevealedPartnerAnswer {
+            await service.markPartnerAnswerSeen(ownerUserID: ownerUserID, instanceID: round.id)
+        }
         // Notification Center can be slow to answer, so the chat doesn't wait on it.
         let shownMessageIDs = Set(messages.map(\.id))
-        Task { [instanceID = question.id] in
-            await DeliveredNotifications.clearQuestion(instanceID: instanceID, shownMessageIDs: shownMessageIDs)
+        let shownInstanceIDs = Set(rounds.map(\.id))
+        Task {
+            await DeliveredNotifications.clearQuestion(instanceIDs: shownInstanceIDs, shownMessageIDs: shownMessageIDs)
         }
         let newestDelivered = messages.filter { !$0.isSending && !$0.sendFailed }.map(\.createdAt).max()
         if let threadID, let newestDelivered {
@@ -198,6 +252,11 @@ final class DailyQuestionChatViewModel {
         }
         markReadOnServerIfActive()
         markAnswerSeenOnServerIfActive()
+    }
+
+    /// The thread of this couple's chat about the question, if the summaries list it.
+    private func chatThreadID(in summaries: [DailyQuestionThreadSummary]) -> UUID? {
+        summaries.first { $0.questionID == question.questionID && $0.coupleID == question.coupleID }?.threadID
     }
 
     private func raiseNoticeForNewFailures() {
@@ -213,11 +272,26 @@ final class DailyQuestionChatViewModel {
     /// starts, show up without a reload. The live results are written to the chat
     /// cache first, so reopening the chat offline shows the same messages.
     func observeLiveUpdates() async {
-        guard let ownerUserID = participants.currentUserID, question.isChatAvailable else { return }
+        guard let ownerUserID = participants.currentUserID, isChatAvailable else { return }
 
         var followedThreadID: UUID?
         var messageUpdates: Task<Void, Never>?
-        defer { messageUpdates?.cancel() }
+        // The days follow the partner's answers and the chat's thread, so an answer that
+        // opens a day shows without a reload.
+        let questionID = question.questionID
+        let coupleID = question.coupleID
+        let roundUpdates = Task { @MainActor [weak self, service] in
+            let updates = service.liveRoundUpdates(ownerUserID: ownerUserID, coupleID: coupleID, questionID: questionID)
+            for await _ in updates {
+                guard let self else { return }
+                self.roundsAreConfirmed = true
+                await self.readStore(ownerUserID: ownerUserID)
+            }
+        }
+        defer {
+            messageUpdates?.cancel()
+            roundUpdates.cancel()
+        }
 
         // The queue changes too, so a message that failed to send says so.
         let changes = LocalStoreChanges.changes(in: .dailyChat, .pendingOperations)
@@ -229,11 +303,10 @@ final class DailyQuestionChatViewModel {
             if let threadID, threadID != followedThreadID {
                 followedThreadID = threadID
                 messageUpdates?.cancel()
-                let instanceID = question.id
                 messageUpdates = Task { @MainActor [weak self, service] in
                     let updates = service.liveMessageUpdates(
                         ownerUserID: ownerUserID,
-                        instanceID: instanceID,
+                        questionID: questionID,
                         threadID: threadID
                     )
                     for await _ in updates {
@@ -315,7 +388,7 @@ extension DailyQuestionChatViewModel {
         replacingFailed failedOperationID: UUID?,
         replyToMessageID retriedReplyID: UUID?
     ) async -> Bool {
-        guard let ownerUserID = participants.currentUserID, question.isChatAvailable else {
+        guard let ownerUserID = participants.currentUserID, isChatAvailable else {
             notice = .unavailable
             return false
         }
@@ -338,7 +411,7 @@ extension DailyQuestionChatViewModel {
                 _ = try await service.queueMessage(
                     ownerUserID: ownerUserID,
                     coupleID: question.coupleID,
-                    instanceID: question.id,
+                    questionID: question.questionID,
                     threadID: threadID,
                     body: body,
                     photos: photosPayload,
@@ -426,14 +499,15 @@ extension DailyQuestionChatViewModel {
     /// enough. A failed send tries again on the next read of the chat or return to the
     /// page. Questions from today are also sent from the Questions tab.
     private func markAnswerSeenOnServerIfActive() {
-        guard isScreenActive, answerSeenUpload == .notSent, question.isChatAvailable,
-              question.partnerAnswerSeenAt == nil
-        else { return }
-        answerSeenUpload = .sending
-        let instanceID = question.id
-        Task {
-            let sent = await service.markPartnerAnswerSeenOnServer(instanceID: instanceID)
-            answerSeenUpload = sent ? .sent : .notSent
+        guard isScreenActive else { return }
+        for round in rounds where round.hasRevealedPartnerAnswer && round.partnerAnswerSeenAt == nil {
+            guard answerSeenUploads[round.id] == nil else { continue }
+            answerSeenUploads[round.id] = .sending
+            let instanceID = round.id
+            Task {
+                let sent = await service.markPartnerAnswerSeenOnServer(instanceID: instanceID)
+                answerSeenUploads[instanceID] = sent ? .sent : nil
+            }
         }
     }
 }
@@ -494,7 +568,7 @@ extension DailyQuestionChatViewModel {
         replacingFailed failedOperationID: UUID?,
         replyToMessageID: UUID?
     ) async -> Bool {
-        guard let ownerUserID = participants.currentUserID, question.isChatAvailable else {
+        guard let ownerUserID = participants.currentUserID, isChatAvailable else {
             notice = .unavailable
             return false
         }
@@ -507,7 +581,7 @@ extension DailyQuestionChatViewModel {
                 _ = try await service.queueVoiceMessage(
                     ownerUserID: ownerUserID,
                     coupleID: question.coupleID,
-                    instanceID: question.id,
+                    questionID: question.questionID,
                     threadID: threadID,
                     voice: DailyQuestionChatVoicePayload(
                         messageID: UUID(),

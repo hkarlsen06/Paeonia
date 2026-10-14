@@ -36,8 +36,8 @@ enum DailyChatMenuAction: MessageMenuAction, Sendable {
         let hasText = !message.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let isPartner = !message.user.isCurrentUser
         var items: [Self] = []
-        if message.id == DailyChatProjection.typingRowID { return [] }
-        if message.id == DailyChatProjection.questionRowID {
+        if DailyChatProjection.isDecorationRowID(message.id) { return [] }
+        if message.id.hasPrefix(DailyChatProjection.questionRowPrefix) {
             return hasText ? [.copy] : []
         }
         let isAnswer = message.id.hasPrefix(DailyChatProjection.answerRowPrefix)

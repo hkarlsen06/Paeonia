@@ -27,6 +27,10 @@ crons.interval("enqueue-due-streak-reminders", { minutes: 5 }, internal.streaks.
 // Evening reminders go out within the hour after 19:00 in each partner's zone, deduped per streak day.
 crons.interval("enqueue-evening-streak-reminders", { minutes: 5 }, internal.streaks.enqueue_evening_streak_reminders, {});
 
+// New in Convex: the opt-in "question time" reminder. The window after the chosen time is 15 minutes,
+// so five-minute runs cover a late run. Deduped per user and local date. See questionTime.ts.
+crons.interval("enqueue-question-time-reminders", { minutes: 5 }, internal.questionTime.enqueue_question_time_reminders, {});
+
 // pg_cron 'queue-subscription-trial-reminders' (internal.queue_subscription_trial_reminders), minute 15 of every hour.
 crons.cron("queue-subscription-trial-reminders", "15 * * * *", internal.storekit.queue_subscription_trial_reminders, {});
 

@@ -44,14 +44,15 @@ struct CoupleMapSnapshot: View {
     /// Shows a heart between the avatars and "Together" in place of the distance.
     let isTogether: Bool
     let onLongPress: () -> Void
+    /// Called for each tap that plays a heart. The card batches them into a send.
+    var onSendHeart: () -> Void = {}
+    /// The partner's hearts to fly toward the person's avatar. Nil when none are playing.
+    var incomingBurst: HeartsBurst?
 
     private static let scrimHeight: CGFloat = 52
     /// Closest the two avatar centers may sit on screen: one avatar plus room for the
     /// together heart between them.
     private static let minimumPinSpacing = MapAvatarPin.avatarDiameter + 20
-    /// Hard cap on simultaneous tap-spawned hearts, so rapid tapping can make a
-    /// little chaos without growing unbounded work or memory.
-    private static let maxConcurrentTapKisses = 16
     /// Lean of the sweep line away from vertical, so it cuts across on a diagonal.
     private static let tiltRadians: CGFloat = 18 * .pi / 180
     private static let sweepDuration: TimeInterval = 1.5
@@ -99,7 +100,7 @@ struct CoupleMapSnapshot: View {
     /// The request the current `snapshot` was rendered for. Never set for a fallback
     /// without a map, so the next run tries a real map again.
     @State private var lastRenderedRequest: SnapshotRequest?
-    @State private var tapKisses: [TapKiss] = []
+    @State private var flights = HeartFlights()
 
     /// One rendered map plus the two avatar points on it. The whole thing is revealed as a
     /// unit (map and avatars together) so the flame hides the old positions while
@@ -132,6 +133,13 @@ struct CoupleMapSnapshot: View {
                 // whichever lands second starts the sweep.
                 .onChange(of: pendingSweep) { startPendingSweepIfReady() }
                 .onChange(of: launchSidesUncovered) { startPendingSweepIfReady() }
+                .onChange(of: incomingBurst) { _, burst in
+                    // Hearts only fly between avatars that are on screen. The line
+                    // and the haptic still tell the person about a burst without a map.
+                    if let burst, snapshot != nil, !isRevealing {
+                        flights.receive(count: burst.flyingCount)
+                    }
+                }
         }
     }
 
@@ -173,7 +181,7 @@ struct CoupleMapSnapshot: View {
                 KissLayer(
                     start: snapshot.currentPoint,
                     end: snapshot.partnerPoint,
-                    tapKisses: tapKisses
+                    tapKisses: flights.kisses
                 )
             }
         }
@@ -253,29 +261,16 @@ struct CoupleMapSnapshot: View {
         }
     }
 
-    /// Spawns a heart that flies between the avatars right now. Several can be in
-    /// flight at once; a hard cap plus per-kiss auto-removal keep it bounded.
+    /// Sends a heart: it flies from the person's avatar to the partner's right now,
+    /// and the card counts it toward the next send. Several can be in flight at once.
     private func spawnTapKiss() {
         // No heart without visible avatars to fly between: ignore taps before the first
         // map and while a sweep is still uncovering them.
         guard snapshot != nil, !isRevealing else {
             return
         }
-        if tapKisses.count >= Self.maxConcurrentTapKisses {
-            tapKisses.removeFirst()
-        }
-
-        let kiss = TapKiss(
-            bornAt: .now,
-            plan: KissPlan(forward: Bool.random(), next: { Double.random(in: 0..<1) })
-        )
-        tapKisses.append(kiss)
-
-        // Drop it once its flight is over so the array returns to empty.
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(kiss.plan.flightDuration + 0.2))
-            tapKisses.removeAll { $0.id == kiss.id }
-        }
+        flights.send()
+        onSendHeart()
     }
 
     private func togetherHeart(between snap: SnapshotResult) -> some View {

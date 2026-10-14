@@ -2,12 +2,12 @@ import Foundation
 
 protocol DailyQuestionChatCaching: Actor {
     func summaries(ownerUserID: UUID) -> [DailyQuestionThreadSummary]
-    func messages(ownerUserID: UUID, instanceID: UUID) -> [DailyQuestionChatMessage]
+    func messages(ownerUserID: UUID, questionID: UUID) -> [DailyQuestionChatMessage]
     func saveSummaries(_ summaries: [DailyQuestionThreadSummary], ownerUserID: UUID)
     func saveMessages(
         _ messages: [DailyQuestionChatMessage],
         ownerUserID: UUID,
-        instanceID: UUID
+        questionID: UUID
     )
     func append(_ message: DailyQuestionChatMessage, ownerUserID: UUID)
     func markFailed(ownerUserID: UUID, clientOperationID: UUID)
@@ -16,7 +16,7 @@ protocol DailyQuestionChatCaching: Actor {
     func discardFailed(ownerUserID: UUID, clientOperationID: UUID)
     func confirm(
         ownerUserID: UUID,
-        instanceID: UUID,
+        questionID: UUID,
         coupleID: UUID,
         clientOperationID: UUID,
         threadID: UUID,
@@ -27,7 +27,7 @@ protocol DailyQuestionChatCaching: Actor {
     )
     func clearAll()
     /// Counts purges. A writer that suspends between reading and saving reads this
-    /// first, then saves with `saveMessages(_:ownerUserID:instanceID:unlessPurgedSince:)`.
+    /// first, then saves with `saveMessages(_:ownerUserID:questionID:unlessPurgedSince:)`.
     func purgeGeneration() -> Int
     /// Like `saveMessages`, but writes nothing when `clearAll()` ran after `generation`
     /// was read. Returns whether it wrote.
@@ -35,17 +35,17 @@ protocol DailyQuestionChatCaching: Actor {
     func saveMessages(
         _ messages: [DailyQuestionChatMessage],
         ownerUserID: UUID,
-        instanceID: UUID,
+        questionID: UUID,
         unlessPurgedSince generation: Int
     ) -> Bool
-    /// Like `saveMessages(_:ownerUserID:instanceID:unlessPurgedSince:)`, for a one-shot
+    /// Like `saveMessages(_:ownerUserID:questionID:unlessPurgedSince:)`, for a one-shot
     /// read that can be older than the cache. Confirmed cached messages that the read
     /// lacks and that are newer than its newest message stay.
     @discardableResult
     func mergeMessages(
         _ messages: [DailyQuestionChatMessage],
         ownerUserID: UUID,
-        instanceID: UUID,
+        questionID: UUID,
         unlessPurgedSince generation: Int
     ) -> Bool
     /// Like `saveSummaries`, but writes nothing when `clearAll()` ran after `generation`
@@ -54,6 +54,17 @@ protocol DailyQuestionChatCaching: Actor {
     func saveSummaries(
         _ summaries: [DailyQuestionThreadSummary],
         ownerUserID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool
+    /// The question's rounds as the server last sent them, so the page opens offline.
+    func rounds(ownerUserID: UUID, questionID: UUID) -> DailyQuestionChatRoundsRow?
+    /// Keeps the question's rounds, unless `clearAll()` ran after `generation` was read.
+    /// Returns whether it wrote.
+    @discardableResult
+    func saveRounds(
+        _ rounds: DailyQuestionChatRoundsRow,
+        ownerUserID: UUID,
+        questionID: UUID,
         unlessPurgedSince generation: Int
     ) -> Bool
     /// When this user last saw each thread, keyed by thread id. Only kept on this phone.
@@ -71,6 +82,14 @@ protocol DailyQuestionChatCaching: Actor {
 }
 
 extension DailyQuestionChatCaching {
+    func rounds(ownerUserID _: UUID, questionID _: UUID) -> DailyQuestionChatRoundsRow? { nil }
+    @discardableResult
+    func saveRounds(
+        _: DailyQuestionChatRoundsRow,
+        ownerUserID _: UUID,
+        questionID _: UUID,
+        unlessPurgedSince _: Int
+    ) -> Bool { false }
     func readMarks(ownerUserID _: UUID) -> [UUID: Date] { [:] }
     @discardableResult
     func markRead(ownerUserID _: UUID, threadID _: UUID, through _: Date) -> Bool { false }
@@ -82,7 +101,7 @@ extension DailyQuestionChatCaching {
 actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     static let shared = FileDailyQuestionChatCache()
 
-    private static let schemaVersion = 3
+    private static let schemaVersion = 4
     private let directoryURL: URL
     private var generation = 0
 
@@ -94,8 +113,8 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         document(ownerUserID: ownerUserID).summaries
     }
 
-    func messages(ownerUserID: UUID, instanceID: UUID) -> [DailyQuestionChatMessage] {
-        document(ownerUserID: ownerUserID).messagesByInstanceID[instanceID.uuidString] ?? []
+    func messages(ownerUserID: UUID, questionID: UUID) -> [DailyQuestionChatMessage] {
+        document(ownerUserID: ownerUserID).messagesByQuestionID[questionID.uuidString] ?? []
     }
 
     func saveSummaries(_ summaries: [DailyQuestionThreadSummary], ownerUserID: UUID) {
@@ -107,11 +126,11 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     func saveMessages(
         _ messages: [DailyQuestionChatMessage],
         ownerUserID: UUID,
-        instanceID: UUID
+        questionID: UUID
     ) {
         var document = document(ownerUserID: ownerUserID)
-        let cached = document.messagesByInstanceID[instanceID.uuidString] ?? []
-        document.messagesByInstanceID[instanceID.uuidString] = DailyQuestionChatMessage.visibleOrdered(
+        let cached = document.messagesByQuestionID[questionID.uuidString] ?? []
+        document.messagesByQuestionID[questionID.uuidString] = DailyQuestionChatMessage.visibleOrdered(
             remote: messages,
             optimistic: cached
         )
@@ -120,7 +139,7 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
 
     func append(_ message: DailyQuestionChatMessage, ownerUserID: UUID) {
         var document = document(ownerUserID: ownerUserID)
-        var messages = document.messagesByInstanceID[message.instanceID.uuidString] ?? []
+        var messages = document.messagesByQuestionID[message.questionID.uuidString] ?? []
         // A confirmation that ran first already stored the final copy. Adding the
         // sending copy again would show a sent message as sending.
         if let operationID = message.clientOperationID,
@@ -129,7 +148,7 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         }
         messages.removeAll { $0.clientOperationID == message.clientOperationID }
         messages.append(message)
-        document.messagesByInstanceID[message.instanceID.uuidString] = messages.sorted {
+        document.messagesByQuestionID[message.questionID.uuidString] = messages.sorted {
             $0.createdAt < $1.createdAt
         }
 
@@ -139,7 +158,7 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
             document.summaries[index] = DailyQuestionThreadSummary(
                 threadID: summary.threadID,
                 coupleID: summary.coupleID,
-                instanceID: summary.instanceID,
+                questionID: summary.questionID,
                 createdAt: summary.createdAt,
                 updatedAt: message.createdAt,
                 lastMessageID: message.id,
@@ -154,16 +173,16 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
 
     func markFailed(ownerUserID: UUID, clientOperationID: UUID) {
         var document = document(ownerUserID: ownerUserID)
-        for key in Array(document.messagesByInstanceID.keys) {
+        for key in Array(document.messagesByQuestionID.keys) {
             guard
-                let messages = document.messagesByInstanceID[key],
+                let messages = document.messagesByQuestionID[key],
                 let index = messages.firstIndex(where: { $0.clientOperationID == clientOperationID })
             else { continue }
             let message = messages[index]
-            document.messagesByInstanceID[key]?[index] = DailyQuestionChatMessage(
+            document.messagesByQuestionID[key]?[index] = DailyQuestionChatMessage(
                 id: message.id,
                 threadID: message.threadID,
-                instanceID: message.instanceID,
+                questionID: message.questionID,
                 senderUserID: message.senderUserID,
                 body: message.body,
                 createdAt: message.createdAt,
@@ -181,19 +200,19 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
 
     func discardFailed(ownerUserID: UUID, clientOperationID: UUID) {
         var document = document(ownerUserID: ownerUserID)
-        let before = document.messagesByInstanceID
-        for key in Array(document.messagesByInstanceID.keys) {
-            document.messagesByInstanceID[key]?.removeAll {
+        let before = document.messagesByQuestionID
+        for key in Array(document.messagesByQuestionID.keys) {
+            document.messagesByQuestionID[key]?.removeAll {
                 $0.clientOperationID == clientOperationID && $0.sendFailed
             }
         }
-        guard document.messagesByInstanceID != before else { return }
+        guard document.messagesByQuestionID != before else { return }
         save(document, ownerUserID: ownerUserID)
     }
 
     func confirm(
         ownerUserID: UUID,
-        instanceID: UUID,
+        questionID: UUID,
         coupleID: UUID,
         clientOperationID: UUID,
         threadID: UUID,
@@ -203,8 +222,8 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         createdAt: Date
     ) {
         var document = document(ownerUserID: ownerUserID)
-        let key = instanceID.uuidString
-        let index = document.messagesByInstanceID[key]?.firstIndex(where: {
+        let key = questionID.uuidString
+        let index = document.messagesByQuestionID[key]?.firstIndex(where: {
             $0.clientOperationID == clientOperationID
         })
         // A voice message keeps playing from this phone's copy until the server's
@@ -212,28 +231,28 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         let confirmed = DailyQuestionChatMessage(
             id: messageID,
             threadID: threadID,
-            instanceID: instanceID,
+            questionID: questionID,
             senderUserID: senderUserID,
             body: body,
             createdAt: createdAt,
             clientOperationID: clientOperationID,
             isSending: false,
-            voice: index.flatMap { document.messagesByInstanceID[key]?[$0].voice },
-            photos: index.flatMap { document.messagesByInstanceID[key]?[$0].photos },
-            replyToMessageID: index.flatMap { document.messagesByInstanceID[key]?[$0].replyToMessageID }
+            voice: index.flatMap { document.messagesByQuestionID[key]?[$0].voice },
+            photos: index.flatMap { document.messagesByQuestionID[key]?[$0].photos },
+            replyToMessageID: index.flatMap { document.messagesByQuestionID[key]?[$0].replyToMessageID }
         )
         if let index {
-            document.messagesByInstanceID[key]?[index] = confirmed
+            document.messagesByQuestionID[key]?[index] = confirmed
         } else {
-            document.messagesByInstanceID[key, default: []].append(confirmed)
+            document.messagesByQuestionID[key, default: []].append(confirmed)
         }
 
-        if let summaryIndex = document.summaries.firstIndex(where: { $0.instanceID == instanceID }) {
+        if let summaryIndex = document.summaries.firstIndex(where: { $0.questionID == questionID }) {
             let summary = document.summaries[summaryIndex]
             document.summaries[summaryIndex] = DailyQuestionThreadSummary(
                 threadID: threadID,
                 coupleID: summary.coupleID,
-                instanceID: instanceID,
+                questionID: questionID,
                 createdAt: summary.createdAt,
                 updatedAt: createdAt,
                 lastMessageID: messageID,
@@ -247,7 +266,7 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
                 DailyQuestionThreadSummary(
                     threadID: threadID,
                     coupleID: coupleID,
-                    instanceID: instanceID,
+                    questionID: questionID,
                     createdAt: createdAt,
                     updatedAt: createdAt,
                     lastMessageID: messageID,
@@ -268,11 +287,11 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     func saveMessages(
         _ messages: [DailyQuestionChatMessage],
         ownerUserID: UUID,
-        instanceID: UUID,
+        questionID: UUID,
         unlessPurgedSince generation: Int
     ) -> Bool {
         guard generation == self.generation else { return false }
-        saveMessages(messages, ownerUserID: ownerUserID, instanceID: instanceID)
+        saveMessages(messages, ownerUserID: ownerUserID, questionID: questionID)
         return true
     }
 
@@ -280,15 +299,15 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     func mergeMessages(
         _ messages: [DailyQuestionChatMessage],
         ownerUserID: UUID,
-        instanceID: UUID,
+        questionID: UUID,
         unlessPurgedSince generation: Int
     ) -> Bool {
         guard generation == self.generation else { return false }
-        let cached = self.messages(ownerUserID: ownerUserID, instanceID: instanceID)
+        let cached = self.messages(ownerUserID: ownerUserID, questionID: questionID)
         saveMessages(
             DailyQuestionChatMessage.keepingNewerCached(messages, cached: cached),
             ownerUserID: ownerUserID,
-            instanceID: instanceID
+            questionID: questionID
         )
         return true
     }
@@ -301,6 +320,25 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     ) -> Bool {
         guard generation == self.generation else { return false }
         saveSummaries(summaries, ownerUserID: ownerUserID)
+        return true
+    }
+
+    func rounds(ownerUserID: UUID, questionID: UUID) -> DailyQuestionChatRoundsRow? {
+        document(ownerUserID: ownerUserID).roundsByQuestionID[questionID.uuidString]
+    }
+
+    @discardableResult
+    func saveRounds(
+        _ rounds: DailyQuestionChatRoundsRow,
+        ownerUserID: UUID,
+        questionID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool {
+        guard generation == self.generation else { return false }
+        var document = document(ownerUserID: ownerUserID)
+        guard document.roundsByQuestionID[questionID.uuidString] != rounds else { return true }
+        document.roundsByQuestionID[questionID.uuidString] = rounds
+        save(document, ownerUserID: ownerUserID)
         return true
     }
 
@@ -389,7 +427,8 @@ nonisolated private struct CacheEnvelope: Codable {
 
 nonisolated private struct CacheDocument: Codable {
     var summaries: [DailyQuestionThreadSummary] = []
-    var messagesByInstanceID: [String: [DailyQuestionChatMessage]] = [:]
+    var messagesByQuestionID: [String: [DailyQuestionChatMessage]] = [:]
+    var roundsByQuestionID: [String: DailyQuestionChatRoundsRow] = [:]
     var readThroughByThreadID: [String: Date] = [:]
     var seenPartnerAnswerInstanceIDs: [String] = []
 }

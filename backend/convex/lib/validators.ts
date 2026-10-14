@@ -55,6 +55,7 @@ export const notificationKind = literals(
   "game_result",
   "game_invite",
   "game_turn_reminder",
+  "question_time_reminder",
 );
 /** Every game, in catalog order. A new game adds its kind here and an entry in `GAME_BACKENDS` (lib/gameRegistry.ts). */
 export const GAME_KINDS = [

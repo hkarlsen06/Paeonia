@@ -4,6 +4,7 @@ import { canAccessCoupleContent } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import type { ReaderCtx } from "./lib/db";
 import { getByUuid, orNull } from "./lib/db";
+import { dailyQuestionThreadLink } from "./lib/dailyQuestionRounds";
 import { visibleAnswersOf } from "./lib/dailyQuestions";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
@@ -33,17 +34,22 @@ async function instanceCoupleId(ctx: ReaderCtx, instanceId: string): Promise<str
 /**
  * Marks the caller as typing in a question's chat, or not. The app sends `true` while
  * the person types (at most every 2.5 seconds) and `false` when they stop or send.
+ * The caller names the couple and must be an active, entitled member of it. One question's
+ * chat is one room per couple.
  */
 export const set_daily_chat_typing = mutation({
-  args: { p_instance_id: v.string(), p_is_typing: v.boolean() },
+  args: { p_couple_id: v.string(), p_question_id: v.string(), p_is_typing: v.boolean() },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
-    const instanceId = uuidArg(args.p_instance_id);
-    const coupleId = await instanceCoupleId(ctx, instanceId);
-    if (!coupleId || !(await canAccessCoupleContent(ctx, userId, coupleId))) {
+    const coupleId = uuidArg(args.p_couple_id);
+    const questionId = uuidArg(args.p_question_id);
+    if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
       return fail("42501", "active entitled couple access is required");
     }
-    await setPresent(ctx, chatTypingRoom(coupleId, instanceId), userId, args.p_is_typing, TYPING_TIMEOUT_MS);
+    if (!(await getByUuid(ctx, "questions", questionId))) {
+      return fail("22023", "daily question was not found");
+    }
+    await setPresent(ctx, chatTypingRoom(coupleId, questionId), userId, args.p_is_typing, TYPING_TIMEOUT_MS);
     return null;
   },
 });
@@ -128,20 +134,17 @@ export const mark_daily_answer_seen = mutation({
  * component ends typing `TYPING_TIMEOUT_MS` after the last heartbeat, which updates this query.
  */
 export const get_daily_chat_presence = query({
-  args: { p_instance_id: v.string() },
+  args: { p_couple_id: v.string(), p_question_id: v.string() },
   handler: async (ctx, args) => {
     const empty = { partner_typing: false, partner_last_read_message_id: null, partner_read_at: null };
     const userId = await requireUserId(ctx);
-    const instanceId = uuidArg(args.p_instance_id);
-    const coupleId = await instanceCoupleId(ctx, instanceId);
-    if (!coupleId || !(await canAccessCoupleContent(ctx, userId, coupleId))) return empty;
+    const coupleId = uuidArg(args.p_couple_id);
+    const questionId = uuidArg(args.p_question_id);
+    if (!(await canAccessCoupleContent(ctx, userId, coupleId))) return empty;
 
-    const typing = (await onlineUserIds(ctx, chatTypingRoom(coupleId, instanceId))).some((id) => id !== userId);
+    const typing = (await onlineUserIds(ctx, chatTypingRoom(coupleId, questionId))).some((id) => id !== userId);
 
-    const link = await ctx.db
-      .query("daily_question_threads")
-      .withIndex("by_instance_id", (q) => q.eq("instance_id", instanceId))
-      .unique();
+    const link = await dailyQuestionThreadLink(ctx, coupleId, questionId);
     const read = link
       ? (
           await ctx.db

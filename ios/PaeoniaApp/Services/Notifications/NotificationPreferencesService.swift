@@ -3,6 +3,33 @@ import Foundation
 import OSLog
 #endif
 
+/// The opt-in "question time" reminder: a time of day when Paeonia nudges you if you
+/// have not started today's questions. It is off until the user turns it on.
+nonisolated struct QuestionTimeReminder: Equatable, Sendable {
+    static let defaultMinutes = 20 * 60
+
+    var isEnabled = false
+    /// Minutes after local midnight, 0 to 1439. The server turns it into a moment in the
+    /// time zone of the phone the user used last.
+    var minutes = QuestionTimeReminder.defaultMinutes
+
+    /// The reminder time on `day`, for a time picker.
+    func time(on day: Date, calendar: Calendar = .current) -> Date {
+        calendar.date(
+            bySettingHour: minutes / 60,
+            minute: minutes % 60,
+            second: 0,
+            of: day
+        ) ?? day
+    }
+
+    /// The minutes after midnight that a time picker's date shows.
+    static func minutes(of time: Date, calendar: Calendar = .current) -> Int {
+        let parts = calendar.dateComponents([.hour, .minute], from: time)
+        return (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+    }
+}
+
 nonisolated struct NotificationPreferences: Equatable, Sendable {
     var streakRemindersEnabled = true
     var dailyChallengeEnabled = true
@@ -11,6 +38,7 @@ nonisolated struct NotificationPreferences: Equatable, Sendable {
     var widgetUpdatesEnabled = true
     var memoriesEnabled = true
     var gamesEnabled = true
+    var questionTime = QuestionTimeReminder()
 }
 
 nonisolated extension NotificationPreferences {
@@ -79,6 +107,9 @@ nonisolated protocol NotificationPreferencesProviding: Sendable {
     /// Persists one user-facing notification toggle.
     func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled: Bool) async throws
 
+    /// Persists the question time reminder: the switch and its time in one request.
+    func setQuestionTimeReminder(_ reminder: QuestionTimeReminder) async throws
+
     /// Emits the preferences now and again whenever they change on the server.
     /// The stream ends when the consuming task is cancelled.
     func notificationPreferenceUpdates() -> AsyncStream<NotificationPreferences>
@@ -120,6 +151,29 @@ actor ConvexNotificationPreferencesService: NotificationPreferencesProviding {
             args: SetNotificationPreferenceRequest(column: kind.columnName, enabled: enabled)
         )
     }
+
+    func setQuestionTimeReminder(_ reminder: QuestionTimeReminder) async throws {
+        try await client.mutation(
+            "identity:set_question_time_reminder",
+            args: SetQuestionTimeReminderRequest(reminder: reminder)
+        )
+    }
+}
+
+nonisolated struct SetQuestionTimeReminderRequest: Encodable {
+    let reminder: QuestionTimeReminder
+
+    enum CodingKeys: String, CodingKey {
+        case enabled = "p_enabled"
+        case minutes = "p_minutes"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(reminder.isEnabled, forKey: .enabled)
+        // `v.number()` in the backend, so a Double.
+        try container.encode(Double(reminder.minutes), forKey: .minutes)
+    }
 }
 
 nonisolated private struct SetNotificationPreferenceRequest: Encodable {
@@ -142,6 +196,8 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
     let widgetUpdatesEnabled: Bool
     let memoriesEnabled: Bool
     let gamesEnabled: Bool
+    let questionTimeEnabled: Bool
+    let questionTimeMinutes: Int
 
     var preferences: NotificationPreferences {
         NotificationPreferences(
@@ -151,7 +207,8 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
             messagesEnabled: messagesEnabled,
             widgetUpdatesEnabled: widgetUpdatesEnabled,
             memoriesEnabled: memoriesEnabled,
-            gamesEnabled: gamesEnabled
+            gamesEnabled: gamesEnabled,
+            questionTime: QuestionTimeReminder(isEnabled: questionTimeEnabled, minutes: questionTimeMinutes)
         )
     }
 
@@ -163,6 +220,8 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
         case widgetUpdatesEnabled = "widget_updates_enabled"
         case memoriesEnabled = "memories_enabled"
         case gamesEnabled = "games_enabled"
+        case questionTimeEnabled = "question_time_enabled"
+        case questionTimeMinutes = "question_time_minutes"
     }
 }
 

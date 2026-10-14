@@ -106,7 +106,12 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 memoryStore: memoryStore
             ),
         ]
-        let defaultHandlers = locationHandlers + GamesPendingOperationRegistry.handlers(client: client)
+        let heartsGateway = LiveHeartsGateway(client: client)
+        let heartsHandlers: [any PendingSyncOperationHandling] = [
+            SendHeartsPendingOperationHandler(gateway: heartsGateway),
+            MarkHeartsSeenPendingOperationHandler(gateway: heartsGateway),
+        ]
+        let defaultHandlers = locationHandlers + heartsHandlers + GamesPendingOperationRegistry.handlers(client: client)
 
         return [
             PendingSyncOperationDrainStream(

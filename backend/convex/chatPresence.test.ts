@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, components } from "./_generated/api";
-import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
+import { answeredRound, seedQuestion } from "./dailyChat.setup";
 import { newUuid } from "./lib/ids";
 import { chatTypingRoom, removePresenceRooms } from "./lib/presence";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
@@ -17,69 +17,47 @@ afterEach(() => {
 
 const tick = (seconds: number) => vi.setSystemTime(new Date(Date.now() + seconds * 1000));
 
-/** A daily question both partners answered, so its chat can start. */
-async function answeredInstance(t: TestConvex, couple: TestCouple) {
-  const instanceId = newUuid();
-  await t.run(async (ctx) => {
-    const now = new Date().toISOString();
-    const dayId = await getOrCreateCoupleDayAt(ctx, couple.coupleId, now);
-    await ctx.db.insert("daily_question_instances", {
-      id: instanceId,
-      couple_day_id: dayId,
-      question_version_id: newUuid(),
-      seeded_for_user_id: couple.first.userId,
-      slot_number: 1,
-      status: "active",
-      created_at: now,
-    });
-    for (const user of [couple.first, couple.second]) {
-      await ctx.db.insert("daily_question_answers", {
-        id: newUuid(),
-        instance_id: instanceId,
-        user_id: user.userId,
-        moderation_status: "visible",
-        created_at: now,
-        updated_at: now,
-      });
-    }
-  });
-  return instanceId;
+/** A daily question both partners answered, so its chat can start. Returns the question id. */
+async function answeredQuestion(t: TestConvex, couple: TestCouple) {
+  const question = await seedQuestion(t);
+  await answeredRound(t, couple, question);
+  return question.id;
 }
 
-const presence = (user: TestCouple["first"], instanceId: string) =>
-  user.as.query(api.chatPresence.get_daily_chat_presence, { p_instance_id: instanceId });
+const presence = (user: TestCouple["first"], coupleId: string, questionId: string) =>
+  user.as.query(api.chatPresence.get_daily_chat_presence, { p_couple_id: coupleId, p_question_id: questionId });
 
 describe("typing", () => {
   test("the partner sees typing until it stops, and never their own", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const instanceId = await answeredInstance(t, couple);
+    const questionId = await answeredQuestion(t, couple);
 
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: true });
-    expect((await presence(couple.second, instanceId)).partner_typing).toBe(true);
-    expect((await presence(couple.first, instanceId)).partner_typing).toBe(false);
+    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true });
+    expect((await presence(couple.second, couple.coupleId, questionId)).partner_typing).toBe(true);
+    expect((await presence(couple.first, couple.coupleId, questionId)).partner_typing).toBe(false);
 
     tick(3);
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: true });
-    expect((await presence(couple.second, instanceId)).partner_typing).toBe(true);
+    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true });
+    expect((await presence(couple.second, couple.coupleId, questionId)).partner_typing).toBe(true);
 
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: false });
-    expect((await presence(couple.second, instanceId)).partner_typing).toBe(false);
+    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: false });
+    expect((await presence(couple.second, couple.coupleId, questionId)).partner_typing).toBe(false);
     // A second stop, such as on send after the idle stop, changes nothing.
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: false });
-    expect((await presence(couple.second, instanceId)).partner_typing).toBe(false);
+    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: false });
+    expect((await presence(couple.second, couple.coupleId, questionId)).partner_typing).toBe(false);
   });
 
   test("strangers cannot type or read presence", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const instanceId = await answeredInstance(t, couple);
+    const questionId = await answeredQuestion(t, couple);
     const stranger = await createSignedInUser(t);
 
     expect(
-      await failure(stranger.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: true })),
+      await failure(stranger.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true })),
     ).toEqual({ code: "42501", message: "active entitled couple access is required" });
-    expect(await presence(stranger, instanceId)).toEqual({
+    expect(await presence(stranger, couple.coupleId, questionId)).toEqual({
       partner_typing: false,
       partner_last_read_message_id: null,
       partner_read_at: null,
@@ -91,29 +69,29 @@ describe("typing", () => {
     vi.useFakeTimers();
     const t = newTest();
     const couple = await createCouple(t);
-    const instanceId = await answeredInstance(t, couple);
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: true });
-    expect((await presence(couple.second, instanceId)).partner_typing).toBe(true);
+    const questionId = await answeredQuestion(t, couple);
+    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true });
+    expect((await presence(couple.second, couple.coupleId, questionId)).partner_typing).toBe(true);
 
     const lastHeartbeat = Date.now();
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect(Date.now() - lastHeartbeat).toBeGreaterThanOrEqual(4_000);
-    expect((await presence(couple.second, instanceId)).partner_typing).toBe(false);
+    expect((await presence(couple.second, couple.coupleId, questionId)).partner_typing).toBe(false);
   });
 
   test("ending the relationship or deleting the account clears typing", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const instanceId = await answeredInstance(t, couple);
-    const room = chatTypingRoom(couple.coupleId, instanceId);
+    const questionId = await answeredQuestion(t, couple);
+    const room = chatTypingRoom(couple.coupleId, questionId);
     const typists = () => t.run((ctx) => ctx.runQuery(components.presence.public.listRoom, { roomId: room }));
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: true });
-    await couple.second.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: true });
+    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true });
+    await couple.second.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true });
     expect(await typists()).toHaveLength(2);
 
     await t.run((ctx) => endRelationshipForPair(ctx, couple.pairId, couple.first.userId, "user_left"));
     expect(await typists()).toEqual([]);
-    expect((await failure(couple.second.as.mutation(api.chatPresence.set_daily_chat_typing, { p_instance_id: instanceId, p_is_typing: true }))).code).toBe("42501");
+    expect((await failure(couple.second.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true }))).code).toBe("42501");
 
     // Account deletion also clears whatever a user still has, in any room.
     const leftover = chatTypingRoom(newUuid(), newUuid());
@@ -127,10 +105,11 @@ describe("read receipts", () => {
   test("marking read moves forward only and the partner sees it", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const instanceId = await answeredInstance(t, couple);
+    const questionId = await answeredQuestion(t, couple);
     const [first] = await couple.first.as.mutation(api.threads.create_daily_question_thread_with_message, {
       ...op(),
-      p_instance_id: instanceId,
+      p_couple_id: couple.coupleId,
+      p_question_id: questionId,
       p_body: "one",
     });
     tick(5);
@@ -149,19 +128,20 @@ describe("read receipts", () => {
       p_message_id: first.message_id,
     });
 
-    const state = await presence(couple.first, instanceId);
+    const state = await presence(couple.first, couple.coupleId, questionId);
     expect(state.partner_last_read_message_id).toBe(second.message_id);
     expect(state.partner_read_at).toEqual(expect.any(String));
-    expect((await presence(couple.second, instanceId)).partner_last_read_message_id).toBeNull();
+    expect((await presence(couple.second, couple.coupleId, questionId)).partner_last_read_message_id).toBeNull();
   });
 
   test("the thread list carries how far the caller has read", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const instanceId = await answeredInstance(t, couple);
+    const questionId = await answeredQuestion(t, couple);
     const [message] = await couple.first.as.mutation(api.threads.create_daily_question_thread_with_message, {
       ...op(),
-      p_instance_id: instanceId,
+      p_couple_id: couple.coupleId,
+      p_question_id: questionId,
       p_body: "hi",
     });
     const readThrough = async (user: TestCouple["first"]) =>
@@ -182,12 +162,14 @@ describe("read receipts", () => {
     const couple = await createCouple(t);
     const [a] = await couple.first.as.mutation(api.threads.create_daily_question_thread_with_message, {
       ...op(),
-      p_instance_id: await answeredInstance(t, couple),
+      p_couple_id: couple.coupleId,
+      p_question_id: await answeredQuestion(t, couple),
       p_body: "a",
     });
     const [b] = await couple.first.as.mutation(api.threads.create_daily_question_thread_with_message, {
       ...op(),
-      p_instance_id: await answeredInstance(t, couple),
+      p_couple_id: couple.coupleId,
+      p_question_id: await answeredQuestion(t, couple),
       p_body: "b",
     });
     expect(

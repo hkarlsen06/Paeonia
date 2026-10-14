@@ -12,7 +12,6 @@ struct DailyChatMessageRow: View {
 
     let row: DailyChatRow
     let participants: DailyChallengeParticipants
-    let mediaKind: DailyChallengeAnswerKind
     let isHighlighted: Bool
     /// Nil when this row can't be replied to.
     let onReply: (() -> Void)?
@@ -36,6 +35,19 @@ struct DailyChatMessageRow: View {
     private var isInMenu: Bool { messageFrame != nil }
 
     var body: some View {
+        switch row.kind {
+        case let .partnerChoiceMatch(match, celebrates):
+            PartnerChoiceMatchBanner(match: match, partnerName: participants.partnerName, celebrates: celebrates)
+                .padding(.horizontal, PaeoniaSpacing.space12)
+                .padding(.vertical, PaeoniaSpacing.space8)
+        case let .waiting(waiting):
+            DailyChatWaitingNote(waiting: waiting, partnerName: participants.partnerName)
+        default:
+            bubbleRow
+        }
+    }
+
+    private var bubbleRow: some View {
         timestampRevealContainer {
             HStack(alignment: .top, spacing: PaeoniaSpacing.space8) {
                 if !isCurrentUser {
@@ -74,7 +86,7 @@ struct DailyChatMessageRow: View {
                 }
             }
             .accessibilityElement(children: .combine)
-        case let .answer(answer):
+        case let .answer(answer, mediaKind):
             bubble(fill: bubbleFill) {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
                     Label {
@@ -121,6 +133,8 @@ struct DailyChatMessageRow: View {
             }
             .accessibilityElement(children: .combine)
             .accessibilityAction(named: Text(.dailyChatActionReply)) { onReply?() }
+        case .partnerChoiceMatch, .waiting:
+            EmptyView()
         case .typing:
             bubble(fill: .paeoniaSurfacePrimary) {
                 DailyChatTypingDots()

@@ -1,3 +1,4 @@
+import SwiftUI
 import UserNotifications
 
 /// Removes alerts from Notification Center once the person has seen what they
@@ -7,6 +8,11 @@ import UserNotifications
 /// by id against what is on screen, so an alert for something that hasn't
 /// reached this phone yet stays.
 nonisolated enum DeliveredNotifications {
+    /// The Questions tab is open, so the "question time" reminder has done its job.
+    static func clearQuestionTimeReminders() async {
+        await clear(types: ["question_time_reminder"])
+    }
+
     /// Removes every delivered alert of these kinds, for example `widget_updated`.
     static func clear(types: Set<String>) async {
         await remove { userInfo in
@@ -15,15 +21,16 @@ nonisolated enum DeliveredNotifications {
     }
 
     /// The person opened this question and saw the partner's answer: its reveal
-    /// alert is read, and "finished today's questions" has done its job. Chat
+    /// alert is read, and "finished today's questions" has done its job. A question's
+    /// page shows every day it came up, so it passes all their instance ids. Chat
     /// alerts go only for the messages on screen.
-    static func clearQuestion(instanceID: UUID, shownMessageIDs: Set<UUID> = []) async {
+    static func clearQuestion(instanceIDs: Set<UUID>, shownMessageIDs: Set<UUID> = []) async {
         await remove { userInfo in
             switch userInfo["type"] as? String {
             case "daily_challenge_completed":
                 true
             case "partner_answered":
-                uuid(userInfo["instance_id"]) == instanceID
+                uuid(userInfo["instance_id"]).map(instanceIDs.contains) ?? false
             case "thread_message_sent":
                 uuid(userInfo["message_id"]).map(shownMessageIDs.contains) ?? false
             default:
@@ -58,5 +65,28 @@ nonisolated enum DeliveredNotifications {
             .map(\.request.identifier)
         guard !identifiers.isEmpty else { return }
         center.removeDeliveredNotifications(withIdentifiers: identifiers)
+    }
+}
+
+extension View {
+    /// Removes a delivered "question time" reminder while this screen is showing, and again
+    /// each time the app comes back to the foreground with it still showing.
+    func clearsDeliveredQuestionTimeReminders() -> some View {
+        modifier(ClearQuestionTimeRemindersModifier())
+    }
+}
+
+private struct ClearQuestionTimeRemindersModifier: ViewModifier {
+    @Environment(\.scenePhase) private var scenePhase
+
+    func body(content: Content) -> some View {
+        content
+            .task {
+                await DeliveredNotifications.clearQuestionTimeReminders()
+            }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                Task { await DeliveredNotifications.clearQuestionTimeReminders() }
+            }
     }
 }

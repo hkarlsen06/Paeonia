@@ -25,6 +25,8 @@ actor SettingsFakeNotificationPreferences: NotificationPreferencesProviding {
     private(set) var lastSetValue: Bool?
     /// Every value that reached the "server", in arrival order.
     private(set) var sentValues = [Bool]()
+    /// Every question time that reached the "server", in arrival order.
+    private(set) var sentQuestionTimes = [QuestionTimeReminder]()
 
     init(
         preferences: NotificationPreferences = NotificationPreferences(),
@@ -94,6 +96,18 @@ actor SettingsFakeNotificationPreferences: NotificationPreferencesProviding {
             throw SettingsFakePreferencesError.failed
         }
         return snapshot
+    }
+
+    func setQuestionTimeReminder(_ reminder: QuestionTimeReminder) async throws {
+        setCallCount += 1
+        if holdSets {
+            await withCheckedContinuation { heldSets.append($0) }
+        }
+        if failOnSet {
+            throw SettingsFakePreferencesError.failed
+        }
+        sentQuestionTimes.append(reminder)
+        preferences.questionTime = reminder
     }
 
     func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled value: Bool) async throws {

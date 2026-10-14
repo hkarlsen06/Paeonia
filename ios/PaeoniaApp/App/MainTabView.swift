@@ -63,6 +63,11 @@ final class MainTabModels {
         dependencies.memoriesViewModel ?? MemoriesViewModel()
     lazy var games: GamesViewModel =
         dependencies.gamesViewModel ?? GamesViewModel(dependencies: .live())
+    lazy var hearts = HeartsViewModel()
+    lazy var lookBack = LookBackViewModel.live(
+        thumbnailLoader: dependencies.widgetHistoryThumbnailLoader
+            ?? WidgetRevisionThumbnailLoader(gateway: WidgetDrawingHistoryFactory.makeGateway())
+    )
     private var settingsModel: SettingsViewModel?
 
     /// Built for the first signed-in user it is asked for, like the
@@ -115,9 +120,16 @@ struct MainTabView: View {
     /// The Questions-tab single-question partner-answer flow. The tapped question drives
     /// presentation and is the card the cover zooms out of.
     @State var partnerAnswerQuestion: DailyChallengeQuestion?
+    /// The partner-answer flow was opened from a locked row on the Home card, so it
+    /// zooms out of that row and not out of the Questions tab list.
+    @State var partnerAnswerOpenedFromHome = false
     /// Question to scroll to and briefly highlight after a notification deep link.
     @State var focusedDailyQuestionID: UUID?
     @State var dailyChatQuestion: DailyChallengeQuestion?
+    /// The Memories tab's stack, so the Home look-back card can open a memory in it.
+    @State var memoriesPath: [UUID] = []
+    /// The drawing history, opened from the Home look-back card.
+    @State var isLookBackDrawingHistoryPresented = false
     /// What the Games tab has open. A notification about a game sets it.
     @State var gamesPath: [GamesDestination] = []
     /// The signed-in user's photo, cropped to a circle for the You tab icon.
@@ -157,6 +169,8 @@ struct MainTabView: View {
     var milestoneViewModel: RelationshipMilestoneViewModel { models.milestone }
     var memoriesViewModel: MemoriesViewModel { models.memories }
     var gamesViewModel: GamesViewModel { models.games }
+    var lookBackViewModel: LookBackViewModel { models.lookBack }
+    var heartsViewModel: HeartsViewModel { models.hearts }
 
     var body: some View {
         presentingDailyFlows(on: tabContent)
@@ -203,6 +217,9 @@ struct MainTabView: View {
             // A closure literal, because the stored value read out of the non-Sendable
             // MainTabActions counts as non-Sendable here.
             gamesViewModel.setLocalChangeSyncHandler { await actions.syncAfterLocalChange() }
+        }
+        .task(id: identity.currentUserID) {
+            heartsViewModel.setSyncAfterLocalChange { await actions.syncAfterLocalChange() }
         }
         .task(id: identity.currentUserID) {
             milestoneViewModel.setSyncAfterLocalChange(actions.syncAfterLocalChange)
@@ -283,7 +300,7 @@ struct MainTabView: View {
     }
 
     private var memoriesTab: some View {
-        NavigationStack {
+        NavigationStack(path: $memoriesPath) {
             MemoriesScreen(
                 currentUserID: identity.currentUserID,
                 coupleID: identity.coupleID,
@@ -309,6 +326,7 @@ struct MainTabView: View {
                         historyThumbnailLoader: dependencies.widgetHistoryThumbnailLoader
                     )
                 }
+                .lookBackDrawingHistory(isPresented: $isLookBackDrawingHistoryPresented, dependencies: dependencies)
         }
     }
 
@@ -334,17 +352,21 @@ struct MainTabView: View {
             },
             unreadChats: dailyChallengeViewModel.unreadChats.map { summary in
                 UnreadChatRow(
-                    id: summary.instanceID,
-                    prompt: dailyChallengeViewModel.questionPrompt(for: summary.instanceID),
+                    id: summary.questionID,
+                    prompt: dailyChallengeViewModel.questionPrompt(for: summary.questionID),
                     preview: summary.lastMessagePreview
                 )
             },
-            onOpenChat: startOpeningDailyChat,
+            onOpenChat: startOpeningDailyChat(questionID:),
             games: gamesViewModel,
+            hearts: heartsViewModel,
             onOpenGame: openGameFromHome,
             onTapStreak: openStreakDetails,
             onOpenDailyChallenge: openDailyChallengeFromHome,
+            onOpenPartnerQuestion: openPartnerQuestionFromHome,
             onOpenWidgetDrawing: actions.openWidgetDrawing,
+            lookBack: lookBackViewModel,
+            onOpenLookBack: openLookBack,
             onRefresh: {
                 await refreshDailyChallenge()
                 await actions.refreshHome()

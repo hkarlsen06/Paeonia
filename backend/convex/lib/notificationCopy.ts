@@ -244,6 +244,10 @@ export function notificationAlertBody(
       return nb ? "Åpne Paeonia for å bli med." : "Open Paeonia to join in.";
     case "game_turn_reminder":
       return gameReminderBody(nb);
+    case "question_time_reminder":
+      return nb
+        ? "To spørsmål venter på deg. Det tar bare noen minutter."
+        : "Two questions are waiting for you. They take a few minutes.";
     case "streak_reminder":
       return nb
         ? "En rask tegning holder. Rekken fortsetter når dere begge har sjekket inn."
@@ -292,6 +296,8 @@ export async function notificationAlertTitle(
       if (!game) return "Paeonia";
       return nb ? `${name} vil spille ${game.name} med deg` : `${name} wants to play ${game.name} with you`;
     }
+    case "question_time_reminder":
+      return nb ? "Dagens spørsmål er klare" : "Today's questions are ready";
     case "streak_reminder":
       return nb ? "Tid for å sjekke inn" : "Time for a quick check-in";
     case "subscription_trial_reminder":

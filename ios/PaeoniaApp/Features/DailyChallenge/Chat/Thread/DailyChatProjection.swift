@@ -99,7 +99,13 @@ enum DailyChatMessageStatus: Hashable {
 struct DailyChatRow {
     enum Kind {
         case question(String)
-        case answer(DailyQuestionAnswerDetail)
+        /// An answer, with the kind of media this day's question takes, since a question
+        /// that comes back can take another kind.
+        case answer(DailyQuestionAnswerDetail, mediaKind: DailyChallengeAnswerKind)
+        /// How two partner-choice picks line up, above the day's answers.
+        case partnerChoiceMatch(PartnerChoiceMatch, celebrates: Bool)
+        /// What a day is still waiting for, under its answers.
+        case waiting(DailyChatRound.Waiting)
         case message(DailyQuestionChatMessage)
         /// The partner's typing dots, after the newest message.
         case typing
@@ -129,22 +135,31 @@ struct DailyChatRow {
 /// so scrolling and unrelated redraws never redo it. Ported from Tidex's chat projection.
 struct DailyChatProjection {
     struct Input: Equatable {
-        let prompt: String
-        let questionStartsAt: Date
-        let answers: [DailyQuestionAnswerDetail]
+        /// Every day the question came up, oldest first.
+        let rounds: [DailyChatRound]
         let messages: [DailyQuestionChatMessage]
         let currentUserID: UUID?
         let partnerName: String
         let youName: String
         var partnerIsTyping = false
         var partnerLastReadMessageID: UUID?
-        /// The partner has opened the page since the user's answer showed for them.
-        var ownAnswerSeenByPartner = false
     }
 
-    static let questionRowID = "question"
+    static let questionRowPrefix = "question-"
     static let answerRowPrefix = "answer-"
+    static let matchRowPrefix = "match-"
+    static let waitingRowPrefix = "waiting-"
     static let typingRowID = "typing-indicator"
+
+    /// The row that opens a day, which the page scrolls to.
+    static func questionRowID(for instanceID: UUID) -> String {
+        questionRowPrefix + instanceID.uuidString
+    }
+
+    /// Rows with nothing to reply to, report, or edit: no long-press menu.
+    static func isDecorationRowID(_ id: String) -> Bool {
+        id == typingRowID || id.hasPrefix(matchRowPrefix) || id.hasPrefix(waitingRowPrefix)
+    }
 
     let exyteMessages: [ExyteChat.Message]
     let rowsByID: [String: DailyChatRow]
@@ -154,170 +169,6 @@ struct DailyChatProjection {
     /// A message keeps its row id when the server confirms it.
     static func rowID(for message: DailyQuestionChatMessage) -> String {
         (message.clientOperationID ?? message.id).uuidString
-    }
-
-    static func make(input: Input) -> DailyChatProjection {
-        var exyteMessages: [ExyteChat.Message] = []
-        var rowsByID: [String: DailyChatRow] = [:]
-        exyteMessages.reserveCapacity(input.messages.count + 3)
-        rowsByID.reserveCapacity(input.messages.count + 3)
-
-        func user(_ userID: UUID?, isCurrentUser: Bool) -> ExyteChat.User {
-            ExyteChat.User(
-                id: userID?.uuidString ?? questionRowID,
-                name: isCurrentUser ? input.youName : input.partnerName,
-                avatarURL: nil,
-                isCurrentUser: isCurrentUser
-            )
-        }
-
-        /// `text` and `status` are never drawn by ExyteChat. The long-press menu reads
-        /// them to pick its actions, since it only gets ExyteChat's message.
-        func append(
-            _ row: DailyChatRow,
-            user: ExyteChat.User,
-            redrawKey: some Hashable,
-            text: String = "",
-            status: ExyteChat.Message.Status? = nil
-        ) {
-            var message = ExyteChat.Message(
-                id: row.id,
-                user: user,
-                status: status,
-                createdAt: row.createdAt,
-                text: text
-            )
-            message.triggerRedraw = redrawToken(of: redrawKey)
-            exyteMessages.append(message)
-            rowsByID[row.id] = row
-        }
-
-        // Paeonia's question opens the chat, then the answers, then the messages. An
-        // answer edited after the chat started still sorts above the first message.
-        let firstMessageAt = input.messages.first?.createdAt ?? .distantFuture
-        let firstAnswerAt = input.answers.first.map { min($0.answeredAt, firstMessageAt) } ?? firstMessageAt
-        let questionRow = DailyChatRow(
-            id: questionRowID,
-            kind: .question(input.prompt),
-            isCurrentUser: false,
-            createdAt: min(input.questionStartsAt, firstAnswerAt),
-            groupContext: .standalone(isCurrentUser: false),
-            status: nil,
-            quotedPreview: nil
-        )
-        append(questionRow, user: user(nil, isCurrentUser: false), redrawKey: input.prompt, text: input.prompt)
-
-        let lastSentOwnMessageID = input.messages.last {
-            $0.senderUserID == input.currentUserID && !$0.isSending && !$0.sendFailed
-        }?.id
-        // Read shows on your answer until you send a message, which then carries it.
-        let answerStatus: DailyChatMessageStatus? =
-            input.ownAnswerSeenByPartner && lastSentOwnMessageID == nil ? .read : nil
-
-        for answer in input.answers {
-            let row = DailyChatRow(
-                id: answerRowPrefix + answer.answerID.uuidString,
-                kind: .answer(answer),
-                isCurrentUser: answer.isOwnAnswer,
-                createdAt: min(answer.answeredAt, firstMessageAt),
-                groupContext: .standalone(isCurrentUser: answer.isOwnAnswer),
-                status: answer.isOwnAnswer ? answerStatus : nil,
-                quotedPreview: nil
-            )
-            append(
-                row,
-                user: user(answer.answerUserID, isCurrentUser: answer.isOwnAnswer),
-                redrawKey: AnswerRedrawKey(answer: answer, status: row.status),
-                text: answer.textBody ?? ""
-            )
-        }
-
-        let messagesByID = Dictionary(input.messages.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let readReceiptMessageID = readReceiptMessageID(input: input, messagesByID: messagesByID)
-        // The dots join the partner's newest message when it is the last one, like Tidex.
-        let typingJoinsPrevious = input.partnerIsTyping
-            && input.messages.last.map { $0.senderUserID != input.currentUserID && !$0.hasMedia } == true
-
-        for (index, message) in input.messages.enumerated() {
-            let isCurrentUser = message.senderUserID == input.currentUserID
-            var groupContext = DailyChatGrouping.context(
-                for: message,
-                previous: index > 0 ? input.messages[index - 1] : nil,
-                next: index + 1 < input.messages.count ? input.messages[index + 1] : nil,
-                currentUserID: input.currentUserID
-            )
-            if typingJoinsPrevious, index == input.messages.count - 1 {
-                groupContext = groupContext.joiningNext()
-            }
-            let status: DailyChatMessageStatus? = if message.sendFailed {
-                .failed
-            } else if message.isSending {
-                .sending
-            } else if message.id == readReceiptMessageID {
-                .read
-            } else if message.id == lastSentOwnMessageID {
-                .sent
-            } else {
-                nil
-            }
-            let quotedPreview = message.replyToMessageID.map { replyID in
-                preview(of: messagesByID[replyID], id: replyID, input: input)
-            }
-            let row = DailyChatRow(
-                id: rowID(for: message),
-                kind: .message(message),
-                isCurrentUser: isCurrentUser,
-                createdAt: message.createdAt,
-                groupContext: groupContext,
-                status: status,
-                quotedPreview: quotedPreview
-            )
-            append(
-                row,
-                user: user(message.senderUserID, isCurrentUser: isCurrentUser),
-                redrawKey: MessageRedrawKey(
-                    message: message,
-                    groupContext: groupContext,
-                    status: status,
-                    quotedPreview: quotedPreview
-                ),
-                text: message.voice == nil ? message.body : "",
-                status: message.isSending || message.sendFailed ? .sending : .sent
-            )
-        }
-
-        if input.partnerIsTyping {
-            // Dated like the newest row, so the dots stay in its day and at the bottom.
-            let row = DailyChatRow(
-                id: typingRowID,
-                kind: .typing,
-                isCurrentUser: false,
-                createdAt: exyteMessages.last?.createdAt ?? .now,
-                groupContext: DailyChatGroupContext(
-                    position: typingJoinsPrevious ? .trailing : .standalone,
-                    isCurrentUser: false
-                ),
-                status: nil,
-                quotedPreview: nil
-            )
-            append(row, user: user(nil, isCurrentUser: false), redrawKey: typingJoinsPrevious)
-        }
-        return DailyChatProjection(exyteMessages: exyteMessages, rowsByID: rowsByID)
-    }
-
-    /// Your newest message the partner has read through. The partner's mark is a
-    /// message id, so read means sent at or before that message.
-    private static func readReceiptMessageID(
-        input: Input,
-        messagesByID: [UUID: DailyQuestionChatMessage]
-    ) -> UUID? {
-        guard let readID = input.partnerLastReadMessageID, let readThrough = messagesByID[readID] else { return nil }
-        return input.messages.last { message in
-            message.senderUserID == input.currentUserID
-                && !message.isSending
-                && !message.sendFailed
-                && (message.createdAt, message.id.uuidString) <= (readThrough.createdAt, readThrough.id.uuidString)
-        }?.id
     }
 
     static func preview(
@@ -333,46 +184,6 @@ struct DailyChatProjection {
             isVoice: message?.voice != nil,
             photos: message?.photos ?? []
         )
-    }
-
-    /// Everything a message row draws that ExyteChat's message doesn't carry. ExyteChat
-    /// only redraws a row whose message changed, so this goes into `triggerRedraw`.
-    private struct AnswerRedrawKey: Hashable {
-        let answer: DailyQuestionAnswerDetail
-        let status: DailyChatMessageStatus?
-    }
-
-    private struct MessageRedrawKey: Hashable {
-        let body: String
-        let isSending: Bool
-        let sendFailed: Bool
-        let voiceAssetID: UUID?
-        let hasLocalVoice: Bool
-        let photoAssetIDs: [UUID?]
-        let hasLocalPhotos: Bool
-        let isEdited: Bool
-        let groupContext: DailyChatGroupContext
-        let status: DailyChatMessageStatus?
-        let quotedPreview: DailyChatReplyPreview?
-
-        init(
-            message: DailyQuestionChatMessage,
-            groupContext: DailyChatGroupContext,
-            status: DailyChatMessageStatus?,
-            quotedPreview: DailyChatReplyPreview?
-        ) {
-            body = message.body
-            isSending = message.isSending
-            sendFailed = message.sendFailed
-            voiceAssetID = message.voice?.mediaAssetID
-            hasLocalVoice = message.voice?.data != nil
-            photoAssetIDs = (message.photos ?? []).map(\.mediaAssetID)
-            hasLocalPhotos = (message.photos ?? []).contains { $0.data != nil }
-            isEdited = message.editedAt != nil
-            self.groupContext = groupContext
-            self.status = status
-            self.quotedPreview = quotedPreview
-        }
     }
 
     /// A UUID that changes whenever `value` changes. Hashes are seeded per launch, so

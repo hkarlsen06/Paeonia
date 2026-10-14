@@ -143,7 +143,7 @@ struct DailyChallengeReadCard: View {
         }
         guard question.hasOwnAnswer else { return Text(.dailyChallengeNotAnswered) }
         guard question.hasPartnerAnswer else { return Text(.dailyChallengeRowWaiting(participants.partnerName)) }
-        guard question.isChatAvailable else { return Text(.dailyChallengePartnerHidden(participants.partnerName)) }
+        guard question.hasRevealedPartnerAnswer else { return Text(.dailyChallengePartnerHidden(participants.partnerName)) }
         if isUnread { return Text(.dailyChatCardUnreadTitle(participants.partnerName)) }
         if isNew { return Text(.dailyChallengeRowNewPartnerAnswer(participants.partnerName)) }
         if let preview = lastMessagePreview?.trimmedNonEmpty { return Text(verbatim: preview) }

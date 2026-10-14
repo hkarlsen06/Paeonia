@@ -8,6 +8,7 @@ import { orNull, type ReaderCtx, withTouch } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalUuidArg, uuidArg } from "./lib/ids";
 import { sha256Hex } from "./lib/crypto";
+import { isValidQuestionTimeMinutes } from "./lib/questionTime";
 import { findProfile, profileRow, profileSummaryRow, updateProfile } from "./lib/profiles";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { nowIso } from "./lib/time";
@@ -265,6 +266,8 @@ function notificationPreferencesRow(row: NonNullable<Awaited<ReturnType<typeof f
     memories_enabled: row.memories_enabled,
     messages_enabled: row.messages_enabled,
     games_enabled: row.games_enabled,
+    question_time_enabled: row.question_time_enabled,
+    question_time_minutes: row.question_time_minutes,
   };
 }
 
@@ -289,6 +292,25 @@ export const set_notification_preference = mutation({
     const row = await findNotificationPreferences(ctx, userId);
     if (!row) return fail("P0002", "notification preferences were not found");
     await ctx.db.patch(row._id, withTouch(row, { [column]: args.p_enabled }));
+    return notificationPreferencesRow((await findNotificationPreferences(ctx, userId))!);
+  },
+});
+
+/** Turns the "question time" reminder on or off and sets its time, in minutes after local midnight. */
+export const set_question_time_reminder = mutation({
+  args: { p_enabled: v.boolean(), p_minutes: v.number() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    if (!isValidQuestionTimeMinutes(args.p_minutes)) {
+      return fail("23514", "question time must be a whole minute of the day");
+    }
+    await assertNoPendingAccountDeletion(ctx, userId);
+    const row = await findNotificationPreferences(ctx, userId);
+    if (!row) return fail("P0002", "notification preferences were not found");
+    await ctx.db.patch(
+      row._id,
+      withTouch(row, { question_time_enabled: args.p_enabled, question_time_minutes: args.p_minutes }),
+    );
     return notificationPreferencesRow((await findNotificationPreferences(ctx, userId))!);
   },
 });

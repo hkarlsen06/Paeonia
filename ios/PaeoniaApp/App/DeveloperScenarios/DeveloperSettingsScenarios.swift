@@ -90,6 +90,10 @@
       case .games: preferences.gamesEnabled = enabled
       }
     }
+
+    func setQuestionTimeReminder(_ reminder: QuestionTimeReminder) async throws {
+      preferences.questionTime = reminder
+    }
   }
 
   @MainActor

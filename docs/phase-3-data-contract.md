@@ -1784,7 +1784,7 @@ This rule should be enforced server-side through RLS or RPC-backed reads, not on
 
 ## Question Threads
 
-A daily question can become a conversation thread.
+A daily question can become a conversation thread. A couple has one thread per question, not per instance. Every time the question comes back, for either partner, its answers show in the same thread as a new dated round. The reveal rule applies to each round on its own. `backend/convex/lib/dailyQuestionRounds.ts` has the round rules.
 
 Do not create a thread automatically when both partners answer. Create the thread only when one partner sends the first follow-up message.
 
@@ -1804,7 +1804,8 @@ conversation_threads
 - moderation_report_id
 
 daily_question_threads
-- instance_id
+- couple_id
+- question_id
 - thread_id
 
 thread_messages
@@ -1829,7 +1830,8 @@ thread_message_media
 
 Rules:
 
-- `daily_question_threads.instance_id` is the primary key and FK to `daily_question_instances(id)`.
+- `daily_question_threads` is unique on `(couple_id, question_id)`. `question_id` is the question, not a question version, so a reworded version keeps its thread.
+- A thread can start once some round of the question has answers from both partners.
 - `daily_question_threads.thread_id` is unique and FK to `conversation_threads(id)`.
 - `thread_message_media` has primary key `(message_id, media_asset_id)`.
 - Threads are couple-owned.

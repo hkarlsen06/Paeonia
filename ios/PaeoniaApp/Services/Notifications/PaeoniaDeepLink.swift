@@ -3,7 +3,8 @@ import Foundation
 nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case widgetDrawing
     case dailyReveal(instanceID: UUID, coupleDayID: UUID?)
-    case dailyChat(instanceID: UUID)
+    /// A question's chat. A couple has one chat per question.
+    case dailyChat(questionID: UUID)
     case dailyToday(coupleDayID: UUID?)
     case memories
     /// `paeonia://games/<path>`, for every `GameKind`.
@@ -50,13 +51,13 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         return url
     }
 
-    static func dailyChatURL(instanceID: UUID) -> URL {
+    static func dailyChatURL(questionID: UUID) -> URL {
         var components = URLComponents()
         components.scheme = scheme
         components.host = "daily"
         components.path = "/chat"
         components.queryItems = [
-            URLQueryItem(name: "instanceId", value: instanceID.uuidString),
+            URLQueryItem(name: "questionId", value: questionID.uuidString),
         ]
 
         guard let url = components.url else {
@@ -152,8 +153,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         case ("daily", ["today"]):
             self = .dailyToday(coupleDayID: query.uuidValue(named: "coupleDayId"))
         case ("daily", ["chat"]):
-            guard let instanceID = query.uuidValue(named: "instanceId") else { return nil }
-            self = .dailyChat(instanceID: instanceID)
+            guard let questionID = query.uuidValue(named: "questionId") else { return nil }
+            self = .dailyChat(questionID: questionID)
         case ("memories", []):
             self = .memories
         case ("games", _) where pathComponents.count == 1:

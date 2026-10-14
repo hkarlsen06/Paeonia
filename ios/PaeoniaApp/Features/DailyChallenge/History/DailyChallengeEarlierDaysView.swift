@@ -42,8 +42,8 @@ struct DailyChallengeEarlierDaysView: View {
                         DailyChallengeReadCard(
                             question: question,
                             participants: viewModel.participants,
-                            lastMessagePreview: viewModel.threadPreview(for: question.id),
-                            hasUnreadChat: viewModel.hasUnreadChat(for: question.id),
+                            lastMessagePreview: viewModel.threadPreview(for: question.questionID),
+                            hasUnreadChat: viewModel.hasUnreadChat(for: question.questionID),
                             hasNewPartnerAnswer: viewModel.hasNewPartnerAnswer(question),
                             onOpen: { onOpenChat(question) }
                         )

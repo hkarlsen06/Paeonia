@@ -9,6 +9,7 @@ import { getByUuid, withTouch } from "./lib/db";
 import { gamePushStillWanted } from "./lib/gameRegistry";
 import type { GamePushKind } from "./lib/games";
 import { uuidArg } from "./lib/ids";
+import { hasStartedToday } from "./lib/questionTimeStatus";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { nowIso } from "./lib/time";
 
@@ -56,6 +57,8 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
   switch (row.kind) {
     case "streak_reminder":
       return preference?.streak_reminders_enabled ?? false;
+    case "question_time_reminder":
+      return preference?.question_time_enabled ?? false;
     case "daily_challenge_completed":
       return preference?.daily_challenge_enabled ?? false;
     case "partner_answered":
@@ -96,6 +99,13 @@ async function rowStillWanted(
   }
   if (typeof payload.couple_id === "string" && !(await isActiveCoupleMember(ctx, recipientUserId, payload.couple_id))) {
     return { wanted: false, reason: "ineligible" };
+  }
+  if (
+    row.kind === "question_time_reminder" &&
+    typeof payload.couple_id === "string" &&
+    (await hasStartedToday(ctx, payload.couple_id, recipientUserId, nowIso()))
+  ) {
+    return { wanted: false, reason: "out_of_date" };
   }
   return { wanted: true };
 }

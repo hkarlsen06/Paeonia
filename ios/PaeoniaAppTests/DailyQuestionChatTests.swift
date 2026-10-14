@@ -94,7 +94,7 @@ struct DailyQuestionChatViewModelTests {
         let operation = try #require(creates.first)
         await fixture.cache.confirm(
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             coupleID: fixture.question.coupleID,
             clientOperationID: operation.operation.id,
             threadID: fixture.threadID,
@@ -254,7 +254,7 @@ struct DailyQuestionChatViewModelTests {
         #expect(viewModel.messages.first?.isSending == true)
         let cached = await fixture.cache.messages(
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id
+            questionID: fixture.question.questionID
         )
         #expect(cached.count == 1)
         #expect(cached.first?.sendFailed == false)
@@ -370,7 +370,7 @@ struct DailyQuestionChatEditTests {
         DailyQuestionChatMessage(
             id: fixture.messageID,
             threadID: fixture.threadID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             senderUserID: fixture.ownerUserID,
             body: "Se you soon",
             createdAt: Date.now.addingTimeInterval(-seconds),
@@ -384,7 +384,7 @@ struct DailyQuestionChatEditTests {
         let viewModel = fixture.makeViewModel()
         let fresh = ownMessage(fixture)
         let partners = DailyQuestionChatMessage(
-            id: UUID(), threadID: fresh.threadID, instanceID: fresh.instanceID,
+            id: UUID(), threadID: fresh.threadID, questionID: fresh.questionID,
             senderUserID: fixture.partnerUserID, body: "Hi", createdAt: fresh.createdAt,
             clientOperationID: nil, isSending: false
         )
@@ -447,7 +447,7 @@ struct DailyQuestionChatEditTests {
         let viewModel = fixture.makeViewModel()
         let first = ownMessage(fixture)
         let second = DailyQuestionChatMessage(
-            id: UUID(), threadID: first.threadID, instanceID: first.instanceID,
+            id: UUID(), threadID: first.threadID, questionID: first.questionID,
             senderUserID: fixture.ownerUserID, body: "Another", createdAt: first.createdAt,
             clientOperationID: nil, isSending: false
         )
@@ -475,13 +475,13 @@ struct DailyQuestionChatEditTests {
 
 struct DailyQuestionChatMergeTests {
     @Test func mergeOrdersMessagesAndKeepsOneCopyPerOperation() throws {
-        let instanceID = UUID()
+        let questionID = UUID()
         let senderID = UUID()
         let operationID = UUID()
         let first = DailyQuestionChatMessage(
             id: UUID(),
             threadID: UUID(),
-            instanceID: instanceID,
+            questionID: questionID,
             senderUserID: senderID,
             body: "First",
             createdAt: Date(timeIntervalSince1970: 1),
@@ -491,7 +491,7 @@ struct DailyQuestionChatMergeTests {
         let confirmed = DailyQuestionChatMessage(
             id: UUID(),
             threadID: UUID(),
-            instanceID: instanceID,
+            questionID: questionID,
             senderUserID: senderID,
             body: "Second",
             createdAt: Date(timeIntervalSince1970: 2),
@@ -501,7 +501,7 @@ struct DailyQuestionChatMergeTests {
         let optimistic = DailyQuestionChatMessage(
             id: operationID,
             threadID: nil,
-            instanceID: instanceID,
+            questionID: questionID,
             senderUserID: senderID,
             body: "Second",
             createdAt: Date(timeIntervalSince1970: 2),
@@ -527,7 +527,7 @@ struct DailyQuestionChatReadMarkTests {
         DailyQuestionThreadSummary(
             threadID: threadID,
             coupleID: UUID(),
-            instanceID: UUID(),
+            questionID: UUID(),
             createdAt: sentAt,
             updatedAt: sentAt,
             lastMessageID: sender == nil ? nil : UUID(),
@@ -613,7 +613,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
         let optimistic = DailyQuestionChatMessage(
             id: operation.id,
             threadID: nil,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             senderUserID: fixture.ownerUserID,
             body: "Hello",
             createdAt: operation.localCreatedAt,
@@ -622,7 +622,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
         )
         await fixture.cache.append(optimistic, ownerUserID: fixture.ownerUserID)
         let payload = CreateDailyQuestionThreadMessageOperationPayload(
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             coupleID: fixture.question.coupleID,
             body: "Hello"
         )
@@ -640,7 +640,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
         let result = try await handler.send(snapshot, context: chatSyncContext(ownerUserID: fixture.ownerUserID))
         let messages = await fixture.cache.messages(
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id
+            questionID: fixture.question.questionID
         )
 
         #expect(result == .succeeded)
@@ -657,7 +657,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
             DailyQuestionChatMessage(
                 id: operation.id,
                 threadID: nil,
-                instanceID: fixture.question.id,
+                questionID: fixture.question.questionID,
                 senderUserID: fixture.ownerUserID,
                 body: "Second",
                 createdAt: operation.localCreatedAt,
@@ -667,7 +667,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
             ownerUserID: fixture.ownerUserID
         )
         let payload = SendDailyQuestionThreadMessageOperationPayload(
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             coupleID: fixture.question.coupleID,
             threadID: nil,
             body: "Second"
@@ -696,7 +696,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
         await fixture.gateway.setFailure(true)
         let operation = fixture.operationProvider.makeOperation()
         let payload = CreateDailyQuestionThreadMessageOperationPayload(
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             coupleID: fixture.question.coupleID,
             body: "Hello"
         )
@@ -748,7 +748,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
                 kind: .createDailyQuestionThreadWithMessage,
                 payload: try JSONEncoder().encode(
                     CreateDailyQuestionThreadMessageOperationPayload(
-                        instanceID: fixture.question.id,
+                        questionID: fixture.question.questionID,
                         coupleID: fixture.question.coupleID,
                         body: "First"
                     )
@@ -769,7 +769,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
                 kind: .sendThreadMessage,
                 payload: try JSONEncoder().encode(
                     SendDailyQuestionThreadMessageOperationPayload(
-                        instanceID: fixture.question.id,
+                        questionID: fixture.question.questionID,
                         coupleID: fixture.question.coupleID,
                         threadID: fixture.threadID,
                         body: "Second"
@@ -790,7 +790,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
             DailyQuestionChatMessage(
                 id: operation.id,
                 threadID: fixture.threadID,
-                instanceID: fixture.question.id,
+                questionID: fixture.question.questionID,
                 senderUserID: fixture.ownerUserID,
                 body: "Second",
                 createdAt: operation.localCreatedAt,
@@ -814,7 +814,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
                 kind: .sendThreadMessage,
                 payload: try JSONEncoder().encode(
                     SendDailyQuestionThreadMessageOperationPayload(
-                        instanceID: fixture.question.id,
+                        questionID: fixture.question.questionID,
                         coupleID: fixture.question.coupleID,
                         threadID: fixture.threadID,
                         body: "Second"
@@ -829,7 +829,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
         #expect(isTerminal)
         let cached = await fixture.cache.messages(
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id
+            questionID: fixture.question.questionID
         )
         #expect(cached.first?.sendFailed == true)
         #expect(cached.first?.isSending == false)
@@ -855,7 +855,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
                     kind: .sendThreadMessage,
                     payload: try JSONEncoder().encode(
                         SendDailyQuestionThreadMessageOperationPayload(
-                            instanceID: fixture.question.id,
+                            questionID: fixture.question.questionID,
                             coupleID: fixture.question.coupleID,
                             threadID: fixture.threadID,
                             body: "Second"
@@ -871,34 +871,84 @@ struct DailyQuestionChatPendingOperationHandlerTests {
         #expect(threw)
     }
 
+    /// A message written in one couple must not be sent to the couple the user joined later.
+    @Test func aMessageFromAnEarlierRelationshipIsNotSentToTheNewOne() async throws {
+        let fixture = ChatTestFixture()
+        let operation = fixture.operationProvider.makeOperation()
+        let data = try JSONEncoder().encode(
+            CreateDailyQuestionThreadMessageOperationPayload(
+                questionID: fixture.question.questionID,
+                coupleID: fixture.question.coupleID,
+                body: "Hi"
+            )
+        )
+        await fixture.cache.append(
+            DailyQuestionChatMessage(
+                id: operation.id, threadID: nil, questionID: fixture.question.questionID,
+                senderUserID: fixture.ownerUserID, body: "Hi", createdAt: operation.localCreatedAt,
+                clientOperationID: operation.id, isSending: true
+            ),
+            ownerUserID: fixture.ownerUserID
+        )
+        let context = SyncContext(
+            session: SyncSession(userID: fixture.ownerUserID, activeCoupleID: UUID()),
+            reason: .localChange,
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: fixture.pendingStore
+        )
+
+        let result = try await CreateDailyQuestionThreadMessagePendingOperationHandler(
+            gateway: fixture.gateway,
+            cache: fixture.cache
+        ).send(
+            pendingSnapshot(
+                ownerUserID: fixture.ownerUserID,
+                operation: operation,
+                kind: .createDailyQuestionThreadWithMessage,
+                payload: data
+            ),
+            context: context
+        )
+
+        var isTerminal = false
+        if case .terminalFailure = result { isTerminal = true }
+        #expect(isTerminal)
+        #expect(await fixture.gateway.createCallCount == 0)
+        let cached = await fixture.cache.messages(
+            ownerUserID: fixture.ownerUserID,
+            questionID: fixture.question.questionID
+        )
+        #expect(cached.first?.sendFailed == true)
+    }
+
     /// A message queued behind a refused thread used to retry forever.
     @Test func aRefusedThreadFailsTheMessagesWaitingForIt() async throws {
         let fixture = ChatTestFixture()
         let ownerUserID = fixture.ownerUserID
-        let instanceID = fixture.question.id
+        let questionID = fixture.question.questionID
         let coupleID = fixture.question.coupleID
-        let otherInstanceID = UUID()
+        let otherQuestionID = UUID()
         let create = fixture.operationProvider.makeOperation()
         let waiting = fixture.operationProvider.makeOperation()
         let otherChat = fixture.operationProvider.makeOperation()
         let createData = try JSONEncoder().encode(
             CreateDailyQuestionThreadMessageOperationPayload(
-                instanceID: instanceID,
+                questionID: questionID,
                 coupleID: coupleID,
                 body: "First"
             )
         )
 
-        for (operation, messageInstanceID, body) in [
-            (create, instanceID, "First"),
-            (waiting, instanceID, "Second"),
-            (otherChat, otherInstanceID, "Other chat")
+        for (operation, messageQuestionID, body) in [
+            (create, questionID, "First"),
+            (waiting, questionID, "Second"),
+            (otherChat, otherQuestionID, "Other chat")
         ] {
             await fixture.cache.append(
                 DailyQuestionChatMessage(
                     id: operation.id,
                     threadID: nil,
-                    instanceID: messageInstanceID,
+                    questionID: messageQuestionID,
                     senderUserID: ownerUserID,
                     body: body,
                     createdAt: operation.localCreatedAt,
@@ -918,9 +968,9 @@ struct DailyQuestionChatPendingOperationHandlerTests {
             )
         )
         // Both sends have no thread id yet. Only the one for the refused chat may fail.
-        for (operation, sendInstanceID, body) in [
-            (waiting, instanceID, "Second"),
-            (otherChat, otherInstanceID, "Other chat")
+        for (operation, sendQuestionID, body) in [
+            (waiting, questionID, "Second"),
+            (otherChat, otherQuestionID, "Other chat")
         ] {
             try await fixture.pendingStore.enqueue(
                 PendingSyncOperationRequest(
@@ -930,7 +980,7 @@ struct DailyQuestionChatPendingOperationHandlerTests {
                     idempotencyScope: "chat",
                     requestData: try JSONEncoder().encode(
                         SendDailyQuestionThreadMessageOperationPayload(
-                            instanceID: sendInstanceID,
+                            questionID: sendQuestionID,
                             coupleID: coupleID,
                             threadID: nil,
                             body: body
@@ -964,9 +1014,9 @@ struct DailyQuestionChatPendingOperationHandlerTests {
             kind: .sendThreadMessage
         )
         #expect(stillWaiting.map(\.operation.id) == [otherChat.id])
-        let refusedChat = await fixture.cache.messages(ownerUserID: ownerUserID, instanceID: instanceID)
+        let refusedChat = await fixture.cache.messages(ownerUserID: ownerUserID, questionID: questionID)
         #expect(refusedChat.first(where: { $0.clientOperationID == waiting.id })?.sendFailed == true)
-        let untouchedChat = await fixture.cache.messages(ownerUserID: ownerUserID, instanceID: otherInstanceID)
+        let untouchedChat = await fixture.cache.messages(ownerUserID: ownerUserID, questionID: otherQuestionID)
         #expect(untouchedChat.first?.sendFailed == false)
         #expect(untouchedChat.first?.isSending == true)
     }
@@ -988,7 +1038,7 @@ struct DailyQuestionChatLiveTests {
         DailyQuestionChatMessage(
             id: id,
             threadID: fixture.threadID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             senderUserID: fixture.partnerUserID,
             body: body,
             createdAt: Date(timeIntervalSince1970: seconds),
@@ -1008,7 +1058,7 @@ struct DailyQuestionChatLiveTests {
         let appeared = await waitForMain { viewModel.messages.map(\.body) == ["Thinking of you"] }
         #expect(appeared)
         // Offline reopen reads the cache, so the message must be stored there.
-        let cached = await fixture.cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        let cached = await fixture.cache.messages(ownerUserID: fixture.ownerUserID, questionID: fixture.question.questionID)
         #expect(cached.map(\.body) == ["Thinking of you"])
         observing.cancel()
         await observing.value
@@ -1029,7 +1079,7 @@ struct DailyQuestionChatLiveTests {
         let serverCopy = DailyQuestionChatMessage(
             id: fixture.messageID,
             threadID: fixture.threadID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             senderUserID: fixture.ownerUserID,
             body: "On my way",
             createdAt: Date(timeIntervalSince1970: 3),
@@ -1049,7 +1099,7 @@ struct DailyQuestionChatLiveTests {
         let operation = try #require(sends.first)
         await fixture.cache.confirm(
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             coupleID: fixture.question.coupleID,
             clientOperationID: operation.operation.id,
             threadID: fixture.threadID,
@@ -1112,7 +1162,7 @@ struct DailyQuestionChatLiveTests {
         await transport.push(
             """
             [{"thread_id":"\(fixture.threadID.uuidString)","couple_id":"\(fixture.question.coupleID.uuidString)",
-            "kind":"daily_question","daily_question_instance_id":"\(fixture.question.id.uuidString)",
+            "kind":"daily_question","daily_question_id":"\(fixture.question.questionID.uuidString)",
             "created_at":"2026-05-01T10:00:00.000Z","updated_at":"2026-05-01T10:00:05.000Z","deleted_at":null,
             "moderation_status":"visible","last_message_id":"\(fixture.messageID.uuidString)",
             "last_message_at":"2026-05-01T10:00:05.000Z","last_message_sender_user_id":"\(fixture.partnerUserID.uuidString)",
@@ -1143,7 +1193,7 @@ struct DailyQuestionChatLiveTests {
         let serverCopy = DailyQuestionChatMessage(
             id: fixture.messageID,
             threadID: fixture.threadID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             senderUserID: fixture.ownerUserID,
             body: "On my way",
             createdAt: Date(timeIntervalSince1970: 3),
@@ -1168,12 +1218,12 @@ struct DailyQuestionChatLiveTests {
 
     @Test func claimingPendingKeepsTheOperationOfAMessageTheCacheAlreadyClaimed() {
         let owner = UUID()
-        let instance = UUID()
+        let question = UUID()
         let serverID = UUID()
         let operation = UUID()
         func message(_ id: UUID, operation: UUID? = nil, sending: Bool = false) -> DailyQuestionChatMessage {
             DailyQuestionChatMessage(
-                id: id, threadID: nil, instanceID: instance, senderUserID: owner, body: "ok",
+                id: id, threadID: nil, questionID: question, senderUserID: owner, body: "ok",
                 createdAt: Date(timeIntervalSince1970: 3), clientOperationID: operation, isSending: sending
             )
         }
@@ -1198,21 +1248,21 @@ struct DailyQuestionChatLiveTests {
         )
         let updates = service.liveMessageUpdates(
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             threadID: fixture.threadID
         )
         var iterator = updates.makeAsyncIterator()
 
         await fixture.gateway.liveSource.push([partnerMessage(fixture, body: "Before")])
         await iterator.next()
-        #expect(await fixture.cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id).count == 1)
+        #expect(await fixture.cache.messages(ownerUserID: fixture.ownerUserID, questionID: fixture.question.questionID).count == 1)
 
         // Sign-out clears the cache. The subscription can still deliver one more result.
         await fixture.cache.clearAll()
         await fixture.gateway.liveSource.push([partnerMessage(fixture, body: "After")])
 
         #expect(await iterator.next() == nil)
-        #expect(await fixture.cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id).isEmpty)
+        #expect(await fixture.cache.messages(ownerUserID: fixture.ownerUserID, questionID: fixture.question.questionID).isEmpty)
     }
 
     @Test func theFileCacheRefusesAMessageSaveThatStartedBeforeAPurge() async throws {
@@ -1228,7 +1278,7 @@ struct DailyQuestionChatLiveTests {
         let wrote = await cache.saveMessages(
             [message],
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             unlessPurgedSince: started
         )
 
@@ -1238,18 +1288,18 @@ struct DailyQuestionChatLiveTests {
         #expect(await cache.saveMessages(
             [message],
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             unlessPurgedSince: current
         ))
-        #expect(await cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id).count == 1)
+        #expect(await cache.messages(ownerUserID: fixture.ownerUserID, questionID: fixture.question.questionID).count == 1)
     }
 
     @Test func claimingPendingMatchesTheOldestSendingMessageOnce() {
         let owner = UUID()
-        let instance = UUID()
+        let question = UUID()
         func message(_ id: UUID, _ body: String, at seconds: Double, operation: UUID? = nil, sending: Bool = false) -> DailyQuestionChatMessage {
             DailyQuestionChatMessage(
-                id: id, threadID: nil, instanceID: instance, senderUserID: owner, body: body,
+                id: id, threadID: nil, questionID: question, senderUserID: owner, body: body,
                 createdAt: Date(timeIntervalSince1970: seconds), clientOperationID: operation, isSending: sending
             )
         }
@@ -1275,23 +1325,23 @@ struct DailyQuestionChatLiveTests {
         await gateway.setRemote(summaries: [fixture.summary], messages: [earlier])
         await gateway.holdLoads()
         let owner = fixture.ownerUserID
-        let instanceID = fixture.question.id
+        let questionID = fixture.question.questionID
         let threadID = fixture.threadID
 
         let refresh = Task {
-            try await service.refreshMessages(ownerUserID: owner, instanceID: instanceID, threadID: threadID)
+            try await service.refreshMessages(ownerUserID: owner, questionID: questionID, threadID: threadID)
         }
         #expect(await waitUntil { await gateway.loadCallCount == 1 })
 
         // The live result lands while the request is still out.
-        let updates = service.liveMessageUpdates(ownerUserID: owner, instanceID: instanceID, threadID: threadID)
+        let updates = service.liveMessageUpdates(ownerUserID: owner, questionID: questionID, threadID: threadID)
         var iterator = updates.makeAsyncIterator()
         await gateway.liveSource.push([earlier, justNow])
         await iterator.next()
         await gateway.releaseLoads()
         _ = try await refresh.value
 
-        let cached = await fixture.cache.messages(ownerUserID: owner, instanceID: instanceID)
+        let cached = await fixture.cache.messages(ownerUserID: owner, questionID: questionID)
         #expect(cached.map(\.body) == ["Earlier", "Just now"])
     }
 
@@ -1305,12 +1355,12 @@ struct DailyQuestionChatLiveTests {
         )
         await gateway.holdLoads()
         let owner = fixture.ownerUserID
-        let instanceID = fixture.question.id
+        let questionID = fixture.question.questionID
         let threadID = fixture.threadID
 
         let summaries = Task { try await service.refreshThreadSummaries(ownerUserID: owner) }
         let messages = Task {
-            try await service.refreshMessages(ownerUserID: owner, instanceID: instanceID, threadID: threadID)
+            try await service.refreshMessages(ownerUserID: owner, questionID: questionID, threadID: threadID)
         }
         #expect(await waitUntil { await gateway.loadCallCount == 2 })
 
@@ -1322,7 +1372,7 @@ struct DailyQuestionChatLiveTests {
 
         #expect(refreshedSummaries.isEmpty)
         #expect(await fixture.cache.summaries(ownerUserID: owner).isEmpty)
-        #expect(await fixture.cache.messages(ownerUserID: owner, instanceID: instanceID).isEmpty)
+        #expect(await fixture.cache.messages(ownerUserID: owner, questionID: questionID).isEmpty)
     }
 
     @Test func theFileCacheKeepsTheConfirmedCopyWhenTheSendingCopyArrivesLate() async {
@@ -1336,7 +1386,7 @@ struct DailyQuestionChatLiveTests {
         // The send's confirmation can land before the queued message is added to the cache.
         await cache.confirm(
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             coupleID: fixture.question.coupleID,
             clientOperationID: operation.id,
             threadID: fixture.threadID,
@@ -1349,7 +1399,7 @@ struct DailyQuestionChatLiveTests {
             DailyQuestionChatMessage(
                 id: operation.id,
                 threadID: nil,
-                instanceID: fixture.question.id,
+                questionID: fixture.question.questionID,
                 senderUserID: fixture.ownerUserID,
                 body: "Hi",
                 createdAt: operation.localCreatedAt,
@@ -1359,7 +1409,7 @@ struct DailyQuestionChatLiveTests {
             ownerUserID: fixture.ownerUserID
         )
 
-        let messages = await cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        let messages = await cache.messages(ownerUserID: fixture.ownerUserID, questionID: fixture.question.questionID)
         #expect(messages.map(\.id) == [fixture.messageID])
         #expect(messages.first?.isSending == false)
     }
@@ -1377,7 +1427,7 @@ struct DailyQuestionChatLiveTests {
                 DailyQuestionChatMessage(
                     id: operation.id,
                     threadID: nil,
-                    instanceID: fixture.question.id,
+                    questionID: fixture.question.questionID,
                     senderUserID: fixture.ownerUserID,
                     body: "Hi",
                     createdAt: operation.localCreatedAt,
@@ -1392,12 +1442,12 @@ struct DailyQuestionChatLiveTests {
         await cache.discardFailed(ownerUserID: fixture.ownerUserID, clientOperationID: sending.id)
         let afterSendingDiscard = await cache.messages(
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id
+            questionID: fixture.question.questionID
         )
         await cache.discardFailed(ownerUserID: fixture.ownerUserID, clientOperationID: failed.id)
         let afterFailedDiscard = await cache.messages(
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id
+            questionID: fixture.question.questionID
         )
 
         #expect(afterSendingDiscard.count == 2)
@@ -1448,7 +1498,7 @@ struct DailyQuestionChatVoiceTests {
         _ = try await service.queueVoiceMessage(
             ownerUserID: fixture.ownerUserID,
             coupleID: fixture.question.coupleID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             threadID: fixture.threadID,
             voice: DailyQuestionChatVoicePayload(
                 messageID: fixture.messageID,
@@ -1461,7 +1511,11 @@ struct DailyQuestionChatVoiceTests {
             replyToMessageID: nil,
             operation: fixture.operationProvider.makeOperation()
         )
-        let firstTry = await service.pendingMessages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        let firstTry = await service.pendingMessages(
+            ownerUserID: fixture.ownerUserID,
+            coupleID: fixture.question.coupleID,
+            questionID: fixture.question.questionID
+        )
         #expect(firstTry.first?.isHeldOnPhone == false)
 
         let queued = try #require(
@@ -1475,7 +1529,11 @@ struct DailyQuestionChatVoiceTests {
             nextRetryAt: nil,
             at: Date()
         )
-        let failed = await service.pendingMessages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        let failed = await service.pendingMessages(
+            ownerUserID: fixture.ownerUserID,
+            coupleID: fixture.question.coupleID,
+            questionID: fixture.question.questionID
+        )
         #expect(failed.first?.isHeldOnPhone == true)
     }
 
@@ -1487,7 +1545,7 @@ struct DailyQuestionChatVoiceTests {
         _ = try await service.queueVoiceMessage(
             ownerUserID: fixture.ownerUserID,
             coupleID: fixture.question.coupleID,
-            instanceID: fixture.question.id,
+            questionID: fixture.question.questionID,
             threadID: fixture.threadID,
             voice: DailyQuestionChatVoicePayload(
                 messageID: fixture.messageID,
@@ -1501,7 +1559,11 @@ struct DailyQuestionChatVoiceTests {
             operation: fixture.operationProvider.makeOperation()
         )
 
-        let pending = await service.pendingMessages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        let pending = await service.pendingMessages(
+            ownerUserID: fixture.ownerUserID,
+            coupleID: fixture.question.coupleID,
+            questionID: fixture.question.questionID
+        )
         #expect(pending.map(\.id) == [fixture.messageID])
         #expect(pending.first?.voice?.data == recording)
 
@@ -1520,7 +1582,7 @@ struct DailyQuestionChatVoiceTests {
         #expect(result == .succeeded)
         #expect(await uploader.uploadedParentIDs == [fixture.messageID])
         #expect(await fixture.gateway.lastMediaAssetIDs == [assetID])
-        let cached = await fixture.cache.messages(ownerUserID: fixture.ownerUserID, instanceID: fixture.question.id)
+        let cached = await fixture.cache.messages(ownerUserID: fixture.ownerUserID, questionID: fixture.question.questionID)
         #expect(cached.first?.isSending == false)
     }
 
@@ -1532,18 +1594,18 @@ struct DailyQuestionChatVoiceTests {
         let owner = UUID()
         let operationID = UUID()
         let message = DailyQuestionChatMessage(
-            id: UUID(), threadID: nil, instanceID: UUID(), senderUserID: owner, body: "",
+            id: UUID(), threadID: nil, questionID: UUID(), senderUserID: owner, body: "",
             createdAt: Date(timeIntervalSince1970: 1), clientOperationID: operationID, isSending: true,
             voice: DailyQuestionChatVoice(data: Data([7]), durationMs: 900)
         )
         await cache.append(message, ownerUserID: owner)
 
         await cache.confirm(
-            ownerUserID: owner, instanceID: message.instanceID, coupleID: UUID(), clientOperationID: operationID,
+            ownerUserID: owner, questionID: message.questionID, coupleID: UUID(), clientOperationID: operationID,
             threadID: UUID(), messageID: message.id, body: "", senderUserID: owner, createdAt: message.createdAt
         )
 
-        let confirmed = try #require(await cache.messages(ownerUserID: owner, instanceID: message.instanceID).first)
+        let confirmed = try #require(await cache.messages(ownerUserID: owner, questionID: message.questionID).first)
         #expect(!confirmed.isSending)
         #expect(confirmed.voice == message.voice)
     }
@@ -1554,7 +1616,7 @@ struct DailyQuestionChatVoiceTests {
         await fixture.cache.saveMessages(
             [fixture.remoteMessage(body: "Earlier")],
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id
+            questionID: fixture.question.questionID
         )
         let viewModel = fixture.makeViewModel()
         await viewModel.prepare()
@@ -1591,7 +1653,7 @@ struct DailyQuestionChatVoiceTests {
     @Test func aMessageWithoutTextPreviewsByItsAttachment() {
         func summary(mediaType: String?) -> DailyQuestionThreadSummary {
             DailyQuestionThreadSummary(
-                threadID: UUID(), coupleID: UUID(), instanceID: UUID(), createdAt: .now, updatedAt: .now,
+                threadID: UUID(), coupleID: UUID(), questionID: UUID(), createdAt: .now, updatedAt: .now,
                 lastMessageID: UUID(), lastMessageAt: .now, lastMessageSenderUserID: UUID(), lastMessageBody: nil,
                 lastMessageMediaType: mediaType
             )
@@ -1605,7 +1667,7 @@ struct DailyQuestionChatVoiceTests {
         let me = UUID()
         func pendingVoice(_ id: UUID) -> DailyQuestionChatMessage {
             DailyQuestionChatMessage(
-                id: id, threadID: nil, instanceID: UUID(), senderUserID: me, body: "",
+                id: id, threadID: nil, questionID: UUID(), senderUserID: me, body: "",
                 createdAt: Date(timeIntervalSince1970: 1), clientOperationID: UUID(), isSending: true,
                 voice: DailyQuestionChatVoice(data: Data([1]))
             )
@@ -1613,7 +1675,7 @@ struct DailyQuestionChatVoiceTests {
         let first = pendingVoice(UUID())
         let second = pendingVoice(UUID())
         let remoteSecond = DailyQuestionChatMessage(
-            id: second.id, threadID: UUID(), instanceID: second.instanceID, senderUserID: me, body: "",
+            id: second.id, threadID: UUID(), questionID: second.questionID, senderUserID: me, body: "",
             createdAt: Date(timeIntervalSince1970: 2), clientOperationID: nil, isSending: false,
             voice: DailyQuestionChatVoice(mediaAssetID: UUID())
         )
@@ -1626,7 +1688,7 @@ struct DailyQuestionChatVoiceTests {
     @Test func aMessageWithNoTextPreviewsAsAVoiceMessage() {
         func summary(body: String?, messageID: UUID?) -> DailyQuestionThreadSummary {
             DailyQuestionThreadSummary(
-                threadID: UUID(), coupleID: UUID(), instanceID: UUID(), createdAt: .now, updatedAt: .now,
+                threadID: UUID(), coupleID: UUID(), questionID: UUID(), createdAt: .now, updatedAt: .now,
                 lastMessageID: messageID, lastMessageAt: .now, lastMessageSenderUserID: UUID(), lastMessageBody: body
             )
         }
@@ -1640,9 +1702,11 @@ struct DailyQuestionChatVoiceTests {
         let fixture = ChatTestFixture()
         let viewModel = fixture.makeViewModel()
 
-        #expect(viewModel.answers.count == 2)
-        #expect(viewModel.answers.map(\.answeredAt) == viewModel.answers.map(\.answeredAt).sorted())
-        #expect(viewModel.waitingMessage == nil)
+        let round = viewModel.chatRounds().first
+        #expect(viewModel.chatRounds().count == 1)
+        #expect(round?.answers.count == 2)
+        #expect(round?.answers.map(\.answeredAt) == round?.answers.map(\.answeredAt).sorted())
+        #expect(round?.waiting == nil)
     }
 
     @Test func thePageKnowsWhenItHasReadThePhonesCopyOfTheChat() async {
@@ -1663,7 +1727,7 @@ struct DailyQuestionChatVoiceTests {
         await fixture.cache.saveMessages(
             [fixture.remoteMessage(body: "Saved earlier")],
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id
+            questionID: fixture.question.questionID
         )
         let viewModel = fixture.makeViewModel()
 
@@ -1680,7 +1744,7 @@ struct DailyQuestionChatVoiceTests {
         await fixture.cache.saveMessages(
             [fixture.remoteMessage(body: "Earlier")],
             ownerUserID: fixture.ownerUserID,
-            instanceID: fixture.question.id
+            questionID: fixture.question.questionID
         )
         let viewModel = fixture.makeViewModel()
         await viewModel.prepare()
@@ -1706,7 +1770,7 @@ struct DailyQuestionChatVoiceTests {
         let fixture = ChatTestFixture()
         let viewModel = fixture.makeViewModel()
         let sending = DailyQuestionChatMessage(
-            id: UUID(), threadID: nil, instanceID: fixture.question.id, senderUserID: fixture.ownerUserID,
+            id: UUID(), threadID: nil, questionID: fixture.question.questionID, senderUserID: fixture.ownerUserID,
             body: "Hi", createdAt: .now, clientOperationID: UUID(), isSending: true
         )
 
@@ -1715,13 +1779,60 @@ struct DailyQuestionChatVoiceTests {
         #expect(viewModel.replyTarget == nil)
     }
 
+    @Test func thePageStacksEveryDayTheServerSendsAndTakesTheThreadFromThem() async throws {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        let earlierID = UUID()
+        await fixture.gateway.setRounds(try decodedChatRounds(
+            threadID: fixture.threadID,
+            rounds: [
+                // The fixture's question begins in 1970, so the earlier day is older still.
+                (earlierID, "1960-03-03", "1960-03-03T00:00:00.000Z"),
+                (fixture.question.id, "1970-01-01", "1970-01-01T00:00:01.000Z"),
+            ],
+            user: fixture.ownerUserID,
+            coupleID: fixture.question.coupleID,
+            questionID: fixture.question.questionID
+        ))
+
+        #expect(viewModel.rounds.map(\.id) == [fixture.question.id])
+        await viewModel.load()
+
+        #expect(viewModel.rounds.map(\.id) == [earlierID, fixture.question.id])
+        #expect(viewModel.threadID == fixture.threadID)
+        #expect(viewModel.chatRounds().count == 2)
+    }
+
+    @Test func aPageOpenedOnAnEarlierDayScrollsToItAndTheNewestDayIsTheDefault() async throws {
+        let fixture = ChatTestFixture()
+        let newestID = UUID()
+        await fixture.gateway.setRounds(try decodedChatRounds(
+            threadID: nil,
+            rounds: [
+                (fixture.question.id, "1970-01-01", "1970-01-01T00:00:01.000Z"),
+                (newestID, "2026-10-09", "2026-10-09T00:00:00.000Z"),
+            ],
+            user: fixture.ownerUserID,
+            coupleID: fixture.question.coupleID,
+            questionID: fixture.question.questionID
+        ))
+        let focusedOnEarlier = fixture.makeViewModel()
+        await focusedOnEarlier.load()
+        let focusedOnNewest = fixture.makeViewModel(focusesNewest: true)
+        await focusedOnNewest.load()
+
+        #expect(focusedOnEarlier.openingScroll == .oldestRow)
+        #expect(focusedOnNewest.openingScroll == .questionRow(newestID))
+    }
+
     @Test func aHiddenPartnerAnswerStaysOutAndThePageSaysWhoItWaitsFor() {
         let fixture = ChatTestFixture(question: makeChatQuestion(revealed: false))
         let viewModel = fixture.makeViewModel()
 
-        #expect(viewModel.answers.map(\.isOwnAnswer) == [true])
+        let round = viewModel.chatRounds().first
+        #expect(round?.answers.map(\.isOwnAnswer) == [true])
         #expect(!viewModel.isChatAvailable)
-        #expect(viewModel.waitingMessage != nil)
+        #expect(round?.waiting == .reveal)
     }
 }
 
@@ -1773,7 +1884,7 @@ private final class ChatTestFixture {
         DailyQuestionThreadSummary(
             threadID: threadID,
             coupleID: question.coupleID,
-            instanceID: question.id,
+            questionID: question.questionID,
             createdAt: Date(timeIntervalSince1970: 1),
             updatedAt: Date(timeIntervalSince1970: 2),
             lastMessageID: messageID,
@@ -1787,7 +1898,7 @@ private final class ChatTestFixture {
         DailyQuestionChatMessage(
             id: messageID,
             threadID: threadID,
-            instanceID: question.id,
+            questionID: question.questionID,
             senderUserID: ownerUserID,
             body: body,
             createdAt: Date(timeIntervalSince1970: 2),
@@ -1804,7 +1915,10 @@ private final class ChatTestFixture {
         )
     }
 
-    func makeViewModel(service: (any DailyQuestionChatServicing)? = nil) -> DailyQuestionChatViewModel {
+    func makeViewModel(
+        focusesNewest: Bool = false,
+        service: (any DailyQuestionChatServicing)? = nil
+    ) -> DailyQuestionChatViewModel {
         DailyQuestionChatViewModel(
             question: question,
             participants: DailyChallengeParticipants(
@@ -1813,6 +1927,7 @@ private final class ChatTestFixture {
                 partnerUserID: partnerUserID,
                 partnerDisplayName: "Partner"
             ),
+            focusesNewest: focusesNewest,
             service: service ?? makeService(),
             operationProvider: operationProvider
         )
@@ -1825,7 +1940,7 @@ private final class ChatTestFixture {
             DailyQuestionChatMessage(
                 id: operation.id,
                 threadID: nil,
-                instanceID: question.id,
+                questionID: question.questionID,
                 senderUserID: ownerUserID,
                 body: body,
                 createdAt: operation.localCreatedAt,
@@ -1884,8 +1999,12 @@ private actor PausingChatService: DailyQuestionChatServicing {
         pausedRead = nil
     }
 
-    func hasPendingThreadCreation(ownerUserID: UUID, instanceID: UUID) async -> Bool {
-        let result = await base.hasPendingThreadCreation(ownerUserID: ownerUserID, instanceID: instanceID)
+    func hasPendingThreadCreation(ownerUserID: UUID, coupleID: UUID, questionID: UUID) async -> Bool {
+        let result = await base.hasPendingThreadCreation(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            questionID: questionID
+        )
         if pausesNextRead {
             pausesNextRead = false
             await withCheckedContinuation { pausedRead = $0 }
@@ -1901,20 +2020,20 @@ private actor PausingChatService: DailyQuestionChatServicing {
         try await base.refreshThreadSummaries(ownerUserID: ownerUserID)
     }
 
-    func cachedMessages(ownerUserID: UUID, instanceID: UUID) async -> [DailyQuestionChatMessage] {
-        await base.cachedMessages(ownerUserID: ownerUserID, instanceID: instanceID)
+    func cachedMessages(ownerUserID: UUID, questionID: UUID) async -> [DailyQuestionChatMessage] {
+        await base.cachedMessages(ownerUserID: ownerUserID, questionID: questionID)
     }
 
     func refreshMessages(
         ownerUserID: UUID,
-        instanceID: UUID,
+        questionID: UUID,
         threadID: UUID
     ) async throws -> [DailyQuestionChatMessage] {
-        try await base.refreshMessages(ownerUserID: ownerUserID, instanceID: instanceID, threadID: threadID)
+        try await base.refreshMessages(ownerUserID: ownerUserID, questionID: questionID, threadID: threadID)
     }
 
-    func pendingMessages(ownerUserID: UUID, instanceID: UUID) async -> [DailyQuestionChatMessage] {
-        await base.pendingMessages(ownerUserID: ownerUserID, instanceID: instanceID)
+    func pendingMessages(ownerUserID: UUID, coupleID: UUID, questionID: UUID) async -> [DailyQuestionChatMessage] {
+        await base.pendingMessages(ownerUserID: ownerUserID, coupleID: coupleID, questionID: questionID)
     }
 
     func discardFailedMessage(ownerUserID: UUID, clientOperationID: UUID) async {
@@ -1924,7 +2043,7 @@ private actor PausingChatService: DailyQuestionChatServicing {
     func queueMessage(
         ownerUserID: UUID,
         coupleID: UUID,
-        instanceID: UUID,
+        questionID: UUID,
         threadID: UUID?,
         body: String,
         photos: DailyQuestionChatPhotosPayload?,
@@ -1935,7 +2054,7 @@ private actor PausingChatService: DailyQuestionChatServicing {
         try await base.queueMessage(
             ownerUserID: ownerUserID,
             coupleID: coupleID,
-            instanceID: instanceID,
+            questionID: questionID,
             threadID: threadID,
             body: body,
             photos: photos,
@@ -1984,6 +2103,7 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
     private var answerSeenFails = false
     private(set) var lastEdit: (messageID: UUID, body: String)?
     private var editError: (any Error)?
+    private var roundsRow: DailyQuestionChatRoundsRow?
 
     init(threadID: UUID, messageID: UUID) {
         self.threadID = threadID
@@ -2000,6 +2120,15 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
 
     func setFailure(_ shouldFail: Bool) {
         self.shouldFail = shouldFail
+    }
+
+    func setRounds(_ row: DailyQuestionChatRoundsRow?) {
+        roundsRow = row
+    }
+
+    func loadRounds(coupleID _: UUID, questionID _: UUID) async throws -> DailyQuestionChatRoundsRow {
+        guard let roundsRow else { throw DailyQuestionChatServiceError.unavailable }
+        return roundsRow
     }
 
     func setAnswerSeenFailure(_ fails: Bool) {
@@ -2047,7 +2176,7 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
         return result
     }
 
-    func loadMessages(threadID _: UUID, instanceID _: UUID) async throws -> [DailyQuestionChatMessage] {
+    func loadMessages(threadID _: UUID, questionID _: UUID) async throws -> [DailyQuestionChatMessage] {
         loadCallCount += 1
         let result = messages
         await waitWhileHeld()
@@ -2060,7 +2189,7 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
         await withCheckedContinuation { heldLoads.append($0) }
     }
 
-    nonisolated func liveMessages(threadID _: UUID, instanceID _: UUID) -> AsyncStream<[DailyQuestionChatMessage]> {
+    nonisolated func liveMessages(threadID _: UUID, questionID _: UUID) -> AsyncStream<[DailyQuestionChatMessage]> {
         liveSource.stream()
     }
 
@@ -2095,14 +2224,30 @@ private actor ChatTestGateway: DailyQuestionChatGateway {
 private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
     private var storedSummaries: [UUID: [DailyQuestionThreadSummary]] = [:]
     private var storedMessages: [UUID: [UUID: [DailyQuestionChatMessage]]] = [:]
+    private var storedRounds: [UUID: [UUID: DailyQuestionChatRoundsRow]] = [:]
     private var generation = 0
 
     func summaries(ownerUserID: UUID) -> [DailyQuestionThreadSummary] {
         storedSummaries[ownerUserID] ?? []
     }
 
-    func messages(ownerUserID: UUID, instanceID: UUID) -> [DailyQuestionChatMessage] {
-        storedMessages[ownerUserID]?[instanceID] ?? []
+    func messages(ownerUserID: UUID, questionID: UUID) -> [DailyQuestionChatMessage] {
+        storedMessages[ownerUserID]?[questionID] ?? []
+    }
+
+    func rounds(ownerUserID: UUID, questionID: UUID) -> DailyQuestionChatRoundsRow? {
+        storedRounds[ownerUserID]?[questionID]
+    }
+
+    func saveRounds(
+        _ rounds: DailyQuestionChatRoundsRow,
+        ownerUserID: UUID,
+        questionID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool {
+        guard generation == self.generation else { return false }
+        storedRounds[ownerUserID, default: [:]][questionID] = rounds
+        return true
     }
 
     func saveSummaries(_ summaries: [DailyQuestionThreadSummary], ownerUserID: UUID) {
@@ -2112,36 +2257,36 @@ private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
     func saveMessages(
         _ messages: [DailyQuestionChatMessage],
         ownerUserID: UUID,
-        instanceID: UUID
+        questionID: UUID
     ) {
-        let optimistic = storedMessages[ownerUserID]?[instanceID] ?? []
-        storedMessages[ownerUserID, default: [:]][instanceID] = DailyQuestionChatMessage.visibleOrdered(
+        let optimistic = storedMessages[ownerUserID]?[questionID] ?? []
+        storedMessages[ownerUserID, default: [:]][questionID] = DailyQuestionChatMessage.visibleOrdered(
             remote: messages,
             optimistic: optimistic
         )
     }
 
     func append(_ message: DailyQuestionChatMessage, ownerUserID: UUID) {
-        let existing = storedMessages[ownerUserID]?[message.instanceID] ?? []
+        let existing = storedMessages[ownerUserID]?[message.questionID] ?? []
         if let operationID = message.clientOperationID,
            existing.contains(where: { $0.clientOperationID == operationID && !$0.isSending }) {
             return
         }
-        storedMessages[ownerUserID, default: [:]][message.instanceID, default: []].append(message)
+        storedMessages[ownerUserID, default: [:]][message.questionID, default: []].append(message)
     }
 
     func markFailed(ownerUserID: UUID, clientOperationID: UUID) {
-        guard let instanceIDs = storedMessages[ownerUserID]?.keys else { return }
-        for instanceID in instanceIDs {
+        guard let questionIDs = storedMessages[ownerUserID]?.keys else { return }
+        for questionID in questionIDs {
             guard
-                let messages = storedMessages[ownerUserID]?[instanceID],
+                let messages = storedMessages[ownerUserID]?[questionID],
                 let index = messages.firstIndex(where: { $0.clientOperationID == clientOperationID })
             else { continue }
             let message = messages[index]
-            storedMessages[ownerUserID]?[instanceID]?[index] = DailyQuestionChatMessage(
+            storedMessages[ownerUserID]?[questionID]?[index] = DailyQuestionChatMessage(
                 id: message.id,
                 threadID: message.threadID,
-                instanceID: message.instanceID,
+                questionID: message.questionID,
                 senderUserID: message.senderUserID,
                 body: message.body,
                 createdAt: message.createdAt,
@@ -2154,9 +2299,9 @@ private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
     }
 
     func discardFailed(ownerUserID: UUID, clientOperationID: UUID) {
-        guard let instanceIDs = storedMessages[ownerUserID]?.keys else { return }
-        for instanceID in Array(instanceIDs) {
-            storedMessages[ownerUserID]?[instanceID]?.removeAll {
+        guard let questionIDs = storedMessages[ownerUserID]?.keys else { return }
+        for questionID in Array(questionIDs) {
+            storedMessages[ownerUserID]?[questionID]?.removeAll {
                 $0.clientOperationID == clientOperationID && $0.sendFailed
             }
         }
@@ -2164,7 +2309,7 @@ private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
 
     func confirm(
         ownerUserID: UUID,
-        instanceID: UUID,
+        questionID: UUID,
         coupleID: UUID,
         clientOperationID: UUID,
         threadID: UUID,
@@ -2173,13 +2318,13 @@ private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
         senderUserID: UUID,
         createdAt: Date
     ) {
-        let index = storedMessages[ownerUserID]?[instanceID]?.firstIndex(where: {
+        let index = storedMessages[ownerUserID]?[questionID]?.firstIndex(where: {
             $0.clientOperationID == clientOperationID
         })
         let confirmed = DailyQuestionChatMessage(
             id: messageID,
             threadID: threadID,
-            instanceID: instanceID,
+            questionID: questionID,
             senderUserID: senderUserID,
             body: body,
             createdAt: createdAt,
@@ -2187,16 +2332,16 @@ private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
             isSending: false
         )
         if let index {
-            storedMessages[ownerUserID]?[instanceID]?[index] = confirmed
+            storedMessages[ownerUserID]?[questionID]?[index] = confirmed
         } else {
-            storedMessages[ownerUserID, default: [:]][instanceID, default: []].append(confirmed)
+            storedMessages[ownerUserID, default: [:]][questionID, default: []].append(confirmed)
         }
-        if storedSummaries[ownerUserID]?.contains(where: { $0.instanceID == instanceID }) != true {
+        if storedSummaries[ownerUserID]?.contains(where: { $0.questionID == questionID }) != true {
             storedSummaries[ownerUserID, default: []].append(
                 DailyQuestionThreadSummary(
                     threadID: threadID,
                     coupleID: coupleID,
-                    instanceID: instanceID,
+                    questionID: questionID,
                     createdAt: createdAt,
                     updatedAt: createdAt,
                     lastMessageID: messageID,
@@ -2221,26 +2366,26 @@ private actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
     func saveMessages(
         _ messages: [DailyQuestionChatMessage],
         ownerUserID: UUID,
-        instanceID: UUID,
+        questionID: UUID,
         unlessPurgedSince generation: Int
     ) -> Bool {
         guard generation == self.generation else { return false }
-        saveMessages(messages, ownerUserID: ownerUserID, instanceID: instanceID)
+        saveMessages(messages, ownerUserID: ownerUserID, questionID: questionID)
         return true
     }
 
     func mergeMessages(
         _ messages: [DailyQuestionChatMessage],
         ownerUserID: UUID,
-        instanceID: UUID,
+        questionID: UUID,
         unlessPurgedSince generation: Int
     ) -> Bool {
         guard generation == self.generation else { return false }
-        let cached = self.messages(ownerUserID: ownerUserID, instanceID: instanceID)
+        let cached = self.messages(ownerUserID: ownerUserID, questionID: questionID)
         saveMessages(
             DailyQuestionChatMessage.keepingNewerCached(messages, cached: cached),
             ownerUserID: ownerUserID,
-            instanceID: instanceID
+            questionID: questionID
         )
         return true
     }

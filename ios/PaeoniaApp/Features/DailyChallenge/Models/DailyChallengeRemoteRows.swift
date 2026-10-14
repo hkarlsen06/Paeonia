@@ -54,6 +54,12 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
     var partnerAnswerSeenAt: Date?
     /// When the partner first saw this user's answer, for the read receipt on it.
     var ownAnswerSeenByPartnerAt: Date?
+    /// How many earlier days this user answered the question, in this couple.
+    var earlierRoundCount: Int?
+    /// The couple-local date of the user's latest earlier answer to the question.
+    var latestEarlierRoundLocalDate: String?
+    /// Some day of the question has answers from both partners, so its chat can start.
+    var chatAvailable: Bool?
 
     enum CodingKeys: String, CodingKey {
         case coupleDayID = "couple_day_id"
@@ -82,6 +88,9 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
         case isCurrentDay = "is_current_day"
         case partnerAnswerSeenAt = "partner_answer_seen_at"
         case ownAnswerSeenByPartnerAt = "own_answer_seen_by_partner_at"
+        case earlierRoundCount = "earlier_round_count"
+        case latestEarlierRoundLocalDate = "latest_earlier_round_local_date"
+        case chatAvailable = "chat_available"
     }
 
     func prompt(for locale: Locale) -> String {

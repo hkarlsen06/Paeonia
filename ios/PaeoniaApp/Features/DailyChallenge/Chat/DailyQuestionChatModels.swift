@@ -3,7 +3,8 @@ import Foundation
 nonisolated struct DailyQuestionThreadSummary: Codable, Equatable, Sendable {
     let threadID: UUID
     let coupleID: UUID
-    let instanceID: UUID
+    /// The question the chat is about. A couple has one chat per question.
+    let questionID: UUID
     let createdAt: Date
     let updatedAt: Date
     let lastMessageID: UUID?
@@ -35,7 +36,8 @@ nonisolated struct DailyQuestionThreadSummary: Codable, Equatable, Sendable {
 nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, Sendable {
     let id: UUID
     let threadID: UUID?
-    let instanceID: UUID
+    /// The question whose chat the message belongs to.
+    let questionID: UUID
     let senderUserID: UUID
     let body: String
     let createdAt: Date
@@ -160,7 +162,7 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
         DailyQuestionChatMessage(
             id: id,
             threadID: threadID,
-            instanceID: instanceID,
+            questionID: questionID,
             senderUserID: senderUserID,
             body: body,
             createdAt: createdAt,
@@ -233,13 +235,21 @@ nonisolated struct DailyQuestionChatVoicePayload: Codable, Equatable, Sendable {
 }
 
 extension DailyChallengeQuestion {
-    nonisolated var isChatAvailable: Bool {
+    /// The partner's answer to this very round is readable. The answer flow and the
+    /// "new answer" marks work per round.
+    nonisolated var hasRevealedPartnerAnswer: Bool {
         hasOwnAnswer && hasPartnerAnswer && canViewPartnerAnswer
+    }
+
+    /// The question's chat can be used. A couple has one chat per question, so it
+    /// opens once any round of the question has both answers.
+    nonisolated var isChatAvailable: Bool {
+        hasRevealedPartnerAnswer || hasSharedRound
     }
 }
 
 nonisolated struct CreateDailyQuestionThreadMessageOperationPayload: Codable, Equatable, Sendable {
-    let instanceID: UUID
+    let questionID: UUID
     let coupleID: UUID
     let body: String
     var voice: DailyQuestionChatVoicePayload?
@@ -247,7 +257,7 @@ nonisolated struct CreateDailyQuestionThreadMessageOperationPayload: Codable, Eq
 }
 
 nonisolated struct SendDailyQuestionThreadMessageOperationPayload: Codable, Equatable, Sendable {
-    let instanceID: UUID
+    let questionID: UUID
     let coupleID: UUID
     let threadID: UUID?
     let body: String

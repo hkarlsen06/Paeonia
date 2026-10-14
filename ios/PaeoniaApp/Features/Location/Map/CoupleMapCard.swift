@@ -20,8 +20,11 @@ struct CoupleMapCard: View {
     let partnerProfilePhotoAssetID: UUID?
     let state: CoupleMapState
     var onPromptCurrentLocation: () -> Void = {}
+    /// Sends and receives hearts. Nil leaves the card without them (previews).
+    var hearts: HeartsViewModel?
 
     @Environment(\.openURL) private var openURL
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @ViewBuilder
     var body: some View {
@@ -88,7 +91,7 @@ struct CoupleMapCard: View {
                 )
             )
         case let .partnerUnknown(reason):
-            emptyCard(partnerUnknownState(for: reason))
+            partnerUnknownCard(reason)
         }
     }
 
@@ -154,9 +157,13 @@ struct CoupleMapCard: View {
                 isTogether: isTogether,
                 onLongPress: {
                     openInAppleMaps(current: current, partner: partner)
-                }
+                },
+                onSendHeart: { hearts?.tap() },
+                incomingBurst: hearts?.incomingBurst
             )
         }
+        .overlay(alignment: .topLeading) { incomingLinePill }
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: hearts?.incomingLine)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.homeMapAccessibilityLabel(partnerName)))
         .accessibilityValue(Text(verbatim: [
@@ -168,6 +175,27 @@ struct CoupleMapCard: View {
         .accessibilityAction {
             openInAppleMaps(current: current, partner: partner)
         }
+        .accessibilityAction(named: Text(.heartsSendAction)) {
+            hearts?.tap()
+        }
+    }
+
+    /// "Robin sent you 14 hearts" over the map's top corner. The map's own text sits
+    /// on the right, and the Apple Maps mark on the bottom left.
+    @ViewBuilder
+    private var incomingLinePill: some View {
+        if let line = hearts?.incomingLine {
+            HeartsIncomingLine(text: line)
+                .padding(.horizontal, PaeoniaSpacing.space12)
+                .padding(.vertical, PaeoniaSpacing.space8)
+                .background(Color.paeoniaBackgroundSecondary.opacity(0.9), in: Capsule())
+                .padding(PaeoniaSpacing.space12)
+                .transition(.opacity)
+        }
+    }
+
+    private func partnerUnknownCard(_ reason: PartnerLocationVisibilityState) -> some View {
+        emptyCard(partnerUnknownState(for: reason), allowsHearts: Self.canSendHearts(whenPartnerUnknown: reason))
     }
 
     private func partnerUnknownState(for reason: PartnerLocationVisibilityState) -> MapEmptyState {
@@ -218,9 +246,29 @@ struct CoupleMapCard: View {
     }
 
     /// The compact card for one of the "no map yet" messages. It has no fixed shape,
-    /// so it is as tall as its text needs.
-    private func emptyCard(_ content: MapEmptyState) -> some View {
-        mapTileSurface(content)
+    /// so it is as tall as its text needs. Paired couples get the heart row too.
+    private func emptyCard(_ content: MapEmptyState, allowsHearts: Bool = true) -> some View {
+        var content = content
+        if allowsHearts, let hearts {
+            content.hearts = MapHeartsButton(
+                currentName: currentName,
+                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                partnerName: partnerName,
+                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                incomingBurst: hearts.incomingBurst,
+                onSend: { hearts.tap() }
+            )
+            content.incomingLine = hearts.incomingLine
+        }
+        return mapTileSurface(content)
+    }
+
+    /// Nobody receives hearts once the relationship has ended.
+    private static func canSendHearts(whenPartnerUnknown reason: PartnerLocationVisibilityState) -> Bool {
+        if case .relationshipEnded = reason {
+            return false
+        }
+        return true
     }
 
     private func mapTile<Content: View>(@ViewBuilder content: () -> Content) -> some View {
@@ -246,13 +294,14 @@ extension LocationPoint {
 }
 
 #if DEBUG
-private func previewCard(_ state: CoupleMapState) -> some View {
+private func previewCard(_ state: CoupleMapState, hearts: HeartsViewModel? = nil) -> some View {
     CoupleMapCard(
         currentName: "Hjalmar",
         currentProfilePhotoAssetID: nil,
         partnerName: "Oda",
         partnerProfilePhotoAssetID: nil,
-        state: state
+        state: state,
+        hearts: hearts
     )
     .padding(PaeoniaSpacing.screenHorizontalPadding)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -262,6 +311,10 @@ private func previewCard(_ state: CoupleMapState) -> some View {
 
 #Preview("Partner not sharing") {
     previewCard(.partnerUnknown(.notSharing))
+}
+
+#Preview("Partner not sharing, with hearts") {
+    previewCard(.partnerUnknown(.notSharing), hearts: HeartsViewModel())
 }
 
 #Preview("Locating") {

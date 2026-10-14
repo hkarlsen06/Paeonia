@@ -95,7 +95,7 @@ async function visibleMediaAssetIds(ctx: ReaderCtx, answerId: string): Promise<s
   return ids;
 }
 
-async function detailRow(
+export async function detailRow(
   ctx: ReaderCtx,
   userId: string,
   day: Doc<"couple_days">,
@@ -702,12 +702,16 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
       .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) => q.eq("couple_day_id", day.id))
       .collect();
 
-    // 1. Conversation threads attached to the day's instances.
+    // 1. The chats of the day's questions. A chat spans every day its question came back on,
+    // so this test reset removes all of it.
     for (const instance of instances) {
-      const link = await ctx.db
-        .query("daily_question_threads")
-        .withIndex("by_instance_id", (q) => q.eq("instance_id", instance.id))
-        .unique();
+      const questionId = (await getByUuid(ctx, "question_versions", instance.question_version_id))?.question_id;
+      const link = questionId
+        ? await ctx.db
+            .query("daily_question_threads")
+            .withIndex("by_couple_id_question_id", (q) => q.eq("couple_id", coupleId).eq("question_id", questionId))
+            .unique()
+        : null;
       if (!link) continue;
       const messages = await ctx.db
         .query("thread_messages")

@@ -1,10 +1,12 @@
 import ExyteChat
 import SwiftUI
 
-/// A question's own page, laid out like a group chat. Paeonia sends the question,
-/// then both answers follow as bubbles from the people who wrote them, then the
-/// conversation about them. Until both answers are revealed the page shows what is
-/// there and says who it is waiting for, with no composer.
+/// A question's own page, laid out like a group chat. A couple has one chat per
+/// question, so the page stacks every day the question came up, oldest first. Each day
+/// is Paeonia's question, then both answers as bubbles from the people who wrote them,
+/// and the conversation follows in the order it happened. Until some day has both
+/// answers revealed the page shows what is there and says who it is waiting for, with
+/// no composer.
 ///
 /// The chat follows Tidex's friends chat: the same ExyteChat setup, row gestures
 /// (swipe to reply, swipe left for times, swipe right to go back), long-press menu,
@@ -37,7 +39,12 @@ struct DailyQuestionChatView: View {
     /// Where the list scrolls next. Nil keeps the list where it is.
     @State private var scrollTarget: ScrollToParams?
     @State private var didApplyOpeningScroll = false
+    /// The page opened before the server's list of days arrived, so it scrolls once more
+    /// when the list does.
+    @State private var openedWithoutRounds = false
     @State private var didRevealPartnerAnswer = false
+    /// The day whose partner-choice match plays its celebration, while the reveal lights up.
+    @State private var celebratingInstanceID: UUID?
 
     init(
         viewModel: DailyQuestionChatViewModel,
@@ -95,22 +102,20 @@ struct DailyQuestionChatView: View {
         }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
         .onChange(of: viewModel.hasReadStore) { applyOpeningScroll() }
+        .onChange(of: viewModel.hasLoadedRounds) { applyOpeningScroll() }
         .onChange(of: revealedPartnerAnswerRowID, initial: true) { revealPartnerAnswer() }
         .paeoniaImageViewer(selection: $photoViewer)
     }
 
     private var projectionInput: DailyChatProjection.Input {
         DailyChatProjection.Input(
-            prompt: viewModel.question.prompt,
-            questionStartsAt: viewModel.question.startsAt,
-            answers: viewModel.answers,
+            rounds: viewModel.chatRounds(celebrating: celebratingInstanceID),
             messages: viewModel.messages,
             currentUserID: viewModel.participants.currentUserID,
             partnerName: viewModel.participants.partnerName,
             youName: String(localized: .dailyChallengeChoiceYou),
             partnerIsTyping: viewModel.presence.partnerIsTyping,
-            partnerLastReadMessageID: viewModel.presence.partnerLastReadMessageID,
-            ownAnswerSeenByPartner: viewModel.question.ownAnswerSeenByPartnerAt != nil
+            partnerLastReadMessageID: viewModel.presence.partnerLastReadMessageID
         )
     }
 
@@ -182,7 +187,6 @@ struct DailyQuestionChatView: View {
         DailyChatMessageRow(
             row: row,
             participants: viewModel.participants,
-            mediaKind: viewModel.question.mediaAnswerKind,
             isHighlighted: row.id == highlightedRowID,
             onReply: row.message.flatMap { message in
                 viewModel.canReply(to: message) ? { viewModel.setReplyTarget(message) } : nil
@@ -223,8 +227,8 @@ struct DailyQuestionChatView: View {
 
     // MARK: - Waiting
 
-    /// The page before both answers are revealed: the question, your answer, and who
-    /// the chat is waiting for. It uses the same rows as the chat.
+    /// The page before any day has both answers revealed: the question, your answer, and
+    /// who the chat is waiting for. It uses the same rows as the chat.
     private var waitingPage: some View {
         let projection = projection
         return ScrollView {
@@ -236,15 +240,6 @@ struct DailyQuestionChatView: View {
                 }
                 if viewModel.question.ownAnswerDetail == nil, let sendingAnswer {
                     DailyChatSendingAnswerRow(answer: sendingAnswer)
-                }
-                if let waitingMessage = viewModel.waitingMessage {
-                    Text(waitingMessage)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                        .padding(.top, PaeoniaSpacing.space16)
                 }
             }
             .padding(.vertical, PaeoniaSpacing.space12)
@@ -353,11 +348,11 @@ extension DailyQuestionChatView {
 
     private func report(_ row: DailyChatRow) {
         switch row.kind {
-        case let .answer(answer):
+        case let .answer(answer, _):
             onReport?(.dailyAnswer(answerID: answer.answerID))
         case let .message(target):
             onReport?(.threadMessage(messageID: target.id))
-        case .question, .typing:
+        case .question, .partnerChoiceMatch, .waiting, .typing:
             break
         }
     }
@@ -405,36 +400,61 @@ extension DailyQuestionChatView {
         if let onClose { onClose() } else { dismiss() }
     }
 
-    /// The partner's answer row once the chat shows it.
-    private var revealedPartnerAnswerRowID: String? {
+    /// The day the page was opened from, when the chat shows its partner's answer.
+    private var revealedRound: DailyChallengeQuestion? {
         guard viewModel.isChatAvailable,
-              let answer = viewModel.answers.first(where: { !$0.isOwnAnswer })
+              let round = viewModel.rounds.first(where: { $0.id == viewModel.question.id }),
+              round.partnerAnswerDetail?.canViewAnswer == true
         else { return nil }
-        return DailyChatProjection.answerRowPrefix + answer.answerID.uuidString
+        return round
+    }
+
+    /// The partner's answer row of that day once the chat shows it.
+    private var revealedPartnerAnswerRowID: String? {
+        revealedRound?.partnerAnswerDetail.map { DailyChatProjection.answerRowPrefix + $0.answerID.uuidString }
     }
 
     /// Right after answering, the partner's answer is the payoff, so it lights up
-    /// like a jumped-to message, with the reveal haptic.
+    /// like a jumped-to message, with the reveal haptic. A partner-choice match plays
+    /// its small celebration with it.
     private func revealPartnerAnswer() {
         guard revealsPartnerAnswer, !didRevealPartnerAnswer, let rowID = revealedPartnerAnswerRowID else { return }
         didRevealPartnerAnswer = true
         PaeoniaHaptics.answerRevealed()
+        celebratingInstanceID = revealedRound?.id
         Task { @MainActor in
             highlightedRowID = rowID
             try? await Task.sleep(for: Self.highlightDuration)
             if highlightedRowID == rowID { highlightedRowID = nil }
+            celebratingInstanceID = nil
         }
     }
 
-    /// With only the question and answers there, the chat opens at the question, so
-    /// the page reads from the start. Once anyone has written, it opens at the newest
-    /// message. The chat is usually read before the screen opens, so this runs as the
-    /// list first fills, not after it was shown.
+    /// The page opens on the day it was opened from, or on the newest message when people
+    /// have written since that day began. The chat is usually read before the screen
+    /// opens, so this runs as the list first fills, not after it was shown. A page that
+    /// opened before the server's list of days arrived scrolls again when the list does.
     private func applyOpeningScroll() {
-        guard !didApplyOpeningScroll, viewModel.hasReadStore else { return }
-        didApplyOpeningScroll = true
-        guard viewModel.messages.isEmpty else { return }
-        scrollTarget = ScrollToParams(.oldestMessage)
+        guard viewModel.hasReadStore else { return }
+        if !didApplyOpeningScroll {
+            didApplyOpeningScroll = true
+            openedWithoutRounds = !viewModel.hasLoadedRounds
+        } else if openedWithoutRounds, viewModel.hasLoadedRounds {
+            openedWithoutRounds = false
+        } else {
+            return
+        }
+        switch viewModel.openingScroll {
+        case .newestMessage:
+            break
+        case .oldestRow:
+            scrollTarget = ScrollToParams(.oldestMessage)
+        case let .questionRow(instanceID):
+            scrollTarget = ScrollToParams(
+                messageID: DailyChatProjection.questionRowID(for: instanceID),
+                position: .middle
+            )
+        }
     }
 
     private func handleBackgroundTimestampRevealChanged(_ value: DailyChatDragValue) {
