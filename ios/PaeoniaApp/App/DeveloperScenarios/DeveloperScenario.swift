@@ -74,7 +74,7 @@
     }
   }
 
-  enum DeveloperScenarioDestination: Equatable {
+  nonisolated enum DeveloperScenarioDestination: Equatable {
     case production
     case menu
     case scenario(DeveloperScenario)
