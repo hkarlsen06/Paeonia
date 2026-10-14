@@ -9,8 +9,7 @@ extension ExquisiteCorpseViewModel {
     /// Re-reads the cache and the queue, then works out the phase.
     func reload() async {
         guard let userID = currentUserID else { return }
-        reloadGeneration += 1
-        let generation = reloadGeneration
+        let reloadTicket = reloadGate.begin()
         let document = await cache.document(ownerUserID: userID)
         let sharedOverview = await dependencies.cache.document(ownerUserID: userID).overview
         let work = await ExquisiteCorpsePendingWork.load(
@@ -24,11 +23,7 @@ extension ExquisiteCorpseViewModel {
         if let stored = notices.last {
             notice = GamesNotice(stored)
         }
-        // A reload that started later and already finished has newer data. One that
-        // is still running does not stop this read, so a caller that awaits
-        // `reload()` sees its change on screen when it returns.
-        guard generation > appliedReloadGeneration else { return }
-        appliedReloadGeneration = generation
+        guard reloadGate.apply(reloadTicket) else { return }
 
         state = document.state
         overview = sharedOverview

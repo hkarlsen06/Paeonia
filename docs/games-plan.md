@@ -183,6 +183,7 @@ Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`
 8. Live play: a message type that conforms to `GameLiveMessage`, sent through a `GameLiveChannel` on a `WidgetLiveConnection` made with `GameLiveTicket.provider(for: .<kind>)`.
 9. Queued writes: `SyncPendingOperationKind` cases in `Services/Sync/SyncTypes.swift`, and your handlers in `Features/Games/Data/GamesPendingOperationRegistry.swift`.
 10. Developer scenarios: cases in `App/DeveloperScenarios/DeveloperScenario.swift` (title, subtitle, category `.games`), routing in `DeveloperScenarioViews.swift`, and your dependency fields in `DeveloperGamesScenarioFactory.dependencies(for:)` so the hub scenarios show your card.
+11. Shared pieces: take the reload gate (`GameReloadGate`), stars (`GameStars`) and drawing pieces such as the canvas and stroke replay from `Features/Games/Shared/` instead of copying Draw & Guess code.
 
 ### Ownership
 

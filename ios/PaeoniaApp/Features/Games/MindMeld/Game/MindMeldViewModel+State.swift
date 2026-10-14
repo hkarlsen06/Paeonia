@@ -7,19 +7,14 @@ extension MindMeldViewModel {
     /// Re-reads the cache and the queue, then works out the phase.
     func reload() async {
         guard let userID = currentUserID else { return }
-        reloadGeneration += 1
-        let generation = reloadGeneration
+        let reloadTicket = reloadGate.begin()
         let document = await cache.document(ownerUserID: userID)
         let overview = await dependencies.cache.document(ownerUserID: userID).overview
         let work = await MindMeldPendingWork.load(from: dependencies.pendingOperationStore, ownerUserID: userID)
         // Kept here before the check below, so a newer reload still shows them.
         let refused = await cache.takeRefusedWords(ownerUserID: userID)
         refusedWords.append(contentsOf: refused)
-        // A reload that started later and already finished has newer data. One that
-        // is still running does not stop this read, so a caller that awaits
-        // `reload()` sees its change on screen when it returns.
-        guard generation > appliedReloadGeneration, currentUserID == userID else { return }
-        appliedReloadGeneration = generation
+        guard currentUserID == userID, reloadGate.apply(reloadTicket) else { return }
 
         state = document.state
         self.overview = overview

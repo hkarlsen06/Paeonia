@@ -28,9 +28,7 @@ final class StoryChainStars {
     @ObservationIgnored private var syncAfterLocalChange: (@MainActor @Sendable () async -> Void)?
     /// Changes the person made while their write was still being saved in the queue.
     @ObservationIgnored private var savingStars: [UUID: Bool] = [:]
-    @ObservationIgnored private var reloadGeneration = 0
-    /// The newest reload whose read is on screen.
-    @ObservationIgnored private var appliedReloadGeneration = 0
+    @ObservationIgnored private var reloadGate = GameReloadGate()
     /// Counts this person's star changes, so a server read can tell which stories
     /// changed after it started.
     @ObservationIgnored private var changeCount = 0
@@ -105,15 +103,10 @@ final class StoryChainStars {
     /// Re-reads the cache and the queue.
     func reload() async {
         guard let userID = currentUserID() else { return }
-        reloadGeneration += 1
-        let generation = reloadGeneration
+        let reloadTicket = reloadGate.begin()
         let document = await dependencies.storyChainCache.document(ownerUserID: userID)
         let queued = await Self.queuedStars(from: dependencies.pendingOperationStore, ownerUserID: userID)
-        // A reload that started later and already finished has newer data. One that
-        // is still running does not stop this read, so a caller that awaits
-        // `reload()` sees its change on screen when it returns.
-        guard generation > appliedReloadGeneration, currentUserID() == userID else { return }
-        appliedReloadGeneration = generation
+        guard currentUserID() == userID, reloadGate.apply(reloadTicket) else { return }
         // The oldest answer first: the first page, then the stars kept from star
         // writes and pages, then the state, which is the freshest for its own stories.
         var values = document.historyFirstPage?.starValues ?? [:]

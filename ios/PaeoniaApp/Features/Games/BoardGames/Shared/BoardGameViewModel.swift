@@ -107,8 +107,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     @ObservationIgnored var localInviteSentAt: Date?
     @ObservationIgnored var now: Date
     @ObservationIgnored var hasFailedAttempt = false
-    @ObservationIgnored var reloadGeneration = 0
-    @ObservationIgnored var appliedReloadGeneration = 0
+    @ObservationIgnored var reloadGate = GameReloadGate()
     /// Goes up with each move or rematch made on this phone.
     @ObservationIgnored var localActionRevision = 0
     @ObservationIgnored var localChangeSyncHandler: (@MainActor @Sendable () async -> Void)?
@@ -174,24 +173,19 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     /// works out the screen.
     func reload() async {
         guard let userID = currentUserID else { return }
-        reloadGeneration += 1
-        let generation = reloadGeneration
+        let reloadTicket = reloadGate.begin()
         let actionRevision = localActionRevision
         let document = await dependencies.boardGamesCache.document(ownerUserID: userID)
         let overview = await dependencies.cache.document(ownerUserID: userID).overview
         let queue = await queueState(ownerUserID: userID)
         let marks = await renderedMarks(document.marks, userID: userID, partnerID: document.state?.partnerUserID)
-        // A read is dropped only when a newer one was already applied. One that
-        // is merely newer and still reading applies later, so this read counts
-        // now and a move shows the moment its own reload ends. A read that began
-        // before this phone's latest move or rematch could put the board from
-        // before it back, so it is dropped too.
-        guard generation > appliedReloadGeneration, actionRevision == localActionRevision,
-              currentUserID == userID
+        // A read that began before this phone's latest move or rematch could put
+        // the board from before it back, so it is dropped as well.
+        guard actionRevision == localActionRevision, currentUserID == userID,
+              reloadGate.apply(reloadTicket)
         else { return }
         // From here to `recompute()` nothing waits, so no other code ever sees
         // the new data half applied.
-        appliedReloadGeneration = generation
         self.document = document
         self.overview = overview
         // A failed read of the queue keeps the actions already known, so a

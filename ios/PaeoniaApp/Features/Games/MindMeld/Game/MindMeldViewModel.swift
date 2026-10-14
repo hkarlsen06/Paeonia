@@ -109,9 +109,7 @@ final class MindMeldViewModel {
     /// starts no game until it starts again.
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
-    @ObservationIgnored var reloadGeneration = 0
-    /// The newest reload whose read is on screen.
-    @ObservationIgnored var appliedReloadGeneration = 0
+    @ObservationIgnored var reloadGate = GameReloadGate()
     /// Refused words that no reload has shown yet.
     @ObservationIgnored var refusedWords: [MindMeldRefusedWord] = []
     /// The open round the draft belongs to.

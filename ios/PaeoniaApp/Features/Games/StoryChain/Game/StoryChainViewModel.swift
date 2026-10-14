@@ -108,9 +108,7 @@ final class StoryChainViewModel {
     @ObservationIgnored var pending = StoryChainPendingWork.none
     @ObservationIgnored var now: Date
     @ObservationIgnored var localInviteSentAt: Date?
-    @ObservationIgnored var reloadGeneration = 0
-    /// The newest reload whose read is on screen.
-    @ObservationIgnored var appliedReloadGeneration = 0
+    @ObservationIgnored var reloadGate = GameReloadGate()
     @ObservationIgnored var isRunning = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var hasEnsuredGame = false
@@ -219,8 +217,7 @@ final class StoryChainViewModel {
     /// Re-reads the caches and the queue, then works out the phase.
     func reload() async {
         guard let userID = currentUserID else { return }
-        reloadGeneration += 1
-        let generation = reloadGeneration
+        let reloadTicket = reloadGate.begin()
         let overview = await dependencies.cache.document(ownerUserID: userID).overview
         let document = await dependencies.storyChainCache.document(ownerUserID: userID)
         let work = await StoryChainPendingWork.load(from: dependencies.pendingOperationStore, ownerUserID: userID)
@@ -229,11 +226,7 @@ final class StoryChainViewModel {
         if currentUserID == userID, let first = notices.first {
             notice = GamesNotice(first)
         }
-        // A reload that started later and already finished has newer data. One that
-        // is still running does not stop this read, so a caller that awaits
-        // `reload()` sees its change on screen when it returns.
-        guard generation > appliedReloadGeneration, currentUserID == userID else { return }
-        appliedReloadGeneration = generation
+        guard currentUserID == userID, reloadGate.apply(reloadTicket) else { return }
 
         state = document.state
         savedDraft = document.draft
