@@ -55,7 +55,7 @@ For ordinary plain string entries, use the repo helper instead of hand-editing `
 ```
 
 - New keys must include English, Norwegian Bokmal, and a translator comment.
-- The helper preserves existing catalog order by default to keep diffs focused. Pass `--sort-keys` only when intentionally normalizing a catalog.
+- The helper writes the catalog exactly as Xcode saves it, with keys in case-insensitive order, so a later save in Xcode leaves no diff. Edit catalogs with the helper or Xcode, not by hand or with other JSON tools.
 - Use `--locale <code>=<value>` for additional languages if the catalog grows beyond `en` and `nb`.
 - Use Xcode's String Catalog editor or XLIFF export/import for pluralization, substitutions, device variants, or bulk translator workflows.
 - After catalog changes, verify generated symbols in Swift code still match the key names. Use the repository build wrapper when generated-symbol correctness needs verification; avoid duplicating a build the user is already running.

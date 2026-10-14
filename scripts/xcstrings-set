@@ -63,11 +63,6 @@ def parse_args() -> argparse.Namespace:
         help="Allow overwriting entries with variations or substitutions.",
     )
     parser.add_argument(
-        "--sort-keys",
-        action="store_true",
-        help="Sort the catalog's strings dictionary alphabetically.",
-    )
-    parser.add_argument(
         "--skip-xcstringstool-check",
         action="store_true",
         help="Skip the xcrun xcstringstool compile dry-run check.",
@@ -148,7 +143,6 @@ def update_catalog(
     extraction_state: Optional[str],
     allow_missing_comment: bool,
     allow_complex: bool,
-    sort_keys: bool,
 ) -> tuple[bool, list[str]]:
     strings = catalog["strings"]
     is_new_entry = key not in strings
@@ -207,23 +201,36 @@ def update_catalog(
             "value": value,
         }
 
-    if sort_keys:
-        catalog["strings"] = {
-            sorted_key: strings[sorted_key]
-            for sorted_key in sorted(strings.keys())
-        }
-
     changed_locales = list(locale_values.keys())
     return is_new_entry, changed_locales
 
 
 def serialize_catalog(catalog: dict) -> str:
-    return json.dumps(
-        catalog,
-        ensure_ascii=False,
-        indent=2,
-        separators=(",", " : "),
-    ) + "\n"
+    """Writes the catalog exactly as Xcode saves it, so a later save in Xcode
+    changes nothing: every object's keys in case-insensitive order, two-space
+    indent, `" : "` between key and value, an empty object as `{`, a blank line
+    and `}`, and no newline at the end."""
+
+    def dump(value, depth: int) -> str:
+        outer = "  " * depth
+        inner = "  " * (depth + 1)
+        if isinstance(value, dict):
+            if not value:
+                return "{\n\n" + outer + "}"
+            keys = sorted(value, key=lambda key: (key.casefold(), key))
+            members = (
+                f"{inner}{json.dumps(key, ensure_ascii=False)} : {dump(value[key], depth + 1)}"
+                for key in keys
+            )
+            return "{\n" + ",\n".join(members) + "\n" + outer + "}"
+        if isinstance(value, list):
+            if not value:
+                return "[\n\n" + outer + "]"
+            items = (inner + dump(item, depth + 1) for item in value)
+            return "[\n" + ",\n".join(items) + "\n" + outer + "]"
+        return json.dumps(value, ensure_ascii=False)
+
+    return dump(catalog, 0)
 
 
 def write_catalog(path: Path, content: str) -> None:
@@ -286,7 +293,6 @@ def main() -> None:
         extraction_state=args.extraction_state,
         allow_missing_comment=args.allow_missing_comment,
         allow_complex=args.allow_complex,
-        sort_keys=args.sort_keys,
     )
 
     content = serialize_catalog(catalog)

@@ -19,6 +19,24 @@
         }
       }
     },
+    "widget.drawing.accessibility" : {
+      "comment" : "VoiceOver label for the drawing in the widget. %@ is the name of who drew it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing from %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegning fra %@"
+          }
+        }
+      }
+    },
     "widget.drawing.action" : {
       "comment" : "Small call to action shown when the widget displays a cached drawing preview.",
       "extractionState" : "manual",
@@ -159,24 +177,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Paeonia"
-          }
-        }
-      }
-    },
-    "widget.drawing.accessibility" : {
-      "comment" : "VoiceOver label for the drawing in the widget. %@ is the name of who drew it.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Drawing from %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tegning fra %@"
           }
         }
       }
