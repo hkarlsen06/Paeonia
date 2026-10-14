@@ -29,13 +29,16 @@ struct PairedHomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    /// iPad landscape: the map and question cards on the left, the milestone and
-    /// drawing tiles stacked in a column on the right.
+    /// iPad landscape: the map and question cards on the left, the drawing and
+    /// milestone tiles stacked in a column on the right (`HomeWideColumnsLayout`).
     @State private var isWideLayout = false
+    /// The scroll view's visible height and the cards' height, for `spareSpaceArt`.
+    @State private var viewportHeight: CGFloat = 0
+    @State private var cardsHeight: CGFloat = 0
 
-    /// Width of the right-hand tile column in the wide layout. At this width the two
-    /// stacked square tiles end close to where the left column's cards end.
-    private static let wideTileColumnWidth: CGFloat = 300
+    /// The peony spray needs at least this much empty space below the cards to show.
+    private static let spareSpaceArtMinHeight: CGFloat = 120
+    private static let spareSpaceArtMaxWidth: CGFloat = 500
     private static let alertTypesSeenOnHome: Set<String> = ["widget_updated", "streak_reminder"]
 
     init(
@@ -92,24 +95,32 @@ struct PairedHomeView: View {
 
     var body: some View {
         ScrollView {
-            // One layout for phone and wide iPad keeps the cards' identity, so turning
-            // the iPad doesn't reset them or close the milestone sheet. The spacing
-            // matches the gap inside the milestone/drawing tile row so the cards read
-            // as one grid.
-            cardsLayout {
-                mainColumn
-                milestoneAndWidget
-                    .frame(width: isWideLayout ? Self.wideTileColumnWidth : nil)
+            VStack(spacing: 0) {
+                // One layout for phone and wide iPad keeps the cards' identity, so turning
+                // the iPad doesn't reset them or close the milestone sheet. The spacing
+                // matches the gap inside the milestone/drawing tile row so the cards read
+                // as one grid.
+                cardsLayout {
+                    mainColumn
+                    milestoneAndWidget
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.top, PaeoniaSpacing.space16)
+                .padding(.bottom, PaeoniaSpacing.space16)
+                .paeoniaReadableWidth(
+                    isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
+                )
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardsHeight = $0 }
+
+                spareSpaceArt
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.space16)
-            .padding(.bottom, PaeoniaSpacing.space16)
-            .paeoniaReadableWidth(
-                isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
-            )
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
+        }
+        // The container size already leaves out the bars' content insets.
+        .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in
+            viewportHeight = height
         }
         .paeoniaWideLayout($isWideLayout)
         .scrollIndicators(.hidden)
@@ -194,6 +205,24 @@ struct PairedHomeView: View {
         }
     }
 
+    /// A peony spray in the space left below the cards on a tall screen, such as an
+    /// iPad in landscape. It takes exactly that space, so the page still doesn't
+    /// scroll, and is left out when the cards fill the screen.
+    @ViewBuilder
+    private var spareSpaceArt: some View {
+        let spareHeight = (viewportHeight - cardsHeight).rounded(.down)
+        if spareHeight >= Self.spareSpaceArtMinHeight {
+            Image(.homePeonySpray)
+                .resizable()
+                .accessibilityHidden(true)
+                .scaledToFit()
+                .frame(maxWidth: Self.spareSpaceArtMaxWidth, maxHeight: spareHeight - 2 * PaeoniaSpacing.space16)
+                .frame(maxWidth: .infinity)
+                .frame(height: spareHeight)
+                .transition(.opacity)
+        }
+    }
+
     private var dailyPromptCard: some View {
         DailyPromptCard(
             state: dailyChallengeCardState,
@@ -206,16 +235,20 @@ struct PairedHomeView: View {
 
     private var cardsLayout: AnyLayout {
         isWideLayout
-            ? AnyLayout(HStackLayout(alignment: .top, spacing: PaeoniaSpacing.space16))
+            ? AnyLayout(HomeWideColumnsLayout(spacing: PaeoniaSpacing.space16))
             : AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
     }
 
     private var milestoneAndWidget: some View {
         // One layout keeps the cards' identity, so a text size change doesn't
         // reset them or close the milestone sheet.
-        let layout = dynamicTypeSize.isAccessibilitySize || isWideLayout
-            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
-            : AnyLayout(HStackLayout(alignment: .top, spacing: PaeoniaSpacing.space16))
+        let layout = if isWideLayout {
+            AnyLayout(HomeWideTileColumnLayout(spacing: PaeoniaSpacing.space16))
+        } else if dynamicTypeSize.isAccessibilitySize {
+            AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
+        } else {
+            AnyLayout(HStackLayout(alignment: .top, spacing: PaeoniaSpacing.space16))
+        }
         return layout {
             milestoneCard
             HomeWidgetCard(
@@ -230,6 +263,7 @@ struct PairedHomeView: View {
         MilestoneCountdownCard(
             startedOn: relationshipStartedOn,
             isSaving: milestoneIsSaving,
+            isSquare: !isWideLayout,
             onSave: onSaveRelationshipStartedOn
         )
     }

@@ -22,6 +22,9 @@ struct MilestoneCountdownCard: View {
     /// The couple's start date as an `yyyy-MM-dd` string (`couples.started_on`).
     let startedOn: String?
     let isSaving: Bool
+    /// False in the wide iPad layout, where the tile fills the height left below the
+    /// drawing instead.
+    let isSquare: Bool
     let onSave: (Date) async -> Bool
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -41,10 +44,12 @@ struct MilestoneCountdownCard: View {
     init(
         startedOn: String?,
         isSaving: Bool = false,
+        isSquare: Bool = true,
         onSave: @escaping (Date) async -> Bool = { _ in false }
     ) {
         self.startedOn = startedOn
         self.isSaving = isSaving
+        self.isSquare = isSquare
         self.onSave = onSave
     }
 
@@ -115,7 +120,7 @@ struct MilestoneCountdownCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .accessibilityElement(children: .combine)
-            .milestoneTileChrome()
+            .milestoneTileChrome(isSquare: isSquare)
             .overlay {
                 if isCelebrating {
                     milestoneCelebration
@@ -157,7 +162,7 @@ struct MilestoneCountdownCard: View {
                     .foregroundStyle(.paeoniaTextPrimary)
                     .multilineTextAlignment(.center)
             }
-            .milestoneTileChrome()
+            .milestoneTileChrome(isSquare: isSquare)
         }
         .buttonStyle(.plain)
         .accessibilityHint(Text(.homeMilestoneSetupAccessibilityHint))
@@ -276,11 +281,11 @@ private extension View {
     /// The Home tab tile treatment shared with the widget drawing card in the same
     /// row: square footprint, tile fill, rounded corners, hairline stroke, and
     /// lift. Content is centred both ways so it reads as one group with even
-    /// space around it.
-    func milestoneTileChrome() -> some View {
+    /// space around it. Without `isSquare` the tile takes the height it's offered.
+    func milestoneTileChrome(isSquare: Bool) -> some View {
         frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             .padding(PaeoniaSpacing.space16)
-            .aspectRatio(1, contentMode: .fit)
+            .square(isSquare)
             .background(.paeoniaBackgroundPrimary)
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
             .overlay {
@@ -288,6 +293,16 @@ private extension View {
                     .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
             }
             .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
+    }
+
+    /// `aspectRatio(nil)` would still fit the content's own ratio, so skip it instead.
+    @ViewBuilder
+    func square(_ isSquare: Bool) -> some View {
+        if isSquare {
+            aspectRatio(1, contentMode: .fit)
+        } else {
+            self
+        }
     }
 }
 
