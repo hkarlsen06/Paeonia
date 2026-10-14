@@ -2,16 +2,15 @@ import Foundation
 
 /// `games:get_games_overview`: what every game and the Games tab share. The
 /// couple's settings, and for each game who has it open and this person's last
-/// invite. The server reads no clock, so the phone judges the timestamps
-/// (`GamePresence.isFresh`, `GameInviteState.make`).
+/// invite. The phone judges the invite time (`GameInviteState.make`).
 nonisolated struct RemoteGamesOverview: Codable, Equatable, Sendable {
     let userID: UUID
     let partnerUserID: UUID?
     let coupleID: UUID
     /// Nil until the couple finished setup.
     let settings: RemoteGameSettings?
-    /// One entry per game that has a presence row or an invite. A game with
-    /// neither is left out.
+    /// One entry per game that either partner has open or this person sent an
+    /// invite for. Other games are left out.
     let presence: [RemoteGamePresence]
 
     enum CodingKeys: String, CodingKey {
@@ -29,15 +28,17 @@ nonisolated struct RemoteGamesOverview: Codable, Equatable, Sendable {
 
 nonisolated struct RemoteGamePresence: Codable, Equatable, Sendable {
     let kind: GameKind
-    let myLastSeenAt: Date?
-    let partnerLastSeenAt: Date?
+    /// This person has the game open on a phone.
+    let myPresent: Bool
+    /// The partner has the game open.
+    let partnerPresent: Bool
     /// This person's last "Tell [Name] you want to play" for this game.
     let lastInviteAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case kind
-        case myLastSeenAt = "my_last_seen_at"
-        case partnerLastSeenAt = "partner_last_seen_at"
+        case myPresent = "my_present"
+        case partnerPresent = "partner_present"
         case lastInviteAt = "last_invite_at"
     }
 }

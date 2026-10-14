@@ -302,8 +302,8 @@
       let here = setups.filter(\.partnerIsHere).map {
         RemoteGamePresence(
           kind: $0.kind,
-          myLastSeenAt: nil,
-          partnerLastSeenAt: DeveloperGamesFixture.now.addingTimeInterval(-10),
+          myPresent: false,
+          partnerPresent: true,
           lastInviteAt: nil
         )
       }

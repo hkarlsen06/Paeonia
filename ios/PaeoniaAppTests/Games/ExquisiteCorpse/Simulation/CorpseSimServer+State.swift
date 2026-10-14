@@ -29,8 +29,8 @@ extension CorpseSimServer {
             presence: hasPresence ? [
                 RemoteGamePresence(
                     kind: .exquisiteCorpse,
-                    myLastSeenAt: presence[user],
-                    partnerLastSeenAt: presence[partnerID],
+                    myPresent: presence[user] != nil,
+                    partnerPresent: presence[partnerID] != nil,
                     lastInviteAt: invites[user]
                 ),
             ] : []
@@ -104,5 +104,16 @@ extension CorpseSimServer {
 
     func presenceStamp(of user: UUID) -> Date? {
         presence[user]
+    }
+
+    /// Like the presence component, closes a game screen 60 seconds after its
+    /// last heartbeat and tells the subscribers.
+    func expirePresence() {
+        let stale = presence.filter { now.timeIntervalSince($0.value) >= 60 }.map(\.key)
+        guard !stale.isEmpty else { return }
+        for user in stale {
+            presence[user] = nil
+        }
+        changed()
     }
 }

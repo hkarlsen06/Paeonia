@@ -159,18 +159,18 @@ final class ExquisiteCorpseTestEnvironment {
 
     /// - Parameters:
     ///   - hasSettings: The couple has picked a game language.
-    ///   - partnerLastSeenAt: The partner's heartbeat in the shared overview.
+    ///   - partnerPresent: The shared overview says the partner has the game open.
     init(
         state: RemoteExquisiteCorpseState?,
         hasSettings: Bool = true,
-        partnerLastSeenAt: Date? = nil,
+        partnerPresent: Bool = false,
         lastInviteAt: Date? = nil
     ) {
         cache = InMemoryExquisiteCorpseCache(state: state, ownerUserID: ExquisiteCorpseFixture.me)
         gamesCache = InMemoryGamesCache(
             overview: Self.overview(
                 hasSettings: hasSettings,
-                partnerLastSeenAt: partnerLastSeenAt,
+                partnerPresent: partnerPresent,
                 lastInviteAt: lastInviteAt
             ),
             ownerUserID: ExquisiteCorpseFixture.me
@@ -184,11 +184,11 @@ final class ExquisiteCorpseTestEnvironment {
 
     static func overview(
         hasSettings: Bool,
-        partnerLastSeenAt: Date?,
+        partnerPresent: Bool,
         lastInviteAt: Date?
     ) -> RemoteGamesOverview {
         let fixture = ExquisiteCorpseFixture.self
-        let hasPresence = partnerLastSeenAt != nil || lastInviteAt != nil
+        let hasPresence = partnerPresent || lastInviteAt != nil
         return RemoteGamesOverview(
             userID: fixture.me,
             partnerUserID: fixture.partner,
@@ -204,8 +204,8 @@ final class ExquisiteCorpseTestEnvironment {
             presence: hasPresence ? [
                 RemoteGamePresence(
                     kind: .exquisiteCorpse,
-                    myLastSeenAt: nil,
-                    partnerLastSeenAt: partnerLastSeenAt,
+                    myPresent: false,
+                    partnerPresent: partnerPresent,
                     lastInviteAt: lastInviteAt
                 ),
             ] : []

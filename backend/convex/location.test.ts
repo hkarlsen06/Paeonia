@@ -225,7 +225,6 @@ describe("update_latest_partner_location", () => {
         auth_provider: "apple",
         status: "ready_for_auth_delete",
         provider_revocation_status: "not_required",
-        auth_delete_attempts: 0,
         created_at: "2026-06-28T12:00:00.000Z",
         updated_at: "2026-06-28T12:00:00.000Z",
       }),

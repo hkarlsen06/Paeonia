@@ -443,9 +443,9 @@ extension RemoteGamesOverview {
     }
 
     /// The overview a Draw & Guess state implies: the same couple and settings, and
-    /// one `drawAndGuess` entry when the state has a presence time or an invite.
+    /// one `drawAndGuess` entry when either partner has it open or there is an invite.
     nonisolated init(drawAndGuess state: RemoteDrawAndGuessState) {
-        let hasPresence = state.myLastSeenAt != nil || state.partnerLastSeenAt != nil || state.lastInviteAt != nil
+        let hasPresence = state.myPresent || state.partnerPresent || state.lastInviteAt != nil
         self.init(
             userID: state.userID,
             partnerUserID: state.partnerUserID,
@@ -454,8 +454,8 @@ extension RemoteGamesOverview {
             presence: hasPresence ? [
                 RemoteGamePresence(
                     kind: .drawAndGuess,
-                    myLastSeenAt: state.myLastSeenAt,
-                    partnerLastSeenAt: state.partnerLastSeenAt,
+                    myPresent: state.myPresent,
+                    partnerPresent: state.partnerPresent,
                     lastInviteAt: state.lastInviteAt
                 ),
             ] : []

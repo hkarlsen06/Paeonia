@@ -262,14 +262,6 @@ export async function redeemReviewAccess(
     auth_verified_at: now,
     redeemed_at: now,
   });
-  await ctx.db.insert("review_access_attempts", {
-    id: newUuid(),
-    user_id: reviewerUserId,
-    code_hash_prefix: code.code_hash.slice(0, 12),
-    matched_code_id: code.id,
-    success: true,
-    attempted_at: now,
-  });
   await ctx.db.patch(code._id, { redemption_count: code.redemption_count + 1 });
   return coupleId;
 }

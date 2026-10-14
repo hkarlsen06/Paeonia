@@ -278,22 +278,22 @@ struct DailyChatPresenceModelTests {
         #expect(await service.typingCalls == [true, true, false])
     }
 
-    @Test func thePartnersDotsShowForAFreshHeartbeatAndHideWhenTheirMessageArrives() {
-        let clock = Clock()
-        let model = DailyChatPresenceModel(instanceID: UUID(), service: TypingRecorder(), now: { clock.now })
+    @Test func thePartnersDotsShowWhileTheyTypeAndHideWhenTheirMessageArrives() {
+        let model = DailyChatPresenceModel(instanceID: UUID(), service: TypingRecorder())
 
-        model.apply(DailyChatPresence(partnerTypingAt: clock.now.addingTimeInterval(-1)))
+        model.apply(DailyChatPresence(partnerIsTyping: true))
         #expect(model.partnerIsTyping)
 
         model.partnerMessageArrived()
         #expect(!model.partnerIsTyping)
     }
 
-    @Test func aLeftoverHeartbeatFromLongAgoShowsNoDots() {
-        let clock = Clock()
-        let model = DailyChatPresenceModel(instanceID: UUID(), service: TypingRecorder(), now: { clock.now })
+    @Test func aReadMarkWhileThePartnerStillTypesDoesNotBringBackHiddenDots() {
+        let model = DailyChatPresenceModel(instanceID: UUID(), service: TypingRecorder())
 
-        model.apply(DailyChatPresence(partnerTypingAt: clock.now.addingTimeInterval(-600)))
+        model.apply(DailyChatPresence(partnerIsTyping: true))
+        model.partnerMessageArrived()
+        model.apply(DailyChatPresence(partnerIsTyping: true, partnerLastReadMessageID: UUID()))
 
         #expect(!model.partnerIsTyping)
     }

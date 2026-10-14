@@ -1,3 +1,4 @@
+import type { WorkId } from "@convex-dev/workpool";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
@@ -5,10 +6,14 @@ import { addDevice, createCouple, newTest, type TestConvex, type TestCouple } fr
 
 const NOW = "2026-10-10T12:00:00.000Z";
 
+// Every deletion queues a Clerk delete on backgroundWorkpool, whose loop waits
+// on timers. Fake them all, so finishAllScheduledFunctions can move the clock,
+// and stub the network, so the queued delete never leaves the test.
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
   process.env.CLERK_SECRET_KEY = "sk_test_clerk";
+  stubNetwork();
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -174,7 +179,6 @@ describe("request_account_deletion", () => {
     expect(state.firstPreferences).toBe(0);
     expect(state.photo).toMatchObject({ storage_delete_status: "pending" });
     expect(state.photo!.deleted_at).toBe(NOW);
-    expect(state.job!.next_attempt_at).toBe("2026-10-10T12:00:30.000Z");
     expect(state.events2.map((event) => event.event_kind).sort()).toEqual(["account_data_removed", "deletion_requested"]);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
@@ -250,7 +254,7 @@ describe("request_account_deletion", () => {
 });
 
 describe("job state machine", () => {
-  test("claim, fail, escalate, operator retry, and completion", async () => {
+  test("fail, run out of tries, operator retry, and completion", async () => {
     const t = newTest();
     const { first } = await appleCoupleWithData(t);
     const [start] = await first.as.mutation(api.identity.request_account_deletion, {});
@@ -261,37 +265,44 @@ describe("job state machine", () => {
       t.mutation(internal.accountDeletion.mark_account_deletion_provider_result, { p_job_id: jobId, p_status: "bogus" }),
       "23514",
     );
+    expect(await t.query(internal.accountDeletion.get_auth_delete_target, { p_job_id: jobId })).toEqual({
+      clerk_user_id: first.subject,
+    });
 
-    const claimed = await t.mutation(internal.accountDeletion.claim_account_deletion_jobs, { p_now: NOW, p_limit: 1, p_job_id: jobId });
-    expect(claimed).toHaveLength(1);
-    expect(claimed[0]).toMatchObject({ job_id: jobId, user_id: first.userId, auth_delete_attempts: 1, auth_provider: "apple" });
-    expect(claimed[0].clerk_user_id).toBe(first.subject);
-    // A claimed job cannot be claimed again until the lease is stale.
-    expect(await t.mutation(internal.accountDeletion.claim_account_deletion_jobs, { p_now: NOW, p_job_id: jobId })).toHaveLength(0);
-
+    // A failed try records its error and leaves the job for the next try.
     expect(
-      await t.mutation(internal.accountDeletion.mark_account_deletion_auth_failed, {
-        p_job_id: jobId,
-        p_error_code: "auth_test_failure",
-        p_max_attempts: 1,
-      }),
+      await t.mutation(internal.accountDeletion.mark_account_deletion_auth_failed, { p_job_id: jobId, p_error_code: "auth_test_failure" }),
     ).toBe(true);
     let job = await t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
-    expect(job).toMatchObject({ status: "attention_required", auth_delete_attempts: 1, last_auth_delete_error_code: "auth_test_failure" });
-    expect(job!.next_attempt_at).toBeUndefined();
-    // A job that is not processing cannot fail again.
-    expect(
-      await t.mutation(internal.accountDeletion.mark_account_deletion_auth_failed, { p_job_id: jobId, p_error_code: "x" }),
-    ).toBe(false);
+    expect(job).toMatchObject({ status: "ready_for_auth_delete", last_auth_delete_error_code: "auth_test_failure" });
+
+    // The pool reports the last failed try.
+    const finished = (kind: "success" | "failed") =>
+      t.mutation(internal.accountDeletion.auth_delete_finished, {
+        workId: "test-work" as WorkId,
+        context: { job_id: jobId },
+        result: kind === "failed" ? { kind, error: "auth_test_failure" } : { kind, returnValue: null },
+      });
+    await finished("success");
+    job = await t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
+    expect(job!.status).toBe("ready_for_auth_delete");
+    await finished("failed");
+    job = await t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
+    expect(job).toMatchObject({ status: "attention_required", last_auth_delete_error_code: "auth_test_failure" });
 
     expect(await t.mutation(internal.accountDeletion.retry_account_deletion_job, { p_job_id: jobId })).toBe(true);
     job = await t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
-    expect(job).toMatchObject({ status: "ready_for_auth_delete", auth_delete_attempts: 0, next_attempt_at: NOW });
+    expect(job!.status).toBe("ready_for_auth_delete");
+    expect(job!.last_auth_delete_error_code).toBeUndefined();
     expect(await t.mutation(internal.accountDeletion.retry_account_deletion_job, { p_job_id: jobId })).toBe(false);
 
-    expect(await t.mutation(internal.accountDeletion.claim_account_deletion_jobs, { p_now: NOW, p_limit: 1, p_job_id: jobId })).toHaveLength(1);
     expect(await t.mutation(internal.accountDeletion.mark_account_deletion_completed, { p_job_id: jobId })).toBe(true);
     expect(await t.mutation(internal.accountDeletion.mark_account_deletion_completed, { p_job_id: jobId })).toBe(true);
+    // A completed job has nothing left to delete and cannot fail.
+    expect(await t.query(internal.accountDeletion.get_auth_delete_target, { p_job_id: jobId })).toBeNull();
+    expect(
+      await t.mutation(internal.accountDeletion.mark_account_deletion_auth_failed, { p_job_id: jobId, p_error_code: "x" }),
+    ).toBe(false);
 
     // A Clerk token that outlives the deletion must not act as the deleted user.
     await expectFail(first.as.mutation(api.identity.ensure_current_user, {}), "42501", "account deletion is in progress");
@@ -339,34 +350,10 @@ describe("job state machine", () => {
     expect(events.map((event) => event.event_kind)).toEqual(
       expect.arrayContaining(["provider_revocation_succeeded", "auth_delete_failed", "auth_user_deleted"]),
     );
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
-  });
-
-  test("failed attempts back off exponentially and stale leases are reclaimed", async () => {
-    const t = newTest();
-    const { first } = await appleCoupleWithData(t);
-    const [start] = await first.as.mutation(api.identity.request_account_deletion, {});
-    const jobId = start.deletion_job_id;
-    await t.mutation(internal.accountDeletion.claim_account_deletion_jobs, { p_now: NOW, p_job_id: jobId });
-    await t.mutation(internal.accountDeletion.mark_account_deletion_auth_failed, { p_job_id: jobId, p_error_code: "auth_http_500" });
-    let job = await t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
-    // 30 seconds times 2 to the power of one attempt.
-    expect(job).toMatchObject({ status: "ready_for_auth_delete", next_attempt_at: "2026-10-10T12:01:00.000Z" });
-    expect(await t.query(internal.accountDeletion.has_due_account_deletion_work, { p_now: NOW })).toBe(false);
-    expect(await t.query(internal.accountDeletion.has_due_account_deletion_work, { p_now: "2026-10-10T12:01:00.000Z" })).toBe(true);
-
-    expect(await t.mutation(internal.accountDeletion.claim_account_deletion_jobs, { p_now: "2026-10-10T12:01:00.000Z" })).toHaveLength(1);
-    expect(await t.query(internal.accountDeletion.has_due_account_deletion_work, { p_now: "2026-10-10T12:03:00.000Z" })).toBe(false);
-    expect(await t.query(internal.accountDeletion.has_due_account_deletion_work, { p_now: "2026-10-10T12:06:00.000Z" })).toBe(true);
-    const reclaimed = await t.mutation(internal.accountDeletion.claim_account_deletion_jobs, { p_now: "2026-10-10T12:06:01.000Z" });
-    expect(reclaimed).toHaveLength(1);
-    expect(reclaimed[0].auth_delete_attempts).toBe(3);
-
-    await expectFail(t.mutation(internal.accountDeletion.claim_account_deletion_jobs, { p_limit: 0 }), "23514", "invalid account deletion claim limit");
-    await expectFail(t.mutation(internal.accountDeletion.claim_account_deletion_jobs, { p_retry_after_seconds: 5 }), "23514");
-    await expectFail(t.mutation(internal.accountDeletion.claim_account_deletion_jobs, { p_max_attempts: 0 }), "23514");
-    job = await t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
-    expect(job!.auth_delete_attempts).toBe(3);
+    expect(events.filter((event) => event.event_kind === "auth_delete_failed").map((event) => event.metadata)).toEqual([
+      { error_code: "auth_test_failure", requires_attention: false },
+      { error_code: "auth_test_failure", requires_attention: true },
+    ]);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
@@ -485,27 +472,6 @@ describe("delete_account action", () => {
     }
   });
 
-  test("a failed Clerk delete queues the job and the drain finishes it", async () => {
-    const t = newTest();
-    const calls = stubNetwork({ clerkDelete: 500, noAppleAccount: true });
-    const couple = await createCouple(t);
-    const { first } = couple;
-    const response = await first.as.action(api.identity.delete_account, {});
-    expect(response).toMatchObject({ authDeleteStatus: "queued", appleRevocation: "not_required", requiresManualAppleRevocation: false });
-    let job = await t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
-    expect(job).toMatchObject({ status: "ready_for_auth_delete", last_auth_delete_error_code: "auth_http_500", auth_delete_attempts: 1 });
-
-    // Nothing is due yet.
-    expect(await t.action(internal.accountDeletion.request_account_deletion_drain, {})).toBe(false);
-    stubNetwork({ clerkDelete: 404, noAppleAccount: true });
-    vi.setSystemTime(new Date("2026-10-10T12:02:00.000Z"));
-    expect(await t.action(internal.accountDeletion.request_account_deletion_drain, {})).toBe(true);
-    job = await t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
-    expect(job).toMatchObject({ status: "completed" });
-    expect(calls.filter((call) => call.method === "DELETE")).toHaveLength(1);
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
-  });
-
   test("an Apple account linked in Clerk needs revocation even without a provider claim", async () => {
     const t = newTest();
     stubNetwork();
@@ -528,5 +494,59 @@ describe("delete_account action", () => {
     expect(again.requestId).toBe(firstResponse.requestId);
     expect(await t.run((ctx) => ctx.db.query("privacy_requests").collect())).toHaveLength(1);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("queued Clerk delete", () => {
+  const clerkDeletes = (calls: Call[]) => calls.filter((call) => call.method === "DELETE").length;
+  const jobOf = (t: TestConvex) => t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
+
+  test("a request without the delete_account action still deletes the Clerk user", async () => {
+    const t = newTest();
+    const calls = stubNetwork({ noAppleAccount: true });
+    const { first } = await createCouple(t);
+    await first.as.mutation(api.identity.request_account_deletion, {});
+    expect(await jobOf(t)).toMatchObject({ status: "ready_for_auth_delete" });
+
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await jobOf(t)).toMatchObject({ status: "completed" });
+    expect(clerkDeletes(calls)).toBe(1);
+  });
+
+  test("a failed Clerk delete is queued, and a later try finishes it", async () => {
+    const t = newTest();
+    const calls = stubNetwork({ clerkDelete: 500, noAppleAccount: true });
+    const { first } = await createCouple(t);
+    const response = await first.as.action(api.identity.delete_account, {});
+    expect(response).toMatchObject({ authDeleteStatus: "queued", appleRevocation: "not_required", requiresManualAppleRevocation: false });
+    expect(await jobOf(t)).toMatchObject({ status: "ready_for_auth_delete", last_auth_delete_error_code: "auth_http_500" });
+
+    // Clerk answers 404 now, which counts as deleted.
+    const later = stubNetwork({ clerkDelete: 404, noAppleAccount: true });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const job = await jobOf(t);
+    expect(job).toMatchObject({ status: "completed" });
+    expect(job!.last_auth_delete_error_code).toBeUndefined();
+    expect(clerkDeletes(calls)).toBe(1);
+    expect(clerkDeletes(later)).toBe(1);
+  });
+
+  test("a Clerk delete that fails every try needs an operator", async () => {
+    const t = newTest();
+    const calls = stubNetwork({ clerkDelete: 503, noAppleAccount: true });
+    const { first } = await createCouple(t);
+    expect((await first.as.action(api.identity.delete_account, {})).authDeleteStatus).toBe("queued");
+
+    await t.finishAllScheduledFunctions(vi.runAllTimers, 1000);
+    expect(await jobOf(t)).toMatchObject({ status: "attention_required", last_auth_delete_error_code: "auth_http_503" });
+    // One try inside delete_account, then ten from the pool.
+    expect(clerkDeletes(calls)).toBe(11);
+    const request = await t.run((ctx) => ctx.db.query("privacy_requests").first());
+    expect(request!.status).toBe("processing");
+    const events = await t.run((ctx) => ctx.db.query("privacy_request_events").collect());
+    expect(events.filter((event) => event.event_kind === "auth_delete_failed").at(-1)!.metadata).toEqual({
+      error_code: "auth_http_503",
+      requires_attention: true,
+    });
   });
 });

@@ -158,8 +158,7 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
     }
 }
 
-/// `drawAndGuess:get_draw_and_guess`: everything the Draw & Guess screens show. The
-/// server reads no clock, so the presence timestamps are judged on the phone.
+/// `drawAndGuess:get_draw_and_guess`: everything the Draw & Guess screens show.
 nonisolated struct RemoteDrawAndGuessState: Codable, Equatable, Sendable {
     let userID: UUID
     let partnerUserID: UUID?
@@ -171,8 +170,8 @@ nonisolated struct RemoteDrawAndGuessState: Codable, Equatable, Sendable {
     var recentRounds: [RemoteDrawAndGuessRound]
     /// Only the drawer whose turn it is, while the game is choosing a word.
     let choices: [RemoteDrawAndGuessChoice]?
-    let myLastSeenAt: Date?
-    let partnerLastSeenAt: Date?
+    let myPresent: Bool
+    let partnerPresent: Bool
     let lastInviteAt: Date?
 
     enum CodingKeys: String, CodingKey {
@@ -184,8 +183,8 @@ nonisolated struct RemoteDrawAndGuessState: Codable, Equatable, Sendable {
         case currentRound = "current_round"
         case recentRounds = "recent_rounds"
         case choices
-        case myLastSeenAt = "my_last_seen_at"
-        case partnerLastSeenAt = "partner_last_seen_at"
+        case myPresent = "my_present"
+        case partnerPresent = "partner_present"
         case lastInviteAt = "last_invite_at"
     }
 }

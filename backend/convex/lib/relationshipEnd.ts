@@ -1,7 +1,7 @@
 import type { WriterCtx } from "./db";
 import { withUpdatedAt } from "./db";
 import { fail } from "./errors";
-import { deleteGamePresenceForCouple } from "./games";
+import { removePresenceRooms } from "./presence";
 import { createRelationshipSyncEvent } from "./syncEvents";
 import { addDaysToInstant, nowIso } from "./time";
 
@@ -22,7 +22,7 @@ export async function deleteLatestLocationsForCouple(ctx: WriterCtx, coupleId: s
 /**
  * Port of `internal.end_relationship_for_pair`. Ends the pair's active couple,
  * marks the initiator as left and the partner as ended_notice_pending, writes a
- * relationship_ended sync event per member, and removes shared locations.
+ * relationship_ended sync event per member, and removes shared locations and presence.
  * Returns false when the pair has no active couple.
  */
 export async function endRelationshipForPair(
@@ -55,7 +55,8 @@ export async function endRelationshipForPair(
 
   await ctx.db.patch(couple._id, withUpdatedAt({ status: "ended" as const, ended_at: now, delete_after: cleanupDeadline }));
   await deleteLatestLocationsForCouple(ctx, couple.id);
-  await deleteGamePresenceForCouple(ctx, couple.id);
+  // Open game screens and typing dots of both partners go at once.
+  await removePresenceRooms(ctx, members.map((member) => member.user_id), `${couple.id}:`);
   await ctx.db.patch(initiator._id, withUpdatedAt({ status: "left" as const, left_at: now }));
   for (const member of members) {
     if (member.user_id !== initiatedByUserId && member.status === "active") {

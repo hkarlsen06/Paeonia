@@ -3,6 +3,7 @@ import { api, internal } from "./_generated/api";
 import { deleteCoupleGameRows } from "./lib/gameRegistry";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op } from "./media.testing";
+import { deliverDuePushes } from "./push.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 const START = Date.parse("2026-10-10T12:00:00.000Z");
@@ -115,8 +116,6 @@ describe("access", () => {
         auth_provider: "apple",
         status: "ready_for_auth_delete",
         provider_revocation_status: "not_required",
-        auth_delete_attempts: 0,
-        next_attempt_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -557,7 +556,7 @@ describe("pushes", () => {
   });
 
   describe("drain", () => {
-    const claim = (s: Setup) => s.t.mutation(internal.pushQueue.claim_notification_batch, {});
+    const claim = (s: Setup) => deliverDuePushes(s.t);
     const types = (rows: { payload: unknown }[]) => rows.map((row) => (row.payload as { type: string }).type).sort();
     const errorsOf = async (s: Setup, kind: string) => (await rowsOf(s, kind)).map((row) => row.last_error ?? null);
 

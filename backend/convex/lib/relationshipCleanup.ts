@@ -96,14 +96,6 @@ export async function cleanupCoupleContent(
   for (const answer of await coupleAnswers(ctx, instances)) {
     await ctx.db.patch(answer._id, withUpdatedAt(softDeleteFields(answer, now)));
   }
-  // Typing rows only matter while both people chat, so they go right away.
-  for (const row of await ctx.db
-    .query("daily_chat_typing")
-    .withIndex("by_couple_id", (q) => q.eq("couple_id", couple.id))
-    .collect()) {
-    await ctx.db.delete(row._id);
-  }
-
   const threads = await ctx.db
     .query("conversation_threads")
     .withIndex("by_couple_id_created_at", (q) => q.eq("couple_id", couple.id))

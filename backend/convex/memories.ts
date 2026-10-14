@@ -11,6 +11,7 @@ import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { dateArg, newUuid, optionalTimestampArg, optionalUuidArg, uuidArg } from "./lib/ids";
 import { queueMemoryMediaAssetsIfOrphaned, queueThreadMediaAssetsIfOrphaned } from "./lib/mediaOrphans";
 import { enqueueMemoryCreatedNotification } from "./lib/notifications";
+import { consumeRateLimit } from "./lib/rateLimits";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
 
@@ -292,6 +293,7 @@ export const create_memory = mutation({
         request: ["create_memory", memoryId, title, memoryDate, noteBody ?? "", mediaIds],
       }),
       async () => {
+        await consumeRateLimit(ctx, "memoryCreate", userId);
         const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
         await insertMemory(ctx, {
           id: memoryId,

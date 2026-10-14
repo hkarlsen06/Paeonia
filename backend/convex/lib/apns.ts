@@ -3,7 +3,7 @@
 
 export type ApnsEnvironment = "sandbox" | "production";
 
-export type ClaimedNotification = {
+export type PreparedNotification = {
   outbox_id: string;
   target_device_id: string;
   push_token: string;
@@ -15,7 +15,7 @@ export type ClaimedNotification = {
   payload: Record<string, unknown>;
 };
 
-export type ClaimedWidgetPush = {
+export type PreparedWidgetPush = {
   outbox_id: string;
   target_widget_device_id: string;
   widget_push_token: string;
@@ -68,7 +68,7 @@ export function errorMessage(error: unknown): string {
  * banner whose title and body were written when the row was queued.
  * The payload privacy rules were applied at queue time, so this adds only `aps`.
  */
-export function buildAppApsPayload(notification: ClaimedNotification): Record<string, unknown> {
+export function buildAppApsPayload(notification: PreparedNotification): Record<string, unknown> {
   if (notification.apns_push_type === "background") {
     return { aps: { "content-available": 1 }, ...notification.payload };
   }
@@ -87,7 +87,7 @@ export function buildAppApsPayload(notification: ClaimedNotification): Record<st
 
 /**
  * When a reminder stops being true: a streak reminder at its deadline, a trial
- * reminder when the trial ends. The claim drops a row past this time, and APNs
+ * reminder when the trial ends. `prepare_notification` drops a row past this time, and APNs
  * drops it on a phone that stays offline past it. Null for everything else.
  */
 export function notificationStaleAt(payload: Record<string, unknown>): string | null {
@@ -100,7 +100,7 @@ export function notificationStaleAt(payload: Record<string, unknown>): string | 
   return typeof value === "string" && !Number.isNaN(Date.parse(value)) ? value : null;
 }
 
-export function buildAppRequest(notification: ClaimedNotification, bundleId: string): ApnsSendRequest {
+export function buildAppRequest(notification: PreparedNotification, bundleId: string): ApnsSendRequest {
   const staleAt = notificationStaleAt(notification.payload);
   return {
     token: notification.push_token,
@@ -114,11 +114,11 @@ export function buildAppRequest(notification: ClaimedNotification, bundleId: str
   };
 }
 
-export function buildWidgetApsPayload(notification: ClaimedWidgetPush): Record<string, unknown> {
+export function buildWidgetApsPayload(notification: PreparedWidgetPush): Record<string, unknown> {
   return { aps: { "content-changed": true }, ...notification.payload };
 }
 
-export function buildWidgetRequest(notification: ClaimedWidgetPush, bundleId: string): ApnsSendRequest {
+export function buildWidgetRequest(notification: PreparedWidgetPush, bundleId: string): ApnsSendRequest {
   return {
     token: notification.widget_push_token,
     preferredEnvironment: notification.apns_environment,
@@ -160,7 +160,7 @@ export function environmentOrder(preferred: ApnsEnvironment): ApnsEnvironment[] 
  * Sends through the preferred host and falls back to the other one when APNs
  * says BadDeviceToken. A token is valid on exactly one host. 410 Unregistered,
  * or BadDeviceToken on the last host, marks the token dead. Any other failure
- * is not an environment mismatch, so the claim lease retries it later.
+ * is not an environment mismatch, so pushWorkpool retries it later.
  */
 export async function sendWithEnvironmentFallback(
   request: ApnsSendRequest,
@@ -267,7 +267,7 @@ export function readApnsConfig(env: ApnsEnv): {
   };
 }
 
-/** A provider token cache that lives as long as the returned object, one drain run. */
+/** A provider token cache that lives as long as the returned object, one send. */
 export function cachedProviderTokens(
   credentialsFor: (environment: ApnsEnvironment) => ApnsCredentials,
   now: () => number = () => Math.floor(Date.now() / 1000),

@@ -127,7 +127,7 @@ describe("create_pairing_invite", () => {
 });
 
 describe("preview_pairing_invite", () => {
-  test("shows the inviter to another user and logs the attempt", async () => {
+  test("shows the inviter to another user", async () => {
     const t = newTest();
     const owner = await inviter(t, "Ada");
     const id = await createInvite(owner);
@@ -142,9 +142,6 @@ describe("preview_pairing_invite", () => {
         has_safety_warning: false,
       },
     ]);
-    const attempts = await t.run((ctx) => ctx.db.query("pairing_invite_attempts").collect());
-    expect(attempts).toEqual([expect.objectContaining({ user_id: guest.userId, success: true, matched_invite_id: id })]);
-    expect(attempts[0].code_hash_prefix).toBe((await hashPairingInviteCode("ABC123")).slice(0, 12));
   });
 
   test("hides unknown, expired, revoked, and blocked invites and a hidden inviter name", async () => {
@@ -154,8 +151,6 @@ describe("preview_pairing_invite", () => {
     const guest = await createSignedInUser(t, {});
 
     expect(await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ZZZZZZ" })).toEqual([]);
-    const failed = await t.run((ctx) => ctx.db.query("pairing_invite_attempts").collect());
-    expect(failed[0]).toMatchObject({ success: false, failure_reason: "not_found" });
 
     await t.run(async (ctx) => {
       const profile = await ctx.db
@@ -204,26 +199,30 @@ describe("preview_pairing_invite", () => {
   test("throttles a user after thirty attempts and ten misses on one code", async () => {
     const t = newTest();
     const guest = await createSignedInUser(t, {});
+    const preview = (code: string) => guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: code });
     for (let attempt = 0; attempt < 10; attempt += 1) {
-      expect(await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ZZZZZZ" })).toEqual([]);
+      expect(await preview("ZZZZZZ")).toEqual([]);
     }
-    await expectFail(guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ZZZZZZ" }), "53300", "too many invite attempts for this code");
-    // Different codes keep counting against the per-user budget.
-    await t.run(async (ctx) => {
-      for (let index = 0; index < 30; index += 1) {
-        await ctx.db.insert("pairing_invite_attempts", {
-          id: newUuid(),
-          code_hash_prefix: `p${index}`,
-          user_id: guest.userId,
-          success: true,
-          attempted_at: NOW,
-        });
-      }
-    });
-    await expectFail(guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "WWWWWW" }), "53300", "too many invite attempts");
-    // The window is ten minutes.
+    await expectFail(preview("ZZZZZZ"), "53300", "too many invite attempts for this code");
+    // Different codes keep counting against the per-user budget of thirty.
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      expect(await preview(`Q${String(attempt).padStart(5, "0")}`)).toEqual([]);
+    }
+    await expectFail(preview("WWWWWW"), "53300", "too many invite attempts");
+    // The budget refills over ten minutes.
     vi.setSystemTime(new Date("2026-10-10T12:11:00.000Z"));
-    expect(await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "WWWWWW" })).toEqual([]);
+    expect(await preview("WWWWWW")).toEqual([]);
+    expect(await preview("ZZZZZZ")).toEqual([]);
+  });
+
+  test("only misses count toward the limit for one code", async () => {
+    const t = newTest();
+    const owner = await inviter(t);
+    await createInvite(owner);
+    const guest = await createSignedInUser(t, {});
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      expect(await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ABC123" })).toHaveLength(1);
+    }
   });
 
   test("an App Review demo code returns the seeded partner", async () => {
@@ -257,6 +256,18 @@ describe("preview_pairing_invite", () => {
 });
 
 describe("accept_pairing_invite", () => {
+  test("a refused accept rolls back and does not count toward the limits", async () => {
+    const t = newTest();
+    const guest = await createSignedInUser(t, {});
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      await expectFail(
+        guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ZZZZZZ", ...operation() }),
+        "22023",
+        "pairing invite is not available",
+      );
+    }
+  });
+
   test("creates the couple, both members, an accepted invite, and refresh events", async () => {
     const t = newTest();
     const owner = await inviter(t);
@@ -272,7 +283,6 @@ describe("accept_pairing_invite", () => {
       invite: await ctx.db.query("pairing_invites").first(),
       pairs: await ctx.db.query("relationship_pairs").collect(),
       events: await ctx.db.query("relationship_sync_events").collect(),
-      attempts: await ctx.db.query("pairing_invite_attempts").collect(),
     }));
     expect(rows.couples).toHaveLength(1);
     expect(rows.couples[0]).toMatchObject({ id: coupleId, status: "active", started_on: "2024-02-29", created_by_user_id: owner.userId });
@@ -291,7 +301,6 @@ describe("accept_pairing_invite", () => {
       initiated_by_user_id: guest.userId,
       local_purge_scope: { relationship: "refresh", entitlement: "refresh" },
     });
-    expect(rows.attempts).toEqual([expect.objectContaining({ success: true, matched_invite_id: inviteId })]);
 
     const state = await relationshipStateOf(guest);
     expect(state).toMatchObject({ couple_id: coupleId, partner_user_id: owner.userId, started_on: "2024-02-29" });
@@ -497,34 +506,5 @@ describe("cleanup", () => {
     expect(await t.mutation(internal.pairing.expire_stale_pairing_invites, { p_now: inDays(2) })).toBe(0);
     expect((await t.run((ctx) => ctx.db.query("pairing_invites").first()))?.status).toBe("expired");
     await expectFail(t.mutation(internal.pairing.expire_stale_pairing_invites, { p_limit: 0 }), "23514", "expiry limit is out of range");
-  });
-
-  test("cleanup_attempt_logs deletes the old pairing and review attempts first", async () => {
-    const t = newTest();
-    const user = await createSignedInUser(t, {});
-    await t.run(async (ctx) => {
-      for (const attemptedAt of [inDays(-40), inDays(-31), inDays(-1)]) {
-        await ctx.db.insert("pairing_invite_attempts", {
-          id: newUuid(),
-          code_hash_prefix: "abc",
-          user_id: user.userId,
-          success: false,
-          attempted_at: attemptedAt,
-        });
-      }
-      await ctx.db.insert("review_access_attempts", {
-        id: newUuid(),
-        user_id: user.userId,
-        code_hash_prefix: "abc",
-        success: false,
-        attempted_at: inDays(-45),
-      });
-    });
-    const limited = await t.mutation(internal.pairing.cleanup_attempt_logs, { p_limit: 1 });
-    expect(limited).toEqual({ pairing_attempts_deleted: 1, review_attempts_deleted: 1 });
-    const rest = await t.mutation(internal.pairing.cleanup_attempt_logs, {});
-    expect(rest).toEqual({ pairing_attempts_deleted: 1, review_attempts_deleted: 0 });
-    expect(await t.run((ctx) => ctx.db.query("pairing_invite_attempts").collect())).toHaveLength(1);
-    await expectFail(t.mutation(internal.pairing.cleanup_attempt_logs, { p_limit: 0 }), "23514");
   });
 });

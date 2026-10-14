@@ -397,7 +397,7 @@ extension SimDriver {
             case .present: return .here
             }
         }
-        if let stamp = server.presenceStamp(of: partner.userID), clock.now.timeIntervalSince(stamp) < GamePresence.freshInterval {
+        if server.presenceStamp(of: partner.userID) != nil {
             return .here
         }
         return .away

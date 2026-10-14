@@ -105,7 +105,6 @@ describe("runClientOperation", () => {
         auth_provider: "unknown",
         status: "ready_for_auth_delete",
         provider_revocation_status: "not_required",
-        auth_delete_attempts: 0,
         created_at: "2026-10-10T12:00:00.000Z",
         updated_at: "2026-10-10T12:00:00.000Z",
       });

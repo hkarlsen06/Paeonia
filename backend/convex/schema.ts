@@ -63,18 +63,10 @@ export default defineSchema({
     request_id: uuid,
     user_id: uuid,
     auth_provider: authProvider,
-    status: literals(
-      "ready_for_auth_delete",
-      "processing_auth_delete",
-      "attention_required",
-      "completed",
-    ),
+    status: literals("ready_for_auth_delete", "attention_required", "completed"),
     provider_revocation_status: literals("not_required", "succeeded", "manual_required"),
     provider_revocation_attempted_at: optTs,
     provider_revocation_error_code: optString,
-    auth_delete_attempts: v.number(),
-    next_attempt_at: optTs,
-    claimed_at: optTs,
     last_auth_delete_error_code: optString,
     completed_at: optTs,
     created_at: ts,
@@ -82,8 +74,7 @@ export default defineSchema({
   })
     .index("by_uuid", ["id"])
     .index("by_request_id", ["request_id"])
-    .index("by_user_id", ["user_id"])
-    .index("by_status_next_attempt_at", ["status", "next_attempt_at"]),
+    .index("by_user_id", ["user_id"]),
 
   // FK: user_id -> users cascade
   app_account_tokens: defineTable({
@@ -199,8 +190,6 @@ export default defineSchema({
     apns_push_type: literals("alert", "background"),
     apns_collapse_id: optString,
     provider_message_id: optString,
-    attempt_count: v.number(),
-    last_attempt_at: optTs,
     last_error: optString,
     scheduled_for: ts,
     sent_at: optTs,
@@ -211,8 +200,6 @@ export default defineSchema({
   })
     .index("by_uuid", ["id"])
     .index("by_dedupe_key", ["dedupe_key"])
-    // Pending work: eq(sent_at, undefined).eq(failed_at, undefined).gte(scheduled_for, ...)
-    .index("by_sent_at_failed_at_scheduled_for", ["sent_at", "failed_at", "scheduled_for"])
     .index("by_recipient_user_id_created_at", ["recipient_user_id", "created_at"])
     .index("by_target_device_id", ["target_device_id"]),
 
@@ -227,24 +214,6 @@ export default defineSchema({
     .index("by_pair_id_created_at", ["pair_id", "created_at"])
     .index("by_pair_id_source_report_id", ["pair_id", "source_report_id"])
     .index("by_source_report_id", ["source_report_id"]),
-
-  // FK: matched_invite_id -> pairing_invites set null
-  pairing_invite_attempts: defineTable({
-    id: uuid,
-    code_hash_prefix: v.string(),
-    matched_invite_id: optUuid,
-    user_id: optUuid,
-    success: v.boolean(),
-    failure_reason: optString,
-    ip_hash: optString,
-    device_hash: optString,
-    app_version: optString,
-    attempted_at: ts,
-  })
-    .index("by_uuid", ["id"])
-    .index("by_code_hash_prefix_attempted_at", ["code_hash_prefix", "attempted_at"])
-    .index("by_matched_invite_id", ["matched_invite_id"])
-    .index("by_user_id_attempted_at", ["user_id", "attempted_at"]),
 
   // FK: invite_id -> pairing_invites cascade. code_hash is unique.
   pairing_invite_secrets: defineTable({
@@ -279,9 +248,7 @@ export default defineSchema({
     media_type: mediaType,
     byte_size: v.optional(v.number()),
     sha256: optString,
-    copy_status: literals("pending_copy", "copying", "copied", "copy_failed"),
-    copy_claimed_at: optTs,
-    copy_attempts: v.number(),
+    copy_status: literals("pending_copy", "copied", "copy_failed"),
     copy_completed_at: optTs,
     last_copy_error: optString,
     delete_after: optTs,
@@ -296,12 +263,6 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_report_id", ["report_id"])
     .index("by_bucket_storage_path", ["bucket", "storage_path"])
-    .index("by_copy_status_copy_attempts_copy_claimed_at_created_at", [
-      "copy_status",
-      "copy_attempts",
-      "copy_claimed_at",
-      "created_at",
-    ])
     .index("by_delete_after_storage_delete_status", ["delete_after", "storage_delete_status"])
     .index("by_report_id_source_media_asset_id", ["report_id", "source_media_asset_id"])
     .index("by_source_media_asset_id", ["source_media_asset_id"])
@@ -321,24 +282,6 @@ export default defineSchema({
   })
     .index("by_report_id", ["report_id"])
     .index("by_delete_after", ["delete_after"]),
-
-  // FK: matched_code_id -> review_access_codes set null
-  review_access_attempts: defineTable({
-    id: uuid,
-    user_id: uuid,
-    code_hash_prefix: v.string(),
-    matched_code_id: optUuid,
-    success: v.boolean(),
-    failure_reason: optString,
-    ip_hash: optString,
-    device_hash: optString,
-    app_version: optString,
-    attempted_at: ts,
-  })
-    .index("by_uuid", ["id"])
-    .index("by_code_hash_prefix_attempted_at", ["code_hash_prefix", "attempted_at"])
-    .index("by_matched_code_id", ["matched_code_id"])
-    .index("by_user_id_attempted_at", ["user_id", "attempted_at"]),
 
   // code_hash is unique.
   review_access_codes: defineTable({
@@ -488,8 +431,6 @@ export default defineSchema({
     dedupe_key: optString,
     apns_collapse_id: optString,
     provider_message_id: optString,
-    attempt_count: v.number(),
-    last_attempt_at: optTs,
     last_error: optString,
     scheduled_for: ts,
     sent_at: optTs,
@@ -497,7 +438,6 @@ export default defineSchema({
     created_at: ts,
   })
     .index("by_uuid", ["id"])
-    .index("by_sent_at_failed_at_scheduled_for", ["sent_at", "failed_at", "scheduled_for"])
     .index("by_target_widget_device_id_dedupe_key", ["target_widget_device_id", "dedupe_key"])
     .index("by_recipient_user_id", ["recipient_user_id"]),
 
@@ -1206,21 +1146,6 @@ export default defineSchema({
     .index("by_thread_id_user_id", ["thread_id", "user_id"])
     .index("by_user_id", ["user_id"]),
 
-  // New in Convex: who is typing in a daily question chat. Keyed by the instance, so typing
-  // shows before the first message creates the thread. One row per (instance_id, user_id),
-  // removed when typing stops; readers treat a row older than a few seconds as stopped.
-  // FK: instance_id -> daily_question_instances cascade; couple_id -> couples cascade; user_id -> users cascade.
-  daily_chat_typing: defineTable({
-    instance_id: uuid,
-    couple_id: uuid,
-    user_id: uuid,
-    typing_at: ts,
-  })
-    .index("by_instance_id_user_id", ["instance_id", "user_id"])
-    .index("by_couple_id", ["couple_id"])
-    .index("by_user_id", ["user_id"])
-    .index("by_typing_at", ["typing_at"]),
-
   // New in Convex: when each person first saw the partner's answer to a daily question,
   // for the "new" mark in the app and the read receipt on the answer. One row per
   // (instance_id, user_id), never moved forward.
@@ -1347,8 +1272,9 @@ export default defineSchema({
 
   // ---- games (new in Convex, see games.ts and docs/games/draw-and-guess.md) ----
   // Every games table has a couple_id index. Relationship cleanup deletes the rows (lib/gameRegistry.ts).
-  // game_settings, game_presence, and game_invites are shared by every game kind. games, game_moves,
-  // game_guesses, game_round_stars, and game_used_words belong to Draw & Guess (lib/drawAndGuess.ts).
+  // game_settings and game_invites are shared by every game kind. The presence component keeps who
+  // has a game open (lib/presence.ts). games, game_moves, game_guesses, game_round_stars, and
+  // game_used_words belong to Draw & Guess (lib/drawAndGuess.ts).
 
   // FK: couple_id -> couples cascade. couple_id is unique. Shared by all games.
   game_settings: defineTable({
@@ -1468,16 +1394,6 @@ export default defineSchema({
   })
     .index("by_game_id_language_difficulty", ["game_id", "language", "difficulty"])
     .index("by_couple_id", ["couple_id"]),
-
-  // The open game screen. (couple_id, kind, user_id) is unique. A cron deletes rows nobody refreshed.
-  game_presence: defineTable({
-    couple_id: uuid,
-    kind: gameKind,
-    user_id: uuid,
-    last_seen_at: ts,
-  })
-    .index("by_couple_id_kind_user_id", ["couple_id", "kind", "user_id"])
-    .index("by_last_seen_at", ["last_seen_at"]),
 
   // The last invite each partner sent. (couple_id, kind, sender_user_id) is unique.
   game_invites: defineTable({

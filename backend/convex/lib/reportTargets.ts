@@ -1,4 +1,6 @@
+import { internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
+import { backgroundWorkpool } from "./backgroundWorkpool";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, orNull } from "./db";
 import { canAccessCoupleContent } from "./access";
@@ -383,15 +385,14 @@ function snapshotMediaIds(snapshot: Record<string, unknown>): string[] {
 
 /**
  * Port of `internal.enqueue_report_snapshot_assets`. Queues a copy of every
- * finalized, visible media asset the snapshot references. Returns the number of
- * rows queued.
+ * finalized, visible media asset the snapshot references, one
+ * `backgroundWorkpool` job per copy.
  */
 export async function enqueueReportSnapshotAssets(
   ctx: WriterCtx,
   reportId: string,
   targetSnapshot: Record<string, unknown>,
-): Promise<number> {
-  let queued = 0;
+): Promise<void> {
   for (const assetId of snapshotMediaIds(targetSnapshot)) {
     const asset = await getByUuid(ctx, "media_assets", assetId);
     if (
@@ -418,15 +419,18 @@ export async function enqueueReportSnapshotAssets(
       byte_size: asset.byte_size,
       sha256: asset.sha256,
       copy_status: "pending_copy",
-      copy_attempts: 0,
       storage_delete_status: "none",
       storage_delete_attempts: 0,
       created_at: now,
       updated_at: now,
     });
-    queued += 1;
+    await backgroundWorkpool.enqueueAction(
+      ctx,
+      internal.moderation.copy_report_snapshot_asset,
+      { p_snapshot_asset_id: id },
+      { onComplete: internal.moderation.report_snapshot_copy_finished, context: { snapshot_asset_id: id } },
+    );
   }
-  return queued;
 }
 
 /** Retention for snapshots after the first moderation action: 180 days. */

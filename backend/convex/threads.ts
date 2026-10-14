@@ -16,6 +16,7 @@ import { getByUuid, orNull } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalUuidArg, uuidArg } from "./lib/ids";
 import { enqueuePartnerNotification } from "./lib/notifications";
+import { consumeRateLimit } from "./lib/rateLimits";
 import { applyCoupleActivity } from "./lib/streaks";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
@@ -268,6 +269,7 @@ export const send_thread_message = mutation({
         ],
       }),
       async () => {
+        await consumeRateLimit(ctx, "threadMessage", userId);
         const messageId = await insertThreadMessage(
           ctx,
           userId,
@@ -306,6 +308,7 @@ export const create_daily_question_thread_with_message = mutation({
         ],
       }),
       async () => {
+        await consumeRateLimit(ctx, "threadMessage", userId);
         const instance = await getByUuid(ctx, "daily_question_instances", instanceId);
         if (!instance || instance.status === "shuffled") {
           return fail("22023", "daily question instance was not found");
@@ -377,6 +380,7 @@ export const create_memory_thread_with_message = mutation({
         ],
       }),
       async () => {
+        await consumeRateLimit(ctx, "threadMessage", userId);
         const memory = await getByUuid(ctx, "memories", memoryId);
         if (
           !memory ||

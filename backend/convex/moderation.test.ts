@@ -5,11 +5,16 @@ import { tombstoneReportTargets } from "./lib/reports";
 import { makeAsset, makeMemory, operation } from "./reports.fixtures";
 import { createCouple, newTest, type TestConvex, type TestCouple } from "./test.setup";
 
+const START = new Date("2026-10-10T12:00:00.000Z");
+
+// Snapshot copies run on backgroundWorkpool, whose loop waits on timers. Fake
+// them all, so finishAllScheduledFunctions can move the clock.
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
+  vi.useFakeTimers();
+  vi.setSystemTime(START);
 });
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
@@ -40,8 +45,10 @@ async function memorySetup() {
   const asset = await makeAsset(t, couple);
   const memory = await makeMemory(t, couple, [asset.id]);
   const reportId = await report(t, couple, "memory", memory.id);
-  // Submitting a report schedules the snapshot copy. Let it finish so tests start from a known state.
+  // Submitting a report queues the snapshot copy. Let it finish so tests start from a known state,
+  // then put back the clock the pool moved.
   await t.finishAllScheduledFunctions(vi.runAllTimers);
+  vi.setSystemTime(START);
   const memoryRow = () =>
     t.run((ctx) => ctx.db.query("memories").withIndex("by_uuid", (q) => q.eq("id", memory.id)).unique());
   const assetRow = () =>
@@ -55,8 +62,6 @@ async function resetCopy(t: TestConvex) {
     for (const row of await ctx.db.query("report_snapshot_assets").collect()) {
       await ctx.db.patch(row._id, {
         copy_status: "pending_copy",
-        copy_attempts: 0,
-        copy_claimed_at: undefined,
         copy_completed_at: undefined,
         storage_id: undefined,
       });
@@ -222,52 +227,73 @@ describe("report snapshot assets", () => {
     return (await t.run((ctx) => ctx.db.query("report_snapshot_assets").collect()))[0];
   }
 
-  test("the copy action stores a second blob with the same bytes", async () => {
+  /** A reported memory with one photo, before the pool has copied it. */
+  async function queuedCopy() {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const asset = await makeAsset(t, couple);
+    const memory = await makeMemory(t, couple, [asset.id]);
+    await report(t, couple, "memory", memory.id);
+    return { t, asset };
+  }
+
+  /** Counts the checksum runs over the photo bytes, and fails the first `failures` of them. */
+  function spyOnPhotoChecksum(size: number, failures = 0) {
+    const digest = crypto.subtle.digest.bind(crypto.subtle);
+    let calls = 0;
+    vi.spyOn(crypto.subtle, "digest").mockImplementation(async (algorithm: AlgorithmIdentifier, data: BufferSource) => {
+      if (data.byteLength === size) {
+        calls += 1;
+        if (calls <= failures) throw new Error("storage hiccup");
+      }
+      return await digest(algorithm, data);
+    });
+    return () => calls;
+  }
+
+  test("the pool copies each snapshot asset to a second blob with the same bytes", async () => {
     const { t, asset } = await memorySetup();
-    await resetCopy(t);
-    const result = await t.action(internal.moderation.copy_report_snapshot_assets, {});
-    expect(result).toEqual({ claimed: 1, copied: 1, failed: 0 });
     const row = await snapshotAssetRow(t);
-    expect(row).toMatchObject({ copy_status: "copied", copy_attempts: 1, copy_completed_at: "2026-10-10T12:00:00.000Z" });
+    expect(row.copy_status).toBe("copied");
+    expect(row.copy_completed_at).toBeDefined();
     expect(row.storage_id).toBeDefined();
     expect(row.storage_id).not.toBe(asset.storageId);
     const copy = await t.run(async (ctx) => await (await ctx.storage.get(row.storage_id!))!.text());
     expect(copy).toBe("photo-bytes");
-    expect(await t.action(internal.moderation.copy_report_snapshot_assets, {})).toEqual({ claimed: 0, copied: 0, failed: 0 });
+    // A copied row has nothing left to copy.
+    expect(await t.action(internal.moderation.copy_report_snapshot_asset, { p_snapshot_asset_id: row.id })).toBe(false);
+
+    await resetCopy(t);
+    expect(await t.action(internal.moderation.copy_report_snapshot_asset, { p_snapshot_asset_id: row.id })).toBe(true);
+    expect(await snapshotAssetRow(t)).toMatchObject({ copy_status: "copied" });
   });
 
-  test("a changed source is retried, then failed for good after five attempts", async () => {
-    const { t } = await memorySetup();
-    await resetCopy(t);
+  test("a copy that fails once is tried again and succeeds", async () => {
+    const { t, asset } = await queuedCopy();
+    const checksums = spyOnPhotoChecksum(asset.size, 1);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const row = await snapshotAssetRow(t);
+    expect(row.copy_status).toBe("copied");
+    expect(row.storage_id).toBeDefined();
+    expect(row.last_copy_error).toBeUndefined();
+    // Two tries check the source, and convex-test's `storage.store` hashes the copy once.
+    expect(checksums()).toBe(3);
+  });
+
+  test("a changed source fails for good after five tries", async () => {
+    const { t, asset } = await queuedCopy();
     // The source file no longer matches the checksum recorded at report time.
     await t.run(async (ctx) => {
       const copy = (await ctx.db.query("report_snapshot_assets").collect())[0];
       await ctx.db.patch(copy._id, { sha256: "f".repeat(64) });
     });
-    await t.action(internal.moderation.copy_report_snapshot_assets, {});
-    let row = await snapshotAssetRow(t);
-    expect(row).toMatchObject({ copy_status: "pending_copy", copy_attempts: 1, last_copy_error: "source file checksum changed" });
-    for (let attempt = 2; attempt <= 5; attempt += 1) {
-      await t.action(internal.moderation.copy_report_snapshot_assets, {});
-    }
-    row = await snapshotAssetRow(t);
-    expect(row).toMatchObject({ copy_status: "copy_failed", copy_attempts: 5 });
-    expect(await t.action(internal.moderation.copy_report_snapshot_assets, {})).toEqual({ claimed: 0, copied: 0, failed: 0 });
-  });
-
-  test("a copy stuck in copying is claimed again after 15 minutes", async () => {
-    const { t } = await memorySetup();
-    await resetCopy(t);
-    const first = await t.mutation(internal.moderation.claim_report_snapshot_asset_copies, {});
-    expect(first).toHaveLength(1);
-    expect(first[0]).toMatchObject({ copy_attempts: 1, destination_bucket: "report-snapshots" });
-    expect(await t.mutation(internal.moderation.claim_report_snapshot_asset_copies, {})).toHaveLength(0);
-    vi.setSystemTime(new Date("2026-10-10T12:16:00.000Z"));
-    const again = await t.mutation(internal.moderation.claim_report_snapshot_asset_copies, {});
-    expect(again[0].copy_attempts).toBe(2);
-    await expect(t.mutation(internal.moderation.claim_report_snapshot_asset_copies, { p_limit: 0 })).rejects.toThrow(
-      /23514.*report snapshot copy claim limit is out of range/,
-    );
+    const checksums = spyOnPhotoChecksum(asset.size);
+    await t.finishAllScheduledFunctions(vi.runAllTimers, 1000);
+    const row = await snapshotAssetRow(t);
+    expect(row.copy_status).toBe("copy_failed");
+    expect(row.last_copy_error).toContain("source file checksum changed");
+    expect(row.storage_id).toBeUndefined();
+    expect(checksums()).toBe(5);
   });
 
   test("expired copies are deleted from storage and then purged with their snapshot", async () => {

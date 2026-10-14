@@ -1,3 +1,4 @@
+import { vOnCompleteArgs } from "@convex-dev/workpool";
 import { v } from "convex/values";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
@@ -362,95 +363,22 @@ export const apply_report_moderation_action = internalMutation({
 
 // ---- Report snapshot asset pipeline ----
 
-const COPY_RETRY_MS = 15 * 60_000;
-const DEFAULT_MAX_ATTEMPTS = 5;
-
-function checkClaimWindow(limit: number, maxAttempts: number): void {
-  if (!Number.isInteger(limit) || limit < 1 || limit > 500) {
-    fail("23514", "report snapshot copy claim limit is out of range");
-  }
-  if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 25) {
-    fail("23514", "report snapshot copy max attempts is out of range");
-  }
-}
-
-type ClaimedCopy = {
-  snapshot_asset_id: string;
-  report_id: string;
-  source_bucket: string;
-  source_storage_path: string;
-  destination_bucket: string;
-  destination_storage_path: string;
-  copy_attempts: number;
-  source_storage_id: string | null;
-  byte_size: number | null;
-  sha256: string | null;
-};
-
-/** Port of `internal.claim_report_snapshot_asset_copies`. Adds `source_storage_id` for the copy action. */
-export const claim_report_snapshot_asset_copies = internalMutation({
-  args: {
-    p_now: v.optional(v.string()),
-    p_limit: v.optional(v.number()),
-    p_retry_after_ms: v.optional(v.number()),
-    p_max_attempts: v.optional(v.number()),
-  },
+/**
+ * What `copy_report_snapshot_asset` needs. Null once the row no longer waits
+ * for a copy or its retention ended, so the job then does nothing.
+ */
+export const get_report_snapshot_copy_source = internalQuery({
+  args: { p_snapshot_asset_id: v.string() },
   handler: async (ctx, args) => {
-    const now = optionalTimestampArg(args.p_now) ?? nowIso();
-    const limit = args.p_limit ?? 100;
-    const maxAttempts = args.p_max_attempts ?? DEFAULT_MAX_ATTEMPTS;
-    checkClaimWindow(limit, maxAttempts);
-    const staleBefore = addMs(now, -(args.p_retry_after_ms ?? COPY_RETRY_MS));
-
-    const candidates: Doc<"report_snapshot_assets">[] = [];
-    for (const status of ["pending_copy", "copying"] as const) {
-      const rows = await ctx.db
-        .query("report_snapshot_assets")
-        .withIndex("by_copy_status_copy_attempts_copy_claimed_at_created_at", (q) =>
-          q.eq("copy_status", status).lt("copy_attempts", maxAttempts),
-        )
-        .collect();
-      candidates.push(
-        ...rows.filter(
-          (row) =>
-            (row.delete_after === undefined || row.delete_after > now) &&
-            (status === "pending_copy" || (row.copy_claimed_at !== undefined && row.copy_claimed_at <= staleBefore)),
-        ),
-      );
+    const asset = await getByUuid(ctx, "report_snapshot_assets", uuidArg(args.p_snapshot_asset_id));
+    if (!asset || asset.copy_status !== "pending_copy" || (asset.delete_after !== undefined && asset.delete_after <= nowIso())) {
+      return null;
     }
-    candidates.sort((a, b) => (a.created_at !== b.created_at ? (a.created_at < b.created_at ? -1 : 1) : a.id < b.id ? -1 : 1));
-
-    const claimed = [];
-    for (const asset of candidates.slice(0, limit)) {
-      await ctx.db.patch(
-        asset._id,
-        withUpdatedAt({
-          copy_status: "copying" as const,
-          copy_claimed_at: now,
-          copy_attempts: asset.copy_attempts + 1,
-          last_copy_error: undefined,
-        }),
-      );
-      const source = await ctx.db
-        .query("media_assets")
-        .withIndex("by_bucket_storage_path", (q) =>
-          q.eq("bucket", asset.source_bucket).eq("storage_path", asset.source_storage_path),
-        )
-        .unique();
-      claimed.push({
-        snapshot_asset_id: asset.id,
-        report_id: asset.report_id,
-        source_bucket: asset.source_bucket,
-        source_storage_path: asset.source_storage_path,
-        destination_bucket: asset.bucket,
-        destination_storage_path: asset.storage_path,
-        copy_attempts: asset.copy_attempts + 1,
-        source_storage_id: source?.storage_id ?? null,
-        byte_size: asset.byte_size ?? null,
-        sha256: asset.sha256 ?? null,
-      });
-    }
-    return claimed;
+    const source = await ctx.db
+      .query("media_assets")
+      .withIndex("by_bucket_storage_path", (q) => q.eq("bucket", asset.source_bucket).eq("storage_path", asset.source_storage_path))
+      .unique();
+    return { source_storage_id: source?.storage_id ?? null, byte_size: asset.byte_size ?? null, sha256: asset.sha256 ?? null };
   },
 });
 
@@ -460,11 +388,7 @@ export const mark_report_snapshot_asset_copied = internalMutation({
   handler: async (ctx, args) => {
     const asset = await getByUuid(ctx, "report_snapshot_assets", uuidArg(args.p_snapshot_asset_id));
     if (!asset) return false;
-    if (
-      ["pending_copy", "copying", "copy_failed"].includes(asset.copy_status) &&
-      asset.byte_size !== undefined &&
-      asset.sha256 !== undefined
-    ) {
+    if (asset.copy_status !== "copied" && asset.byte_size !== undefined && asset.sha256 !== undefined) {
       await ctx.db.patch(
         asset._id,
         withUpdatedAt({
@@ -483,64 +407,66 @@ export const mark_report_snapshot_asset_copied = internalMutation({
   },
 });
 
-/** Port of `internal.mark_report_snapshot_asset_copy_failed`. */
-export const mark_report_snapshot_asset_copy_failed = internalMutation({
-  args: { p_snapshot_asset_id: v.string(), p_error: v.optional(v.union(v.null(), v.string())), p_terminal: v.optional(v.boolean()) },
-  handler: async (ctx, args) => {
-    const asset = await getByUuid(ctx, "report_snapshot_assets", uuidArg(args.p_snapshot_asset_id));
-    if (!asset || !["pending_copy", "copying", "copy_failed"].includes(asset.copy_status)) return false;
-    await ctx.db.patch(
-      asset._id,
-      withUpdatedAt({
-        copy_status: args.p_terminal ? ("copy_failed" as const) : ("pending_copy" as const),
-        last_copy_error: Array.from((args.p_error ?? "").trim()).slice(0, 4000).join("") || undefined,
-      }),
-    );
-    return true;
+/**
+ * The `backgroundWorkpool` job that `enqueueReportSnapshotAssets` queues for
+ * each snapshot asset. Reads the source blob from Convex storage, checks its
+ * size and checksum, and stores a second copy. A throw makes the pool try again.
+ * A blob stored by a try whose row update then failed has no row, and
+ * `sweep_orphan_storage` removes it.
+ */
+export const copy_report_snapshot_asset = internalAction({
+  args: { p_snapshot_asset_id: v.string() },
+  handler: async (ctx, args): Promise<boolean> => {
+    const asset = await ctx.runQuery(internal.moderation.get_report_snapshot_copy_source, args);
+    if (!asset) return false;
+    const blob = asset.source_storage_id ? await ctx.storage.get(asset.source_storage_id) : null;
+    if (!blob) throw new Error("source file is missing");
+    if (asset.byte_size !== null && blob.size !== asset.byte_size) throw new Error("source file size changed");
+    if (asset.sha256 !== null && (await sha256Hex(new Uint8Array(await blob.arrayBuffer()))) !== asset.sha256) {
+      throw new Error("source file checksum changed");
+    }
+    const storageId = await ctx.storage.store(blob);
+    return await ctx.runMutation(internal.moderation.mark_report_snapshot_asset_copied, {
+      p_snapshot_asset_id: args.p_snapshot_asset_id,
+      p_storage_id: storageId,
+    });
   },
 });
 
 /**
- * Replaces the Edge Function copy step: reads each claimed source blob from
- * Convex storage, checks its size and checksum, and stores a second copy.
+ * The pool calls this when a copy job ends. A copy that failed every try, or whose job was
+ * canceled, becomes `copy_failed`, because nothing else would pick it up again.
  */
-export const copy_report_snapshot_assets = internalAction({
-  args: { p_limit: v.optional(v.number()), p_max_attempts: v.optional(v.number()) },
-  handler: async (ctx, args): Promise<{ claimed: number; copied: number; failed: number }> => {
-    const maxAttempts = args.p_max_attempts ?? DEFAULT_MAX_ATTEMPTS;
-    const claimed: ClaimedCopy[] = await ctx.runMutation(internal.moderation.claim_report_snapshot_asset_copies, {
-      p_limit: args.p_limit,
-      p_max_attempts: maxAttempts,
-    });
-    let copied = 0;
-    let failed = 0;
-    for (const asset of claimed) {
-      try {
-        if (!asset.source_storage_id) throw new Error("source file is missing");
-        const blob = await ctx.storage.get(asset.source_storage_id as Id<"_storage">);
-        if (!blob) throw new Error("source file is missing");
-        if (asset.byte_size !== null && blob.size !== asset.byte_size) throw new Error("source file size changed");
-        if (asset.sha256 !== null && (await sha256Hex(new Uint8Array(await blob.arrayBuffer()))) !== asset.sha256) {
-          throw new Error("source file checksum changed");
-        }
-        const storageId = await ctx.storage.store(blob);
-        await ctx.runMutation(internal.moderation.mark_report_snapshot_asset_copied, {
-          p_snapshot_asset_id: asset.snapshot_asset_id,
-          p_storage_id: storageId,
-        });
-        copied += 1;
-      } catch (error) {
-        failed += 1;
-        await ctx.runMutation(internal.moderation.mark_report_snapshot_asset_copy_failed, {
-          p_snapshot_asset_id: asset.snapshot_asset_id,
-          p_error: error instanceof Error ? error.message : String(error),
-          p_terminal: asset.copy_attempts >= maxAttempts,
-        });
-      }
-    }
-    return { claimed: claimed.length, copied, failed };
+export const report_snapshot_copy_finished = internalMutation({
+  args: vOnCompleteArgs(v.object({ snapshot_asset_id: v.string() })),
+  handler: async (ctx, { context, result }) => {
+    if (result.kind === "success") return;
+    const asset = await getByUuid(ctx, "report_snapshot_assets", context.snapshot_asset_id);
+    if (!asset || asset.copy_status !== "pending_copy") return;
+    await ctx.db.patch(
+      asset._id,
+      withUpdatedAt({
+        copy_status: "copy_failed" as const,
+        last_copy_error:
+          result.kind === "failed"
+            ? Array.from(result.error.trim()).slice(0, 4000).join("") || undefined
+            : "copy was canceled",
+      }),
+    );
   },
 });
+
+const STORAGE_DELETE_RETRY_MS = 15 * 60_000;
+const STORAGE_DELETE_MAX_ATTEMPTS = 5;
+
+function checkClaimWindow(limit: number, maxAttempts: number): void {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 500) {
+    fail("23514", "report snapshot storage delete limit is out of range");
+  }
+  if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 25) {
+    fail("23514", "report snapshot storage delete max attempts is out of range");
+  }
+}
 
 /**
  * Collapses `claim_report_snapshot_storage_deletes`,
@@ -552,9 +478,9 @@ export const delete_expired_report_snapshot_storage = internalMutation({
   handler: async (ctx, args) => {
     const now = optionalTimestampArg(args.p_now) ?? nowIso();
     const limit = args.p_limit ?? 100;
-    const maxAttempts = args.p_max_attempts ?? DEFAULT_MAX_ATTEMPTS;
+    const maxAttempts = args.p_max_attempts ?? STORAGE_DELETE_MAX_ATTEMPTS;
     checkClaimWindow(limit, maxAttempts);
-    const retryBefore = addMs(now, -COPY_RETRY_MS);
+    const retryBefore = addMs(now, -STORAGE_DELETE_RETRY_MS);
 
     const due: Doc<"report_snapshot_assets">[] = [];
     for (const status of ["none", "pending", "retrying"] as const) {

@@ -28,8 +28,8 @@ const bonusFor = (solveMs: number) => (solveMs <= 15_000 ? 2 : solveMs <= 30_000
 const AVERAGE_MAX_MS = 10 * 60_000;
 const HISTORY_MAX = 50;
 const REACTIONS = ["love", "laugh", "wow"] as const;
-const PRESENCE_FRESH_MS = 60_000;
-const PRESENCE_DELETE_MS = 120_000;
+/** The presence component closes a game screen this long after its last heartbeat. */
+const PRESENCE_TIMEOUT_MS = 60_000;
 const INVITE_GAP_MS = 15 * 60_000;
 const REMINDER_AFTER_MS = 72 * 3_600_000;
 const MAX_SOLVE_MS = 30 * 24 * 3_600_000;
@@ -203,7 +203,13 @@ class Fuzz {
   }
   private present(user: Uid) {
     const seen = this.m.presence[user];
-    return seen !== undefined && seen >= Date.now() - PRESENCE_FRESH_MS;
+    return seen !== undefined && seen + PRESENCE_TIMEOUT_MS > Date.now();
+  }
+
+  /** Moves the clock forward and runs what came due, such as the presence component closing a screen. */
+  private async advanceTo(ms: number) {
+    vi.advanceTimersByTime(ms - Date.now());
+    await this.t.finishInProgressScheduledFunctions();
   }
 
   private note(line: string) {
@@ -555,7 +561,7 @@ class Fuzz {
       // Land right on the edge of a speed bonus tier.
       const edge = round.seenAt + this.pick([14_999, 15_000, 15_001, 29_999, 30_000, 30_001]);
       if (edge > Date.now()) {
-        vi.setSystemTime(new Date(edge));
+        await this.advanceTo(edge);
         this.note(`time -> ${iso(edge)} (bonus window edge)`);
       }
     }
@@ -871,7 +877,7 @@ class Fuzz {
 
   private async timeJump() {
     const delta = this.pick(TIME_JUMPS);
-    vi.setSystemTime(new Date(Date.now() + delta));
+    await this.advanceTo(Date.now() + delta);
     this.note(`time +${delta} ms -> ${iso(Date.now())}`);
     if (this.chance(0.4)) await this.crons();
   }
@@ -887,10 +893,6 @@ class Fuzz {
       m.reminded = true;
       m.pushes.game_turn_reminder += 1;
     }
-    const stale = Object.entries(m.presence).filter(([, seen]) => seen !== undefined && seen < now - PRESENCE_DELETE_MS);
-    const removed = this.check("cron cleanup_stale_game_presence", await attempt(this.t.mutation(internal.games.cleanup_stale_game_presence, {})), "ok");
-    this.same("presence rows removed", removed, stale.length);
-    for (const [user] of stale) m.presence[user] = undefined;
   }
 
   // --- Invariants -------------------------------------------------------------
@@ -987,10 +989,7 @@ class Fuzz {
       const ordered = [...m.rounds].reverse();
       this.same(`${who} current round`, v.current_round ? this.viewRound(v.current_round) : null, ordered[0] ? this.roundJson(ordered[0], me) : null);
       this.same(`${who} recent rounds`, v.recent_rounds.map((round) => this.viewRound(round)), ordered.slice(1, 21).map((round) => this.roundJson(round, me)));
-      this.same(`${who} presence`, [v.my_last_seen_at, v.partner_last_seen_at], [
-        m.presence[me] === undefined ? null : iso(m.presence[me]!),
-        m.presence[partner] === undefined ? null : iso(m.presence[partner]!),
-      ]);
+      this.same(`${who} presence`, [v.my_present, v.partner_present], [this.present(me), this.present(partner)]);
       this.same(`${who} last invite`, v.last_invite_at, m.lastInvite[me] === undefined ? null : iso(m.lastInvite[me]!));
     }
 
@@ -1179,7 +1178,8 @@ class Fuzz {
 
 beforeEach(() => {
   setMediaEnv();
-  vi.useFakeTimers({ toFake: ["Date"] });
+  // Every timer, so the presence component's scheduled timeouts run when the clock moves.
+  vi.useFakeTimers();
 });
 afterEach(() => {
   vi.restoreAllMocks();

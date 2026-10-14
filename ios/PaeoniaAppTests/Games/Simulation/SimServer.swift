@@ -616,6 +616,17 @@ final class SimServer {
         presence[user]
     }
 
+    /// Like the presence component, closes a game screen 60 seconds after its
+    /// last heartbeat and tells the subscribers.
+    func expirePresence() {
+        let stale = presence.filter { now.timeIntervalSince($0.value) >= 60 }.map(\.key)
+        guard !stale.isEmpty else { return }
+        for user in stale {
+            presence[user] = nil
+        }
+        changed()
+    }
+
     // MARK: - The view
 
     /// `get_draw_and_guess` for `user`.
@@ -647,8 +658,8 @@ final class SimServer {
             currentRound: moves.first,
             recentRounds: Array(moves.dropFirst()),
             choices: game?.state == .choosingWord && game?.turnUser == user ? game?.choices : nil,
-            myLastSeenAt: presence[user],
-            partnerLastSeenAt: presence[partnerID],
+            myPresent: presence[user] != nil,
+            partnerPresent: presence[partnerID] != nil,
             lastInviteAt: invites[user]
         )
     }

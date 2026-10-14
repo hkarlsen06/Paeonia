@@ -24,10 +24,10 @@ import type * as lib_access from "../lib/access.js";
 import type * as lib_accountDeletion from "../lib/accountDeletion.js";
 import type * as lib_accountDeletionProviders from "../lib/accountDeletionProviders.js";
 import type * as lib_apns from "../lib/apns.js";
-import type * as lib_apnsDrain from "../lib/apnsDrain.js";
 import type * as lib_appleNotificationVerifier from "../lib/appleNotificationVerifier.js";
 import type * as lib_appleStoreKit from "../lib/appleStoreKit.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_backgroundWorkpool from "../lib/backgroundWorkpool.js";
 import type * as lib_boardGameBackend from "../lib/boardGameBackend.js";
 import type * as lib_boardGameRules from "../lib/boardGameRules.js";
 import type * as lib_boardGameStore from "../lib/boardGameStore.js";
@@ -57,7 +57,9 @@ import type * as lib_mediaOrphans from "../lib/mediaOrphans.js";
 import type * as lib_mindMeld from "../lib/mindMeld.js";
 import type * as lib_notificationCopy from "../lib/notificationCopy.js";
 import type * as lib_notifications from "../lib/notifications.js";
+import type * as lib_presence from "../lib/presence.js";
 import type * as lib_profiles from "../lib/profiles.js";
+import type * as lib_rateLimits from "../lib/rateLimits.js";
 import type * as lib_relationshipBlock from "../lib/relationshipBlock.js";
 import type * as lib_relationshipCleanup from "../lib/relationshipCleanup.js";
 import type * as lib_relationshipEnd from "../lib/relationshipEnd.js";
@@ -115,10 +117,10 @@ declare const fullApi: ApiFromModules<{
   "lib/accountDeletion": typeof lib_accountDeletion;
   "lib/accountDeletionProviders": typeof lib_accountDeletionProviders;
   "lib/apns": typeof lib_apns;
-  "lib/apnsDrain": typeof lib_apnsDrain;
   "lib/appleNotificationVerifier": typeof lib_appleNotificationVerifier;
   "lib/appleStoreKit": typeof lib_appleStoreKit;
   "lib/auth": typeof lib_auth;
+  "lib/backgroundWorkpool": typeof lib_backgroundWorkpool;
   "lib/boardGameBackend": typeof lib_boardGameBackend;
   "lib/boardGameRules": typeof lib_boardGameRules;
   "lib/boardGameStore": typeof lib_boardGameStore;
@@ -148,7 +150,9 @@ declare const fullApi: ApiFromModules<{
   "lib/mindMeld": typeof lib_mindMeld;
   "lib/notificationCopy": typeof lib_notificationCopy;
   "lib/notifications": typeof lib_notifications;
+  "lib/presence": typeof lib_presence;
   "lib/profiles": typeof lib_profiles;
+  "lib/rateLimits": typeof lib_rateLimits;
   "lib/relationshipBlock": typeof lib_relationshipBlock;
   "lib/relationshipCleanup": typeof lib_relationshipCleanup;
   "lib/relationshipEnd": typeof lib_relationshipEnd;
@@ -210,4 +214,9 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  pushWorkpool: import("@convex-dev/workpool/_generated/component.js").ComponentApi<"pushWorkpool">;
+  backgroundWorkpool: import("@convex-dev/workpool/_generated/component.js").ComponentApi<"backgroundWorkpool">;
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+  presence: import("@convex-dev/presence/_generated/component.js").ComponentApi<"presence">;
+};

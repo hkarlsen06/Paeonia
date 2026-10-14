@@ -23,18 +23,13 @@ struct StoryChainViewModelPresenceTests {
     }
 
     @Test func theOverviewHeartbeatSaysWhetherThePartnerIsHere() async {
-        func presence(partnerSeenAgo seconds: TimeInterval, clock: Date) -> RemoteGamePresence {
-            RemoteGamePresence(
-                kind: .storyChain,
-                myLastSeenAt: nil,
-                partnerLastSeenAt: clock.addingTimeInterval(-seconds),
-                lastInviteAt: nil
-            )
+        func presence(partnerPresent: Bool) -> RemoteGamePresence {
+            RemoteGamePresence(kind: .storyChain, myPresent: false, partnerPresent: partnerPresent, lastInviteAt: nil)
         }
         let lines = [Env.line(1, by: Fixture.me)]
         let here = Env(
             state: Env.writing(turn: Fixture.partner, lines: lines),
-            presence: [presence(partnerSeenAgo: 10, clock: GameFixture.now)]
+            presence: [presence(partnerPresent: true)]
         ).viewModel()
         await here.reload()
         #expect(here.partnerPresence == .here)
@@ -42,7 +37,7 @@ struct StoryChainViewModelPresenceTests {
 
         let away = Env(
             state: Env.writing(turn: Fixture.partner, lines: lines),
-            presence: [presence(partnerSeenAgo: 120, clock: GameFixture.now)]
+            presence: [presence(partnerPresent: false)]
         ).viewModel()
         await away.reload()
         #expect(away.partnerPresence == .away)

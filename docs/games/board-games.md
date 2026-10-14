@@ -23,7 +23,7 @@ Decided on 2026-10-13.
 
 Made on 2026-10-14 while the developer was away. Each is the option that was recommended, and each can change.
 
-- **No relay room.** Live play runs on the Convex subscription and the presence row. Showing the partner's finger hovering over a column would need a relay channel, so it is left for later.
+- **No relay room.** Live play runs on the Convex subscription and the shared game presence. Showing the partner's finger hovering over a column would need a relay channel, so it is left for later.
 - **Saving a mark needs a connection.** The editor keeps the drawing and shows a banner when the save fails. A mark is not queued like a move.
 - **A refused move is told on the board.** The board keeps the notice until it opens, then shows the banner. The Games tab shows the game as it is, without a banner.
 - **The stake counts Unicode scalars.** The server counts them, so the phone counts them the same way and never sends a stake the server refuses.
@@ -106,7 +106,7 @@ Player one started the game and always moves first. Each game has a pure rules f
 ## Live and async
 
 - **Convex only.** Moves go through Convex and reach the other phone through its subscription within a few hundred milliseconds. Board games use no relay room.
-- **Presence.** The open board screen keeps the game's presence row fresh, as Draw & Guess does. "[Name] is here" shows while the partner has the same game open.
+- **Presence.** The open board screen sends the game's presence heartbeat, as Draw & Guess does. "[Name] is here" shows while the partner has the same game open.
 - **Invite.** While the partner is not in the game, the board shows "Tell [Name] you want to play" (see `docs/games-plan.md`).
 - **The partner's moves arrive animated.** A move that arrives while the board is open plays its animation. When the board opens after the partner moved, the moves since this phone last showed the board play in order, 0.45 seconds apart, and the whole sequence takes 3 seconds at most. A tap on the board skips to the end.
 - **Offline.** A move made offline shows on the board at once and is saved on the phone as a pending operation. The screen says "Saved on this phone. We'll send it when you're online." Moves leave in order. A move the server refuses as stale or illegal is dropped with "Your move wasn't sent", and the board shows the server's state again.

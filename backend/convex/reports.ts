@@ -1,11 +1,11 @@
 import { v, type ObjectType } from "convex/values";
-import { internal } from "./_generated/api";
 import { mutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
 import { runClientOperation } from "./lib/clientOperations";
 import { fail } from "./lib/errors";
 import { newUuid, optionalTimestampArg, optionalUuidArg, uuidArg } from "./lib/ids";
+import { consumeRateLimit } from "./lib/rateLimits";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { addPairSafetyWarningFlag, blockRelationship } from "./lib/relationshipBlock";
 import {
@@ -82,6 +82,7 @@ async function submitContentReport(ctx: MutationCtx, args: ReportArgs, leaveRela
       },
     },
     async () => {
+      await consumeRateLimit(ctx, "contentReport", userId);
       const target = await resolveContentReportTarget(ctx, userId, targetKind, targetId, targetAuxId);
       if (!target) {
         return fail("22023", "report target was not found");
@@ -142,10 +143,7 @@ async function submitContentReport(ctx: MutationCtx, args: ReportArgs, leaveRela
         },
         created_at: now,
       });
-      if ((await enqueueReportSnapshotAssets(ctx, reportId, target.snapshot)) > 0) {
-        // Copy right away. The cron retries anything that fails.
-        await ctx.scheduler.runAfter(0, internal.moderation.copy_report_snapshot_assets, {});
-      }
+      await enqueueReportSnapshotAssets(ctx, reportId, target.snapshot);
       await addPairSafetyWarningFlag(ctx, target.pair_id, reportId);
 
       if (blockReportedUser) {

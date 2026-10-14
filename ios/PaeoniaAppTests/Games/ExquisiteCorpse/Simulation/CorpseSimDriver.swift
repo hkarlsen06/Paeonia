@@ -237,6 +237,7 @@ final class CorpseSimDriver {
         clock.advance(seconds)
         log.add("time +\(Int(seconds))s")
         relay.expireSessions()
+        server.expirePresence()
         let beat = clock.now.timeIntervalSince(lastHeartbeat) >= 30
         if beat {
             lastHeartbeat = clock.now

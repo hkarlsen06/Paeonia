@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { api, internal } from "./_generated/api";
+import { api, components, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
+import { gameRoom } from "./lib/presence";
 import { endCouple, failure, op, setMediaEnv, uploadAsset } from "./media.testing";
+import { deliverDuePushes } from "./push.testing";
 import { photo } from "./media.testing";
 import {
   addDevice,
@@ -156,8 +158,6 @@ describe("access", () => {
         auth_provider: "apple",
         status: "ready_for_auth_delete",
         provider_revocation_status: "not_required",
-        auth_delete_attempts: 0,
-        next_attempt_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -794,10 +794,12 @@ describe("pushes", () => {
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("presence older than 60 seconds does not suppress the push, and closing the screen removes it", async () => {
+  test("a screen that stopped its heartbeats does not suppress the push, and closing the screen removes it", async () => {
     const s = await startGame();
+    // The presence component times sessions out with scheduled functions, so fake every timer.
+    vi.useFakeTimers();
     await s.b.as.mutation(api.games.set_game_presence, { p_kind: "draw_and_guess", p_present: true });
-    tick(61);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     const picked = await pick(s.a, s.gameId, "easy");
     await sendDrawing(s, s.a, picked.round_id);
     expect((await outbox(s.t)).filter((row) => row.kind === "game_turn_ready")).toHaveLength(1);
@@ -824,7 +826,7 @@ describe("pushes", () => {
 });
 
 describe("push drain", () => {
-  const claim = (s: Setup) => s.t.mutation(internal.pushQueue.claim_notification_batch, {});
+  const claim = (s: Setup) => deliverDuePushes(s.t);
   const kinds = (rows: { payload: unknown }[]) => rows.map((row) => (row.payload as { type: string }).type).sort();
   const errorsOf = async (s: Setup, kind: string) =>
     (await outbox(s.t)).filter((row) => row.kind === kind).map((row) => row.last_error ?? null);
@@ -858,7 +860,7 @@ describe("push drain", () => {
     await sendDrawing(s, s.a, picked.round_id);
     await s.a.as.mutation(api.games.send_game_invite, { p_kind: "draw_and_guess" });
     await guess(s.b, picked.round_id, "flying cat");
-    expect(kinds((await outbox(s.t)).filter((row) => row.last_attempt_at === undefined))).toEqual(
+    expect(kinds((await outbox(s.t)).filter((row) => row.sent_at === undefined))).toEqual(
       ["game_invite", "game_result", "game_turn_ready"],
     );
     await endCouple(s.t, s.couple.coupleId, s.a.userId);
@@ -900,22 +902,18 @@ describe("invites", () => {
 });
 
 describe("presence", () => {
-  test("the query returns each partner's last seen time and the cron removes old rows", async () => {
+  test("the query says who has the screen open, until 60 seconds after the last heartbeat", async () => {
     const s = await startGame();
+    // The presence component times sessions out with scheduled functions, so fake every timer.
+    vi.useFakeTimers();
     await s.b.as.mutation(api.games.set_game_presence, { p_kind: "draw_and_guess", p_present: true });
-    const seen = new Date().toISOString();
-    expect((await view(s.a)).partner_last_seen_at).toBe(seen);
-    expect((await view(s.a)).my_last_seen_at).toBeNull();
-    tick(30);
-    await s.b.as.mutation(api.games.set_game_presence, { p_kind: "draw_and_guess", p_present: true });
-    expect((await view(s.a)).partner_last_seen_at).toBe(new Date().toISOString());
-    expect(await s.t.run((ctx) => ctx.db.query("game_presence").collect())).toHaveLength(1);
+    expect(await view(s.a)).toMatchObject({ my_present: false, partner_present: true });
+    expect(await view(s.b)).toMatchObject({ my_present: true, partner_present: false });
 
-    tick(119);
-    expect(await s.t.mutation(internal.games.cleanup_stale_game_presence, {})).toBe(0);
-    tick(2);
-    expect(await s.t.mutation(internal.games.cleanup_stale_game_presence, {})).toBe(1);
-    expect((await view(s.a)).partner_last_seen_at).toBeNull();
+    const lastHeartbeat = Date.now();
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(Date.now() - lastHeartbeat).toBeGreaterThanOrEqual(60_000);
+    expect(await view(s.a)).toMatchObject({ my_present: false, partner_present: false });
   });
 });
 
@@ -1509,7 +1507,6 @@ describe("relationship end", () => {
       "game_guesses",
       "game_round_stars",
       "game_used_words",
-      "game_presence",
       "game_invites",
     ] as const;
     const count = (t: TestConvex, coupleId: string) =>
@@ -1520,10 +1517,13 @@ describe("relationship end", () => {
         }
         return result;
       });
+    const online = (coupleId: string) =>
+      s.t.run((ctx) => ctx.runQuery(components.presence.public.listRoom, { roomId: gameRoom(coupleId, "draw_and_guess") }));
     expect(Object.values(await count(s.t, s.couple.coupleId)).every((rows) => rows > 0)).toBe(true);
+    expect(await online(s.couple.coupleId)).toHaveLength(1);
 
     await s.a.as.mutation(api.relationship.leave_relationship, op());
-    expect((await count(s.t, s.couple.coupleId)).game_presence).toBe(0);
+    expect(await online(s.couple.coupleId)).toEqual([]);
     expect((await count(s.t, s.couple.coupleId)).game_moves).toBe(1);
 
     await s.t.mutation(internal.relationship.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });

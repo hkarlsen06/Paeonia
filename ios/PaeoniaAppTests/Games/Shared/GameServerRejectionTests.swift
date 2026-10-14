@@ -90,6 +90,23 @@ struct GameServerRejectionTests {
         #expect(counted == 0)
     }
 
+    @Test func aRateLimitIsNeverCounted() async throws {
+        let operation = try makeOperation()
+        var counted = 0
+
+        for _ in 0..<(GameServerRejection.unexplainedRefusalLimit + 1) {
+            let drop = await GameServerRejection.shouldDrop(
+                .server(code: "53300", message: "too many requests: mediaUpload"),
+                of: operation
+            ) { _, _ in
+                counted += 1
+                return counted
+            }
+            #expect(!drop)
+        }
+        #expect(counted == 0)
+    }
+
     @Test func aMoveStaysQueuedWhenTheStateCouldNotBeRead() async throws {
         let operation = try makeOperation()
 

@@ -33,8 +33,9 @@ import {
 } from "./lib/drawAndGuess";
 import { fail, uniqueViolation } from "./lib/errors";
 import { DIFFICULTY_POINTS, normalizeCustomWord, normalizeWordText } from "./lib/gameWords";
-import { enqueueGamePush, getGameSettings, getPresence, requireGameSettings, requirePartnerId, settingsJson } from "./lib/games";
+import { enqueueGamePush, getGameSettings, requireGameSettings, requirePartnerId, settingsJson } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
+import { gameRoom, onlineUserIds } from "./lib/presence";
 import { applyCoupleActivity } from "./lib/streaks";
 import { charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
@@ -113,8 +114,8 @@ export const ensure_draw_and_guess_game = mutation({
 
 /**
  * Everything the Draw & Guess screen shows, for the caller. Subscribe to it after
- * `ensure_draw_and_guess_game`. It does not read the clock: `partner_last_seen_at` and
- * `last_invite_at` are timestamps, and the app decides what counts as recent.
+ * `ensure_draw_and_guess_game`. It does not read the clock: the presence component marks a
+ * closed screen offline, and the app decides what counts as a recent `last_invite_at`.
  */
 export const get_draw_and_guess = query({
   args: {},
@@ -137,8 +138,7 @@ export const get_draw_and_guess = query({
         q.eq("couple_id", coupleId).eq("kind", "draw_and_guess").eq("sender_user_id", userId),
       )
       .unique();
-    const mine = await getPresence(ctx, coupleId, "draw_and_guess", userId);
-    const theirs = partnerId ? await getPresence(ctx, coupleId, "draw_and_guess", partnerId) : null;
+    const online = await onlineUserIds(ctx, gameRoom(coupleId, "draw_and_guess"));
 
     // The latest round first. It is the current round, whatever its state.
     const moves = game ? await getMovesByGame(ctx, game.id, 21) : [];
@@ -163,8 +163,8 @@ export const get_draw_and_guess = query({
               points: DIFFICULTY_POINTS[choice.difficulty],
             }))
           : null,
-      my_last_seen_at: orNull(mine?.last_seen_at),
-      partner_last_seen_at: orNull(theirs?.last_seen_at),
+      my_present: online.includes(userId),
+      partner_present: partnerId !== null && online.includes(partnerId),
       last_invite_at: orNull(invite?.sent_at),
     };
   },

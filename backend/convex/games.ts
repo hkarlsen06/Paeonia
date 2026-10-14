@@ -8,14 +8,14 @@ import { fail } from "./lib/errors";
 import { gameLanguageChanged, sendDueGameTurnReminders } from "./lib/gameRegistry";
 import {
   enqueueGamePush,
+  GAME_PRESENCE_TIMEOUT_MS,
   getGameSettings,
-  getPresence,
   INVITE_INTERVAL_MS,
-  PRESENCE_DELETE_AFTER_MS,
   requirePartnerId,
   settingsJson,
 } from "./lib/games";
 import { signLiveTicket } from "./lib/liveTicket";
+import { gameRoom, onlineUserIds, setPresent } from "./lib/presence";
 import { addMs, nowIso } from "./lib/time";
 import { GAME_KINDS, gameKind, gameLanguage, gamePlayStyle } from "./lib/validators";
 
@@ -58,14 +58,13 @@ export const set_game_settings = mutation({
 
 /**
  * What the Games tab and every game share, for the caller. Subscribe to it. It does not read the
- * clock: the app decides what counts as recent.
+ * clock: the presence component marks a closed screen offline, and the app judges the invite time.
  *
  * Result: `{ user_id, partner_user_id, couple_id, settings, presence }`. `partner_user_id` is null
  * without an active partner, and `settings` is null until the couple sets them. `presence` has one
- * entry per game kind (in `GAME_KINDS` order) that has a presence row for either partner or an
- * invite from the caller, and leaves the other kinds out. An entry is `{ kind, my_last_seen_at,
- * partner_last_seen_at, last_invite_at }`, with null for a missing time. `last_invite_at` is the
- * caller's own last invite for that kind.
+ * entry per game kind (in `GAME_KINDS` order) that either partner has open or the caller sent an
+ * invite for, and leaves the other kinds out. An entry is `{ kind, my_present, partner_present,
+ * last_invite_at }`. `last_invite_at` is the caller's own last invite for that kind, or null.
  */
 export const get_games_overview = query({
   args: {},
@@ -74,34 +73,27 @@ export const get_games_overview = query({
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     const settings = await getGameSettings(ctx, coupleId);
     const partnerId = (await listActiveMembers(ctx, coupleId)).find((member) => member.user_id !== userId)?.user_id ?? null;
-    const presence = await ctx.db
-      .query("game_presence")
-      .withIndex("by_couple_id_kind_user_id", (q) => q.eq("couple_id", coupleId))
-      .collect();
     const invites = await ctx.db
       .query("game_invites")
       .withIndex("by_couple_id_kind_sender_user_id", (q) => q.eq("couple_id", coupleId))
       .collect();
+
+    const presence = [];
+    for (const kind of GAME_KINDS) {
+      const online = await onlineUserIds(ctx, gameRoom(coupleId, kind));
+      const invite = invites.find((row) => row.kind === kind && row.sender_user_id === userId);
+      const myPresent = online.includes(userId);
+      const partnerPresent = partnerId !== null && online.includes(partnerId);
+      if (!myPresent && !partnerPresent && !invite) continue;
+      presence.push({ kind, my_present: myPresent, partner_present: partnerPresent, last_invite_at: orNull(invite?.sent_at) });
+    }
 
     return {
       user_id: userId,
       partner_user_id: partnerId,
       couple_id: coupleId,
       settings: settings ? settingsJson(settings) : null,
-      presence: GAME_KINDS.flatMap((kind) => {
-        const mine = presence.find((row) => row.kind === kind && row.user_id === userId);
-        const theirs = presence.find((row) => row.kind === kind && row.user_id === partnerId);
-        const invite = invites.find((row) => row.kind === kind && row.sender_user_id === userId);
-        if (!mine && !theirs && !invite) return [];
-        return [
-          {
-            kind,
-            my_last_seen_at: orNull(mine?.last_seen_at),
-            partner_last_seen_at: orNull(theirs?.last_seen_at),
-            last_invite_at: orNull(invite?.sent_at),
-          },
-        ];
-      }),
+      presence,
     };
   },
 });
@@ -145,7 +137,8 @@ export const send_game_invite = mutation({
 
 /**
  * The open game screen. The app sends `true` when the screen opens and every 30 seconds
- * after, and `false` when it closes. A row older than 60 seconds counts as gone.
+ * after, and `false` when it closes. The presence component marks the screen closed 60
+ * seconds after the last `true`, such as when the app was killed.
  */
 export const set_game_presence = mutation({
   args: { p_kind: gameKind, p_present: v.boolean() },
@@ -153,17 +146,7 @@ export const set_game_presence = mutation({
     const userId = await requireUserId(ctx);
     await assertNoPendingAccountDeletion(ctx, userId);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-    const existing = await getPresence(ctx, coupleId, args.p_kind, userId);
-    if (!args.p_present) {
-      if (existing) await ctx.db.delete(existing._id);
-      return null;
-    }
-    const now = nowIso();
-    if (existing) {
-      await ctx.db.patch(existing._id, { last_seen_at: now });
-    } else {
-      await ctx.db.insert("game_presence", { couple_id: coupleId, kind: args.p_kind, user_id: userId, last_seen_at: now });
-    }
+    await setPresent(ctx, gameRoom(coupleId, args.p_kind), userId, args.p_present, GAME_PRESENCE_TIMEOUT_MS);
     return null;
   },
 });
@@ -183,20 +166,6 @@ export const create_game_live_ticket = mutation({
 });
 
 // --- Cron jobs --------------------------------------------------------------
-
-/** Deletes presence rows the app stopped refreshing, such as a phone that lost power. */
-export const cleanup_stale_game_presence = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const cutoff = addMs(nowIso(), -PRESENCE_DELETE_AFTER_MS);
-    const stale = await ctx.db
-      .query("game_presence")
-      .withIndex("by_last_seen_at", (q) => q.lt("last_seen_at", cutoff))
-      .take(200);
-    for (const row of stale) await ctx.db.delete(row._id);
-    return stale.length;
-  },
-});
 
 /** The single reminder for each turn that waited 72 hours, for every game with turns. Returns the pushes queued. */
 export const send_due_game_turn_reminders = internalMutation({

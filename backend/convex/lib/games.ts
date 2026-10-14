@@ -3,7 +3,8 @@ import { canAccessCoupleContent, listActiveMembers } from "./access";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { fail } from "./errors";
 import { enqueueNotificationForUser } from "./notifications";
-import { addMs, nowIso } from "./time";
+import { gameRoom, onlineUserIds } from "./presence";
+import { nowIso } from "./time";
 import type { GAME_KINDS } from "./validators";
 
 // Helpers every game shares: settings, presence, invites, and pushes. Draw & Guess has its own
@@ -12,10 +13,8 @@ import type { GAME_KINDS } from "./validators";
 export type GameKind = (typeof GAME_KINDS)[number];
 export type GameSettings = Doc<"game_settings">;
 
-/** A presence row refreshed within this long counts as "the game screen is open". */
-export const PRESENCE_FRESH_MS = 60_000;
-/** The cleanup cron deletes presence rows older than this. */
-export const PRESENCE_DELETE_AFTER_MS = 2 * 60_000;
+/** The game screen counts as closed this long after its last heartbeat. The app sends one every 30 seconds. */
+export const GAME_PRESENCE_TIMEOUT_MS = 60_000;
 export const INVITE_INTERVAL_MS = 15 * 60_000;
 export const TURN_REMINDER_AFTER_MS = 72 * 3_600_000;
 
@@ -50,22 +49,9 @@ export async function requirePartnerId(ctx: ReaderCtx, coupleId: string, userId:
 
 // --- Presence ---------------------------------------------------------------
 
-export async function getPresence(
-  ctx: ReaderCtx,
-  coupleId: string,
-  kind: GameKind,
-  userId: string,
-): Promise<Doc<"game_presence"> | null> {
-  return await ctx.db
-    .query("game_presence")
-    .withIndex("by_couple_id_kind_user_id", (q) => q.eq("couple_id", coupleId).eq("kind", kind).eq("user_id", userId))
-    .unique();
-}
-
-/** True when the user's game screen refreshed its presence row within `PRESENCE_FRESH_MS`. */
+/** True while the user has the game screen open, per the presence component. */
 export async function isGamePresent(ctx: ReaderCtx, coupleId: string, kind: GameKind, userId: string): Promise<boolean> {
-  const row = await getPresence(ctx, coupleId, kind, userId);
-  return row !== null && row.last_seen_at >= addMs(nowIso(), -PRESENCE_FRESH_MS);
+  return (await onlineUserIds(ctx, gameRoom(coupleId, kind))).includes(userId);
 }
 
 // --- Notifications ----------------------------------------------------------
@@ -139,15 +125,4 @@ export function settingsJson(settings: GameSettings) {
     created_at: settings.created_at,
     updated_at: settings.updated_at,
   };
-}
-
-// --- Cleanup ----------------------------------------------------------------
-
-/** Deletes the presence rows of a couple, for every game. Call when the couple stops being active. */
-export async function deleteGamePresenceForCouple(ctx: WriterCtx, coupleId: string): Promise<void> {
-  const rows = await ctx.db
-    .query("game_presence")
-    .withIndex("by_couple_id_kind_user_id", (q) => q.eq("couple_id", coupleId))
-    .collect();
-  for (const row of rows) await ctx.db.delete(row._id);
 }

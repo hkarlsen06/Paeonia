@@ -1,26 +1,27 @@
+import { vOnCompleteArgs } from "@convex-dev/workpool";
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { internalMutation, internalQuery } from "./_generated/server";
-import { notificationStaleAt } from "./lib/apns";
-import type { ReaderCtx, WriterCtx } from "./lib/db";
+import { internalMutation } from "./_generated/server";
+import { notificationStaleAt, type PreparedNotification, type PreparedWidgetPush } from "./lib/apns";
+import type { WriterCtx } from "./lib/db";
 import { isActiveCoupleMember } from "./lib/access";
 import { getByUuid, withTouch } from "./lib/db";
 import { gamePushStillWanted } from "./lib/gameRegistry";
 import type { GamePushKind } from "./lib/games";
-import { optionalTimestampArg, uuidArg } from "./lib/ids";
+import { uuidArg } from "./lib/ids";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
-import { addMs, nowIso } from "./lib/time";
+import { nowIso } from "./lib/time";
 
-/** Both outbox tables share this attempt budget. */
-const MAX_ATTEMPTS = 5;
-/** A claimed notification is invisible to other drains for this long. A failed send retries after it. */
-const NOTIFICATION_LEASE_MS = 30_000;
-/** Read cap per call. The 30 second cron picks up whatever is left. */
-const SCAN_CAP = 1000;
+// The database side of one APNs send. Each outbox row is one pushWorkpool work item
+// (`enqueuePush` in lib/notifications.ts). `push:send_push` asks `prepare_*` whether the row
+// should still go out, sends it, and records the result here.
+
 const TARGET_INELIGIBLE = "notification target is no longer eligible";
 const OUT_OF_DATE = "notification is out of date";
 
-const clampLimit = (limit: number | undefined) => Math.max(1, Math.min(limit ?? 50, 200));
+const deviceKind = v.union(v.literal("app"), v.literal("widget"));
+type DeviceKind = "app" | "widget";
+const OUTBOX = { app: "notification_outbox", widget: "widget_push_outbox" } as const;
 
 /** `substring(btrim(text) for max)` that turns an empty result into undefined. */
 function cleanText(value: string | null | undefined, max: number): string | undefined {
@@ -28,21 +29,23 @@ function cleanText(value: string | null | undefined, max: number): string | unde
   return text === "" ? undefined : Array.from(text).slice(0, max).join("");
 }
 
-/** Due, unsent, not failed. Ordered by `scheduled_for`. */
-function pendingDueNotifications(ctx: ReaderCtx, now: string) {
-  return ctx.db
-    .query("notification_outbox")
-    .withIndex("by_sent_at_failed_at_scheduled_for", (q) =>
-      q.eq("sent_at", undefined).eq("failed_at", undefined).lte("scheduled_for", now),
-    );
+/** The row when it is neither sent nor failed. */
+async function pendingRow<T extends "notification_outbox" | "widget_push_outbox">(
+  ctx: WriterCtx,
+  table: T,
+  outboxId: string,
+): Promise<Doc<T> | null> {
+  const row = await getByUuid(ctx, table, uuidArg(outboxId));
+  return row && row.sent_at === undefined && row.failed_at === undefined ? row : null;
 }
 
-function pendingDueWidgetPushes(ctx: ReaderCtx, now: string) {
-  return ctx.db
-    .query("widget_push_outbox")
-    .withIndex("by_sent_at_failed_at_scheduled_for", (q) =>
-      q.eq("sent_at", undefined).eq("failed_at", undefined).lte("scheduled_for", now),
-    );
+async function drop(
+  ctx: WriterCtx,
+  row: Doc<"notification_outbox"> | Doc<"widget_push_outbox">,
+  error: string,
+): Promise<null> {
+  await ctx.db.patch(row._id, { failed_at: nowIso(), last_error: error });
+  return null;
 }
 
 /**
@@ -98,266 +101,177 @@ async function rowStillWanted(
 }
 
 /**
- * Fails every due row whose device is gone or disabled, whose kind the user
- * turned off, or whose couple or game turn no longer needs it, then returns up
- * to `limit` of the remaining due rows (oldest first) with their device.
+ * Runs right before each send, so a row queued for later is checked when it is due. Fails the row
+ * when its device is gone or disabled, the user turned its kind off, its couple or game turn no
+ * longer needs it, or its reminder passed. Returns what the send needs, or null.
  */
-async function sweepAndPickNotifications(
-  ctx: WriterCtx,
-  now: string,
-  limit: number,
-): Promise<{ row: Doc<"notification_outbox">; device: Doc<"user_devices"> }[]> {
-  const devices = new Map<string, Doc<"user_devices"> | null>();
-  const preferences = new Map<string, Doc<"notification_preferences"> | null>();
-  const picked: { row: Doc<"notification_outbox">; device: Doc<"user_devices"> }[] = [];
-
-  const rows = await pendingDueNotifications(ctx, now).take(SCAN_CAP);
-  for (const row of rows) {
-    if (!devices.has(row.target_device_id)) {
-      devices.set(row.target_device_id, await getByUuid(ctx, "user_devices", row.target_device_id));
-    }
-    const device = devices.get(row.target_device_id)!;
+export const prepare_notification = internalMutation({
+  args: { outbox_id: v.string() },
+  handler: async (ctx, args): Promise<PreparedNotification | null> => {
+    const row = await pendingRow(ctx, "notification_outbox", args.outbox_id);
+    if (!row) return null;
+    const device = await getByUuid(ctx, "user_devices", row.target_device_id);
     // A deleted device cascaded its outbox rows in Postgres, so a missing one is ineligible too.
-    let eligible = device !== null && device.disabled_at === undefined;
-    if (eligible) {
-      if (!preferences.has(device!.user_id)) {
-        preferences.set(
-          device!.user_id,
-          await ctx.db
-            .query("notification_preferences")
-            .withIndex("by_user_id", (q) => q.eq("user_id", device!.user_id))
-            .unique(),
-        );
-      }
-      eligible = kindAllowed(row, preferences.get(device!.user_id)!);
-    }
-    if (!eligible) {
-      await ctx.db.patch(row._id, { failed_at: now, last_attempt_at: now, last_error: TARGET_INELIGIBLE });
-      continue;
-    }
-    const still = await rowStillWanted(ctx, row, device!.user_id);
-    if (!still.wanted) {
-      await ctx.db.patch(row._id, {
-        failed_at: now,
-        last_attempt_at: now,
-        last_error: still.reason === "ineligible" ? TARGET_INELIGIBLE : OUT_OF_DATE,
-      });
-      continue;
-    }
+    if (!device || device.disabled_at !== undefined) return await drop(ctx, row, TARGET_INELIGIBLE);
+    const preference = await ctx.db
+      .query("notification_preferences")
+      .withIndex("by_user_id", (q) => q.eq("user_id", device.user_id))
+      .unique();
+    if (!kindAllowed(row, preference)) return await drop(ctx, row, TARGET_INELIGIBLE);
+    const still = await rowStillWanted(ctx, row, device.user_id);
+    if (!still.wanted) return await drop(ctx, row, still.reason === "ineligible" ? TARGET_INELIGIBLE : OUT_OF_DATE);
     const staleAt = notificationStaleAt(row.payload);
-    if (staleAt !== null && Date.parse(staleAt) <= Date.parse(now)) {
-      await ctx.db.patch(row._id, { failed_at: now, last_attempt_at: now, last_error: OUT_OF_DATE });
-      continue;
-    }
-    if (picked.length < limit && row.attempt_count < MAX_ATTEMPTS) {
-      picked.push({ row, device: device! });
-    }
-  }
-  return picked;
+    if (staleAt !== null && Date.parse(staleAt) <= Date.now()) return await drop(ctx, row, OUT_OF_DATE);
+    return {
+      outbox_id: row.id,
+      target_device_id: row.target_device_id,
+      push_token: device.push_token,
+      apns_environment: row.apns_environment,
+      apns_push_type: row.apns_push_type,
+      apns_collapse_id: row.apns_collapse_id ?? null,
+      title: row.title ?? null,
+      body: row.body ?? null,
+      payload: row.payload,
+    };
+  },
+});
+
+/** Like `prepare_notification` for a WidgetKit push. Only the widget device is checked. */
+export const prepare_widget_push = internalMutation({
+  args: { outbox_id: v.string() },
+  handler: async (ctx, args): Promise<PreparedWidgetPush | null> => {
+    const row = await pendingRow(ctx, "widget_push_outbox", args.outbox_id);
+    if (!row) return null;
+    const device = await getByUuid(ctx, "widget_push_devices", row.target_widget_device_id);
+    if (!device || device.disabled_at !== undefined) return await drop(ctx, row, TARGET_INELIGIBLE);
+    return {
+      outbox_id: row.id,
+      target_widget_device_id: device.id,
+      widget_push_token: device.widget_push_token,
+      apns_environment: row.apns_environment,
+      apns_collapse_id: row.apns_collapse_id ?? null,
+      payload: row.payload,
+    };
+  },
+});
+
+async function recordResult(
+  ctx: WriterCtx,
+  kind: DeviceKind,
+  outboxId: string,
+  result: { provider_message_id?: string; error?: string },
+): Promise<void> {
+  const row = await pendingRow(ctx, OUTBOX[kind], outboxId);
+  if (!row) return;
+  const now = nowIso();
+  await ctx.db.patch(
+    row._id,
+    result.error === undefined
+      ? { sent_at: now, provider_message_id: cleanText(result.provider_message_id, Infinity), last_error: undefined }
+      : { failed_at: now, last_error: cleanText(result.error, 2000) ?? "delivery failed" },
+  );
 }
 
-/** Port of `internal.fail_exhausted_notification_claims`. Only rows whose lease has ended. */
-async function failExhaustedNotifications(ctx: WriterCtx, now: string): Promise<number> {
-  let failed = 0;
-  for (const row of await pendingDueNotifications(ctx, now).take(SCAN_CAP)) {
-    if (row.attempt_count >= MAX_ATTEMPTS) {
-      await ctx.db.patch(row._id, {
-        failed_at: now,
-        last_error: row.last_error || "delivery attempt budget exhausted before a result was recorded",
-      });
-      failed += 1;
-    }
-  }
-  return failed;
-}
+/** Port of `internal.mark_notification_result`. Without `error` the row is sent, with it the row failed for good. */
+export const mark_push_result = internalMutation({
+  args: {
+    kind: deviceKind,
+    outbox_id: v.string(),
+    provider_message_id: v.optional(v.string()),
+    error: v.optional(v.string()),
+  },
+  handler: async (ctx, { kind, outbox_id, ...result }) => {
+    await recordResult(ctx, kind, outbox_id, result);
+    return null;
+  },
+});
 
-async function failExhaustedWidgetPushes(ctx: WriterCtx, now: string): Promise<number> {
-  let failed = 0;
-  for (const row of await pendingDueWidgetPushes(ctx, now).take(SCAN_CAP)) {
-    if (row.attempt_count >= MAX_ATTEMPTS) {
-      await ctx.db.patch(row._id, { failed_at: now, last_error: row.last_error ?? "attempts exhausted" });
-      failed += 1;
-    }
-  }
-  return failed;
-}
+/** What `push:send_push` returns once APNs answered for good. `push_finished` records it. */
+export type PushOutcome = {
+  device_id: string;
+  provider_message_id?: string;
+  error?: string;
+  invalid_token: boolean;
+  /** The host APNs accepted, when it differs from the one the row was queued for. */
+  confirmed_environment?: "sandbox" | "production";
+};
 
 /**
- * Port of `internal.claim_notification_batch`, the claim the APNs drain uses.
- * Each claimed row gets a 30 second lease so a second drain skips it.
+ * pushWorkpool `onComplete` for every send. A send that APNs answered records its outcome here,
+ * in one mutation, so a failed write cannot leave the row pending after the push went out. A send
+ * that used up its retries, or was canceled, fails the row. A `null` result means nothing was sent.
  */
-export const claim_notification_batch = internalMutation({
-  args: { p_limit: v.optional(v.number()), p_now: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    const now = optionalTimestampArg(args.p_now) ?? nowIso();
-    await failExhaustedNotifications(ctx, now);
-    const picked = await sweepAndPickNotifications(ctx, now, clampLimit(args.p_limit));
-    const lease = addMs(now, NOTIFICATION_LEASE_MS);
-    const claimed = [];
-    for (const { row, device } of picked) {
-      await ctx.db.patch(row._id, {
-        attempt_count: row.attempt_count + 1,
-        last_attempt_at: now,
-        last_error: undefined,
-        scheduled_for: lease,
+export const push_finished = internalMutation({
+  args: vOnCompleteArgs(v.object({ kind: deviceKind, outbox_id: v.string() })),
+  handler: async (ctx, { context, result }) => {
+    if (result.kind !== "success") {
+      await recordResult(ctx, context.kind, context.outbox_id, {
+        error: result.kind === "failed" ? result.error : "delivery was canceled",
       });
-      claimed.push({
-        outbox_id: row.id,
-        target_device_id: row.target_device_id,
-        push_token: device.push_token,
-        apns_environment: row.apns_environment,
-        apns_push_type: row.apns_push_type,
-        apns_collapse_id: row.apns_collapse_id ?? null,
-        title: row.title ?? null,
-        body: row.body ?? null,
-        payload: row.payload,
-      });
+      return null;
     }
-    return claimed;
-  },
-});
-
-/** Port of `internal.mark_notification_result`. */
-export const mark_notification_result = internalMutation({
-  args: {
-    p_outbox_id: v.string(),
-    p_success: v.boolean(),
-    p_provider_message_id: v.optional(v.union(v.null(), v.string())),
-    p_error: v.optional(v.union(v.null(), v.string())),
-    p_invalid_token: v.optional(v.boolean()),
-  },
-  handler: async (ctx, args) => {
-    const row = await getByUuid(ctx, "notification_outbox", uuidArg(args.p_outbox_id));
-    if (!row || row.sent_at !== undefined || row.failed_at !== undefined) return null;
-    const now = nowIso();
-    if (args.p_success) {
-      await ctx.db.patch(row._id, {
-        sent_at: now,
-        provider_message_id: cleanText(args.p_provider_message_id, Infinity),
-        last_error: undefined,
-      });
-    } else {
-      await ctx.db.patch(row._id, {
-        last_error: cleanText(args.p_error, 2000) ?? "delivery failed",
-        failed_at: args.p_invalid_token || row.attempt_count >= MAX_ATTEMPTS ? now : undefined,
-      });
+    const outcome = result.returnValue as PushOutcome | null;
+    if (!outcome) return null;
+    if (outcome.confirmed_environment) {
+      await persistDeviceEnvironment(ctx, context.kind, outcome.device_id, outcome.confirmed_environment);
     }
+    if (outcome.invalid_token) await disableDevice(ctx, context.kind, outcome.device_id);
+    await recordResult(ctx, context.kind, context.outbox_id, outcome);
     return null;
   },
 });
 
-/** Port of `internal.claim_widget_push_batch`. There is no lease: a failed push retries on the next drain. */
-export const claim_widget_push_batch = internalMutation({
-  args: { p_limit: v.optional(v.number()), p_now: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    const now = optionalTimestampArg(args.p_now) ?? nowIso();
-    await failExhaustedWidgetPushes(ctx, now);
-    const limit = clampLimit(args.p_limit);
-    const claimed = [];
-    for (const row of await pendingDueWidgetPushes(ctx, now).take(SCAN_CAP)) {
-      if (claimed.length >= limit) break;
-      if (row.attempt_count >= MAX_ATTEMPTS) continue;
-      const device = await getByUuid(ctx, "widget_push_devices", row.target_widget_device_id);
-      if (!device || device.disabled_at !== undefined) continue;
-      await ctx.db.patch(row._id, { attempt_count: row.attempt_count + 1, last_attempt_at: now });
-      claimed.push({
-        outbox_id: row.id,
-        target_widget_device_id: device.id,
-        widget_push_token: device.widget_push_token,
-        apns_environment: row.apns_environment,
-        apns_collapse_id: row.apns_collapse_id ?? null,
-        payload: row.payload,
-      });
-    }
-    return claimed;
-  },
-});
+async function persistDeviceEnvironment(
+  ctx: WriterCtx,
+  kind: DeviceKind,
+  deviceId: string,
+  environment: "sandbox" | "production",
+): Promise<void> {
+  const id = uuidArg(deviceId);
+  if (kind === "app") {
+    const device = await getByUuid(ctx, "user_devices", id);
+    if (device) await ctx.db.patch(device._id, withTouch(device, { apns_environment: environment }));
+  } else {
+    const device = await getByUuid(ctx, "widget_push_devices", id);
+    if (device) await ctx.db.patch(device._id, withTouch(device, { apns_environment: environment }));
+  }
+}
 
-/** Port of `internal.mark_widget_push_result`. */
-export const mark_widget_push_result = internalMutation({
-  args: {
-    p_outbox_id: v.string(),
-    p_success: v.boolean(),
-    p_provider_message_id: v.optional(v.union(v.null(), v.string())),
-    p_error: v.optional(v.union(v.null(), v.string())),
-    p_invalid_token: v.optional(v.boolean()),
-  },
-  handler: async (ctx, args) => {
-    const row = await getByUuid(ctx, "widget_push_outbox", uuidArg(args.p_outbox_id));
-    if (!row) return null;
-    if (args.p_success) {
-      await ctx.db.patch(row._id, {
-        sent_at: nowIso(),
-        provider_message_id: args.p_provider_message_id ?? undefined,
-        last_error: undefined,
-      });
-    } else {
-      await ctx.db.patch(row._id, {
-        failed_at: args.p_invalid_token || row.attempt_count >= MAX_ATTEMPTS ? nowIso() : row.failed_at,
-        last_error: args.p_error ?? undefined,
-      });
+async function disableDevice(ctx: WriterCtx, kind: DeviceKind, deviceId: string): Promise<void> {
+  const id = uuidArg(deviceId);
+  const now = nowIso();
+  if (kind === "app") {
+    const device = await getByUuid(ctx, "user_devices", id);
+    if (!device || device.disabled_at !== undefined) return;
+    await ctx.db.patch(device._id, withTouch(device, { disabled_at: now }));
+    await refreshStreakAfterDeviceTimeZoneChange(
+      ctx,
+      device.user_id,
+      { time_zone_id: device.time_zone_id, last_seen_at: device.last_seen_at, disabled_at: now },
+      { time_zone_id: device.time_zone_id, last_seen_at: device.last_seen_at, disabled_at: null },
+    );
+  } else {
+    const device = await getByUuid(ctx, "widget_push_devices", id);
+    if (device && device.disabled_at === undefined) {
+      await ctx.db.patch(device._id, withTouch(device, { disabled_at: now }));
     }
-    return null;
-  },
-});
+  }
+}
 
-/** Port of `internal.has_due_push_notification_work`. */
-export const has_due_push_notification_work = internalQuery({
-  args: { p_now: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    const now = optionalTimestampArg(args.p_now) ?? nowIso();
-    for await (const row of pendingDueNotifications(ctx, now)) {
-      if (row.attempt_count < MAX_ATTEMPTS) return true;
-    }
-    for await (const row of pendingDueWidgetPushes(ctx, now)) {
-      if (row.attempt_count >= MAX_ATTEMPTS) continue;
-      const device = await getByUuid(ctx, "widget_push_devices", row.target_widget_device_id);
-      if (device && device.disabled_at === undefined) return true;
-    }
-    return false;
-  },
-});
-
-const deviceKind = v.union(v.literal("app"), v.literal("widget"));
-
-/** The drain writes back an environment APNs confirmed, so later sends skip the fallback host. */
+/** Sets the APNs host a device's pushes go to. */
 export const persist_device_environment = internalMutation({
   args: { kind: deviceKind, device_id: v.string(), apns_environment: v.union(v.literal("sandbox"), v.literal("production")) },
   handler: async (ctx, args) => {
-    const id = uuidArg(args.device_id);
-    if (args.kind === "app") {
-      const device = await getByUuid(ctx, "user_devices", id);
-      if (device) await ctx.db.patch(device._id, withTouch(device, { apns_environment: args.apns_environment }));
-    } else {
-      const device = await getByUuid(ctx, "widget_push_devices", id);
-      if (device) await ctx.db.patch(device._id, withTouch(device, { apns_environment: args.apns_environment }));
-    }
+    await persistDeviceEnvironment(ctx, args.kind, args.device_id, args.apns_environment);
     return null;
   },
 });
 
-/** Retires a device token APNs rejected on every environment. */
+/** Retires a device whose token APNs rejected. */
 export const disable_device = internalMutation({
   args: { kind: deviceKind, device_id: v.string() },
   handler: async (ctx, args) => {
-    const id = uuidArg(args.device_id);
-    const now = nowIso();
-    if (args.kind === "app") {
-      const device = await getByUuid(ctx, "user_devices", id);
-      if (!device || device.disabled_at !== undefined) return null;
-      await ctx.db.patch(device._id, withTouch(device, { disabled_at: now }));
-      await refreshStreakAfterDeviceTimeZoneChange(
-        ctx,
-        device.user_id,
-        { time_zone_id: device.time_zone_id, last_seen_at: device.last_seen_at, disabled_at: now },
-        { time_zone_id: device.time_zone_id, last_seen_at: device.last_seen_at, disabled_at: null },
-      );
-    } else {
-      const device = await getByUuid(ctx, "widget_push_devices", id);
-      if (device && device.disabled_at === undefined) {
-        await ctx.db.patch(device._id, withTouch(device, { disabled_at: now }));
-      }
-    }
+    await disableDevice(ctx, args.kind, args.device_id);
     return null;
   },
 });

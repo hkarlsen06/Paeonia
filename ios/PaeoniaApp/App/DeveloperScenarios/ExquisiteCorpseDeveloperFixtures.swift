@@ -262,8 +262,8 @@
         presence: partnerIsHere ? [
           RemoteGamePresence(
             kind: .exquisiteCorpse,
-            myLastSeenAt: nil,
-            partnerLastSeenAt: now.addingTimeInterval(-10),
+            myPresent: false,
+            partnerPresent: true,
             lastInviteAt: nil
           ),
         ] : []

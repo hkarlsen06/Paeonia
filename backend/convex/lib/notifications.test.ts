@@ -214,7 +214,6 @@ describe("enqueueNotificationForUser", () => {
       apns_push_type: "alert",
       apns_collapse_id: "memory:abc",
       payload_version: 1,
-      attempt_count: 0,
       scheduled_for: "2026-10-10T12:00:00.000Z",
     });
     expect(rows[0].dedupe_key).toBe(`memory_created:abc:${rows[0].target_device_id}`);

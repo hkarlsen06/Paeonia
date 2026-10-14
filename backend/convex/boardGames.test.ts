@@ -5,6 +5,7 @@ import { movers, replay, type BoardGameKind } from "./lib/boardGames";
 import { newUuid } from "./lib/ids";
 import { notificationAlertBody, notificationAlertTitle } from "./lib/notificationCopy";
 import { endCouple, failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
+import { deliverDuePushes } from "./push.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 const START = Date.parse("2026-10-10T12:00:00.000Z");
@@ -159,7 +160,6 @@ describe("access", () => {
         auth_provider: "apple",
         status: "ready_for_auth_delete",
         provider_revocation_status: "not_required",
-        auth_delete_attempts: 0,
         created_at: now,
         updated_at: now,
       });
@@ -988,7 +988,7 @@ async function startPushCouple(locale?: string): Promise<Setup> {
 
 const outbox = (t: TestConvex) => t.run((ctx) => ctx.db.query("notification_outbox").collect());
 const pushesOf = async (t: TestConvex, kind: string) => (await outbox(t)).filter((row) => row.kind === kind);
-const claim = (s: Setup) => s.t.mutation(internal.pushQueue.claim_notification_batch, {});
+const claim = (s: Setup) => deliverDuePushes(s.t);
 const runReminders = (s: Setup) => s.t.mutation(internal.games.send_due_game_turn_reminders, {});
 const hours = (count: number) => tick(count * 3600);
 /** Who a push goes to and which turn it names, for a push kind. */
@@ -1127,11 +1127,13 @@ describe("pushes", () => {
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("presence older than 60 seconds does not suppress the push, and closing the screen removes it", async () => {
+  test("a screen that stopped its heartbeats does not suppress the push, and closing the screen removes it", async () => {
     const s = await startPushCouple();
     const game = await ensure(s.a, "connect_four");
+    // The presence component times sessions out with scheduled functions, so fake every timer.
+    vi.useFakeTimers();
     await s.b.as.mutation(api.games.set_game_presence, { p_kind: "connect_four", p_present: true });
-    tick(61);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     const first = await move(s.a, game, 3);
     expect(await pushesOf(s.t, "game_turn_ready")).toHaveLength(1);
 

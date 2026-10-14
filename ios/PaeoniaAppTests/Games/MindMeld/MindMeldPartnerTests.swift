@@ -80,9 +80,9 @@ struct MindMeldPartnerTests {
 
     // MARK: Status
 
-    @Test func aFreshHeartbeatMeansThePartnerIsHere() async {
-        let fresh = MindMeldTestEnvironment.overview(partnerLastSeenAt: GameFixture.now.addingTimeInterval(-10))
-        let stale = MindMeldTestEnvironment.overview(partnerLastSeenAt: GameFixture.now.addingTimeInterval(-120))
+    @Test func theServersPresenceSaysWhetherThePartnerIsHere() async {
+        let fresh = MindMeldTestEnvironment.overview(partnerPresent: true)
+        let stale = MindMeldTestEnvironment.overview(partnerPresent: false)
         let here = environment(fixtures.open(1), overview: fresh).viewModel()
         let away = environment(fixtures.open(1), overview: stale).viewModel()
         let unknown = environment(fixtures.open(1)).viewModel()
@@ -252,7 +252,7 @@ struct MindMeldPartnerTests {
         let away = environment(fixtures.open(1)).viewModel()
         let here = environment(
             fixtures.open(1),
-            overview: MindMeldTestEnvironment.overview(partnerLastSeenAt: GameFixture.now.addingTimeInterval(-5))
+            overview: MindMeldTestEnvironment.overview(partnerPresent: true)
         ).viewModel()
         let sentRecently = environment(
             fixtures.open(1),

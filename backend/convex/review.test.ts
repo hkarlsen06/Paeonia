@@ -48,7 +48,6 @@ describe("redeem_review_access", () => {
       locations: await ctx.db.query("latest_partner_locations").collect(),
       sharing: await ctx.db.query("location_sharing_preferences").collect(),
       sessions: await ctx.db.query("review_access_sessions").collect(),
-      attempts: await ctx.db.query("review_access_attempts").collect(),
       code: await ctx.db.query("review_access_codes").first(),
       events: await ctx.db.query("relationship_sync_events").collect(),
       transactions: await ctx.db.query("storekit_transactions").collect(),
@@ -71,7 +70,6 @@ describe("redeem_review_access", () => {
     expect(state.sessions).toMatchObject([
       { code_id: state.code!.id, user_id: reviewer.userId, couple_id: coupleId, seeded_partner_user_id: partner.userId },
     ]);
-    expect(state.attempts).toMatchObject([{ success: true, matched_code_id: state.code!.id, code_hash_prefix: state.code!.code_hash.slice(0, 12) }]);
     expect(state.code!.redemption_count).toBe(1);
     expect(state.events.map((event) => event.event_kind)).toEqual(["relationship_started", "relationship_started"]);
     // The partner's lapsed subscription is what makes the reviewer see the paywall.

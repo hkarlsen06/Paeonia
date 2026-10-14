@@ -6,6 +6,7 @@ import { newUuid } from "./lib/ids";
 import { STORY_OPENINGS, STORY_WORDS } from "./lib/storyChain";
 import { deleteCoupleGameRows } from "./lib/gameRegistry";
 import { endCouple, failure, op } from "./media.testing";
+import { deliverDuePushes } from "./push.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
 
 const START = Date.parse("2026-10-10T12:00:00.000Z");
@@ -241,8 +242,6 @@ describe("access", () => {
         auth_provider: "apple",
         status: "ready_for_auth_delete",
         provider_revocation_status: "not_required",
-        auth_delete_attempts: 0,
-        next_attempt_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -1321,15 +1320,17 @@ describe("pushes", () => {
     expect((await storyRow(s.t, reached.storyId)).state).toBe("finished");
   });
 
-  test("an old presence, or presence in another game, does not silence the push", async () => {
+  test("a screen that stopped its heartbeats, or presence in another game, does not silence the push", async () => {
     const s = await startGame();
+    // The presence component times sessions out with scheduled functions, so fake every timer.
+    vi.useFakeTimers();
     await s.b.as.mutation(api.games.set_game_presence, { p_kind: "draw_and_guess", p_present: true });
     const { story_id } = await begin(s.a, s.gameId);
     await write(s.a, story_id, "Line one.");
     expect(await pushesOf(s.t, "game_turn_ready")).toHaveLength(1);
 
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "story_chain", p_present: true });
-    tick(61);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     await write(s.b, story_id, "Line two.");
     expect(await pushesOf(s.t, "game_turn_ready")).toHaveLength(2);
 
@@ -1350,7 +1351,7 @@ describe("pushes", () => {
 });
 
 describe("push drain", () => {
-  const claim = (s: Setup) => s.t.mutation(internal.pushQueue.claim_notification_batch, {});
+  const claim = (s: Setup) => deliverDuePushes(s.t);
   const errorsOf = async (s: Setup, recipient: TestUser, kind: string) =>
     (await outbox(s.t)).filter((row) => row.kind === kind && row.recipient_user_id === recipient.userId).map((row) => row.last_error ?? null);
 
@@ -1509,7 +1510,7 @@ describe("turn reminder", () => {
     const waiting = await startGame();
     tick(73 * HOUR);
     expect(await run(waiting)).toBe(1);
-    const claimed = await waiting.t.mutation(internal.pushQueue.claim_notification_batch, {});
+    const claimed = await deliverDuePushes(waiting.t);
     expect(claimed.map((row) => (row.payload as { type: string }).type)).toEqual(["game_turn_reminder"]);
 
     const moved = await startGame();
@@ -1517,7 +1518,7 @@ describe("turn reminder", () => {
     expect(await run(moved)).toBe(1);
     const { story_id } = await begin(moved.a, moved.gameId);
     await write(moved.a, story_id, "Line one.");
-    const kinds = (await moved.t.mutation(internal.pushQueue.claim_notification_batch, {})).map((row) => (row.payload as { type: string }).type);
+    const kinds = (await deliverDuePushes(moved.t)).map((row) => (row.payload as { type: string }).type);
     expect(kinds).toEqual(["game_turn_ready"]);
     expect((await reminders(moved)).map((row) => row.last_error ?? null)).toEqual(["notification is out of date"]);
   });
@@ -1530,7 +1531,7 @@ describe("turn reminder", () => {
     await write(s.a, story_id, "Line one.");
     await write(s.b, story_id, "Line two.");
     // It is a's turn again, but a new turn began, so the old reminder has no reason to go out.
-    const claimed = await s.t.mutation(internal.pushQueue.claim_notification_batch, {});
+    const claimed = await deliverDuePushes(s.t);
     expect(claimed.map((row) => (row.payload as { type: string }).type)).toEqual(["game_turn_ready"]);
     expect(claimed[0].payload).toMatchObject({ actor_user_id: s.b.userId });
     expect((await reminders(s)).map((row) => row.last_error ?? null)).toEqual(["notification is out of date"]);

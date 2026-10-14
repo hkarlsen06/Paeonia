@@ -387,15 +387,16 @@ struct GamesPhaseTests {
         #expect(revealHubStatus(guessingHere, pending: unsentCorrectGuess) == .yourTurnToDraw)
     }
 
-    @Test func theHubShowsThePartnerHereOnlyForAFreshHeartbeat() {
-        let here = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil),
-            partnerIsHere: true
-        )
-        let overview = RemoteGamesOverview(drawAndGuess: here)
+    @Test func theHubShowsThePartnerHereOnlyWhileTheServerSaysSo() {
+        func overview(partnerIsHere: Bool) -> RemoteGamesOverview {
+            RemoteGamesOverview(drawAndGuess: GameFixture.state(
+                settings: GameFixture.settings(),
+                game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil),
+                partnerIsHere: partnerIsHere
+            ))
+        }
 
-        #expect(GamesViewModel.partnerGames(in: overview, now: GameFixture.now) == [.drawAndGuess])
-        #expect(GamesViewModel.partnerGames(in: overview, now: GameFixture.now.addingTimeInterval(120)).isEmpty)
+        #expect(GamesViewModel.partnerGames(in: overview(partnerIsHere: true)) == [.drawAndGuess])
+        #expect(GamesViewModel.partnerGames(in: overview(partnerIsHere: false)).isEmpty)
     }
 }

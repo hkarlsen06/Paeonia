@@ -21,6 +21,7 @@ import {
   normalizeMediaFileExtension,
 } from "./lib/mediaAssets";
 import { mediaAssetHasLiveReference, queueOrphanedMediaAssetsForDelete } from "./lib/mediaOrphans";
+import { consumeRateLimit } from "./lib/rateLimits";
 import { isCorpseUploadPurpose, reserveCorpseUpload } from "./lib/exquisiteCorpse"; // Exquisite corpse
 import { btrim } from "./lib/text";
 import { addMs, nowIso } from "./lib/time";
@@ -96,6 +97,7 @@ export const create_pending_media_upload = mutation({
         ],
       }),
       async () => {
+        await consumeRateLimit(ctx, "mediaUpload", userId);
         const assetId = newUuid();
         let bucket: MediaAsset["bucket"];
         let coupleId: string | undefined;

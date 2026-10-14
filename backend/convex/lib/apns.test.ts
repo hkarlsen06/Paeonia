@@ -14,11 +14,11 @@ import {
   type ApnsHttpResponse,
   type ApnsSendRequest,
   type ApnsTransport,
-  type ClaimedNotification,
-  type ClaimedWidgetPush,
+  type PreparedNotification,
+  type PreparedWidgetPush,
 } from "./apns";
 
-const alert: ClaimedNotification = {
+const alert: PreparedNotification = {
   outbox_id: "o1",
   target_device_id: "d1",
   push_token: "abc123",
@@ -64,7 +64,7 @@ describe("payload builders", () => {
   });
 
   test("widget payload is a content-changed push", () => {
-    const widget: ClaimedWidgetPush = {
+    const widget: PreparedWidgetPush = {
       outbox_id: "w1",
       target_widget_device_id: "wd",
       widget_push_token: "wtok",

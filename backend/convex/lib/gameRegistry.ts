@@ -78,15 +78,15 @@ export async function sendDueGameTurnReminders(ctx: WriterCtx, now: string): Pro
 }
 
 /**
- * Deletes every game row of a couple: the shared settings, presence, and invites, then each game's
- * own rows. Returns the number of rows deleted. Drawing media is queued for deletion by the couple
- * media sweep in `cleanupCoupleContent`.
+ * Deletes every game row of a couple: the shared settings and invites, then each game's own rows.
+ * Returns the number of rows deleted. Presence went when the relationship ended
+ * (`endRelationshipForPair`). Drawing media is queued for deletion by the couple media sweep in
+ * `cleanupCoupleContent`.
  */
 export async function deleteCoupleGameRows(ctx: WriterCtx, coupleId: string): Promise<number> {
   let deleted = 0;
   const shared = [
     ...(await ctx.db.query("game_settings").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()),
-    ...(await ctx.db.query("game_presence").withIndex("by_couple_id_kind_user_id", (q) => q.eq("couple_id", coupleId)).collect()),
     ...(await ctx.db.query("game_invites").withIndex("by_couple_id_kind_sender_user_id", (q) => q.eq("couple_id", coupleId)).collect()),
   ];
   for (const row of shared) {

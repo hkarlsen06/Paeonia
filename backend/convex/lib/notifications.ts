@@ -1,4 +1,5 @@
-import { internal } from "../_generated/api";
+import { Workpool } from "@convex-dev/workpool";
+import { components, internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { listActiveMembers } from "./access";
 import type { WriterCtx } from "./db";
@@ -38,14 +39,28 @@ export function assertNotificationPayloadSafe(payload: unknown): void {
   }
 }
 
-/** Schedules the APNs drain. Replaces the `invoke_push_notification_drain` statement trigger. */
-export async function scheduleNotificationDrain(ctx: WriterCtx): Promise<void> {
-  await ctx.scheduler.runAfter(0, internal.push.drain_notifications, {});
-}
+/**
+ * Runs `push:send_push`, one work item per outbox row. At most ten sends run at once, which is
+ * far more than this app needs and caps a burst. A failed send retries after about 10, 20, 40,
+ * and 80 seconds, then `push_finished` fails the row.
+ */
+const pushWorkpool = new Workpool(components.pushWorkpool, {
+  maxParallelism: 10,
+  retryActionsByDefault: true,
+  defaultRetryBehavior: { maxAttempts: 5, initialBackoffMs: 10_000, base: 2 },
+});
 
-/** Schedules the widget push drain. Replaces the `invoke_push_notification_drain` trigger on widget_push_outbox. */
-export async function scheduleWidgetPushDrain(ctx: WriterCtx): Promise<void> {
-  await ctx.scheduler.runAfter(0, internal.push.drain_widget_pushes, {});
+/**
+ * Queues the send of one outbox row at its `scheduled_for`. Replaces the
+ * `invoke_push_notification_drain` triggers and the 30 second drain cron.
+ */
+async function enqueuePush(ctx: WriterCtx, kind: "app" | "widget", outboxId: string, scheduledFor: string): Promise<void> {
+  const context = { kind, outbox_id: outboxId };
+  await pushWorkpool.enqueueAction(ctx, internal.push.send_push, context, {
+    runAt: Date.parse(scheduledFor),
+    onComplete: internal.pushQueue.push_finished,
+    context,
+  });
 }
 
 function trimmedLength(value: string): number {
@@ -72,7 +87,7 @@ export type NotificationOutboxInsert = {
  * Inserts one notification_outbox row. Applies the table check constraints and
  * the `assert_notification_outbox_payload_safe` trigger. Returns false (and
  * inserts nothing) when the dedupe key already exists, like `on conflict do nothing`.
- * Does not schedule the drain. Callers call `scheduleNotificationDrain` once after their inserts.
+ * Queues the send for `scheduled_for`, or now.
  */
 export async function insertNotificationOutbox(
   ctx: WriterCtx,
@@ -106,8 +121,10 @@ export async function insertNotificationOutbox(
     }
   }
   const now = nowIso();
+  const id = newUuid();
+  const scheduledFor = row.scheduled_for ?? now;
   await ctx.db.insert("notification_outbox", {
-    id: newUuid(),
+    id,
     recipient_user_id: row.recipient_user_id,
     target_device_id: row.target_device_id,
     push_token_hash: row.push_token_hash,
@@ -119,12 +136,12 @@ export async function insertNotificationOutbox(
     dedupe_key: row.dedupe_key ?? undefined,
     apns_push_type: row.apns_push_type ?? "alert",
     apns_collapse_id: row.apns_collapse_id ?? undefined,
-    attempt_count: 0,
-    scheduled_for: row.scheduled_for ?? now,
+    scheduled_for: scheduledFor,
     created_at: now,
     title: row.title ?? undefined,
     body: row.body ?? undefined,
   });
+  await enqueuePush(ctx, "app", id, scheduledFor);
   return true;
 }
 
@@ -171,7 +188,7 @@ export async function listActiveUserDevices(
 
 /**
  * Port of `internal.enqueue_notification_for_user`. Queues one alert per active
- * device when the user's preferences allow the kind, then schedules the drain.
+ * device when the user's preferences allow the kind.
  * Returns the number of rows queued.
  */
 export async function enqueueNotificationForUser(
@@ -235,9 +252,6 @@ export async function enqueueNotificationForUser(
     });
     if (inserted) queued += 1;
   }
-  if (queued > 0) {
-    await scheduleNotificationDrain(ctx);
-  }
   return queued;
 }
 
@@ -276,7 +290,7 @@ export async function enqueuePartnerNotification(
 /**
  * Insert one widget_push_outbox row. Applies the table checks and the pending
  * dedupe unique index. Returns false when a pending row with the same device
- * and dedupe key exists.
+ * and dedupe key exists. Queues the send for `scheduled_for`, or now.
  */
 export async function insertWidgetPushOutbox(
   ctx: WriterCtx,
@@ -313,8 +327,10 @@ export async function insertWidgetPushOutbox(
     if (length < 1 || length > 64) checkViolation(table, "widget_push_outbox_collapse_id_check");
   }
   const now = nowIso();
+  const id = newUuid();
+  const scheduledFor = row.scheduled_for ?? now;
   await ctx.db.insert("widget_push_outbox", {
-    id: newUuid(),
+    id,
     recipient_user_id: row.recipient_user_id,
     target_widget_device_id: row.target_widget_device_id,
     widget_push_token_hash: row.widget_push_token_hash,
@@ -323,10 +339,10 @@ export async function insertWidgetPushOutbox(
     payload: row.payload,
     dedupe_key: row.dedupe_key ?? undefined,
     apns_collapse_id: row.apns_collapse_id ?? undefined,
-    attempt_count: 0,
-    scheduled_for: row.scheduled_for ?? now,
+    scheduled_for: scheduledFor,
     created_at: now,
   });
+  await enqueuePush(ctx, "widget", id, scheduledFor);
   return true;
 }
 
@@ -372,9 +388,6 @@ export async function enqueueWidgetPushForUser(
       scheduled_for: args.scheduled_for,
     });
     if (inserted) queued += 1;
-  }
-  if (queued > 0) {
-    await scheduleWidgetPushDrain(ctx);
   }
   return queued;
 }
@@ -505,9 +518,6 @@ export async function enqueueWidgetUpdateAlert(
       scheduled_for: nowIso(),
     });
     if (inserted) queued += 1;
-  }
-  if (queued > 0) {
-    await scheduleNotificationDrain(ctx);
   }
   return queued;
 }

@@ -35,10 +35,9 @@ extension MindMeldViewModel {
         live.map { $0.partnerActivity != .away } ?? false
     }
 
-    /// The partner has the game open: in the live room, or with a fresh heartbeat.
+    /// The partner has the game open: in the live room, or by their heartbeat.
     var isPartnerHere: Bool {
-        isPartnerInLiveRoom
-            || GamePresence.isFresh(overview?.presence(for: .mindMeld)?.partnerLastSeenAt, now: now)
+        isPartnerInLiveRoom || overview?.presence(for: .mindMeld)?.partnerPresent == true
     }
 
     /// Works out the partner's status and the invite. A locked word beats typing,

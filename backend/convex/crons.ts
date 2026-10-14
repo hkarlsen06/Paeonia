@@ -5,24 +5,17 @@ import { internal } from "./_generated/api";
 // comment per job naming the pg_cron job or SQL function it replaces.
 const crons = cronJobs();
 
-// New in Convex: removes typing rows left behind by an app that closed mid-typing. See chatPresence.ts.
-crons.interval("cleanup-stale-daily-chat-typing", { minutes: 10 }, internal.chatPresence.cleanup_stale_daily_chat_typing, {});
+// Game presence and chat typing have no cleanup cron: the presence component marks a user
+// offline when heartbeats stop. See lib/presence.ts.
 
-// New in Convex: removes game presence rows an app stopped refreshing. See games.ts.
-crons.interval("cleanup-stale-game-presence", { minutes: 5 }, internal.games.cleanup_stale_game_presence, {});
 // New in Convex: the single reminder for a game turn that waited 72 hours. See games.ts.
 crons.interval("send-due-game-turn-reminders", { minutes: 15 }, internal.games.send_due_game_turn_reminders, {});
 
-// pg_cron 'paeonia-push-notification-drain' (internal.run_scheduled_push_notification_jobs).
-crons.interval(
-  "paeonia-push-notification-drain",
-  { seconds: 30 },
-  internal.push.run_scheduled_push_notification_jobs,
-);
+// pg_cron 'paeonia-push-notification-drain' has no entry: each outbox row is a pushWorkpool
+// work item that runs at its scheduled_for and retries itself. See lib/notifications.ts.
 
-// New in Convex: report snapshot copies had no schedule in SQL (operators ran the claim by hand).
-// The copy also runs right after a report is submitted. This cron retries failures after 15 minutes.
-crons.interval("copy-report-snapshot-assets", { minutes: 5 }, internal.moderation.copy_report_snapshot_assets, {});
+// Report snapshot copies have no cron. Each copy is a backgroundWorkpool job that retries
+// itself. See lib/reportTargets.ts.
 
 // New in Convex: replaces operator runs of claim_report_snapshot_storage_deletes
 // and purge_deleted_report_snapshots. Snapshots expire 180 days after the first moderation action.
@@ -37,16 +30,10 @@ crons.interval("enqueue-evening-streak-reminders", { minutes: 5 }, internal.stre
 // pg_cron 'queue-subscription-trial-reminders' (internal.queue_subscription_trial_reminders), minute 15 of every hour.
 crons.cron("queue-subscription-trial-reminders", "15 * * * *", internal.storekit.queue_subscription_trial_reminders, {});
 
-// pg_cron 'paeonia-account-deletion-drain' (internal.request_account_deletion_drain), every minute.
-// Inserting a job also schedules a drain after its 30 second reservation window.
-crons.interval(
-  "paeonia-account-deletion-drain",
-  { minutes: 1 },
-  internal.accountDeletion.request_account_deletion_drain,
-  { p_source: "cron.account_deletion" },
-);
+// pg_cron 'paeonia-account-deletion-drain' has no entry. requestAccountDeletion queues the
+// Clerk delete as a backgroundWorkpool job that retries itself. See accountDeletion.ts.
 
-// New in Convex: these four SQL cleanup functions had no pg_cron job (operators ran them by hand).
+// New in Convex: these three SQL cleanup functions had no pg_cron job (operators ran them by hand).
 // Each runs one mutation per batch, so the batch sizes stay small. See lib/relationshipCleanup.ts.
 crons.interval(
   "paeonia-cleanup-expired-relationship-content",
@@ -61,7 +48,6 @@ crons.interval(
   { p_limit: 5 },
 );
 crons.interval("paeonia-expire-stale-pairing-invites", { hours: 1 }, internal.pairing.expire_stale_pairing_invites, {});
-crons.cron("paeonia-cleanup-attempt-logs", "30 3 * * *", internal.pairing.cleanup_attempt_logs, {});
 
 // Replaces the cleanup-media-storage Edge Function, claim_media_storage_deletes, and
 // claim_expired_pending_uploads. The SQL drain ran after each queueing write; the other two had no schedule.

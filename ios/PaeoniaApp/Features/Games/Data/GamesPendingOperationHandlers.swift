@@ -25,10 +25,12 @@ nonisolated enum GameServerRejection {
 
     /// The server answered, and the answer is not one a retry can change.
     /// Offline and sign-in problems are not in this group: they come back as
-    /// other errors or as `42501` and `55P03`, which keep retrying.
+    /// other errors or as `42501` and `55P03`, which keep retrying. `53300`
+    /// keeps retrying too. The server sends it when this person sent too much at
+    /// once, such as a phone that comes back online with many drawings to upload.
     static func isUnexplained(_ error: PaeoniaConvexError) -> Bool {
         guard case let .server(code, _) = error else { return false }
-        return code != "42501" && code != "55P03" && !isPermanent(error) && !isAlreadyDone(error)
+        return !["42501", "55P03", "53300"].contains(code) && !isPermanent(error) && !isAlreadyDone(error)
     }
 
     /// Whether to drop the write now: a permanent refusal, or the

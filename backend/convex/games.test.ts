@@ -2,12 +2,14 @@
 // and the registry that the shared code uses to reach a game. Draw & Guess has its own tests in
 // drawAndGuess.test.ts.
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { api, internal } from "./_generated/api";
+import { api, components, internal } from "./_generated/api";
 import { hmacSha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
 import { deleteCoupleGameRows, GAME_BACKENDS, gamePushStillWanted, type GameBackend } from "./lib/gameRegistry";
 import { gameDeepLink } from "./lib/games";
 import { GAME_PUSH_COPY } from "./lib/notificationCopy";
+import { gameRoom } from "./lib/presence";
+import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { GAME_KINDS } from "./lib/validators";
 import { endCouple, failure } from "./media.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex } from "./test.setup";
@@ -23,7 +25,6 @@ afterEach(() => {
 });
 
 const tick = (seconds: number) => vi.setSystemTime(new Date(Date.now() + seconds * 1000));
-const iso = () => new Date().toISOString();
 
 /** A couple with a push device each. */
 async function startCouple() {
@@ -66,6 +67,7 @@ describe("access", () => {
     const couple = await createCouple(t, { entitled: false });
     expect((await failure(couple.first.as.query(api.games.get_games_overview, {}))).code).toBe("42501");
     expect((await failure(couple.first.as.mutation(api.games.send_game_invite, { p_kind: "mind_meld" }))).code).toBe("42501");
+    expect((await failure(couple.first.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true }))).code).toBe("42501");
   });
 
   test("a kind outside the catalog is refused", async () => {
@@ -124,29 +126,25 @@ describe("get_games_overview", () => {
     expect((await s.b.as.query(api.games.get_games_overview, {})).settings).toEqual(set);
   });
 
-  test("lists a kind only with a presence row of either partner or an invite from the caller", async () => {
+  test("lists a kind only while either partner has it open, or with an invite from the caller", async () => {
     const s = await startCouple();
-    const first = iso();
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true });
-    tick(10);
-    const second = iso();
     await s.b.as.mutation(api.games.set_game_presence, { p_kind: "connect_four", p_present: true });
-    tick(10);
     const invited = await s.a.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
-    // Another kind with a presence row that was closed again leaves no entry.
+    // Another kind that was opened and closed again leaves no entry.
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "dots_and_boxes", p_present: true });
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "dots_and_boxes", p_present: false });
 
     // Entries follow the order of GAME_KINDS: mind_meld, story_chain, connect_four.
     expect((await s.a.as.query(api.games.get_games_overview, {})).presence).toEqual([
-      { kind: "mind_meld", my_last_seen_at: first, partner_last_seen_at: null, last_invite_at: null },
-      { kind: "story_chain", my_last_seen_at: null, partner_last_seen_at: null, last_invite_at: invited.sent_at },
-      { kind: "connect_four", my_last_seen_at: null, partner_last_seen_at: second, last_invite_at: null },
+      { kind: "mind_meld", my_present: true, partner_present: false, last_invite_at: null },
+      { kind: "story_chain", my_present: false, partner_present: false, last_invite_at: invited.sent_at },
+      { kind: "connect_four", my_present: false, partner_present: true, last_invite_at: null },
     ]);
     // The partner's view swaps the two sides, and the invite belongs to the sender only.
     expect((await s.b.as.query(api.games.get_games_overview, {})).presence).toEqual([
-      { kind: "mind_meld", my_last_seen_at: null, partner_last_seen_at: first, last_invite_at: null },
-      { kind: "connect_four", my_last_seen_at: second, partner_last_seen_at: null, last_invite_at: null },
+      { kind: "mind_meld", my_present: false, partner_present: true, last_invite_at: null },
+      { kind: "connect_four", my_present: true, partner_present: false, last_invite_at: null },
     ]);
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
@@ -161,21 +159,44 @@ describe("get_games_overview", () => {
 });
 
 describe("presence and invites for every kind", () => {
-  test("a kind other than Draw & Guess keeps its own presence row and cron cleanup removes it", async () => {
+  test("each kind has its own presence, and a screen goes offline 60 seconds after its last heartbeat", async () => {
+    // The presence component times sessions out with scheduled functions, so fake every timer.
+    vi.useFakeTimers();
     const s = await startCouple();
+    const partnerSees = async () =>
+      (await s.b.as.query(api.games.get_games_overview, {})).presence.filter((entry) => entry.partner_present).map((entry) => entry.kind);
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true });
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "draw_and_guess", p_present: true });
-    const rows = await s.t.run((ctx) => ctx.db.query("game_presence").collect());
-    expect(rows.map((row) => row.kind).sort()).toEqual(["draw_and_guess", "mind_meld"]);
+    expect(await partnerSees()).toEqual(["draw_and_guess", "mind_meld"]);
 
-    tick(30);
-    await s.a.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true });
+    // Closing a screen ends it at once.
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "draw_and_guess", p_present: false });
-    expect((await s.t.run((ctx) => ctx.db.query("game_presence").collect())).map((row) => row.kind)).toEqual(["mind_meld"]);
+    expect(await partnerSees()).toEqual(["mind_meld"]);
 
-    tick(121);
-    expect(await s.t.mutation(internal.games.cleanup_stale_game_presence, {})).toBe(1);
-    expect(await s.t.run((ctx) => ctx.db.query("game_presence").collect())).toHaveLength(0);
+    // An app that stops sending heartbeats goes offline without a cron.
+    const lastHeartbeat = Date.now();
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(Date.now() - lastHeartbeat).toBeGreaterThanOrEqual(60_000);
+    expect(await partnerSees()).toEqual([]);
+  });
+
+  test("ending the relationship removes both partners' presence, and a former partner can no longer send or read it", async () => {
+    const s = await startCouple();
+    const other = await createCouple(s.t);
+    for (const user of [s.a, s.b]) await user.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true });
+    await other.first.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true });
+    const room = (coupleId: string) =>
+      s.t.run((ctx) => ctx.runQuery(components.presence.public.listRoom, { roomId: gameRoom(coupleId, "mind_meld") }));
+    expect(await room(s.couple.coupleId)).toHaveLength(2);
+
+    await s.t.run((ctx) => endRelationshipForPair(ctx, s.couple.pairId, s.a.userId, "user_left"));
+    expect(await room(s.couple.coupleId)).toEqual([]);
+    expect((await room(other.coupleId)).map((row) => row.userId)).toEqual([other.first.userId]);
+    for (const user of [s.a, s.b]) {
+      expect((await failure(user.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true }))).code).toBe("42501");
+      expect((await failure(user.as.query(api.games.get_games_overview, {}))).code).toBe("42501");
+    }
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
   test("an open game screen does not silence an invite", async () => {
@@ -377,9 +398,6 @@ describe("registry", () => {
   test("cleanup deletes the shared rows of every kind, then asks each game for its own", async () => {
     const s = await startCouple();
     const other = await createCouple(s.t);
-    for (const user of [s.a, s.b, other.first]) {
-      await user.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true });
-    }
     await s.a.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" });
     await other.first.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" });
     await s.a.as.mutation(api.games.send_game_invite, { p_kind: "connect_four" });
@@ -391,10 +409,10 @@ describe("registry", () => {
     const deleteCoupleRows = vi.fn<GameBackend["deleteCoupleRows"]>(async () => 5);
     GAME_BACKENDS.mind_meld = { ...nullBackend, deleteCoupleRows };
     try {
-      // 1 settings + 2 presence + 2 invites, 1 game and its used words from Draw & Guess, 5 from the fake entry.
+      // 1 settings + 2 invites, 1 game and its used words from Draw & Guess, 5 from the fake entry.
       const usedWords = (await s.t.run((ctx) => ctx.db.query("game_used_words").collect())).filter((row) => row.couple_id === s.couple.coupleId);
       expect(usedWords).toHaveLength(3);
-      expect(await s.t.run((ctx) => deleteCoupleGameRows(ctx, s.couple.coupleId))).toBe(1 + 2 + 2 + 1 + 3 + 5);
+      expect(await s.t.run((ctx) => deleteCoupleGameRows(ctx, s.couple.coupleId))).toBe(1 + 2 + 1 + 3 + 5);
       expect(deleteCoupleRows).toHaveBeenCalledWith(expect.anything(), s.couple.coupleId);
     } finally {
       GAME_BACKENDS.mind_meld = null;
@@ -402,14 +420,12 @@ describe("registry", () => {
 
     const left = await s.t.run(async (ctx) => ({
       settings: (await ctx.db.query("game_settings").collect()).map((row) => row.couple_id),
-      presence: (await ctx.db.query("game_presence").collect()).map((row) => row.couple_id),
       invites: (await ctx.db.query("game_invites").collect()).map((row) => row.couple_id),
       games: (await ctx.db.query("games").collect()).map((row) => row.couple_id),
     }));
     // The other couple keeps everything.
     expect(left).toEqual({
       settings: [other.coupleId],
-      presence: [other.coupleId],
       invites: [],
       games: [other.coupleId],
     });

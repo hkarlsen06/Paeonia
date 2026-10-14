@@ -75,7 +75,7 @@ extension StoryChainViewModel {
         case .choosing: .choosing
         case .result: .result
         case .present: .here
-        case .away, nil: GamePresence.isFresh(overviewPresence?.partnerLastSeenAt, now: now) ? .here : .away
+        case .away, nil: overviewPresence?.partnerPresent == true ? .here : .away
         }
     }
 

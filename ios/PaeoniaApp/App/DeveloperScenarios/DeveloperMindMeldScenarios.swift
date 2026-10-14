@@ -130,8 +130,8 @@
       InMemoryMindMeldCache(state: state(for: scenario), ownerUserID: Fixture.me)
     }
 
-    /// The shared overview for the hub scenario where Robin is in both games. His Mind
-    /// Meld heartbeat is older than his Draw & Guess one, so Draw & Guess stays first.
+    /// The shared overview for the hub scenario where Robin is in both games. Draw &
+    /// Guess comes first in the list, as the server sends it, so it stays first.
     /// Nil for every other scenario, which keeps the overview its Draw & Guess state implies.
     static func overview(
       for scenario: DeveloperScenario,
@@ -147,8 +147,8 @@
         presence: base.presence + [
           RemoteGamePresence(
             kind: .mindMeld,
-            myLastSeenAt: nil,
-            partnerLastSeenAt: Fixture.now.addingTimeInterval(-25),
+            myPresent: false,
+            partnerPresent: true,
             lastInviteAt: nil
           ),
         ]

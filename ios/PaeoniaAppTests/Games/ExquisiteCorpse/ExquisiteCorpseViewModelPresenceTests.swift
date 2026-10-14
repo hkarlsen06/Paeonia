@@ -12,10 +12,10 @@ struct ExquisiteCorpseViewModelPresenceTests {
     private var now: Date { Env.now }
 
     private func environment(
-        partnerLastSeenAt: Date? = nil,
+        partnerPresent: Bool = false,
         lastInviteAt: Date? = nil
     ) -> Env {
-        Env(state: Fixture.partnerBodyTurn(), partnerLastSeenAt: partnerLastSeenAt, lastInviteAt: lastInviteAt)
+        Env(state: Fixture.partnerBodyTurn(), partnerPresent: partnerPresent, lastInviteAt: lastInviteAt)
     }
 
     // MARK: What the partner is doing
@@ -43,8 +43,8 @@ struct ExquisiteCorpseViewModelPresenceTests {
         #expect(viewModel.partnerPresence == .away)
     }
 
-    @Test func aFreshHeartbeatMeansHereWhenTheRoomSaysNothing() async {
-        let env = environment(partnerLastSeenAt: now.addingTimeInterval(-10))
+    @Test func theServersPresenceMeansHereWhenTheRoomSaysNothing() async {
+        let env = environment(partnerPresent: true)
         let viewModel = env.viewModel()
 
         await viewModel.reload()
@@ -53,8 +53,8 @@ struct ExquisiteCorpseViewModelPresenceTests {
         #expect(viewModel.invite == .hidden)
     }
 
-    @Test func aStaleHeartbeatMeansAway() async {
-        let env = environment(partnerLastSeenAt: now.addingTimeInterval(-120))
+    @Test func noPresenceFromTheServerMeansAway() async {
+        let env = environment(partnerPresent: false)
         let viewModel = env.viewModel()
 
         await viewModel.reload()

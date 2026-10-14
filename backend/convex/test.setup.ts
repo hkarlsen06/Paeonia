@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
 // Shared test helpers. The two dots in the file name keep Convex from bundling this file.
+import presence from "@convex-dev/presence/test";
+import rateLimiter from "@convex-dev/rate-limiter/test";
+import workpool from "@convex-dev/workpool/test";
 import { convexTest } from "convex-test";
 import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
@@ -11,7 +14,13 @@ import schema from "./schema";
 export const modules = import.meta.glob(["./**/*.{ts,js}", "!./**/*.*.*"]);
 
 export function newTest() {
-  return convexTest(schema, modules);
+  const t = convexTest(schema, modules);
+  // Names match convex.config.ts.
+  workpool.register(t, "pushWorkpool");
+  workpool.register(t, "backgroundWorkpool");
+  rateLimiter.register(t);
+  presence.register(t);
+  return t;
 }
 export type TestConvex = ReturnType<typeof newTest>;
 

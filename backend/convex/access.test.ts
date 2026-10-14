@@ -284,7 +284,6 @@ describe("verify_purchase", () => {
         auth_provider: "apple",
         status: "completed",
         provider_revocation_status: "not_required",
-        auth_delete_attempts: 1,
         completed_at: now,
         created_at: now,
         updated_at: now,

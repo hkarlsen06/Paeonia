@@ -869,7 +869,6 @@ describe("storage cleanup", () => {
         storage_path: "r/b.jpg",
         media_type: "image",
         copy_status: "copied",
-        copy_attempts: 1,
         storage_delete_status: "none",
         storage_delete_attempts: 0,
         storage_id: storageId as never,

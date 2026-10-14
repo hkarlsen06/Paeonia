@@ -4,8 +4,10 @@ import { newUuid } from "./lib/ids";
 import { makeAsset, makeMemory, operation } from "./reports.fixtures";
 import { createCouple, newTest } from "./test.setup";
 
+// A report with media queues snapshot copies on backgroundWorkpool, whose loop
+// waits on timers. Fake them all, so finishAllScheduledFunctions can move the clock.
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
 afterEach(() => {

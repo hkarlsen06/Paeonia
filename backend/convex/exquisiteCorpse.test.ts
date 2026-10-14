@@ -5,6 +5,7 @@ import { newUuid } from "./lib/ids";
 import { dealIdeas } from "./lib/exquisiteCorpse";
 import { EXQUISITE_CORPSE_IDEAS } from "./lib/exquisiteCorpseIdeas";
 import { endCouple, failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
+import { deliverDuePushes } from "./push.testing";
 import {
   addDevice,
   createCouple,
@@ -153,8 +154,6 @@ describe("access", () => {
         auth_provider: "apple",
         status: "ready_for_auth_delete",
         provider_revocation_status: "not_required",
-        auth_delete_attempts: 0,
-        next_attempt_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -815,7 +814,7 @@ describe("history", () => {
 
 describe("pushes", () => {
   const kinds = (rows: { payload: unknown }[]) => rows.map((row) => (row.payload as { type: string }).type).sort();
-  const claim = (s: Setup) => s.t.mutation(internal.pushQueue.claim_notification_batch, {});
+  const claim = (s: Setup) => deliverDuePushes(s.t);
   const errorsOf = async (s: Setup, kind: string) => (await outbox(s.t)).filter((row) => row.kind === kind).map((row) => row.last_error ?? null);
 
   test("a head or body queues a lock-screen-safe turn push, and the legs queue a result push", async () => {
@@ -870,6 +869,8 @@ describe("pushes", () => {
 
   test("an open game screen on the recipient's phone suppresses the turn and result pushes", async () => {
     const s = await startGame();
+    // The presence component times sessions out with scheduled functions, so fake every timer.
+    vi.useFakeTimers();
     await s.b.as.mutation(api.games.set_game_presence, { p_kind: "exquisite_corpse", p_present: true });
     const figureId = newUuid();
     await send(s, s.a, { figureId, index: 0 });
@@ -885,9 +886,9 @@ describe("pushes", () => {
     await send(s, s.a, { figureId, index: 2 });
     expect(await outbox(s.t)).toHaveLength(0);
 
-    // Presence older than 60 seconds does not count.
+    // A screen that stopped its heartbeats does not count.
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "exquisite_corpse", p_present: true });
-    tick(61);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     await send(s, s.b, { figureId: newUuid(), index: 0 });
     expect(kinds(await outbox(s.t))).toEqual(["game_turn_ready"]);
     await settle(s);
@@ -973,8 +974,8 @@ describe("turn reminder", () => {
     tick(73 * HOUR);
     expect(await run(s)).toBe(1);
     await send(s, s.a, { figureId: newUuid(), index: 0 });
-    const claimed = await s.t.mutation(internal.pushQueue.claim_notification_batch, {});
-    expect(claimed.map((row: { payload: { type: string } }) => row.payload.type)).toEqual(["game_turn_ready"]);
+    const claimed = await deliverDuePushes(s.t);
+    expect(claimed.map((row) => row.payload.type)).toEqual(["game_turn_ready"]);
     expect((await reminders(s))[0].last_error).toBe("notification is out of date");
     await settle(s);
   });
@@ -990,9 +991,9 @@ describe("turn reminder", () => {
     tick(73 * HOUR);
     expect(await run(s)).toBe(1);
 
-    const claimed = await s.t.mutation(internal.pushQueue.claim_notification_batch, {});
-    const sent = claimed.filter((row: { payload: { type: string } }) => row.payload.type === "game_turn_reminder");
-    expect(sent.map((row: { payload: { step?: string } }) => row.payload.step)).toEqual(["turn_1_2"]);
+    const claimed = await deliverDuePushes(s.t);
+    const sent = claimed.filter((row) => row.payload.type === "game_turn_reminder");
+    expect(sent.map((row) => row.payload.step)).toEqual(["turn_1_2"]);
     const stale = (await reminders(s)).find((row) => (row.payload as { step?: string }).step === "turn_1_0");
     expect(stale?.last_error).toBe("notification is out of date");
     await settle(s);

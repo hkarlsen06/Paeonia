@@ -275,10 +275,10 @@ struct MindMeldTestEnvironment {
     }
 
     /// The shared Games overview with the game language and, for Mind Meld, the
-    /// partner's last heartbeat and this person's last invite.
+    /// partner's presence and this person's last invite.
     static func overview(
         language: GameLanguage = .en,
-        partnerLastSeenAt: Date? = nil,
+        partnerPresent: Bool = false,
         lastInviteAt: Date? = nil
     ) -> RemoteGamesOverview {
         RemoteGamesOverview(
@@ -296,8 +296,8 @@ struct MindMeldTestEnvironment {
             presence: [
                 RemoteGamePresence(
                     kind: .mindMeld,
-                    myLastSeenAt: nil,
-                    partnerLastSeenAt: partnerLastSeenAt,
+                    myPresent: false,
+                    partnerPresent: partnerPresent,
                     lastInviteAt: lastInviteAt
                 ),
             ]

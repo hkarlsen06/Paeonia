@@ -33,8 +33,10 @@ extension ExquisiteCorpseViewModel {
     /// heartbeat when the room says nothing, then works out the invite button.
     func updatePresenceState() {
         let shared = overview?.presence(for: .exquisiteCorpse)
-        let isFresh = GamePresence.isFresh(shared?.partnerLastSeenAt, now: now)
-        partnerPresence = ExquisiteCorpsePartnerPresence(live?.partnerActivity ?? .away, isHeartbeatFresh: isFresh)
+        partnerPresence = ExquisiteCorpsePartnerPresence(
+            live?.partnerActivity ?? .away,
+            isHeartbeatFresh: shared?.partnerPresent == true
+        )
         invite = GameInviteState.make(
             lastInviteAt: shared?.lastInviteAt,
             localSentAt: localInviteSentAt,

@@ -1,28 +1,31 @@
 "use node";
 
-// APNs delivery. Node, because APNs only speaks HTTP/2. Claiming, result
-// recording, and the pure request builders are in pushQueue.ts and lib/apns.ts.
+// APNs delivery. Node, because APNs only speaks HTTP/2. The send-time checks and
+// result recording are in pushQueue.ts, the pure request builders in lib/apns.ts.
 
+import { v } from "convex/values";
 import { connect, type ClientHttp2Session } from "node:http2";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
+import type { PushOutcome } from "./pushQueue";
 import {
   apnsHeaders,
   apnsHost,
+  buildAppRequest,
+  buildWidgetRequest,
   cachedProviderTokens,
-  errorMessage,
   readApnsConfig,
   sendWithEnvironmentFallback,
   type ApnsEnvironment,
   type ApnsHttpResponse,
   type ApnsSendRequest,
+  type ApnsSendResult,
   type ApnsTransport,
 } from "./lib/apns";
-import { drainAppNotifications, drainWidgetPushes, type DrainStats } from "./lib/apnsDrain";
 
 const REQUEST_TIMEOUT_MS = 20_000;
 
-/** One HTTP/2 session per host for the life of a drain run. The JWT cache lives and dies with it. */
+/** One HTTP/2 session per host for one send. The JWT cache lives and dies with it. */
 function createTransport(config: ReturnType<typeof readApnsConfig>): ApnsTransport & { close(): void } {
   const sessions = new Map<ApnsEnvironment, ClientHttp2Session>();
 
@@ -83,54 +86,62 @@ function createTransport(config: ReturnType<typeof readApnsConfig>): ApnsTranspo
   };
 }
 
-type DrainOutcome = { configured: boolean; app: DrainStats | null; widget: DrainStats | null };
-
-async function drain(
-  ctx: Parameters<typeof drainAppNotifications>[0],
-  which: { app: boolean; widget: boolean },
-): Promise<DrainOutcome> {
-  const config = readApnsConfig(process.env);
-  if (config.missing.length > 0) {
-    console.error("push delivery is not configured", { missing: config.missing });
-    return { configured: false, app: null, widget: null };
-  }
-  const transport = createTransport(config);
-  const send = (request: ApnsSendRequest) => sendWithEnvironmentFallback(request, transport);
-  try {
-    const app = which.app ? await drainAppNotifications(ctx, send, config.bundleId) : null;
-    const widget = which.widget ? await drainWidgetPushes(ctx, send, config.bundleId) : null;
-    return { configured: true, app, widget };
-  } catch (error) {
-    console.error("push drain failed", { error: errorMessage(error) });
-    throw error;
-  } finally {
-    transport.close();
-  }
-}
-
-/** Scheduled by `insertNotificationOutbox` callers right after they queue an app notification. */
-export const drain_notifications = internalAction({
-  args: {},
-  handler: async (ctx): Promise<DrainOutcome> => await drain(ctx, { app: true, widget: false }),
-});
-
-/** Scheduled right after a widget push is queued. */
-export const drain_widget_pushes = internalAction({
-  args: {},
-  handler: async (ctx): Promise<DrainOutcome> => await drain(ctx, { app: false, widget: true }),
-});
-
 /**
- * Port of `internal.run_scheduled_push_notification_jobs`, minus the streak
- * reminder enqueue (owned by the streaks module). Drains both outboxes when
- * something is due, including retries whose lease ended.
+ * Sends one outbox row. Each call is one pushWorkpool work item. A network error or any APNs
+ * failure other than a dead token throws, so the pool retries it with backoff, and `push_finished`
+ * fails the row once the retries run out. A dead token is not retried: `push_finished` retires the
+ * device and fails the row.
+ *
+ * Each send opens its own HTTP/2 session and signs a fresh provider token. A Convex action cannot
+ * keep a session open between runs, and at this app's volume one TLS handshake per push is fine.
  */
-export const run_scheduled_push_notification_jobs = internalAction({
-  args: {},
-  handler: async (ctx): Promise<{ due_work: boolean; drain_requested: boolean }> => {
-    const dueWork: boolean = await ctx.runQuery(internal.pushQueue.has_due_push_notification_work, {});
-    if (!dueWork) return { due_work: false, drain_requested: false };
-    const outcome = await drain(ctx, { app: true, widget: true });
-    return { due_work: true, drain_requested: outcome.configured };
+export const send_push = internalAction({
+  args: { kind: v.union(v.literal("app"), v.literal("widget")), outbox_id: v.string() },
+  handler: async (ctx, { kind, outbox_id }): Promise<PushOutcome | null> => {
+    const config = readApnsConfig(process.env);
+    if (config.missing.length > 0) {
+      // Local backends have no APNs keys. The row stays unsent, and nothing retries it.
+      console.error("push delivery is not configured", { missing: config.missing });
+      return null;
+    }
+
+    let request: ApnsSendRequest;
+    let deviceId: string;
+    let queuedEnvironment: ApnsEnvironment;
+    if (kind === "app") {
+      const notification = await ctx.runMutation(internal.pushQueue.prepare_notification, { outbox_id });
+      if (!notification) return null;
+      request = buildAppRequest(notification, config.bundleId);
+      deviceId = notification.target_device_id;
+      queuedEnvironment = notification.apns_environment;
+    } else {
+      const push = await ctx.runMutation(internal.pushQueue.prepare_widget_push, { outbox_id });
+      if (!push) return null;
+      request = buildWidgetRequest(push, config.bundleId);
+      deviceId = push.target_widget_device_id;
+      queuedEnvironment = push.apns_environment;
+    }
+
+    const transport = createTransport(config);
+    let result: ApnsSendResult;
+    try {
+      result = await sendWithEnvironmentFallback(request, transport);
+    } finally {
+      transport.close();
+    }
+
+    if (!result.ok && !result.invalidToken) {
+      throw new Error(result.error ?? "delivery failed");
+    }
+    // APNs answered for good. `push_finished` records this in one mutation, and nothing here
+    // throws after the send, so the pool never retries a push that already went out.
+    return {
+      device_id: deviceId,
+      provider_message_id: result.providerMessageId,
+      error: result.ok ? undefined : (result.error ?? "delivery failed"),
+      invalid_token: Boolean(result.invalidToken),
+      confirmed_environment:
+        result.ok && result.environment && result.environment !== queuedEnvironment ? result.environment : undefined,
+    };
   },
 });

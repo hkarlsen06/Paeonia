@@ -629,7 +629,6 @@ describe("register_widget_push_device", () => {
         auth_provider: "apple",
         status: "ready_for_auth_delete",
         provider_revocation_status: "not_required",
-        auth_delete_attempts: 0,
         created_at: now,
         updated_at: now,
       });

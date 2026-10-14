@@ -66,7 +66,7 @@ protocol DailyQuestionChatServicing: Actor {
 
 /// The partner's typing and read state in one question's chat.
 nonisolated struct DailyChatPresence: Equatable, Sendable {
-    var partnerTypingAt: Date?
+    var partnerIsTyping = false
     var partnerLastReadMessageID: UUID?
 
     static let none = DailyChatPresence()
@@ -571,10 +571,17 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
                     args: ["p_instance_id": instanceID.uuidString.lowercased()],
                     as: PresenceRow.self
                 )
+                var latest = DailyChatPresence.none
                 for await result in results {
-                    if case let .value(row) = result {
-                        continuation.yield(row.presence)
+                    switch result {
+                    case let .value(row):
+                        latest = row.presence
+                    case .failure:
+                        // While the subscription is down, nobody can say the partner
+                        // still types. Keep the read mark.
+                        latest.partnerIsTyping = false
                     }
+                    continuation.yield(latest)
                 }
                 continuation.finish()
             }
@@ -845,15 +852,15 @@ nonisolated private struct MarkAnswerSeenRequest: Encodable {
 }
 
 nonisolated private struct PresenceRow: Decodable {
-    let partnerTypingAt: Date?
+    let partnerTyping: Bool
     let partnerLastReadMessageID: UUID?
 
     var presence: DailyChatPresence {
-        DailyChatPresence(partnerTypingAt: partnerTypingAt, partnerLastReadMessageID: partnerLastReadMessageID)
+        DailyChatPresence(partnerIsTyping: partnerTyping, partnerLastReadMessageID: partnerLastReadMessageID)
     }
 
     enum CodingKeys: String, CodingKey {
-        case partnerTypingAt = "partner_typing_at"
+        case partnerTyping = "partner_typing"
         case partnerLastReadMessageID = "partner_last_read_message_id"
     }
 }

@@ -20,7 +20,7 @@ struct GamesRulesTests {
            "version":4,"created_at":"2026-10-12T10:00:00.000Z","updated_at":"2026-10-12T10:00:00.000Z"},
          "current_round":null,"recent_rounds":[],
          "choices":[{"difficulty":"easy","word_id":"nb-easy-hund","word":"hund","points":1}],
-         "my_last_seen_at":null,"partner_last_seen_at":"2026-10-12T10:00:30.500Z","last_invite_at":null}
+         "my_present":false,"partner_present":true,"last_invite_at":null}
         """
         let state = try PaeoniaConvexClient.decoder.decode(RemoteDrawAndGuessState.self, from: Data(json.utf8))
 
@@ -29,7 +29,7 @@ struct GamesRulesTests {
         #expect(state.game?.state == .choosingWord)
         #expect(state.game?.currentRoundID == nil)
         #expect(state.choices?.first?.wordID == "nb-easy-hund")
-        #expect(state.partnerLastSeenAt != nil)
+        #expect(state.partnerPresent)
         #expect(state.currentRound == nil)
     }
 
@@ -61,15 +61,6 @@ struct GamesRulesTests {
     }
 
     // MARK: Presence and invite
-
-    @Test func aHeartbeatUnderSixtySecondsOldCountsAsHere() {
-        let now = GameFixture.now
-        #expect(GamePresence.isFresh(now.addingTimeInterval(-59), now: now))
-        #expect(!GamePresence.isFresh(now.addingTimeInterval(-60), now: now))
-        #expect(!GamePresence.isFresh(nil, now: now))
-        // A partner's clock a little ahead of this phone's is still fresh.
-        #expect(GamePresence.isFresh(now.addingTimeInterval(5), now: now))
-    }
 
     @Test func theInviteButtonIsHiddenWhenThePartnerIsHereAndSentForFifteenMinutes() {
         let now = GameFixture.now

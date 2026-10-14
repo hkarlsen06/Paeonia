@@ -177,7 +177,7 @@ final class GamesViewModel {
         guard currentUserID == userID else { return }
         overview = document.overview
         hasLoaded = true
-        partnerGameKinds = Self.partnerGames(in: overview, now: dependencies.now())
+        partnerGameKinds = Self.partnerGames(in: overview)
             .filter { game($0) != nil }
         settings = overview?.settings
         if let settings {
@@ -273,12 +273,9 @@ final class GamesViewModel {
 }
 
 extension GamesViewModel {
-    /// The games the partner has open, the most recent heartbeat first.
-    nonisolated static func partnerGames(in overview: RemoteGamesOverview?, now: Date) -> [GameKind] {
-        (overview?.presence ?? [])
-            .filter { GamePresence.isFresh($0.partnerLastSeenAt, now: now) }
-            .sorted { ($0.partnerLastSeenAt ?? .distantPast) > ($1.partnerLastSeenAt ?? .distantPast) }
-            .map(\.kind)
+    /// The games the partner has open, in the server's order.
+    nonisolated static func partnerGames(in overview: RemoteGamesOverview?) -> [GameKind] {
+        (overview?.presence ?? []).filter(\.partnerPresent).map(\.kind)
     }
 
     /// The games the partner is in, then the games waiting for this person in

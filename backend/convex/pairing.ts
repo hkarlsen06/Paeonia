@@ -12,10 +12,10 @@ import { newUuid, optionalDateArg, optionalTimestampArg, optionalUuidArg, timest
 import { findActiveReviewAccessCode, redeemReviewAccess } from "./lib/reviewAccess";
 import { userHasDirectEntitlement } from "./lib/entitlements";
 import { createRelationshipSyncEvent } from "./lib/syncEvents";
-import { addDaysToInstant, addMs, nowIso } from "./lib/time";
+import { consumeRateLimit, rateLimiter } from "./lib/rateLimits";
+import { addDaysToInstant, nowIso } from "./lib/time";
 
 const CODE_PATTERN = /^[0-9ABCDEFGHJKMNPQRSTVWXYZ]{6}$/;
-const WINDOW_MS = 10 * 60_000;
 
 /**
  * Port of `internal.hash_pairing_invite_code`: HMAC-SHA256 of the six-character
@@ -32,30 +32,30 @@ export async function hashPairingInviteCode(code: string | null | undefined): Pr
   return await hmacSha256Hex(pepper, code);
 }
 
-/** Port of `internal.assert_pairing_invite_attempt_allowed`. */
-export async function assertPairingInviteAttemptAllowed(
-  ctx: ReaderCtx,
-  userId: string,
-  codeHashPrefix: string,
-): Promise<void> {
-  const since = addMs(nowIso(), -WINDOW_MS);
-  const attempts = await ctx.db
-    .query("pairing_invite_attempts")
-    .withIndex("by_user_id_attempted_at", (q) => q.eq("user_id", userId).gt("attempted_at", since))
-    .collect();
-  if (attempts.length >= 30) {
+/**
+ * Port of `internal.assert_pairing_invite_attempt_allowed`. The SQL counted
+ * logged attempts in a ten-minute window. The rate limiter keeps the same budget:
+ * `recordAttempt` takes from it where the SQL logged a row.
+ */
+async function assertPairingInviteAttemptAllowed(ctx: MutationCtx, userId: string, codeHashPrefix: string): Promise<void> {
+  if (!(await rateLimiter.check(ctx, "pairingInviteAttempt", { key: userId })).ok) {
     fail("53300", "too many invite attempts");
   }
-  if (attempts.filter((attempt) => !attempt.success && attempt.code_hash_prefix === codeHashPrefix).length >= 10) {
+  if (!(await rateLimiter.check(ctx, "pairingInviteCodeFailure", { key: codeFailureKey(userId, codeHashPrefix) })).ok) {
     fail("53300", "too many invite attempts for this code");
   }
 }
 
-async function recordAttempt(
-  ctx: MutationCtx,
-  attempt: { code_hash_prefix: string; user_id: string; success: boolean; matched_invite_id?: string; failure_reason?: string },
-) {
-  await ctx.db.insert("pairing_invite_attempts", { id: newUuid(), attempted_at: nowIso(), ...attempt });
+/** Only failed attempts count toward the limit for one code. */
+async function recordAttempt(ctx: MutationCtx, userId: string, codeHashPrefix: string, success: boolean): Promise<void> {
+  await rateLimiter.limit(ctx, "pairingInviteAttempt", { key: userId });
+  if (!success) {
+    await rateLimiter.limit(ctx, "pairingInviteCodeFailure", { key: codeFailureKey(userId, codeHashPrefix) });
+  }
+}
+
+function codeFailureKey(userId: string, codeHashPrefix: string): string {
+  return `${userId}:${codeHashPrefix}`;
 }
 
 async function findInviteByCodeHash(ctx: ReaderCtx, codeHash: string): Promise<Doc<"pairing_invites"> | null> {
@@ -123,6 +123,7 @@ export const create_pairing_invite = mutation({
       request: { kind: "create_pairing_invite", code_hash: codeHash, expires_at: args.p_expires_at ?? "default" },
     });
     const outcome = await runClientOperation(ctx, userId, input, async () => {
+      await consumeRateLimit(ctx, "pairingInviteCreate", userId);
       checkExpiry(expiresAt);
       if (!(await userHasDirectEntitlement(ctx, userId))) {
         fail("42501", "direct entitlement is required to create an invite");
@@ -162,6 +163,7 @@ export const rotate_pairing_invite = mutation({
       },
     });
     const outcome = await runClientOperation(ctx, userId, input, async () => {
+      await consumeRateLimit(ctx, "pairingInviteCreate", userId);
       checkExpiry(expiresAt);
       if (!(await userHasDirectEntitlement(ctx, userId))) {
         fail("42501", "direct entitlement is required to create an invite");
@@ -255,22 +257,16 @@ export const preview_pairing_invite = mutation({
 
     const invite = await findInviteByCodeHash(ctx, codeHash);
     if (!invite || invite.status !== "pending" || invite.expires_at <= now) {
-      await recordAttempt(ctx, { code_hash_prefix: prefix, user_id: userId, success: false, failure_reason: "not_found" });
+      await recordAttempt(ctx, userId, prefix, false);
       return [];
     }
 
     const pairId = await findRelationshipPairId(ctx, userId, invite.created_by_user_id);
     if (pairId && (await hasActiveRelationshipBlock(ctx, pairId))) {
-      await recordAttempt(ctx, {
-        code_hash_prefix: prefix,
-        user_id: userId,
-        success: false,
-        matched_invite_id: invite.id,
-        failure_reason: "active_block",
-      });
+      await recordAttempt(ctx, userId, prefix, false);
       return [];
     }
-    await recordAttempt(ctx, { code_hash_prefix: prefix, user_id: userId, success: true, matched_invite_id: invite.id });
+    await recordAttempt(ctx, userId, prefix, true);
 
     const inviter = await ctx.db
       .query("profiles")
@@ -315,7 +311,7 @@ export const accept_pairing_invite = mutation({
       request: { kind: "accept_pairing_invite", code_hash: codeHash, started_on: startedOn ?? "unset" },
     });
     // The SQL logged each rejected attempt and then raised, which rolled the log back.
-    // The throws below keep the same all-or-nothing behavior, so only accepted attempts are logged.
+    // The throws below roll back the rate limiter the same way, so only accepted attempts count.
     const outcome = await runClientOperation(ctx, userId, input, async () => {
       const invite = await findInviteByCodeHash(ctx, codeHash);
       if (!invite) fail("22023", "pairing invite is not available");
@@ -376,7 +372,7 @@ export const accept_pairing_invite = mutation({
           local_purge_scope: { relationship: "refresh", entitlement: "refresh" },
         });
       }
-      await recordAttempt(ctx, { code_hash_prefix: prefix, user_id: userId, success: true, matched_invite_id: invite.id });
+      await recordAttempt(ctx, userId, prefix, true);
       return { couple_id: coupleId };
     });
     return outcome.couple_id;
@@ -402,42 +398,5 @@ export const expire_stale_pairing_invites = internalMutation({
       await ctx.db.patch(invite._id, withUpdatedAt({ status: "expired" as const }));
     }
     return stale.length;
-  },
-});
-
-/**
- * Port of `internal.cleanup_attempt_logs`: deletes the oldest pairing and review
- * attempt rows past their retention. Rows are visited in creation order, which
- * matches `attempted_at` because every writer stamps it at insert time.
- */
-export const cleanup_attempt_logs = internalMutation({
-  args: {
-    p_now: v.optional(v.union(v.null(), v.string())),
-    p_pairing_retention_days: v.optional(v.number()),
-    p_review_retention_days: v.optional(v.number()),
-    p_limit: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    const now = optionalTimestampArg(args.p_now) ?? nowIso();
-    const limit = args.p_limit ?? 1000;
-    if (!Number.isInteger(limit) || limit < 1 || limit > 10000) {
-      return fail("23514", "attempt cleanup limit is out of range");
-    }
-    const pairingCutoff = addDaysToInstant(now, -(args.p_pairing_retention_days ?? 30));
-    const reviewCutoff = addDaysToInstant(now, -(args.p_review_retention_days ?? 30));
-
-    let pairingDeleted = 0;
-    for await (const attempt of ctx.db.query("pairing_invite_attempts").order("asc")) {
-      if (attempt.attempted_at >= pairingCutoff || pairingDeleted >= limit) break;
-      await ctx.db.delete(attempt._id);
-      pairingDeleted += 1;
-    }
-    let reviewDeleted = 0;
-    for await (const attempt of ctx.db.query("review_access_attempts").order("asc")) {
-      if (attempt.attempted_at >= reviewCutoff || reviewDeleted >= limit) break;
-      await ctx.db.delete(attempt._id);
-      reviewDeleted += 1;
-    }
-    return { pairing_attempts_deleted: pairingDeleted, review_attempts_deleted: reviewDeleted };
   },
 });

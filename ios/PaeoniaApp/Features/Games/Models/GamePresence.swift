@@ -1,19 +1,11 @@
 import Foundation
 
-/// Whether the partner has the game screen open. The server reads no clock, so
-/// the phone judges the `last_seen_at` timestamp.
+/// The heartbeat that tells the server this game screen is open. The server
+/// counts the screen as closed 60 seconds after the last one, and says so in the
+/// overview's `partnerPresent`.
 nonisolated enum GamePresence {
-    /// A heartbeat younger than this means the screen is open.
-    static let freshInterval: TimeInterval = 60
     /// How often the open screen refreshes its own heartbeat.
     static let heartbeatInterval: Duration = .seconds(30)
-
-    static func isFresh(_ lastSeenAt: Date?, now: Date) -> Bool {
-        guard let lastSeenAt else {
-            return false
-        }
-        return now.timeIntervalSince(lastSeenAt) < freshInterval
-    }
 }
 
 /// The "Tell [Name] you want to play" button.

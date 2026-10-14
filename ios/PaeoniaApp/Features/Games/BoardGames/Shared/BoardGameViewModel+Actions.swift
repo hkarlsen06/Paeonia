@@ -215,7 +215,7 @@ extension BoardGameViewModel {
     /// Whether the partner has this game open, and the invite button.
     func updatePresence() {
         let presence = overview?.presence(for: kind)
-        let isHere = GamePresence.isFresh(presence?.partnerLastSeenAt, now: now)
+        let isHere = presence?.partnerPresent == true
         partnerStatus = isHere ? .here : .away
         invite = GameInviteState.make(
             lastInviteAt: presence?.lastInviteAt,

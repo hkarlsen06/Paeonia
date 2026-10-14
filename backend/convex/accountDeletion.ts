@@ -1,12 +1,14 @@
+import { vOnCompleteArgs } from "@convex-dev/workpool";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type ActionCtx, type MutationCtx } from "./_generated/server";
 import { findCurrentCouple } from "./lib/access";
 import { authProviderFromIdentity } from "./lib/auth";
+import { backgroundWorkpool } from "./lib/backgroundWorkpool";
 import { getByUuid, withTouch, withUpdatedAt, type ReaderCtx } from "./lib/db";
 import { fail } from "./lib/errors";
-import { newUuid, optionalTimestampArg, optionalUuidArg, uuidArg } from "./lib/ids";
+import { newUuid, uuidArg } from "./lib/ids";
 import { queueOldMediaAssetIfOrphaned } from "./lib/mediaOrphans";
 import {
   deleteClerkUser,
@@ -14,16 +16,21 @@ import {
   revokeAppleAuthorization,
   stableAuthDeleteErrorCode,
 } from "./lib/accountDeletionProviders";
+import { removePresenceRooms } from "./lib/presence";
 import { findProfile, updateProfile } from "./lib/profiles";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { tombstoneReportTargets } from "./lib/reports";
-import { addMs, nowIso } from "./lib/time";
+import { nowIso } from "./lib/time";
 import { authProvider as authProviderValidator } from "./lib/validators";
 
 type AuthProvider = "apple" | "google" | "unknown";
 
-const MAX_AUTH_ATTEMPTS = 10;
-const RESERVATION_MS = 30_000;
+// `delete_account` deletes the Clerk user itself right after the Apple step,
+// which can take 30 seconds. The queued job starts later, so it rarely runs
+// alongside. A run alongside is harmless, because both steps are idempotent.
+const QUEUED_AUTH_DELETE_DELAY_MS = 60_000;
+// 10 tries over about 8.5 hours, then the job needs an operator.
+const AUTH_DELETE_RETRY = { maxAttempts: 10, initialBackoffMs: 60_000, base: 2 };
 const ACTIVE_DELETION_STATUSES = ["submitted", "verifying", "processing"] as const;
 
 type DeletionStartRow = {
@@ -65,10 +72,19 @@ function startRow(request: Doc<"privacy_requests">, job: Doc<"account_deletion_j
   };
 }
 
-function scheduleDrain(ctx: MutationCtx, delayMs: number) {
-  return ctx.scheduler.runAfter(Math.max(0, delayMs), internal.accountDeletion.request_account_deletion_drain, {
-    p_source: "convex.account_deletion_jobs",
-  });
+/** Queues the Clerk delete on `backgroundWorkpool`. `auth_delete_finished` records a job that ran out of tries. */
+function enqueueAuthDelete(ctx: MutationCtx, jobId: string, runAfter: number) {
+  return backgroundWorkpool.enqueueAction(
+    ctx,
+    internal.accountDeletion.delete_auth_user,
+    { p_job_id: jobId },
+    {
+      runAfter,
+      retry: AUTH_DELETE_RETRY,
+      onComplete: internal.accountDeletion.auth_delete_finished,
+      context: { job_id: jobId },
+    },
+  );
 }
 
 async function findActiveDeletionRequest(ctx: ReaderCtx, userId: string): Promise<Doc<"privacy_requests"> | null> {
@@ -285,9 +301,6 @@ export async function requestAccountDeletion(
     auth_provider: resolvedProvider,
     status: "ready_for_auth_delete",
     provider_revocation_status: resolvedProvider === "apple" ? "manual_required" : "not_required",
-    auth_delete_attempts: 0,
-    // A short reservation lets the delete_account action claim the job first.
-    next_attempt_at: addMs(now, RESERVATION_MS),
     created_at: now,
     updated_at: now,
   });
@@ -307,7 +320,7 @@ export async function requestAccountDeletion(
     });
   }
 
-  await scheduleDrain(ctx, RESERVATION_MS);
+  await enqueueAuthDelete(ctx, jobId, QUEUED_AUTH_DELETE_DELAY_MS);
   return [startRow(request, job)];
 }
 
@@ -326,117 +339,55 @@ export const begin_account_deletion = internalMutation({
   },
 });
 
-export const claim_account_deletion_jobs = internalMutation({
-  args: {
-    p_now: v.optional(v.union(v.null(), v.string())),
-    p_limit: v.optional(v.number()),
-    p_retry_after_seconds: v.optional(v.number()),
-    p_max_attempts: v.optional(v.number()),
-    p_job_id: v.optional(v.union(v.null(), v.string())),
-  },
-  handler: async (ctx, args) => {
-    const now = optionalTimestampArg(args.p_now) ?? nowIso();
-    const limit = args.p_limit ?? 10;
-    const retryAfterSeconds = args.p_retry_after_seconds ?? 300;
-    const maxAttempts = args.p_max_attempts ?? MAX_AUTH_ATTEMPTS;
-    const jobId = optionalUuidArg(args.p_job_id);
-    if (!(limit >= 1 && limit <= 100)) fail("23514", "invalid account deletion claim limit");
-    if (!(retryAfterSeconds >= 30 && retryAfterSeconds <= 86_400)) {
-      fail("23514", "invalid account deletion retry interval");
-    }
-    if (!(maxAttempts >= 1 && maxAttempts <= 100)) fail("23514", "invalid account deletion max attempts");
-
-    const staleBefore = addMs(now, -retryAfterSeconds * 1000);
-    let candidates: Doc<"account_deletion_jobs">[];
-    if (jobId) {
-      const job = await getByUuid(ctx, "account_deletion_jobs", jobId);
-      candidates = job ? [job] : [];
-    } else {
-      const ready = await ctx.db
-        .query("account_deletion_jobs")
-        .withIndex("by_status_next_attempt_at", (q) =>
-          q.eq("status", "ready_for_auth_delete").lte("next_attempt_at", now),
-        )
-        .collect();
-      const processing = await ctx.db
-        .query("account_deletion_jobs")
-        .withIndex("by_status_next_attempt_at", (q) => q.eq("status", "processing_auth_delete"))
-        .collect();
-      candidates = [...ready, ...processing];
-    }
-    const claimable = candidates
-      .filter((job) => {
-        if (job.auth_delete_attempts >= maxAttempts) return false;
-        if (job.status === "ready_for_auth_delete") {
-          return jobId !== undefined || (job.next_attempt_at !== undefined && job.next_attempt_at <= now);
-        }
-        return job.status === "processing_auth_delete" && job.claimed_at !== undefined && job.claimed_at <= staleBefore;
-      })
-      .sort((a, b) => {
-        const left = a.next_attempt_at ?? "";
-        const right = b.next_attempt_at ?? "";
-        return left === right ? (a.id < b.id ? -1 : 1) : left < right ? -1 : 1;
-      })
-      .slice(0, limit);
-
-    const claimed = [];
-    for (const job of claimable) {
-      await ctx.db.patch(
-        job._id,
-        withUpdatedAt({
-          status: "processing_auth_delete" as const,
-          claimed_at: now,
-          auth_delete_attempts: job.auth_delete_attempts + 1,
-          last_auth_delete_error_code: undefined,
-        }),
-      );
-      const user = await getByUuid(ctx, "users", job.user_id);
-      claimed.push({
-        job_id: job.id,
-        request_id: job.request_id,
-        user_id: job.user_id,
-        auth_provider: job.auth_provider,
-        provider_revocation_status: job.provider_revocation_status,
-        auth_delete_attempts: job.auth_delete_attempts + 1,
-        // Not in the SQL result. The drain needs it to delete the Clerk user.
-        clerk_user_id: user?.clerk_user_id ?? null,
-      });
-    }
-    return claimed;
+/** The Clerk user a job still has to delete. Null once the job completed. */
+export const get_auth_delete_target = internalQuery({
+  args: { p_job_id: v.string() },
+  handler: async (ctx, args): Promise<{ clerk_user_id: string | null } | null> => {
+    const job = await getByUuid(ctx, "account_deletion_jobs", uuidArg(args.p_job_id));
+    if (!job || job.status === "completed") return null;
+    const user = await getByUuid(ctx, "users", job.user_id);
+    return { clerk_user_id: user?.clerk_user_id ?? null };
   },
 });
 
+/** Records one failed Clerk delete. The job keeps its status while tries remain. */
 export const mark_account_deletion_auth_failed = internalMutation({
-  args: { p_job_id: v.string(), p_error_code: v.string(), p_max_attempts: v.optional(v.number()) },
+  args: { p_job_id: v.string(), p_error_code: v.string() },
   handler: async (ctx, args): Promise<boolean> => {
-    const jobId = uuidArg(args.p_job_id);
-    const maxAttempts = args.p_max_attempts ?? MAX_AUTH_ATTEMPTS;
     if (Array.from(args.p_error_code).length < 1 || Array.from(args.p_error_code).length > 120) {
       fail("23514", "invalid Auth deletion error code");
     }
-    const job = await getByUuid(ctx, "account_deletion_jobs", jobId);
-    if (!job || job.status !== "processing_auth_delete") {
-      return false;
-    }
-    const exhausted = job.auth_delete_attempts >= maxAttempts;
-    const backoffMs = Math.min(6 * 3_600_000, 30_000 * 2 ** Math.min(job.auth_delete_attempts, 10));
-    const nextAttemptAt = exhausted ? undefined : addMs(nowIso(), backoffMs);
-    await ctx.db.patch(
-      job._id,
-      withUpdatedAt({
-        status: exhausted ? ("attention_required" as const) : ("ready_for_auth_delete" as const),
-        next_attempt_at: nextAttemptAt,
-        claimed_at: undefined,
-        last_auth_delete_error_code: args.p_error_code,
-      }),
-    );
+    const job = await getByUuid(ctx, "account_deletion_jobs", uuidArg(args.p_job_id));
+    if (!job || job.status === "completed") return false;
+    await ctx.db.patch(job._id, withUpdatedAt({ last_auth_delete_error_code: args.p_error_code }));
     await addPrivacyRequestEvent(ctx, job.request_id, null, "auth_delete_failed", {
       error_code: args.p_error_code,
-      attempt: job.auth_delete_attempts,
-      requires_attention: exhausted,
+      requires_attention: false,
     });
-    if (nextAttemptAt) await scheduleDrain(ctx, backoffMs);
     return true;
+  },
+});
+
+/**
+ * The pool calls this when a Clerk delete job ends. A job that failed every try, or whose pool
+ * job was canceled, becomes `attention_required`, so an operator sees it and can retry it.
+ */
+export const auth_delete_finished = internalMutation({
+  args: vOnCompleteArgs(v.object({ job_id: v.string() })),
+  handler: async (ctx, { context, result }) => {
+    if (result.kind === "success") return;
+    const job = await getByUuid(ctx, "account_deletion_jobs", context.job_id);
+    if (!job || job.status !== "ready_for_auth_delete") return;
+    const errorCode =
+      result.kind === "canceled" ? "auth_delete_canceled" : (job.last_auth_delete_error_code ?? "auth_delete_unexpected");
+    await ctx.db.patch(
+      job._id,
+      withUpdatedAt({ status: "attention_required" as const, last_auth_delete_error_code: errorCode }),
+    );
+    await addPrivacyRequestEvent(ctx, job.request_id, null, "auth_delete_failed", {
+      error_code: errorCode,
+      requires_attention: true,
+    });
   },
 });
 
@@ -464,13 +415,14 @@ async function removeDeletedUserRows(ctx: MutationCtx, userId: string): Promise<
       .collect()),
     ...(await ctx.db.query("review_demo_partners").withIndex("by_user_id", (q) => q.eq("user_id", userId)).collect()),
     ...(await ctx.db.query("thread_read_states").withIndex("by_user_id", (q) => q.eq("user_id", userId)).collect()),
-    ...(await ctx.db.query("daily_chat_typing").withIndex("by_user_id", (q) => q.eq("user_id", userId)).collect()),
     ...(await ctx.db
       .query("daily_answer_seen_states")
       .withIndex("by_user_id", (q) => q.eq("user_id", userId))
       .collect()),
   ];
   for (const row of rows) await ctx.db.delete(row._id);
+  // Ending the relationship already removed the couple's presence rooms. This clears any left.
+  await removePresenceRooms(ctx, [userId], "");
   const user = await getByUuid(ctx, "users", userId);
   if (user) {
     await ctx.db.patch(user._id, { email: undefined, claim_display_name: undefined });
@@ -489,8 +441,6 @@ export const mark_account_deletion_completed = internalMutation({
       job._id,
       withUpdatedAt({
         status: "completed" as const,
-        next_attempt_at: undefined,
-        claimed_at: undefined,
         last_auth_delete_error_code: undefined,
         completed_at: now,
       }),
@@ -508,7 +458,6 @@ export const mark_account_deletion_completed = internalMutation({
       );
     }
     await addPrivacyRequestEvent(ctx, job.request_id, null, "auth_user_deleted", {
-      attempts: job.auth_delete_attempts,
       provider_revocation_status: job.provider_revocation_status,
     });
     await removeDeletedUserRows(ctx, job.user_id);
@@ -537,14 +486,6 @@ export const mark_account_deletion_provider_result = internalMutation({
         provider_revocation_status: status,
         provider_revocation_attempted_at: now,
         provider_revocation_error_code: errorCode,
-        status:
-          job.status === "completed"
-            ? ("completed" as const)
-            : job.status === "processing_auth_delete"
-              ? ("processing_auth_delete" as const)
-              : ("ready_for_auth_delete" as const),
-        next_attempt_at: job.status === "completed" ? undefined : now,
-        claimed_at: job.status === "processing_auth_delete" ? job.claimed_at : undefined,
       }),
     );
     const eventKind =
@@ -557,107 +498,55 @@ export const mark_account_deletion_provider_result = internalMutation({
       provider: job.auth_provider,
       ...(errorCode ? { error_code: errorCode } : {}),
     });
-    if (job.status !== "completed") await scheduleDrain(ctx, 0);
     return true;
   },
 });
 
-/** Operator retry for a job that ran out of attempts. */
+/** Operator retry for a job that ran out of tries. Queues a fresh set of tries. */
 export const retry_account_deletion_job = internalMutation({
   args: { p_job_id: v.string() },
   handler: async (ctx, args): Promise<boolean> => {
     const job = await getByUuid(ctx, "account_deletion_jobs", uuidArg(args.p_job_id));
     if (!job || job.status !== "attention_required") return false;
-    // Reset the claim budget so the retry is claimable. Failure events keep the history.
+    // Failure events keep the history.
     await ctx.db.patch(
       job._id,
-      withUpdatedAt({
-        status: "ready_for_auth_delete" as const,
-        auth_delete_attempts: 0,
-        next_attempt_at: nowIso(),
-        claimed_at: undefined,
-        last_auth_delete_error_code: undefined,
-      }),
+      withUpdatedAt({ status: "ready_for_auth_delete" as const, last_auth_delete_error_code: undefined }),
     );
-    await scheduleDrain(ctx, 0);
+    await enqueueAuthDelete(ctx, job.id, 0);
     return true;
   },
 });
 
-export const has_due_account_deletion_work = internalQuery({
-  args: { p_now: v.optional(v.union(v.null(), v.string())) },
-  handler: async (ctx, args): Promise<boolean> => {
-    const now = optionalTimestampArg(args.p_now) ?? nowIso();
-    const staleBefore = addMs(now, -5 * 60_000);
-    const ready = await ctx.db
-      .query("account_deletion_jobs")
-      .withIndex("by_status_next_attempt_at", (q) => q.eq("status", "ready_for_auth_delete").lte("next_attempt_at", now))
-      .collect();
-    if (ready.some((job) => job.next_attempt_at !== undefined)) return true;
-    const processing = await ctx.db
-      .query("account_deletion_jobs")
-      .withIndex("by_status_next_attempt_at", (q) => q.eq("status", "processing_auth_delete"))
-      .collect();
-    return processing.some((job) => job.claimed_at !== undefined && job.claimed_at <= staleBefore);
-  },
-});
-
-export type ClaimedDeletionJob = {
-  job_id: string;
-  user_id: string;
-  clerk_user_id: string | null;
-};
-
-/** Deletes the Clerk user for a claimed job, then records the result. */
-export async function deleteAuthUser(
-  ctx: ActionCtx,
-  job: ClaimedDeletionJob,
-): Promise<{ status: "completed" | "queued"; errorCode?: string }> {
-  try {
-    if (!job.clerk_user_id) {
-      // No Clerk identity was ever linked to this user, so there is nothing to delete.
-    } else {
-      await deleteClerkUser(job.clerk_user_id);
+/**
+ * Deletes the Clerk user of a job that has not completed, then marks it
+ * completed. Records a failure and throws it, so the pool can try again.
+ */
+async function deleteAuthUser(ctx: ActionCtx, jobId: string): Promise<void> {
+  const target = await ctx.runQuery(internal.accountDeletion.get_auth_delete_target, { p_job_id: jobId });
+  if (!target) return;
+  // A user without a Clerk identity has nothing to delete there.
+  if (target.clerk_user_id) {
+    try {
+      await deleteClerkUser(target.clerk_user_id);
+    } catch (error) {
+      const errorCode = stableAuthDeleteErrorCode(error);
+      await ctx.runMutation(internal.accountDeletion.mark_account_deletion_auth_failed, {
+        p_job_id: jobId,
+        p_error_code: errorCode,
+      });
+      throw new Error(errorCode);
     }
-    await ctx.runMutation(internal.accountDeletion.mark_account_deletion_completed, { p_job_id: job.job_id });
-    return { status: "completed" };
-  } catch (error) {
-    const errorCode = stableAuthDeleteErrorCode(error);
-    await ctx.runMutation(internal.accountDeletion.mark_account_deletion_auth_failed, {
-      p_job_id: job.job_id,
-      p_error_code: errorCode,
-      p_max_attempts: MAX_AUTH_ATTEMPTS,
-    });
-    return { status: "queued", errorCode };
   }
+  await ctx.runMutation(internal.accountDeletion.mark_account_deletion_completed, { p_job_id: jobId });
 }
 
-async function drainAccountDeletions(ctx: ActionCtx): Promise<{ claimed: number; completed: number; queued: number }> {
-  const jobs: ClaimedDeletionJob[] = await ctx.runMutation(internal.accountDeletion.claim_account_deletion_jobs, {
-    p_now: nowIso(),
-    p_limit: 25,
-    p_retry_after_seconds: 300,
-    p_max_attempts: MAX_AUTH_ATTEMPTS,
-  });
-  let completed = 0;
-  let queued = 0;
-  for (const job of jobs) {
-    const result = await deleteAuthUser(ctx, job);
-    if (result.status === "completed") completed += 1;
-    else queued += 1;
-  }
-  return { claimed: jobs.length, completed, queued };
-}
-
-/** Port of `request_account_deletion_drain`: runs the drain when work is due. Called by the cron and after job writes. */
-export const request_account_deletion_drain = internalAction({
-  args: { p_source: v.optional(v.string()) },
-  handler: async (ctx): Promise<boolean> => {
-    if (!(await ctx.runQuery(internal.accountDeletion.has_due_account_deletion_work, {}))) {
-      return false;
-    }
-    await drainAccountDeletions(ctx);
-    return true;
+/** The `backgroundWorkpool` job queued by `requestAccountDeletion` and `retry_account_deletion_job`. */
+export const delete_auth_user = internalAction({
+  args: { p_job_id: v.string() },
+  handler: async (ctx, args): Promise<null> => {
+    await deleteAuthUser(ctx, args.p_job_id);
+    return null;
   },
 });
 
@@ -705,21 +594,6 @@ export async function runDeleteAccount(
     };
   }
 
-  // Reserve the job before talking to Apple so the background drain cannot delete the identity first.
-  let claimed: ClaimedDeletionJob | null = null;
-  try {
-    const rows: ClaimedDeletionJob[] = await ctx.runMutation(internal.accountDeletion.claim_account_deletion_jobs, {
-      p_now: nowIso(),
-      p_limit: 1,
-      p_retry_after_seconds: 300,
-      p_max_attempts: MAX_AUTH_ATTEMPTS,
-      p_job_id: start.deletion_job_id,
-    });
-    claimed = rows[0] ?? null;
-  } catch {
-    claimed = null;
-  }
-
   let revocationStatus = start.provider_revocation_status;
   let revocationErrorCode: string | null = null;
   if (start.auth_provider === "apple") {
@@ -745,21 +619,11 @@ export async function runDeleteAccount(
 
   // Manual Apple revocation never keeps the account alive.
   let authDeleteStatus: "completed" | "queued" = "queued";
-  if (claimed) {
-    authDeleteStatus = (await deleteAuthUser(ctx, claimed)).status;
-  } else {
-    try {
-      const rows: ClaimedDeletionJob[] = await ctx.runMutation(internal.accountDeletion.claim_account_deletion_jobs, {
-        p_now: nowIso(),
-        p_limit: 1,
-        p_retry_after_seconds: 300,
-        p_max_attempts: MAX_AUTH_ATTEMPTS,
-        p_job_id: start.deletion_job_id,
-      });
-      if (rows[0]) authDeleteStatus = (await deleteAuthUser(ctx, rows[0])).status;
-    } catch {
-      authDeleteStatus = "queued";
-    }
+  try {
+    await deleteAuthUser(ctx, start.deletion_job_id);
+    authDeleteStatus = "completed";
+  } catch {
+    // The job that requestAccountDeletion queued keeps trying.
   }
 
   return {

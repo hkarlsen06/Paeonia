@@ -32,7 +32,7 @@ extension DrawAndGuessViewModel {
     }
 
     func updatePresenceState() {
-        let isFresh = GamePresence.isFresh(state?.partnerLastSeenAt, now: now)
+        let isHeartbeatHere = state?.partnerPresent == true
         switch live?.partnerActivity {
         case .drawing:
             partnerPresence = .drawing
@@ -45,7 +45,7 @@ extension DrawAndGuessViewModel {
         case .present:
             partnerPresence = .here
         case .away, nil:
-            partnerPresence = isFresh ? .here : .away
+            partnerPresence = isHeartbeatHere ? .here : .away
         }
         invite = GameInviteState.make(
             lastInviteAt: state?.lastInviteAt,

@@ -135,8 +135,8 @@
         currentRound: round,
         recentRounds: recentRounds,
         choices: choices,
-        myLastSeenAt: nil,
-        partnerLastSeenAt: partnerIsHere ? now.addingTimeInterval(-10) : nil,
+        myPresent: false,
+        partnerPresent: partnerIsHere,
         lastInviteAt: nil
       )
     }

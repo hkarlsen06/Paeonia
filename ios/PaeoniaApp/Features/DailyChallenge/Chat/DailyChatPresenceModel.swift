@@ -5,19 +5,16 @@ import Observation
 ///
 /// While the person types, the server hears "typing" at most every 2.5 seconds, and
 /// "stopped" after 4 seconds without a keystroke, on send, on an emptied field, or on
-/// leaving. The partner's dots hide 5 seconds after their last heartbeat, 2 seconds
-/// after they stop, and right away when their message arrives.
+/// leaving. The partner's dots show while the server says they type. The server ends
+/// that 4 seconds after their last heartbeat, such as when their app was killed. The
+/// dots hide 2 seconds after typing ends, and right away when their message arrives.
 @MainActor
 @Observable
 final class DailyChatPresenceModel {
     private enum Timing {
         static let typingRefreshInterval: TimeInterval = 2.5
         static let typingIdleStop: Duration = .seconds(4)
-        static let remoteTypingTimeout: Duration = .seconds(5)
         static let remoteStopGrace: Duration = .seconds(2)
-        /// A heartbeat older than this when it arrives is left over, not live. It allows
-        /// for the two phones' clocks being a little apart.
-        static let remoteFreshness: TimeInterval = 15
         static let readDebounce: Duration = .milliseconds(200)
     }
 
@@ -31,7 +28,7 @@ final class DailyChatPresenceModel {
     private var didSendTypingStart = false
     private var lastTypingStartSentAt: Date?
     private var idleStopTask: Task<Void, Never>?
-    private var lastRemoteTypingAt: Date?
+    private var lastRemoteTyping = false
     private var remoteTypingTask: Task<Void, Never>?
     private var lastMarkedMessageID: UUID?
     private var readTask: Task<Void, Never>?
@@ -89,22 +86,29 @@ final class DailyChatPresenceModel {
 
     func apply(_ presence: DailyChatPresence) {
         partnerLastReadMessageID = presence.partnerLastReadMessageID
-        guard presence.partnerTypingAt != lastRemoteTypingAt else { return }
-        lastRemoteTypingAt = presence.partnerTypingAt
+        guard presence.partnerIsTyping != lastRemoteTyping else { return }
+        lastRemoteTyping = presence.partnerIsTyping
         remoteTypingTask?.cancel()
 
-        if let typingAt = presence.partnerTypingAt, now().timeIntervalSince(typingAt) < Timing.remoteFreshness {
+        if presence.partnerIsTyping {
             partnerIsTyping = true
-            remoteTypingTask = hideTyping(after: Timing.remoteTypingTimeout)
         } else if partnerIsTyping {
             remoteTypingTask = hideTyping(after: Timing.remoteStopGrace)
         }
     }
 
-    /// The partner's message replaces their dots at once, with no grace.
+    /// The partner's message replaces their dots at once, with no grace. The server
+    /// only reports changes, so if it still says they type after the grace, they are
+    /// writing the next message and the dots come back.
     func partnerMessageArrived() {
         remoteTypingTask?.cancel()
         partnerIsTyping = false
+        guard lastRemoteTyping else { return }
+        remoteTypingTask = Task { [weak self] in
+            try? await Task.sleep(for: Timing.remoteStopGrace)
+            guard !Task.isCancelled, let self, lastRemoteTyping else { return }
+            partnerIsTyping = true
+        }
     }
 
     private func hideTyping(after delay: Duration) -> Task<Void, Never> {
