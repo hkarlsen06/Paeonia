@@ -171,6 +171,10 @@
         ownerUserID: DeveloperGamesFixture.me,
         hasSeenSettings: scenario != .gamesPartnerPicked
       )
+      let storyChainCache = InMemoryStoryChainCache(
+        state: DeveloperStoryChainScenarios.state(for: scenario),
+        ownerUserID: DeveloperGamesFixture.me
+      )
       // Each built game sets its own dependency fields on this value, so the hub
       // scenarios show its card next to Draw & Guess.
       return GamesDependencies(
@@ -181,7 +185,12 @@
         drawingStore: drawingStore,
         drawingTransfer: DeveloperGameDrawingTransfer(stallsDownloads: isLoading),
         makeLive: { coupleID in makeLive(for: scenario, coupleID: coupleID) },
-        now: { DeveloperGamesFixture.now }
+        now: { DeveloperGamesFixture.now },
+        storyChainGateway: DeveloperStoryChainGateway(scenario: scenario),
+        storyChainCache: storyChainCache,
+        makeStoryChainLive: { coupleID in
+          DeveloperStoryChainScenarios.makeLive(for: scenario, coupleID: coupleID, cache: storyChainCache)
+        }
       )
     }
 

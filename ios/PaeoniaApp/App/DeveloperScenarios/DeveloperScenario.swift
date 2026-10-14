@@ -86,6 +86,19 @@
     case drawRevealLoading = "draw-reveal-loading"
     case drawHistory = "draw-history"
     case drawHistoryEmpty = "draw-history-empty"
+    case storyChainChoose = "story-chain-choose"
+    case storyChainChooseOffline = "story-chain-choose-offline"
+    case storyChainWriting = "story-chain-writing"
+    case storyChainWritingLast = "story-chain-writing-last"
+    case storyChainWaitingLive = "story-chain-waiting-live"
+    case storyChainWaitingAway = "story-chain-waiting-away"
+    case storyChainSavedOffline = "story-chain-saved-offline"
+    case storyChainNaming = "story-chain-naming"
+    case storyChainWaitingName = "story-chain-waiting-name"
+    case storyChainFinished = "story-chain-finished"
+    case storyChainWaitingOpening = "story-chain-waiting-opening"
+    case storyChainHistory = "story-chain-history"
+    case storyChainHistoryEmpty = "story-chain-history-empty"
 
     case notificationPrimer = "notification-primer"
     case settings
@@ -191,6 +204,19 @@
       case .drawRevealLoading: "Draw & Guess · reveal, drawing still loading"
       case .drawHistory: "Draw & Guess · our drawings"
       case .drawHistoryEmpty: "Draw & Guess · our drawings, none yet"
+      case .storyChainChoose: "Story Chain · choose an opening"
+      case .storyChainChooseOffline: "Story Chain · choose an opening, offline"
+      case .storyChainWriting: "Story Chain · your turn to write"
+      case .storyChainWritingLast: "Story Chain · line 20, the last line"
+      case .storyChainWaitingLive: "Story Chain · Robin is typing live"
+      case .storyChainWaitingAway: "Story Chain · waiting for Robin, who is away"
+      case .storyChainSavedOffline: "Story Chain · line sent offline"
+      case .storyChainNaming: "Story Chain · name the story"
+      case .storyChainWaitingName: "Story Chain · Robin is naming the story"
+      case .storyChainFinished: "Story Chain · the finished story"
+      case .storyChainWaitingOpening: "Story Chain · Robin picks an opening"
+      case .storyChainHistory: "Story Chain · our stories"
+      case .storyChainHistoryEmpty: "Story Chain · our stories, none yet"
       case .notificationPrimer: "Notifications · primer"
       case .settings: "Settings"
       case .settingsNotificationsDenied: "Settings · notifications denied"
@@ -348,6 +374,32 @@
         "Records and a grid of finished drawings, some starred, one missed. Open one to replay it"
       case .drawHistoryEmpty:
         "Our drawings before the first round has finished"
+      case .storyChainChoose:
+        "Three opening lines and the choice to write your own first line"
+      case .storyChainChooseOffline:
+        "The offline message when no opening lines are on the phone. Your own first line still works"
+      case .storyChainWriting:
+        "Robin dared you to use LADDER and is reading along. The last-line switch is available"
+      case .storyChainWritingLast:
+        "Line 20 is always the last, so the switch is locked on. Robin dared you to use TUESDAY"
+      case .storyChainWaitingLive:
+        "Robin types line 8 letter by letter with two corrections, sends it, and then your turn opens"
+      case .storyChainWaitingAway:
+        "Robin has the turn and is not in the game. The page shows the hint and the invite button"
+      case .storyChainSavedOffline:
+        "Your line is queued after a failed try, so the page says it is saved on this phone"
+      case .storyChainNaming:
+        "Robin wrote the last line and you give the story a title"
+      case .storyChainWaitingName:
+        "You wrote the last line and Robin is on the naming screen"
+      case .storyChainFinished:
+        "Robin named your story and you have not seen it yet. The reveal plays, then Continue"
+      case .storyChainWaitingOpening:
+        "The last story just ended and Robin is picking the next opening"
+      case .storyChainHistory:
+        "Three finished stories, two starred. Open one to read it"
+      case .storyChainHistoryEmpty:
+        "Our stories before the first story has finished"
       case .notificationPrimer:
         "Pre-permission notification explanation"
       case .settings:
@@ -399,7 +451,11 @@
         .gamesHubPartnerHere, .drawChooseWord, .drawWaitingForWord, .drawDrawing, .drawSavedOffline,
         .drawWaitingForGuess, .drawWaitingForDrawing, .drawWatchingLive, .drawGuessingReplay,
         .drawGuessingLongWord, .drawRevealSolved, .drawRevealBonuses, .drawRevealMissed, .drawRevealAsDrawer,
-        .drawRevealPartnerDrawing, .drawRevealLoading, .drawHistory, .drawHistoryEmpty:
+        .drawRevealPartnerDrawing, .drawRevealLoading, .drawHistory, .drawHistoryEmpty,
+        .storyChainChoose, .storyChainChooseOffline, .storyChainWriting, .storyChainWritingLast,
+        .storyChainWaitingLive, .storyChainWaitingAway, .storyChainSavedOffline, .storyChainNaming,
+        .storyChainWaitingName, .storyChainFinished, .storyChainWaitingOpening, .storyChainHistory,
+        .storyChainHistoryEmpty:
         .games
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         .widget

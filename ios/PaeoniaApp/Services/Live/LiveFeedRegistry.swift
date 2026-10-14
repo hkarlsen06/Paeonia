@@ -24,6 +24,7 @@ nonisolated enum LiveFeedRegistry {
             DailyQuestionChatLiveFeed(cache: FileDailyQuestionChatCache.shared),
             GamesOverviewLiveFeed(cache: FileGamesCache.shared),
             DrawAndGuessLiveFeed(cache: FileGamesCache.shared),
+            StoryChainLiveFeed(cache: FileStoryChainCache.shared),
         ]
     }
 }

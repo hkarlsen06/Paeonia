@@ -10367,6 +10367,1458 @@
         }
       }
     },
+    "storyChain.choose.offline.message" : {
+      "comment" : "Shown instead of the opening lines while offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to get your opening lines."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å få åpningslinjene."
+          }
+        }
+      }
+    },
+    "storyChain.choose.own" : {
+      "comment" : "Choice that starts a story without one of Paeonia's opening lines.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start with your own line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start med din egen linje"
+          }
+        }
+      }
+    },
+    "storyChain.choose.own.subtitle" : {
+      "comment" : "Line under 'Start with your own line'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write the first sentence yourself."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv den første setningen selv."
+          }
+        }
+      }
+    },
+    "storyChain.choose.start" : {
+      "comment" : "Button that starts the story with the picked opening.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start writing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begynn å skrive"
+          }
+        }
+      }
+    },
+    "storyChain.choose.subtitle" : {
+      "comment" : "Line under the title. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a first line. Then you and %@ take turns adding one or two sentences."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg en første linje. Så bytter du og %@ på å skrive én eller to setninger."
+          }
+        }
+      }
+    },
+    "storyChain.choose.title" : {
+      "comment" : "Title of the screen where the player picks how a new story starts.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start a new story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start en ny historie"
+          }
+        }
+      }
+    },
+    "storyChain.dare.own" : {
+      "comment" : "Choice in the word sheet to type a word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your own word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ditt eget ord"
+          }
+        }
+      }
+    },
+    "storyChain.dare.own.action" : {
+      "comment" : "Button that picks the typed word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk dette ordet"
+          }
+        }
+      }
+    },
+    "storyChain.dare.own.error" : {
+      "comment" : "Shown under the field when the typed word is not one word of 2 to 20 letters.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use one word of 2 to 20 letters."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk ett ord på 2 til 20 bokstaver."
+          }
+        }
+      }
+    },
+    "storyChain.dare.own.placeholder" : {
+      "comment" : "Placeholder of the field for an own word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ett ord"
+          }
+        }
+      }
+    },
+    "storyChain.dare.subtitle" : {
+      "comment" : "Line under the title of the word sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their next line has to use it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste linje må bruke det."
+          }
+        }
+      }
+    },
+    "storyChain.dare.title" : {
+      "comment" : "Title of the sheet where the writer picks a word for the partner. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give %@ a word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi %@ et ord"
+          }
+        }
+      }
+    },
+    "storyChain.finished.byline" : {
+      "comment" : "Under the title of a finished story. %1$@ is the partner's name, %2$@ the date it finished.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "by you and %1$@ · %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "av deg og %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "storyChain.finished.continue" : {
+      "comment" : "Button after reading a story the partner named.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      }
+    },
+    "storyChain.finished.dares" : {
+      "comment" : "Under a finished story. %lld is the number of given words that were used.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dare word"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dare words"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld utfordringsord"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld utfordringsord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "storyChain.finished.lines" : {
+      "comment" : "Under a finished story. %lld is the number of lines.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld line"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld lines"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld linje"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld linjer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "storyChain.finished.startNew" : {
+      "comment" : "Button after naming a story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start a new story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start en ny historie"
+          }
+        }
+      }
+    },
+    "storyChain.history.empty.message" : {
+      "comment" : "Our stories, before any story is finished.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your stories will show up here when you finish your first one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historiene deres dukker opp her når dere er ferdige med den første."
+          }
+        }
+      }
+    },
+    "storyChain.history.empty.title" : {
+      "comment" : "Our stories, before any story is finished.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No stories yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen historier ennå"
+          }
+        }
+      }
+    },
+    "storyChain.history.emptyStarred.message" : {
+      "comment" : "Starred filter with no stars.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the star on a story you like, and it shows up here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk på stjernen på en historie du liker, så dukker den opp her."
+          }
+        }
+      }
+    },
+    "storyChain.history.emptyStarred.title" : {
+      "comment" : "Starred filter with no stars.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No starred stories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen stjernemerkede historier"
+          }
+        }
+      }
+    },
+    "storyChain.history.filter.all" : {
+      "comment" : "Filter: every finished story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle"
+          }
+        }
+      }
+    },
+    "storyChain.history.filter.label" : {
+      "comment" : "Accessibility label of the filter.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis"
+          }
+        }
+      }
+    },
+    "storyChain.history.filter.starred" : {
+      "comment" : "Filter: only starred stories.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starred"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stjernemerket"
+          }
+        }
+      }
+    },
+    "storyChain.history.loadMore.failed" : {
+      "comment" : "Shown when older stories could not load.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load older stories."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke laste eldre historier."
+          }
+        }
+      }
+    },
+    "storyChain.history.offline.message" : {
+      "comment" : "Our stories while offline with nothing saved on the phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to see your stories."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å se historiene deres."
+          }
+        }
+      }
+    },
+    "storyChain.history.row.lines" : {
+      "comment" : "In a row of Our stories. %lld is the number of lines.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld line"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld lines"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld linje"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld linjer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "storyChain.history.title" : {
+      "comment" : "Title of the list of finished stories, and its button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Our stories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historiene våre"
+          }
+        }
+      }
+    },
+    "storyChain.hub.action.open" : {
+      "comment" : "Story Chain card button when it is not your turn.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne"
+          }
+        }
+      }
+    },
+    "storyChain.hub.action.write" : {
+      "comment" : "Story Chain card button when it is your turn.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv"
+          }
+        }
+      }
+    },
+    "storyChain.hub.finishedCount" : {
+      "comment" : "Story Chain card. %lld is the number of finished stories.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld story finished"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld stories finished"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld historie ferdig"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld historier ferdige"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "storyChain.hub.status.name" : {
+      "comment" : "Story Chain card status: your partner wrote the last line, and you give the story a title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give your story a title"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi historien en tittel"
+          }
+        }
+      }
+    },
+    "storyChain.hub.status.partnerWriting" : {
+      "comment" : "Story Chain card status. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is writing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ skriver"
+          }
+        }
+      }
+    },
+    "storyChain.hub.status.read" : {
+      "comment" : "Story Chain card status: your partner named the story and you haven't read the finished story yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read how your story ended"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les hvordan historien endte"
+          }
+        }
+      }
+    },
+    "storyChain.hub.status.start" : {
+      "comment" : "Story Chain card status: it is your turn to start the next story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start a new story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start en ny historie"
+          }
+        }
+      }
+    },
+    "storyChain.hub.status.write" : {
+      "comment" : "Story Chain card status: it is your turn to add a line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn to write"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur til å skrive"
+          }
+        }
+      }
+    },
+    "storyChain.hub.subtitle" : {
+      "comment" : "Story Chain card on the Games tab: what the game is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write a story together, one line at a time."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv en historie sammen, én linje om gangen."
+          }
+        }
+      }
+    },
+    "storyChain.name" : {
+      "comment" : "Name of the Story Chain game, where partners write a story together one line at a time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story Chain"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skrivestafett"
+          }
+        }
+      }
+    },
+    "storyChain.name.action" : {
+      "comment" : "Button that names the story and finishes it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name the story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi historien tittel"
+          }
+        }
+      }
+    },
+    "storyChain.name.placeholder" : {
+      "comment" : "Placeholder of the title field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give it a title"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi den en tittel"
+          }
+        }
+      }
+    },
+    "storyChain.name.prompt" : {
+      "comment" : "Above the title field. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wrote the last line. Give your story a title."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ skrev den siste linjen. Gi historien en tittel."
+          }
+        }
+      }
+    },
+    "storyChain.needsSetup" : {
+      "comment" : "Shown in Story Chain when the couple has not set up games yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose how you play in the Games tab first."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg hvordan dere spiller i Spill-fanen først."
+          }
+        }
+      }
+    },
+    "storyChain.offline.title" : {
+      "comment" : "Title of the empty state when Story Chain needs the internet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett"
+          }
+        }
+      }
+    },
+    "storyChain.page.opening" : {
+      "comment" : "VoiceOver: the label of Paeonia's opening line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpning"
+          }
+        }
+      }
+    },
+    "storyChain.page.usedWord" : {
+      "comment" : "In the popover about a line: the line used this given word. %@ is the word in capitals.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Used %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brukte %@"
+          }
+        }
+      }
+    },
+    "storyChain.page.you" : {
+      "comment" : "VoiceOver: who wrote a line, when it was this person.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du"
+          }
+        }
+      }
+    },
+    "storyChain.star" : {
+      "comment" : "Star button on a finished story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Star"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stjernemerk"
+          }
+        }
+      }
+    },
+    "storyChain.star.privacy" : {
+      "comment" : "Banner the first time a person stars a story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only you can see your stars."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bare du ser stjernene dine."
+          }
+        }
+      }
+    },
+    "storyChain.starred" : {
+      "comment" : "Star button on a starred story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starred"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stjernemerket"
+          }
+        }
+      }
+    },
+    "storyChain.story.number" : {
+      "comment" : "Eyebrow over a story. %lld is the story's number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Story %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Story %lld"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Historie %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Historie %lld"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "storyChain.wait.generic" : {
+      "comment" : "While it is the partner's turn and they are away. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@"
+          }
+        }
+      }
+    },
+    "storyChain.wait.hint" : {
+      "comment" : "Under 'Waiting for [Name]'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll tell you when it's your turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi sier fra når det er din tur."
+          }
+        }
+      }
+    },
+    "storyChain.wait.naming" : {
+      "comment" : "While the partner gives the story a title. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is naming your story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gir historien en tittel"
+          }
+        }
+      }
+    },
+    "storyChain.wait.opening" : {
+      "comment" : "While the partner picks how the next story starts. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is picking an opening"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ velger en åpning"
+          }
+        }
+      }
+    },
+    "storyChain.wait.startNext" : {
+      "comment" : "While it is the partner's turn to start the next story. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@ to start a new story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på at %@ skal starte en ny historie"
+          }
+        }
+      }
+    },
+    "storyChain.wait.writing" : {
+      "comment" : "While the partner types a line live. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is writing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ skriver"
+          }
+        }
+      }
+    },
+    "storyChain.wait.writingLast" : {
+      "comment" : "While the partner types the last line live. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is writing the last line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ skriver den siste linjen"
+          }
+        }
+      }
+    },
+    "storyChain.waitingToSync.failedMessage" : {
+      "comment" : "Under 'We couldn't send that yet'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll keep trying. You can also try again now."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi prøver på nytt. Du kan også prøve igjen nå."
+          }
+        }
+      }
+    },
+    "storyChain.waitingToSync.failedTitle" : {
+      "comment" : "A move saved on this phone could not be sent although the phone is online.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't send that yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke sendt det ennå"
+          }
+        }
+      }
+    },
+    "storyChain.waitingToSync.message" : {
+      "comment" : "Under the line that says the move is saved on this phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Then the story can go on."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Så kan historien fortsette."
+          }
+        }
+      }
+    },
+    "storyChain.write.count.a11y" : {
+      "comment" : "Accessibility label of the character counter. %1$lld is the count, %2$lld the limit.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld characters"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld av %2$lld tegn"
+          }
+        }
+      }
+    },
+    "storyChain.write.dareChip" : {
+      "comment" : "Chip after choosing a word for the partner. %1$@ is the partner's name, %2$@ the word in capitals.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ must use %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ må bruke %2$@"
+          }
+        }
+      }
+    },
+    "storyChain.write.dareRemove.a11y" : {
+      "comment" : "Accessibility label of the button that removes the chosen word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove the word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern ordet"
+          }
+        }
+      }
+    },
+    "storyChain.write.giveWord" : {
+      "comment" : "Button that lets the writer give the partner a word for their next line. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give %@ a word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi %@ et ord"
+          }
+        }
+      }
+    },
+    "storyChain.write.here" : {
+      "comment" : "Over the field while the partner is in the game. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is here"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er her"
+          }
+        }
+      }
+    },
+    "storyChain.write.lastLine" : {
+      "comment" : "Switch that makes the line the end of the story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make this the last line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør dette til siste linje"
+          }
+        }
+      }
+    },
+    "storyChain.write.lastLinePrompt" : {
+      "comment" : "Placeholder on line 20, which always ends the story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write the last line."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv den siste linjen."
+          }
+        }
+      }
+    },
+    "storyChain.write.later" : {
+      "comment" : "Over the field while the partner is away. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will read it later"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ leser det senere"
+          }
+        }
+      }
+    },
+    "storyChain.write.mustUse" : {
+      "comment" : "Above the field: the partner gave a word the line must use. %@ is the word in capitals.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the word %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk ordet %@"
+          }
+        }
+      }
+    },
+    "storyChain.write.mustUseHint" : {
+      "comment" : "Under the field while the line does not use the given word yet. %@ is the word in capitals.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use %@ to send."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk %@ for å sende."
+          }
+        }
+      }
+    },
+    "storyChain.write.placeholder" : {
+      "comment" : "Placeholder in the field where the player writes the next line of the story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What happens next? One or two sentences."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hva skjer videre? Én eller to setninger."
+          }
+        }
+      }
+    },
+    "storyChain.write.placeholderFirst" : {
+      "comment" : "Placeholder for the first line of a story that has no opening line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write the first line."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv den første linjen."
+          }
+        }
+      }
+    },
+    "storyChain.write.readingAlong" : {
+      "comment" : "Over the field while the partner watches the letters live. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is reading along"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ leser med"
+          }
+        }
+      }
+    },
+    "storyChain.write.send.a11y" : {
+      "comment" : "Accessibility label of the send button. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send to %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send til %@"
+          }
+        }
+      }
+    },
     "streak.flame.lost.accessibility" : {
       "comment" : "VoiceOver label for the streak flame when the streak is paused and can be restored. The argument is the number of days.",
       "extractionState" : "manual",

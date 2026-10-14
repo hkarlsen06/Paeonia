@@ -190,6 +190,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let dailyChallengeSnapshotCache: any DailyChallengeSnapshotCaching
     private let dailyQuestionChatCache: any DailyQuestionChatCaching
     private let gamesCache: any GamesCaching
+    private let storyChainCache: any StoryChainCaching
     private let gameDrawingStore: any GameDrawingStoring
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
     private let temporaryDirectory: URL
@@ -205,6 +206,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         dailyChallengeSnapshotCache: any DailyChallengeSnapshotCaching = FileDailyChallengeSnapshotCache.live(),
         dailyQuestionChatCache: any DailyQuestionChatCaching = FileDailyQuestionChatCache.shared,
         gamesCache: any GamesCaching = FileGamesCache.shared,
+        storyChainCache: any StoryChainCaching = FileStoryChainCache.shared,
         gameDrawingStore: any GameDrawingStoring = FileGameDrawingStore.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
         temporaryDirectory: URL = FileManager.default.temporaryDirectory
@@ -219,6 +221,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.dailyChallengeSnapshotCache = dailyChallengeSnapshotCache
         self.dailyQuestionChatCache = dailyQuestionChatCache
         self.gamesCache = gamesCache
+        self.storyChainCache = storyChainCache
         self.gameDrawingStore = gameDrawingStore
         self.profilePhotoDiskCache = profilePhotoDiskCache
         self.temporaryDirectory = temporaryDirectory
@@ -240,6 +243,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         dailyChallengeSnapshotCache.clearAll()
         await dailyQuestionChatCache.clearAll()
         await gamesCache.clearAll()
+        await storyChainCache.clearAll()
         gameDrawingStore.purge(for: scope)
         try? await profilePhotoDiskCache.removeAllProfilePhotoData()
         removeDirectoryIfPresent(DailyAnswerMediaImageService.defaultDirectoryURL())

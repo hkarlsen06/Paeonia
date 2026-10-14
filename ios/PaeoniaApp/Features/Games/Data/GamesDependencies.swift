@@ -17,6 +17,10 @@ struct GamesDependencies {
     // Each built game adds its own dependency fields here, after `now`. Give each
     // a default that works offline, so a test that builds `GamesDependencies`
     // memberwise does not change when a game adds a field.
+    var storyChainGateway: any StoryChainGateway = UnavailableGamesGateway()
+    var storyChainCache: any StoryChainCaching = InMemoryStoryChainCache()
+    /// Builds the Story Chain relay room for the couple, or nil when there is none.
+    var makeStoryChainLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
 
     static func live() -> GamesDependencies {
         let client = try? PaeoniaConvexClientProvider.shared.client()
@@ -33,7 +37,10 @@ struct GamesDependencies {
             operationProvider: SyncClientOperationFactory.shared,
             drawingStore: FileGameDrawingStore.shared,
             drawingTransfer: client.map { LiveGameDrawingTransfer(client: $0) } ?? UnavailableGameDrawingTransfer(),
-            makeLive: { DrawAndGuessLive.make(coupleID: $0) }
+            makeLive: { DrawAndGuessLive.make(coupleID: $0) },
+            storyChainGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
+            storyChainCache: FileStoryChainCache.shared,
+            makeStoryChainLive: { StoryChainLive.make(coupleID: $0) }
         )
     }
 }

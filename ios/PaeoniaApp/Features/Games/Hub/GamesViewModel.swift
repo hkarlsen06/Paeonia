@@ -11,6 +11,10 @@ nonisolated enum GamesDestination: Hashable, Sendable {
     /// "Our drawings".
     case drawAndGuessHistory
     case drawAndGuessHistoryDetail(UUID)
+
+    /// "Our stories".
+    case storyChainHistory
+    case storyChainHistoryDetail(UUID)
 }
 
 /// The Games tab: first-time setup, the hub, and the couple's game settings.
@@ -48,10 +52,11 @@ final class GamesViewModel {
 
     // Each built game adds its hub model here and to `games`.
     let drawAndGuess: DrawAndGuessHubModel
+    let storyChain: StoryChainHubModel
 
     /// The built games, in `GameKind` order. A kind that is not here shows nowhere.
     var games: [any GameHubModel] {
-        [drawAndGuess]
+        [drawAndGuess, storyChain]
     }
 
     private let dependencies: GamesDependencies
@@ -64,6 +69,7 @@ final class GamesViewModel {
         participants = GameParticipants()
         partnerName = ""
         self.drawAndGuess = DrawAndGuessHubModel(dependencies: dependencies, game: drawAndGuess)
+        storyChain = StoryChainHubModel(dependencies: dependencies)
     }
 
     /// A game waits for this person to move. The Games tab shows a badge.

@@ -170,6 +170,12 @@
         DeveloperGamesScenarioView(scenario: scenario)
       case .drawHistory, .drawHistoryEmpty:
         DeveloperGamesHistoryScenarioView(scenario: scenario)
+      case .storyChainChoose, .storyChainChooseOffline, .storyChainWriting, .storyChainWritingLast,
+        .storyChainWaitingLive, .storyChainWaitingAway, .storyChainSavedOffline, .storyChainNaming,
+        .storyChainWaitingName, .storyChainFinished, .storyChainWaitingOpening:
+        DeveloperStoryChainScenarioView(scenario: scenario)
+      case .storyChainHistory, .storyChainHistoryEmpty:
+        DeveloperStoryChainHistoryScenarioView(scenario: scenario)
       case .widgetDrawing, .widgetHistoryEmpty, .widgetHistoryPopulated:
         DeveloperWidgetScenarioView(scenario: scenario)
       case .notificationPrimer, .settings, .settingsNotificationsDenied, .privacySafety,
