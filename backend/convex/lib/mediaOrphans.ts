@@ -1,6 +1,7 @@
 import type { WriterCtx, ReaderCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
 import { fail } from "./errors";
+import { isCorpseAssetReferenced } from "./exquisiteCorpse"; // Exquisite corpse
 import { addMs, nowIso } from "./time";
 import type { Doc } from "../_generated/dataModel";
 
@@ -69,7 +70,8 @@ export async function mediaAssetHasLiveReference(ctx: ReaderCtx, assetId: string
     .query("game_moves")
     .withIndex("by_drawing_media_asset_id", (q) => q.eq("drawing_media_asset_id", assetId))
     .first();
-  return moves !== null;
+  if (moves !== null) return true;
+  return await isCorpseAssetReferenced(ctx, assetId); // Exquisite corpse
 }
 
 function isQueueable(asset: Doc<"media_assets">): boolean {

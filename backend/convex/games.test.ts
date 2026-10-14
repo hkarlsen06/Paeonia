@@ -293,6 +293,7 @@ describe("registry", () => {
     expect(GAME_BACKENDS.draw_and_guess).not.toBeNull();
     expect(GAME_BACKENDS.mind_meld).not.toBeNull();
     expect(GAME_BACKENDS.story_chain).not.toBeNull();
+    expect(GAME_BACKENDS.exquisite_corpse).not.toBeNull();
     expect(Object.keys(GAME_BACKENDS)).toEqual([...GAME_KINDS]);
   });
 

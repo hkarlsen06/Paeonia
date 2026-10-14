@@ -814,6 +814,7 @@ export default defineSchema({
       "thread_message_media",
       "widget_drawing_revision",
       "game_move",
+      "exquisite_corpse_part", // Exquisite corpse
       "report_snapshot",
     ),
     reserved_parent_id: uuid,
@@ -829,6 +830,8 @@ export default defineSchema({
       "thread_media",
       "widget_drawing_payload",
       "game_drawing_payload",
+      "exquisite_corpse_drawing", // Exquisite corpse
+      "exquisite_corpse_strip", // Exquisite corpse
       "report_snapshot",
     ),
     expected_media_type: mediaType,
@@ -1568,6 +1571,75 @@ export default defineSchema({
     .index("by_couple_id", ["couple_id"]),
   // Mind Meld: mind_meld_games, mind_meld_rounds, mind_meld_words (lib/mindMeld.ts, docs/games/mind-meld.md).
   ...mindMeldTables,
+  // Exquisite corpse (docs/games/exquisite-corpse.md). Four tables, deleted with the couple's other game rows (lib/exquisiteCorpse.ts).
+  // FK: couple_id -> couples cascade. couple_id is unique. part_index (0 head, 1 body, 2 legs) is the next part.
+  exquisite_corpse_games: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    created_by_user_id: uuid,
+    turn_user_id: uuid,
+    turn_started_at: ts,
+    turn_reminder_sent_at: optTs,
+    figure_id: optUuid,
+    figure_number: v.number(),
+    part_index: v.number(),
+    figures_finished: v.number(),
+    version: v.number(),
+    created_at: ts,
+    updated_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_couple_id", ["couple_id"])
+    .index("by_turn_reminder_sent_at_turn_started_at", ["turn_reminder_sent_at", "turn_started_at"]),
+
+  // FK: game_id -> exquisite_corpse_games cascade. The client makes the id. The reveal seen times keep the first write.
+  exquisite_corpse_figures: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    game_id: uuid,
+    number: v.number(),
+    starter_user_id: uuid,
+    created_at: ts,
+    finished_at: optTs,
+    starter_reveal_seen_at: optTs,
+    partner_reveal_seen_at: optTs,
+    updated_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_game_id_number", ["game_id", "number"])
+    .index("by_couple_id_number", ["couple_id", "number"]),
+
+  // FK: figure_id -> exquisite_corpse_figures cascade; media_assets restrict. The client makes the id. The strip is for the head and body only.
+  exquisite_corpse_parts: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    game_id: uuid,
+    figure_id: uuid,
+    figure_number: v.number(),
+    part_index: v.number(),
+    drawer_user_id: uuid,
+    drawing_media_asset_id: uuid,
+    strip_media_asset_id: optUuid,
+    idea_id: optString,
+    idea_text: optString,
+    created_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_figure_id_part_index", ["figure_id", "part_index"])
+    .index("by_drawing_media_asset_id", ["drawing_media_asset_id"])
+    .index("by_strip_media_asset_id", ["strip_media_asset_id"])
+    .index("by_couple_id", ["couple_id"]),
+
+  // FK: figure_id -> exquisite_corpse_figures cascade. (user_id, figure_id) is unique. A private star. figure_number lets stars page.
+  exquisite_corpse_stars: defineTable({
+    couple_id: uuid,
+    user_id: uuid,
+    figure_id: uuid,
+    figure_number: v.number(),
+    created_at: ts,
+  })
+    .index("by_couple_id_user_id_figure_number", ["couple_id", "user_id", "figure_number"])
+    .index("by_user_id_figure_id", ["user_id", "figure_id"]),
 
   // FK: user_id -> users cascade. (widget_push_token_hash, apns_environment, widget_kind) is unique while disabled_at is null.
   widget_push_devices: defineTable({

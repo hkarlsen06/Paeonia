@@ -21,6 +21,7 @@ import {
   normalizeMediaFileExtension,
 } from "./lib/mediaAssets";
 import { mediaAssetHasLiveReference, queueOrphanedMediaAssetsForDelete } from "./lib/mediaOrphans";
+import { isCorpseUploadPurpose, reserveCorpseUpload } from "./lib/exquisiteCorpse"; // Exquisite corpse
 import { btrim } from "./lib/text";
 import { addMs, nowIso } from "./lib/time";
 
@@ -163,6 +164,11 @@ export const create_pending_media_upload = mutation({
           bucket = "game-drawings";
           coupleId = coupleArg;
           storagePath = `${coupleArg}/${gameId}/rounds/${parentId}/${assetId}.${extension}`;
+        } else if (isCorpseUploadPurpose(purpose)) {
+          // Exquisite corpse: a part's drawing and its strip go in the game-drawings bucket.
+          bucket = "game-drawings";
+          coupleId = coupleArg;
+          storagePath = await reserveCorpseUpload(ctx, { userId, kind, mediaType, coupleId: coupleArg, pathContext, partId: parentId, assetId, extension });
         } else if (purpose === "report_snapshot") {
           return fail("42501", "report snapshot uploads require a trusted service path");
         } else {

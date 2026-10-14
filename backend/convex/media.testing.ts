@@ -50,8 +50,8 @@ export async function storeBlob(t: TestConvex, bytes: Uint8Array, contentType: s
 }
 
 export type UploadSpec = {
-  kind: "memory_media" | "thread_message_media" | "daily_answer_media" | "widget_drawing_revision" | "game_move" | "profile_photo";
-  purpose: "memory_photo" | "voice_note" | "thread_media" | "daily_answer_media" | "widget_drawing_payload" | "game_drawing_payload" | "profile_photo";
+  kind: "memory_media" | "thread_message_media" | "daily_answer_media" | "widget_drawing_revision" | "game_move" | "exquisite_corpse_part" | "profile_photo";
+  purpose: "memory_photo" | "voice_note" | "thread_media" | "daily_answer_media" | "widget_drawing_payload" | "game_drawing_payload" | "exquisite_corpse_drawing" | "exquisite_corpse_strip" | "profile_photo";
   mediaType: "image" | "voice" | "drawing_payload";
   extension: string;
   mime: string;

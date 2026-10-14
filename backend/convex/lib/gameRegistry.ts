@@ -1,6 +1,7 @@
 import { canAccessCoupleContent } from "./access";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { drawAndGuessBackend } from "./drawAndGuess";
+import { exquisiteCorpseBackend } from "./exquisiteCorpse";
 import { mindMeldBackend } from "./mindMeld";
 import { storyChainBackend } from "./storyChain";
 import type { GameLanguage } from "./gameWords";
@@ -32,7 +33,7 @@ export type GameBackend = {
 export const GAME_BACKENDS: Record<GameKind, GameBackend | null> = {
   draw_and_guess: drawAndGuessBackend,
   mind_meld: mindMeldBackend,
-  exquisite_corpse: null,
+  exquisite_corpse: exquisiteCorpseBackend,
   story_chain: storyChainBackend,
   connect_four: null,
   dots_and_boxes: null,

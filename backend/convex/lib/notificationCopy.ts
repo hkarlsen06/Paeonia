@@ -77,6 +77,26 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
       },
     },
   },
+  exquisite_corpse: {
+    en: {
+      name: "Exquisite corpse",
+      resultTitle: (actor) => `${actor} finished your creature`,
+      resultBody: "Open it to see the whole thing.",
+      steps: {
+        body: { title: (actor) => `${actor} drew the head`, body: "Your turn to draw the body." },
+        legs: { title: (actor) => `${actor} drew the body`, body: "Your turn to draw the legs." },
+      },
+    },
+    nb: {
+      name: "Kadaver exquis",
+      resultTitle: (actor) => `${actor} gjorde ferdig skapningen deres`,
+      resultBody: "Åpne den for å se hele.",
+      steps: {
+        body: { title: (actor) => `${actor} har tegnet hodet`, body: "Din tur til å tegne kroppen." },
+        legs: { title: (actor) => `${actor} har tegnet kroppen`, body: "Din tur til å tegne beina." },
+      },
+    },
+  },
 };
 
 /** The copy of the game a push names in `payload.game_kind`, or null when the game has no entry. */

@@ -3,6 +3,7 @@ import { canAccessCoupleContent } from "./access";
 import type { ReaderCtx } from "./db";
 import { getByUuid } from "./db";
 import { fail } from "./errors";
+import { canReadCorpseAsset } from "./exquisiteCorpse"; // Exquisite corpse
 
 /** Port of `internal.media_byte_limit`. */
 export function mediaByteLimit(mediaType: string): number {
@@ -222,6 +223,8 @@ export async function canReadMediaAsset(ctx: ReaderCtx, userId: string, asset: D
       return asset.bucket === "widget-drawings" && (await canReadWidgetPayload(ctx, userId, asset));
     case "game_move":
       return asset.bucket === "game-drawings" && (await canReadGameDrawing(ctx, userId, asset));
+    case "exquisite_corpse_part": // Exquisite corpse
+      return asset.bucket === "game-drawings" && (await canReadCorpseAsset(ctx, userId, asset));
     default:
       return false;
   }
