@@ -1090,19 +1090,19 @@
       }
     },
     "boardGames.mark.intro" : {
-      "comment" : "Short line under the title of the mark sheet. Pieces are the discs, boxes and cells in the board games.",
+      "comment" : "Short line under the title of the mark sheet. Pieces are the discs, boxes, cells and Ludo pieces in the board games. One mark is used in all of them.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Draw something small. It shows on every piece you play."
+            "value" : "Draw something small. It shows on your pieces in every board game."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegn noe lite. Det vises på hver brikke du spiller."
+            "value" : "Tegn noe lite. Det vises på brikkene dine i alle brettspill."
           }
         }
       }
@@ -6256,13 +6256,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ready when you are"
+            "value" : "Draw one part each without peeking. Then unfold your creature."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Klar når dere er det"
+            "value" : "Tegn hver deres del uten å kikke. Brett så ut skapningen."
           }
         }
       }
@@ -6466,19 +6466,19 @@
       }
     },
     "exquisiteCorpse.name" : {
-      "comment" : "Name of the Exquisite corpse game. Shown as the screen title and on the Games hub. A creature is drawn in three parts by two people, each part folded out of sight of the other. Norwegian uses the French name Kadaver exquis.",
+      "comment" : "Name of the Odd Creatures game. Shown as the screen title and on the Games hub. A creature is drawn in three parts by two people, each part folded out of sight of the other. The code calls it Exquisite corpse.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exquisite corpse"
+            "value" : "Odd Creatures"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kadaver exquis"
+            "value" : "Rare skapninger"
           }
         }
       }
@@ -9856,13 +9856,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ready when you are"
+            "value" : "Take turns drawing a word. The other one guesses it."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Klar når dere er det"
+            "value" : "Bytt på å tegne et ord. Den andre gjetter hva det er."
           }
         }
       }
@@ -12724,13 +12724,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Share your latest location with %@. Paeonia updates it only while you use the app and never saves a location history. You can turn this off anytime in Settings."
+            "value" : "Share your latest location with %@. iOS will also ask if it can update while Paeonia is closed. That's up to you. Paeonia never saves a location history, and you can turn sharing off anytime in Settings."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Del den nyeste posisjonen din med %@. Paeonia oppdaterer den bare mens du bruker appen, og lagrer aldri posisjonshistorikk. Du kan slå dette av når som helst i Innstillinger."
+            "value" : "Del den nyeste posisjonen din med %@. iOS spør også om den kan oppdateres når Paeonia er lukket. Det bestemmer du. Paeonia lagrer aldri posisjonshistorikk, og du kan slå av deling når som helst i Innstillinger."
           }
         }
       }
@@ -18857,6 +18857,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Konto"
+          }
+        }
+      }
+    },
+    "settings.gameMark.title" : {
+      "comment" : "Row in the Us tab that opens the sheet where the person draws the small mark shown on their pieces in every board game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your mark in games"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merket ditt i spill"
           }
         }
       }

@@ -76,6 +76,9 @@ final class WidgetDrawingViewModel {
     /// The partner sent a drawing while this canvas had changes that were not
     /// sent. The canvas keeps the changes; the screen says what sending does.
     private(set) var partnerSentWhileEditing = false
+    /// The user sent a drawing since the app started. The notification ask
+    /// waits for this.
+    @ObservationIgnored private(set) var hasSentDrawing = false
     /// Unsent work that a newer drawing on the widgets replaced on the canvas.
     /// The person can bring it back or delete it.
     private(set) var setAsideDrawing: PKDrawing?
@@ -559,6 +562,7 @@ final class WidgetDrawingViewModel {
         }
 
         isPublishing = false
+        hasSentDrawing = true
         // The canvas can change size while saving: on iPad the rows around it
         // change height. The baseline must be in the canvas's current size, or
         // the sent drawing reads as "not sent yet".

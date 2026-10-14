@@ -85,6 +85,9 @@ final class DailyChallengeViewModel {
     /// Seen answers being sent to the server right now, so a second trigger doesn't
     /// send the same one twice.
     @ObservationIgnored var seenAnswerUploads: Set<UUID> = []
+    /// The user sent an answer since the app started. The notification ask
+    /// waits for this.
+    @ObservationIgnored var hasSentAnswer = false
     /// The chat screen to open next, already read from this phone by `prepareChat(for:)`.
     @ObservationIgnored var preparedChat: DailyQuestionChatViewModel?
 

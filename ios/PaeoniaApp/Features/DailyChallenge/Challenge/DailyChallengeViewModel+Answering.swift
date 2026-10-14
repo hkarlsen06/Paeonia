@@ -149,6 +149,7 @@ extension DailyChallengeViewModel {
         // the editable draft can go (staged media stays on disk for the upload).
         sendingAnswers[question.id] = outgoing.sending
         sendingGeneration += 1
+        hasSentAnswer = true
         clearDraft(for: question.id)
         submittingQuestionID = nil
         syncQueuedAnswerInBackground()

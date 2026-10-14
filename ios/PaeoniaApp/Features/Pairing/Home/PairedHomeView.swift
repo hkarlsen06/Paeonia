@@ -36,8 +36,8 @@ struct PairedHomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    /// iPad landscape: the map and question cards on the left, the drawing and
-    /// milestone tiles stacked in a column on the right (`HomeWideColumnsLayout`).
+    /// iPad landscape: the map with the other cards in two columns below it on the
+    /// left, the drawing and milestone tiles stacked on the right (`HomeWideColumnsLayout`).
     @State private var isWideLayout = false
     /// The scroll view's visible height and the cards' height, for `spareSpaceArt`.
     @State private var viewportHeight: CGFloat = 0
@@ -194,7 +194,10 @@ struct PairedHomeView: View {
     }
 
     private var mainColumn: some View {
-        VStack(spacing: PaeoniaSpacing.space16) {
+        let layout = isWideLayout
+            ? AnyLayout(HomeWideMainCardsLayout(spacing: PaeoniaSpacing.space16))
+            : AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
+        return layout {
             CoupleMapCard(
                 currentName: currentName,
                 currentProfilePhotoAssetID: currentProfilePhotoAssetID,
@@ -301,7 +304,6 @@ struct PairedHomeView: View {
         MilestoneCountdownCard(
             startedOn: relationshipStartedOn,
             isSaving: milestoneIsSaving,
-            isSquare: !isWideLayout,
             onSave: onSaveRelationshipStartedOn
         )
     }

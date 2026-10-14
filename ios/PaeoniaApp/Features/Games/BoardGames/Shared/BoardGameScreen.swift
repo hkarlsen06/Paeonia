@@ -50,11 +50,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             }
             .sheet(isPresented: isEditingMark) {
                 if let model = viewModel.markEditor {
-                    BoardMarkEditorView(
-                        color: .boardGameMine,
-                        initial: viewModel.meInfo.style.initial,
-                        model: model
-                    )
+                    BoardMarkEditorView(color: .boardGameMine, model: model)
                 }
             }
             .gameTutorial(tutorial, isPresented: $showsTutorial)

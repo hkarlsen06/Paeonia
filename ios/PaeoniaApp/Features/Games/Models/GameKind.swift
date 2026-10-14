@@ -4,14 +4,15 @@ import Foundation
 /// games in this order. A kind is registered before its game is built, and it
 /// shows nowhere until its hub model is in `GamesViewModel.games`.
 nonisolated enum GameKind: String, CaseIterable, Codable, Hashable, Sendable {
+    // The case order is the hub's catalog order, most popular first.
+    case ludo = "ludo"
     case drawAndGuess = "draw_and_guess"
-    case mindMeld = "mind_meld"
-    case exquisiteCorpse = "exquisite_corpse"
-    case storyChain = "story_chain"
     case connectFour = "connect_four"
+    case mindMeld = "mind_meld"
     case dotsAndBoxes = "dots_and_boxes"
     case ultimateTicTacToe = "ultimate_tic_tac_toe"
-    case ludo = "ludo"
+    case storyChain = "story_chain"
+    case exquisiteCorpse = "exquisite_corpse"
 
     /// The deep link path: `paeonia://games/<path>`, such as `draw-and-guess`.
     var path: String {

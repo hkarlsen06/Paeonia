@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The Games tab. It shows setup for a couple that has not played, the moment
-/// that explains what the partner chose, or the hub. A banner shows problems.
+/// The Games tab: the hub, and over it the first-time steps when a game opens
+/// for the first time. A banner shows problems.
 struct GamesRootView: View {
     @Bindable var viewModel: GamesViewModel
     @Binding var path: [GamesDestination]
@@ -35,12 +35,33 @@ struct GamesRootView: View {
                 Task { await viewModel.refresh() }
             }
         }
+        .sheet(isPresented: isShowingIntro) {
+            GamesIntroSheet(viewModel: viewModel)
+        }
+        // The hub, Home and notifications open screens through the view model, so
+        // the first game can show the first-time steps before it.
+        .onChange(of: viewModel.destinationToOpen, initial: true) { _, destination in
+            guard let destination else { return }
+            path = [destination]
+            viewModel.destinationToOpen = nil
+        }
     }
 
-    /// Opens a game from the hub. A second tap while it opens does nothing.
+    private var isShowingIntro: Binding<Bool> {
+        Binding(
+            get: { viewModel.introStep != nil },
+            set: { isPresented in
+                if !isPresented {
+                    viewModel.introDismissed()
+                }
+            }
+        )
+    }
+
+    /// Opens a screen from the hub. A second tap while it opens does nothing.
     private func open(_ destination: GamesDestination) {
         guard path.isEmpty else { return }
-        path.append(destination)
+        viewModel.open(destination)
     }
 
     @ViewBuilder
@@ -50,10 +71,6 @@ struct GamesRootView: View {
             Color.paeoniaBackgroundPrimary
         case .unavailable:
             unavailable
-        case .setup:
-            GamesSetupView(viewModel: viewModel)
-        case let .partnerPicked(settings):
-            GamesPartnerPickedView(viewModel: viewModel, settings: settings)
         case .hub:
             GamesHubView(viewModel: viewModel, open: open)
         }

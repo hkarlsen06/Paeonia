@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-/// The Games tab: setup the first time, the partner's choices once, then the hub.
+/// The Games tab: the hub at once, and the first-time steps before the first game.
 @MainActor
 struct GamesViewModelTests {
     private func viewModel(
@@ -13,18 +13,38 @@ struct GamesViewModelTests {
         return viewModel
     }
 
-    @Test func aCoupleThatHasNotChosenSeesSetupWithTheirOwnLanguagePreselected() async {
+    private let ludo = GamesDestination.game(.ludo)
+
+    private func step(_ viewModel: GamesViewModel) -> String {
+        switch viewModel.introStep {
+        case .setup: "setup"
+        case .partnerPicked: "partnerPicked"
+        case .mark: "mark"
+        case nil: "none"
+        }
+    }
+
+    @Test func aCoupleThatHasNotChosenSeesTheHubAndSetupWhenAGameOpens() async {
         let env = GamesTestEnvironment(state: GameFixture.state(settings: nil, game: nil), hasSeenSettings: false)
         let viewModel = viewModel(env)
 
         await viewModel.load()
-
-        #expect(viewModel.screen == .setup)
+        #expect(viewModel.screen == .hub)
         #expect(viewModel.draftLanguage == GameLanguage.preferred())
         #expect(viewModel.draftPlayStyle == .against)
+
+        // A history screen is not a game, so it opens at once.
+        viewModel.open(.drawAndGuessHistory)
+        #expect(viewModel.destinationToOpen == .drawAndGuessHistory)
+        #expect(step(viewModel) == "none")
+        viewModel.destinationToOpen = nil
+
+        viewModel.open(ludo)
+        #expect(step(viewModel) == "setup")
+        #expect(viewModel.destinationToOpen == nil)
     }
 
-    @Test func finishingSetupSavesTheChoicesAndOpensTheHub() async {
+    @Test func finishingSetupSavesTheChoicesThenAsksForAMarkThenOpensTheGame() async {
         let env = GamesTestEnvironment(state: GameFixture.state(settings: nil, game: nil), hasSeenSettings: false)
         let afterSetup = GameFixture.state(
             settings: GameFixture.settings(),
@@ -33,6 +53,7 @@ struct GamesViewModelTests {
         env.gateway.setStateToLoad(afterSetup)
         let viewModel = viewModel(env)
         await viewModel.load()
+        viewModel.open(ludo)
         viewModel.draftPlayStyle = .together
         viewModel.draftLanguage = .nb
 
@@ -42,9 +63,56 @@ struct GamesViewModelTests {
         #expect(viewModel.screen == .hub)
         let coupleID = DeveloperScenarioFixture.coupleID
         #expect(await env.cache.hasSeenSettings(coupleID: coupleID, ownerUserID: GameFixture.me))
+        #expect(step(viewModel) == "mark")
+        #expect(viewModel.destinationToOpen == nil)
+
+        // Closing the mark sheet, saved or not, opens the game.
+        viewModel.introDismissed()
+        #expect(step(viewModel) == "none")
+        #expect(viewModel.destinationToOpen == ludo)
+
+        // The next game opens at once.
+        viewModel.destinationToOpen = nil
+        viewModel.open(.game(.connectFour))
+        #expect(viewModel.destinationToOpen == .game(.connectFour))
     }
 
-    @Test func thePartnerWhoArrivesLaterSeesWhatWasPickedOnceThenTheHub() async {
+    @Test func closingSetupLeavesThePersonOnTheHub() async {
+        let env = GamesTestEnvironment(state: GameFixture.state(settings: nil, game: nil), hasSeenSettings: false)
+        let viewModel = viewModel(env)
+        await viewModel.load()
+        viewModel.open(ludo)
+
+        viewModel.introDismissed()
+
+        #expect(step(viewModel) == "none")
+        #expect(viewModel.destinationToOpen == nil)
+    }
+
+    @Test func setupOpensTheGameAtOnceForSomeoneWhoAlreadyDrewAMark() async {
+        let env = GamesTestEnvironment(state: GameFixture.state(settings: nil, game: nil), hasSeenSettings: false)
+        env.gateway.setStateToLoad(GameFixture.state(settings: GameFixture.settings(), game: nil))
+        var dependencies = env.dependencies()
+        dependencies.boardGamesCache = InMemoryBoardGamesCache(
+            marks: RemoteBoardGameMarks(
+                userID: GameFixture.me,
+                mine: RemoteBoardGameMark(drawing: "bmV3", updatedAt: GameFixture.now),
+                partner: nil
+            ),
+            ownerUserID: GameFixture.me
+        )
+        let viewModel = GamesViewModel(dependencies: dependencies)
+        viewModel.configure(participants: GameFixture.participants)
+        await viewModel.load()
+        viewModel.open(ludo)
+
+        await viewModel.finishSetup()
+
+        #expect(step(viewModel) == "none")
+        #expect(viewModel.destinationToOpen == ludo)
+    }
+
+    @Test func thePartnerWhoArrivesLaterSeesWhatWasPickedOnceBeforeTheFirstGame() async {
         let state = GameFixture.state(
             settings: GameFixture.settings(by: GameFixture.partner),
             game: nil
@@ -53,19 +121,42 @@ struct GamesViewModelTests {
         let viewModel = viewModel(env)
 
         await viewModel.load()
-        guard case let .partnerPicked(settings) = viewModel.screen else {
-            Issue.record("Expected the partner-picked moment, got \(viewModel.screen)")
+        #expect(viewModel.screen == .hub)
+        viewModel.open(ludo)
+        guard case let .partnerPicked(settings) = viewModel.introStep else {
+            Issue.record("Expected the partner-picked moment, got \(step(viewModel))")
             return
         }
         #expect(settings.updatedByUserID == GameFixture.partner)
 
         await viewModel.acknowledgePartnerPicked()
-        #expect(viewModel.screen == .hub)
+        #expect(step(viewModel) == "mark")
 
-        // A new view model on the same cache never shows it again.
+        // A new view model on the same cache opens games at once.
         let again = self.viewModel(env)
         await again.load()
-        #expect(again.screen == .hub)
+        again.open(ludo)
+        #expect(step(again) == "none")
+        #expect(again.destinationToOpen == ludo)
+    }
+
+    @Test func changingWhatThePartnerPickedStillAsksForAMark() async {
+        let state = GameFixture.state(
+            settings: GameFixture.settings(by: GameFixture.partner),
+            game: nil
+        )
+        let env = GamesTestEnvironment(state: state, hasSeenSettings: false)
+        env.gateway.setStateToLoad(GameFixture.state(settings: GameFixture.settings(), game: nil))
+        let viewModel = viewModel(env)
+        await viewModel.load()
+        viewModel.open(ludo)
+
+        viewModel.changePartnerPicked()
+        #expect(step(viewModel) == "setup")
+        await viewModel.finishSetup()
+
+        #expect(env.gateway.calls.contains("setSettings"))
+        #expect(step(viewModel) == "mark")
     }
 
     @Test func settingsThisPersonChoseNeverShowTheMoment() async {
@@ -74,8 +165,10 @@ struct GamesViewModelTests {
         let viewModel = viewModel(env)
 
         await viewModel.load()
+        viewModel.open(ludo)
 
         #expect(viewModel.screen == .hub)
+        #expect(viewModel.destinationToOpen == ludo)
     }
 
     @Test func theHubSummaryShowsWhoseTurnItIsAndTheScore() async {

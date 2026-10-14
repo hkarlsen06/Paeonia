@@ -45,7 +45,7 @@ extension RootView {
             async let widgetSync: Void = performWidgetSyncIfPaired(viewModel.state)
             await viewModel.refreshAfterForegroundActivation()
             if let identity = stablePairedLocationIdentity {
-                await presentPermissionPrimerIfNeeded(for: identity)
+                presentLocationPrimerIfNeeded(for: identity)
             }
             _ = await (locationRefresh, widgetSync)
         }

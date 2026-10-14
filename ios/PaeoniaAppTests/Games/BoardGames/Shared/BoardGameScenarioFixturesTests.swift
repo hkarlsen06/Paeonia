@@ -247,10 +247,10 @@ struct BoardGameScenarioFixturesTests {
         #expect(viewModel.ultimateTicTacToe.game.summary?.status == .partnerWon)
         #expect(viewModel.ludo.game.summary?.status == .partnerTurn)
         #expect(viewModel.isYourTurn)
-        // Robin has Dots and Boxes open, so its card comes first. Story Chain and
-        // Connect Four wait for Alex, so they come next.
+        // Robin has Dots and Boxes open, so its card comes first. Connect Four and
+        // Story Chain wait for Alex, so they come next.
         #expect(viewModel.partnerGameKinds == [.dotsAndBoxes])
-        let first: [GameKind] = [.dotsAndBoxes, .storyChain, .connectFour]
+        let first: [GameKind] = [.dotsAndBoxes, .connectFour, .storyChain]
         let others = GameKind.allCases.filter { !first.contains($0) && viewModel.game($0) != nil }
         #expect(others.allSatisfy { viewModel.game($0)?.isYourTurn == false })
         #expect(viewModel.hubGames.map(\.kind) == first + others)

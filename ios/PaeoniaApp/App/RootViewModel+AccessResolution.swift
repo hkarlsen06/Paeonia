@@ -230,7 +230,7 @@ extension RootViewModel {
             }
         }
 
-        applyAccessResolution(resolution, for: session, previous: previous)
+        applyAccessResolution(resolution, for: session)
     }
 
     func schedulePrivacyPurgeRecovery(for session: AuthSession) {

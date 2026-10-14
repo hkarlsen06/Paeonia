@@ -1,9 +1,9 @@
 import Foundation
 import Observation
 
-/// Sequences the automatic permission primers after pairing. Notifications are
-/// always resolved first; location can be presented by a later evaluation only
-/// after that sheet and any system prompt have gone away.
+/// Decides when the permission primers show. The location primer is offered
+/// when Home settles. The notification primer waits until the person has sent
+/// their partner something, so the ask comes when it makes sense to them.
 @MainActor
 @Observable
 final class RootPairingPermissionPrimerCoordinator {
@@ -31,40 +31,22 @@ final class RootPairingPermissionPrimerCoordinator {
         self.locationPrimerStore = locationPrimerStore
     }
 
-    func presentIfNeeded(
+    /// The location primer needs the saved sharing preference, so it waits
+    /// until that is known.
+    func presentLocationPrimerIfNeeded(
         identity: LocationIdentity,
         sharingStateIsKnown: Bool,
         sharingEnabled: Bool,
-        locationAuthorizationState: ForegroundLocationAuthorizationState,
-        pushAuthorization: any PushAuthorizationProviding
-    ) async {
+        locationAuthorizationState: ForegroundLocationAuthorizationState
+    ) {
         if let presentedIdentity, presentedIdentity != identity {
             dismiss()
         }
 
         guard let ownerUserID = identity.currentUserID,
               let coupleID = identity.coupleID,
-              presentedPrimer == nil
-        else {
-            return
-        }
-
-        evaluationGeneration &+= 1
-        let activeEvaluationGeneration = evaluationGeneration
-
-        // The notification primer needs nothing from the server, so it can show
-        // right after pairing. Only the location primer waits for the saved
-        // sharing preference.
-        let didPresentPushPrimer = await presentPushPrimerIfNeeded(
-            identity: identity,
-            evaluationGeneration: activeEvaluationGeneration,
-            pushAuthorization: pushAuthorization
-        )
-        guard !didPresentPushPrimer,
-              sharingStateIsKnown,
-              !Task.isCancelled,
-              activeEvaluationGeneration == evaluationGeneration,
               presentedPrimer == nil,
+              sharingStateIsKnown,
               !locationPrimedIdentities.contains(identity)
         else {
             return
@@ -79,6 +61,49 @@ final class RootPairingPermissionPrimerCoordinator {
             locationPrimedIdentities.insert(identity)
             presentedIdentity = identity
             presentedPrimer = .location
+        }
+    }
+
+    /// Offered after the person answers a question or sends a drawing, while
+    /// iOS has not asked about notifications yet.
+    func presentNotificationPrimerIfNeeded(
+        identity: LocationIdentity,
+        pushAuthorization: any PushAuthorizationProviding
+    ) async {
+        if let presentedIdentity, presentedIdentity != identity {
+            dismiss()
+        }
+
+        guard identity.currentUserID != nil,
+              identity.coupleID != nil,
+              presentedPrimer == nil,
+              !pushPrimerStore.hasResponded(),
+              !pushPrimedIdentities.contains(identity)
+        else {
+            return
+        }
+
+        evaluationGeneration &+= 1
+        let activeEvaluationGeneration = evaluationGeneration
+        let isNotDetermined = await pushAuthorization.isNotDetermined()
+
+        guard !Task.isCancelled,
+              activeEvaluationGeneration == evaluationGeneration,
+              presentedPrimer == nil,
+              !pushPrimerStore.hasResponded(),
+              !pushPrimedIdentities.contains(identity)
+        else {
+            return
+        }
+
+        if isNotDetermined {
+            pushPrimedIdentities.insert(identity)
+            presentedIdentity = identity
+            presentedPrimer = .notifications
+        } else {
+            // A prior system choice makes the primer irrelevant on every paired
+            // transition on this installation.
+            pushPrimerStore.markResponded()
         }
     }
 
@@ -110,41 +135,6 @@ final class RootPairingPermissionPrimerCoordinator {
             ownerUserID: ownerUserID,
             coupleID: coupleID
         )
-    }
-
-    private func presentPushPrimerIfNeeded(
-        identity: LocationIdentity,
-        evaluationGeneration activeEvaluationGeneration: Int,
-        pushAuthorization: any PushAuthorizationProviding
-    ) async -> Bool {
-        guard !pushPrimerStore.hasResponded(),
-              !pushPrimedIdentities.contains(identity)
-        else {
-            return false
-        }
-
-        let isNotDetermined = await pushAuthorization.isNotDetermined()
-
-        guard !Task.isCancelled,
-              activeEvaluationGeneration == evaluationGeneration,
-              presentedPrimer == nil,
-              !pushPrimerStore.hasResponded(),
-              !pushPrimedIdentities.contains(identity)
-        else {
-            return false
-        }
-
-        if isNotDetermined {
-            pushPrimedIdentities.insert(identity)
-            presentedIdentity = identity
-            presentedPrimer = .notifications
-            return true
-        } else {
-            // A prior system choice makes the primer irrelevant on every paired
-            // transition on this installation.
-            pushPrimerStore.markResponded()
-            return false
-        }
     }
 
     func markLocationResponded(identity: LocationIdentity) {

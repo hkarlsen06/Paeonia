@@ -142,17 +142,12 @@ extension BoardGameViewModel {
     // MARK: - Marks
 
     func openMarkEditor() {
-        let gateway = dependencies.boardGamesGateway
-        let cache = dependencies.boardGamesCache
-        let userID = currentUserID
-        let existing = document.marks?.mine.flatMap { BoardMarkRenderer.data(fromBase64: $0.drawing) }
-        markEditor = BoardMarkEditorModel(initialMarkData: existing) { data in
-            _ = try await gateway.setMark(data)
-            if let userID {
-                _ = try? await cache.fetchMarks(from: gateway, ownerUserID: userID)
-                LocalStoreChanges.post(.games, ownerUserID: userID)
-            }
-        }
+        markEditor = .live(
+            savedMark: document.marks?.mine,
+            initial: meInfo.style.initial,
+            userID: currentUserID,
+            dependencies: dependencies
+        )
     }
 
     /// The drawn marks as template images, by owner. A mark rendered before
@@ -183,8 +178,8 @@ extension BoardGameViewModel {
 
     /// The players' names, photos, colors and marks.
     func updatePeople() {
-        let myInitial = Self.initial(of: participants.currentName)
-        let theirInitial = Self.initial(of: participants.partnerName)
+        let myInitial = BoardPieceStyle.initial(of: participants.currentName)
+        let theirInitial = BoardPieceStyle.initial(of: participants.partnerName)
         let mine = BoardPieceStyle(
             color: .boardGameMine,
             mark: currentUserID.flatMap { markImages[$0]?.image },
@@ -206,10 +201,6 @@ extension BoardGameViewModel {
             photoAssetID: participants.partnerPhotoAssetID,
             style: theirs
         )
-    }
-
-    nonisolated static func initial(of name: String) -> String {
-        name.trimmingCharacters(in: .whitespacesAndNewlines).first.map { String($0).uppercased() } ?? "?"
     }
 
     /// Whether the partner has this game open, and the invite button.

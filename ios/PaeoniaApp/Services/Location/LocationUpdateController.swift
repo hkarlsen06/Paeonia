@@ -132,6 +132,14 @@ final class LocationUpdateController: NSObject {
         apply()
     }
 
+    /// Called right after someone turns sharing on from the map card or the
+    /// primer. While Paeonia has While Using access, iOS asks straight away
+    /// whether to change it to Always, so the person decides on the spot.
+    func offerUpdatesWhileClosed() {
+        guard manager.authorizationStatus == .authorizedWhenInUse else { return }
+        setUpdatesWhileClosed(true)
+    }
+
     /// Stops updates while closed and forgets the choice. Used when local
     /// private data is cleared: signing out, account deletion, or the
     /// relationship ending.

@@ -273,9 +273,9 @@ Record any skipped command with the reason.
 - [x] Location permission is requested at the right moment.
 - [x] Permission copy explains latest location only and no location history.
 - [x] Updates while the app is open come from a live feed that sends only after a 250 m move or 5 minutes.
-- [x] Updates while the app is closed are a separate switch, off by default, shown only while sharing is on, and turned off when sharing is turned off.
+- [x] Updates while the app is closed are a separate choice. Turning sharing on from the map card or the location primer asks iOS for Always right away, so the person decides then. The Settings switch changes it later, shows only while sharing is on, and turns off when sharing is turned off.
 - [x] Updates while closed use the significant-change service with Always access. The app does not declare the `location` background mode.
-- [x] `NSLocationAlwaysAndWhenInUseUsageDescription` names the switch and says when the location is sent, in English and Norwegian.
+- [x] `NSLocationAlwaysAndWhenInUseUsageDescription` says when the location is sent and how to turn it off, in English and Norwegian.
 - [ ] Backend with the `background` location source is deployed before a build with updates while closed ships.
 - [ ] On a real device: allow Always, close the app, move about 1 km, and confirm the partner sees the new location.
 - [ ] On a real device: choose "Keep Only While Using" at the iOS question and confirm the "Choose Always in Settings" note appears.
@@ -483,7 +483,7 @@ Run these on real devices where possible.
   - [ ] how subscription sharing works
   - [ ] how pairing normally works
   - [ ] widget behavior
-  - [ ] location behavior, including that sharing while closed is optional, off by default, needs Always, and sends the latest location only after a significant move
+  - [ ] location behavior, including that sharing while closed is optional, asked about right after sharing is turned on, needs Always, and sends the latest location only after a significant move
 - [ ] In-app purchases submitted with the build.
 - [ ] Subscription screenshot/metadata completed.
 - [ ] Privacy Nutrition Labels completed.

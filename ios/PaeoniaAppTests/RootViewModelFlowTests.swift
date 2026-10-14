@@ -293,7 +293,8 @@ struct RootViewModelFlowTests {
     }
 }
 
-/// The notification primer no longer waits for the server's location preference.
+/// The notification primer needs nothing from the location preference, and
+/// the location primer still waits until that preference is known.
 @MainActor
 struct RootPermissionPrimerOrderTests {
     @Test func notificationPrimerDoesNotWaitForTheLocationPreference() async throws {
@@ -307,24 +308,19 @@ struct RootPermissionPrimerOrderTests {
         )
         let identity = LocationIdentity(currentUserID: UUID(), coupleID: UUID())
 
-        await coordinator.presentIfNeeded(
+        await coordinator.presentNotificationPrimerIfNeeded(
             identity: identity,
-            sharingStateIsKnown: false,
-            sharingEnabled: false,
-            locationAuthorizationState: .notDetermined,
             pushAuthorization: FixedPushAuthorization(isNotDetermined: true)
         )
         #expect(coordinator.presentedPrimer == .notifications)
 
-        // The location primer still waits until the preference is known.
         pushStore.markResponded()
         coordinator.dismiss()
-        await coordinator.presentIfNeeded(
+        coordinator.presentLocationPrimerIfNeeded(
             identity: identity,
             sharingStateIsKnown: false,
             sharingEnabled: false,
-            locationAuthorizationState: .notDetermined,
-            pushAuthorization: FixedPushAuthorization(isNotDetermined: true)
+            locationAuthorizationState: .notDetermined
         )
         #expect(coordinator.presentedPrimer == nil)
     }

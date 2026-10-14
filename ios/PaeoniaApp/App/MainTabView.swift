@@ -22,6 +22,10 @@ struct MainTabIdentity: Equatable {
 /// Root-owned work the tabs ask for.
 struct MainTabActions {
     var openWidgetDrawing: () -> Void = {}
+    /// The map card's Share button. Turns sharing on and offers sharing while closed.
+    var shareLocation: @MainActor () async -> Void = {}
+    /// The person answered a question or sent a drawing.
+    var sentSomethingToPartner: () -> Void = {}
     /// Pull-to-refresh on Home, after the daily challenge refresh.
     var refreshHome: () async -> Void = {}
     /// Runs one sync pass so a daily challenge refresh sees partner answers.
@@ -327,6 +331,11 @@ struct MainTabView: View {
                     )
                 }
                 .lookBackDrawingHistory(isPresented: $isLookBackDrawingHistoryPresented, dependencies: dependencies)
+                .onChange(of: widgetDrawingPresented.wrappedValue) { _, isPresented in
+                    if !isPresented, dependencies.widgetDrawingViewModel?.hasSentDrawing == true {
+                        actions.sentSomethingToPartner()
+                    }
+                }
         }
     }
 
@@ -348,7 +357,7 @@ struct MainTabView: View {
             zoomNamespace: zoomNamespace,
             locationMapState: locationMapState,
             onPromptCurrentLocation: {
-                Task { await locationViewModel.promptForCurrentLocation() }
+                Task { await actions.shareLocation() }
             },
             unreadChats: dailyChallengeViewModel.unreadChats.map { summary in
                 UnreadChatRow(
@@ -422,6 +431,7 @@ struct MainTabView: View {
                 onPurchasesRestored: { [purchasesRestored = actions.purchasesRestored] in
                     await purchasesRestored()
                 },
+                loadMarkEditor: { [gamesViewModel] in await gamesViewModel.makeMarkEditor() },
                 privacySafetyService: dependencies.settingsPrivacyService,
                 privacyOperationProvider: dependencies.settingsPrivacyOperationProvider
             )

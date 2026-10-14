@@ -1,4 +1,4 @@
-# Exquisite corpse
+# Odd Creatures (exquisite corpse)
 
 Design for the second drawing game. Shared rules for all games (transports, the Convex model, notifications, play style, game language, the streak) live in `docs/games-plan.md`. Draw & Guess (`docs/games/draw-and-guess.md`) sets the bar and owns the drawing canvas, the replay and the history this game reuses. This file covers only what is specific to Exquisite corpse.
 
@@ -8,7 +8,7 @@ Keep this file current. When a decision lands or the design changes, update it i
 
 Decided on 2026-10-13.
 
-- **The name is "Exquisite corpse".** Norwegian "Kadaver exquis". The code uses the kind `exquisite_corpse` and the Swift prefix `ExquisiteCorpse`.
+- **The name is "Odd Creatures".** Norwegian "Rare skapninger". The game is known as exquisite corpse, and the code uses the kind `exquisite_corpse` and the Swift prefix `ExquisiteCorpse`.
 - **Three parts, and turns alternate.** A figure is a head, a body and legs. The partner who starts a figure draws its head and its legs, and the other partner draws the body. The next figure starts with the other partner. Turns simply alternate forever, so over two figures each partner draws three parts.
 - **The strip is 12% of a part.** The next drawer sees the bottom 12% of the part before, 38 pt of the 320 pt square. Nothing else of it.
 - **Ideas are optional.** The canvas says "Draw the head". A quiet "Need an idea?" button deals a hand-written idea in the couple's game language. The idea shows as a chip with Shuffle and a remove button. Whatever chip shows when the drawer taps Done is saved with the part, stays hidden from the partner, and becomes the part's caption at the reveal.
@@ -143,8 +143,8 @@ Sending a part counts toward the couple's streak as `game_turn_completed`, with 
 - Turn: title "Robin drew the head", body "Your turn to draw the body." After the body: "Robin drew the body", "Your turn to draw the legs." Sent when a head or body arrives, and not sent when the partner has the game open. The push carries `step: "body"` or `step: "legs"`, the part that is now the partner's turn, and the copy for each step is in `GAME_PUSH_COPY` (`lib/notificationCopy.ts`).
 - Finished: title "Robin finished your creature", body "Open it to see the whole thing." Sent when the legs arrive, and not sent when the partner has the game open.
 - A new figure needs no push of its own. The partner who draws the next head gets the finished push for the last figure, and that opens the reveal and then their turn.
-- Reminder: "Your turn in Exquisite corpse", once, when a turn has waited 72 hours.
-- Invite: the shared "[Name] wants to play Exquisite corpse with you".
+- Reminder: "Your turn in Odd Creatures", once, when a turn has waited 72 hours.
+- Invite: the shared "[Name] wants to play Odd Creatures with you".
 - The lock screen never shows a drawing or an idea. The payload holds only ids, the step and the deep link `paeonia://games/exquisite-corpse`.
 - The drain drops a turn push once the turn has moved on, and a finished push once the recipient has seen the reveal.
 
@@ -153,8 +153,8 @@ Sending a part counts toward the couple's streak as `game_turn_completed`, with 
 | Turn, head done | %@ drew the head / %@ har tegnet hodet | Your turn to draw the body. / Din tur til å tegne kroppen. |
 | Turn, body done | %@ drew the body / %@ har tegnet kroppen | Your turn to draw the legs. / Din tur til å tegne beina. |
 | Finished | %@ finished your creature / %@ gjorde ferdig skapningen deres | Open it to see the whole thing. / Åpne den for å se hele. |
-| Reminder | Your turn in Exquisite corpse / Din tur i Kadaver exquis | Open Paeonia to take your turn. / Åpne Paeonia for å ta turen din. |
-| Invite | %@ wants to play Exquisite corpse with you / %@ vil spille Kadaver exquis med deg | The shared invite body |
+| Reminder | Your turn in Odd Creatures / Din tur i Rare skapninger | Open Paeonia to take your turn. / Åpne Paeonia for å ta turen din. |
+| Invite | %@ wants to play Odd Creatures with you / %@ vil spille Rare skapninger med deg | The shared invite body |
 
 ## Data
 
@@ -180,7 +180,7 @@ The screen-by-screen design. Copy keys start with `exquisiteCorpse.` and the tab
 ### Shell
 
 - One screen, `ExquisiteCorpseScreen`, opened from the Games tab and from the pushes. It shows one phase at a time, picked by `ExquisiteCorpseResolver` from the game, the current figure, this phone's queued moves and relay presence.
-- The Draw & Guess shell: `.paeoniaBackgroundSecondary`, `.preferredColorScheme(.dark)`, inline title "Exquisite corpse" / "Kadaver exquis", dark toolbar, no tab bar, bottom clusters pinned with `paeoniaBottomBar` inside `.paeoniaReadableWidth()`, phase changes as a cross-fade with a 12 pt rise over `meaningfulMoment` (Reduce Motion: cross-fade over `motionFast`). The canvas surface is `.paeoniaBackgroundPrimary` with the widget ink palette.
+- The Draw & Guess shell: `.paeoniaBackgroundSecondary`, `.preferredColorScheme(.dark)`, inline title "Odd Creatures" / "Rare skapninger", dark toolbar, no tab bar, bottom clusters pinned with `paeoniaBottomBar` inside `.paeoniaReadableWidth()`, phase changes as a cross-fade with a 12 pt rise over `meaningfulMoment` (Reduce Motion: cross-fade over `motionFast`). The canvas surface is `.paeoniaBackgroundPrimary` with the widget ink palette.
 - The square is sized like the Draw & Guess square, counting the strip above it as part of its height, so the strip and canvas together fit without scrolling.
 - Partner colors, avatars and haptics follow Draw & Guess.
 - The paper back (the fold) is `.paeoniaSurfaceSecondary` with a soft vertical gradient to `.paeoniaSurfacePrimary` and a 1 pt highlight along the fold edge, so it reads as paper folded toward the viewer.
@@ -216,7 +216,7 @@ Done. `drawingSent()`, then the waiting screen with "Sent to [Name]". Offline, t
 
 | Key | English | Norwegian |
 |---|---|---|
-| `name` | Exquisite corpse | Kadaver exquis |
+| `name` | Odd Creatures | Rare skapninger |
 | `draw.eyebrow` | Your part | Din del |
 | `draw.head` / `draw.body` / `draw.legs` | Draw the head / Draw the body / Draw the legs | Tegn hodet / Tegn kroppen / Tegn beina |
 | `draw.firstHint` | [Name] draws the body next, and only sees the bottom of yours. | [Name] tegner kroppen etterpå, og ser bare bunnen av din. |
@@ -309,7 +309,7 @@ The shared card frame from the foundation, with its own artwork: a strip of ligh
 | Partner's turn | [Name] is drawing the head / body / legs | [Name] tegner hodet / kroppen / beina |
 | Unseen reveal | Your creature is ready | Skapningen deres er klar |
 | My legs are saved on the phone | Waiting for [Name] to start a new creature (the waiting screen's title) | Venter på at [Name] skal starte en ny skapning |
-| Not started | Ready when you are | Klar når dere er det |
+| Not started | Draw one part each without peeking. Then unfold your creature. | Tegn hver deres del uten å kikke. Brett så ut skapningen. |
 | Action, my turn | Draw | Tegn |
 | Action, reveal | See it | Se den |
 | Action, not started | Start playing | Begynn å spille |
@@ -343,7 +343,7 @@ Code map in `docs/implementation-map.md`. Decisions the sections above leave ope
 
 Made on 2026-10-14 while the developer was away. Each can change after review.
 
-- **Copy for states the doc didn't cover.** The hub says "Ready when you are" with "Start playing" before the first figure, and the waiting screen's "Waiting for [Name] to start a new creature" while this person's legs wait to be sent. Watching the legs live, the paper covers the whole square (the legs leave no strip) and the hint says "You'll both see the whole creature when the legs are done."
+- **Copy for states the doc didn't cover.** The hub says "Draw one part each without peeking. Then unfold your creature." with "Start playing" before the first figure, and the waiting screen's "Waiting for [Name] to start a new creature" while this person's legs wait to be sent. Watching the legs live, the paper covers the whole square (the legs leave no strip) and the hint says "You'll both see the whole creature when the legs are done."
 - **Generic strings moved to shared keys.** "Choose how you play in the Games tab first." and "We couldn't send your move yet" with its message are `games.needsSetup` and `games.waitingToSync.*`, used by both games with the same text. The clear alert, the star button and the drawing loading label moved the same way.
 - **Push steps.** The turn push's `step` is the part that is now the partner's turn (`body` or `legs`).
 - **Ideas.** 50 hand-written ideas per part per language, dealt as a deck of 12 per part. Both lists still need the developer's read (see "Open questions").

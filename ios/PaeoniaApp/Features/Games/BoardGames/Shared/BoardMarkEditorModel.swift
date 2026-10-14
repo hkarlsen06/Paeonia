@@ -32,6 +32,8 @@ final class BoardMarkEditorModel {
     private(set) var previewMark: UIImage?
     /// The person already has a drawn mark, so "Use my initial" has something to remove.
     let hasSavedMark: Bool
+    /// The person's initial, shown on the previews while the canvas is empty.
+    let initial: String
 
     private var history = DrawingEditHistory()
     @ObservationIgnored private var canvasSide: CGFloat = 0
@@ -40,11 +42,13 @@ final class BoardMarkEditorModel {
 
     /// - Parameters:
     ///   - initialMarkData: The saved mark's `PKDrawing` data, or nil without one.
+    ///   - initial: The person's initial, for the previews.
     ///   - save: Stores the mark, or clears it when given nil. It throws when the
     ///     mark did not reach the server.
-    init(initialMarkData: Data?, save: @escaping (Data?) async throws -> Void) {
+    init(initialMarkData: Data?, initial: String, save: @escaping (Data?) async throws -> Void) {
         drawing = initialMarkData.flatMap { try? PKDrawing(data: $0) } ?? PKDrawing()
         hasSavedMark = initialMarkData != nil
+        self.initial = initial
         saveMark = save
         schedulePreview(after: .zero)
     }
@@ -179,6 +183,29 @@ final class BoardMarkEditorModel {
             let image = await BoardMarkRenderer.image(from: canonical.dataRepresentation())
             guard !Task.isCancelled else { return }
             previewMark = image
+        }
+    }
+}
+
+extension BoardMarkEditorModel {
+    /// The sheet for the signed-in person's mark, which every board game shares.
+    /// A save goes to the server and then re-reads the marks, so open boards
+    /// show the new mark.
+    static func live(
+        savedMark: RemoteBoardGameMark?,
+        initial: String,
+        userID: UUID?,
+        dependencies: GamesDependencies
+    ) -> BoardMarkEditorModel {
+        let gateway = dependencies.boardGamesGateway
+        let cache = dependencies.boardGamesCache
+        let existing = savedMark.flatMap { BoardMarkRenderer.data(fromBase64: $0.drawing) }
+        return BoardMarkEditorModel(initialMarkData: existing, initial: initial) { data in
+            _ = try await gateway.setMark(data)
+            if let userID {
+                _ = try? await cache.fetchMarks(from: gateway, ownerUserID: userID)
+                LocalStoreChanges.post(.games, ownerUserID: userID)
+            }
         }
     }
 }

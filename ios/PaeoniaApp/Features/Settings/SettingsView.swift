@@ -34,6 +34,9 @@ struct SettingsView: View {
     let isLoggingOut: Bool
     let onUpdateProfile: @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool
     let onPurchasesRestored: @MainActor @Sendable () async -> Void
+    /// Builds the sheet for this person's mark in the board games. Without it
+    /// the row is hidden.
+    let loadMarkEditor: (@MainActor () async -> BoardMarkEditorModel?)?
     private let privacySafetyService: (any PrivacySafetyServicing)?
     private let privacyOperationProvider: (any SyncClientOperationProviding)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -68,6 +71,7 @@ struct SettingsView: View {
         onUpdateProfile: @escaping @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool =
             { _, _ in false },
         onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {},
+        loadMarkEditor: (@MainActor () async -> BoardMarkEditorModel?)? = nil,
         privacySafetyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
         privacyOperationProvider: (any SyncClientOperationProviding)? = nil
     ) {
@@ -89,6 +93,7 @@ struct SettingsView: View {
         self.isLoggingOut = isLoggingOut
         self.onUpdateProfile = onUpdateProfile
         self.onPurchasesRestored = onPurchasesRestored
+        self.loadMarkEditor = loadMarkEditor
         self.privacySafetyService = privacySafetyService
         self.privacyOperationProvider = privacyOperationProvider
         _viewModel = State(
@@ -281,6 +286,10 @@ extension SettingsView {
                 } icon: {
                     Image(systemName: "bell.badge.fill")
                 }
+            }
+
+            if let loadMarkEditor {
+                SettingsMarkRow(loadEditor: loadMarkEditor)
             }
 
             NavigationLink {

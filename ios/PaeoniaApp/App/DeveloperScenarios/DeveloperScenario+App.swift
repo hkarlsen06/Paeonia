@@ -206,12 +206,12 @@
     // MARK: Games tab
 
     static let gamesSetup = pairedApp(
-      "games-setup", "Games · first-time setup", "Games tab before the couple chose a play style and language",
-      .games
+      "games-setup", "Games · first-time setup",
+      "Hub before the couple chose a play style and language. Open a game for setup", .games
     )
     static let gamesPartnerPicked = pairedApp(
       "games-partner-picked", "Games · partner already set up",
-      "The one-time moment that shows what the partner picked", .games
+      "Open a game for the one-time moment that shows what the partner picked", .games
     )
     static let gamesHubYourTurn = pairedApp(
       "games-hub-your-turn", "Games · hub, your turn", "Hub with Draw & Guess waiting for your word", .games

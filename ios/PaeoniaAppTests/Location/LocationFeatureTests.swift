@@ -91,7 +91,7 @@ struct LocationSharingPrimerStoreTests {
 
     @MainActor
     @Test
-    func notificationPrimerPrecedesLocationWhenBothAreEligible() async throws {
+    func locationPrimerShowsWithoutWaitingForNotifications() throws {
         let suiteName = "LocationSharingPrimerCoordinatorTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -99,37 +99,26 @@ struct LocationSharingPrimerStoreTests {
             currentUserID: testUUID("11111111-1111-1111-1111-111111111111"),
             coupleID: testUUID("22222222-2222-2222-2222-222222222222")
         )
+        let pushStore = UserDefaultsPushPermissionPrimerStore(defaults: defaults)
         let coordinator = RootPairingPermissionPrimerCoordinator(
-            pushPrimerStore: UserDefaultsPushPermissionPrimerStore(defaults: defaults),
+            pushPrimerStore: pushStore,
             locationPrimerStore: UserDefaultsLocationSharingPrimerStore(defaults: defaults)
         )
 
-        await coordinator.presentIfNeeded(
+        coordinator.presentLocationPrimerIfNeeded(
             identity: identity,
             sharingStateIsKnown: true,
             sharingEnabled: true,
-            locationAuthorizationState: .notDetermined,
-            pushAuthorization: StaticPushAuthorization(isNotDetermined: true)
-        )
-
-        #expect(coordinator.presentedPrimer == .notifications)
-
-        coordinator.markPushResponded()
-        coordinator.dismiss()
-        await coordinator.presentIfNeeded(
-            identity: identity,
-            sharingStateIsKnown: true,
-            sharingEnabled: true,
-            locationAuthorizationState: .notDetermined,
-            pushAuthorization: StaticPushAuthorization(isNotDetermined: true)
+            locationAuthorizationState: .notDetermined
         )
 
         #expect(coordinator.presentedPrimer == .location)
+        #expect(!pushStore.hasResponded())
     }
 
     @MainActor
     @Test
-    func dismissingNotificationPrimerContinuesToLocationWithoutRepeatingIt() async throws {
+    func dismissingNotificationPrimerDoesNotRepeatItInTheSameSession() async throws {
         let suiteName = "LocationSharingPrimerDismissTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -143,31 +132,25 @@ struct LocationSharingPrimerStoreTests {
             locationPrimerStore: UserDefaultsLocationSharingPrimerStore(defaults: defaults)
         )
 
-        await coordinator.presentIfNeeded(
+        await coordinator.presentNotificationPrimerIfNeeded(
             identity: identity,
-            sharingStateIsKnown: true,
-            sharingEnabled: true,
-            locationAuthorizationState: .notDetermined,
             pushAuthorization: StaticPushAuthorization(isNotDetermined: true)
         )
         #expect(coordinator.presentedPrimer == .notifications)
 
         coordinator.dismiss()
-        await coordinator.presentIfNeeded(
+        await coordinator.presentNotificationPrimerIfNeeded(
             identity: identity,
-            sharingStateIsKnown: true,
-            sharingEnabled: true,
-            locationAuthorizationState: .notDetermined,
             pushAuthorization: StaticPushAuthorization(isNotDetermined: true)
         )
 
-        #expect(coordinator.presentedPrimer == .location)
+        #expect(coordinator.presentedPrimer == nil)
         #expect(!pushStore.hasResponded())
     }
 
     @MainActor
     @Test
-    func locationPrimerAppearsOnlyOncePerRelationshipInOneSession() async throws {
+    func locationPrimerAppearsOnlyOncePerRelationshipInOneSession() throws {
         let suiteName = "LocationSharingPrimerOnceTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -175,29 +158,25 @@ struct LocationSharingPrimerStoreTests {
             currentUserID: testUUID("11111111-1111-1111-1111-111111111111"),
             coupleID: testUUID("22222222-2222-2222-2222-222222222222")
         )
-        let pushStore = UserDefaultsPushPermissionPrimerStore(defaults: defaults)
-        pushStore.markResponded()
         let coordinator = RootPairingPermissionPrimerCoordinator(
-            pushPrimerStore: pushStore,
+            pushPrimerStore: UserDefaultsPushPermissionPrimerStore(defaults: defaults),
             locationPrimerStore: UserDefaultsLocationSharingPrimerStore(defaults: defaults)
         )
 
-        await coordinator.presentIfNeeded(
+        coordinator.presentLocationPrimerIfNeeded(
             identity: identity,
             sharingStateIsKnown: true,
             sharingEnabled: false,
-            locationAuthorizationState: .notDetermined,
-            pushAuthorization: StaticPushAuthorization(isNotDetermined: false)
+            locationAuthorizationState: .notDetermined
         )
         #expect(coordinator.presentedPrimer == .location)
 
         coordinator.dismiss()
-        await coordinator.presentIfNeeded(
+        coordinator.presentLocationPrimerIfNeeded(
             identity: identity,
             sharingStateIsKnown: true,
             sharingEnabled: false,
-            locationAuthorizationState: .notDetermined,
-            pushAuthorization: StaticPushAuthorization(isNotDetermined: false)
+            locationAuthorizationState: .notDetermined
         )
 
         #expect(coordinator.presentedPrimer == nil)
@@ -224,20 +203,14 @@ struct LocationSharingPrimerStoreTests {
         )
 
         let staleEvaluation = Task { @MainActor in
-            await coordinator.presentIfNeeded(
+            await coordinator.presentNotificationPrimerIfNeeded(
                 identity: firstIdentity,
-                sharingStateIsKnown: true,
-                sharingEnabled: true,
-                locationAuthorizationState: .authorized,
                 pushAuthorization: pushAuthorization
             )
         }
         await pushAuthorization.waitUntilFirstEvaluationStarts()
-        await coordinator.presentIfNeeded(
+        await coordinator.presentNotificationPrimerIfNeeded(
             identity: latestIdentity,
-            sharingStateIsKnown: true,
-            sharingEnabled: true,
-            locationAuthorizationState: .authorized,
             pushAuthorization: pushAuthorization
         )
         await pushAuthorization.finishFirstEvaluation()
@@ -249,7 +222,7 @@ struct LocationSharingPrimerStoreTests {
 
     @MainActor
     @Test
-    func deniedLocationAuthorizationNeverShowsDeadEndLocationPrimer() async throws {
+    func deniedLocationAuthorizationNeverShowsDeadEndLocationPrimer() throws {
         let suiteName = "LocationSharingPrimerDeniedTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -262,15 +235,14 @@ struct LocationSharingPrimerStoreTests {
             locationPrimerStore: UserDefaultsLocationSharingPrimerStore(defaults: defaults)
         )
 
-        await coordinator.presentIfNeeded(
+        coordinator.presentLocationPrimerIfNeeded(
             identity: identity,
             sharingStateIsKnown: true,
             sharingEnabled: false,
-            locationAuthorizationState: .denied,
-            pushAuthorization: StaticPushAuthorization(isNotDetermined: true)
+            locationAuthorizationState: .denied
         )
 
-        #expect(coordinator.presentedPrimer == .notifications)
+        #expect(coordinator.presentedPrimer == nil)
     }
 }
 

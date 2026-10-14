@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The first time a couple opens Games: how they play and in which language. The
+/// The first game a couple opens: how they play and in which language. The
 /// partner who arrives later skips this and sees `GamesPartnerPickedView`.
 struct GamesSetupView: View {
     @Bindable var viewModel: GamesViewModel
@@ -66,11 +66,11 @@ struct GamesBadge: View {
     }
 }
 
-/// Shown once to the partner who opens Games after the other one set it up.
+/// Shown once, before the first game, to the partner who opens one after the
+/// other set up Games.
 struct GamesPartnerPickedView: View {
     let viewModel: GamesViewModel
     let settings: RemoteGameSettings
-    @State private var isChangingSettings = false
 
     var body: some View {
         ScrollView {
@@ -108,7 +108,7 @@ struct GamesPartnerPickedView: View {
                 .accessibilityIdentifier("games.partnerPicked.continue")
 
                 Button {
-                    isChangingSettings = true
+                    viewModel.changePartnerPicked()
                 } label: {
                     Text(.gamesPartnerPickedChange)
                 }
@@ -121,9 +121,6 @@ struct GamesPartnerPickedView: View {
         }
         .navigationTitle(Text(.mainTabGames))
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $isChangingSettings) {
-            GamesSettingsSheet(viewModel: viewModel)
-        }
         .accessibilityIdentifier("games.partnerPicked")
     }
 

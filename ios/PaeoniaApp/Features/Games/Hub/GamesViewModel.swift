@@ -36,11 +36,17 @@ final class GamesViewModel {
         case loading
         /// Nothing cached and the first read failed.
         case unavailable
+        case hub
+    }
+
+    /// The steps before this person's first game, in one sheet over the hub.
+    enum IntroStep {
         /// The couple has not chosen a play style and language.
         case setup
         /// The partner chose first. Shows what they picked once.
         case partnerPicked(RemoteGameSettings)
-        case hub
+        /// The canvas for the mark on this person's pieces, for someone without one.
+        case mark(BoardMarkEditorModel)
     }
 
     var screen: Screen = .loading
@@ -50,6 +56,10 @@ final class GamesViewModel {
     var draftLanguage: GameLanguage = .preferred()
     var isSavingSettings = false
     var notice: GamesNotice?
+    /// The first-time step on screen while a game waits to open.
+    var introStep: IntroStep?
+    /// A screen to push now. The Games tab pushes it and clears this.
+    var destinationToOpen: GamesDestination?
     private(set) var partnerName: String
     /// The built games the partner has open right now, freshest first.
     private(set) var partnerGameKinds: [GameKind] = []
@@ -68,13 +78,17 @@ final class GamesViewModel {
 
     /// The built games, in `GameKind` order. A kind that is not here shows nowhere.
     var games: [any GameHubModel] {
-        [drawAndGuess, mindMeld, exquisiteCorpse, storyChain, connectFour, dotsAndBoxes, ultimateTicTacToe, ludo]
+        [ludo, drawAndGuess, connectFour, mindMeld, dotsAndBoxes, ultimateTicTacToe, storyChain, exquisiteCorpse]
     }
 
     private let dependencies: GamesDependencies
     private var participants: GameParticipants
     private var overview: RemoteGamesOverview?
     private var hasLoaded = false
+    /// The step the next opened game shows first, or nil when there is none.
+    private var neededIntro: IntroStep?
+    /// The game that opens when the first-time steps end.
+    private var destinationAfterIntro: GamesDestination?
 
     init(dependencies: GamesDependencies, drawAndGuess: DrawAndGuessViewModel? = nil) {
         self.dependencies = dependencies
@@ -154,6 +168,26 @@ final class GamesViewModel {
         }
     }
 
+    /// The sheet for this person's mark, shared by every board game. A phone that
+    /// has never read the marks asks the server first, so a saved mark is not
+    /// shown as missing.
+    func makeMarkEditor() async -> BoardMarkEditorModel? {
+        guard let userID = currentUserID else { return nil }
+        let cache = dependencies.boardGamesCache
+        var marks = await cache.document(ownerUserID: userID).marks
+        if marks == nil {
+            _ = try? await cache.fetchMarks(from: dependencies.boardGamesGateway, ownerUserID: userID)
+            marks = await cache.document(ownerUserID: userID).marks
+        }
+        guard currentUserID == userID else { return nil }
+        return .live(
+            savedMark: marks?.mine,
+            initial: BoardPieceStyle.initial(of: participants.currentName),
+            userID: userID,
+            dependencies: dependencies
+        )
+    }
+
     // MARK: - Reading
 
     /// Reads the cache, and the server when the cache is empty.
@@ -222,25 +256,77 @@ final class GamesViewModel {
             return
         }
         guard let settings else {
-            screen = overview == nil ? .loading : .setup
+            neededIntro = .setup
+            screen = overview == nil ? .loading : .hub
             return
         }
         if await dependencies.cache.hasSeenSettings(coupleID: settings.coupleID, ownerUserID: userID) {
-            screen = .hub
+            neededIntro = nil
         } else if settings.updatedByUserID == userID {
             // This person chose them, so there is nothing new to show.
             await dependencies.cache.markSettingsSeen(coupleID: settings.coupleID, ownerUserID: userID)
-            screen = .hub
+            neededIntro = nil
         } else {
-            screen = .partnerPicked(settings)
+            neededIntro = .partnerPicked(settings)
+        }
+        screen = .hub
+    }
+
+    // MARK: - Opening
+
+    /// Opens a screen from the hub, Home or a notification. The hub shows every
+    /// game before anyone sets anything up, so the first game opened shows the
+    /// first-time steps, and the game opens after them.
+    func open(_ destination: GamesDestination) {
+        guard screen == .hub else { return }
+        if case .game = destination, let neededIntro {
+            destinationAfterIntro = destination
+            introStep = neededIntro
+        } else {
+            destinationToOpen = destination
+        }
+    }
+
+    /// "Change" on what the partner picked switches the sheet to the setup step,
+    /// which starts from the partner's choices.
+    func changePartnerPicked() {
+        guard case .partnerPicked = introStep else { return }
+        introStep = .setup
+    }
+
+    /// The sheet closed. Closing the mark step still opens the game, because the
+    /// mark can wait. Closing an earlier step leaves the person on the hub.
+    func introDismissed() {
+        if case .mark = introStep {
+            destinationToOpen = destinationAfterIntro
+        }
+        introStep = nil
+        destinationAfterIntro = nil
+    }
+
+    /// After the settings, someone without a mark gets the canvas. Without one
+    /// to ask for, the game opens.
+    private func continueIntro() async {
+        guard introStep != nil else { return }
+        let editor = await makeMarkEditor()
+        // The person closed the sheet while the marks loaded.
+        guard introStep != nil else { return }
+        if let editor, !editor.hasSavedMark {
+            introStep = .mark(editor)
+        } else {
+            destinationToOpen = destinationAfterIntro
+            introStep = nil
+            destinationAfterIntro = nil
         }
     }
 
     // MARK: - Settings
 
-    /// Saves the first choices from setup.
+    /// Saves the first choices from setup, then moves on to the mark.
     func finishSetup() async {
-        await saveSettings(playStyle: draftPlayStyle, language: draftLanguage)
+        if await saveSettings(playStyle: draftPlayStyle, language: draftLanguage) {
+            await continueIntro()
+        }
     }
 
     /// Saves a change from the settings sheet. Returns whether it saved.
@@ -267,6 +353,7 @@ final class GamesViewModel {
         guard let userID = currentUserID, let settings else { return }
         await dependencies.cache.markSettingsSeen(coupleID: settings.coupleID, ownerUserID: userID)
         await reload()
+        await continueIntro()
     }
 
     func clearNotice() {

@@ -82,10 +82,11 @@ Player one started the game and always moves first. Each game has a pure rules f
 
 ### Your mark
 
-- A mark is a small drawing made with the PencilKit pen in one ink. It is stored per partner in the couple, not per game, so one mark shows in all three games.
+- A mark is a small drawing made with the PencilKit pen in one ink. It is stored per partner in the couple, not per game, so one mark shows in every board game.
 - The board tints the mark in its owner's color. On this phone, my pieces use `.paeoniaPartnerOne` and my partner's use `.paeoniaInkLavender` (`Color.boardGameMine` and `Color.boardGamePartner`).
 - Without a drawn mark, a partner's mark is the first letter of their display name.
-- The mark editor opens from the "Your mark" button in the board toolbar, and from a quiet "Draw your mark" link under my avatar while I have no mark. It never blocks a game.
+- The first time a partner opens any game, the first-time sheet ends on the mark editor for someone with no mark, after setup or the partner's choices. Cancel skips it, and the game opens either way.
+- Later the editor opens from "Your mark in games" on the Us tab, the "Your mark" button in the board toolbar, and a quiet "Draw your mark" link under my avatar while I have no mark. It never blocks a game.
 - Saving needs a connection. A failed save keeps the drawing in the editor and shows "We couldn't save your mark. Check your connection and try again."
 - The partner's new mark shows on their pieces the next time the board renders. Nobody gets a push for it.
 

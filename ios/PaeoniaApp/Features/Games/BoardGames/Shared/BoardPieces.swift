@@ -20,6 +20,10 @@ struct BoardPieceStyle: Equatable {
     static func == (lhs: BoardPieceStyle, rhs: BoardPieceStyle) -> Bool {
         lhs.color == rhs.color && lhs.mark === rhs.mark && lhs.initial == rhs.initial
     }
+
+    nonisolated static func initial(of name: String) -> String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines).first.map { String($0).uppercased() } ?? "?"
+    }
 }
 
 /// Both players' styles, by board player.

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The one-time notification and location primers shown after pairing.
+/// The one-time notification and location primers.
 /// `RootPairingPermissionPrimerCoordinator` decides which primer is due; this
 /// extension supplies the paired identity, the sheets, and their actions.
 extension RootView {
@@ -30,19 +30,15 @@ extension RootView {
         !Task.isCancelled && stablePairedLocationIdentity == identity
     }
 
-    /// Runs when Home becomes the stable paired surface. The notification primer
-    /// is offered first, once Home has finished sliding in, because it needs no
-    /// server data. The location primer needs the server-backed sharing
-    /// preference, which the sync pass below restores, and is only offered when
-    /// no other primer was shown during this visit.
+    /// Runs when Home becomes the stable paired surface. The location primer
+    /// needs the server-backed sharing preference, which the sync pass below
+    /// restores, and waits until Home has finished sliding in.
     func restorePairedLocationPresentation(for identity: LocationIdentity) async {
         do {
             try await Task.sleep(for: .milliseconds(600))
         } catch {
             return
         }
-        await presentPermissionPrimerIfNeeded(for: identity)
-        guard isCurrentStableIdentity(identity) else { return }
 
         await viewModel.synchronizePairedPresentationData()
         guard isCurrentStableIdentity(identity) else { return }
@@ -60,13 +56,13 @@ extension RootView {
         )
         guard isCurrentStableIdentity(identity) else { return }
 
-        await presentPermissionPrimerIfNeeded(for: identity)
+        presentLocationPrimerIfNeeded(for: identity)
     }
 
-    /// Offers at most one primer per visit. Two permission asks back to back
+    /// Offers at most one primer per visit. Two permission asks close together
     /// feel pushy, so after the notification primer the location primer waits
     /// until the person next comes back to the app.
-    func presentPermissionPrimerIfNeeded(for identity: LocationIdentity) async {
+    func presentLocationPrimerIfNeeded(for identity: LocationIdentity) {
         guard allowsSystemIntegrations,
               !primerShownThisVisit,
               isCurrentStableIdentity(identity)
@@ -74,24 +70,43 @@ extension RootView {
             return
         }
 
-        await permissionPrimerCoordinator.presentIfNeeded(
+        permissionPrimerCoordinator.presentLocationPrimerIfNeeded(
             identity: identity,
             sharingStateIsKnown: locationViewModel.hasResolvedSharingPreference,
             sharingEnabled: locationViewModel.sharingEnabled,
-            locationAuthorizationState: locationViewModel.authorizationState,
-            pushAuthorization: pushAuthorization
+            locationAuthorizationState: locationViewModel.authorizationState
         )
-
-        // Scene-activation work is intentionally unstructured and can outlive
-        // the paired identity while the authorization status read is suspended.
-        // Never let that stale result resurrect a primer after unpair/sign-out.
-        if !isCurrentStableIdentity(identity),
-           permissionPrimerCoordinator.presentedIdentity == identity {
-            permissionPrimerCoordinator.dismiss()
-        }
-
         if permissionPrimerCoordinator.presentedPrimer != nil {
             primerShownThisVisit = true
+        }
+    }
+
+    /// The notification primer waits until the person has answered a question
+    /// or sent a drawing, so the ask comes when its reason is clear. It shows
+    /// once the answer cover or the drawing screen has gone away.
+    func offerNotificationsAfterSharing() {
+        guard allowsSystemIntegrations,
+              let identity = stablePairedLocationIdentity
+        else {
+            return
+        }
+
+        Task { @MainActor in
+            await permissionPrimerCoordinator.presentNotificationPrimerIfNeeded(
+                identity: identity,
+                pushAuthorization: pushAuthorization
+            )
+
+            // The authorization status read can outlive the paired identity.
+            // Never let that stale result resurrect a primer after unpair/sign-out.
+            if !isCurrentStableIdentity(identity),
+               permissionPrimerCoordinator.presentedIdentity == identity {
+                permissionPrimerCoordinator.dismiss()
+            }
+
+            if permissionPrimerCoordinator.presentedPrimer != nil {
+                primerShownThisVisit = true
+            }
         }
     }
 
@@ -130,8 +145,22 @@ extension RootView {
         permissionPrimerCoordinator.markLocationResponded(identity: locationIdentity)
         permissionPrimerCoordinator.dismiss()
         Task { @MainActor in
-            await locationViewModel.promptForCurrentLocation()
+            await shareLocation()
         }
+    }
+
+    /// Turns sharing on, asking iOS for While Using first. Once that is
+    /// allowed, iOS asks right away whether Paeonia may also share while closed.
+    func shareLocation() async {
+        let wasSharing = locationViewModel.sharingEnabled
+        await locationViewModel.promptForCurrentLocation()
+        guard !wasSharing,
+              locationViewModel.sharingEnabled,
+              locationViewModel.authorizationState == .authorized
+        else {
+            return
+        }
+        LocationUpdateController.shared.offerUpdatesWhileClosed()
     }
 
     private func dismissLocationSharingPrimer() {

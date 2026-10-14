@@ -40,7 +40,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Paeonia uses your camera so you can take a photo to answer the daily question.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>When you turn on "Share while Paeonia is closed", Paeonia sends your location to your partner each time you move a good distance, even when you're not using the app.</string>
+	<string>If you allow this, Paeonia sends your location to your partner each time you move a good distance, even when you're not using the app. You can turn it off anytime in Settings.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Paeonia uses your location only when you turn on sharing, so your partner can see your latest location.</string>
 	<key>NSMicrophoneUsageDescription</key>

@@ -527,7 +527,7 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
-    @Test func launchingDirectlyIntoUnseenPairedShowsSettledCelebration() async throws {
+    @Test func launchingDirectlyIntoUnseenPairedPlaysCelebrationIntro() async throws {
         let pairID = try #require(UUID(uuidString: "E6067801-9F27-4982-B8FD-0DFED2F61672"))
         let pairingCelebrationStore = TestPairingCelebrationStore()
         let accessRouteService = StaticAccessRouteService(
@@ -543,7 +543,7 @@ struct PaeoniaAppTests {
         await viewModel.start()
 
         #expect(viewModel.state == .paired)
-        #expect(viewModel.pendingPairingCelebration == false)
+        #expect(viewModel.pendingPairingCelebration == true)
         #expect(viewModel.isPairingCelebrationPresented == true)
 
         viewModel.dismissPairingCelebration()

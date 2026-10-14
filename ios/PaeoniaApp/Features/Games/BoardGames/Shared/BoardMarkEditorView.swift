@@ -6,8 +6,6 @@ import SwiftUI
 struct BoardMarkEditorView: View {
     /// The color of my pieces.
     let color: Color
-    /// My initial, shown on the previews while the canvas is empty.
-    let initial: String
 
     @State private var model: BoardMarkEditorModel
     @Environment(\.dismiss) private var dismiss
@@ -17,9 +15,8 @@ struct BoardMarkEditorView: View {
 
     /// The sheet keeps the first model it gets, so a parent that builds a new model
     /// whenever it redraws cannot reset the canvas while the person draws.
-    init(color: Color, initial: String, model: BoardMarkEditorModel) {
+    init(color: Color, model: BoardMarkEditorModel) {
         self.color = color
-        self.initial = initial
         _model = State(initialValue: model)
     }
 
@@ -90,7 +87,7 @@ struct BoardMarkEditorView: View {
     }
 
     private var previewStyle: BoardPieceStyle {
-        BoardPieceStyle(color: color, mark: model.previewMark, initial: initial)
+        BoardPieceStyle(color: color, mark: model.previewMark, initial: model.initial)
     }
 
     // MARK: Canvas
@@ -243,8 +240,7 @@ private struct BoardMarkPreviews: View {
 #Preview {
     BoardMarkEditorView(
         color: .paeoniaPartnerOne,
-        initial: "H",
-        model: BoardMarkEditorModel(initialMarkData: nil, save: { _ in })
+        model: BoardMarkEditorModel(initialMarkData: nil, initial: "H", save: { _ in })
     )
     .environment(PaeoniaBannerCenter())
 }

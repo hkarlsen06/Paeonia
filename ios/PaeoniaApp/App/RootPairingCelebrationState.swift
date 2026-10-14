@@ -47,10 +47,10 @@ struct RootPairingCelebrationState {
         marksSeenWhenPairIDArrives = false
     }
 
-    /// Applies a committed access resolution. `shouldCelebrate` is true for a
-    /// fresh link, which plays the intro; an ordinary launch into an unseen pair
-    /// shows the settled celebration without it.
-    mutating func update(for resolution: AccessRouteResolution, shouldCelebrate: Bool) {
+    /// Applies a committed access resolution. An unseen pair always shows the
+    /// celebration with its intro, whether the couple just linked or the app
+    /// opened into a pair this phone has not celebrated yet.
+    mutating func update(for resolution: AccessRouteResolution) {
         guard resolution.route == .paired else {
             clear()
             return
@@ -71,7 +71,7 @@ struct RootPairingCelebrationState {
 
         let hasSeen = resolution.pairingCelebrationPairID
             .map(store.hasSeenCelebration(forPairID:)) ?? false
-        playsIntro = shouldCelebrate && !hasSeen
+        playsIntro = !hasSeen
         isPresented = !hasSeen
     }
 
@@ -82,21 +82,5 @@ struct RootPairingCelebrationState {
 
         store.markCelebrationSeen(forPairID: pairID)
         return true
-    }
-
-    /// A fresh link is a move into `.paired` from a state where the couple was
-    /// not linked yet. An ordinary app open that is already paired starts from
-    /// no previous route and must not replay the intro.
-    static func isFreshLink(from previous: AccessRoute?, to current: AccessRoute) -> Bool {
-        guard current == .paired, let previous else {
-            return false
-        }
-
-        switch previous {
-        case .invitePending, .unpaired, .limitedAuthenticated, .pairedPaywalled:
-            return true
-        case .paired, .relationshipEndedNotice:
-            return false
-        }
     }
 }

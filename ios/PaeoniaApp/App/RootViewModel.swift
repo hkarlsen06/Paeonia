@@ -282,14 +282,8 @@ final class RootViewModel {
 
     /// Commits a resolved access route and, in the same step, decides whether the
     /// one-time pairing celebration should be presented above the paired screen.
-    func applyAccessResolution(
-        _ resolution: AccessRouteResolution,
-        for session: AuthSession,
-        previous: AccessRouteResolution?
-    ) {
-        let shouldCelebrate = celebration.playsIntro
-            || RootPairingCelebrationState.isFreshLink(from: previous?.route, to: resolution.route)
-        celebration.update(for: resolution, shouldCelebrate: shouldCelebrate)
+    func applyAccessResolution(_ resolution: AccessRouteResolution, for session: AuthSession) {
+        celebration.update(for: resolution)
         if resolution.route != .paired {
             clearPendingWidgetDrawingOpen()
         }

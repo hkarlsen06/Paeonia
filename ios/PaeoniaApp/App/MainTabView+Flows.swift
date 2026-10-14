@@ -23,7 +23,7 @@ extension MainTabView {
     /// shared top banner, because the root's banner would sit behind it.
     func presentingDailyFlows(on content: some View) -> some View {
         presentingStreakMilestones(on: content)
-            .fullScreenCover(isPresented: $isAnswerFlowPresented) {
+            .fullScreenCover(isPresented: $isAnswerFlowPresented, onDismiss: offerNotificationsIfAnswered) {
                 DailyChallengeAnswerFlow(
                     viewModel: dailyChallengeViewModel,
                     onClose: closeAnswerFlow,
@@ -37,7 +37,11 @@ extension MainTabView {
                 .paeoniaTopBanner(bannerCenter)
             }
             // The single-question partner-answer flow zooms out of the tapped card.
-            .fullScreenCover(item: $partnerAnswerQuestion, content: partnerAnswerFlow)
+            .fullScreenCover(
+                item: $partnerAnswerQuestion,
+                onDismiss: offerNotificationsIfAnswered,
+                content: partnerAnswerFlow
+            )
             // The streak badge opens the restore offer (broken) from outside the answer flow.
             .sheet(isPresented: $showStreakRestore) {
                 StreakRestoreView(
@@ -57,6 +61,13 @@ extension MainTabView {
                 .presentationDetents([.large])
                 .presentationBackground(.paeoniaSurfacePrimary)
             }
+    }
+
+    /// Runs once the cover is gone, so the notification ask can show.
+    private func offerNotificationsIfAnswered() {
+        if dailyChallengeViewModel.hasSentAnswer {
+            actions.sentSomethingToPartner()
+        }
     }
 
     /// Answering a question the partner already answered. Sending it turns the
@@ -292,27 +303,25 @@ extension MainTabView {
         }
     }
 
-    /// Opens a game from a notification or an invite. A couple that has not set
-    /// up Games yet lands on the setup instead, because every game needs their
-    /// choices. A game this build does not have opens the hub.
+    /// Opens a game from a notification or an invite. Someone who has not been
+    /// through the first-time steps sees them before the game. A game this build
+    /// does not have opens the hub.
     private func openGame(_ kind: GameKind, for deepLink: PaeoniaDeepLink) async {
         selection.wrappedValue = .games
         gamesViewModel.configure(participants: gamesParticipants)
         await gamesViewModel.load()
         guard isCurrent(deepLink) else { return }
-        if gamesViewModel.screen == .hub, gamesViewModel.game(kind) != nil {
-            gamesPath = [.game(kind)]
+        if gamesViewModel.game(kind) != nil {
+            gamesViewModel.open(.game(kind))
         }
         self.deepLink.wrappedValue = nil
     }
 
-    /// A game card on Home, shown while the partner is in the game. A partner who
-    /// has not seen the couple's settings yet lands on the Games tab to see them first.
+    /// A game card on Home, shown while the partner is in the game. Someone who
+    /// has not been through the first-time steps sees them before the game.
     func openGameFromHome(_ destination: GamesDestination) {
         selection.wrappedValue = .games
-        if gamesViewModel.screen == .hub {
-            gamesPath = [destination]
-        }
+        gamesViewModel.open(destination)
     }
 
     /// Links into the Questions tab refresh first, so a partner's answer or a

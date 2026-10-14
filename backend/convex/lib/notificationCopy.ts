@@ -79,7 +79,7 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
   },
   exquisite_corpse: {
     en: {
-      name: "Exquisite corpse",
+      name: "Odd Creatures",
       resultTitle: (actor) => `${actor} finished your creature`,
       resultBody: "Open it to see the whole thing.",
       steps: {
@@ -88,7 +88,7 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
       },
     },
     nb: {
-      name: "Kadaver exquis",
+      name: "Rare skapninger",
       resultTitle: (actor) => `${actor} gjorde ferdig skapningen deres`,
       resultBody: "Åpne den for å se hele.",
       steps: {
