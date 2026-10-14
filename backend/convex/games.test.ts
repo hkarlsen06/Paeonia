@@ -188,32 +188,38 @@ describe("presence and invites for every kind", () => {
 
   test("an invite for another kind is stored per kind, limited to one every 15 minutes, and has no copy yet", async () => {
     const s = await startCouple();
-    // A kind that has no push copy yet.
-    const kind = GAME_KINDS.find((item) => item !== "story_chain" && !GAME_PUSH_COPY[item])!;
-    const sent = await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind });
-    expect(sent.sent_at).toBe(new Date(START).toISOString());
-    const [row] = await outbox(s.t);
-    expect(row).toMatchObject({
-      recipient_user_id: s.b.userId,
-      title: "Paeonia",
-      body: "Open Paeonia to join in.",
-      payload: { type: "game_invite", game_kind: kind, couple_id: s.couple.coupleId, route: "games", deeplink: gameDeepLink(kind) },
-    });
-    expect(row.payload).not.toHaveProperty("game_id");
+    // Every built game has push copy, so the test takes one game's copy away and puts it back.
+    const kind = "ultimate_tic_tac_toe";
+    const copy = GAME_PUSH_COPY[kind];
+    delete GAME_PUSH_COPY[kind];
+    try {
+      const sent = await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind });
+      expect(sent.sent_at).toBe(new Date(START).toISOString());
+      const [row] = await outbox(s.t);
+      expect(row).toMatchObject({
+        recipient_user_id: s.b.userId,
+        title: "Paeonia",
+        body: "Open Paeonia to join in.",
+        payload: { type: "game_invite", game_kind: kind, couple_id: s.couple.coupleId, route: "games", deeplink: gameDeepLink(kind) },
+      });
+      expect(row.payload).not.toHaveProperty("game_id");
 
-    tick(14 * 60 + 59);
-    expect((await failure(s.a.as.mutation(api.games.send_game_invite, { p_kind: kind }))).code).toBe("53300");
-    // The limit is per sender and per kind.
-    await s.b.as.mutation(api.games.send_game_invite, { p_kind: kind });
-    await s.a.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
-    tick(1);
-    expect((await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind })).sent_at > sent.sent_at).toBe(true);
-    expect((await s.t.run((ctx) => ctx.db.query("game_invites").collect())).map((invite) => invite.kind).sort()).toEqual([
-      kind,
-      kind,
-      "story_chain",
-    ].sort());
-    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+      tick(14 * 60 + 59);
+      expect((await failure(s.a.as.mutation(api.games.send_game_invite, { p_kind: kind }))).code).toBe("53300");
+      // The limit is per sender and per kind.
+      await s.b.as.mutation(api.games.send_game_invite, { p_kind: kind });
+      await s.a.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
+      tick(1);
+      expect((await s.a.as.mutation(api.games.send_game_invite, { p_kind: kind })).sent_at > sent.sent_at).toBe(true);
+      expect((await s.t.run((ctx) => ctx.db.query("game_invites").collect())).map((invite) => invite.kind).sort()).toEqual([
+        kind,
+        kind,
+        "story_chain",
+      ].sort());
+      await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+    } finally {
+      GAME_PUSH_COPY[kind] = copy;
+    }
   });
 
   test("the push payload carries the deep link of its kind", async () => {
@@ -294,6 +300,9 @@ describe("registry", () => {
     expect(GAME_BACKENDS.mind_meld).not.toBeNull();
     expect(GAME_BACKENDS.story_chain).not.toBeNull();
     expect(GAME_BACKENDS.exquisite_corpse).not.toBeNull();
+    expect(GAME_BACKENDS.connect_four).not.toBeNull();
+    expect(GAME_BACKENDS.dots_and_boxes).not.toBeNull();
+    expect(GAME_BACKENDS.ultimate_tic_tac_toe).not.toBeNull();
     expect(Object.keys(GAME_BACKENDS)).toEqual([...GAME_KINDS]);
   });
 
@@ -351,14 +360,17 @@ describe("registry", () => {
   test("the reminder cron sums the reminders of every game with turns", async () => {
     const s = await startCouple();
     const sendDueTurnReminders = vi.fn<NonNullable<GameBackend["sendDueTurnReminders"]>>(async () => 2);
+    // Stand-ins replace two entries and put back what was there, so a game that
+    // registered its real backend keeps it.
+    const saved = { mind_meld: GAME_BACKENDS.mind_meld, story_chain: GAME_BACKENDS.story_chain };
     GAME_BACKENDS.mind_meld = { ...nullBackend, sendDueTurnReminders };
-    GAME_BACKENDS.connect_four = { ...nullBackend, sendDueTurnReminders };
+    GAME_BACKENDS.story_chain = { ...nullBackend, sendDueTurnReminders };
     try {
       expect(await s.t.mutation(internal.games.send_due_game_turn_reminders, {})).toBe(4);
       expect(sendDueTurnReminders).toHaveBeenCalledWith(expect.anything(), new Date().toISOString());
     } finally {
-      GAME_BACKENDS.mind_meld = null;
-      GAME_BACKENDS.connect_four = null;
+      GAME_BACKENDS.mind_meld = saved.mind_meld;
+      GAME_BACKENDS.story_chain = saved.story_chain;
     }
   });
 

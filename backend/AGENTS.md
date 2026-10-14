@@ -97,6 +97,8 @@ Import these instead of re-porting the SQL.
 | `drawAndGuess.ts` | Draw & Guess tables: turn start, word choices, scoring, json shapes, and `drawAndGuessBackend` |
 | `storyChain.ts` | Story Chain rules (line, title and dare word checks, end rules), the opening and dare word lists, seeded choices, story json, and `storyChainBackend` |
 | `mindMeld.ts` | Mind Meld tables (`mindMeldTables`), word rules and match keys, and `mindMeldBackend` |
+| `boardGames.ts`, `boardGameRules.ts`, `connectFour.ts`, `dotsAndBoxes.ts`, `ultimateTicTacToe.ts` | the board games' pure rules (`BOARD_RULES`, `replay`, `movers`) |
+| `boardGameStore.ts`, `boardGameBackend.ts` | the board game row helpers, the view projection, the hidden photo pick, the turn token, and `boardGameBackend` |
 | `gameRegistry.ts` | `GAME_BACKENDS` and the dispatchers `gamePushStillWanted`, `deleteCoupleGameRows`, `sendDueGameTurnReminders`, `gameLanguageChanged` |
 | `gameWords.ts` | Draw & Guess word lists, custom word and guess normalization |
 | `liveTicket.ts` | `signLiveTicket`, the relay ticket for the widget canvas and for game channels |
@@ -155,6 +157,7 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `storyChain` | `ensure_story_chain_game`, `get_story_chain`, `get_story_chain_story`, `start_story`, `add_story_line`, `name_story`, `mark_story_seen`, `set_story_star`, `get_story_chain_history` |
 | `drawAndGuess` | `ensure_draw_and_guess_game`, `get_draw_and_guess`, `get_draw_and_guess_round`, `pick_draw_word`, `submit_drawing`, `mark_round_seen`, `submit_guess`, `give_up_round`, `mark_round_result_seen`, `set_round_reaction`, `set_round_star`, `get_draw_and_guess_history`, `get_draw_and_guess_records` |
 | `mindMeld` | `get_mind_meld`, `start_mind_meld_game`, `lock_mind_meld_word`, `count_mind_meld_round`, `mark_mind_meld_reveal_seen`, `mark_mind_meld_end_seen`, `restart_mind_meld`, `get_mind_meld_history` |
+| `boardGames` | `get_board_games`, `get_board_game_marks`, `ensure_board_game`, `make_move`, `start_rematch`, `set_board_game_mark` (Connect Four, Dots and Boxes and Ultimate Tic-Tac-Toe, each by `p_kind`) |
 | `widget` | `get_or_create_widget_canvas`, `get_widget_canvas`, `get_widget_drawing_revisions`, `submit_widget_drawing_revision`, `register_widget_push_device`, `create_widget_live_ticket` |
 | `location` | `update_latest_partner_location`, `update_location_sharing_preference`, `get_partner_location_visibility` |
 
@@ -222,7 +225,7 @@ Keep server access to what the task needs. Do not change the docker stack, Caddy
 
 ## Games
 
-Draw & Guess and Story Chain are built. Story Chain's design is in `docs/games/story-chain.md`, its opening lines and dare words are in `backend/games/story-chain/`, and `backend/scripts/story-chain/play.mjs` plays the partner from the command line. `GAME_KINDS` in `lib/validators.ts` lists all seven planned kinds, and the shared functions in `games.ts` accept every one of them. The design is in `docs/games/draw-and-guess.md` and `docs/games-plan.md`. Function arguments and results are documented in the comments of `convex/games.ts` and `convex/drawAndGuess.ts`.
+Draw & Guess, Story Chain and the board games (Connect Four, Dots and Boxes, Ultimate Tic-Tac-Toe) are built. Story Chain's design is in `docs/games/story-chain.md`, its opening lines and dare words are in `backend/games/story-chain/`, and `backend/scripts/story-chain/play.mjs` plays the partner from the command line. `GAME_KINDS` in `lib/validators.ts` lists all seven planned kinds, and the shared functions in `games.ts` accept every one of them. The design is in `docs/games/draw-and-guess.md`, `docs/games/board-games.md` and `docs/games-plan.md`. Function arguments and results are documented in the comments of `convex/games.ts` and `convex/drawAndGuess.ts`.
 
 A new game adds its entries at these points and edits no other game:
 
@@ -243,6 +246,7 @@ A new game adds its entries at these points and edits no other game:
 - A sent drawing counts as the `game_turn_completed` streak activity (dedupe key `game_turn_completed:<round id>`).
 - Pushes use the kinds `game_turn_ready`, `game_result`, `game_invite`, and `game_turn_reminder`. `game_result` means the partner finished something you wait to see, such as a solved drawing. All four follow `games_enabled`. The payload carries `type`, `game_kind`, `couple_id`, `game_id` and `round_id` when the game passes them (never on invites), `step` when the game passes one, `actor_user_id`, `route: "games"`, and `deeplink: "paeonia://games/<kind with dashes>"`, for example `paeonia://games/draw-and-guess`. It never carries the word, a drawing, or written content. The turn and result pushes are skipped while the recipient's `game_presence` row for that kind is under 60 seconds old. The title and body come from `GAME_PUSH_COPY` in `lib/notificationCopy.ts` by `payload.game_kind`, or from the entry's `steps` when `payload.step` names one. `step` is a fixed token the game picks, never content. A kind without an entry gets the title "Paeonia".
 - Mind Meld (`docs/games/mind-meld.md`) has its own tables `mind_meld_games`, `mind_meld_rounds` and `mind_meld_words`. `get_mind_meld` returns the partner's word only for a revealed round, so a word stays hidden until both partners locked in. `lock_mind_meld_word` uses `runClientOperation`, and the second lock-in reveals the round in the same mutation. Each lock-in counts as `game_turn_completed` with the dedupe key `game_turn_completed:<round id>:<user id>`. Every write bumps the version of the game it touches and of the couple's newest game, so the app can tell an older read from a newer one.
+- Board games (`docs/games/board-games.md`) keep one `board_games` row per couple and kind with the move list, and `board_game_marks` with each partner's drawn mark. `make_move` and `start_rematch` check the version, so a stale move fails with 40001. `backend/scripts/boardGames/play.mjs` plays either account from the command line.
 - Crons: `cleanup-stale-game-presence` (rows older than 2 minutes) and `send-due-game-turn-reminders` (one reminder per turn after 72 hours). The reminder cron calls `sendDueTurnReminders` of every game in `GAME_BACKENDS` that has turns. Changing the game language calls `onLanguageChanged` of every game that has it.
 
 ## Live drawing relay

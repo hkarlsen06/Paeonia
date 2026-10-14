@@ -1,4 +1,5 @@
 import { canAccessCoupleContent } from "./access";
+import { boardGameBackend } from "./boardGameBackend";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { drawAndGuessBackend } from "./drawAndGuess";
 import { exquisiteCorpseBackend } from "./exquisiteCorpse";
@@ -35,9 +36,10 @@ export const GAME_BACKENDS: Record<GameKind, GameBackend | null> = {
   mind_meld: mindMeldBackend,
   exquisite_corpse: exquisiteCorpseBackend,
   story_chain: storyChainBackend,
-  connect_four: null,
-  dots_and_boxes: null,
-  ultimate_tic_tac_toe: null,
+  // The board games share one backend, which works on the couple's rows of every board game.
+  connect_four: boardGameBackend,
+  dots_and_boxes: boardGameBackend,
+  ultimate_tic_tac_toe: boardGameBackend,
 };
 
 const registered = (): GameBackend[] => GAME_KINDS.flatMap((kind) => GAME_BACKENDS[kind] ?? []);

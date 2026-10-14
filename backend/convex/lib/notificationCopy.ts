@@ -97,6 +97,48 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
       },
     },
   },
+  connect_four: {
+    en: {
+      name: "Connect Four",
+      turnReadyBody: "Open Paeonia to make your move.",
+      resultTitle: () => "Your game of Connect Four is over",
+      resultBody: "Open Paeonia to see how it ended.",
+    },
+    nb: {
+      name: "Fire på rad",
+      turnReadyBody: "Åpne Paeonia for å gjøre trekket ditt.",
+      resultTitle: () => "Spillet deres i Fire på rad er ferdig",
+      resultBody: "Åpne Paeonia for å se hvordan det endte.",
+    },
+  },
+  dots_and_boxes: {
+    en: {
+      name: "Dots and Boxes",
+      turnReadyBody: "Open Paeonia to make your move.",
+      resultTitle: () => "Your game of Dots and Boxes is over",
+      resultBody: "Open Paeonia to see how it ended.",
+    },
+    nb: {
+      name: "Prikker og streker",
+      turnReadyBody: "Åpne Paeonia for å gjøre trekket ditt.",
+      resultTitle: () => "Spillet deres i Prikker og streker er ferdig",
+      resultBody: "Åpne Paeonia for å se hvordan det endte.",
+    },
+  },
+  ultimate_tic_tac_toe: {
+    en: {
+      name: "Ultimate Tic-Tac-Toe",
+      turnReadyBody: "Open Paeonia to make your move.",
+      resultTitle: () => "Your game of Ultimate Tic-Tac-Toe is over",
+      resultBody: "Open Paeonia to see how it ended.",
+    },
+    nb: {
+      name: "Ultimat bondesjakk",
+      turnReadyBody: "Åpne Paeonia for å gjøre trekket ditt.",
+      resultTitle: () => "Spillet deres i Ultimat bondesjakk er ferdig",
+      resultBody: "Åpne Paeonia for å se hvordan det endte.",
+    },
+  },
 };
 
 /** The copy of the game a push names in `payload.game_kind`, or null when the game has no entry. */

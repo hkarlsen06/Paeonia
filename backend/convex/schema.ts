@@ -1641,6 +1641,70 @@ export default defineSchema({
     .index("by_couple_id_user_id_figure_number", ["couple_id", "user_id", "figure_number"])
     .index("by_user_id_figure_id", ["user_id", "figure_id"]),
 
+  // FK: couple_id -> couples cascade. (couple_id, kind) is unique. One row per couple and board game: the current
+  // game, the couple's tallies, and the last finished game (see boardGames.ts and docs/games/board-games.md).
+  board_games: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    kind: literals("connect_four", "dots_and_boxes", "ultimate_tic_tac_toe"),
+    // Starts at 1 and goes up with every rematch.
+    game_number: v.number(),
+    status: literals("playing", "finished"),
+    // Player one of the current game. Player one moves first.
+    first_user_id: uuid,
+    // The move indexes in order. The board comes from replaying them with the kind's rules.
+    moves: v.array(v.number()),
+    // Absent once the game is finished.
+    turn_user_id: optUuid,
+    // Absent for a draw and while playing.
+    winner_user_id: optUuid,
+    win_line: v.array(v.number()),
+    // Written with the first move by the starter. 1 to 60 characters on one line.
+    stake: optString,
+    stake_by_user_id: optUuid,
+    // FK: media_assets. The hidden photo of a dots_and_boxes game. Nothing is cascaded: every read checks that the photo is still visible.
+    photo_media_asset_id: optUuid,
+    // The last finished game, kept after a rematch starts so a partner who missed the ending can see it.
+    previous: v.optional(
+      v.object({
+        game_number: v.number(),
+        first_user_id: uuid,
+        moves: v.array(v.number()),
+        winner_user_id: optUuid,
+        win_line: v.array(v.number()),
+        stake: optString,
+        photo_media_asset_id: optUuid,
+        finished_at: ts,
+      }),
+    ),
+    // Tallies never reset. Keyed by user id.
+    wins_by_user: v.record(v.string(), v.number()),
+    draws: v.number(),
+    games_finished: v.number(),
+    started_at: ts,
+    finished_at: optTs,
+    turn_started_at: ts,
+    // Set once the 72-hour reminder went out for the turn, and when the game ends so no reminder follows.
+    turn_reminder_sent_at: optTs,
+    version: v.number(),
+    created_by_user_id: uuid,
+    created_at: ts,
+    updated_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_couple_id_kind", ["couple_id", "kind"])
+    .index("by_turn_reminder_sent_at_turn_started_at", ["turn_reminder_sent_at", "turn_started_at"]),
+
+  // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.
+  // A partner's own mark for all board games, as base64 PKDrawing data.
+  board_game_marks: defineTable({
+    couple_id: uuid,
+    user_id: uuid,
+    drawing: v.string(),
+    created_at: ts,
+    updated_at: ts,
+  }).index("by_couple_id_user_id", ["couple_id", "user_id"]),
+
   // FK: user_id -> users cascade. (widget_push_token_hash, apns_environment, widget_kind) is unique while disabled_at is null.
   widget_push_devices: defineTable({
     id: uuid,
