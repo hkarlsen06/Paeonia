@@ -21,7 +21,7 @@ private struct MindMeldHubBeat: View, Animatable {
         set { progress = newValue }
     }
 
-    private static let meeting = CGPoint(x: 512, y: 535)
+    private static let meeting = CGPoint(x: 513, y: 523)
 
     var body: some View {
         ZStack {
@@ -31,7 +31,7 @@ private struct MindMeldHubBeat: View, Animatable {
                 radius: 180,
                 strength: GameHubArtworkTiming.ease(progress, from: 0, to: 0.4)
             )
-            GameHubBeatPop(image: .gameHubPeony, center: Self.meeting, size: 140, progress: progress, start: 0.25)
+            GameHubBeatPop(image: .gameHubPeony, center: Self.meeting, size: 150, progress: progress, start: 0.25)
         }
     }
 }

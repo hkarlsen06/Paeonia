@@ -1,10 +1,10 @@
 import SwiftUI
 
 /// The card every game shows on the hub and, while the partner is in the game,
-/// on the Home tab. The game's painting runs behind the whole card: the scene at the
-/// top with the partner chip and a trailing badge over it, then the name, a status line,
-/// the main button, and optional extras on a blurred, darkened part of the painting.
-/// The card glows while the game waits for this person.
+/// on the Home tab. The game's painting runs behind the whole card. A badge such as the
+/// score floats at the top center of its scene. Below, where the painting goes out of
+/// focus, come the partner chip, the name, a status line, the main button, and optional
+/// extras, centered. The card glows while the game waits for this person.
 struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
     let name: LocalizedStringResource
     let status: LocalizedStringResource
@@ -15,7 +15,7 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
     let actionIdentifier: String
     let open: () -> Void
     @ViewBuilder let artwork: () -> Artwork
-    /// Top trailing over the art, such as the score.
+    /// At the top center, over the painting, such as the score.
     @ViewBuilder let badge: () -> Badge
     /// Below the button, such as a quiet link to the game's history.
     @ViewBuilder let extras: () -> Extras
@@ -34,30 +34,17 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
             .buttonStyle(.plain)
             .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                    Text(name)
-                        .font(PaeoniaTypography.heroTitle)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .accessibilityAddTraits(.isHeader)
-                    statusLine
-                }
-
-                Button(action: open) {
-                    Text(actionTitle)
-                }
-                .buttonStyle(PaeoniaPrimaryButtonStyle())
-                .accessibilityIdentifier(actionIdentifier)
-
-                extras()
-            }
-            .padding([.horizontal, .bottom], PaeoniaSpacing.space20)
-            .padding(.top, PaeoniaSpacing.space4)
-            .background(alignment: .top) { textScrim }
+            textBlock
         }
         // The painting runs behind the whole card, text included.
         .background(alignment: .top) { artwork() }
-        .overlay(alignment: .top) { badges }
+        .overlay(alignment: .top) {
+            badge()
+                .environment(\.gameCapsuleIsOnArtwork, true)
+                .padding(.top, PaeoniaSpacing.space12)
+                // The scene is only so tall, so the badge stops growing before it covers it.
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        }
         .clipShape(shape)
         .background {
             shape
@@ -72,52 +59,71 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
         }
     }
 
-    /// Blurs and darkens the painting under the text, fading in over 40 pt from just above
-    /// the name, so the scene stays sharp and the text keeps more than 4.5:1 on the
-    /// brightest part of any painting (5.8:1 for the name on a pink field, where the fade
-    /// is still at 70 percent).
-    private var textScrim: some View {
-        let fadeIn = PaeoniaSpacing.space40
-        return ZStack {
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .environment(\.colorScheme, .dark)
-            Color.paeoniaBackgroundSecondary.opacity(0.7)
+    /// The partner chip, the name, the status, the button and the extras, centered under
+    /// the painting's centered scene.
+    private var textBlock: some View {
+        VStack(spacing: PaeoniaSpacing.space16) {
+            VStack(spacing: PaeoniaSpacing.space4) {
+                if context.partnerIsHere {
+                    partnerHereChip
+                        .padding(.bottom, PaeoniaSpacing.space4)
+                }
+                Text(name)
+                    .font(PaeoniaTypography.heroTitle)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .multilineTextAlignment(.center)
+                    .accessibilityAddTraits(.isHeader)
+                statusLine
+            }
+            .frame(maxWidth: .infinity)
+
+            Button(action: open) {
+                Text(actionTitle)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .accessibilityIdentifier(actionIdentifier)
+
+            extras()
         }
+        .padding([.horizontal, .bottom], PaeoniaSpacing.space20)
+        .padding(.top, PaeoniaSpacing.space4)
+        .background(alignment: .top) { textScrim }
+    }
+
+    /// A light shadow under the text, on top of the painting's Gaussian blur
+    /// (`GameHubArtwork`). It fades in with the blur and deepens toward the bottom, where
+    /// the button and links sit. `docs/games/hub-artwork.md` has the contrast this keeps.
+    private var textScrim: some View {
+        let shadow = Color.paeoniaBackgroundSecondary
+        return LinearGradient(
+            colors: [
+                shadow.opacity(GameHubTextScrim.shadowAtName),
+                shadow.opacity(GameHubTextScrim.shadowAtBottom),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
         .mask {
             VStack(spacing: 0) {
                 LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                    .frame(height: fadeIn)
+                    .frame(height: GameHubArtworkLayout.blurFadeIn)
                 Color.black
             }
         }
-        .padding(.top, -PaeoniaSpacing.space24)
+        .padding(.top, -GameHubArtworkLayout.blurLead)
     }
 
-    /// The partner chip on the left and the badge on the right, over the painting. The
-    /// badge turns blush there (`gameCapsuleStyle()`).
-    private var badges: some View {
-        HStack(alignment: .top, spacing: PaeoniaSpacing.space8) {
-            if context.partnerIsHere {
-                partnerHereChip
-            }
-            Spacer(minLength: 0)
-            badge()
-                .environment(\.gameCapsuleIsOnArtwork, true)
-        }
-        .padding(PaeoniaSpacing.space12)
-        // The scene is only so tall, so the chips stop growing before they cover it.
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-    }
-
+    /// White and bold on your turn. Pink text can't keep 4.5:1 on a blurred pink painting,
+    /// and the card's pink glow already says it is your turn.
     private var statusLine: some View {
         Text(status)
             .font(isYourTurn ? PaeoniaTypography.bodyEmphasis : PaeoniaTypography.body)
-            .foregroundStyle(isYourTurn ? .paeoniaAccentPrimary : .paeoniaTextSecondary)
+            .foregroundStyle(isYourTurn ? .paeoniaTextPrimary : .paeoniaTextSecondary)
+            .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// Solid green so it stands out against both the plum card and the white art.
+    /// Solid green, a live signal centered above the name.
     private var partnerHereChip: some View {
         Label {
             Text(.gamesPartnerHereNow(context.partnerName))
@@ -131,8 +137,15 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
         .padding(.horizontal, PaeoniaSpacing.space12)
         .padding(.vertical, PaeoniaSpacing.space8)
         .background(.paeoniaSuccess, in: Capsule())
-        .shadow(color: .paeoniaBackgroundSecondary.opacity(0.5), radius: 6, y: 2)
     }
+}
+
+/// How dark the shadow under the card's text is, from the name to the bottom. Kept in step
+/// with `art_asset.py text` in the paeonia-illustrations skill, which checks the contrast.
+/// A generic view can't hold static stored values, so they live here.
+private enum GameHubTextScrim {
+    static let shadowAtName = 0.25
+    static let shadowAtBottom = 0.5
 }
 
 extension GameHubCardFrame where Badge == EmptyView, Extras == EmptyView {

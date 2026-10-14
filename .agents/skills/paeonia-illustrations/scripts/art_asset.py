@@ -5,13 +5,13 @@ Run with a Python that has Pillow, outside the repository:
     python3 -m venv /tmp/paeonia-art-venv && /tmp/paeonia-art-venv/bin/pip install pillow
     /tmp/paeonia-art-venv/bin/python -I art_asset.py check a.png b.png ...
     /tmp/paeonia-art-venv/bin/python -I art_asset.py import a.png GameHubThing 240 [--opaque] [--folder GameHub]
-    /tmp/paeonia-art-venv/bin/python -I art_asset.py zones plate.png ...
+    /tmp/paeonia-art-venv/bin/python -I art_asset.py text painting.png ...
     /tmp/paeonia-art-venv/bin/python -I art_asset.py selftest
 
 `check` reports each file's size, alpha, corners, edge fringe and the object's
 bounds, and writes a preview on the plum background to /tmp/paeonia-art-preview.png.
-`zones` checks a 1024 x 1536 hub card painting against docs/games/hub-artwork.md:
-the chip band's brightest point and how dark the text zone gets.
+`text` simulates the hub card's shadow and blur on a 1024 x 1536 painting and checks
+each line of the card's text against the contrast docs/games/hub-artwork.md asks for.
 `import` trims the transparent margin, scales the longest side down to the given
 pixel count (three times the largest size the app shows it at), and writes a
 universal imageset. With --opaque it keeps the whole image and writes a JPEG. Run `import` from the repository root.
@@ -82,10 +82,42 @@ def luminance(rgb):
     return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
 
 
-def zones(paths):
-    """The chip band (pixels 0 to 160) must stay at or below 0.09 relative luminance at its
-    brightest (99th percentile, so a stray pixel does not count), which keeps the green chip
-    and the blush badge at 3:1. The text zone should be deep plum by pixel 1000."""
+# The card frame's Gaussian blur and shadow under the text. Keep in step with
+# GameHubTextScrim in GameHubCardFrame.swift and the blur in GameHubArtworkParts.swift.
+BLUR_STRENGTH = 1.0
+SHADOW_AT_NAME = 0.25
+SHADOW_AT_BOTTOM = 0.5
+PLUM = (42, 11, 30)
+BLUSH = (251, 243, 247)
+# Text lines at the narrowest card (335 pt): the band each line can fall in, in points below
+# the 640 px text line (with or without the chip row above the name), the text color, its
+# opacity, and the contrast it needs.
+TEXT_LINES = [
+    ("name", 4, 85, BLUSH, 1.0, 3.0),
+    ("status", 49, 111, BLUSH, 0.74, 4.5),
+    ("your turn", 49, 111, BLUSH, 1.0, 4.5),
+    ("link", 159, 231, BLUSH, 0.74, 4.5),
+]
+CARD_HEIGHT_BELOW_TEXT = 260
+
+
+def mix(a, b, t):
+    return tuple(x * (1 - t) + y * t for x, y in zip(a, b))
+
+
+def contrast(a, b):
+    la, lb = luminance(a), luminance(b)
+    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+
+def text(paths):
+    """Simulate the frame's shadow and blur on a 1024 x 1536 card painting and check every
+    text line against the contrast it needs, at the narrowest card (335 pt). Each line's
+    worst point is its 0.5th percentile, so a stray pixel does not count."""
+    from PIL import ImageFilter
+
+    px_per_pt = 1024 / 335
+    top, bottom = 640, 640 + CARD_HEIGHT_BELOW_TEXT * px_per_pt
     failed = False
     for path in paths:
         image = Image.open(path).convert("RGB")
@@ -93,15 +125,25 @@ def zones(paths):
             print(f"FAIL {os.path.basename(path)}: {image.size[0]}x{image.size[1]}, expected 1024x1536")
             failed = True
             continue
-        band = sorted(luminance(p) for p in image.crop((0, 0, 1024, 160)).resize((256, 40)).getdata())
-        brightest = band[int(len(band) * 0.99)]
-        bottom = image.crop((0, 1000, 1024, 1536)).resize((1, 1)).getpixel((0, 0))
-        ok = brightest <= 0.09
-        failed |= not ok
-        print(
-            f"{'ok  ' if ok else 'FAIL'} {os.path.basename(path)}: chip band brightest {brightest:.3f} "
-            f"(max 0.09), text zone below 1000 averages #{bottom[0]:02X}{bottom[1]:02X}{bottom[2]:02X}"
-        )
+        small = image.resize((256, 384))
+        blurred = small.filter(ImageFilter.GaussianBlur(15))
+        results = []
+        for label, start, end, color, alpha, need in TEXT_LINES:
+            ratios = []
+            # The painting is checked at a quarter size, so pixel rows are divided by 4.
+            for y in range(int((top + start * px_per_pt) / 4), int((top + end * px_per_pt) / 4)):
+                depth = min(max((y * 4 - top) / (bottom - top), 0), 1)
+                shadow = SHADOW_AT_NAME + (SHADOW_AT_BOTTOM - SHADOW_AT_NAME) * depth
+                for x in range(15, 241):
+                    under = mix(small.getpixel((x, y)), blurred.getpixel((x, y)), BLUR_STRENGTH)
+                    under = mix(under, PLUM, shadow)
+                    ratios.append(contrast(mix(under, color, alpha), under))
+            ratios.sort()
+            worst = ratios[int(len(ratios) * 0.005)]
+            ok = worst >= need
+            failed |= not ok
+            results.append(f"{label} {worst:.1f}{'' if ok else ' LOW'}")
+        print(f"{'ok  ' if 'LOW' not in ' '.join(results) else 'FAIL'} {os.path.basename(path)}: " + ", ".join(results))
     return 1 if failed else 0
 
 
@@ -161,8 +203,8 @@ if __name__ == "__main__":
     if args[:1] == ["import"] and len(args) >= 4:
         folder = args[args.index("--folder") + 1] if "--folder" in args else "GameHub"
         sys.exit(import_asset(args[1], args[2], int(args[3]), "--opaque" in args, folder))
-    if args[:1] == ["zones"] and len(args) > 1:
-        sys.exit(zones(args[1:]))
+    if args[:1] == ["text"] and len(args) > 1:
+        sys.exit(text(args[1:]))
     if args == ["selftest"]:
         sys.exit(selftest())
     print(__doc__)

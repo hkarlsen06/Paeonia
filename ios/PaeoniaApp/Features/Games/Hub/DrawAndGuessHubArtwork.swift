@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The Draw & Guess card's painting: a sheet of paper with a pink heart drawn on it and the
 /// pencil that drew it. The beat pops in the letter tiles that spell what the drawing is,
-/// in the card's language, in the clear right third. It follows `docs/games/hub-artwork.md`.
+/// in the card's language, in the clear space at the top right. It follows `docs/games/hub-artwork.md`.
 struct DrawAndGuessHubArtwork: View {
     var body: some View {
         GameHubArtwork(plate: .gameHubDrawAndGuessPainting, duration: 1.4) { progress in
@@ -12,7 +12,7 @@ struct DrawAndGuessHubArtwork: View {
 }
 
 /// In the painting's pixels. The tiles pop in one by one, three to a row, centered in the
-/// clear area the painting leaves (x 700 to 1024, y 220 to 600).
+/// clear area the painting leaves (x 690 to 1020, y 220 to 450).
 private struct DrawAndGuessHubBeat: View, Animatable {
     var progress: Double
 
@@ -21,7 +21,7 @@ private struct DrawAndGuessHubBeat: View, Animatable {
         set { progress = newValue }
     }
 
-    private static let center = CGPoint(x: 858, y: 410)
+    private static let center = CGPoint(x: 855, y: 335)
     private static let tileSize: CGFloat = 96
     private static let tileSpacing: CGFloat = 12
     private static let tilesPerRow = 3

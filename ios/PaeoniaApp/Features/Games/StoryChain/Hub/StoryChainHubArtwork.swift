@@ -24,8 +24,8 @@ private struct StoryChainHubBeat: View, Animatable {
     var body: some View {
         GameHubBeatPop(
             image: .gameHubPeonyBud,
-            center: CGPoint(x: 625, y: 535),
-            size: 90,
+            center: CGPoint(x: 680, y: 520),
+            size: 96,
             progress: progress,
             start: 0.1
         )

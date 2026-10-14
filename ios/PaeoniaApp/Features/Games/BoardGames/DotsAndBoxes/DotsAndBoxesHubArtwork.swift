@@ -25,7 +25,7 @@ private struct DotsAndBoxesHubBeat: View, Animatable {
         let settle = GameHubArtworkTiming.ease(progress, from: 0.5, to: 1)
         GameHubBeatGlow(
             color: .paeoniaInkGold,
-            center: CGPoint(x: 512, y: 385),
+            center: CGPoint(x: 512, y: 398),
             radius: 360,
             strength: rise - 0.45 * settle
         )

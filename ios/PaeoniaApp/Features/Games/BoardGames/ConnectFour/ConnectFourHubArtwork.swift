@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The Connect Four card's painting: a cream board with both partners' discs in it, three
+/// The Connect Four card's painting: a cream board full of both partners' discs, three
 /// pink discs in a row at the bottom and the fourth hole still empty. The beat drops the
 /// last pink disc into that hole, and the row lights up gold. It follows
 /// `docs/games/hub-artwork.md`.
@@ -24,11 +24,11 @@ private struct ConnectFourHubBeat: View, Animatable {
 
     private typealias Timing = GameHubArtworkTiming
 
-    private static let hole = CGPoint(x: 597, y: 481)
-    private static let holeSize: CGFloat = 44
+    private static let hole = CGPoint(x: 609, y: 533)
+    private static let holeSize: CGFloat = 66
     /// The middle of the winning row, from the first pink disc to the empty hole.
-    private static let row = CGPoint(x: 494, y: 481)
-    private static let rowLength: CGFloat = 270
+    private static let row = CGPoint(x: 476, y: 533)
+    private static let rowLength: CGFloat = 350
 
     var body: some View {
         let glow = Timing.ease(progress, from: 0.62, to: 0.9)

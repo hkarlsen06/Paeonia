@@ -11,8 +11,6 @@ struct StoryChainHubCard: View {
     /// Opens "Our stories". Nil where the card has no room for the link.
     var openHistory: (() -> Void)?
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     var body: some View {
         GameHubCardFrame(
             name: .storyChainName,
@@ -27,17 +25,16 @@ struct StoryChainHubCard: View {
         } badge: {
             finishedBadge
         } extras: {
-            extras
+            historyLink
         }
     }
 
     // MARK: Finished stories
 
-    /// A capsule over the art. At accessibility text sizes it would crowd the
-    /// partner chip, so the count moves under the button as a caption.
+    /// A capsule beside the name with how many stories the couple has finished.
     @ViewBuilder
     private var finishedBadge: some View {
-        if summary.finishedCount > 0, !dynamicTypeSize.isAccessibilitySize {
+        if summary.finishedCount > 0 {
             Label {
                 Text(.storyChainHubFinishedCount(summary.finishedCount))
             } icon: {
@@ -51,17 +48,6 @@ struct StoryChainHubCard: View {
             .gameCapsuleStyle()
             .accessibilityIdentifier("games.hub.storyChain.finished")
         }
-    }
-
-    @ViewBuilder
-    private var extras: some View {
-        if summary.finishedCount > 0, dynamicTypeSize.isAccessibilitySize {
-            Text(.storyChainHubFinishedCount(summary.finishedCount))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .frame(maxWidth: .infinity)
-        }
-        historyLink
     }
 
     /// A quiet link to "Our stories", once the couple has a finished story.

@@ -20,7 +20,7 @@ struct ExquisiteCorpseHubCard: View {
             actionIdentifier: "games.hub.exquisiteCorpse",
             open: open
         ) {
-            ExquisiteCorpseHubArtwork()
+            ExquisiteCorpseHubPainting()
         } badge: {
             if summary.hasCreatures {
                 ExquisiteCorpseCountCapsule(count: summary.figuresFinished)

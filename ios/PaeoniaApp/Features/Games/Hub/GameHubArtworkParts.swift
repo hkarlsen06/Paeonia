@@ -8,13 +8,20 @@ enum GameHubArtworkLayout {
     /// How far down the scene reaches, as a share of the card's width. The card's text
     /// starts below it, so the scene keeps its shape at every card width.
     static let sceneShare: CGFloat = 640 / 1_024
+    /// The painting goes out of focus under the text: a Gaussian blur that fades in over
+    /// `blurFadeIn` points, starting `blurLead` points above where the text starts.
+    static let blurRadius: CGFloat = 20
+    static let blurLead: CGFloat = 24
+    static let blurFadeIn: CGFloat = 40
 }
 
 /// A hub card's picture: the game's painting, as wide as the card and anchored at the top,
-/// with one animated beat on top. The beat is laid out in the painting's own pixels, so
-/// it lands on the spot the painting leaves for it at every card width. It plays once when
-/// the card appears, as `progress` runs from 0 to 1 at an even pace. With Reduce Motion
-/// it starts finished. VoiceOver skips the picture, since the card says the same in words.
+/// with one animated beat on top. Under the card's text the painting goes out of focus
+/// with a Gaussian blur, so the picture carries on behind the text. The beat is laid out
+/// in the painting's own pixels, so it lands on the spot the painting leaves for it at
+/// every card width. It plays once when the card appears, as `progress` runs from 0 to 1
+/// at an even pace. With Reduce Motion it starts finished. VoiceOver skips the picture,
+/// since the card says the same in words.
 struct GameHubArtwork<Beat: View & Animatable>: View {
     let plate: ImageResource
     let duration: TimeInterval
@@ -28,11 +35,20 @@ struct GameHubArtwork<Beat: View & Animatable>: View {
         GeometryReader { proxy in
             let plateSize = GameHubArtworkLayout.plateSize
             let scale = proxy.size.width / plateSize.width
+            let textTop = proxy.size.width * GameHubArtworkLayout.sceneShare
             ZStack(alignment: .topLeading) {
-                Image(plate)
-                    .resizable()
-                    .accessibilityHidden(true)
-                    .frame(width: proxy.size.width, height: plateSize.height * scale)
+                painting(width: proxy.size.width)
+                painting(width: proxy.size.width)
+                    .blur(radius: GameHubArtworkLayout.blurRadius, opaque: true)
+                    .mask(alignment: .top) {
+                        VStack(spacing: 0) {
+                            Color.clear
+                                .frame(height: textTop - GameHubArtworkLayout.blurLead)
+                            LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                                .frame(height: GameHubArtworkLayout.blurFadeIn)
+                            Color.black
+                        }
+                    }
                 beat(isPlayed || reduceMotion ? 1 : 0)
                     .animation(reduceMotion ? nil : .linear(duration: duration).delay(delay), value: isPlayed)
                     .frame(width: plateSize.width, height: plateSize.height)
@@ -45,6 +61,14 @@ struct GameHubArtwork<Beat: View & Animatable>: View {
         .dynamicTypeSize(.large)
         .accessibilityHidden(true)
         .onAppear { isPlayed = true }
+    }
+
+    private func painting(width: CGFloat) -> some View {
+        let plateSize = GameHubArtworkLayout.plateSize
+        return Image(plate)
+            .resizable()
+            .accessibilityHidden(true)
+            .frame(width: width, height: plateSize.height * width / plateSize.width)
     }
 }
 

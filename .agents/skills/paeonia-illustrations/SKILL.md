@@ -10,7 +10,7 @@ Every illustration in the app looks like it came from one sticker set. You get t
 There are two kinds of asset:
 
 - An **object** is one thing on a transparent background, such as a peony or a game disc, that code places and animates.
-- A **painting** is a whole hub card, 1024 by 1536 and opaque, made to the series, zones and beat in `docs/games/hub-artwork.md`. Read that file before you brief a painting.
+- A **painting** is a whole hub card, 1024 by 1536 and opaque, made to the series, composition, zones and beat in `docs/games/hub-artwork.md`. Read that file before you brief a painting.
 
 The approved set lives in `ios/PaeoniaApp/Resources/Assets.xcassets/GameHub/`. `GameHubPeony` and `GameHubConnectFourDiscPink` are the clearest examples of the object style, and the `GameHub<Game>Painting` images of the series.
 
@@ -34,7 +34,7 @@ For each asset, decide and write down:
 - **Display size.** The largest size in points the app shows it at. The import size is three times that.
 - **File name.** Short and kebab-case for the original, such as `peony-bud.png`. The asset name is `GameHub<Game><Thing>`, or `GameHub<Thing>` when several games share it. A card painting is `GameHub<Game>Painting`.
 
-A painting's brief also names its **beat**: the one element left out of the painting for the app to animate, and the clear spot it needs. Paste the series description and the zone table from `docs/games/hub-artwork.md` into the prompt, and ask for the beat's position in pixels.
+A painting's brief also names its **beat**: the one element left out of the painting for the app to animate, and the clear spot it needs. Paste the series, the composition rules and the zone table from `docs/games/hub-artwork.md` into the prompt, and ask for the beat's position in pixels.
 
 Done when every asset has all five, and every painting its beat.
 
@@ -66,13 +66,13 @@ It prints corner alpha, the share of pale fringe on the cutout's edge, and the o
 
 A white or cream object, like paper, reads as some fringe because its own edge is pale. Judge those by eye on the preview.
 
-For paintings, run `zones` instead. It measures the chip band's brightest point against the 0.09 limit and shows how dark the text zone gets:
+For paintings, run `text` instead. It lays the card frame's shadow and blur over the painting and checks every line of the card's text against the contrast it needs:
 
 ```bash
-/tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py zones /tmp/paeonia-art/plates/*.png
+/tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py text /tmp/paeonia-art/plates/*.png
 ```
 
-Look at every painting next to the approved ones as well: the two color fields, the seam behind the main object, the camera height and the light.
+Then judge each painting as a composition, at the card's visible crop (about the top 1024 by 1340), against the composition rules in `docs/games/hub-artwork.md`: full height, one focal point, balance, three planes, and the picture continuing under the text. Look at it next to the approved paintings as well: the two color fields, the seam behind the main object, the camera height and the light. Ask for two candidates per painting and keep the better one.
 
 Done when every file prints `ok` (or passes by eye as a pale object) and looks right on the preview or beside the series.
 

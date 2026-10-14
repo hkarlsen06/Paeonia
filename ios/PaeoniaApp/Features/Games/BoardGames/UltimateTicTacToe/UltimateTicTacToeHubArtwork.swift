@@ -24,8 +24,8 @@ private struct UltimateTicTacToeHubBeat: View, Animatable {
     var body: some View {
         let drawn = GameHubArtworkTiming.ease(progress, from: 0, to: 0.8)
         Path { path in
-            path.move(to: CGPoint(x: 204, y: 325))
-            path.addLine(to: CGPoint(x: 361, y: 400))
+            path.move(to: CGPoint(x: 221, y: 304))
+            path.addLine(to: CGPoint(x: 377, y: 416))
         }
         .trimmedPath(from: 0, to: drawn)
         .stroke(Color.paeoniaInkGold, style: StrokeStyle(lineWidth: 10, lineCap: .round))

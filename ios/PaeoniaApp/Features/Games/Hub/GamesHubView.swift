@@ -1,15 +1,17 @@
 import SwiftUI
 
 /// The list of built games, one card each. The game the partner is in comes
-/// first, then games waiting for this person, then catalog order.
+/// first, then games waiting for this person, then catalog order. A wide iPad shows
+/// two columns.
 struct GamesHubView: View {
     let viewModel: GamesViewModel
     let open: (GamesDestination) -> Void
     @State private var isChangingSettings = false
+    @State private var isWideLayout = false
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
                 ForEach(viewModel.hubGames, id: \.kind) { game in
                     game.card(viewModel.cardContext(for: game.kind, isOnHub: true), open: open)
                 }
@@ -17,8 +19,11 @@ struct GamesHubView: View {
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space32)
-            .paeoniaReadableWidth()
+            .paeoniaReadableWidth(
+                isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
+            )
         }
+        .paeoniaWideLayout($isWideLayout)
         .refreshable { await viewModel.refresh() }
         .background(.paeoniaBackgroundPrimary)
         .navigationTitle(Text(.mainTabGames))
@@ -41,5 +46,10 @@ struct GamesHubView: View {
             GamesSettingsSheet(viewModel: viewModel)
         }
         .accessibilityIdentifier("games.hub")
+    }
+
+    private var columns: [GridItem] {
+        let column = GridItem(.flexible(), spacing: PaeoniaSpacing.sectionSpacing, alignment: .top)
+        return isWideLayout ? [column, column] : [column]
     }
 }
