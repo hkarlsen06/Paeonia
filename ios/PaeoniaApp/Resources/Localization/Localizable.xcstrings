@@ -13138,7 +13138,7 @@
       }
     },
     "mindMeld.hub.artwork.first" : {
-      "comment" : "Short word in capitals on the first tile of the picture on the Games tab card. It is decoration only, and VoiceOver skips it. Pick a common word that fits a small tile.",
+      "comment" : "Short word in capitals on the first player's card in the picture on the Games tab card. It is decoration only, and VoiceOver skips it. With the second word it should lead to the shared word.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -13155,8 +13155,26 @@
         }
       }
     },
+    "mindMeld.hub.artwork.match" : {
+      "comment" : "Short word in capitals that both players pick in the second round of the picture on the Games tab card. It links the first two words, like sea + salt = water. Decoration only, and VoiceOver skips it. Keep it short so it fits a small card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WATER"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VANN"
+          }
+        }
+      }
+    },
     "mindMeld.hub.artwork.second" : {
-      "comment" : "Short word in capitals on the second tile of the picture on the Games tab card. It is decoration only, and VoiceOver skips it. Pick a common word that fits a small tile.",
+      "comment" : "Short word in capitals on the second player's card in the picture on the Games tab card. It is decoration only, and VoiceOver skips it. With the first word it should lead to the shared word.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

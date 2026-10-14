@@ -93,9 +93,14 @@ final class GamesViewModel {
         games.contains { $0.isYourTurn }
     }
 
-    /// The hub's order: the game the partner is in first, then catalog order.
+    /// The hub's order: the game the partner is in first, then games waiting for
+    /// this person, then catalog order.
     var hubGames: [any GameHubModel] {
-        Self.hubOrder(games.map(\.kind), partnerGames: partnerGameKinds).compactMap { game($0) }
+        Self.hubOrder(
+            games.map(\.kind),
+            partnerGames: partnerGameKinds,
+            yourTurn: Set(games.filter(\.isYourTurn).map(\.kind))
+        ).compactMap { game($0) }
     }
 
     /// The game the partner opened most recently, while they have it open. The
@@ -276,9 +281,16 @@ extension GamesViewModel {
             .map(\.kind)
     }
 
-    /// Catalog order, with the games the partner is in moved to the front.
-    nonisolated static func hubOrder(_ kinds: [GameKind], partnerGames: [GameKind]) -> [GameKind] {
+    /// The games the partner is in, then the games waiting for this person in
+    /// catalog order, then the rest in catalog order.
+    nonisolated static func hubOrder(
+        _ kinds: [GameKind],
+        partnerGames: [GameKind],
+        yourTurn: Set<GameKind>
+    ) -> [GameKind] {
         let catalog = GameKind.allCases.filter(kinds.contains)
-        return partnerGames.filter(catalog.contains) + catalog.filter { !partnerGames.contains($0) }
+        let rest = catalog.filter { !partnerGames.contains($0) }
+        return partnerGames.filter(catalog.contains) + rest.filter(yourTurn.contains)
+            + rest.filter { !yourTurn.contains($0) }
     }
 }

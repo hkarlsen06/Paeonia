@@ -363,7 +363,7 @@ Empty states use `PaeoniaEmptyStateView`: no finished games yet (`point.3.connec
 
 `MindMeldHubCard` follows the Draw & Guess card: artwork on top with the partner-here chip and the stats capsule, then the title, a status line, the primary button and the "Our melds" link.
 
-Artwork (`MindMeldHubArtwork`, 200 pt tall). Two soft glowing circles on the plum gradient, `.paeoniaPartnerOne` and `.paeoniaPartnerTwo`, each holding a word tile. They drift together over 2.4 s. Where they overlap, a small petal bloom opens and the two tiles merge into one tile with the petal mark. Plays once on appear. Reduce Motion: the final frame. Drawn in SwiftUI shapes, hidden from VoiceOver.
+Artwork (`MindMeldHubArtwork`, 200 pt tall). A short game told with word cards drawn like the game's own. Round one deals in from the sides: SEA in `.paeoniaPartnerOne` and SALT in `.paeoniaInkLavender`, which then fade back. Two cards drop in face down and flip one after the other. Both say WATER, so they slide together, their borders turn green, and a petal mark pops over them. It runs over 4.6 s and plays once on appear. Reduce Motion: the final frame. Drawn in SwiftUI shapes, hidden from VoiceOver.
 
 | State | Status line | Button |
 |---|---|---|
@@ -389,7 +389,8 @@ Artwork (`MindMeldHubArtwork`, 200 pt tall). Two soft glowing circles on the plu
 | `hub.pick` | Pick your word | Velg ordet ditt |
 | `hub.open` | Open | Åpne |
 | `hub.seeWords` | See your words | Se ordene |
-| `hub.artwork.first` / `hub.artwork.second` | SEA / SALT (the artwork's tiles) | HAV / SALT |
+| `hub.artwork.first` / `hub.artwork.second` | SEA / SALT (the artwork's first round) | HAV / SALT |
+| `hub.artwork.match` | WATER (the artwork's matching cards) | VANN |
 
 ### Wide layouts and Dynamic Type
 

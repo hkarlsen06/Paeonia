@@ -321,7 +321,7 @@ The reveal. It should feel like closing a book you wrote together.
 
 ### Hub card
 
-- Artwork: a page with lines of text drawn as soft strokes in the two inks, one gold underline, and a small flower at the end.
+- Artwork: a ruled notebook page tilted toward the viewer, where a story writes itself in looping handwriting. The ink changes where one partner's sentence ends and the other's begins, a dot of wet ink rides the tip of the line, one word gets the gold dare underline, and the flower pops in after the last word.
 - Status: "Your turn to write", "Start a new story", "Give your story a title", "[Name] is writing", "Waiting for [Name]".
 - Detail line: "3 stories finished" once one exists.
 - The badge counts any of my turns: choosing an opening, writing, naming, or an unseen finished story.

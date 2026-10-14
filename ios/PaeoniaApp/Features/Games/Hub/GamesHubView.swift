@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The list of built games, one card each. The game the partner is in comes
-/// first, then catalog order.
+/// first, then games waiting for this person, then catalog order.
 struct GamesHubView: View {
     let viewModel: GamesViewModel
     let open: (GamesDestination) -> Void

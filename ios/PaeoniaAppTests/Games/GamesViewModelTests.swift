@@ -165,13 +165,23 @@ struct GamesViewModelTests {
         #expect(await cache.document(ownerUserID: GameFixture.me).overview == nil)
     }
 
-    @Test func theHubListsGamesInCatalogOrderWithThePartnersGameFirst() {
+    @Test func theHubListsThePartnersGameFirstThenYourTurnThenCatalogOrder() {
         let built: [GameKind] = [.storyChain, .drawAndGuess, .mindMeld]
+        func order(partner: [GameKind] = [], yourTurn: Set<GameKind> = []) -> [GameKind] {
+            GamesViewModel.hubOrder(built, partnerGames: partner, yourTurn: yourTurn)
+        }
 
-        #expect(GamesViewModel.hubOrder(built, partnerGames: []) == [.drawAndGuess, .mindMeld, .storyChain])
-        #expect(GamesViewModel.hubOrder(built, partnerGames: [.storyChain]) == [.storyChain, .drawAndGuess, .mindMeld])
+        #expect(order() == [.drawAndGuess, .mindMeld, .storyChain])
+        #expect(order(partner: [.storyChain]) == [.storyChain, .drawAndGuess, .mindMeld])
         // A game that is not built never shows, even when the partner is in it.
-        #expect(GamesViewModel.hubOrder(built, partnerGames: [.connectFour]) == [.drawAndGuess, .mindMeld, .storyChain])
+        #expect(order(partner: [.connectFour]) == [.drawAndGuess, .mindMeld, .storyChain])
+        #expect(order(yourTurn: [.mindMeld]) == [.mindMeld, .drawAndGuess, .storyChain])
+        // The partner's game stays on top, even above a game waiting for your turn.
+        #expect(order(partner: [.storyChain], yourTurn: [.mindMeld]) == [.storyChain, .mindMeld, .drawAndGuess])
+        #expect(
+            order(partner: [.drawAndGuess], yourTurn: [.drawAndGuess, .storyChain])
+                == [.drawAndGuess, .storyChain, .mindMeld]
+        )
     }
 
     @Test func changingTheSettingsLaterKeepsTheHubAndAFailureShowsANotice() async {

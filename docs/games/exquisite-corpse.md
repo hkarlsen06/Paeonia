@@ -301,7 +301,7 @@ The star strings are the shared keys `games.star.button`, `games.star.buttonStar
 
 ### Hub card
 
-The shared card frame from the foundation, with its own artwork: three paper panels stacked like a folded strip. On first appear they unfold one by one to show a doodle creature (a cat's head, a striped sweater body, chicken legs), drawn in widget ink colors. It plays once, and starts unfolded under Reduce Motion.
+The shared card frame from the foundation, with its own artwork: a strip of paper in three parts, tilted toward the viewer, with a dashed crease at each fold. On first appear the parts swing open from the top one by one, and each part draws itself line by line before the next one opens: a cat's head, a striped sweater body, chicken legs, in widget ink colors. Then a glow comes up behind the creature and it hops. It plays once, and starts finished under Reduce Motion.
 
 | Status | English | Norwegian |
 |---|---|---|

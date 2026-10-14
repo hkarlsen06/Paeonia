@@ -5,15 +5,24 @@ import SwiftUI
 /// a fold leave one part at the same x where the next part picks them up.
 struct ExquisiteCorpseHubDoodle: View {
     let part: ExquisiteCorpsePartKind
+    /// How much of the part is drawn, from 0 to 1. The lines are drawn one after
+    /// another in layer order, and a filled shape appears once its turn comes.
+    var drawn: Double = 1
 
     var body: some View {
         Canvas { context, size in
-            for layer in Self.layers(for: part, in: size) {
+            let layers = Self.layers(for: part, in: size)
+            for (index, layer) in layers.enumerated() {
+                let share = 1 / Double(layers.count)
+                let amount = min(max((drawn - Double(index) * share) / share, 0), 1)
+                guard amount > 0 else { continue }
                 if layer.isFilled {
+                    context.opacity = amount
                     context.fill(layer.path, with: .color(layer.color))
+                    context.opacity = 1
                 } else {
                     context.stroke(
-                        layer.path,
+                        layer.path.trimmedPath(from: 0, to: amount),
                         with: .color(layer.color),
                         style: StrokeStyle(lineWidth: layer.width, lineCap: .round, lineJoin: .round)
                     )
