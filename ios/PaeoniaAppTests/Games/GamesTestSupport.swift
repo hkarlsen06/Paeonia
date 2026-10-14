@@ -408,6 +408,7 @@ func makeOfflineLiveRoom() -> (room: WidgetLiveDrawing, connection: WidgetLiveCo
 
 /// Waits until `condition` holds, for work the view model starts in a task.
 @MainActor
+@discardableResult
 func waitUntil(timeout: Duration = .seconds(2), _ condition: () -> Bool) async -> Bool {
     let deadline = ContinuousClock.now + timeout
     while !condition() {

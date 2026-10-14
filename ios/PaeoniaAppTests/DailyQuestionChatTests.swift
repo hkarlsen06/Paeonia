@@ -1073,7 +1073,7 @@ struct DailyQuestionChatLiveTests {
         #expect(await waitForMain { source.subscriptionCount.value == 1 })
 
         #expect(await viewModel.send("On my way"))
-        #expect(viewModel.messages.map(\.isSending) == [true])
+        #expect(await waitForMain { viewModel.messages.map(\.isSending) == [true] })
 
         // The server copy arrives before the send's own response confirms it.
         let serverCopy = DailyQuestionChatMessage(

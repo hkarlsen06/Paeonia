@@ -3,7 +3,7 @@ import Foundation
 
 /// Where a bubble sits in a run of messages from the same person, which decides its
 /// corner shape and whether the avatar shows. Ported from Tidex's chat grouping.
-enum DailyChatGroupPosition: Hashable {
+nonisolated enum DailyChatGroupPosition: Hashable {
     case standalone
     case leading
     case middle
@@ -88,7 +88,7 @@ struct DailyChatReplyPreview: Hashable {
 /// The small line under your own messages. Like Tidex: Sending and Not sent show on
 /// every message in that state, Read on the newest one the partner has read, and
 /// Sent on your newest message.
-enum DailyChatMessageStatus: Hashable {
+nonisolated enum DailyChatMessageStatus: Hashable {
     case sending
     case sent
     case read

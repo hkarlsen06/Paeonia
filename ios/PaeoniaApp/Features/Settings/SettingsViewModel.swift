@@ -14,7 +14,7 @@ final class SettingsViewModel {
     }
 
     /// What iOS allows. The switches only matter once iOS allows notifications.
-    enum SystemNotificationPermission: Equatable {
+    nonisolated enum SystemNotificationPermission: Equatable {
         case allowed
         /// iOS has never asked, for example after "Not now" on the app's own
         /// primer. The screen offers to ask now.

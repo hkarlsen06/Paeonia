@@ -139,7 +139,7 @@ struct LocalPrivacyPurgeTests {
 
         #expect(firstResult == .recordsPendingRetry)
         #expect(
-            try await retryStore.request(for: ownerUserID)
+            await retryStore.request(for: ownerUserID)
                 == LocalPrivacyPurgeRequest(ownerUserID: ownerUserID, scope: .departingUser)
         )
 
@@ -152,7 +152,7 @@ struct LocalPrivacyPurgeTests {
         let retryResult = await purger.retryPendingPurges()
 
         #expect(retryResult == .completed)
-        #expect(try await retryStore.request(for: ownerUserID) == nil)
+        #expect(await retryStore.request(for: ownerUserID) == nil)
         #expect(await recordStore.calls == [.departingUser, .departingUser])
         // Record retries must not repeat already-completed file/App Group cleanup.
         #expect(await filePurger.calls.count == 1)
@@ -180,7 +180,7 @@ struct LocalPrivacyPurgeTests {
 
         #expect(await purger.retryPendingPurges() == .completed)
 
-        #expect(try await retryStore.request(for: ownerUserID) == nil)
+        #expect(await retryStore.request(for: ownerUserID) == nil)
         #expect(
             await recordStore.calls == [
                 .departingUser,
@@ -194,13 +194,13 @@ struct LocalPrivacyPurgeTests {
         let ownerUserID = UUID()
         let retryStore = InMemoryLocalPrivacyPurgeRetryStore()
 
-        try await retryStore.enqueue(
+        await retryStore.enqueue(
             LocalPrivacyPurgeRequest(
                 ownerUserID: ownerUserID,
                 scope: .relationshipContentPurged(clearAccessSnapshot: false)
             )
         )
-        try await retryStore.enqueue(
+        await retryStore.enqueue(
             LocalPrivacyPurgeRequest(
                 ownerUserID: ownerUserID,
                 scope: .relationshipContentPurged(clearAccessSnapshot: true)
@@ -208,7 +208,7 @@ struct LocalPrivacyPurgeTests {
         )
 
         #expect(
-            try await retryStore.request(for: ownerUserID)
+            await retryStore.request(for: ownerUserID)
                 == LocalPrivacyPurgeRequest(
                     ownerUserID: ownerUserID,
                     scope: .relationshipContentPurged(clearAccessSnapshot: true)

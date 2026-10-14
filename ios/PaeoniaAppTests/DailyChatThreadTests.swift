@@ -409,7 +409,9 @@ struct DailyChatRowGestureAreaTests {
             timestampRevealOffset: .constant(0),
             messageFrame: nil
         )
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 393, height: 200))
+        let scene = try #require(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 393, height: 200)
         let host = UIHostingController(rootView: view)
         window.rootViewController = host
         window.makeKeyAndVisible()

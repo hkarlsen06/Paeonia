@@ -337,7 +337,7 @@ struct GamesQueueHardeningTests {
 
         let first = await cache.beginFetch()
         let second = await cache.beginFetch()
-        await cache.saveFetchedState(newer, ownerUserID: GameFixture.me, ticket: second)
+        _ = await cache.saveFetchedState(newer, ownerUserID: GameFixture.me, ticket: second)
         let savedOlder = await cache.saveFetchedState(older, ownerUserID: GameFixture.me, ticket: first)
 
         #expect(!savedOlder)
