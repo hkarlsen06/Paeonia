@@ -68,6 +68,8 @@ struct BoardGameShellContent: Equatable {
     let score: BoardGameScore?
     /// A game's own line for the status row, shown instead of who is here.
     var hint: LocalizedStringResource?
+    /// Ludo's color circles before the player's first move. Nil in the other games and after.
+    var colorChoice: BoardGameColorChoice?
 }
 
 // MARK: Turn label

@@ -112,6 +112,8 @@
         winLine: outcome?.line ?? [],
         stake: stake,
         stakeByUserID: stake == nil ? nil : firstUserID,
+        myColor: kind == .ludo ? .pink : nil,
+        partnerColor: kind == .ludo ? .lavender : nil,
         photoMediaAssetID: hasPhoto ? DeveloperBoardGamesFixture.photoAssetID : nil,
         myWins: tallies.mine,
         partnerWins: tallies.partner,
@@ -176,6 +178,7 @@
         expectedVersion: game.version,
         move: queuedMove,
         stake: nil,
+        ludoColor: nil,
         createdAt: DeveloperScenarioFixture.now
       )
     }

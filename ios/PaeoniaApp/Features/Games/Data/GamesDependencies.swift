@@ -36,6 +36,8 @@ struct GamesDependencies {
     // Board games
     var boardGamesGateway: any BoardGamesGateway = UnavailableBoardGamesGateway()
     var boardGamesCache: any BoardGamesCaching = InMemoryBoardGamesCache()
+    /// Builds Ludo's relay room for the couple, which carries live rolls, or nil when there is none.
+    var makeLudoLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
     /// Loads the hidden photo under Dots and Boxes, the way Memories loads photos.
     var memoryPhotos: (any MemoryMediaImageProviding)?
 
@@ -67,6 +69,7 @@ struct GamesDependencies {
             makeExquisiteCorpseLive: { ExquisiteCorpseLive.make(coupleID: $0) },
             boardGamesGateway: client.map { LiveBoardGamesGateway(client: $0) } ?? UnavailableBoardGamesGateway(),
             boardGamesCache: FileBoardGamesCache.shared,
+            makeLudoLive: { LudoLive.make(coupleID: $0) },
             memoryPhotos: MemoryMediaImageProviderFactory.shared
         )
     }

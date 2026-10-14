@@ -208,6 +208,7 @@ struct BoardGameResolverTests {
             expectedVersion: game.version + 1,
             move: 3,
             stake: "Winner picks the film",
+            ludoColor: nil,
             createdAt: Fixture.now
         )
 

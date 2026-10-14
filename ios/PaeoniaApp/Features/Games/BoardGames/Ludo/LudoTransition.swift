@@ -26,7 +26,7 @@ nonisolated struct LudoTransition: Equatable, Sendable {
     let path: [LudoSquare]
     /// Partner pawns sent back to their base, as pawn indexes in ascending order.
     let sentHome: [Int]
-    /// Whether the same player rolls again. False when the move ends the game.
+    /// Whether the same player rolls again, also after a missed 6 with tries left. False when the move ends the game.
     let rollsAgain: Bool
 }
 
@@ -77,14 +77,15 @@ nonisolated extension LudoBoard {
         }
 
         let won = (0..<Self.pawnsPerPlayer).allSatisfy { progress[Self.pawnIndex(mover, $0)] == Self.homeProgress }
-        let reachedHome = pawn.map { progress[$0] == Self.homeProgress } ?? false
-        let rollsAgain = !won && (die == Self.dieFaces || !sentHome.isEmpty || reachedHome)
+        let rollsAgain = !won && (die == Self.dieFaces || !sentHome.isEmpty || path.last == .home(mover)
+            || missedSixes(after: choice) > 0)
         let board = LudoBoard(
             progress: progress,
             next: rollsAgain || won ? mover : mover.other,
+            missedSixes: missedSixes(after: choice),
             outcome: won ? BoardOutcome(winner: mover, line: []) : nil
         )
-        let transition = LudoTransition(
+        return (board, LudoTransition(
             player: mover,
             die: die,
             choice: choice,
@@ -92,8 +93,14 @@ nonisolated extension LudoBoard {
             path: path,
             sentHome: sentHome,
             rollsAgain: rollsAgain
-        )
-        return (board, transition)
+        ))
+    }
+
+    /// The missed 6s `next` counts after `choice`. With no pawn out a pass is a
+    /// missed 6, and the third one starts the count over as the turn passes.
+    private func missedSixes(after choice: LudoChoice) -> Int {
+        guard choice == .pass, hasNoPawnOut(next) else { return 0 }
+        return (missedSixes + 1) % Self.triesInBase
     }
 
     /// The partner pawns a pawn landing on `square` sends home. That is every partner pawn on the track

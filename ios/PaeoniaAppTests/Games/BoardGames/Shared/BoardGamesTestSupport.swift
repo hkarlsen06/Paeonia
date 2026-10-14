@@ -154,6 +154,8 @@ enum BoardGameDataFixture {
         winner: UUID? = nil,
         version: Int? = nil,
         stake: String? = nil,
+        myColor: LudoColor? = nil,
+        partnerColor: LudoColor? = nil,
         photo: UUID? = nil,
         myWins: Int = 0,
         partnerWins: Int = 0,
@@ -173,6 +175,8 @@ enum BoardGameDataFixture {
             winLine: [],
             stake: stake,
             stakeByUserID: stake == nil ? nil : first,
+            myColor: myColor,
+            partnerColor: partnerColor,
             photoMediaAssetID: photo,
             myWins: myWins,
             partnerWins: partnerWins,
@@ -201,7 +205,8 @@ enum BoardGameDataFixture {
         _ move: Int,
         on game: RemoteBoardGame,
         expectedVersion: Int? = nil,
-        stake: String? = nil
+        stake: String? = nil,
+        ludoColor: LudoColor? = nil
     ) -> BoardGameMovePayload {
         BoardGameMovePayload(
             kind: game.kind,
@@ -210,6 +215,7 @@ enum BoardGameDataFixture {
             expectedVersion: expectedVersion ?? game.version,
             move: move,
             stake: stake,
+            ludoColor: ludoColor,
             createdAt: now
         )
     }

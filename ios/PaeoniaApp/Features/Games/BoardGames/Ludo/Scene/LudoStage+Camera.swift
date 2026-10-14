@@ -7,10 +7,12 @@ import RealityKit
 /// where the person leaves it.
 extension LudoStage {
     /// Fits the camera to a view of this shape, letting the board's near edge run
-    /// `overshoot` past each side.
-    func setAspect(_ aspect: Double, overshoot: Double) {
-        guard fit == nil || abs(aspect - (fit?.aspect ?? 0)) > 0.001 || overshoot != fit?.overshoot else { return }
-        fit = LudoCameraFit.make(aspect: aspect, overshoot: overshoot)
+    /// `overshoot` past each side and keeping it inside `fitHeight` of the view's height.
+    func setAspect(_ aspect: Double, overshoot: Double, fitHeight: Double) {
+        let next = LudoCameraFit.make(aspect: aspect, overshoot: overshoot, fitHeight: fitHeight)
+        if let fit, abs(next.aspect - fit.aspect) < 0.001, next.overshoot == fit.overshoot,
+           abs(next.fitHeight - fit.fitHeight) < 0.001 { return }
+        fit = next
         cameraNeedsUpdate = true
         applyCamera()
         notifyCameraSettled()

@@ -6,17 +6,21 @@ import UIKit
 extension LudoStage {
     /// Brings the die to the state the screen asks for.
     ///
-    /// My rolls come from the screen as `.rolling(side: me)`. The partner's rolls
-    /// do not: the stage tumbles the die by itself when the partner's move arrives
-    /// (see `tumblePartnerDie`), so a `.rolling` for the partner's side is ignored.
-    func syncDie(_ state: LudoDieState) {
+    /// My rolls come from the screen as `.rolling(side: me)`. My partner's come
+    /// as `.rolling(side: partner)` when their roll arrives live, and the stage
+    /// remembers it so their move does not tumble the die again. Without a live
+    /// roll the stage tumbles the die by itself when the partner's move arrives
+    /// (see `tumblePartnerDie`).
+    func syncDie(_ state: LudoDieState, afterPartnerMove: Bool = false) {
         guard let die = dieNode else { return }
         let isNear = state.side(me: viewer) == viewer
         let tray = LudoWorld.dieRestPosition(isNear: isNear)
 
         if case let .rolling(value, _, token) = state {
-            guard isNear, token != lastTumbleToken else { return }
+            guard token != lastTumbleToken else { return }
             lastTumbleToken = token
+            if !isNear, afterPartnerMove { return }
+            partnerLiveRoll = isNear ? nil : (value, clock + LudoSceneStyle.tumbleDuration)
             tumble(die, to: value, tray: tray, isNear: isNear)
             return
         }
@@ -32,6 +36,14 @@ extension LudoStage {
         case .rolling:
             break
         }
+    }
+
+    /// Takes the partner's live roll when it matches the move that arrived, and
+    /// returns how much of its tumble is left. Nil means the die has not tumbled yet.
+    func takePartnerLiveRoll(matching value: Int) -> Double? {
+        defer { partnerLiveRoll = nil }
+        guard let roll = partnerLiveRoll, roll.die == value else { return nil }
+        return max(0, roll.endsAt - clock)
     }
 
     /// The partner's move arrived: the die tumbles on their tray and lands with

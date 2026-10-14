@@ -18,7 +18,8 @@ enum BoardGamePreviewData {
     static func shell(
         turn: BoardGameTurnLabel = .yourTurn,
         stake: BoardGameStakeState = .fixed("Loser makes coffee"),
-        partnerStatus: BoardGamePartnerStatus = .here
+        partnerStatus: BoardGamePartnerStatus = .here,
+        colorChoice: BoardGameColorChoice? = nil
     ) -> BoardGameShellContent {
         BoardGameShellContent(
             me: me,
@@ -27,7 +28,8 @@ enum BoardGamePreviewData {
             stake: stake,
             partnerStatus: partnerStatus,
             extraTurnCount: 0,
-            score: .against(mine: 4, partner: 3)
+            score: .against(mine: 4, partner: 3),
+            colorChoice: colorChoice
         )
     }
 

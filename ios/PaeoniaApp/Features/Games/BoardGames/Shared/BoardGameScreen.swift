@@ -10,8 +10,8 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
     /// there is one, it shows instead of who is here, and the "Another turn"
     /// chip stays quiet because the hint already says it.
     var hint: LocalizedStringResource?
-    /// The board fills the screen sideways and takes the free height, as Ludo's does.
-    /// It then fills any space it is given, so it needs no square of its own.
+    /// The board draws over the whole screen behind the rows and fits itself in the
+    /// free space between them, as Ludo's does. It reads `boardFitHeight` for that.
     var boardBleeds = false
     /// The game's board, built from the view model's board state.
     @ViewBuilder let board: () -> BoardContent
@@ -50,7 +50,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             }
             .sheet(isPresented: isEditingMark) {
                 if let model = viewModel.markEditor {
-                    BoardMarkEditorView(color: .boardGameMine, model: model)
+                    BoardMarkEditorView(color: viewModel.meInfo.style.color, model: model)
                 }
             }
             .gameTutorial(tutorial, isPresented: $showsTutorial)
@@ -83,7 +83,8 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
                 content: shellContent,
                 stakeDraft: $viewModel.stakeDraft,
                 onCommitStake: {},
-                boardBleeds: boardBleeds
+                boardBleeds: boardBleeds,
+                onPickColor: viewModel.pickColor
             ) {
                 // A tap while moves replay or the outcome plays jumps to the end. It
                 // is a shortcut for sighted people, since VoiceOver reads the board
@@ -106,7 +107,8 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             partnerStatus: viewModel.partnerStatus,
             extraTurnCount: hint == nil ? viewModel.extraTurnCount : 0,
             score: viewModel.score,
-            hint: hint
+            hint: hint,
+            colorChoice: viewModel.colorChoice
         )
     }
 

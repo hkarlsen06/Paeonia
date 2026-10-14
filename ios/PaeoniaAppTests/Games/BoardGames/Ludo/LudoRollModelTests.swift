@@ -83,7 +83,8 @@ private final class RollHarness {
 @MainActor
 struct LudoRollModelTests {
     /// Player one has pawns on progress 5 and 1, and a 3 moves either one.
-    private static let twoPawns = [15, 16, 9, 8]
+    /// Robin missed a 6 three times.
+    private static let twoPawns = [15, 16, 9, 8, 8, 14]
     /// Player one has one pawn out on progress 1, so a 3 has one option.
     private static let onePawn = [15]
 
@@ -135,7 +136,7 @@ struct LudoRollModelTests {
         #expect(harness.sleeps.contains(.milliseconds(500)))
     }
 
-    @Test func aPassMovesByItselfWhileTheStatusSaysNoMove() async {
+    @Test func aMissedSixPassesByItselfAndLeavesTwoTries() async {
         let harness = RollHarness(moves: [], dice: [3])
         harness.holdsAutomaticMoves = true
         await harness.model.restore()
@@ -150,7 +151,21 @@ struct LudoRollModelTests {
         #expect(passed)
         #expect(harness.played == [LudoBoard.move(die: 3, choice: .pass)])
         #expect(harness.sleeps.contains(.milliseconds(1_200)))
-        #expect(harness.model.hint == nil)
+        // No pawn is out, so I roll again with two tries left.
+        #expect(harness.model.die == .ready)
+        #expect(harness.model.hint == .triesLeft(2))
+    }
+
+    @Test func theThirdMissedSixPassesTheTurn() async {
+        let misses = [LudoBoard.move(die: 3, choice: .pass), LudoBoard.move(die: 5, choice: .pass)]
+        let harness = RollHarness(moves: misses, dice: [1])
+        await harness.model.restore()
+        #expect(harness.model.hint == .triesLeft(1))
+        harness.model.roll()
+        let passed = await waitUntil { !harness.played.isEmpty }
+        #expect(passed)
+        #expect(harness.board.next == .two)
+        #expect(harness.model.die == .idle(side: .two))
     }
 
     @Test func aSixGivesAnotherRollWithRollAgain() async {
@@ -190,12 +205,67 @@ struct LudoRollModelTests {
     }
 
     @Test func robinsMoveLeavesTheTumbleToTheBoard() async {
-        // Robin passed with a 5 (move 14) and the board is still replaying it.
-        // The board tumbles Robin's die itself, so the model only names the tray.
-        let harness = RollHarness(moves: [15, 9, 14])
+        // Robin missed a 6 three times, the last with a 5 (move 14), and the board
+        // is still replaying it. The board tumbles Robin's die itself, so the
+        // model only names the tray.
+        let harness = RollHarness(moves: [15, 9, 8, 8, 14])
         harness.canPlayOverride = false
         await harness.model.restore()
         #expect(harness.model.die == .idle(side: .one))
         #expect(harness.model.movableChoices.isEmpty)
+    }
+
+    // MARK: Live rolls
+
+    @Test func myRollGoesLiveAsTheTumbleStarts() async {
+        let harness = RollHarness(moves: Self.twoPawns, dice: [3])
+        var announced: [LudoSavedRoll] = []
+        harness.model.announce = { announced.append($0) }
+        await harness.model.restore()
+        #expect(harness.model.ownRoll == nil)
+        harness.model.roll()
+        let roll = LudoSavedRoll(position: harness.position, die: 3)
+        #expect(announced == [roll])
+        // It is sent again when Robin opens the game, until the move lands.
+        #expect(harness.model.ownRoll == roll)
+    }
+
+    @Test func aKeptRollGoesLiveAgainWhenItComesBack() async {
+        let harness = RollHarness(moves: Self.twoPawns)
+        var announced: [LudoSavedRoll] = []
+        harness.model.announce = { announced.append($0) }
+        harness.setKept(LudoSavedRoll(position: harness.position, die: 4))
+        await harness.model.restore()
+        #expect(announced == [LudoSavedRoll(position: harness.position, die: 4)])
+    }
+
+    @Test func robinsLiveRollTumblesOnRobinsTray() async {
+        let harness = RollHarness(moves: [15, 9])
+        await harness.model.restore()
+        harness.model.receivePartnerRoll(LudoSavedRoll(position: harness.position, die: 4))
+        #expect(harness.model.die == .rolling(die: 4, side: .two, token: 1))
+        let landed = await waitUntil { harness.model.die == .showing(die: 4, side: .two) }
+        #expect(landed)
+        // The same roll again, as when Robin's phone resends it, does not tumble twice.
+        harness.model.receivePartnerRoll(LudoSavedRoll(position: harness.position, die: 4))
+        #expect(harness.model.die == .showing(die: 4, side: .two))
+    }
+
+    @Test func aLiveRollThatArrivesBeforeRobinsMoveWaitsForTheBoard() async {
+        let harness = RollHarness(moves: [15, 9])
+        await harness.model.restore()
+        // Robin rolls a 6, moves, and rolls again before the move reaches this phone.
+        harness.model.receivePartnerRoll(LudoSavedRoll(position: harness.position(movesCount: 3), die: 2))
+        #expect(harness.model.die == .idle(side: .two))
+        harness.moves.append(15)
+        harness.model.update()
+        #expect(harness.model.die == .rolling(die: 2, side: .two, token: 1))
+    }
+
+    @Test func aLiveRollForAnEarlierPositionIsIgnored() async {
+        let harness = RollHarness(moves: [15, 9])
+        await harness.model.restore()
+        harness.model.receivePartnerRoll(LudoSavedRoll(position: harness.position(movesCount: 1), die: 5))
+        #expect(harness.model.die == .idle(side: .two))
     }
 }

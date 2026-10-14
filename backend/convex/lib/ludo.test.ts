@@ -19,21 +19,21 @@ import {
  * [player 1 pawn 0, player 1 pawn 1, player 2 pawn 0, player 2 pawn 1]. `next` is who rolls next
  * and `winner` is null while the game goes on.
  *
- * exitAndWalk: a 6 brings a pawn out and rolls again, a 5 walks it, and player 2 passes on a 2.
+ * exitAndWalk: a 6 brings a pawn out and rolls again, a 5 walks it, and player 2 misses a 6 three times.
  * capture: player 1 lands on square 28 and sends player 2's pawn home, which rolls again.
  * safeSquare: player 1 lands on square 26 where player 2 has a pawn, and nobody is sent home.
  * playerOneWins and playerTwoWins: whole games with captures, passes and exact finishes.
  */
 const FIXTURES: readonly { name: string; moves: readonly number[]; progress: readonly number[]; next: BoardPlayer; winner: BoardPlayer | null }[] = [
-  { name: "exitAndWalk", moves: [15, 12, 5], progress: [6, 0, 0, 0], next: 1, winner: null },
+  { name: "exitAndWalk", moves: [15, 12, 5, 8, 14], progress: [6, 0, 0, 0], next: 1, winner: null },
   { name: "capture", moves: [15, 15, 15, 15, 15, 6, 15, 3, 0], progress: [29, 0, 0, 0], next: 1, winner: null },
   { name: "safeSquare", moves: [15, 15, 15, 15, 15, 0, 15, 16, 3, 0], progress: [27, 0, 3, 1], next: 2, winner: null },
   {
     name: "playerOneWins",
     moves: [
-      15, 3, 11, 3, 11, 6, 14, 6, 5, 3, 14, 12, 15, 3, 12, 6, 3, 0, 12, 16, 9, 6, 0, 0, 16, 4, 9, 15, 0, 13, 9, 13, 12, 16, 4, 6, 5, 13, 2, 13, 14, 10,
-      14, 15, 7, 16, 16, 4, 1, 16, 1, 6, 10, 9, 7, 10, 13, 14, 9, 5, 1, 16, 7, 12, 4, 15, 0, 1, 15, 12, 1, 0, 16, 7, 15, 6, 1, 3, 7, 10, 4, 8, 10, 14,
-      13, 15, 9, 13, 9, 13, 6, 10, 0, 13, 12, 4, 0, 17, 4,
+      15, 3, 11, 8, 14, 3, 11, 8, 14, 6, 14, 8, 14, 6, 5, 8, 14, 3, 14, 8, 14, 12, 15, 3, 12, 6, 3, 0, 12, 16, 9, 6, 0, 0, 16, 4, 9, 15, 0, 13, 9, 13,
+      12, 16, 4, 6, 5, 8, 14, 13, 2, 8, 14, 13, 14, 8, 14, 10, 14, 8, 14, 15, 7, 16, 16, 4, 1, 16, 1, 6, 10, 9, 7, 10, 13, 14, 8, 14, 9, 5, 8, 14, 1,
+      16, 7, 12, 4, 15, 0, 1, 15, 12, 1, 0, 16, 7, 15, 6, 1, 3, 7, 10, 4, 8, 8, 14, 10, 14, 8, 14, 13, 15, 9, 13, 9, 13, 6, 10, 0, 13, 12, 4, 0, 17, 4,
     ],
     progress: [57, 57, 19, 57],
     next: 1,
@@ -42,9 +42,9 @@ const FIXTURES: readonly { name: string; moves: readonly number[]; progress: rea
   {
     name: "playerTwoWins",
     moves: [
-      11, 16, 1, 2, 10, 8, 7, 16, 7, 16, 1, 10, 13, 4, 10, 4, 4, 1, 13, 4, 10, 7, 10, 10, 16, 7, 7, 4, 10, 16, 10, 11, 16, 13, 1, 4, 5, 7, 8, 15, 10, 14,
-      12, 8, 7, 5, 0, 5, 6, 15, 6, 9, 9, 16, 1, 11, 9, 8, 15, 4, 15, 9, 9, 15, 9, 3, 3, 3, 12, 16, 16, 0, 3, 7, 12, 12, 15, 15, 12, 4, 9, 1, 3, 4, 3, 7,
-      17, 6, 11, 12, 14, 4, 14, 10, 8, 13, 8, 13, 1,
+      11, 8, 14, 16, 1, 2, 8, 14, 10, 8, 8, 14, 7, 16, 7, 16, 1, 10, 13, 4, 10, 4, 4, 1, 13, 4, 10, 7, 10, 10, 16, 7, 7, 4, 10, 16, 10, 11, 16, 13, 1,
+      4, 5, 7, 8, 15, 10, 14, 12, 8, 7, 5, 0, 5, 6, 15, 6, 9, 9, 16, 1, 11, 9, 8, 15, 4, 15, 9, 9, 15, 9, 3, 3, 3, 12, 16, 16, 0, 3, 7, 12, 12, 15, 15,
+      12, 4, 9, 1, 3, 4, 3, 7, 17, 6, 11, 12, 14, 4, 14, 10, 8, 13, 8, 13, 1,
     ],
     progress: [43, 34, 57, 57],
     next: 2,
@@ -63,7 +63,7 @@ function play(moves: readonly number[]): LudoState {
 }
 
 function at(progress: readonly number[], next: BoardPlayer = 1): LudoState {
-  return { progress, next, outcome: null };
+  return { progress, next, missedSixes: 0, outcome: null };
 }
 
 /** The progress a player's pawn has when it stands on a track square. */
@@ -124,7 +124,7 @@ describe("move numbers and squares", () => {
 
 describe("initial board", () => {
   test("all four pawns wait in their bases and player 1 moves first", () => {
-    expect(rules.initial()).toEqual({ progress: [0, 0, 0, 0], next: 1, outcome: null });
+    expect(rules.initial()).toEqual({ progress: [0, 0, 0, 0], next: 1, missedSixes: 0, outcome: null });
     expect(rules.next(rules.initial())).toBe(1);
     expect(rules.outcome(rules.initial())).toBeNull();
   });
@@ -313,9 +313,31 @@ describe("passing", () => {
     expect(ludoLegalChoices(at([56, 57, 0, 0]), 2)).toEqual([2]);
   });
 
-  test("a pass changes nothing but the turn", () => {
-    const after = roll(rules.initial(), 3, 2);
-    expect(after).toEqual({ progress: [0, 0, 0, 0], next: 2, outcome: null });
+  test("a pass with a pawn out changes nothing but the turn", () => {
+    const after = roll(at([56, 0, 0, 0]), 3, 2);
+    expect(after).toEqual({ progress: [56, 0, 0, 0], next: 2, missedSixes: 0, outcome: null });
+  });
+
+  test("a player with no pawn out gets three tries to roll a 6", () => {
+    const first = roll(rules.initial(), 3, 2);
+    expect(first).toEqual({ progress: [0, 0, 0, 0], next: 1, missedSixes: 1, outcome: null });
+    const second = roll(first, 5, 2);
+    expect(second).toEqual({ progress: [0, 0, 0, 0], next: 1, missedSixes: 2, outcome: null });
+    expect(roll(second, 1, 2)).toEqual({ progress: [0, 0, 0, 0], next: 2, missedSixes: 0, outcome: null });
+  });
+
+  test("a 6 on the second or third try brings a pawn out", () => {
+    const after = roll(roll(roll(rules.initial(), 3, 2), 2, 2), 6, 0);
+    expect(after).toEqual({ progress: [1, 0, 0, 0], next: 1, missedSixes: 0, outcome: null });
+  });
+
+  test("a pawn already home doesn't count as out", () => {
+    expect(roll(at([57, 0, 0, 0]), 4, 2)).toEqual({ progress: [57, 0, 0, 0], next: 1, missedSixes: 1, outcome: null });
+    expect(roll(at([0, 0, 0, 57], 2), 4, 2).next).toBe(2);
+  });
+
+  test("a player with a pawn out who can't move gets no second try", () => {
+    expect(roll(at([56, 57, 0, 0]), 2, 2).next).toBe(2);
   });
 
   test("a pass on a 6 gives another roll", () => {

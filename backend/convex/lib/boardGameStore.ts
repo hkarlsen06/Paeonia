@@ -132,6 +132,8 @@ export async function boardGameView(ctx: ReaderCtx, game: BoardGame, userId: str
     win_line: game.win_line,
     stake: orNull(game.stake),
     stake_by_user_id: orNull(game.stake_by_user_id),
+    my_color: game.colors_by_user?.[userId] ?? null,
+    partner_color: partnerId ? (game.colors_by_user?.[partnerId] ?? null) : null,
     photo_media_asset_id: await readablePhotoId(ctx, userId, game.couple_id, game.photo_media_asset_id),
     my_wins: game.wins_by_user[userId] ?? 0,
     partner_wins: partnerId ? (game.wins_by_user[partnerId] ?? 0) : 0,

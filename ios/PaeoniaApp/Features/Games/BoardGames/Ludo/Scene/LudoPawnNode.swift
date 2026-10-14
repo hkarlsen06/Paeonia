@@ -15,8 +15,8 @@ final class LudoPawnNode {
 
     private let body: ModelEntity
     private let cap: ModelEntity
-    private let normalMaterial: PhysicallyBasedMaterial
-    private let glowMaterial: PhysicallyBasedMaterial
+    private var normalMaterial: PhysicallyBasedMaterial
+    private var glowMaterial: PhysicallyBasedMaterial
 
     /// Where the pawn stands when nothing moves it, with its size.
     private(set) var rest = SIMD3<Float>.zero
@@ -70,6 +70,13 @@ final class LudoPawnNode {
             .offsetBy(translation: SIMD3(0, size.y / 2 - 0.1, 0))
         root.components.set(CollisionComponent(shapes: [shape]))
         root.components.set(InputTargetComponent())
+    }
+
+    /// Paints the pawn in another color.
+    func setColor(_ color: UIColor) {
+        normalMaterial = LudoMaterials.pawn(color, glowing: false)
+        glowMaterial = LudoMaterials.pawn(color, glowing: true)
+        body.model?.materials = [isMovable ? glowMaterial : normalMaterial]
     }
 
     /// Changes the picture on top.

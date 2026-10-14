@@ -65,6 +65,10 @@ nonisolated struct RemoteBoardGame: Codable, Equatable, Sendable {
     let winLine: [Int]
     let stake: String?
     let stakeByUserID: UUID?
+    /// Ludo only: the piece color of each player, always two different ones.
+    /// Nil in the other board games.
+    let myColor: LudoColor?
+    let partnerColor: LudoColor?
     /// The hidden photo of a Dots and Boxes game, while its memory is visible.
     let photoMediaAssetID: UUID?
     let myWins: Int
@@ -92,6 +96,8 @@ nonisolated struct RemoteBoardGame: Codable, Equatable, Sendable {
         case winLine = "win_line"
         case stake
         case stakeByUserID = "stake_by_user_id"
+        case myColor = "my_color"
+        case partnerColor = "partner_color"
         case photoMediaAssetID = "photo_media_asset_id"
         case myWins = "my_wins"
         case partnerWins = "partner_wins"

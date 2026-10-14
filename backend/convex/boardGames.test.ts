@@ -48,7 +48,12 @@ async function gameOf(user: TestUser, kind: BoardGameKind): Promise<View> {
   return found;
 }
 
-function move(user: TestUser, game: Pick<View, "id" | "version">, cell: number, extra: { p_stake?: string | null } = {}) {
+function move(
+  user: TestUser,
+  game: Pick<View, "id" | "version">,
+  cell: number,
+  extra: { p_stake?: string | null; p_ludo_color?: "pink" | "lavender" | "gold" | "sky" | null } = {},
+) {
   return user.as.mutation(api.boardGames.make_move, {
     ...op(),
     p_game_id: game.id,
@@ -105,9 +110,9 @@ const ULTIMATE_WIN = [
 ];
 // From the shared Ludo fixtures (lib/ludo.test.ts). Player one gets both pawns home on the last move.
 const LUDO_WIN = [
-  15, 3, 11, 3, 11, 6, 14, 6, 5, 3, 14, 12, 15, 3, 12, 6, 3, 0, 12, 16, 9, 6, 0, 0, 16, 4, 9, 15, 0, 13, 9, 13, 12, 16, 4, 6, 5, 13, 2, 13, 14, 10,
-  14, 15, 7, 16, 16, 4, 1, 16, 1, 6, 10, 9, 7, 10, 13, 14, 9, 5, 1, 16, 7, 12, 4, 15, 0, 1, 15, 12, 1, 0, 16, 7, 15, 6, 1, 3, 7, 10, 4, 8, 10, 14,
-  13, 15, 9, 13, 9, 13, 6, 10, 0, 13, 12, 4, 0, 17, 4,
+  15, 3, 11, 8, 14, 3, 11, 8, 14, 6, 14, 8, 14, 6, 5, 8, 14, 3, 14, 8, 14, 12, 15, 3, 12, 6, 3, 0, 12, 16, 9, 6, 0, 0, 16, 4, 9, 15, 0, 13, 9, 13,
+  12, 16, 4, 6, 5, 8, 14, 13, 2, 8, 14, 13, 14, 8, 14, 10, 14, 8, 14, 15, 7, 16, 16, 4, 1, 16, 1, 6, 10, 9, 7, 10, 13, 14, 8, 14, 9, 5, 8, 14, 1,
+  16, 7, 12, 4, 15, 0, 1, 15, 12, 1, 0, 16, 7, 15, 6, 1, 3, 7, 10, 4, 8, 8, 14, 10, 14, 8, 14, 13, 15, 9, 13, 9, 13, 6, 10, 0, 13, 12, 4, 0, 17, 4,
 ];
 // Every kind has a move that is legal on an empty board. Ludo's is a 6 for the first pawn.
 const OPENING_MOVE = { connect_four: 0, dots_and_boxes: 0, ultimate_tic_tac_toe: 0, ludo: 15 } as const;
@@ -203,6 +208,8 @@ describe("ensure_board_game", () => {
       win_line: [],
       stake: null,
       stake_by_user_id: null,
+      my_color: null,
+      partner_color: null,
       photo_media_asset_id: null,
       my_wins: 0,
       partner_wins: 0,
@@ -401,12 +408,14 @@ describe("refused moves", () => {
     });
   });
 
-  test("Ludo: a pass is legal only when no pawn can move, and a 6 keeps the turn", async () => {
+  test("Ludo: a pass is legal only when no pawn can move, three tries for a 6, and a 6 keeps the turn", async () => {
     const s = await startCouple();
     const game = await ensure(s.a, "ludo");
     // With both pawns in the base, a 1 can't move a pawn, so only the pass (move 2) is legal.
     expect((await failure(move(s.a, game, 0))).code).toBe("23514");
-    const passed = await move(s.a, game, 2);
+    const firstTry = await move(s.a, game, 2);
+    expect(firstTry.turn_user_id).toBe(s.a.userId);
+    const passed = await move(s.a, await move(s.a, firstTry, 5), 8);
     expect(passed.turn_user_id).toBe(s.b.userId);
     // A 6 brings a pawn out and rolls again. A pass on a 6 is illegal while a pawn can leave the base.
     const out = await move(s.b, passed, 15);
@@ -511,6 +520,76 @@ describe("Dots and Boxes extra turns", () => {
     expect(await reminder()).toBe(marked);
     await move(s.b, closed, 22);
     expect(await reminder()).toBeUndefined();
+  });
+});
+
+describe("Ludo colors", () => {
+  test("a new game gives player one pink and the partner lavender, each seeing both", async () => {
+    const s = await startCouple();
+    await ensure(s.a, "ludo");
+    expect(await gameOf(s.a, "ludo")).toMatchObject({ my_color: "pink", partner_color: "lavender" });
+    expect(await gameOf(s.b, "ludo")).toMatchObject({ my_color: "lavender", partner_color: "pink" });
+  });
+
+  test("the first move can pick a color, and the partner sees it", async () => {
+    const s = await startCouple();
+    const game = await ensure(s.a, "ludo");
+    const after = await move(s.a, game, 15, { p_ludo_color: "gold" });
+    expect(after).toMatchObject({ my_color: "gold", partner_color: "lavender", moves: [15] });
+    expect(await gameOf(s.b, "ludo")).toMatchObject({ my_color: "lavender", partner_color: "gold" });
+  });
+
+  test("the partner's current color is ignored, and the move still goes through", async () => {
+    const s = await startCouple();
+    const game = await ensure(s.a, "ludo");
+    const after = await move(s.a, game, 15, { p_ludo_color: "lavender" });
+    expect(after).toMatchObject({ my_color: "pink", partner_color: "lavender", moves: [15] });
+  });
+
+  test("player two picks with their own first move, and a color the first partner just took is ignored", async () => {
+    const s = await startCouple();
+    const game = await ensure(s.a, "ludo");
+    const firstTry = await move(s.a, game, 2, { p_ludo_color: "sky" });
+    // Player one misses a 6 three times, so the turn goes to player two.
+    const first = await move(s.a, await move(s.a, firstTry, 5), 8);
+    // Player two wanted sky too, but sky is taken now.
+    expect(await move(s.b, first, 15, { p_ludo_color: "sky" })).toMatchObject({ my_color: "lavender", partner_color: "sky" });
+    const again = await ensure(s.b, "ludo");
+    expect(again).toMatchObject({ my_color: "lavender", partner_color: "sky" });
+  });
+
+  test("a pick after the mover's first move of the game is ignored", async () => {
+    const s = await startCouple();
+    const game = await ensure(s.a, "ludo");
+    const first = await move(s.a, game, 15);
+    // A 6 keeps the turn, so this is player one's second move.
+    const second = await move(s.a, first, 15, { p_ludo_color: "gold" });
+    expect(second).toMatchObject({ my_color: "pink", moves: [15, 15] });
+  });
+
+  test("colors stay across a rematch, and the next game's first move can change them", async () => {
+    const s = await startCouple();
+    const game = await ensure(s.a, "ludo");
+    await move(s.a, game, LUDO_WIN[0], { p_ludo_color: "gold" });
+    const finished = await playMoves(s, await gameOf(s.a, "ludo"), LUDO_WIN.slice(1));
+    expect(finished.status).toBe("finished");
+    const next = await rematch(s.a, finished);
+    expect(next).toMatchObject({ game_number: 2, my_color: "gold", partner_color: "lavender" });
+    // Player two starts game two and picks sky.
+    expect(await move(s.b, next, 15, { p_ludo_color: "sky" })).toMatchObject({ my_color: "sky", partner_color: "gold" });
+  });
+
+  test("other board games refuse a color", async () => {
+    const s = await startCouple();
+    const game = await ensure(s.a, "connect_four");
+    expect(await failure(move(s.a, game, 3, { p_ludo_color: "gold" }))).toEqual({ code: "23514", message: "that color is not allowed" });
+    expect((await gameOf(s.a, "connect_four")).moves).toEqual([]);
+  });
+
+  test("an unknown color is refused by the argument check", async () => {
+    const s = await startCouple();
+    const game = await ensure(s.a, "ludo");
+    await expect(move(s.a, game, 15, { p_ludo_color: "green" as never })).rejects.toThrow();
   });
 });
 
@@ -626,7 +705,7 @@ describe("client operations", () => {
     const game = await ensure(s.a, "connect_four");
     const args = { ...op(), p_game_id: game.id, p_expected_version: game.version, p_move: 3 };
     await s.a.as.mutation(api.boardGames.make_move, args);
-    for (const changed of [{ p_move: 4 }, { p_expected_version: 5 }, { p_stake: "Dinner" }]) {
+    for (const changed of [{ p_move: 4 }, { p_expected_version: 5 }, { p_stake: "Dinner" }, { p_ludo_color: "gold" as const }]) {
       expect(await failure(s.a.as.mutation(api.boardGames.make_move, { ...args, ...changed }))).toEqual({
         code: "23505",
         message: "client operation replay hash mismatch",
@@ -727,6 +806,8 @@ describe("start_rematch", () => {
       stake: null,
       stake_by_user_id: null,
       photo_media_asset_id: null,
+      my_color: null,
+      partner_color: null,
       my_wins: 1,
       partner_wins: 0,
       draws: 0,

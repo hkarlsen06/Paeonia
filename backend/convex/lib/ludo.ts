@@ -1,5 +1,9 @@
 import { isMoveInRange, otherPlayer, type BoardOutcome, type BoardPlayer, type BoardRules } from "./boardGames";
 
+/** The four corner colors a player can pick. The two nobody picked stay as the empty corners. */
+export const LUDO_COLORS = ["pink", "lavender", "gold", "sky"] as const;
+export type LudoColor = (typeof LUDO_COLORS)[number];
+
 export const LUDO_PAWNS_PER_PLAYER = 2;
 export const LUDO_TRACK_LENGTH = 52;
 /** Progress of a pawn that reached the home in the middle of the board. */
@@ -7,6 +11,8 @@ export const LUDO_HOME_PROGRESS = 57;
 /** The last progress on the shared track. Progress 52 to 56 is the pawn's own home column. */
 const LAST_TRACK_PROGRESS = 51;
 const DICE_FACES = 6;
+/** Rolls a player gets to throw a 6 while no pawn of theirs is out. */
+export const LUDO_TRIES_IN_BASE = 3;
 /** Choices per die value: the first pawn, the second pawn and a pass. */
 const CHOICES = LUDO_PAWNS_PER_PLAYER + 1;
 export const LUDO_PASS = LUDO_PAWNS_PER_PLAYER;
@@ -22,10 +28,14 @@ export const LUDO_SAFE_SQUARES: ReadonlySet<number> = new Set([0, 8, 13, 21, 26,
  *
  * A move is (die - 1) * 3 + choice, where choice is 0 for the mover's first pawn, 1 for the second
  * and 2 for a pass. The die roll is part of the move, so the rules use no randomness.
+ *
+ * `missedSixes` counts the rolls in a row `next` has passed with no pawn out. A player with no pawn
+ * out gets three tries to roll a 6.
  */
 export interface LudoState {
   readonly progress: readonly number[];
   readonly next: BoardPlayer;
+  readonly missedSixes: number;
   readonly outcome: BoardOutcome | null;
 }
 
@@ -59,6 +69,11 @@ export function ludoCanMove(progress: number, die: number): boolean {
   return progress + die <= LUDO_HOME_PROGRESS;
 }
 
+/** Whether every pawn of `player` is in the base or home, so only a 6 can move one. */
+export function ludoHasNoPawnOut(progress: readonly number[], player: BoardPlayer): boolean {
+  return [0, 1].every((pawn) => [0, LUDO_HOME_PROGRESS].includes(progress[ludoPawnIndex(player, pawn)]));
+}
+
 /** The choices `state.next` has with `die`: each pawn that can move, or only the pass. Empty once the game is over. */
 export function ludoLegalChoices(state: LudoState, die: number): number[] {
   if (state.outcome !== null) return [];
@@ -73,7 +88,7 @@ export const ludoRules: BoardRules<LudoState> = {
   moveLimit: DICE_FACES * CHOICES,
 
   initial() {
-    return { progress: new Array<number>(LUDO_PAWNS_PER_PLAYER * 2).fill(0), next: 1, outcome: null };
+    return { progress: new Array<number>(LUDO_PAWNS_PER_PLAYER * 2).fill(0), next: 1, missedSixes: 0, outcome: null };
   },
 
   next(state) {
@@ -95,6 +110,9 @@ export const ludoRules: BoardRules<LudoState> = {
 
     const progress = state.progress.slice();
     let again = die === DICE_FACES;
+    // With no pawn out a pass is a missed 6, and the third one starts the count over as the turn passes.
+    const missedSixes = choice === LUDO_PASS && ludoHasNoPawnOut(state.progress, mover) ? (state.missedSixes + 1) % LUDO_TRIES_IN_BASE : 0;
+    if (missedSixes > 0) again = true;
     if (choice !== LUDO_PASS) {
       const index = ludoPawnIndex(mover, choice);
       const arrived = progress[index] === 0 ? 1 : progress[index] + die;
@@ -114,7 +132,7 @@ export const ludoRules: BoardRules<LudoState> = {
     }
 
     const won = [0, 1].every((pawn) => progress[ludoPawnIndex(mover, pawn)] === LUDO_HOME_PROGRESS);
-    if (won) return { progress, next: mover, outcome: { winner: mover, line: [] } };
-    return { progress, next: again ? mover : otherPlayer(mover), outcome: null };
+    if (won) return { progress, next: mover, missedSixes: 0, outcome: { winner: mover, line: [] } };
+    return { progress, next: again ? mover : otherPlayer(mover), missedSixes, outcome: null };
   },
 };

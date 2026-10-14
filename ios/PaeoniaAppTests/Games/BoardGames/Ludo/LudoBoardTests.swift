@@ -270,10 +270,10 @@ struct LudoBoardTests {
         #expect(board([56, 57, 0, 0]).legalChoices(die: 2) == [.pass])
     }
 
-    @Test func aPassChangesNothingButTheTurn() throws {
-        let after = try roll(.initial, 3, .pass)
+    @Test func aPassWithAPawnOutChangesNothingButTheTurn() throws {
+        let after = try roll(board([56, 0, 0, 0]), 3, .pass)
 
-        #expect(after == LudoBoard(progress: [0, 0, 0, 0], next: .two, outcome: nil))
+        #expect(after == LudoBoard(progress: [56, 0, 0, 0], next: .two, outcome: nil))
     }
 
     @Test func aPassOnASixGivesAnotherRoll() throws {
@@ -338,5 +338,32 @@ struct LudoBoardTests {
     @Test func aPawnThatCantMoveByTheDieIsRejected() {
         #expect(!LudoBoard.initial.isLegal(LudoBoard.move(die: 5, choice: .first)))
         #expect(!board([57, 57, 0, 0]).isLegal(LudoBoard.move(die: 1, choice: .first)))
+    }
+}
+
+// MARK: - Three tries for a 6
+
+extension LudoBoardTests {
+    @Test func aPlayerWithNoPawnOutGetsThreeTriesToRollASix() throws {
+        let first = try roll(.initial, 3, .pass)
+        #expect(first == LudoBoard(progress: [0, 0, 0, 0], next: .one, missedSixes: 1, outcome: nil))
+        let second = try roll(first, 5, .pass)
+        #expect(second == LudoBoard(progress: [0, 0, 0, 0], next: .one, missedSixes: 2, outcome: nil))
+        #expect(try roll(second, 1, .pass) == LudoBoard(progress: [0, 0, 0, 0], next: .two, outcome: nil))
+    }
+
+    @Test func aSixOnALaterTryBringsAPawnOut() throws {
+        let after = try roll(roll(roll(.initial, 3, .pass), 2, .pass), 6, .first)
+
+        #expect(after == LudoBoard(progress: [1, 0, 0, 0], next: .one, outcome: nil))
+    }
+
+    @Test func aPawnAlreadyHomeDoesNotCountAsOut() throws {
+        #expect(try roll(board([57, 0, 0, 0]), 4, .pass).next == .one)
+        #expect(try roll(board([0, 0, 0, 57], next: .two), 4, .pass).next == .two)
+    }
+
+    @Test func aPlayerWithAPawnOutWhoCannotMoveGetsNoSecondTry() throws {
+        #expect(try roll(board([56, 57, 0, 0]), 2, .pass).next == .two)
     }
 }

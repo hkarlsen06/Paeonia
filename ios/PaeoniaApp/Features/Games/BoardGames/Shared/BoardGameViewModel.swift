@@ -50,6 +50,11 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     var stakeState: BoardGameStakeState = .hidden
     /// The starter's stake before the first move. It goes with that move.
     var stakeDraft = ""
+    /// Ludo only: the colors of the two players on this phone. Pink for me and
+    /// lavender for my partner in the other games.
+    var ludoColors = LudoColorPair.standard
+    /// Ludo only: the color circles before this person's first move, or nil.
+    var colorChoice: BoardGameColorChoice?
     var partnerStatus: BoardGamePartnerStatus = .away
     var invite: GameInviteState = .hidden
     var score: BoardGameScore?
@@ -104,6 +109,9 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     @ObservationIgnored var markImages: [UUID: (key: String, image: UIImage)] = [:]
     @ObservationIgnored var photoAssetID: UUID?
     @ObservationIgnored var localInviteSentAt: Date?
+    /// The color this person tapped, and the game it is for. It goes with their
+    /// first move of that game.
+    @ObservationIgnored var colorDraft: (gameNumber: Int, color: LudoColor)?
     @ObservationIgnored var now: Date
     @ObservationIgnored var hasFailedAttempt = false
     @ObservationIgnored var reloadGate = GameReloadGate()
@@ -303,6 +311,9 @@ final class BoardGameViewModel<Board: BoardGameRules> {
         result = nil
         isShowingMissedEnding = false
         stakeDraft = ""
+        colorDraft = nil
+        ludoColors = .standard
+        colorChoice = nil
         summary = nil
         phase = .loading
     }

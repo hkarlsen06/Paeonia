@@ -33,6 +33,7 @@ extension BoardGameViewModel {
             expectedVersion: snapshot.version,
             move: move,
             stake: stake,
+            ludoColor: pendingColorPick,
             createdAt: dependencies.now()
         )
         localActionRevision += 1
@@ -72,6 +73,7 @@ extension BoardGameViewModel {
         result = nil
         isResultCollapsed = false
         stakeDraft = ""
+        colorDraft = nil
         extraTurnCount = 0
         // The new game shows from its start, not as an ending of the old one.
         hasDisplay = false
@@ -180,13 +182,17 @@ extension BoardGameViewModel {
     func updatePeople() {
         let myInitial = BoardPieceStyle.initial(of: participants.currentName)
         let theirInitial = BoardPieceStyle.initial(of: participants.partnerName)
+        let colors = currentColors()
+        if ludoColors != colors {
+            ludoColors = colors
+        }
         let mine = BoardPieceStyle(
-            color: .boardGameMine,
+            color: colors.mine.color,
             mark: currentUserID.flatMap { markImages[$0]?.image },
             initial: myInitial
         )
         let theirs = BoardPieceStyle(
-            color: .boardGamePartner,
+            color: colors.partner.color,
             mark: partnerUserID.flatMap { markImages[$0]?.image },
             initial: theirInitial
         )
@@ -221,6 +227,7 @@ extension BoardGameViewModel {
     func updateScreen() {
         guard let snapshot, let userID = currentUserID else { return }
         updatePeople()
+        updateColors()
         if let outcome = board.outcome {
             if let winner = outcome.winner {
                 turnLabel = winner == me ? .youWon : .partnerWon

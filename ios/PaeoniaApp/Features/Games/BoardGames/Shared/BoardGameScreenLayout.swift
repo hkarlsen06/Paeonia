@@ -5,7 +5,7 @@ import SwiftUI
 enum BoardGameMetrics {
     /// The board never grows past this on a phone or in a narrow window.
     static let maxBoard: CGFloat = 560
-    /// A board that doesn't bleed never grows past this in the wide layout.
+    /// The board never grows past this in the wide layout.
     static let maxWideBoard: CGFloat = 640
     /// The widest the column beside the board grows in the wide layout.
     static let sideColumnWidth: CGFloat = 420
@@ -17,18 +17,22 @@ enum BoardGameMetrics {
         size.width >= wideMinWidth && size.width > size.height
     }
 
-    /// The side of the square the board gets in the wide layout. A board that
-    /// bleeds has no cap and takes all the width beside the column.
-    static func wideBoardSide(in size: CGSize, bleeds: Bool = false) -> CGFloat {
+    /// The side of the square the board gets in the wide layout.
+    static func wideBoardSide(in size: CGSize) -> CGFloat {
         let padding = PaeoniaSpacing.screenHorizontalPadding * 2
         let beside = size.width - sideColumnWidth - PaeoniaSpacing.space32 - padding
-        let cap = bleeds ? beside : maxWideBoard
-        return max(minWideBoard, min(cap, beside, size.height - PaeoniaSpacing.space24 * 2))
+        return max(minWideBoard, min(maxWideBoard, beside, size.height - PaeoniaSpacing.space24 * 2))
     }
 }
 
-/// The arrangement of a board game screen: the players, the board, the status row
-/// and the stake, with the bottom content pinned.
+extension EnvironmentValues {
+    /// The share of a board view's height, around its middle, that the board fits in.
+    /// A board that bleeds draws past the space the layout gave it, so it fits in less than all of its view.
+    @Entry var boardFitHeight: CGFloat = 1
+}
+
+/// The arrangement of a board game screen: the players, the board, the status row,
+/// Ludo's color circles and the stake, with the bottom content pinned.
 ///
 /// The board gets up to `BoardGameMetrics.maxBoard` points of width, or a square
 /// of the wide layout's side, and fits itself inside that space, for example
@@ -36,13 +40,16 @@ enum BoardGameMetrics {
 ///
 /// - A phone and a narrow window show one column that never scrolls. The board
 ///   shrinks first when the screen is short. The rows keep to a readable width,
-///   and a board that bleeds still takes the whole width of the screen. The stake sits under the column,
-///   above the bottom content, and rises with the keyboard while the starter
+///   and a board that bleeds draws over the whole screen behind the rows. It fits
+///   itself in the space between them, and the screen color fades over it outside
+///   that space. The color circles and the stake sit under the column, above the
+///   bottom content, and the stake rises with the keyboard while the starter
 ///   writes it. The keyboard covers the column instead of squeezing the board.
 /// - At accessibility text sizes the column scrolls, the board keeps its size and
 ///   the stake comes after the status row.
 /// - A wide window puts the board on the left and everything else in a column on
-///   the right, with the bottom content at the column's bottom.
+///   the right, with the bottom content at the column's bottom. A board that
+///   bleeds, like Ludo's, keeps the one column there too.
 struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     let content: BoardGameShellContent
     /// The text the starter writes before the first move.
@@ -51,6 +58,8 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     /// A board that fills the screen sideways, past the padding, and takes the
     /// height that is left. It fills any space it is given.
     var boardBleeds = false
+    /// A tap on one of Ludo's color circles.
+    let onPickColor: (LudoColor) -> Void
     @ViewBuilder var board: Board
     /// The invite button, the offline line or the result panel.
     @ViewBuilder var bottom: Bottom
@@ -60,10 +69,20 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     @State private var wideRowsHeight: CGFloat = 0
     /// The height of the bottom content in the wide layout.
     @State private var wideBottomHeight: CGFloat = 0
+    /// Where a board that bleeds fits, in global coordinates.
+    @State private var bleedSlotFrame: CGRect = .zero
+
+    /// How far the cover takes to fade in past the edge of the space the board fits in.
+    /// A long, eased fade has no edge the eye can catch.
+    private static var bleedCoverFade: CGFloat { 140 }
+    /// How much of the board the cover hides above and below that space.
+    private static var bleedCoverOpacity: Double { 0.85 }
 
     var body: some View {
         GeometryReader { proxy in
-            if BoardGameMetrics.isWide(proxy.size) {
+            // A board that bleeds keeps the one column on a wide screen too, so it spans
+            // the whole width instead of a box beside the rows.
+            if !boardBleeds, BoardGameMetrics.isWide(proxy.size) {
                 wide(size: proxy.size)
             } else if dynamicTypeSize.isAccessibilitySize {
                 scrolling
@@ -98,6 +117,13 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         }
     }
 
+    @ViewBuilder
+    private var colorRow: some View {
+        if let choice = content.colorChoice {
+            BoardGameColorPicker(choice: choice, onPick: onPickColor)
+        }
+    }
+
     private var statusRow: some View {
         BoardGameStatusRow(
             partnerName: content.partner.name,
@@ -127,7 +153,11 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                 .paeoniaReadableWidth()
             // Takes the height that is left and centers the board and the status row in it.
             VStack(spacing: PaeoniaSpacing.space12) {
-                boardSlot
+                if boardBleeds {
+                    bleedSlot
+                } else {
+                    boardSlot
+                }
                 statusRow
                     .paeoniaReadableWidth()
             }
@@ -138,15 +168,24 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         // Outside the bottom bar, which hides while the keyboard is up.
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            stakeRow
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.space8)
-                .paeoniaReadableWidth()
-                // The board can be under it while the keyboard is up.
-                .background(.paeoniaBackgroundSecondary)
-                .animation(PaeoniaMotion.stateChange, value: content.stake)
+            VStack(spacing: PaeoniaSpacing.space4) {
+                colorRow
+                stakeRow
+            }
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.space8)
+            .paeoniaReadableWidth()
+            // The board can be under it while the keyboard is up. A board that bleeds is covered there instead.
+            .background(boardBleeds ? Color.clear : .paeoniaBackgroundSecondary)
+            .animation(PaeoniaMotion.stateChange, value: content.stake)
+            .animation(PaeoniaMotion.stateChange, value: content.colorChoice != nil)
         }
         .paeoniaBottomBar { bottomBar }
+        .background {
+            if boardBleeds {
+                bleedingBoard
+            }
+        }
     }
 
     private var scrolling: some View {
@@ -156,9 +195,11 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                 boardSlot
                     .aspectRatio(boardBleeds ? 1 : nil, contentMode: .fit)
                 statusRow
+                colorRow
                 stakeRow
             }
             .animation(PaeoniaMotion.stateChange, value: content.stake)
+            .animation(PaeoniaMotion.stateChange, value: content.colorChoice != nil)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space8)
             .padding(.bottom, PaeoniaSpacing.space16)
@@ -187,13 +228,79 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space8)
         .paeoniaReadableWidth()
-        .background(.paeoniaBackgroundSecondary)
+        .background(boardBleeds && !dynamicTypeSize.isAccessibilitySize ? Color.clear : .paeoniaBackgroundSecondary)
+    }
+
+    // MARK: Bleed
+
+    /// The space a board that bleeds fits in. It stays empty, so touches pass through
+    /// to the board behind it.
+    private var bleedSlot: some View {
+        Color.clear
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { bleedSlotFrame = $0 }
+    }
+
+    /// The board over the whole screen, behind the rows. It reaches as far above and
+    /// below the slot as the farther edge of the screen, so the slot stays in its middle
+    /// and the board fits there. Past the slot's top and bottom the screen color fades in over it.
+    private var bleedingBoard: some View {
+        GeometryReader { proxy in
+            let screen = proxy.frame(in: .global)
+            let slot = bleedSlotFrame.offsetBy(dx: -screen.minX, dy: -screen.minY)
+            // ponytail: the view runs past the nearer screen edge and draws pixels nobody sees.
+            // Shift the camera's lens off center instead if that costs frames on an iPad.
+            let reach = max(slot.minY, screen.height - slot.maxY, 0)
+            let height = slot.height + reach * 2
+            if slot.height > 0 {
+                ZStack {
+                    board
+                        .environment(\.boardFitHeight, slot.height / height)
+                    bleedCover(reach: reach, slotHeight: slot.height)
+                }
+                .frame(width: screen.width, height: height)
+                .position(x: screen.width / 2, y: slot.midY)
+            }
+        }
+        .ignoresSafeArea()
+    }
+
+    /// The screen color over the board above and below the slot, clear inside it.
+    /// It is not a material: a material can't blur the 3D view behind it and adds its
+    /// own gray tint, which shows as frosted strips even over the plain background.
+    private func bleedCover(reach: CGFloat, slotHeight: CGFloat) -> some View {
+        let height = reach * 2 + slotHeight
+        let fade = Self.bleedCoverFade
+        func at(_ y: CGFloat) -> CGFloat { min(max(y / height, 0), 1) }
+        // Clear at `edge`, easing in to full over `fade` points in `direction`. A
+        // smoothstep curve has no kink where it starts or ends, unlike a straight ramp.
+        func ramp(from edge: CGFloat, direction: CGFloat) -> [Gradient.Stop] {
+            let steps = 16
+            return (0...steps).map { step in
+                let share = CGFloat(step) / CGFloat(steps)
+                let eased = share * share * (3 - 2 * share)
+                return .init(color: .black.opacity(eased), location: at(edge + direction * share * fade))
+            }
+        }
+        let mask = LinearGradient(
+            stops: [.init(color: .black, location: 0)]
+                + ramp(from: reach, direction: -1).reversed()
+                + ramp(from: reach + slotHeight, direction: 1)
+                + [.init(color: .black, location: 1)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        return Color.paeoniaBackgroundSecondary
+            .opacity(Self.bleedCoverOpacity)
+            .mask(mask)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 
     // MARK: Wide
 
     private func wide(size: CGSize) -> some View {
-        let side = BoardGameMetrics.wideBoardSide(in: size, bleeds: boardBleeds)
+        let side = BoardGameMetrics.wideBoardSide(in: size)
         // A tall bottom, such as a result panel on a landscape phone, would leave
         // the rows above it no room. It then scrolls with them.
         let scrollsBottom = wideBottomHeight > size.height * 0.55
@@ -202,13 +309,13 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         // board's edges. It grows only when the rows need more room.
         let columnHeight = min(size.height, max(side, rowsHeight))
         return HStack(alignment: .center, spacing: PaeoniaSpacing.space32) {
-            // A board that bleeds draws its own space around itself, so it takes the whole height.
             board
-                .frame(width: side, height: boardBleeds ? size.height : side)
+                .frame(width: side, height: side)
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(spacing: PaeoniaSpacing.space12) {
                         header
+                        colorRow
                         stakeRow
                         statusRow
                         if scrollsBottom {
@@ -217,6 +324,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                     }
                     .padding(.vertical, PaeoniaSpacing.space8)
                     .animation(PaeoniaMotion.stateChange, value: content.stake)
+                    .animation(PaeoniaMotion.stateChange, value: content.colorChoice != nil)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { wideRowsHeight = $0 }
                 }
                 .scrollBounceBehavior(.basedOnSize)
@@ -253,6 +361,7 @@ private struct BoardGameLayoutPreview: View {
             content: shell,
             stakeDraft: $draft,
             onCommitStake: {},
+            onPickColor: { _ in },
             board: { BoardGamePreviewData.board },
             bottom: {
                 if showsResult {
@@ -286,6 +395,23 @@ private struct BoardGameLayoutPreview: View {
         BoardGameLayoutPreview(shell: BoardGamePreviewData.shell(stake: .writable))
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Connect Four")
+    }
+}
+
+#Preview("Ludo, pick a color") {
+    NavigationStack {
+        BoardGameLayoutPreview(
+            shell: BoardGamePreviewData.shell(
+                stake: .writable,
+                colorChoice: BoardGameColorChoice(
+                    colors: .standard,
+                    partnerName: "Robin",
+                    partnerInitial: "R"
+                )
+            )
+        )
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Ludo")
     }
 }
 

@@ -27,7 +27,7 @@ private struct LudoPlayablePreview: View {
             LudoBoardView(
                 board: board,
                 lastMove: lastMove,
-                styles: LudoPreviewStyles.styles,
+                styles: LudoPreviewStyles.styles(for: .standard),
                 me: .one,
                 die: die,
                 movableChoices: movable,
@@ -126,12 +126,14 @@ private struct LudoStaticPreview: View {
     var die: LudoDieState = .idle(side: .two)
     var movable: [LudoChoice] = []
     var showsOutcome = false
+    var colors = LudoColorPair.standard
 
     var body: some View {
         LudoBoardView(
             board: board,
             lastMove: nil,
-            styles: LudoPreviewStyles.styles,
+            styles: LudoPreviewStyles.styles(for: colors),
+            colors: colors,
             me: .one,
             die: die,
             movableChoices: movable,
@@ -149,10 +151,12 @@ private struct LudoStaticPreview: View {
 
 private enum LudoPreviewStyles {
     /// Player one has a drawn mark (a heart). Player two has no mark yet, so their initial shows.
-    static let styles = BoardPieceStyles(
-        one: BoardPieceStyle(color: .boardGameMine, mark: UIImage(systemName: "heart.fill"), initial: "H"),
-        two: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "M")
-    )
+    static func styles(for colors: LudoColorPair) -> BoardPieceStyles {
+        BoardPieceStyles(
+            one: BoardPieceStyle(color: colors.mine.color, mark: UIImage(systemName: "heart.fill"), initial: "H"),
+            two: BoardPieceStyle(color: colors.partner.color, mark: nil, initial: "M")
+        )
+    }
 }
 
 #Preview("Playable") {
@@ -182,5 +186,14 @@ private enum LudoPreviewStyles {
             outcome: BoardOutcome(winner: .one, line: [])
         ),
         showsOutcome: true
+    )
+}
+
+#Preview("Gold and sky blue") {
+    LudoStaticPreview(
+        board: LudoBoard(progress: [14, 52, 9, 33], next: .one, outcome: nil),
+        die: .showing(die: 3, side: .one),
+        movable: [.first, .second],
+        colors: LudoColorPair(mine: .gold, partner: .sky)
     )
 }

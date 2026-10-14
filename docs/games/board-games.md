@@ -25,7 +25,7 @@ Decided on 2026-10-13.
 
 Made on 2026-10-14 while the developer was away. Each is the option that was recommended, and each can change.
 
-- **No relay room.** Live play runs on the Convex subscription and the shared game presence. Showing the partner's finger hovering over a column would need a relay channel, so it is left for later.
+- **No relay room.** Live play runs on the Convex subscription and the shared game presence. Showing the partner's finger hovering over a column would need a relay channel, so it is left for later. Ludo is the exception: it sends each roll through its relay room, so both dice tumble together (see `docs/games/ludo.md`).
 - **Saving a mark needs a connection.** The editor keeps the drawing and shows a banner when the save fails. A mark is not queued like a move.
 - **A refused move is told on the board.** The board keeps the notice until it opens, then shows the banner. The Games tab shows the game as it is, without a banner.
 - **The stake counts Unicode scalars.** The server counts them, so the phone counts them the same way and never sends a stake the server refuses.
@@ -84,7 +84,7 @@ Player one started the game and always moves first. Each game has a pure rules f
 
 - A mark is a small drawing made with the PencilKit pen in one ink. It is stored per partner in the couple, not per game, so one mark shows in every board game.
 - The phone crops the mark to a square around its strokes, so a mark drawn small or off center still fills its piece. The crop is at least half the canvas, so a tiny mark grows at most 2x.
-- The board tints the mark in its owner's color. On this phone, my pieces use `.paeoniaPartnerOne` and my partner's use `.paeoniaInkLavender` (`Color.boardGameMine` and `Color.boardGamePartner`).
+- The board tints the mark in its owner's color. On this phone, my pieces use `.paeoniaPartnerOne` and my partner's use `.paeoniaInkLavender` (`Color.boardGameMine` and `Color.boardGamePartner`). Ludo is the exception: each partner picks one of four colors, and both phones show the same colors (see `docs/games/ludo.md`).
 - Without a drawn mark, a partner's mark is the first letter of their display name.
 - The first time a partner opens any game, the first-time sheet ends on the mark editor for someone with no mark, after setup or the partner's choices. Cancel skips it, and the game opens either way.
 - Later the editor opens from "Your mark" in the game settings sheet on the hub, "Your mark in games" on the Us tab, and the "Your mark" button in the board toolbar. It never blocks a game.
@@ -140,15 +140,16 @@ The functions are in `backend/convex/boardGames.ts`, the shared helpers in `back
   - `first_user_id` is player one. `moves` is the list of move indexes in order. `turn_user_id` is the partner who moves next, and is absent once the game is finished.
   - `winner_user_id` and `win_line` describe a finished game. A finished game without a winner is a draw.
   - `stake` and `stake_by_user_id` hold the stake. `photo_media_asset_id` is the hidden photo of a Dots and Boxes game.
+  - `colors_by_user` holds each player's piece color, in Ludo only.
   - `wins_by_user`, `draws` and `games_finished` are the tallies. They never reset.
   - `previous` keeps the last finished game (its number, first player, moves, winner, line, stake and photo) after a rematch, so a partner who missed the ending can see it.
   - `turn_started_at` and `turn_reminder_sent_at` drive the 72-hour reminder. `version` goes up with every change.
 - `board_game_marks`: one row per couple and partner, with the mark as base64 `PKDrawing` data (at most 48 KB) and `updated_at`.
 - Functions:
-  - `get_board_games` returns all three games for the caller as `view_for` projections: the moves, whose turn it is, the outcome, the stake, the photo asset id (only while its memory is visible), my and my partner's tallies, and `previous`. A game the couple has not started is `null`.
+  - `get_board_games` returns all three games for the caller as `view_for` projections: the moves, whose turn it is, the outcome, the stake, the photo asset id (only while its memory is visible), my and my partner's tallies, and `previous`. Ludo games also carry `my_color` and `partner_color`. A game the couple has not started is `null`.
   - `get_board_game_marks` returns both marks. It is a separate subscription, so a move never resends the drawings.
   - `ensure_board_game({ kind })` creates the row with the caller as player one.
-  - `make_move({ game_id, expected_version, move, stake? })` checks couple access, that the game is playing, that it is the caller's turn and that `expected_version` matches. It then runs the pure rules for the row's kind. A stale version fails instead of overwriting. It is a client operation, so a retry is answered from the server's record.
+  - `make_move({ game_id, expected_version, move, stake?, ludo_color? })` checks couple access, that the game is playing, that it is the caller's turn and that `expected_version` matches. It then runs the pure rules for the row's kind. A stale version fails instead of overwriting. It is a client operation, so a retry is answered from the server's record.
   - `start_rematch({ game_id, expected_version })` starts the next game when the current one is finished.
   - `set_board_game_mark({ drawing })` saves or clears the caller's mark.
 - Refusals use the wording the phone's queue understands: `42501 it is not your turn`, `23514 that move is not allowed` and `40001 the game has changed`. A game id the server doesn't have, such as after a restore of the server, is `40001` too.
@@ -163,9 +164,10 @@ Copy keys start with `boardGames.` for the shared shell and `connectFour.`, `dot
 
 - One screen per game, built on `BoardGameScreen` in `Features/Games/BoardGames/Shared/`. It opens from the hub card, the turn and invite pushes and the deep link.
 - Look. The Draw & Guess shell: `.paeoniaBackgroundSecondary`, dark color scheme, inline title with the game's name, no tab bar on iPhone.
-- **Players row.** My avatar on the leading side and my partner's on the trailing side, 44 pt, each with its mark in a small badge. Whoever's turn it is gets a soft glow behind the avatar in their piece color that brightens and fades, an avatar 10 percent larger, and a bold name in their piece color. The other avatar has no outline. On a finished game the winner's glow stays lit, and a draw lights neither. A green dot at the top of my partner's avatar shows they have the game open. VoiceOver reads "Your turn", "[Name]'s turn", "You won" or "[Name] won" on the glowing avatar, and "[Name] is here" as my partner's name while they are.
+- **Players row.** My avatar on the leading side and my partner's on the trailing side, 44 pt, each with its mark in a small badge. Whoever's turn it is gets a soft glow behind the avatar in their piece color that brightens and fades (a radial gradient, since a blur gets cut off at the row's edges), an avatar 10 percent larger, and a bold name in their piece color. The other avatar has no outline. On a finished game the winner's glow stays lit, and a draw lights neither. A green dot at the top of my partner's avatar shows they have the game open. VoiceOver reads "Your turn", "[Name]'s turn", "You won" or "[Name] won" on the glowing avatar, and "[Name] is here" as my partner's name while they are.
 - **Stake row.** Under the status row, above the pinned bottom. The stake capsule, or the "Add a bet" button for the starter before the first move. Hidden otherwise, without leaving a gap. In the wide layout it sits under the players row.
 - **Board.** Square for Dots and Boxes and Ultimate Tic-Tac-Toe, 7 by 6 for Connect Four. It takes the width up to 560 pt and never scrolls on a phone in portrait.
+- **Color row.** Ludo only. Four round color circles under the status row and above the stake row, until the player's first move of the game (see "Your color" in `docs/games/ludo.md`). In the wide layout it sits under the players row, above the stake.
 - **Status row.** Under the board. "[Name] is here" with a green dot while the partner has the game open, "[Name] will see it later" otherwise. On a Dots and Boxes extra turn, "Another turn" pops in for 1.5 seconds. A game can show its own hint there instead, as Ludo does ("Roll again").
 - **Pinned bottom.** The invite button while it is not my turn and the partner is away. The offline line while a move waits to send.
 - **Score capsule.** Toolbar trailing, as in Draw & Guess (see "Scoring").
@@ -240,7 +242,7 @@ Code map in `docs/implementation-map.md`. Decisions the sections above leave ope
 
 ## Wide layouts and Dynamic Type
 
-- Wide means 700 pt or more and wider than tall, as in Draw & Guess. The board sits on the left (up to 640 pt), and the players, stake, status and result sit in a column on the right (up to 420 pt).
+- Wide means 700 pt or more and wider than tall, as in Draw & Guess. The board sits on the left (up to 640 pt), and the players, stake, status and result sit in a column on the right (up to 420 pt). Ludo's board bleeds, so it keeps the single column on a wide screen. Its 3D view covers the whole screen behind the rows, the camera fits the board in the space between the players row and the status row, and the screen color fades in over the board past that space so the rows stay readable. It is not a material blur: a material can't blur the 3D view and shows gray strips over the plain background.
 - At accessibility text sizes the players row stacks and the screen scrolls. The board keeps its size.
 
 ## Open questions

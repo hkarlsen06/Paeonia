@@ -13,7 +13,7 @@ import {
   rulesFor,
   type BoardGame,
 } from "./lib/boardGameStore";
-import { BOARD_GAME_KINDS, replay } from "./lib/boardGames";
+import { BOARD_GAME_KINDS, movers, replay } from "./lib/boardGames";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
@@ -22,6 +22,7 @@ import { getByUuid, omitNulls, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dataEpoch, requireGameSettings, requirePartnerId } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
+import { LUDO_COLORS, type LudoColor } from "./lib/ludo";
 import { applyCoupleActivity } from "./lib/streaks";
 import { charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
@@ -36,6 +37,7 @@ import { literals } from "./lib/validators";
 
 const boardGameKind = literals(...BOARD_GAME_KINDS);
 const nullableString = v.optional(v.union(v.null(), v.string()));
+const ludoColor = literals(...LUDO_COLORS);
 
 /** A stake is 1 to 60 characters on one line. */
 const MAX_STAKE_CHARACTERS = 60;
@@ -80,7 +82,8 @@ function assertCurrentVersion(game: BoardGame, expectedVersion: number): void {
  * winner_user_id, win_line, stake, stake_by_user_id, photo_media_asset_id, my_wins, partner_wins,
  * draws, games_finished, previous, started_at, finished_at, turn_started_at, updated_at }`.
  * `turn_user_id` is null once the game is finished and `winner_user_id` is null for a draw. A photo id
- * is null once its memory is gone. `previous` is the last finished game after a rematch:
+ * is null once its memory is gone. `my_color` and `partner_color` are the Ludo piece colors (`pink`, `lavender`,
+ * `gold` or `sky`) and are null in the other games. `previous` is the last finished game after a rematch:
  * `{ game_number, first_user_id, moves, winner_user_id, win_line, stake, photo_media_asset_id, finished_at }`.
  */
 export const get_board_games = query({
@@ -145,6 +148,7 @@ export const ensure_board_game = mutation({
       moves: [],
       turn_user_id: userId,
       win_line: [],
+      colors_by_user: args.p_kind === "ludo" ? { [userId]: "pink", [partnerId]: "lavender" } : undefined,
       photo_media_asset_id: args.p_kind === "dots_and_boxes" ? await pickBoardGamePhoto(ctx, userId, coupleId) : undefined,
       wins_by_user: {},
       draws: 0,
@@ -183,10 +187,31 @@ function normalizeStake(stake: string | null, game: BoardGame, userId: string): 
 }
 
 /**
+ * The Ludo colors after `userId` picks `color` with a move, or undefined when the pick changes nothing.
+ * A pick is ignored, never refused, when it is the partner's color or when the mover already moved in
+ * this game, so a move is not lost over a color. Fails with 23514 outside Ludo.
+ */
+function pickedColors(
+  game: BoardGame,
+  userId: string,
+  partnerId: string,
+  color: LudoColor | null,
+): Record<string, LudoColor> | undefined {
+  if (color === null) return undefined;
+  if (game.kind !== "ludo" || !game.colors_by_user) return fail("23514", "that color is not allowed");
+  if (color === game.colors_by_user[userId] || color === game.colors_by_user[partnerId]) return undefined;
+  const player = game.first_user_id === userId ? 1 : 2;
+  if (movers(rulesFor(game.kind), game.moves)?.includes(player)) return undefined;
+  return { ...game.colors_by_user, [userId]: color };
+}
+
+/**
  * Plays one move: a column in Connect Four, a line in Dots and Boxes, a cell in Ultimate Tic-Tac-Toe.
  * It fails with 40001 `the game has changed` when `p_expected_version` is not the current version or
  * the game is over or gone, 42501 `it is not your turn`, and 23514 `that move is not allowed` for a move the
  * rules refuse. The starter can send `p_stake` with the first move only. An empty stake means none.
+ * In Ludo, `p_ludo_color` is the mover's color for this game. It counts only with the mover's first move of the
+ * game and only when it is not the partner's color. Any other pick is ignored and the move goes through.
  * Returns the game in the shape of `get_board_games`, as it is now. A retry of the same operation
  * changes nothing and returns the game as it is now too. Every accepted move counts as the `game_turn_completed` streak activity.
  * A move that passes the turn queues `game_turn_ready` for the partner and a move that ends the game queues
@@ -199,12 +224,14 @@ export const make_move = mutation({
     p_expected_version: v.number(),
     p_move: v.number(),
     p_stake: nullableString,
+    p_ludo_color: v.optional(v.union(v.null(), ludoColor)),
     ...clientOperationArgs,
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const gameId = uuidArg(args.p_game_id);
     const stakeArg = args.p_stake ?? null;
+    const colorArg = args.p_ludo_color ?? null;
     // Access is checked on every call, a replay too, so a stored answer never outlives the couple.
     await requireBoardGameById(ctx, userId, gameId);
 
@@ -214,7 +241,7 @@ export const make_move = mutation({
       toClientOperation(args, {
         kind: "make_board_game_move",
         scope: "games",
-        request: ["make_board_game_move", gameId, args.p_expected_version, args.p_move, stakeArg],
+        request: ["make_board_game_move", gameId, args.p_expected_version, args.p_move, stakeArg, colorArg],
       }),
       async () => {
         const game = await requireBoardGameById(ctx, userId, gameId);
@@ -230,6 +257,7 @@ export const make_move = mutation({
         const stake = normalizeStake(stakeArg, game, userId);
 
         const partnerId = await requirePartnerId(ctx, game.couple_id, userId);
+        const colors = pickedColors(game, userId, partnerId, colorArg);
         const playerOneId = game.first_user_id;
         const playerTwoId = playerOneId === userId ? partnerId : userId;
         const now = nowIso();
@@ -261,6 +289,7 @@ export const make_move = mutation({
         const updated = await patchBoardGame(ctx, game, {
           moves: [...game.moves, args.p_move],
           ...(stake === null ? {} : { stake, stake_by_user_id: userId }),
+          ...(colors ? { colors_by_user: colors } : {}),
           ...turnPatch,
         });
 

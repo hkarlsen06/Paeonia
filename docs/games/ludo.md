@@ -10,7 +10,11 @@ Decided on 2026-10-14 with the developer.
 
 - **A real 3D board, built in code with RealityKit.** A `RealityView` shows a tilted board with lights, soft shadows and a camera. Tiles, pawns and the die are rounded meshes made in code with satin clay materials in the house palette, so a pawn always lands exactly on its square. No Metal, no SceneKit (deprecated at WWDC25), and no model files. The die tumble is a scripted animation, not physics, so it always lands on the rolled face and looks the same on both phones.
 - **Two pawns each.** A shorter game than classic Ludo's four, because async turns can take hours.
-- **The phone rolls the die.** The roll goes to the server inside the move, so a move can be made offline and queued like every other board game move. A partner could cheat in theory. The board games already accept that between partners (see "The hidden photo" in `docs/games/board-games.md`).
+- **The phone rolls the die.** The roll goes to the server inside the move, so a move can be made offline and queued like every other board game move. The roll also goes live through the relay the moment the die starts to tumble, so a partner with the game open sees the same tumble at the same time. A partner could cheat in theory. The board games already accept that between partners (see "The hidden photo" in `docs/games/board-games.md`).
+
+Decided on 2026-10-15 with the developer.
+
+- **Pick your color.** Ludo only. Each partner picks one of the four corner colors (pink, lavender, gold, sky blue) for their pawns at the start of each game. The two colors nobody picked stay as the empty corners. Both phones show the same color for the same person, so if I pick gold, my partner sees my corner, pawns and avatar in gold too. Nobody waits for a pick: a partner who has not picked keeps the color from the last game. The other board games keep pink for me and lavender for my partner.
 
 ## Decisions made without the developer
 
@@ -19,10 +23,10 @@ Made on 2026-10-14. Each can change.
 - **The name is Ludo in both languages.** Norway calls the game Ludo.
 - **A rolled die is kept.** The phone saves the roll before the die stops, with the game number and move count. Leaving and reopening the screen shows the same roll, so closing the app does not give a new one. The phone keeps it in the board games local document (`ludoRoll`), keyed by game, game number and move count, so sign out clears it with the rest and a different position ignores it.
 - **One option moves by itself.** When only one move is possible, the pawn moves 0.5 seconds after the die lands. Two pawns on the same square, or both in the base, count as one option.
-- **No legal move passes by itself.** The die lands, the board says "No move with a 3", and the turn passes after 1.2 seconds.
+- **No legal move passes by itself.** The die lands, the board says "No move with a 3", and the turn passes after 1.2 seconds. With no pawn out, the pass only uses up one of the three tries for a 6.
 - **No penalty for three sixes.** Ludo variants that take away the turn after three sixes punish luck. This one doesn't.
 - **No blocks.** Two pawns of the same player on one square do not block the partner.
-- **Teach by playing.** The status row says "Tap the die to roll" on the first roll of a game, and "Roll a 6 to bring a pawn out" while all my pawns wait in the base.
+- **Teach by playing.** The status row says "Tap the die to roll" on the first roll of a game, "Roll a 6 to bring a pawn out" while all my pawns wait in the base, and "2 tries left to roll a 6" after a missed 6.
 
 ## Why Ludo
 
@@ -60,6 +64,7 @@ A pawn walks 51 track squares, then turns into its home column. The track square
 - Two pawns of the same player can share a square.
 - Rolling a 6, sending a pawn back, or bringing a pawn home gives another roll. A 6 gives another roll even when no pawn could move.
 - When no pawn can move with the roll, the move is a pass. A pass is legal only when no pawn can move.
+- A player with no pawn out, every pawn in the base or home, gets three tries to roll a 6. The first two missed 6s give another roll and the third passes the turn. The rules count the misses in `missedSixes`, so the server and the phone agree from the move list alone.
 - The first player with both pawns home wins. Ludo has no draws. The winning move gives no extra roll.
 
 ### The move
@@ -133,11 +138,23 @@ extension LudoBoard {
 - The pawn hops square by square, 0.16 seconds a square, with a light tick on each landing. Coming out of the base is one hop onto the start square.
 - Sending a partner's pawn home: my pawn lands, the partner's pawn pops up, arcs back to its base and settles, with `streakTick()`.
 - A pawn reaching home sinks into the center, which pulses in my color.
-- Another roll: the status row says "Roll again" and the die returns to my tray.
+- Another roll: the status row says "Roll again", or "2 tries left to roll a 6" after a missed 6, and the die returns to my tray.
+
+### Your color
+
+- Before my first move of a game, a row sits under the status row, above "Add a bet": "Your color" and four round color circles (pink, lavender, gold and sky blue). It is there for the partner who moves second too, while they wait for the first move.
+- The circle I have shows a ring and a check mark. The circle my partner has is faded, shows their initial and can't be tapped. A tap on another circle gives `selection()` and recolors my corner, start square, home column, half of the dome, pawns, avatar ring, name and the result at once. The board keeps its shape, so my corner stays on my near side.
+- The row goes away when I make my first move of the game. A pick after that does not exist, so a color can't change in the middle of a game.
+- The pick goes to the server inside that first move (`make_move` with `p_ludo_color`), so it works offline through the pending queue like the stake. My phone shows the pick on its own until then. The server stores each player's color on the game's row, and it stays for the next game.
+- The server ignores a pick that is the partner's current color. The move still goes through. If both partners pick the same color before either move arrives, the first move wins, and the second phone shows its old color again once it hears.
+- A new couple's first game gives the partner who opens the game pink and the other lavender.
+- VoiceOver reads each circle as its color name, with "selected" on mine and "taken by [Name]" on my partner's. Reduce Motion turns off the small selection animation.
+- The result of an ending I missed uses the colors the game has now.
 
 ### The partner's move
 
-- The die moves to the partner's tray and tumbles to their roll, then their pawn hops the same way. A move that sends my pawn home plays a soft `partnerDrawingReceived()`.
+- With the game open on both phones, the partner's die tumbles on my phone while it tumbles on theirs. Their phone sends `LudoLiveMessage` (the game, game number, move count and face) to the `<couple>:ludo` relay room as the tumble starts, and again when I open the game in the middle of their turn. The tumble is scripted, so it lands on the same face the same way. A roll for a position my board has not reached yet waits for the move that leads there. When their move arrives, the die has already rolled, so only the pawn hops.
+- Without a live roll, for example when the relay is down or I open the game after they moved, the die tumbles to their roll when their move arrives, then their pawn hops the same way. A move that sends my pawn home plays a soft `partnerDrawingReceived()`.
 - Replays follow the board games rule: moves since this phone last showed the board play in order, and a tap skips to the end.
 
 ### Timing
@@ -171,10 +188,10 @@ Lengths are in board cells, as in `LudoSceneStyle`: x runs to the right, y up, a
 ### The board
 
 - The board is a thick blush slab with rounded edges on the screen's deep plum. It has no border: the slab ends 0.25 cells past the 15 by 15 grid, a thin rounded lip that still reads as a thick board. The scene has a clear background, so the screen's plum shows around it. Tiles are raised squares, 0.18 cells tall with fully rounded edges like small pillows, and whiter than the slab, so the track reads as tiles.
-- Colors follow the phone. My base, start square and home column are petal pink (`.boardGameMine`). My partner's are lavender (`.boardGamePartner`). The two corners nobody plays are quiet gold and sky blue.
+- Colors belong to the person and are the same on both phones (see "Your color"). By default my base, start square and home column are petal pink (`.boardGameMine`) and my partner's are lavender (`.boardGamePartner`). The two colors nobody picked fill the two corners nobody plays, quiet by default: the first one at the top left and the second at the bottom right, in the order pink, lavender, gold, sky blue. With the defaults that is gold at the top left and sky blue at the bottom right.
 - The board turns so my base is always nearest me at the bottom left.
 - Each base is a raised pad, 5.6 cells square inside its 6 by 6 corner, 0.24 cells tall with a 0.6 corner radius. A rim of the slab shows around it and its rounded edge catches the light, so the corner reads as a sticker piece and not a flat block. The players' bases are full color, as in the painting, with darker round dents where the pawns wait. Only the two empty corners are pale, and they have no dents.
-- The center is a low round dome, 2.8 cells across and 0.26 tall in the middle, split in two halves: mine in pink and my partner's in lavender. The seam runs across the board between the two home columns, so each column runs into its own half. This is the seam of the hub series, where the two worlds meet. The empty corners have no pad in the center. A pawn at home stands on its own half, and the half glows in the player's color when a pawn arrives.
+- The center is a low round dome, 2.8 cells across and 0.26 tall in the middle, split in two halves: mine in my color and my partner's in theirs, pink and lavender by default. The seam runs across the board between the two home columns, so each column runs into its own half. This is the seam of the hub series, where the two worlds meet. The empty corners have no pad in the center. A pawn at home stands on its own half, and the half glows in the player's color when a pawn arrives.
 - Safe squares carry a flat peony instead of a star: `LudoPeonyTop` laid on the tile (see "Illustrated textures" below). The two players' start squares are colored and carry no peony. The other six safe squares (8, 13, 21, 34, 39 and 47) do.
 
 ### Colors
@@ -183,13 +200,14 @@ Lengths are in board cells, as in `LudoSceneStyle`: x runs to the right, y up, a
 |---|---|---|
 | Slab | `#F4DCE6` | Warm blush, a step darker than the tiles |
 | Track tiles | `#FFF8FB` | |
-| My corner, start square, center half | `#F27EB2` | `.boardGameMine` |
-| Partner's corner, start square, center half | `#B99CF2` | `.boardGamePartner` |
+| Pink, the first game's color for player one | `#F27EB2` | `.boardGameMine` |
+| Lavender, the first game's color for player two | `#B99CF2` | `.boardGamePartner` |
 | Home column tiles | The player's color mixed 10 percent with white | |
 | Base plate | The corner color mixed 10 percent with white | |
 | Base dents | The base plate mixed 12 percent with black | |
-| Empty corner, gold | `#E9CF98` | Same as the painting |
-| Empty corner, sky | `#A9C6E6` | Same as the painting |
+| Gold | `#E9CF98` | Same as the painting. An empty corner unless a player picked it |
+| Sky blue | `#A9C6E6` | Same as the painting. An empty corner unless a player picked it |
+| A player's corner, start square, center half and pawns | The player's color | Any of the four. The home column and the base plate use the mixes below |
 | Die | `#FFF8FB` | |
 | Pips | `#4F203A` | Plum hearts, see the die |
 | Mark on a pawn top | `#FFFFFF` | On the pawn's color darkened 38 percent, so the initial stands out |
@@ -242,7 +260,7 @@ The pieces you touch, the pawns and the die, are glossier than the board, like t
 
 The default camera looks down at 64 degrees with a vertical field of view of 30 degrees. The narrow field keeps the board flat and graphic like the painting, and a pawn on the far side stays big enough to tap. There is no camera roll.
 
-The board fills the screen sideways. The board view takes the full width of the screen, past the shell's padding, and all the height between the players row and the status row. On a view narrower than 600 pt, such as a phone, the camera stands as close as lets the near edge of the slab run up to 15 percent of the view's width past the left and right edges (`cameraOvershoot` 0.3), so the near corners run off the screen. A wider view, such as an iPad, has room for the whole slab, so it gets no overshoot and the corners stay in view. On an iPad the board ignores the readable width cap in portrait and the 640 pt cap in landscape. The far edge then spans the width, and the far pawns stay well inside it. The board is centered from top to bottom. On a phone in portrait this board is about 15 percent taller than at 60 degrees with the near edge exactly at the screen's edges, which shrinks the plum bands above and below it.
+The board fills the screen sideways. The board view takes the full width of the screen, past the shell's padding, and all the height between the players row and the status row. On a view narrower than 600 pt, such as a phone, the camera stands as close as lets the near edge of the slab run up to 15 percent of the view's width past the left and right edges (`cameraOvershoot` 0.3), so the near corners run off the screen. A wider view, such as an iPad, has room for the whole slab, so it gets no overshoot and the corners stay in view. On an iPad the board ignores the readable width cap and keeps the single column in landscape too, so it spans the whole screen instead of sitting in a box beside the side column. The far edge then spans the width, and the far pawns stay well inside it. The board is centered from top to bottom. On a phone in portrait this board is about 15 percent taller than at 60 degrees with the near edge exactly at the screen's edges, which shrinks the plum bands above and below it.
 
 The person can handle the board like a model:
 
@@ -266,7 +284,9 @@ The peony is a top view with very soft painted shading, so the scene's light sha
 
 ## Data
 
-Nothing new beyond the kind. `ludo` joins `BOARD_GAME_KINDS`, `GAME_KINDS`, the relay's `ALLOWED_CHANNELS`, the schema's `board_games.kind` literal, `GAME_BACKENDS` (with `boardGameBackend`), `GAME_PUSH_COPY` and `BOARD_RULES`. In Swift it is `GameKind.ludo`, path `ludo`, folder `Features/Games/BoardGames/Ludo`.
+The kind, the live roll and the colors. `ludo` joins `BOARD_GAME_KINDS`, `GAME_KINDS`, the relay's `ALLOWED_CHANNELS`, the schema's `board_games.kind` literal, `GAME_BACKENDS` (with `boardGameBackend`), `GAME_PUSH_COPY` and `BOARD_RULES`. In Swift it is `GameKind.ludo`, path `ludo`, folder `Features/Games/BoardGames/Ludo`.
+
+Colors. `board_games.colors_by_user` maps each player's user id to `pink`, `lavender`, `gold` or `sky`, always two different colors. `ensure_board_game` sets player one to pink and the partner to lavender, and the colors stay through rematches. `make_move` takes an optional `p_ludo_color`. It counts only when the mover has no move yet in this game (the server replays the moves to check) and the partner does not have that color. Any other pick is ignored without refusing the move. A color sent with another board game is refused with `23514 that color is not allowed`. `get_board_games` returns `my_color` and `partner_color` for the caller, both null outside Ludo. The pick is part of the move's request hash. On the phone `BoardGameMovePayload.ludoColor` carries it and `BoardGameResolver` shows it on top of the server's colors, and `BoardGameViewModel.ludoColors` is what the screen shows.
 
 Notifications follow the board games: "Your turn in Ludo", "Your game of Ludo is over", "[Name] wants to play Ludo with you", and one reminder after 72 hours.
 

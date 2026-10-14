@@ -11,6 +11,9 @@ nonisolated struct BoardGameMovePayload: Codable, Equatable, Sendable {
     let move: Int
     /// Only on the first move of the game, by the partner who started it.
     let stake: String?
+    /// Ludo only: the color this player picked for the game. It goes with this
+    /// player's first move of the game, and only when it differs from their color.
+    let ludoColor: LudoColor?
     let createdAt: Date
 }
 
@@ -47,6 +50,9 @@ nonisolated struct BoardGameSnapshot<Board: BoardGameRules>: Equatable, Sendable
     let moves: [Int]
     let board: Board
     let stake: String?
+    /// Ludo only: the piece colors, with this phone's unsent pick on top.
+    let myColor: LudoColor?
+    let partnerColor: LudoColor?
     let photoMediaAssetID: UUID?
     let myWins: Int
     let partnerWins: Int
@@ -98,6 +104,8 @@ nonisolated enum BoardGameResolver {
             moves: state.moves,
             board: state.board,
             stake: state.stake,
+            myColor: state.myColor,
+            partnerColor: state.partnerColor,
             photoMediaAssetID: state.photoMediaAssetID,
             myWins: state.myWins,
             partnerWins: state.partnerWins,
@@ -115,6 +123,8 @@ nonisolated enum BoardGameResolver {
         var firstUserID: UUID
         var moves: [Int]
         var stake: String?
+        var myColor: LudoColor?
+        var partnerColor: LudoColor?
         var photoMediaAssetID: UUID?
         var myWins: Int
         var partnerWins: Int
@@ -130,6 +140,8 @@ nonisolated enum BoardGameResolver {
             firstUserID = game.firstUserID
             moves = game.moves
             stake = game.stake
+            myColor = game.myColor
+            partnerColor = game.partnerColor
             photoMediaAssetID = game.photoMediaAssetID
             myWins = game.myWins
             partnerWins = game.partnerWins
@@ -149,6 +161,12 @@ nonisolated enum BoardGameResolver {
             else { return }
             if moves.isEmpty, firstUserID == userID, let stake = payload.stake {
                 self.stake = stake
+            }
+            // The server takes a pick with a player's first move, and not when
+            // the partner already has that color.
+            if let color = payload.ludoColor, myColor != nil, color != partnerColor,
+               Board.movers(moves)?.contains(firstUserID == userID ? .one : .two) == false {
+                myColor = color
             }
             moves.append(payload.move)
             version += 1

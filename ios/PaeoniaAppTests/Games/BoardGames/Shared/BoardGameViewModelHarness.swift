@@ -97,6 +97,8 @@ struct BoardGameHarness {
             winLine: [],
             stake: nil,
             stakeByUserID: nil,
+            myColor: finished.myColor,
+            partnerColor: finished.partnerColor,
             photoMediaAssetID: nil,
             myWins: finished.myWins,
             partnerWins: finished.partnerWins,

@@ -98,8 +98,8 @@ struct LudoTransitionTests {
         #expect(try transition(board([8, 0, 35, 0]), 1, .first).sentHome.isEmpty)
     }
 
-    @Test func aPassHasNoPawnNoPathAndRollsAgainOnlyOnASix() throws {
-        let plain = try transition(.initial, 3, .pass)
+    @Test func aPassHasNoPawnNoPathAndRollsAgainOnASixOrAMissedSix() throws {
+        let plain = try transition(board([56, 0, 0, 0]), 3, .pass)
         #expect(plain == LudoTransition(
             player: .one,
             die: 3,
@@ -114,6 +114,12 @@ struct LudoTransitionTests {
         #expect(six.pawn == nil)
         #expect(six.path.isEmpty)
         #expect(six.rollsAgain)
+
+        // With no pawn out, the first two misses roll again and the third does not.
+        let missed = try roll(.initial, 3, .pass)
+        #expect(try transition(.initial, 3, .pass).rollsAgain)
+        #expect(try transition(missed, 3, .pass).rollsAgain)
+        #expect(try !transition(roll(missed, 3, .pass), 3, .pass).rollsAgain)
     }
 
     @Test func theWinningMoveDoesNotRollAgain() throws {

@@ -16,6 +16,8 @@ struct BoardGamePlayersRow: View {
 
     private static let avatarSize: CGFloat = 44
     private static let columnWidth: CGFloat = 88
+    /// Wide enough to hold the avatar's glow and the name.
+    private static let backdropSize: CGFloat = 124
 
     var body: some View {
         Group {
@@ -60,6 +62,26 @@ struct BoardGamePlayersRow: View {
         .accessibilityLabel(spokenName(isMe: isMe))
         .accessibilityValue(spokenTurn(isMe: isMe))
         .frame(width: Self.columnWidth)
+        .background { backdrop }
+    }
+
+    /// A disc in the screen color behind the avatar, its glow and the name. It
+    /// can't be seen on the plain background, and it keeps them readable where a
+    /// board runs under the row, as Ludo's does. Its rim fades out so it has no hard edge.
+    private var backdrop: some View {
+        Circle()
+            .fill(RadialGradient(
+                stops: [
+                    .init(color: .paeoniaBackgroundSecondary, location: 0.78),
+                    .init(color: .paeoniaBackgroundSecondary.opacity(0), location: 1)
+                ],
+                center: .center,
+                startRadius: 0,
+                endRadius: Self.backdropSize / 2
+            ))
+            .frame(width: Self.backdropSize, height: Self.backdropSize)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 
     /// Avatar beside name, for accessibility text sizes.
@@ -133,7 +155,7 @@ struct BoardGamePlayerAvatar: View {
 
     var body: some View {
         BoardGameAvatar(player: player, size: size)
-            .background { BoardGameGlow(color: player.style.color, state: glow) }
+            .background { BoardGameGlow(color: player.style.color, state: glow, avatarSize: size) }
             .overlay(alignment: .bottomTrailing) {
                 badge.offset(x: 4, y: 4)
             }
@@ -165,15 +187,16 @@ struct BoardGamePlayerAvatar: View {
 }
 
 /// A soft glow behind the avatar in the player's piece color. It breathes on the
-/// player's turn, stays lit for the winner, and is gone otherwise.
+/// player's turn, stays lit for the winner, and is gone otherwise. It is a radial
+/// gradient, not a blur, because a blur is cut off at the edges of its row.
 private struct BoardGameGlow: View {
     let color: Color
     let state: BoardGameGlowState
+    let avatarSize: CGFloat
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// How far the glow reaches past the avatar before the blur.
-    private static let spread: CGFloat = 6
-    private static let blur: CGFloat = 12
+    /// How far the glow reaches past the edge of the avatar.
+    private static let reach: CGFloat = 18
 
     var body: some View {
         ZStack {
@@ -206,10 +229,15 @@ private struct BoardGameGlow: View {
     }
 
     private func glow(opacity: Double) -> some View {
-        Circle()
-            .fill(color)
-            .padding(-Self.spread)
-            .blur(radius: Self.blur)
+        let radius = avatarSize / 2
+        return Circle()
+            .fill(RadialGradient(
+                colors: [color, color.opacity(0.5), color.opacity(0)],
+                center: .center,
+                startRadius: radius * 0.8,
+                endRadius: radius + Self.reach
+            ))
+            .frame(width: (radius + Self.reach) * 2, height: (radius + Self.reach) * 2)
             .opacity(opacity)
     }
 }

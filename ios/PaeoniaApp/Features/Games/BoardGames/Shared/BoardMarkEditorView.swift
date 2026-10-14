@@ -28,6 +28,9 @@ struct BoardMarkEditorView: View {
                 .navigationTitle(Text(.boardGamesMarkTitle))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
+                // The sheet scrolls on short screens such as an iPad form sheet, so both
+                // bars are opaque. Otherwise the content shows through them.
+                .toolbarBackgroundVisibility(.visible, for: .navigationBar)
                 .toolbarColorScheme(.dark, for: .navigationBar)
                 .toolbar { cancelButton }
         }
@@ -180,6 +183,7 @@ struct BoardMarkEditorView: View {
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space12)
         .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+        .background(.paeoniaBackgroundSecondary)
     }
 
     // MARK: Failures

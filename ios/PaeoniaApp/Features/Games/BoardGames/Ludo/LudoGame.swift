@@ -24,6 +24,8 @@ struct LudoScreen: View {
     let viewModel: BoardGameViewModel<LudoBoard>
 
     @State private var roll: LudoRollModel
+    /// Sends and receives live rolls while the screen is open.
+    @State private var live: LudoLiveLink?
 
     init(viewModel: BoardGameViewModel<LudoBoard>) {
         self.viewModel = viewModel
@@ -40,6 +42,7 @@ struct LudoScreen: View {
                 board: viewModel.board,
                 lastMove: viewModel.lastMove,
                 styles: viewModel.styles,
+                colors: viewModel.ludoColors,
                 me: viewModel.me,
                 die: roll.die,
                 movableChoices: roll.movableChoices,
@@ -59,9 +62,23 @@ struct LudoScreen: View {
         .onChange(of: LudoRollContext(viewModel), initial: true) {
             roll.update()
         }
-        .onDisappear { roll.stop() }
+        .task(id: viewModel.participants.coupleID) {
+            startLive(coupleID: viewModel.participants.coupleID)
+        }
+        .onDisappear {
+            roll.stop()
+            live?.stop()
+            live = nil
+        }
         // A drag turns the board, so only the edge swipe goes back.
         .background(LudoEdgeSwipeOnly())
+    }
+
+    private func startLive(coupleID: UUID?) {
+        live?.stop()
+        live = coupleID
+            .flatMap { viewModel.dependencies.makeLudoLive($0) }
+            .map { LudoLiveLink(room: $0, roll: roll) }
     }
 }
 

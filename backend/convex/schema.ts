@@ -19,6 +19,7 @@ import {
   locationSource,
   wordDifficulty,
 } from "./lib/validators";
+import { LUDO_COLORS } from "./lib/ludo";
 import { mindMeldTables } from "./lib/mindMeld";
 
 // Conventions (see backend/AGENTS.md):
@@ -1626,6 +1627,8 @@ export default defineSchema({
     // Written with the first move by the starter. 1 to 60 characters on one line.
     stake: optString,
     stake_by_user_id: optUuid,
+    // Ludo only. Each partner's piece color by user id, always two different colors. It stays across rematches, and a partner changes theirs with the first move of a game.
+    colors_by_user: v.optional(v.record(v.string(), literals(...LUDO_COLORS))),
     // FK: media_assets. The hidden photo of a dots_and_boxes game. Nothing is cascaded: every read checks that the photo is still visible.
     photo_media_asset_id: optUuid,
     // The last finished game, kept after a rematch starts so a partner who missed the ending can see it.

@@ -61,15 +61,23 @@ nonisolated struct LudoCameraFit: Equatable, Sendable {
     let aspect: Double
     /// How far the near edge may run past each side, as a share of half the view.
     let overshoot: Double
+    /// The share of the view's height, around its middle, the board fits in. Below 1
+    /// when the view reaches past the space the board was given, as Ludo's does.
+    let fitHeight: Double
 
-    static func make(aspect rawAspect: Double, overshoot: Double = LudoSceneStyle.cameraOvershoot) -> LudoCameraFit {
-        let setup = Fit(aspect: max(rawAspect, 0.2), overshoot: overshoot)
+    static func make(
+        aspect rawAspect: Double,
+        overshoot: Double = LudoSceneStyle.cameraOvershoot,
+        fitHeight: Double = 1
+    ) -> LudoCameraFit {
+        let setup = Fit(aspect: max(rawAspect, 0.2), overshoot: overshoot, fitHeight: min(max(fitHeight, 0.1), 1))
         let targetZ = setup.centeredTargetZ()
         return LudoCameraFit(
             distance: setup.fittingDistance(targetZ: targetZ),
             targetZ: targetZ,
             aspect: setup.aspect,
-            overshoot: overshoot
+            overshoot: overshoot,
+            fitHeight: setup.fitHeight
         )
     }
 
@@ -114,6 +122,7 @@ nonisolated struct LudoCameraFit: Equatable, Sendable {
     private struct Fit {
         let aspect: Double
         let overshoot: Double
+        let fitHeight: Double
         let tanHalf = tan(LudoSceneStyle.cameraFieldOfViewDegrees / 2 * .pi / 180)
         let corners = Fit.fitPoints()
 
@@ -152,7 +161,7 @@ nonisolated struct LudoCameraFit: Equatable, Sendable {
                 largest = max(
                     largest,
                     abs(ndc.x) / (1 + overshoot),
-                    abs(ndc.y) / (1 - LudoSceneStyle.cameraMargin)
+                    abs(ndc.y) / ((1 - LudoSceneStyle.cameraMargin) * fitHeight)
                 )
                 lowest = min(lowest, ndc.y)
                 highest = max(highest, ndc.y)
@@ -210,8 +219,12 @@ nonisolated struct LudoCameraRig: Equatable, Sendable {
     let aspect: Double
 
     /// The default camera for a view `aspect` wide for each unit of height.
-    static func fitting(aspect: Double, overshoot: Double = LudoSceneStyle.cameraOvershoot) -> LudoCameraRig {
-        LudoCameraFit.make(aspect: aspect, overshoot: overshoot).rig(for: .home)
+    static func fitting(
+        aspect: Double,
+        overshoot: Double = LudoSceneStyle.cameraOvershoot,
+        fitHeight: Double = 1
+    ) -> LudoCameraRig {
+        LudoCameraFit.make(aspect: aspect, overshoot: overshoot, fitHeight: fitHeight).rig(for: .home)
     }
 
     /// Where a point of the scene shows in the view, from 0 to 1 across and down,

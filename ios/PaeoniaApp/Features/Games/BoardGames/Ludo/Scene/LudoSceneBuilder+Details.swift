@@ -6,34 +6,17 @@ import simd
 /// The center dome, the peonies and the lights.
 extension LudoSceneBuilder {
     /// The center dome in two halves, mine on the near side and my partner's on the
-    /// far side, with the seam between the two home columns. Returns a glow shell
-    /// over each half, for player one and player two in that order.
-    static func addCenter(to root: Entity, viewer: BoardPlayer, colors: CornerColors) -> [ModelEntity] {
+    /// far side, with the seam between the two home columns. Records each half and
+    /// the glow shell over it in `paint`, for player one and player two in that order.
+    static func addCenter(to root: Entity, viewer: BoardPlayer, colors: CornerColors, paint: inout LudoPaintTargets) {
         let data = LudoMeshGeometry.domeHalf()
-        guard let mesh = try? MeshResource.generate(from: [descriptor(data, name: "ludoDome")]) else { return [] }
-        var glows: [ModelEntity] = []
+        guard let mesh = try? MeshResource.generate(from: [descriptor(data, name: "ludoDome")]) else { return }
         for player in [BoardPlayer.one, .two] {
             let isNear = player == viewer
-            let color = isNear ? colors.mine : colors.partner
-            let half = ModelEntity(
-                mesh: mesh,
-                materials: [LudoMaterials.satin(
-                    color,
-                    roughness: LudoSceneStyle.domeRoughness,
-                    clearcoat: LudoSceneStyle.domeClearcoat,
-                    showsBothSides: true
-                )]
-            )
+            let dome = domeMaterials(isNear ? colors.mine : colors.partner)
+            let half = ModelEntity(mesh: mesh, materials: [dome.half])
             // Hidden until a pawn gets home, and when the game is won.
-            let glow = ModelEntity(
-                mesh: mesh,
-                materials: [LudoMaterials.glowing(
-                    color,
-                    roughness: LudoSceneStyle.domeRoughness,
-                    clearcoat: LudoSceneStyle.domeClearcoat,
-                    showsBothSides: true
-                )]
-            )
+            let glow = ModelEntity(mesh: mesh, materials: [dome.glow])
             glow.scale = SIMD3(1.05, 1.04, 1.05)
             glow.components.set(OpacityComponent(opacity: 0))
             glow.isEnabled = false
@@ -42,9 +25,9 @@ extension LudoSceneBuilder {
                 if !isNear { entity.orientation = simd_quatf(angle: .pi, axis: SIMD3(0, 1, 0)) }
                 root.addChild(entity)
             }
-            glows.append(glow)
+            paint.domeHalves.append(half)
+            paint.domeGlows.append(glow)
         }
-        return glows
     }
 
     /// The flat peony on the six safe squares that are not a player's start square.

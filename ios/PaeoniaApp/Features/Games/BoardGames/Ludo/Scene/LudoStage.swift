@@ -16,6 +16,8 @@ final class LudoStage {
         let board: LudoBoard
         let lastMove: BoardMoveEvent?
         let styles: BoardPieceStyles
+        /// The colors the two players picked.
+        let colors: LudoColorPair
         let me: BoardPlayer
         let die: LudoDieState
         let movableChoices: [LudoChoice]
@@ -52,6 +54,10 @@ final class LudoStage {
     var dieNode: LudoDieNode?
     var homeGlows: [ModelEntity] = []
     var capMaterials: [PhysicallyBasedMaterial] = []
+    /// The board pieces that take the players' colors.
+    var paint = LudoPaintTargets()
+    /// Goes up with each new look, so a slow mark texture of an earlier one never lands over a later one.
+    private var lookGeneration = 0
     private var targets: [Entity.ID: Target] = [:]
     private var updateSubscription: Cancellable?
 
@@ -89,6 +95,9 @@ final class LudoStage {
     var hasShownBoard = false
     var reduceMotion = false
     var lastTumbleToken: Int?
+    /// My partner's roll that tumbled live, before their move arrived, and when
+    /// that tumble ends. Their move then skips its own tumble.
+    var partnerLiveRoll: (die: Int, endsAt: Double)?
     var diePlaced = false
     var outcomeWinner: BoardPlayer?
     var outcomeSchedule: OutcomeSchedule?
@@ -115,12 +124,13 @@ final class LudoStage {
         viewer = input.me
         self.input = input
         reduceMotion = input.reduceMotion
-        let parts = await LudoSceneBuilder.build(viewer: input.me, styles: input.styles)
+        let parts = await LudoSceneBuilder.build(viewer: input.me, styles: input.styles, colors: input.colors)
         sceneRoot.addChild(parts.root)
         pawns = parts.pawns
         dieNode = parts.die
         homeGlows = parts.homeGlows
         capMaterials = parts.capMaterials
+        paint = parts.paint
         targets[parts.die.root.id] = .die
         for pawn in parts.pawns { targets[pawn.root.id] = .pawn(pawn.index) }
 
@@ -162,12 +172,14 @@ final class LudoStage {
         reduceMotion = new.reduceMotion
         guard isBuilt, pawns.count == LudoBoard.pawnsPerPlayer * 2, dieNode != nil else { return Update() }
         var update = Update()
-        if let old, old.styles != new.styles {
-            refreshMarks(styles: new.styles)
+        if let old, old.styles != new.styles || old.colors != new.colors {
+            refreshLook(new)
         }
         update.presentedMove = syncBoard(new)
         syncMovable(new)
-        syncDie(new.die)
+        // The die state can still carry the roll of a partner move this update just
+        // played. That roll must not tumble again or mark a later move as rolled.
+        syncDie(new.die, afterPartnerMove: update.presentedMove?.isMine == false)
         update.outcomeStartsIn = syncOutcome(new)
         return update
     }
@@ -180,11 +192,19 @@ final class LudoStage {
         }
     }
 
-    private func refreshMarks(styles: BoardPieceStyles) {
-        let colors = LudoSceneBuilder.CornerColors(viewer: viewer, styles: styles)
+    /// Paints the board and the pawns in the players' colors, then puts their marks on the pawn tops.
+    private func refreshLook(_ new: Input) {
+        let colors = LudoSceneBuilder.CornerColors(viewer: viewer, colors: new.colors)
+        LudoSceneBuilder.repaint(paint, colors: colors)
+        for pawn in pawns {
+            pawn.setColor(colors.pawnColor(of: pawn.player))
+        }
+        lookGeneration += 1
+        let generation = lookGeneration
+        let styles = new.styles
         Task { @MainActor in
             let materials = await LudoSceneBuilder.makeCapMaterials(styles: styles, colors: colors)
-            guard materials.count == 2 else { return }
+            guard generation == lookGeneration, materials.count == 2 else { return }
             capMaterials = materials
             for pawn in pawns {
                 pawn.setCapMaterial(materials[pawn.player.rawValue - 1])
@@ -248,9 +268,10 @@ final class LudoStage {
     }
 
     /// Every clip jumps to its last pose, so a new move starts from a settled board.
-    func finishAllClips() {
-        let running = clips
-        clips = []
+    /// Ends every clip at once, except the die's while `keepsDie` is set.
+    func finishAllClips(keepsDie: Bool = false) {
+        let running = keepsDie ? clips.filter { $0.owner != .die } : clips
+        clips = keepsDie ? clips.filter { $0.owner == .die } : []
         for clip in running {
             clip.finishNow()
             clip.onFinish?()

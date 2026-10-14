@@ -41,6 +41,10 @@ struct LudoRollStore {
 /// The model keeps the person's roll on this phone before the tumble starts, so
 /// reopening the screen shows the same roll. The rules of what happens next
 /// are in `LudoRollDecision`.
+///
+/// Rolls also travel live (see `LudoLiveLink`). `announce` sends mine as the
+/// tumble starts. A partner's roll that arrives through `receivePartnerRoll`
+/// tumbles their die on this phone at the same time, before their move exists here.
 @MainActor
 @Observable
 final class LudoRollModel {
@@ -74,6 +78,14 @@ final class LudoRollModel {
     @ObservationIgnored private var turn: Turn?
     @ObservationIgnored private var tumbleCount = 0
     @ObservationIgnored private var task: Task<Void, Never>?
+    /// The newest roll my partner sent live. It can arrive before the move that
+    /// leads to its position, so it waits until the board gets there.
+    @ObservationIgnored private var partnerRoll: LudoSavedRoll?
+    /// The position whose partner roll is tumbling or showing.
+    @ObservationIgnored private var shownPartnerRoll: LudoPosition?
+
+    /// Sends my roll to my partner's phone as the die starts to tumble.
+    @ObservationIgnored var announce: (@MainActor (LudoSavedRoll) -> Void)?
 
     init(
         context: @escaping @MainActor () -> LudoRollContext,
@@ -101,6 +113,9 @@ final class LudoRollModel {
         saved = await store.load()
         isLoaded = true
         turn = nil
+        // A partner roll can arrive while this reads. It names its game and
+        // position, so it is kept and only shown where it belongs.
+        shownPartnerRoll = nil
         cancelTask()
         update()
     }
@@ -128,6 +143,8 @@ final class LudoRollModel {
         cancelTask()
         turn = Turn(position: position, phase: .ready)
         if let kept = LudoRollDecision.restoredDie(from: saved, at: position) {
+            // My partner may have arrived before this roll was back on screen.
+            announce?(LudoSavedRoll(position: position, die: kept))
             land(kept, context: context, schedulesAutomaticMove: true)
         } else {
             die = .ready
@@ -145,6 +162,7 @@ final class LudoRollModel {
         let value = rollDie()
         let roll = LudoSavedRoll(position: position, die: value)
         saved = roll
+        announce?(roll)
         turn.phase = .rolling(value)
         self.turn = turn
         movableChoices = []
@@ -227,16 +245,60 @@ final class LudoRollModel {
         }
     }
 
+    /// My roll for the turn on screen, from the tap until the move lands. My
+    /// partner's phone gets it again when they open the game in the middle of it.
+    var ownRoll: LudoSavedRoll? {
+        guard let turn else { return nil }
+        switch turn.phase {
+        case .ready: return nil
+        case let .rolling(value), let .showing(value), let .playing(value):
+            return LudoSavedRoll(position: turn.position, die: value)
+        }
+    }
+
     // MARK: - Their turn
 
-    /// While it is not the person's turn the die rests on the tray of whoever
-    /// moves next. The board tumbles the partner's roll itself, before their pawn hops.
+    /// My partner rolled. Their die tumbles here once the board is at the roll's position.
+    func receivePartnerRoll(_ roll: LudoSavedRoll) {
+        guard LudoRollDecision.faces.contains(roll.die) else { return }
+        partnerRoll = roll
+        update()
+    }
+
+    /// While it is not the person's turn the die rests in the yard of whoever
+    /// moves next, or shows the roll my partner sent live. Without a live roll the
+    /// board tumbles the partner's roll itself when their move arrives.
     private func showTheirTurn(_ context: LudoRollContext) {
         movableChoices = []
         hint = nil
         turn = nil
+        if let partnerRoll, let position = context.position, partnerRoll.position == position,
+           context.board.outcome == nil, context.board.next == context.me.other {
+            // Already tumbling or showing: leave it alone.
+            guard shownPartnerRoll != position else { return }
+            showPartnerRoll(partnerRoll.die, at: position, context: context)
+            return
+        }
+        shownPartnerRoll = nil
         cancelTask()
         die = .idle(side: context.board.next)
+    }
+
+    private func showPartnerRoll(_ value: Int, at position: LudoPosition, context: LudoRollContext) {
+        cancelTask()
+        shownPartnerRoll = position
+        let side = context.me.other
+        // Under Reduce Motion the stage shows the face without a tumble, and still
+        // knows the die is rolled, so the partner's move does not roll it again.
+        tumbleCount += 1
+        die = .rolling(die: value, side: side, token: tumbleCount)
+        let sleep = sleep
+        let tumbleDuration = tumbleDuration
+        task = Task { [weak self] in
+            try? await sleep(tumbleDuration)
+            guard !Task.isCancelled, let self, shownPartnerRoll == position else { return }
+            die = .showing(die: value, side: side)
+        }
     }
 
     private func cancelTask() {

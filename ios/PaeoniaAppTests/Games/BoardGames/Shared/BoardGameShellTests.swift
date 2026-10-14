@@ -160,11 +160,4 @@ struct BoardGameShellTests {
         // A landscape phone is limited by its height less 24 points above and below.
         #expect(BoardGameMetrics.wideBoardSide(in: CGSize(width: 844, height: 390)) == 342)
     }
-
-    @Test func aBleedingBoardTakesAllTheWidthBesideTheColumn() {
-        // 1366 wide leaves 874 beside the 420 point column, the gap and the padding.
-        #expect(BoardGameMetrics.wideBoardSide(in: CGSize(width: 1_366, height: 1_024), bleeds: true) == 874)
-        // The height still limits it.
-        #expect(BoardGameMetrics.wideBoardSide(in: CGSize(width: 1_366, height: 600), bleeds: true) == 552)
-    }
 }

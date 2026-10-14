@@ -96,7 +96,7 @@ struct LudoRollDecisionTests {
     @Test func theFirstRollOfAGameSaysTapTheDie() throws {
         #expect(LudoRollDecision.hintBeforeRoll(board: .initial, moves: [], me: .one) == .tapToRoll)
         // Player two has not moved yet either.
-        let afterPlayerOne = [LudoBoard.move(die: 2, choice: .pass)]
+        let afterPlayerOne = Array(repeating: LudoBoard.move(die: 2, choice: .pass), count: 3)
         let board = try board(afterPlayerOne)
         #expect(LudoRollDecision.hintBeforeRoll(board: board, moves: afterPlayerOne, me: .two) == .tapToRoll)
     }
@@ -108,10 +108,17 @@ struct LudoRollDecisionTests {
     }
 
     @Test func pawnsStillInTheBaseSayRollASix() throws {
-        // Both players passed once, so player one is back with every pawn in the base.
-        let moves = [LudoBoard.move(die: 2, choice: .pass), LudoBoard.move(die: 3, choice: .pass)]
+        // Both players missed a 6 three times, so player one is back with every pawn in the base.
+        let moves = Array(repeating: LudoBoard.move(die: 2, choice: .pass), count: 6)
         let board = try board(moves)
         #expect(LudoRollDecision.hintBeforeRoll(board: board, moves: moves, me: .one) == .rollSix)
+    }
+
+    @Test func aMissedSixSaysHowManyTriesAreLeft() throws {
+        let one = [LudoBoard.move(die: 2, choice: .pass)]
+        #expect(LudoRollDecision.hintBeforeRoll(board: try board(one), moves: one, me: .one) == .triesLeft(2))
+        let two = one + [LudoBoard.move(die: 4, choice: .pass)]
+        #expect(LudoRollDecision.hintBeforeRoll(board: try board(two), moves: two, me: .one) == .triesLeft(1))
     }
 
     @Test func aPawnOnTheBoardNeedsNoHint() throws {

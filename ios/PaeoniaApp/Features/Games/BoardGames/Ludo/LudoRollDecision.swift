@@ -24,6 +24,8 @@ nonisolated enum LudoHint: Equatable, Sendable {
     case rollSix
     /// The last move earned another roll.
     case rollAgain
+    /// The person missed a 6 with no pawn out and has this many tries left.
+    case triesLeft(Int)
     /// The roll left no pawn to move, so the turn passes by itself.
     case noMove(die: Int)
 }
@@ -34,6 +36,7 @@ extension LudoHint {
         case .tapToRoll: .ludoHintTapToRoll
         case .rollSix: .ludoHintRollSix
         case .rollAgain: .ludoHintRollAgain
+        case let .triesLeft(tries): .ludoHintTriesLeft(tries)
         case let .noMove(die): .ludoHintNoMove(die)
         }
     }
@@ -104,7 +107,7 @@ nonisolated enum LudoRollDecision {
     static func hintBeforeRoll(board: LudoBoard, moves: [Int], me: BoardPlayer) -> LudoHint? {
         let movers = LudoBoard.movers(moves) ?? []
         if movers.last == me {
-            return .rollAgain
+            return board.missedSixes > 0 ? .triesLeft(LudoBoard.triesInBase - board.missedSixes) : .rollAgain
         }
         if !movers.contains(me) {
             return .tapToRoll

@@ -81,6 +81,8 @@ nonisolated private struct MakeMoveRequest: Encodable {
     let move: Int
     /// Only the first move of a game carries one, so the key is left out otherwise.
     let stake: String?
+    /// Ludo only, and only on a player's first move of a game.
+    let ludoColor: LudoColor?
     let operation: GameClientOperationFields
 
     init(payload: BoardGameMovePayload, operation: SyncClientOperation) {
@@ -88,6 +90,7 @@ nonisolated private struct MakeMoveRequest: Encodable {
         expectedVersion = payload.expectedVersion
         move = payload.move
         stake = payload.stake
+        ludoColor = payload.ludoColor
         self.operation = GameClientOperationFields(operation)
     }
 
@@ -96,6 +99,7 @@ nonisolated private struct MakeMoveRequest: Encodable {
         case expectedVersion = "p_expected_version"
         case move = "p_move"
         case stake = "p_stake"
+        case ludoColor = "p_ludo_color"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -104,6 +108,7 @@ nonisolated private struct MakeMoveRequest: Encodable {
         try container.encode(expectedVersion, forKey: .expectedVersion)
         try container.encode(move, forKey: .move)
         try container.encodeIfPresent(stake, forKey: .stake)
+        try container.encodeIfPresent(ludoColor, forKey: .ludoColor)
         try operation.encode(to: encoder)
     }
 }

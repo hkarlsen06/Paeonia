@@ -2025,6 +2025,24 @@
         }
       }
     },
+    "auth.onboarding.displayName.firstNameHint" : {
+      "comment" : "Validation hint shown when the profile name has more than two words, such as a first name and a surname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use your first name, like Mina or Anne Marie."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk fornavnet ditt, som Mina eller Anne Marie."
+          }
+        }
+      }
+    },
     "auth.onboarding.displayName.label" : {
       "comment" : "Label for the profile name field.",
       "extractionState" : "manual",
@@ -2057,24 +2075,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mina eller Eli"
-          }
-        }
-      }
-    },
-    "auth.onboarding.displayName.firstNameHint" : {
-      "comment" : "Validation hint shown when the profile name has more than two words, such as a first name and a surname.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use your first name, like Mina or Anne Marie."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bruk fornavnet ditt, som Mina eller Anne Marie."
           }
         }
       }
@@ -14355,6 +14355,132 @@
         }
       }
     },
+    "ludo.color.gold" : {
+      "comment" : "Name of the soft gold pawn color in Ludo. VoiceOver reads it on the color circle.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gold"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gull"
+          }
+        }
+      }
+    },
+    "ludo.color.hint.a11y" : {
+      "comment" : "VoiceOver hint on a Ludo color circle that can be picked. The partner sees the same color on this player's pawns. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sees this color too"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser denne fargen også"
+          }
+        }
+      }
+    },
+    "ludo.color.lavender" : {
+      "comment" : "Name of the light purple pawn color in Ludo. VoiceOver reads it on the color circle.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lavender"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lavendel"
+          }
+        }
+      }
+    },
+    "ludo.color.pink" : {
+      "comment" : "Name of the pink pawn color in Ludo. VoiceOver reads it on the color circle.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pink"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rosa"
+          }
+        }
+      }
+    },
+    "ludo.color.sky" : {
+      "comment" : "Name of the light blue pawn color in Ludo. VoiceOver reads it on the color circle.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sky blue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Himmelblå"
+          }
+        }
+      }
+    },
+    "ludo.color.taken.a11y" : {
+      "comment" : "VoiceOver label on a Ludo color circle the partner already has, so it cannot be picked. First %@ is the color name, second %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, taken by %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, tatt av %@"
+          }
+        }
+      }
+    },
+    "ludo.color.title" : {
+      "comment" : "Label next to the four color circles under the Ludo board, where a player picks the color of their pawns before their first move. Short, a few words.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your color"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din farge"
+          }
+        }
+      }
+    },
     "ludo.die.roll" : {
       "comment" : "VoiceOver label of the die on this person's side of the Ludo board while it is their turn to roll. Double-tapping it rolls the die.",
       "extractionState" : "manual",
@@ -14459,6 +14585,48 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trykk på terningen for å kaste"
+          }
+        }
+      }
+    },
+    "ludo.hint.triesLeft" : {
+      "comment" : "Line under the Ludo board after this person missed a 6 while none of their pawns is out. They get three tries to roll a 6. The number is the tries left, 1 or 2.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld try left to roll a 6"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld tries left to roll a 6"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld forsøk igjen på å kaste en 6"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld forsøk igjen på å kaste en 6"
+                }
+              }
+            }
           }
         }
       }

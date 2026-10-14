@@ -128,6 +128,31 @@ struct BoardGameRemoteDecodingTests {
         #expect(replayed.outcome?.line == ultimate.winLine)
     }
 
+    @Test func ludoColorsDecodeAndAreNilInOtherGames() throws {
+        func game(kind: String, colors: String) -> String {
+            #"""
+            {"draws": 0, "finished_at": null, "first_user_id": "00000000-0000-0000-0000-00000000000a",
+             "game_number": 1, "games_finished": 0, "id": "00000000-0000-0000-0000-000000000103",
+             "kind": "\#(kind)", "moves": [], \#(colors) "my_wins": 0, "partner_wins": 0,
+             "photo_media_asset_id": null, "previous": null, "stake": null, "stake_by_user_id": null,
+             "started_at": "2026-10-14T01:12:41.329Z", "status": "playing",
+             "turn_started_at": "2026-10-14T01:12:41.329Z", "turn_user_id": "00000000-0000-0000-0000-00000000000a",
+             "updated_at": "2026-10-14T01:12:41.329Z", "version": 1, "win_line": [], "winner_user_id": null}
+            """#
+        }
+        let ludo = game(kind: "ludo", colors: #""my_color": "gold", "partner_color": "sky","#)
+        let connectFour = game(kind: "connect_four", colors: #""my_color": null, "partner_color": null,"#)
+
+        let decoder = PaeoniaConvexClient.decoder
+        let decodedLudo = try decoder.decode(RemoteBoardGame.self, from: Data(ludo.utf8))
+        let decodedConnectFour = try decoder.decode(RemoteBoardGame.self, from: Data(connectFour.utf8))
+
+        #expect(decodedLudo.myColor == .gold)
+        #expect(decodedLudo.partnerColor == .sky)
+        #expect(decodedConnectFour.myColor == nil)
+        #expect(decodedConnectFour.partnerColor == nil)
+    }
+
     @Test func theServersMarksDecode() throws {
         let marks = try PaeoniaConvexClient.decoder.decode(RemoteBoardGameMarks.self, from: Data(Self.marks.utf8))
 

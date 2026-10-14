@@ -13,13 +13,16 @@ import UIKit
 /// board shows at once. The screen around the board owns my die, the choices,
 /// the status line and the timing of `showsOutcome`.
 ///
-/// The view fills the space it is given. A one-finger drag orbits the board, a
-/// pinch zooms and a double tap goes back to the default view.
+/// The view fills the space it is given and fits the board inside the middle
+/// `boardFitHeight` of it. A one-finger drag orbits the board, a pinch zooms and a
+/// double tap goes back to the default view.
 struct LudoBoardView: View {
     let board: LudoBoard
     /// The newest move. The board animates it when `number` changes.
     let lastMove: BoardMoveEvent?
     let styles: BoardPieceStyles
+    /// The colors the two players picked. Pink and lavender until they pick.
+    var colors = LudoColorPair.standard
     /// The player this phone plays as.
     let me: BoardPlayer
     let die: LudoDieState
@@ -50,6 +53,7 @@ private struct LudoBoardScene: View {
     let inputs: LudoBoardView
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.boardFitHeight) private var fitHeight
     @State private var stage = LudoStage()
     @State private var bloomStart: Date?
     /// Where the camera last came to rest, so VoiceOver follows it.
@@ -62,6 +66,7 @@ private struct LudoBoardScene: View {
             let aspect = size.height > 0 ? Double(size.width / size.height) : LudoSceneStyle.viewAspect
             let overshoot = LudoSceneStyle.cameraOvershoot(forViewWidth: Double(size.width))
             let rig = currentRig(aspect: aspect, overshoot: overshoot)
+            let fit = [aspect, overshoot, Double(fitHeight)]
             ZStack {
                 LudoSceneView(
                     stage: stage,
@@ -84,7 +89,9 @@ private struct LudoBoardScene: View {
                 )
             }
             .frame(width: size.width, height: size.height)
-            .onChange(of: [aspect, overshoot], initial: true) { stage.setAspect(aspect, overshoot: overshoot) }
+            .onChange(of: fit, initial: true) {
+                stage.setAspect(aspect, overshoot: overshoot, fitHeight: Double(fitHeight))
+            }
         }
         .onChange(of: stageInput, initial: true) { sync() }
         .onChange(of: inputs.showsOutcome) {
@@ -95,7 +102,7 @@ private struct LudoBoardScene: View {
     /// The camera the person has left, or the default one while the view's shape is new.
     private func currentRig(aspect: Double, overshoot: Double) -> LudoCameraRig {
         if let settledRig, abs(settledRig.aspect - aspect) < 0.001 { return settledRig }
-        return LudoCameraRig.fitting(aspect: aspect, overshoot: overshoot)
+        return LudoCameraRig.fitting(aspect: aspect, overshoot: overshoot, fitHeight: Double(fitHeight))
     }
 
     private var stageInput: LudoStage.Input {
@@ -103,6 +110,7 @@ private struct LudoBoardScene: View {
             board: inputs.board,
             lastMove: inputs.lastMove,
             styles: inputs.styles,
+            colors: inputs.colors,
             me: inputs.me,
             die: inputs.die,
             movableChoices: inputs.movableChoices,

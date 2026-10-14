@@ -36,6 +36,7 @@ extension LudoStage {
     /// Shows a board at once, with no animation.
     func snap(_ board: LudoBoard) {
         finishAllClips()
+        partnerLiveRoll = nil
         shownBoard = board
         hasShownBoard = true
         let placements = LudoBoardGeometry.placements(board: board, viewer: viewer)
@@ -48,17 +49,20 @@ extension LudoStage {
     // MARK: A move
 
     private func play(_ transition: LudoTransition, from old: LudoBoard, to new: LudoBoard, isMine: Bool) {
-        finishAllClips()
+        // A roll that tumbled live is already on the partner's tray, and may still be tumbling.
+        let liveTumbleLeft = isMine ? nil : takePartnerLiveRoll(matching: transition.die)
+        finishAllClips(keepsDie: liveTumbleLeft != nil)
         let placements = LudoBoardGeometry.placements(board: new, viewer: viewer)
         let starts = pawns.map { ($0.rest, $0.restScale) }
         for (pawn, placement) in zip(pawns, placements) {
             pawn.setRest(position: LudoWorld.position(of: placement), scale: Float(placement.scale))
         }
-        if !isMine { tumblePartnerDie(to: transition.die) }
+        if !isMine, liveTumbleLeft == nil { tumblePartnerDie(to: transition.die) }
+        let tumbleLeft = liveTumbleLeft ?? LudoSceneStyle.tumbleDuration
         guard let index = transition.pawn, pawns.indices.contains(index) else { return }
 
         // The partner's pawn waits for the die to tumble on their tray.
-        let lead = isMine ? 0 : (reduceMotion ? 0.2 : LudoSceneStyle.tumbleDuration + LudoSceneStyle.partnerPause)
+        let lead = isMine ? 0 : (reduceMotion ? 0.2 : tumbleLeft + LudoSceneStyle.partnerPause)
         let begin = clock + lead
         let moverDuration: Double
         if reduceMotion {

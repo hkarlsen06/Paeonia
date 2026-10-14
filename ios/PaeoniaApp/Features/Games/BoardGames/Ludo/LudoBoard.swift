@@ -13,6 +13,8 @@ nonisolated struct LudoBoard: BoardGameRules {
     /// The last progress on the shared track. Progress 52 to 56 is the home column.
     static let lastTrackProgress = 51
     static let dieFaces = 6
+    /// Rolls a player gets to throw a 6 while no pawn of theirs is out.
+    static let triesInBase = 3
     static let moveLimit = dieFaces * 3
     /// The four start squares and the square 8 past each. A pawn on one can't be sent home.
     static let safeSquares: Set<Int> = [0, 8, 13, 21, 26, 34, 39, 47]
@@ -24,8 +26,11 @@ nonisolated struct LudoBoard: BoardGameRules {
 
     /// Progress 0...57 per pawn. Player one's pawns are 0 and 1, player two's are 2 and 3.
     let progress: [Int]
-    /// Who rolls next. After a 6, a capture or a pawn reaching home it is the mover again.
+    /// Who rolls next. After a 6, a capture, a pawn reaching home or a missed 6
+    /// with tries left it is the mover again.
     let next: BoardPlayer
+    /// The rolls in a row `next` has passed with no pawn out.
+    var missedSixes = 0
     let outcome: BoardOutcome?
 
     static func startSquare(of player: BoardPlayer) -> Int {
@@ -56,6 +61,11 @@ nonisolated struct LudoBoard: BoardGameRules {
     /// a 6, and a pawn needs the exact number to reach home.
     static func canMove(progress: Int, die: Int) -> Bool {
         progress == 0 ? die == dieFaces : progress + die <= homeProgress
+    }
+
+    /// Whether every pawn of `player` is in the base or home, so only a 6 can move one.
+    func hasNoPawnOut(_ player: BoardPlayer) -> Bool {
+        (0..<Self.pawnsPerPlayer).allSatisfy { [0, Self.homeProgress].contains(progress[Self.pawnIndex(player, $0)]) }
     }
 
     /// The moves `next` can make with `die`: the movable pawns, or `[.pass]`.
