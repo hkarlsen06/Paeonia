@@ -43,12 +43,12 @@ struct ProfileEditorDraft: Equatable, Sendable {
     }
 
     var validatedName: String? {
-        AuthDisplayNamePolicy.validatedSingleName(from: name)
+        AuthDisplayNamePolicy.validatedName(from: name)
     }
 
-    /// The one-word rule is otherwise invisible: a two-word name would just leave
-    /// Save disabled with no explanation.
-    var showsSingleWordHint: Bool {
+    /// The two-word limit is otherwise invisible: a first name with a surname would
+    /// just leave Save disabled with no explanation.
+    var showsFirstNameHint: Bool {
         name.trimmedNonEmpty != nil && validatedName == nil
     }
 
@@ -81,7 +81,7 @@ struct ProfileEditorDraft: Equatable, Sendable {
 
     var hasChanges: Bool {
         photoUpdate != .unchanged
-            || validatedName != AuthDisplayNamePolicy.validatedSingleName(from: savedName)
+            || validatedName != AuthDisplayNamePolicy.validatedName(from: savedName)
     }
 
     var canSave: Bool {

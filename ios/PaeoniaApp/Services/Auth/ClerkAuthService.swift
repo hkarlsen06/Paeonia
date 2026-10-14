@@ -97,7 +97,7 @@ actor ClerkAuthService: AuthServicing {
         let remoteSession = try await AuthNetworkDeadline.run(until: deadline) {
             try await gateway.signInWithApple(idToken: credential.idToken)
         }
-        let appleName = credential.fullName.flatMap(AuthDisplayNamePolicy.normalizedFirstName)
+        let appleName = credential.givenName.flatMap(AuthDisplayNamePolicy.normalizedFirstName)
         return try await finishSignIn(
             remoteSession: RemoteAuthSession(
                 accountID: remoteSession.accountID,
@@ -187,10 +187,16 @@ actor ClerkAuthService: AuthServicing {
             profilePhotoAssetID: loadedProfile.profilePhotoAssetID
         )
 
-        let newlyUploadedAssetID = await uploadProfilePhotoIfAvailable(
-            userID: currentProfile.userID,
-            data: profilePhotoData
-        )
+        // Setup needs a photo. Without a picked one, the Google photo already on
+        // the profile counts. A picked photo that fails to upload fails setup
+        // instead of quietly falling back to the Google one.
+        var newlyUploadedAssetID: UUID?
+        if let profilePhotoData {
+            newlyUploadedAssetID = try await uploadProfilePhoto(
+                userID: currentProfile.userID,
+                data: profilePhotoData
+            )
+        }
         let linkedProfilePhotoAssetID = newlyUploadedAssetID
             ?? currentProfile.profilePhotoAssetID
 
@@ -314,15 +320,10 @@ actor ClerkAuthService: AuthServicing {
         )
     }
 
-    /// Compresses and uploads the chosen profile photo, caching it locally on
-    /// success. The photo is optional, so any failure here — an image we can't
-    /// process or a failed upload — returns `nil` and lets the person finish setup
-    /// rather than blocking onboarding.
-    private func uploadProfilePhotoIfAvailable(userID: String, data: Data?) async -> UUID? {
-        guard let data else {
-            return nil
-        }
-
+    /// Compresses and uploads the Google photo, caching it locally on success.
+    /// It is only a fallback, so any failure here returns `nil` and lets sign-in
+    /// finish without it.
+    private func uploadProfilePhotoIfAvailable(userID: String, data: Data) async -> UUID? {
         // Runs on this actor, off the main thread, so resizing never stalls the UI.
         let compressedImage = ImageCompressor.compress(data)
         guard let compressedImage else {
@@ -343,8 +344,8 @@ actor ClerkAuthService: AuthServicing {
         }
     }
 
-    /// Paired edits are explicit saves, so an invalid or failed replacement must
-    /// surface as an error instead of silently keeping the old image.
+    /// Setup and profile edits are explicit saves, so an invalid or failed photo
+    /// must surface as an error instead of silently keeping the old image or none.
     private func uploadProfilePhoto(userID: String, data: Data) async throws -> UUID {
         // Runs on this actor, off the main thread, so resizing never stalls the UI.
         let compressedImage = ImageCompressor.compress(data)
@@ -397,7 +398,7 @@ actor ClerkAuthService: AuthServicing {
 
     private func logProfilePhotoIssue(_ message: String) {
         #if DEBUG
-        logger.error("Profile photo \(message, privacy: .public); continuing onboarding without it.")
+        logger.error("Profile photo \(message, privacy: .public); continuing sign-in without it.")
         #endif
     }
 
@@ -495,7 +496,7 @@ actor ClerkAuthService: AuthServicing {
     }
 
     private func normalizedDisplayName(_ value: String) throws -> String {
-        guard let displayName = AuthDisplayNamePolicy.validatedSingleName(from: value) else {
+        guard let displayName = AuthDisplayNamePolicy.validatedName(from: value) else {
             throw AuthServiceError.invalidDisplayName
         }
 

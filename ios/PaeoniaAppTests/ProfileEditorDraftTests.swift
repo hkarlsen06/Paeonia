@@ -13,7 +13,7 @@ struct ProfileEditorDraftTests {
         #expect(!draft.hasChanges)
         #expect(!draft.canSave)
         #expect(draft.photoUpdate == .unchanged)
-        #expect(!draft.showsSingleWordHint)
+        #expect(!draft.showsFirstNameHint)
     }
 
     /// The field follows the session until the user types, so a name that finishes
@@ -38,11 +38,19 @@ struct ProfileEditorDraftTests {
         #expect(!draft.canSave)
     }
 
-    @Test func multiWordNameExplainsItselfAndBlocksSaving() {
-        let draft = ProfileEditorDraft(savedName: "Mina", typedName: "Mina Lee")
+    @Test func doubleNameCanBeSaved() {
+        let draft = ProfileEditorDraft(savedName: "Anne", typedName: "Anne  Marie")
+
+        #expect(draft.validatedName == "Anne Marie")
+        #expect(!draft.showsFirstNameHint)
+        #expect(draft.canSave)
+    }
+
+    @Test func nameWithSurnameExplainsItselfAndBlocksSaving() {
+        let draft = ProfileEditorDraft(savedName: "Mina", typedName: "Mina Lee Hansen")
 
         #expect(draft.validatedName == nil)
-        #expect(draft.showsSingleWordHint)
+        #expect(draft.showsFirstNameHint)
         #expect(draft.hasChanges)
         #expect(!draft.canSave)
     }
@@ -53,7 +61,7 @@ struct ProfileEditorDraftTests {
         #expect(draft.hasChanges)
         #expect(!draft.canSave)
         // Nothing to explain yet — the placeholder already shows what belongs here.
-        #expect(!draft.showsSingleWordHint)
+        #expect(!draft.showsFirstNameHint)
     }
 
     @Test func stagedPhotoIsSavedAsAReplacement() {

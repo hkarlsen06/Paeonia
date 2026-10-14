@@ -4,6 +4,11 @@ import Foundation
 /// root coordinator but in its own file so `RootView` stays focused on view
 /// logic.
 extension RootNotice {
+    /// Being signed out and an account that was not deleted are worth reading in full.
+    var bannerTiming: PaeoniaBannerTiming {
+        self == .sessionEnded || self == .deleteAccountFailed ? .untilDismissed : .standard
+    }
+
     var title: LocalizedStringResource {
         switch self {
         case .sessionLoadFailed:

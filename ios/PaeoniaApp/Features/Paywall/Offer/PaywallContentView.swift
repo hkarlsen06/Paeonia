@@ -1,21 +1,25 @@
 import SwiftUI
 
 /// The scrolling part of the paywall: what Paeonia is, what you get, and the plans.
-/// It cascades in under the logo like the profile screen before it.
+/// It cascades in under the logo like the profile screen before it, once
+/// `isEntranceReady` says the prices are in or have taken too long.
 struct PaywallContentView: View {
     let audience: PaywallAudience
     let plans: [PaywallPlanOption]
     let isLoadingPlans: Bool
     let showsTrialReminder: Bool
+    let isEntranceReady: Bool
     @Binding var billingPeriod: PaeoniaBillingPeriod
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space24) {
             header
-                .screenEntrance(order: 1)
+                .screenEntrance(order: 1, isReady: isEntranceReady)
 
             PaywallFeatureList()
-                .screenEntrance(order: 2)
+                .screenEntrance(order: 2, isReady: isEntranceReady)
 
             VStack(spacing: PaeoniaSpacing.space12) {
                 PaywallPlanPicker(plans: plans, isLoading: isLoadingPlans, selection: $billingPeriod)
@@ -24,7 +28,9 @@ struct PaywallContentView: View {
                     trialReminder
                 }
             }
-            .screenEntrance(order: 3)
+            // Prices that come in after the drop grow the cards instead of jumping.
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isLoadingPlans)
+            .screenEntrance(order: 3, isReady: isEntranceReady)
         }
     }
 

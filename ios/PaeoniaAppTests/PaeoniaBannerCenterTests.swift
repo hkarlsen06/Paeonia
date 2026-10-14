@@ -116,4 +116,25 @@ struct PaeoniaBannerCenterTests {
         center.dismiss()
         #expect(center.content == nil)
     }
+
+    @Test func anUntilDismissedBannerOutlastsItsStyleDuration() async throws {
+        let center = makeCenter(errorDuration: .milliseconds(100))
+
+        center.show(.error(message: "Your report may not have been sent", timing: .untilDismissed))
+        try await Task.sleep(for: .milliseconds(500))
+        #expect(center.content != nil)
+
+        center.dismiss()
+        #expect(center.content == nil)
+    }
+
+    @Test func aFixedTimingReplacesTheStyleDuration() async throws {
+        let center = makeCenter(infoDuration: .seconds(5))
+
+        center.show(.info(message: "Robin opened Ludo", timing: .fixed(.milliseconds(100))))
+        #expect(center.content != nil)
+
+        try await Task.sleep(for: .milliseconds(500))
+        #expect(center.content == nil)
+    }
 }

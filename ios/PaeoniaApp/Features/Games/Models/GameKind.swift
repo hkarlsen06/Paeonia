@@ -25,6 +25,20 @@ nonisolated enum GameKind: String, CaseIterable, Codable, Hashable, Sendable {
         rawValue
     }
 
+    /// The game's name, as its card and screen title show it.
+    var name: LocalizedStringResource {
+        switch self {
+        case .ludo: .ludoName
+        case .drawAndGuess: .gamesDrawAndGuessName
+        case .connectFour: .connectFourName
+        case .mindMeld: .mindMeldTitle
+        case .dotsAndBoxes: .dotsAndBoxesName
+        case .ultimateTicTacToe: .ultimateTicTacToeName
+        case .storyChain: .storyChainName
+        case .exquisiteCorpse: .exquisiteCorpseName
+        }
+    }
+
     init?(path: String) {
         guard let kind = Self.allCases.first(where: { $0.path == path }) else { return nil }
         self = kind

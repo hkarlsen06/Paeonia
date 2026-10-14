@@ -68,7 +68,8 @@ nonisolated enum AuthProfileStatus: String, Codable, Equatable, Sendable {
 nonisolated struct AppleSignInCredential: Equatable, Sendable {
     let idToken: String
     let nonce: String
-    let fullName: String?
+    /// The first name from the Apple ID. Apple shares it only on the first sign-in.
+    let givenName: String?
     /// Apple's short-lived authorization code. Sign-in itself only needs the ID
     /// token, but account deletion can exchange this code server-side and revoke
     /// the user's Sign in with Apple authorization without persisting a token.
@@ -77,12 +78,12 @@ nonisolated struct AppleSignInCredential: Equatable, Sendable {
     nonisolated init(
         idToken: String,
         nonce: String,
-        fullName: String?,
+        givenName: String?,
         authorizationCode: String? = nil
     ) {
         self.idToken = idToken
         self.nonce = nonce
-        self.fullName = fullName
+        self.givenName = givenName
         self.authorizationCode = authorizationCode
     }
 }

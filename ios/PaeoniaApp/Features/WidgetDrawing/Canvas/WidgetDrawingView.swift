@@ -187,6 +187,7 @@ struct WidgetDrawingView: View {
             // where the remaining vertical space is shorter than screen width.
             .frame(width: side, height: side)
             .overlay { liveOverlay }
+            .overlay { WidgetDrawingSizePreview(viewModel: viewModel) }
             .overlay(alignment: .bottom) { WidgetDrawingSetAsideBar(viewModel: viewModel) }
             .background(.paeoniaBackgroundPrimary)
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))

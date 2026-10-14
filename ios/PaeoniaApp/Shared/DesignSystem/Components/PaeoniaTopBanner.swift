@@ -10,6 +10,16 @@ enum PaeoniaBannerStyle: Equatable {
     case info
 }
 
+/// How long a banner stays before it dismisses itself.
+enum PaeoniaBannerTiming: Equatable {
+    /// The center's time for the banner's style.
+    case standard
+    case fixed(Duration)
+    /// For an error the user has to deal with somewhere else, or one they must
+    /// not miss, such as a report that may not have been sent.
+    case untilDismissed
+}
+
 struct PaeoniaBannerContent: Equatable, Identifiable {
     let id: UUID
     let style: PaeoniaBannerStyle
@@ -25,6 +35,9 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
     let isTappable: Bool
     /// SF Symbol shown instead of the style's default icon.
     let systemImage: String?
+    /// Runs on tap instead of the host's tap handler. Setting it makes the banner tappable.
+    let action: (() -> Void)?
+    let timing: PaeoniaBannerTiming
 
     init(
         id: UUID = UUID(),
@@ -33,7 +46,9 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
         message: String,
         imageData: Data? = nil,
         isTappable: Bool = false,
-        systemImage: String? = nil
+        systemImage: String? = nil,
+        action: (() -> Void)? = nil,
+        timing: PaeoniaBannerTiming = .standard
     ) {
         self.id = id
         self.style = style
@@ -41,8 +56,10 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
         self.message = message
         self.imageData = imageData
         self.avatar = imageData.flatMap { UIImage(data: $0) }
-        self.isTappable = isTappable
+        self.isTappable = isTappable || action != nil
         self.systemImage = systemImage
+        self.action = action
+        self.timing = timing
     }
 
     static func == (lhs: PaeoniaBannerContent, rhs: PaeoniaBannerContent) -> Bool {
@@ -53,6 +70,7 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
             && lhs.imageData == rhs.imageData
             && lhs.isTappable == rhs.isTappable
             && lhs.systemImage == rhs.systemImage
+            && lhs.timing == rhs.timing
     }
 
     /// True when `other` would look the same to the user, even with a different id.
@@ -60,8 +78,12 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
         style == other.style && title == other.title && message == other.message
     }
 
-    static func error(title: String? = nil, message: String) -> PaeoniaBannerContent {
-        PaeoniaBannerContent(style: .error, title: title, message: message)
+    static func error(
+        title: String? = nil,
+        message: String,
+        timing: PaeoniaBannerTiming = .standard
+    ) -> PaeoniaBannerContent {
+        PaeoniaBannerContent(style: .error, title: title, message: message, timing: timing)
     }
 
     static func info(
@@ -69,7 +91,9 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
         message: String,
         imageData: Data? = nil,
         isTappable: Bool = false,
-        systemImage: String? = nil
+        systemImage: String? = nil,
+        action: (() -> Void)? = nil,
+        timing: PaeoniaBannerTiming = .standard
     ) -> PaeoniaBannerContent {
         PaeoniaBannerContent(
             style: .info,
@@ -77,7 +101,9 @@ struct PaeoniaBannerContent: Equatable, Identifiable {
             message: message,
             imageData: imageData,
             isTappable: isTappable,
-            systemImage: systemImage
+            systemImage: systemImage,
+            action: action,
+            timing: timing
         )
     }
 }
@@ -97,8 +123,8 @@ final class PaeoniaBannerCenter {
     private let isVoiceOverRunning: @MainActor () -> Bool
     @ObservationIgnored private var dismissTask: Task<Void, Never>?
 
-    /// Banners dismiss themselves after `errorDuration` or `infoDuration`. With
-    /// VoiceOver running they stay until the user dismisses them.
+    /// A `.standard` banner dismisses itself after `errorDuration` or `infoDuration`.
+    /// With VoiceOver running every banner stays until the user dismisses it.
     init(
         errorDuration: Duration = .seconds(6),
         infoDuration: Duration = .seconds(4),
@@ -164,11 +190,19 @@ final class PaeoniaBannerCenter {
         dismissTask?.cancel()
         dismissTask = nil
 
+        let duration: Duration
+        switch banner.timing {
+        case .standard:
+            duration = banner.style == .error ? errorDuration : infoDuration
+        case let .fixed(fixed):
+            duration = fixed
+        case .untilDismissed:
+            return
+        }
         guard !isVoiceOverRunning() else {
             return
         }
 
-        let duration = banner.style == .error ? errorDuration : infoDuration
         let id = banner.id
         dismissTask = Task { [weak self] in
             try? await Task.sleep(for: duration)
@@ -386,7 +420,7 @@ private struct PaeoniaTopBannerPresentation: View {
             onTap: content.isTappable
                 ? {
                     center.dismiss(id: content.id)
-                    onTap()
+                    (content.action ?? onTap)()
                 }
                 : nil
         )

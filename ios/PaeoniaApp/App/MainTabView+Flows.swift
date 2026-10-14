@@ -324,11 +324,34 @@ extension MainTabView {
         self.deepLink.wrappedValue = nil
     }
 
-    /// A game card on Home, shown while the partner is in the game. Someone who
-    /// has not been through the first-time steps sees them before the game.
+    /// A game card on Home, shown while the partner is in the game, or the banner
+    /// other tabs show when the partner opens one. Someone who has not been through
+    /// the first-time steps sees them before the game.
     func openGameFromHome(_ destination: GamesDestination) {
         selection.wrappedValue = .games
         gamesViewModel.open(destination)
+    }
+
+    /// The partner just opened `kind`. Home already shows the game's card, and a
+    /// person already in that game, or in the middle of answering, gets no banner.
+    func announcePartnerGame(_ kind: GameKind?) {
+        guard let kind, selection.wrappedValue != .home,
+              !(selection.wrappedValue == .games && gamesPath.contains(.game(kind))),
+              !isAnswerFlowPresented, partnerAnswerQuestion == nil
+        else { return }
+
+        let gameName = String(localized: kind.name)
+        bannerCenter.show(
+            .info(
+                title: String(localized: .gamesPartnerOpenedTitle(gamesViewModel.partnerName, gameName)),
+                message: String(localized: .gamesPartnerOpenedMessage),
+                imageData: PaeoniaAppGroup.partnerAvatarData(),
+                systemImage: "gamecontroller.fill",
+                action: { openGameFromHome(.game(kind)) },
+                // Longer than other notices: the invite only helps while the partner is still in the game.
+                timing: .fixed(.seconds(7))
+            )
+        )
     }
 
     /// Links into the Questions tab refresh first, so a partner's answer or a

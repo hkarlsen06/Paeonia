@@ -43,6 +43,18 @@ final class PaeoniaAppUITests: XCTestCase {
         XCTAssertTrue(appleSignInButton.waitForExistence(timeout: 8))
         appleSignInButton.tap()
 
+        // Setup needs a photo. The system photo picker runs out of process, but its
+        // grid still shows up in the app's element tree.
+        let photoButton = app.buttons["auth.onboarding.profilePhoto"]
+        XCTAssertTrue(photoButton.waitForExistence(timeout: 5))
+        photoButton.tap()
+        let firstPhoto = app.scrollViews.otherElements.images.firstMatch
+        XCTAssertTrue(firstPhoto.waitForExistence(timeout: 10))
+        firstPhoto.tap()
+        let cropDone = app.buttons.matching(NSPredicate(format: "label IN %@", ["Done", "Ferdig"])).firstMatch
+        XCTAssertTrue(cropDone.waitForExistence(timeout: 5))
+        cropDone.tap()
+
         let nameField = app.textFields["auth.onboarding.displayName"]
         XCTAssertTrue(nameField.waitForExistence(timeout: 5))
         nameField.tap()

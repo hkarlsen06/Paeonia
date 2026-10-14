@@ -2061,38 +2061,38 @@
         }
       }
     },
-    "auth.onboarding.displayName.singleWordHint" : {
-      "comment" : "Validation hint shown when the profile name contains spaces and must be reduced to one name.",
+    "auth.onboarding.displayName.firstNameHint" : {
+      "comment" : "Validation hint shown when the profile name has more than two words, such as a first name and a surname.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use one name only, like Mina or Eli."
+            "value" : "Use your first name, like Mina or Anne Marie."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bruk bare ett navn, som Mina eller Eli."
+            "value" : "Bruk fornavnet ditt, som Mina eller Anne Marie."
           }
         }
       }
     },
     "auth.onboarding.message" : {
-      "comment" : "Supporting line under the onboarding name screen title; covers both the name and optional photo",
+      "comment" : "Supporting line under the onboarding name screen title. Both the photo and the name are required.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your partner will see this name and photo."
+            "value" : "Add a photo and a name. Your partner will see both."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Partneren din ser dette navnet og bildet."
+            "value" : "Legg til et bilde og et navn. Partneren din ser begge."
           }
         }
       }
@@ -2165,6 +2165,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Endre profilbilde"
+          }
+        }
+      }
+    },
+    "auth.onboarding.profilePhoto.required" : {
+      "comment" : "Shown under the empty profile photo when the user taps Continue during setup without adding a photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a photo to continue."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til et bilde for å fortsette."
           }
         }
       }
@@ -11861,6 +11879,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ er her nå"
+          }
+        }
+      }
+    },
+    "games.partnerOpened.message" : {
+      "comment" : "Second line of the banner shown on other tabs when the partner opens a game. Tapping the banner opens the same game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to join."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk for å bli med."
+          }
+        }
+      }
+    },
+    "games.partnerOpened.title" : {
+      "comment" : "Banner shown on other tabs when the partner opens a game. %1$@ is the partner's name, %2$@ is the game's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ opened %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ åpnet %2$@"
           }
         }
       }

@@ -56,9 +56,11 @@ extension View {
     /// The same lifted drop-in cascade as `launchEntrance(order:)`, but cued by the
     /// screen's own first appearance — for screens the user reaches mid-session, like
     /// the profile setup screen right after signing in. During a cold launch it still
-    /// waits for the intro's content cue, so both paths feel identical.
-    func screenEntrance(order: Int) -> some View {
-        modifier(ScreenEntranceModifier(order: order))
+    /// waits for the intro's content cue, so both paths feel identical. A screen
+    /// whose content is still loading can hold the drop with `isReady`. Once true,
+    /// it must stay true.
+    func screenEntrance(order: Int, isReady: Bool = true) -> some View {
+        modifier(ScreenEntranceModifier(order: order, isReady: isReady))
     }
 }
 
@@ -100,6 +102,7 @@ private struct LaunchEntranceModifier: ViewModifier {
 
 private struct ScreenEntranceModifier: ViewModifier {
     let order: Int
+    let isReady: Bool
 
     @Environment(\.launchContentRevealed) private var launchRevealed
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -108,7 +111,7 @@ private struct ScreenEntranceModifier: ViewModifier {
     /// During a cold launch the intro's cue gates the drop-in; mid-session the first
     /// rendered frame does, so the cascade plays right as the screen arrives.
     private var revealed: Bool {
-        hasAppeared && launchRevealed
+        hasAppeared && launchRevealed && isReady
     }
 
     func body(content: Content) -> some View {

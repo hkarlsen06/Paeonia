@@ -204,7 +204,8 @@ struct ReportAndLeaveView: View {
             bannerCenter.show(
                 .error(
                     title: String(localized: .reportAndLeaveFailedTitle),
-                    message: String(localized: .reportAndLeaveFailedMessage)
+                    message: String(localized: .reportAndLeaveFailedMessage),
+                    timing: .untilDismissed
                 )
             )
         }

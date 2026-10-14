@@ -44,7 +44,7 @@ actor DevelopmentAuthService: AuthServicing {
         let session = AuthSession(
             id: "development-apple-user",
             provider: .apple,
-            displayName: credential.fullName.flatMap(
+            displayName: credential.givenName.flatMap(
                 AuthDisplayNamePolicy.normalizedFirstName
             ),
             timeZoneID: nil,
@@ -89,7 +89,7 @@ actor DevelopmentAuthService: AuthServicing {
         guard let session else {
             throw AuthServiceError.noActiveSession
         }
-        guard let displayName = AuthDisplayNamePolicy.validatedSingleName(from: displayName) else {
+        guard let displayName = AuthDisplayNamePolicy.validatedName(from: displayName) else {
             throw AuthServiceError.invalidDisplayName
         }
 
@@ -108,7 +108,7 @@ actor DevelopmentAuthService: AuthServicing {
         guard let session else {
             throw AuthServiceError.noActiveSession
         }
-        guard let displayName = AuthDisplayNamePolicy.validatedSingleName(from: displayName) else {
+        guard let displayName = AuthDisplayNamePolicy.validatedName(from: displayName) else {
             throw AuthServiceError.invalidDisplayName
         }
 

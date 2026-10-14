@@ -28,4 +28,14 @@ nonisolated enum PaeoniaAppGroup {
     nonisolated static var containerURL: URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: identifier)
     }
+
+    /// The partner avatar staged at `communicationPartnerAvatarPath` (the image the
+    /// notification service extension uses), so in-app banners can show the
+    /// partner's face instead of a generic icon.
+    nonisolated static func partnerAvatarData() -> Data? {
+        guard let url = containerURL?.appendingPathComponent(communicationPartnerAvatarPath) else {
+            return nil
+        }
+        return try? Data(contentsOf: url)
+    }
 }

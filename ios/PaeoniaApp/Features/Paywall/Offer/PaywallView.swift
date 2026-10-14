@@ -29,6 +29,9 @@ struct PaywallView: View {
     @State private var isOpening = false
     /// The scroll view's height between the logo and the buy button.
     @State private var visibleHeight: CGFloat = 0
+    /// The offer drops in once the prices are in, so they don't swap in halfway
+    /// through the drop. A slow App Store only holds it for a moment.
+    @State private var isEntranceReady = false
 
     init(
         session: AuthSession?,
@@ -69,6 +72,7 @@ struct PaywallView: View {
                     plans: plans,
                     isLoadingPlans: selectedPresentation.isLoading,
                     showsTrialReminder: selectedPresentation.hasFreeTrial,
+                    isEntranceReady: isEntranceReady,
                     billingPeriod: $viewModel.billingPeriod
                 )
                 // The offer fills the first screen, so restore, legal links and
@@ -98,6 +102,15 @@ struct PaywallView: View {
                 return
             }
             await viewModel.loadProducts()
+        }
+        .task {
+            try? await Task.sleep(for: .milliseconds(600))
+            isEntranceReady = true
+        }
+        .onChange(of: selectedPresentation.isLoading, initial: true) { _, isLoading in
+            if !isLoading {
+                isEntranceReady = true
+            }
         }
         .task(id: allowsInviteEntry ? pendingInviteCode : nil) {
             await previewPendingInvite()

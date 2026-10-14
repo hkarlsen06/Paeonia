@@ -28,6 +28,7 @@ struct GameDrawingCanvas: View {
             )
             .task { board.canvasDidLayout(side: side) }
             .onChange(of: side) { _, newSide in board.canvasDidLayout(side: newSide) }
+            .overlay { WidgetDrawingSizePreview(viewModel: board) }
         }
         .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
         .accessibilityIdentifier(identifier)

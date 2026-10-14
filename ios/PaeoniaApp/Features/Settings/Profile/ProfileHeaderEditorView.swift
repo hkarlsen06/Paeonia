@@ -217,8 +217,8 @@ extension ProfileHeaderEditorView {
 
     private var supportingCopy: some View {
         VStack(spacing: PaeoniaSpacing.space4) {
-            if draft.showsSingleWordHint {
-                Text(.authOnboardingDisplayNameSingleWordHint)
+            if draft.showsFirstNameHint {
+                Text(.authOnboardingDisplayNameFirstNameHint)
                     .foregroundStyle(.paeoniaWarning)
             }
 

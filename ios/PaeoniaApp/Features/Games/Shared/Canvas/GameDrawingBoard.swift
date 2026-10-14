@@ -17,6 +17,7 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     private(set) var selectedColorChoiceID: String? = WidgetDrawingColorChoice.palette[0].id
     private(set) var selectedCGColor: CGColor = WidgetDrawingColorChoice.palette[0].uiColor.cgColor
     private(set) var toolWidthFraction: CGFloat = 0.4
+    private(set) var isAdjustingToolWidth = false
     private(set) var toolConfigurationRevision = 0
     /// The side of the square canvas on screen, in points. Zero until laid out.
     private(set) var canvasSide: CGFloat = 0
@@ -44,8 +45,12 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
         drawing.strokes.isEmpty
     }
 
+    var toolWidth: CGFloat {
+        selectedTool.width(forFraction: toolWidthFraction)
+    }
+
     var pencilKitTool: any PKTool {
-        selectedTool.pencilKitTool(color: selectedUIColor, width: selectedTool.width(forFraction: toolWidthFraction))
+        selectedTool.pencilKitTool(color: selectedUIColor, width: toolWidth)
     }
 
     /// The drawing at the size every phone exchanges.
@@ -93,6 +98,10 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
         guard toolWidthFraction != clamped else { return }
         toolWidthFraction = clamped
         toolConfigurationRevision += 1
+    }
+
+    func setAdjustingToolWidth(_ isAdjusting: Bool) {
+        isAdjustingToolWidth = isAdjusting
     }
 
     /// Apple Pencil double tap. It switches between the drawing tool and the

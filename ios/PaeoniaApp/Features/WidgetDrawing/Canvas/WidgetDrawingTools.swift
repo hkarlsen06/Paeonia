@@ -119,7 +119,7 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
         case .pen, .fill:
             // PencilKit's `.pen` ink sizes finger strokes by speed and mostly
             // ignores the width, so the size slider barely changed it. Monoline
-            // draws exactly the width it is given.
+            // keeps a steady width, twice the one it is given (see `drawnWidth`).
             PKInkingTool(.monoline, color: color, width: clampedWidth)
         case .pencil:
             PKInkingTool(.pencil, color: color, width: clampedWidth)
@@ -140,9 +140,22 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
         return range.lowerBound + (range.upperBound - range.lowerBound) * clampedFraction
     }
 
+    /// How thick the line on the canvas is when PencilKit is given `width`.
+    /// Monoline draws twice the width. Rendering the points of real finger
+    /// strokes gave lines of 2, 11 and 24 points for widths 1, 5.4 and 12. The
+    /// pencil and the eraser draw about the width they are given.
+    func drawnWidth(_ width: CGFloat) -> CGFloat {
+        switch self {
+        case .pen, .fill:
+            width * 2
+        case .pencil, .eraser:
+            width
+        }
+    }
+
     /// Each tool has its own width range, which is why a single fixed slider
     /// range cannot be shared. Monoline reports `0.5...4`, too thin to be
-    /// useful, but it draws wider widths correctly, so the pen sets its own.
+    /// useful, but it takes wider widths too, so the pen sets its own.
     var validWidthRange: ClosedRange<CGFloat> {
         switch self {
         case .pen, .fill:

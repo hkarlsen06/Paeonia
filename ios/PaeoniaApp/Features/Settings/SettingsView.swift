@@ -437,7 +437,8 @@ extension SettingsView {
             bannerCenter.show(
                 .error(
                     title: String(localized: .settingsPurchasesLinkedElsewhereTitle),
-                    message: String(localized: .settingsPurchasesLinkedElsewhereMessage)
+                    message: String(localized: .settingsPurchasesLinkedElsewhereMessage),
+                    timing: .untilDismissed
                 )
             )
         }

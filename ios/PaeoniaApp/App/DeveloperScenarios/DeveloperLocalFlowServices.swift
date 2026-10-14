@@ -41,7 +41,7 @@
 
     func completeOnboarding(displayName: String, timeZoneID: String) throws -> AuthSession {
       guard let session else { throw AuthServiceError.noActiveSession }
-      guard let displayName = AuthDisplayNamePolicy.validatedSingleName(from: displayName) else {
+      guard let displayName = AuthDisplayNamePolicy.validatedName(from: displayName) else {
         throw AuthServiceError.invalidDisplayName
       }
       let completed = session.completingOnboarding(
@@ -54,7 +54,7 @@
 
     func updateProfile(displayName: String) throws -> AuthSession {
       guard let session else { throw AuthServiceError.noActiveSession }
-      guard let displayName = AuthDisplayNamePolicy.validatedSingleName(from: displayName) else {
+      guard let displayName = AuthDisplayNamePolicy.validatedName(from: displayName) else {
         throw AuthServiceError.invalidDisplayName
       }
       let updated = AuthSession(
@@ -298,7 +298,7 @@
       AppleSignInCredential(
         idToken: "developer-apple-token",
         nonce: "developer-nonce",
-        fullName: "Alex"
+        givenName: "Alex"
       )
     }
   }

@@ -12,6 +12,10 @@ protocol WidgetDrawingToolControlling: AnyObject {
     var selectedCGColor: CGColor { get }
     var isColorSelectionEnabled: Bool { get }
     var toolWidthFraction: CGFloat { get }
+    /// The width the selected tool draws, in canvas points.
+    var toolWidth: CGFloat { get }
+    /// The size slider is being dragged, so the canvas shows the size.
+    var isAdjustingToolWidth: Bool { get }
     var canUndoDrawing: Bool { get }
     var canRedoDrawing: Bool { get }
 
@@ -19,6 +23,7 @@ protocol WidgetDrawingToolControlling: AnyObject {
     func selectColorChoice(_ choice: WidgetDrawingColorChoice)
     func selectCustomColor(_ color: CGColor)
     func updateToolWidthFraction(_ fraction: CGFloat)
+    func setAdjustingToolWidth(_ isAdjusting: Bool)
     func undoDrawing()
     func redoDrawing()
     func handlePencilDoubleTap(_ action: PencilPreferredAction)
@@ -118,7 +123,8 @@ struct WidgetDrawingSizeControlsView: View {
                 Image(systemName: "circle.fill")
                     .font(.system(size: 18, weight: .semibold))
                     .accessibilityHidden(true)
-            }
+            },
+            onEditingChanged: { viewModel.setAdjustingToolWidth($0) }
         )
         .tint(isSizeEnabled ? .paeoniaAccentPrimary : .paeoniaTextTertiary)
         .disabled(viewModel.selectedTool.isFill)
@@ -129,6 +135,56 @@ struct WidgetDrawingSizeControlsView: View {
     /// The eraser has a size but no color. The paint bucket has neither.
     private var isSizeEnabled: Bool {
         viewModel.isColorSelectionEnabled && !viewModel.selectedTool.isFill
+    }
+}
+
+/// While the size slider is dragged, a dot as thick as the line the tool
+/// draws, on an accent bubble in the middle of the canvas. The bubble keeps the
+/// dot visible over any drawing underneath.
+struct WidgetDrawingSizePreview: View {
+    let viewModel: any WidgetDrawingToolControlling
+
+    var body: some View {
+        ZStack {
+            if viewModel.isAdjustingToolWidth {
+                Circle()
+                    .fill(.paeoniaAccentPrimary)
+                    .frame(width: bubbleSize, height: bubbleSize)
+                    .overlay { dot }
+                    .shadow(color: .black.opacity(0.22), radius: 12, x: 0, y: 4)
+                    .transition(.opacity)
+            }
+        }
+        .animation(PaeoniaMotion.stateChange, value: viewModel.isAdjustingToolWidth)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private var tool: WidgetDrawingTool {
+        viewModel.selectedTool
+    }
+
+    /// Fits the tool's thickest line, so the bubble keeps one size during a drag.
+    private var bubbleSize: CGFloat {
+        max(56, tool.drawnWidth(tool.validWidthRange.upperBound) + PaeoniaSpacing.space32)
+    }
+
+    /// The eraser has no ink, so it shows as a ring. The dark edge sits inside
+    /// the dot, so the size stays exact, and keeps ink the color of the bubble
+    /// visible.
+    @ViewBuilder
+    private var dot: some View {
+        let width = tool.drawnWidth(viewModel.toolWidth)
+        if tool.isEraser {
+            Circle()
+                .strokeBorder(.paeoniaTextInverse, lineWidth: 1.5)
+                .frame(width: width, height: width)
+        } else {
+            Circle()
+                .fill(Color(cgColor: viewModel.selectedCGColor))
+                .overlay { Circle().strokeBorder(.paeoniaTextInverse.opacity(0.6), lineWidth: 1) }
+                .frame(width: width, height: width)
+        }
     }
 }
 

@@ -48,6 +48,10 @@ export const complete_profile_onboarding = mutation({
       checkViolation("profiles", "profiles_time_zone_id_check");
     }
     const profile = await requireActiveProfile(ctx, userId);
+    // Setup ends with a photo: the one picked now, one already linked, or the imported Google photo.
+    if (!photoId && !profile.profile_photo_asset_id && !profile.provider_profile_photo_asset_id) {
+      fail("23514", "a profile photo is required to finish setup");
+    }
     const now = nowIso();
     const updated = await updateProfile(ctx, profile, {
       time_zone_id: args.p_time_zone_id,
@@ -63,9 +67,11 @@ export const update_own_profile = mutation({
   args: { p_display_name: v.string(), p_profile_photo_asset_id: v.optional(v.union(v.null(), v.string())) },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
-    const displayName = btrim(args.p_display_name);
-    if (charLength(displayName) < 1 || charLength(displayName) > 80 || /\s/u.test(displayName)) {
-      fail("23514", "display name must be one name between 1 and 80 characters");
+    // One or two words, so a double name like "Anne Marie" fits but a surname does not.
+    const words = args.p_display_name.split(/\s+/u).filter((word) => word !== "");
+    const displayName = words.join(" ");
+    if (words.length < 1 || words.length > 2 || charLength(displayName) > 80) {
+      fail("23514", "display name must be one or two names and at most 80 characters");
     }
     const photoId = optionalUuidArg(args.p_profile_photo_asset_id);
     const profile = await requireActiveProfile(ctx, userId);

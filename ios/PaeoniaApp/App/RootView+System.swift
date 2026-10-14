@@ -147,23 +147,11 @@ extension RootView {
             .info(
                 title: notice.title,
                 message: notice.message,
-                imageData: partnerAvatarData(),
+                imageData: PaeoniaAppGroup.partnerAvatarData(),
                 isTappable: true
             )
         )
         PaeoniaNotificationRouter.shared.consumeForegroundNotice()
-    }
-
-    /// Reads the partner avatar the app stages in the shared App Group (the same
-    /// image the notification service extension uses) so the in-app notice can
-    /// show the partner's face instead of a generic icon.
-    private func partnerAvatarData() -> Data? {
-        guard let url = PaeoniaAppGroup.containerURL?
-            .appendingPathComponent(PaeoniaAppGroup.communicationPartnerAvatarPath)
-        else {
-            return nil
-        }
-        return try? Data(contentsOf: url)
     }
 
     func showBanner(for notice: RootNotice?) {
@@ -174,7 +162,8 @@ extension RootView {
         bannerCenter.show(
             .error(
                 title: String(localized: notice.title),
-                message: String(localized: notice.message)
+                message: String(localized: notice.message),
+                timing: notice.bannerTiming
             )
         )
         viewModel.dismissNotice()
@@ -188,7 +177,9 @@ extension RootView {
         bannerCenter.show(
             .error(
                 title: String(localized: notice.title),
-                message: String(localized: notice.message(partnerName: partnerNameForCopy))
+                message: String(localized: notice.message(partnerName: partnerNameForCopy)),
+                // Location permission is fixed in Settings, after the banner would have gone.
+                timing: notice == .permissionDenied ? .untilDismissed : .standard
             )
         )
         locationViewModel.dismissNotice()

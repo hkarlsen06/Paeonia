@@ -2,12 +2,15 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
-/// Profile setup right after the first sign-in: a name and an optional photo.
+/// Profile setup right after the first sign-in: a photo and a name, both required.
+/// A Google photo imported at sign-in shows in the avatar and counts as the photo.
 /// Continue sits at the bottom, with sign out and account deletion as quiet links
 /// under it. The keyboard covers them while the name is typed, and the keyboard's
 /// Continue key submits.
 struct AuthOnboardingView: View {
     let isWorking: Bool
+    /// The photo already on the account, such as the imported Google photo.
+    let savedPhotoAssetID: UUID?
     let onCompleteOnboarding: (String, Data?) -> Void
     let onSignOut: () -> Void
     let onDeleteAccount: () -> Void
@@ -21,6 +24,9 @@ struct AuthOnboardingView: View {
     /// The user tapped Continue. The spinner shows only while that save runs,
     /// not while a sign-out from the menu is running.
     @State private var hasSubmitted = false
+    /// The user tapped Continue without a photo. The note under the photo stays
+    /// until a photo is picked.
+    @State private var triedWithoutPhoto = false
     @FocusState private var isNameFocused: Bool
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
@@ -32,6 +38,7 @@ struct AuthOnboardingView: View {
         onDeleteAccount: @escaping () -> Void
     ) {
         self.isWorking = isWorking
+        self.savedPhotoAssetID = session?.profilePhotoAssetID
         self.onCompleteOnboarding = onCompleteOnboarding
         self.onSignOut = onSignOut
         self.onDeleteAccount = onDeleteAccount
@@ -84,7 +91,7 @@ struct AuthOnboardingView: View {
 
     private var onboardingContent: some View {
         VStack(spacing: PaeoniaSpacing.space20) {
-            profilePhotoPicker
+            profilePhotoSection
                 .screenEntrance(order: 1)
 
             VStack(spacing: PaeoniaSpacing.space8) {
@@ -104,28 +111,36 @@ struct AuthOnboardingView: View {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
                 displayNameField
 
-                if showsSingleWordHint {
-                    Text(.authOnboardingDisplayNameSingleWordHint)
+                if showsFirstNameHint {
+                    Text(.authOnboardingDisplayNameFirstNameHint)
                         .font(PaeoniaTypography.caption)
                         .foregroundStyle(.paeoniaTextSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .animation(PaeoniaMotion.stateChange, value: showsSingleWordHint)
+            .animation(PaeoniaMotion.stateChange, value: showsFirstNameHint)
             .screenEntrance(order: 3)
         }
         .frame(maxWidth: .infinity)
     }
 
     private var validatedName: String? {
-        AuthDisplayNamePolicy.validatedSingleName(from: displayName)
+        AuthDisplayNamePolicy.validatedName(from: displayName)
     }
 
-    /// The single-word rule is otherwise invisible: a multi-word name just leaves
-    /// Continue disabled with no explanation.
-    private var showsSingleWordHint: Bool {
+    /// The two-word limit is otherwise invisible: a first name with a surname just
+    /// leaves Continue disabled with no explanation.
+    private var showsFirstNameHint: Bool {
         displayName.trimmedNonEmpty != nil && validatedName == nil
+    }
+
+    private var hasPhoto: Bool {
+        selectedProfilePhotoData != nil || savedPhotoAssetID != nil
+    }
+
+    private var showsPhotoRequiredHint: Bool {
+        triedWithoutPhoto && !hasPhoto
     }
 
     private var isSaving: Bool {
@@ -158,7 +173,8 @@ struct AuthOnboardingView: View {
             Text(.authOnboardingCompleteButton)
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: isSaving))
-        .disabled(validatedName == nil || (isWorking && !isSaving))
+        // Stays tappable while something is missing, so a tap can point at it.
+        .disabled(isWorking && !isSaving)
         .accessibilityIdentifier("auth.onboarding.complete")
     }
 
@@ -193,7 +209,11 @@ struct AuthOnboardingView: View {
     }
 
     private func complete() {
-        guard !isWorking, let name = validatedName else {
+        guard !isWorking else {
+            return
+        }
+        guard hasPhoto, let name = validatedName else {
+            showMissingRequirements()
             return
         }
 
@@ -201,6 +221,40 @@ struct AuthOnboardingView: View {
         hasSubmitted = true
         PaeoniaHaptics.profileSetupSent()
         onCompleteOnboarding(name, selectedProfilePhotoData)
+    }
+
+    /// Points at what still blocks setup: a note and a stronger ring on the photo,
+    /// and the keyboard for a missing or too long name.
+    private func showMissingRequirements() {
+        PaeoniaHaptics.validationError()
+        if !hasPhoto {
+            triedWithoutPhoto = true
+            AccessibilityNotification.Announcement(
+                String(localized: .authOnboardingProfilePhotoRequired)
+            ).post()
+        }
+        if validatedName == nil {
+            isNameFocused = true
+        }
+    }
+}
+
+// MARK: - Photo
+
+extension AuthOnboardingView {
+    private var profilePhotoSection: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            profilePhotoPicker
+
+            if showsPhotoRequiredHint {
+                Text(.authOnboardingProfilePhotoRequired)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .animation(PaeoniaMotion.stateChange, value: showsPhotoRequiredHint)
     }
 
     private var profilePhotoPicker: some View {
@@ -211,7 +265,7 @@ struct AuthOnboardingView: View {
         ) {
             profilePhotoPreview
                 .overlay(alignment: .bottomTrailing) {
-                    Image(systemName: selectedProfilePhotoImage == nil ? "plus.circle.fill" : "pencil.circle.fill")
+                    Image(systemName: hasPhoto ? "pencil.circle.fill" : "plus.circle.fill")
                         .font(.title2.weight(.semibold))
                         .foregroundStyle(.paeoniaAccentPrimary)
                         .background(Circle().fill(.paeoniaBackgroundPrimary))
@@ -221,11 +275,12 @@ struct AuthOnboardingView: View {
         .disabled(isWorking)
         .accessibilityLabel(
             Text(
-                selectedProfilePhotoImage == nil
-                    ? .authOnboardingProfilePhotoAdd
-                    : .authOnboardingProfilePhotoChange
+                hasPhoto
+                    ? .authOnboardingProfilePhotoChange
+                    : .authOnboardingProfilePhotoAdd
             )
         )
+        .accessibilityIdentifier("auth.onboarding.profilePhoto")
     }
 
     private var profilePhotoPreview: some View {
@@ -234,6 +289,13 @@ struct AuthOnboardingView: View {
                 selectedProfilePhotoImage
                     .resizable()
                     .scaledToFill()
+            } else if let savedPhotoAssetID {
+                PaeoniaProfilePhotoAvatar(
+                    mediaAssetID: savedPhotoAssetID,
+                    name: displayName,
+                    tint: .paeoniaPartnerOne,
+                    size: 88
+                )
             } else {
                 Image(systemName: "person.crop.circle.fill")
                     .resizable()
@@ -247,8 +309,12 @@ struct AuthOnboardingView: View {
         .clipShape(Circle())
         .overlay {
             Circle()
-                .strokeBorder(.paeoniaAccentPrimary.opacity(0.25), lineWidth: 1)
+                .strokeBorder(
+                    .paeoniaAccentPrimary.opacity(showsPhotoRequiredHint ? 1 : 0.25),
+                    lineWidth: showsPhotoRequiredHint ? 2 : 1
+                )
         }
+        .animation(PaeoniaMotion.stateChange, value: showsPhotoRequiredHint)
         .accessibilityHidden(true)
     }
 
@@ -286,7 +352,6 @@ struct AuthOnboardingView: View {
         }
 
         selectedProfilePhotoData = imageData
-        // swiftlint:disable:next accessibility_label_for_image
         selectedProfilePhotoImage = Image(uiImage: image)
     }
 }

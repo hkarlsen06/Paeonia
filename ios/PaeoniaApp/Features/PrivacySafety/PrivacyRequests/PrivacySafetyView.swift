@@ -171,7 +171,8 @@ struct PrivacySafetyView: View {
             bannerCenter.show(
                 .error(
                     title: String(localized: .privacySafetyRequestFailedTitle),
-                    message: String(localized: .privacySafetyRequestFailedMessage)
+                    message: String(localized: .privacySafetyRequestFailedMessage),
+                    timing: .untilDismissed
                 )
             )
         case .correctionDetailsRequired:

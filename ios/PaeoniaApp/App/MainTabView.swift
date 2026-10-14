@@ -216,6 +216,9 @@ struct MainTabView: View {
         .task(id: identity.currentUserID) {
             await gamesViewModel.observeStoreChanges()
         }
+        .onChange(of: gamesViewModel.partnerGameKinds) { old, new in
+            announcePartnerGame(GamesViewModel.openedPartnerGame(from: old, to: new))
+        }
         // Names, photos and the couple arrive after launch. They never reload the games.
         .onChange(of: gamesParticipants) { _, participants in gamesViewModel.configure(participants: participants) }
         .task(id: identity.currentUserID) {

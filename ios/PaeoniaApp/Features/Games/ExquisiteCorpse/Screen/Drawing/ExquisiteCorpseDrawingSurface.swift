@@ -99,6 +99,7 @@ struct ExquisiteCorpseDrawingSurface: View {
                 ExquisiteCorpseFoldLineOverlay(side: side, label: .exquisiteCorpseDrawFoldLabel(partnerName))
             }
         }
+        .overlay { WidgetDrawingSizePreview(viewModel: board) }
         .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
         .accessibilityIdentifier("corpse.canvas")
     }

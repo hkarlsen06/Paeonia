@@ -40,6 +40,7 @@ Decided on 2026-10-12.
 - **Live is not deferred.** When a game's design includes live play, live ships in the game's first version.
 - **Invite to play.** Every game with live play has a "Tell [Name] you want to play" button. It shows when the partner doesn't have the game open. Tapping it sends the partner a push, "[Name] wants to play [game] with you", and opening the push goes straight into the game. A partner can send one invite every 15 minutes. Until then the button shows "Sent".
 - **Partner in a game on Us.** While the partner has a game open, its card from the Games tab also shows on the Us tab, so an invite opens in one tap. Only the game the partner is in shows there. A game that waits for your turn stays on the Games tab. The Games tab lists the one the partner is in first, then the games waiting for your turn.
+- **Partner opens a game on another tab.** When the partner opens a game while this person is on any tab but Home, a banner at the top says "Robin opened Ludo" with the partner's photo. It stays 7 seconds, longer than other notices, and tapping it opens that game. There is no banner while this person is already in that game or is answering a question. Leaving one of two open games shows nothing. `MainTabView.announcePartnerGame` owns it.
 - **Scores grow forever.** Scores never reset. There are no seasons or weekly matches.
 
 Decided on 2026-10-11.

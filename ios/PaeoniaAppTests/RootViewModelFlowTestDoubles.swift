@@ -200,7 +200,7 @@ final class StubAppleSignInProvider: AppleSignInProviding {
         if let error {
             throw error
         }
-        return AppleSignInCredential(idToken: "token", nonce: "nonce", fullName: nil, authorizationCode: code)
+        return AppleSignInCredential(idToken: "token", nonce: "nonce", givenName: nil, authorizationCode: code)
     }
 }
 
@@ -224,7 +224,7 @@ final class GatedAppleSignInProvider: AppleSignInProviding {
 
     func finish(code: String) {
         pending?.resume(
-            returning: AppleSignInCredential(idToken: "token", nonce: "nonce", fullName: nil, authorizationCode: code)
+            returning: AppleSignInCredential(idToken: "token", nonce: "nonce", givenName: nil, authorizationCode: code)
         )
         pending = nil
     }

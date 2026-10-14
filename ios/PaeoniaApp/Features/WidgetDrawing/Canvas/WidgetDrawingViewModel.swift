@@ -63,6 +63,7 @@ final class WidgetDrawingViewModel {
     /// Slider position in `0...1`. The actual PencilKit width is derived per tool
     /// so the slider always spans the selected tool's full width range.
     private(set) var toolWidthFraction: CGFloat = 0.4
+    private(set) var isAdjustingToolWidth = false
 
     var toolWidth: CGFloat {
         selectedTool.width(forFraction: toolWidthFraction)
@@ -263,6 +264,10 @@ final class WidgetDrawingViewModel {
 
         toolWidthFraction = clampedFraction
         toolConfigurationRevision += 1
+    }
+
+    func setAdjustingToolWidth(_ isAdjusting: Bool) {
+        isAdjustingToolWidth = isAdjusting
     }
 
     // MARK: - Canvas

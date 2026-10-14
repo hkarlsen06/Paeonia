@@ -24,7 +24,13 @@ enum PaywallError: Equatable {
     var bannerContent: PaeoniaBannerContent {
         isInformational
             ? .info(title: title, message: message)
-            : .error(title: title, message: message)
+            : .error(title: title, message: message, timing: staysUntilDismissed ? .untilDismissed : .standard)
+    }
+
+    /// The payment went through but did not open Paeonia, or the fix is with
+    /// support. The person needs the steps after the banner would have gone.
+    private var staysUntilDismissed: Bool {
+        self == .purchaseNotFinished || self == .purchaseLinkedToAnotherAccount
     }
 
     var title: String? {

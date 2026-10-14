@@ -83,14 +83,22 @@ describe("profile", () => {
   test("complete_profile_onboarding stores the time zone and finishes onboarding", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, { name: "Ada" });
-    const profile = await user.as.mutation(api.identity.complete_profile_onboarding, { p_time_zone_id: "Europe/Oslo" });
+    const photo = await addProfilePhoto(t, user.userId, "custom");
+    const profile = await user.as.mutation(api.identity.complete_profile_onboarding, {
+      p_time_zone_id: "Europe/Oslo",
+      p_profile_photo_asset_id: photo,
+    });
     expect(profile).toMatchObject({
+      profile_photo_asset_id: photo,
       time_zone_id: "Europe/Oslo",
       time_zone_updated_at: "2026-10-10T12:00:00.000Z",
       onboarding_completed_at: "2026-10-10T12:00:00.000Z",
       revision: 2,
     });
-    await expectFail(user.as.mutation(api.identity.complete_profile_onboarding, { p_time_zone_id: "  " }), "23514");
+    await expectFail(
+      user.as.mutation(api.identity.complete_profile_onboarding, { p_time_zone_id: "  ", p_profile_photo_asset_id: photo }),
+      "23514",
+    );
     await expectFail(
       user.as.mutation(api.identity.complete_profile_onboarding, {
         p_time_zone_id: "Europe/Oslo",
@@ -101,6 +109,28 @@ describe("profile", () => {
     );
   });
 
+  test("complete_profile_onboarding needs a photo but accepts the imported Google photo", async () => {
+    const t = newTest();
+    const user = await createSignedInUser(t, { name: "Ada" });
+    await expectFail(
+      user.as.mutation(api.identity.complete_profile_onboarding, { p_time_zone_id: "Europe/Oslo" }),
+      "23514",
+      "a profile photo is required",
+    );
+
+    const provider = await addProfilePhoto(t, user.userId, "provider");
+    await user.as.mutation(api.identity.set_own_provider_profile_photo, {
+      p_profile_photo_asset_id: provider,
+      p_source: "google",
+    });
+    const profile = await user.as.mutation(api.identity.complete_profile_onboarding, { p_time_zone_id: "Europe/Oslo" });
+    expect(profile).toMatchObject({
+      profile_photo_asset_id: null,
+      provider_profile_photo_asset_id: provider,
+      onboarding_completed_at: "2026-10-10T12:00:00.000Z",
+    });
+  });
+
   test("update_own_profile validates the name and clears the custom photo", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, { name: "Ada" });
@@ -108,10 +138,15 @@ describe("profile", () => {
     const provider = await addProfilePhoto(t, user.userId, "provider");
 
     await expectFail(
-      user.as.mutation(api.identity.update_own_profile, { p_display_name: "Two Names", p_profile_photo_asset_id: null }),
+      user.as.mutation(api.identity.update_own_profile, { p_display_name: "Anne Marie Hansen", p_profile_photo_asset_id: null }),
       "23514",
-      "display name must be one name",
+      "display name must be one or two names",
     );
+    const doubleName = await user.as.mutation(api.identity.update_own_profile, {
+      p_display_name: "  Anne   Marie ",
+      p_profile_photo_asset_id: null,
+    });
+    expect(doubleName[0]).toMatchObject({ display_name: "Anne Marie" });
     await expectFail(
       user.as.mutation(api.identity.update_own_profile, { p_display_name: "  ", p_profile_photo_asset_id: null }),
       "23514",
@@ -202,7 +237,11 @@ describe("profile", () => {
   test("a paired user can change their time zone during onboarding", async () => {
     const t = newTest();
     const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
-    const profile = await couple.first.as.mutation(api.identity.complete_profile_onboarding, { p_time_zone_id: "Asia/Tokyo" });
+    const photo = await addProfilePhoto(t, couple.first.userId, "custom");
+    const profile = await couple.first.as.mutation(api.identity.complete_profile_onboarding, {
+      p_time_zone_id: "Asia/Tokyo",
+      p_profile_photo_asset_id: photo,
+    });
     expect(profile?.time_zone_id).toBe("Asia/Tokyo");
   });
 });

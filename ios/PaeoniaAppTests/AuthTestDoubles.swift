@@ -43,7 +43,7 @@ actor AuthServiceSpy: AuthServicing {
         let session = AuthSession(
             id: "apple-test-user",
             provider: .apple,
-            displayName: credential.fullName,
+            displayName: credential.givenName,
             timeZoneID: nil,
             profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding
@@ -174,7 +174,7 @@ actor BlockingDeleteAuthService: AuthServicing {
         let session = AuthSession(
             id: "apple-test-user",
             provider: .apple,
-            displayName: credential.fullName,
+            displayName: credential.givenName,
             timeZoneID: nil,
             profilePhotoAssetID: nil,
             profileStatus: .needsOnboarding

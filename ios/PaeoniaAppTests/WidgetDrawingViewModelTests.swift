@@ -105,6 +105,14 @@ struct WidgetDrawingViewModelTests {
         #expect(largest.width == WidgetDrawingTool.eraser.validWidthRange.upperBound)
     }
 
+    /// The size preview shows the line the canvas draws. Monoline, the pen's
+    /// ink, draws twice the width PencilKit is given.
+    @Test func penDrawsTwiceItsWidthWhileOtherToolsDrawTheirWidth() {
+        #expect(WidgetDrawingTool.pen.drawnWidth(5) == 10)
+        #expect(WidgetDrawingTool.pencil.drawnWidth(5) == 5)
+        #expect(WidgetDrawingTool.eraser.drawnWidth(5) == 5)
+    }
+
     @Test func colorSelectionIsIgnoredWhileErasing() {
         let viewModel = WidgetDrawingViewModel()
         let pinkChoice = viewModel.colorChoices[2]

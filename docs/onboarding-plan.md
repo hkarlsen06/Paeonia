@@ -17,11 +17,11 @@ Supporting research is summarized at the end.
 
 ## Current Baseline (verified in code)
 
-Cold-launch intro → `SignInView` (single screen) → `AuthOnboardingView` (name + optional photo) → paywall at `limitedAuthenticated` (**before pairing**) → invite/join → `PairingCelebrationView` → `MainTabView`.
+Cold-launch intro → `SignInView` (single screen) → `AuthOnboardingView` (photo + name, both required) → paywall at `limitedAuthenticated` (**before pairing**) → invite/join → `PairingCelebrationView` → `MainTabView`.
 
 - Access states live in `ios/PaeoniaApp/Services/Access/AccessRoute.swift` (`AccessRouteResolver`). The paywall shows at `.limitedAuthenticated` and `.pairedPaywalled`.
 - The paywall already sells a **14-day free trial** (introductory offer live in App Store Connect) and embeds invite-code entry (`ios/PaeoniaApp/Features/Paywall/Components/PaywallInviteCodeView.swift`), so the joining partner pays nothing — one `coupleEntitlement` covers the couple.
-- Post-auth setup collects only display name (single word, prefilled from Apple/Google) plus an optional photo (`ios/PaeoniaApp/Features/Auth/AuthBaselineViews.swift`, `AuthOnboardingView`). Timezone is captured silently.
+- Post-auth setup collects only a display name (one or two words, prefilled from Apple/Google) plus a required photo, which can be the Google photo imported at sign-in (`ios/PaeoniaApp/Features/Auth/AuthBaselineViews.swift`, `AuthOnboardingView`). Timezone is captured silently.
 - **Relationship dates are contextual and truthful.** Ordinary invite acceptance leaves `couples.started_on` unset. The Home tab milestone tile shows an honest setup state, either entitled partner can set or edit the date, and the local-first queue preserves the newest choice until both clients refresh.
 - **Permissions are contextual asks.** Push keeps its post-pairing timing, but `RootView` first presents a persisted one-benefit primer and requests the iOS permission only after an explicit continue. Location remains lazy at the map surface, where the empty state explains latest-location-only, foreground-only, no-history behavior before the system request.
 
@@ -67,9 +67,9 @@ Collect each item at the latest moment it is actually needed, tied to the benefi
 | Data / permission | Required | Collect when | Why there |
 |---|---|---|---|
 | Identity (Apple/Google) | Yes | The auth wall, after the hook | Nothing works without it; earn it first |
-| Display name (single word) | Yes | First post-auth step, prefilled | Partner sees it at celebration; ~2s |
+| Display name (one or two words) | Yes | First post-auth step, prefilled | Partner sees it at celebration; ~2s |
 | Timezone | Yes | Silent, at onboarding | Couple-day rituals need it; never ask |
-| Profile photo | Optional | Same setup step, skippable | Warms celebration + paired header |
+| Profile photo | Yes (Google photo counts) | Same setup step | Warms celebration + paired header |
 | The pairing link | Yes | After paywall (A); via link (B) | The activation gate |
 | Anniversary (`started_on`) | Deferred | Home tab milestone setup card | Makes the countdown truthful; contextual moment |
 | Push permission | Core loop | Primed, at/just-after pairing | Tie to "when {partner} draws or replies" |

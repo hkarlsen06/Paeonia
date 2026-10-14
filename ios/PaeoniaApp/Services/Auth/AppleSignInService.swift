@@ -151,7 +151,7 @@ extension AppleSignInService: ASAuthorizationControllerDelegate {
                 AppleSignInCredential(
                     idToken: identityTokenString,
                     nonce: nonce,
-                    fullName: Self.fullName(from: appleIDCredential.fullName),
+                    givenName: appleIDCredential.fullName?.givenName?.trimmedNonEmpty,
                     authorizationCode: appleIDCredential.authorizationCode.flatMap {
                         String(data: $0, encoding: .utf8)
                     }
@@ -168,15 +168,6 @@ extension AppleSignInService: ASAuthorizationControllerDelegate {
             return
         }
         finish(with: .failure(error))
-    }
-
-    private static func fullName(from components: PersonNameComponents?) -> String? {
-        guard let components else {
-            return nil
-        }
-
-        let name = PersonNameComponentsFormatter.localizedString(from: components, style: .default)
-        return name.trimmedNonEmpty
     }
 }
 

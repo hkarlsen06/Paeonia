@@ -261,6 +261,7 @@ struct HomeWidgetCard: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
+        .clipShape(DrawingCanvasShape())
     }
 }
 

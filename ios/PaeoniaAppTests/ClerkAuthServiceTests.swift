@@ -166,7 +166,7 @@ struct ClerkAuthServiceTests {
 
         do {
             _ = try await service.signInWithApple(
-                AppleSignInCredential(idToken: "id-token", nonce: "nonce", fullName: nil)
+                AppleSignInCredential(idToken: "id-token", nonce: "nonce", givenName: nil)
             )
             Issue.record("Expected the stalled sign-in to time out")
         } catch let error as URLError {
@@ -295,14 +295,14 @@ struct ClerkAuthServiceTests {
             AppleSignInCredential(
                 idToken: "id-token",
                 nonce: "nonce",
-                fullName: "Taylor Swift"
+                givenName: "Anne Marie"
             )
         )
 
         #expect(await gateway.appleIDToken == "id-token")
         #expect(session.provider == .apple)
-        #expect(session.displayName == "Taylor")
-        #expect(await gateway.updatedProfileDisplayName == "Taylor")
+        #expect(session.displayName == "Anne Marie")
+        #expect(await gateway.updatedProfileDisplayName == "Anne Marie")
         #expect(session.profileStatus == .needsOnboarding)
     }
 
@@ -317,7 +317,7 @@ struct ClerkAuthServiceTests {
             AppleSignInCredential(
                 idToken: "id-token",
                 nonce: "nonce",
-                fullName: "Taylor Swift"
+                givenName: "Taylor"
             )
         )
 
@@ -335,7 +335,7 @@ struct ClerkAuthServiceTests {
 
         await #expect(throws: URLError.self) {
             try await service.signInWithApple(
-                AppleSignInCredential(idToken: "id-token", nonce: "nonce", fullName: nil)
+                AppleSignInCredential(idToken: "id-token", nonce: "nonce", givenName: nil)
             )
         }
         #expect(await gateway.signOutCallCount == 1)
@@ -343,7 +343,7 @@ struct ClerkAuthServiceTests {
 
     @Test func googleSignInUsesOAuthGatewaySession() async throws {
         let gateway = FakeAuthGateway(
-            remoteSession: .test(provider: .unknown, displayName: "Riley Chen"),
+            remoteSession: .test(provider: .unknown, displayName: "Riley"),
             profile: .test(displayName: nil, onboardingCompletedAt: nil)
         )
         let service = ClerkAuthService(gateway: gateway)
@@ -357,7 +357,7 @@ struct ClerkAuthServiceTests {
         #expect(session.profileStatus == .needsOnboarding)
     }
 
-    @Test func googleSignInImportsProviderAvatarIntoPrivateProfileAndOnboardingPreservesIt() async throws {
+    @Test func googleSignInImportsProviderAvatarIntoPrivateProfileAndOnboardingKeepsIt() async throws {
         let importedAssetID = try #require(
             UUID(uuidString: "A6B39D76-11D0-4A4D-8B77-5AF09A9E85E1")
         )
@@ -420,14 +420,14 @@ struct ClerkAuthServiceTests {
         let service = ClerkAuthService(gateway: gateway)
 
         let session = try await service.completeOnboarding(
-            displayName: "  Jamie  ",
+            displayName: "  Anne   Marie  ",
             timeZoneID: "Europe/Oslo",
-            profilePhotoData: nil
+            profilePhotoData: Self.makeJPEGData()
         )
 
-        #expect(await gateway.updatedProfileDisplayName == "Jamie")
+        #expect(await gateway.updatedProfileDisplayName == "Anne Marie")
         #expect(await gateway.updatedTimeZoneID == "Europe/Oslo")
-        #expect(session.displayName == "Jamie")
+        #expect(session.displayName == "Anne Marie")
         #expect(session.profileStatus == .complete)
     }
 
@@ -462,7 +462,7 @@ struct ClerkAuthServiceTests {
         #expect(await profilePhotoCache.profilePhotoData(for: profilePhotoAssetID) != nil)
     }
 
-    @Test func completeOnboardingContinuesWhenProfilePhotoUploadFails() async throws {
+    @Test func completeOnboardingFailsWhenProfilePhotoUploadFails() async {
         let gateway = FakeAuthGateway(
             remoteSession: .test(provider: .apple),
             profile: .test(displayName: nil, onboardingCompletedAt: nil),
@@ -474,14 +474,15 @@ struct ClerkAuthServiceTests {
             profilePhotoCache: profilePhotoCache
         )
 
-        let session = try await service.completeOnboarding(
-            displayName: "Jamie",
-            timeZoneID: "Europe/Oslo",
-            profilePhotoData: Self.makeJPEGData()
-        )
+        await #expect(throws: AuthServiceError.invalidProfilePhoto) {
+            try await service.completeOnboarding(
+                displayName: "Jamie",
+                timeZoneID: "Europe/Oslo",
+                profilePhotoData: Self.makeJPEGData()
+            )
+        }
 
-        #expect(session.profileStatus == .complete)
-        #expect(session.profilePhotoAssetID == nil)
+        #expect(await gateway.updatedTimeZoneID == nil)
         #expect(await gateway.completedProfilePhotoAssetID == nil)
         #expect(await profilePhotoCache.storedMediaAssetIDs.isEmpty)
     }
@@ -512,7 +513,7 @@ struct ClerkAuthServiceTests {
         #expect(await profilePhotoCache.profilePhotoData(for: profilePhotoAssetID) == nil)
     }
 
-    @Test func completeOnboardingRejectsMultipleWords() async {
+    @Test func completeOnboardingRejectsMoreThanTwoWords() async {
         let gateway = FakeAuthGateway(
             remoteSession: .test(provider: .apple),
             profile: .test(displayName: nil, onboardingCompletedAt: nil)
@@ -521,9 +522,9 @@ struct ClerkAuthServiceTests {
 
         await #expect(throws: AuthServiceError.invalidDisplayName) {
             try await service.completeOnboarding(
-                displayName: "Jamie Lee",
+                displayName: "Jamie Lee Hansen",
                 timeZoneID: "Europe/Oslo",
-                profilePhotoData: nil
+                profilePhotoData: Self.makeJPEGData()
             )
         }
     }
@@ -674,16 +675,19 @@ struct ClerkAuthServiceTests {
         #expect(await gateway.markedForDeletionAssetIDs == [customAssetID])
     }
 
-    @Test func displayNamePolicyAllowsOnlyOneEnteredWord() {
-        #expect(AuthDisplayNamePolicy.validatedSingleName(from: "Jamie") == "Jamie")
-        #expect(AuthDisplayNamePolicy.validatedSingleName(from: "  Jamie  ") == "Jamie")
-        #expect(AuthDisplayNamePolicy.validatedSingleName(from: "Jamie Lee") == nil)
-        #expect(AuthDisplayNamePolicy.validatedSingleName(from: "   ") == nil)
+    @Test func displayNamePolicyAllowsOneOrTwoEnteredWords() {
+        #expect(AuthDisplayNamePolicy.validatedName(from: "Jamie") == "Jamie")
+        #expect(AuthDisplayNamePolicy.validatedName(from: "  Jamie  ") == "Jamie")
+        #expect(AuthDisplayNamePolicy.validatedName(from: "Anne Marie") == "Anne Marie")
+        #expect(AuthDisplayNamePolicy.validatedName(from: " Anne \n  Marie ") == "Anne Marie")
+        #expect(AuthDisplayNamePolicy.validatedName(from: "Anne Marie Hansen") == nil)
+        #expect(AuthDisplayNamePolicy.validatedName(from: "   ") == nil)
     }
 
-    @Test func displayNamePolicyNormalizesOAuthNamesToFirstName() {
-        #expect(AuthDisplayNamePolicy.normalizedFirstName(from: "Taylor Swift") == "Taylor")
-        #expect(AuthDisplayNamePolicy.normalizedFirstName(from: "  Riley Chen  ") == "Riley")
+    @Test func displayNamePolicyKeepsTheFirstTwoWordsOfProviderNames() {
+        #expect(AuthDisplayNamePolicy.normalizedFirstName(from: "Taylor") == "Taylor")
+        #expect(AuthDisplayNamePolicy.normalizedFirstName(from: "  Jan   Erik  ") == "Jan Erik")
+        #expect(AuthDisplayNamePolicy.normalizedFirstName(from: "Anne Marie Louise") == "Anne Marie")
         #expect(AuthDisplayNamePolicy.normalizedFirstName(from: "   ") == nil)
     }
 

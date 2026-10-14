@@ -21,8 +21,13 @@ enum MemoriesNotice: Equatable {
         case .photoSaved:
             .info(message: String(localized: .memoriesNoticePhotoSavedMessage))
         default:
-            .error(title: String(localized: title), message: String(localized: message))
+            .error(title: String(localized: title), message: String(localized: message), timing: timing)
         }
+    }
+
+    /// Photo access is fixed in Settings, and a removed memory means the changes are gone.
+    private var timing: PaeoniaBannerTiming {
+        self == .photoSaveDenied || self == .memoryRemoved ? .untilDismissed : .standard
     }
 
     private var title: LocalizedStringResource {

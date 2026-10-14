@@ -367,6 +367,12 @@ extension GamesViewModel {
         (overview?.presence ?? []).filter(\.partnerPresent).map(\.kind)
     }
 
+    /// The game the partner just opened. Both lists are freshest first. Leaving
+    /// one of two open games opens nothing.
+    nonisolated static func openedPartnerGame(from old: [GameKind], to new: [GameKind]) -> GameKind? {
+        new.first { !old.contains($0) }
+    }
+
     /// The games the partner is in, then the games waiting for this person in
     /// catalog order, then the rest in catalog order.
     nonisolated static func hubOrder(

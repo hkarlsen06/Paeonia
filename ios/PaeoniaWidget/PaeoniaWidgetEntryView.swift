@@ -77,6 +77,7 @@ struct PaeoniaWidgetEntryView: View {
             .resizable()
             .interpolation(.high)
             .scaledToFit()
+            .clipShape(DrawingCanvasShape())
             .privacySensitive()
             .accessibilityLabel(drawingAccessibilityLabel(for: content))
     }
