@@ -155,7 +155,7 @@ The checklist for building a game. All seven kinds are already registered on the
 | ultimate_tic_tac_toe | ultimateTicTacToe / UltimateTicTacToe | ultimate-tic-tac-toe | BoardGames/UltimateTicTacToe | docs/games/board-games.md |
 
 - Backend: module `backend/convex/<camelKind>.ts` (function paths `<camelKind>:<name>`), helpers in `backend/convex/lib/<camelKind>.ts`, tests next to them. Tables start with the kind, such as `mind_meld_rounds`. The board games share `boardGames.ts`, `lib/boardGames.ts`, `board_games` and `board_game_*`.
-- Swift: every type, file, `GamesDestination` case, `SyncPendingOperationKind` case and `DeveloperScenario` case starts with the Swift prefix, such as `MindMeldHubModel` and `mindMeldReveal`. Tests go in `ios/PaeoniaAppTests/Games/<Folder>/`. Board games share `Features/Games/BoardGames/Shared/`.
+- Swift: every type, file, `GamesDestination` case, `SyncPendingOperationKind` case and `DeveloperScenario` static member starts with the Swift prefix, such as `MindMeldHubModel` and `mindMeldReveal`. Tests go in `ios/PaeoniaAppTests/Games/<Folder>/`. Board games share `Features/Games/BoardGames/Shared/`.
 - String Catalog keys start with the Swift prefix, such as `mindMeldRevealTitle`, so each game's keys sit together. Add English and Norwegian Bokmal for every key. Keys that start with `games` belong to the shared tab.
 
 ### Backend
@@ -182,7 +182,7 @@ Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`
 7. Presence and invites: while your screen is open, send `dependencies.gateway.setPresence(.<kind>, isPresent: true)` every `GamePresence.heartbeatInterval`, and `false` when it closes (`DrawAndGuessViewModel+Partner.swift`). Read the partner's heartbeat and your last invite from `overview.presence(for: .<kind>)`, judge them with `GamePresence.isFresh` and `GameInviteState.make`, and send invites with `dependencies.gateway.sendInvite(.<kind>)`.
 8. Live play: a message type that conforms to `GameLiveMessage`, sent through a `GameLiveChannel` on a `WidgetLiveConnection` made with `GameLiveTicket.provider(for: .<kind>)`.
 9. Queued writes: `SyncPendingOperationKind` cases in `Services/Sync/SyncTypes.swift`, and your handlers in `Features/Games/Data/GamesPendingOperationRegistry.swift`.
-10. Developer scenarios: cases in `App/DeveloperScenarios/DeveloperScenario.swift` (title, subtitle, category `.games`), routing in `DeveloperScenarioViews.swift`, and your dependency fields in `DeveloperGamesScenarioFactory.dependencies(for:)` so the hub scenarios show your card.
+10. Developer scenarios: a new file `App/DeveloperScenarios/DeveloperScenario+<Prefix>.swift`, like `DeveloperScenario+MindMeld.swift`. Each scenario is a `static let` with its id, title, detail, category `.games` and the screen it opens, and one `static let <camelKind>: [DeveloperScenario]` lists them in menu order. Add that list to `allCases` in `DeveloperScenario.swift`. Also add your dependency fields in `DeveloperGamesScenarioFactory.dependencies(for:)` so the hub scenarios show your card.
 11. Shared pieces: take the reload gate (`GameReloadGate`), stars (`GameStars`) and drawing pieces such as the canvas and stroke replay from `Features/Games/Shared/` instead of copying Draw & Guess code.
 
 ### Ownership

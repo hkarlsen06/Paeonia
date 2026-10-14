@@ -51,6 +51,13 @@
       }
     }
 
+    /// Scenarios are values in per-game lists, so the compiler no longer catches a
+    /// repeated id or a game list added twice.
+    @Test func everyScenarioIDIsUnique() {
+      let ids = DeveloperScenario.allCases.map(\.rawValue)
+      #expect(Set(ids).count == ids.count)
+    }
+
     @Test func everyCategoryContainsAtLeastOneScenario() {
       for category in DeveloperScenario.Category.allCases {
         #expect(DeveloperScenario.allCases.contains { $0.category == category })

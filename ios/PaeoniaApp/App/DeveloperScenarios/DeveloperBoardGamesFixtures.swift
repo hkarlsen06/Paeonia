@@ -320,7 +320,7 @@
   extension DeveloperScenario {
     /// The board game this scenario opens full screen. Nil for every other
     /// scenario, including the hub.
-    var boardGame: DeveloperBoardGame? {
+    @MainActor var boardGame: DeveloperBoardGame? {
       guard self != .gamesHubBoardGames else { return nil }
       return DeveloperBoardGamesFixture.setups(for: self).first?.game
     }
