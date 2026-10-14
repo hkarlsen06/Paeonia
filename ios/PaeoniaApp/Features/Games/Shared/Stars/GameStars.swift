@@ -30,6 +30,8 @@ final class GameStars {
     /// Changes the person made while their write was still being saved in the queue.
     @ObservationIgnored private var savingStars: [UUID: Bool] = [:]
     @ObservationIgnored private var reloadGeneration = 0
+    /// The newest reload whose read is on screen.
+    @ObservationIgnored private var appliedReloadGeneration = 0
     /// Counts this person's star changes, so a server read can tell which items
     /// changed after it started.
     @ObservationIgnored private var changeCount = 0
@@ -115,8 +117,11 @@ final class GameStars {
             ownerUserID: userID,
             source: source
         )
-        // A newer reload started while this one waited. It has newer data.
-        guard generation == reloadGeneration, currentUserID() == userID else { return }
+        // A reload that started later and already finished has newer data. One that
+        // is still running does not stop this read, so a caller that awaits
+        // `reload()` sees its change on screen when it returns.
+        guard generation > appliedReloadGeneration, currentUserID() == userID else { return }
+        appliedReloadGeneration = generation
         serverStars = server
         // A write the queue read could not see yet still counts.
         pendingStars = (queued ?? pendingStars).merging(savingStars) { _, saving in saving }

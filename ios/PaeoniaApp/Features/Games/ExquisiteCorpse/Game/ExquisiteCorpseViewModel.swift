@@ -128,6 +128,8 @@ final class ExquisiteCorpseViewModel {
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGeneration = 0
+    /// The newest reload whose read is on screen.
+    @ObservationIgnored var appliedReloadGeneration = 0
 
     @ObservationIgnored var observationTask: Task<Void, Never>?
     @ObservationIgnored var heartbeatTask: Task<Void, Never>?

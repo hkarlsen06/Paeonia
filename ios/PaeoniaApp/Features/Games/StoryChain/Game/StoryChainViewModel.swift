@@ -109,6 +109,8 @@ final class StoryChainViewModel {
     @ObservationIgnored var now: Date
     @ObservationIgnored var localInviteSentAt: Date?
     @ObservationIgnored var reloadGeneration = 0
+    /// The newest reload whose read is on screen.
+    @ObservationIgnored var appliedReloadGeneration = 0
     @ObservationIgnored var isRunning = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var hasEnsuredGame = false
@@ -227,8 +229,11 @@ final class StoryChainViewModel {
         if currentUserID == userID, let first = notices.first {
             notice = GamesNotice(first)
         }
-        // A newer reload started while this one waited. It has newer data.
-        guard generation == reloadGeneration, currentUserID == userID else { return }
+        // A reload that started later and already finished has newer data. One that
+        // is still running does not stop this read, so a caller that awaits
+        // `reload()` sees its change on screen when it returns.
+        guard generation > appliedReloadGeneration, currentUserID == userID else { return }
+        appliedReloadGeneration = generation
 
         state = document.state
         savedDraft = document.draft

@@ -24,8 +24,11 @@ extension ExquisiteCorpseViewModel {
         if let stored = notices.last {
             notice = GamesNotice(stored)
         }
-        // A newer reload started while this one waited. It has newer data.
-        guard generation == reloadGeneration else { return }
+        // A reload that started later and already finished has newer data. One that
+        // is still running does not stop this read, so a caller that awaits
+        // `reload()` sees its change on screen when it returns.
+        guard generation > appliedReloadGeneration else { return }
+        appliedReloadGeneration = generation
 
         state = document.state
         overview = sharedOverview

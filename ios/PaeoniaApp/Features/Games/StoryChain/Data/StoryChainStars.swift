@@ -29,6 +29,8 @@ final class StoryChainStars {
     /// Changes the person made while their write was still being saved in the queue.
     @ObservationIgnored private var savingStars: [UUID: Bool] = [:]
     @ObservationIgnored private var reloadGeneration = 0
+    /// The newest reload whose read is on screen.
+    @ObservationIgnored private var appliedReloadGeneration = 0
     /// Counts this person's star changes, so a server read can tell which stories
     /// changed after it started.
     @ObservationIgnored private var changeCount = 0
@@ -107,8 +109,11 @@ final class StoryChainStars {
         let generation = reloadGeneration
         let document = await dependencies.storyChainCache.document(ownerUserID: userID)
         let queued = await Self.queuedStars(from: dependencies.pendingOperationStore, ownerUserID: userID)
-        // A newer reload started while this one waited. It has newer data.
-        guard generation == reloadGeneration, currentUserID() == userID else { return }
+        // A reload that started later and already finished has newer data. One that
+        // is still running does not stop this read, so a caller that awaits
+        // `reload()` sees its change on screen when it returns.
+        guard generation > appliedReloadGeneration, currentUserID() == userID else { return }
+        appliedReloadGeneration = generation
         // The oldest answer first: the first page, then the stars kept from star
         // writes and pages, then the state, which is the freshest for its own stories.
         var values = document.historyFirstPage?.starValues ?? [:]

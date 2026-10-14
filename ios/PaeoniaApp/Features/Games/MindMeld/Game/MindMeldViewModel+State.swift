@@ -15,8 +15,11 @@ extension MindMeldViewModel {
         // Kept here before the check below, so a newer reload still shows them.
         let refused = await cache.takeRefusedWords(ownerUserID: userID)
         refusedWords.append(contentsOf: refused)
-        // A newer reload started while this one waited. It has newer data.
-        guard generation == reloadGeneration, currentUserID == userID else { return }
+        // A reload that started later and already finished has newer data. One that
+        // is still running does not stop this read, so a caller that awaits
+        // `reload()` sees its change on screen when it returns.
+        guard generation > appliedReloadGeneration, currentUserID == userID else { return }
+        appliedReloadGeneration = generation
 
         state = document.state
         self.overview = overview
