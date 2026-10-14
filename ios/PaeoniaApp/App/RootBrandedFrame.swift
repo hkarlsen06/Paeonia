@@ -6,6 +6,7 @@ enum RootFramedScreen: Hashable {
     case paywall
     case pairing
     case relationshipEnded
+    case accountClosed
     case deletingAccount
 }
 

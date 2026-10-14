@@ -6,6 +6,8 @@ nonisolated struct AccessSyncSnapshot: Equatable, Sendable {
     let userEntitlement: RemoteUserEntitlement?
     let coupleEntitlement: RemoteCoupleEntitlement?
     let relationshipState: RemoteRelationshipState?
+    /// Paeonia banned this account. The other fields are then empty.
+    let isBanned: Bool
     let refreshedAt: Date
 
     init(
@@ -13,12 +15,14 @@ nonisolated struct AccessSyncSnapshot: Equatable, Sendable {
         userEntitlement: RemoteUserEntitlement?,
         coupleEntitlement: RemoteCoupleEntitlement?,
         relationshipState: RemoteRelationshipState?,
+        isBanned: Bool = false,
         refreshedAt: Date = Date()
     ) {
         self.ownerUserID = ownerUserID
         self.userEntitlement = userEntitlement
         self.coupleEntitlement = coupleEntitlement
         self.relationshipState = relationshipState
+        self.isBanned = isBanned
         self.refreshedAt = refreshedAt
     }
 }
@@ -47,6 +51,7 @@ extension AccessSyncSnapshotPersisting {
                 userEntitlement: existing.userEntitlement,
                 coupleEntitlement: existing.coupleEntitlement,
                 relationshipState: relationshipState.replacingStartedOn(startedOn),
+                isBanned: existing.isBanned,
                 refreshedAt: refreshedAt
             )
         )
@@ -76,6 +81,7 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
         localSnapshot.userEntitlementData = try encode(snapshot.userEntitlement)
         localSnapshot.coupleEntitlementData = try encode(snapshot.coupleEntitlement)
         localSnapshot.relationshipStateData = try encode(snapshot.relationshipState)
+        localSnapshot.isBanned = snapshot.isBanned
         localSnapshot.refreshedAt = snapshot.refreshedAt
 
         try context.save()
@@ -103,6 +109,7 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
                 RemoteRelationshipState.self,
                 from: snapshot.relationshipStateData
             ),
+            isBanned: snapshot.isBanned,
             refreshedAt: snapshot.refreshedAt
         )
     }

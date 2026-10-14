@@ -10,5 +10,6 @@ nonisolated enum AppState: CaseIterable, Equatable {
     case entitlementLost
     case entitlementRestored
     case relationshipEndedNotice
+    case accountClosed
     case deletingAccount
 }

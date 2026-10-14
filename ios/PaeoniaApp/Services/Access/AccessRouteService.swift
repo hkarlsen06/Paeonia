@@ -30,7 +30,8 @@ actor RemoteAccessRouteService: AccessRouteServicing {
             userEntitlement: accessSnapshot.userEntitlement,
             coupleEntitlement: accessSnapshot.coupleEntitlement,
             relationshipState: accessSnapshot.relationshipState,
-            hasPendingInvite: hasPendingInvite
+            hasPendingInvite: hasPendingInvite,
+            isBanned: accessSnapshot.isBanned
         )
 
         return AccessRouteResolution(

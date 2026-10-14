@@ -4,12 +4,24 @@ nonisolated struct RemoteAccessSnapshot: Codable, Equatable, Sendable {
     let userEntitlement: RemoteUserEntitlement?
     let coupleEntitlement: RemoteCoupleEntitlement?
     let relationshipState: RemoteRelationshipState?
+    /// A banned account gets `.banned` and nothing else.
+    var accountStatus: RemoteAccountStatus = .active
 
     enum CodingKeys: String, CodingKey {
         case userEntitlement = "user_entitlement"
         case coupleEntitlement = "couple_entitlement"
         case relationshipState = "relationship_state"
+        case accountStatus = "account_status"
     }
+
+    var isBanned: Bool {
+        accountStatus == .banned
+    }
+}
+
+nonisolated enum RemoteAccountStatus: String, Codable, Equatable, Sendable {
+    case active
+    case banned
 }
 
 nonisolated struct RemoteUserEntitlement: Codable, Equatable, Sendable {

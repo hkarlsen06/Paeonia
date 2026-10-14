@@ -40,6 +40,8 @@ extension RootView {
             .pairing
         case .relationshipEndedNotice:
             .relationshipEnded
+        case .accountClosed:
+            .accountClosed
         case .deletingAccount:
             .deletingAccount
         case .launching, .unauthenticated, .paired:
@@ -66,6 +68,12 @@ extension RootView {
             RelationshipEndedNoticeView(
                 isWorking: viewModel.isWorking,
                 onAcknowledge: acknowledgeRelationshipEnded
+            )
+        case .accountClosed:
+            AccountClosedView(
+                isWorking: viewModel.isWorking,
+                onSignOut: signOut,
+                onDeleteAccount: deleteAccount
             )
         case .deletingAccount:
             AuthDeletingAccountView()

@@ -37,7 +37,8 @@ nonisolated struct AccessLiveFeed: LiveFeed {
         if let stored = try? await snapshotStore.load(ownerUserID: ownerUserID),
            stored.userEntitlement == remote.userEntitlement,
            stored.coupleEntitlement == remote.coupleEntitlement,
-           stored.relationshipState == remote.relationshipState {
+           stored.relationshipState == remote.relationshipState,
+           stored.isBanned == remote.isBanned {
             return
         }
         if Task.isCancelled {
@@ -52,6 +53,7 @@ nonisolated struct AccessLiveFeed: LiveFeed {
                 userEntitlement: remote.userEntitlement,
                 coupleEntitlement: remote.coupleEntitlement,
                 relationshipState: remote.relationshipState,
+                isBanned: remote.isBanned,
                 refreshedAt: Date()
             )
         )

@@ -7,6 +7,7 @@ final class LocalAccessSyncSnapshot {
     var userEntitlementData: Data?
     var coupleEntitlementData: Data?
     var relationshipStateData: Data?
+    var isBanned: Bool = false
     var refreshedAt: Date
 
     init(
@@ -14,12 +15,14 @@ final class LocalAccessSyncSnapshot {
         userEntitlementData: Data? = nil,
         coupleEntitlementData: Data? = nil,
         relationshipStateData: Data? = nil,
+        isBanned: Bool = false,
         refreshedAt: Date = Date()
     ) {
         self.ownerUserID = ownerUserID
         self.userEntitlementData = userEntitlementData
         self.coupleEntitlementData = coupleEntitlementData
         self.relationshipStateData = relationshipStateData
+        self.isBanned = isBanned
         self.refreshedAt = refreshedAt
     }
 }

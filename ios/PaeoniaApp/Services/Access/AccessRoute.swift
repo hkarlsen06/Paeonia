@@ -7,6 +7,8 @@ nonisolated enum AccessRoute: Equatable, Sendable {
     case paired
     case pairedPaywalled
     case relationshipEndedNotice
+    /// Paeonia banned this account.
+    case accountClosed
 
     var appState: AppState {
         switch self {
@@ -22,6 +24,8 @@ nonisolated enum AccessRoute: Equatable, Sendable {
             .pairedPaywalled
         case .relationshipEndedNotice:
             .relationshipEndedNotice
+        case .accountClosed:
+            .accountClosed
         }
     }
 
@@ -29,7 +33,7 @@ nonisolated enum AccessRoute: Equatable, Sendable {
         switch self {
         case .limitedAuthenticated, .unpaired, .invitePending:
             true
-        case .paired, .pairedPaywalled, .relationshipEndedNotice:
+        case .paired, .pairedPaywalled, .relationshipEndedNotice, .accountClosed:
             false
         }
     }
@@ -40,18 +44,20 @@ nonisolated struct AccessRouteSnapshot: Equatable, Sendable {
     let coupleEntitlement: RemoteCoupleEntitlement?
     let relationshipState: RemoteRelationshipState?
     let hasPendingInvite: Bool
+    let isBanned: Bool
 
-    // swiftlint:disable:next unneeded_synthesized_initializer
     nonisolated init(
         userEntitlement: RemoteUserEntitlement?,
         coupleEntitlement: RemoteCoupleEntitlement?,
         relationshipState: RemoteRelationshipState?,
-        hasPendingInvite: Bool
+        hasPendingInvite: Bool,
+        isBanned: Bool = false
     ) {
         self.userEntitlement = userEntitlement
         self.coupleEntitlement = coupleEntitlement
         self.relationshipState = relationshipState
         self.hasPendingInvite = hasPendingInvite
+        self.isBanned = isBanned
     }
 }
 
@@ -93,6 +99,10 @@ nonisolated struct AccessRouteResolution: Equatable, Sendable {
 
 nonisolated struct AccessRouteResolver: Sendable {
     func route(for snapshot: AccessRouteSnapshot) -> AccessRoute {
+        if snapshot.isBanned {
+            return .accountClosed
+        }
+
         if let relationshipState = snapshot.relationshipState {
             if relationshipState.needsEndedNotice {
                 return .relationshipEndedNotice
@@ -143,6 +153,7 @@ nonisolated struct PendingJoinInviteFlowResolver: Sendable {
              .entitlementLost,
              .entitlementRestored,
              .relationshipEndedNotice,
+             .accountClosed,
              .deletingAccount:
             false
         }

@@ -22,6 +22,7 @@ struct PaeoniaAppTests {
             .entitlementLost,
             .entitlementRestored,
             .relationshipEndedNotice,
+            .accountClosed,
             .deletingAccount,
         ])
     }
@@ -1380,7 +1381,7 @@ private extension AccessRouteResolution {
                 partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
                 pairID: pairID
             )
-        case .limitedAuthenticated, .unpaired, .invitePending:
+        case .limitedAuthenticated, .unpaired, .invitePending, .accountClosed:
             return nil
         }
     }

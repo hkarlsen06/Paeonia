@@ -10,6 +10,1410 @@
     "+%lld" : {
 
     },
+    "admin.audit.banned" : {
+      "comment" : "Admin log entry for a ban. The placeholder is the banned user's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banned %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stengte ute %@"
+          }
+        }
+      }
+    },
+    "admin.audit.byAdmin" : {
+      "comment" : "Admin log line naming the admin who acted. The placeholder is the admin's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Av %@"
+          }
+        }
+      }
+    },
+    "admin.audit.byOperator" : {
+      "comment" : "Admin log line for an action done from the command line. The placeholder is the operator's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By %@ from the command line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Av %@ fra kommandolinjen"
+          }
+        }
+      }
+    },
+    "admin.audit.byUnknown" : {
+      "comment" : "Admin log line when the admin is not known.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By an admin"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Av en admin"
+          }
+        }
+      }
+    },
+    "admin.audit.emptyMessage" : {
+      "comment" : "Message shown when the admin log has no entries.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bans and lifted bans show up here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utestengelser og opphevede utestengelser vises her."
+          }
+        }
+      }
+    },
+    "admin.audit.emptyTitle" : {
+      "comment" : "Title shown when the admin log has no entries.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing logged yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingenting logget ennå"
+          }
+        }
+      }
+    },
+    "admin.audit.other" : {
+      "comment" : "Admin log entry for an action this app version does not know. The placeholder is the user's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changed %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endret %@"
+          }
+        }
+      }
+    },
+    "admin.audit.reason" : {
+      "comment" : "Admin log line with the ban reason. The placeholder is the reason.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reason: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grunn: %@"
+          }
+        }
+      }
+    },
+    "admin.audit.title" : {
+      "comment" : "Title of the admin log screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Admin log"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adminlogg"
+          }
+        }
+      }
+    },
+    "admin.audit.unbanned" : {
+      "comment" : "Admin log entry for a lifted ban. The placeholder is the user's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lifted the ban on %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opphevet utestengelsen av %@"
+          }
+        }
+      }
+    },
+    "admin.ban.confirmAction" : {
+      "comment" : "Destructive button that bans the user.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ban"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steng ute"
+          }
+        }
+      }
+    },
+    "admin.ban.confirmMessage" : {
+      "comment" : "Message of the ban confirmation. Explains what happens to the banned person and their partner. The placeholder is the user's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s relationship ends now. Their partner will see \"This relationship is closed\". %@ will see a screen saying their account is closed. Lifting the ban later does not bring the relationship back."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forholdet til %@ avsluttes nå. Partneren ser «Dette forholdet er avsluttet». %@ ser en skjerm som sier at kontoen er stengt. Å oppheve utestengelsen senere gir ikke forholdet tilbake."
+          }
+        }
+      }
+    },
+    "admin.ban.confirmTitle" : {
+      "comment" : "Title of the ban confirmation. The placeholder is the user's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ban %@?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stenge ute %@?"
+          }
+        }
+      }
+    },
+    "admin.ban.continue" : {
+      "comment" : "Button in the ban sheet that moves on to the confirmation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      }
+    },
+    "admin.ban.intro" : {
+      "comment" : "Intro text in the ban sheet. The placeholder is the user's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Say why you are banning %@. The reason is saved in the admin log."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv hvorfor du stenger ute %@. Grunnen lagres i adminloggen."
+          }
+        }
+      }
+    },
+    "admin.ban.reasonLabel" : {
+      "comment" : "Label of the ban reason field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reason"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grunn"
+          }
+        }
+      }
+    },
+    "admin.ban.reasonPlaceholder" : {
+      "comment" : "Placeholder of the ban reason field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why is this person being banned?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvorfor blir denne personen stengt ute?"
+          }
+        }
+      }
+    },
+    "admin.ban.title" : {
+      "comment" : "Title of the sheet where the admin writes why a user is banned.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ban user"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steng ute bruker"
+          }
+        }
+      }
+    },
+    "admin.detail.accountSection" : {
+      "comment" : "Section header for a user's account facts in the admin area.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konto"
+          }
+        }
+      }
+    },
+    "admin.detail.banAction" : {
+      "comment" : "Button that starts banning the user.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ban this user"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steng ute denne brukeren"
+          }
+        }
+      }
+    },
+    "admin.detail.bannedBy" : {
+      "comment" : "Label for the admin who banned the user.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banned by"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utestengt av"
+          }
+        }
+      }
+    },
+    "admin.detail.bannedOn" : {
+      "comment" : "Label for the date the user was banned.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banned on"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utestengt"
+          }
+        }
+      }
+    },
+    "admin.detail.banReason" : {
+      "comment" : "Label for the reason the user was banned.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reason"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grunn"
+          }
+        }
+      }
+    },
+    "admin.detail.banSection" : {
+      "comment" : "Section header for the ban details of a banned user.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ban"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utestengelse"
+          }
+        }
+      }
+    },
+    "admin.detail.cannotBan" : {
+      "comment" : "Footer explaining why there is no ban button for this user.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can't ban yourself or another admin."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan ikke stenge ute deg selv eller en annen admin."
+          }
+        }
+      }
+    },
+    "admin.detail.finishedSetup" : {
+      "comment" : "Label for the date the user finished the first setup.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finished setup"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fullførte oppsettet"
+          }
+        }
+      }
+    },
+    "admin.detail.fullAccess" : {
+      "comment" : "Label for whether the user has the paid features.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full access"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full tilgang"
+          }
+        }
+      }
+    },
+    "admin.detail.historyEmpty" : {
+      "comment" : "Shown when no admin has acted on this user.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No admin actions for this user."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen adminhandlinger for denne brukeren."
+          }
+        }
+      }
+    },
+    "admin.detail.historySection" : {
+      "comment" : "Section header for the admin log entries about one user.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historikk"
+          }
+        }
+      }
+    },
+    "admin.detail.no" : {
+      "comment" : "Answer no.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nei"
+          }
+        }
+      }
+    },
+    "admin.detail.notPaired" : {
+      "comment" : "Shown when the user has no partner in the app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not in a relationship"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke i et forhold"
+          }
+        }
+      }
+    },
+    "admin.detail.notYet" : {
+      "comment" : "Value shown when something has not happened yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke ennå"
+          }
+        }
+      }
+    },
+    "admin.detail.pairedSince" : {
+      "comment" : "Label for the date the couple got together in the app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together since"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen siden"
+          }
+        }
+      }
+    },
+    "admin.detail.partner" : {
+      "comment" : "Label for the user's partner. Tapping it opens the partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partner"
+          }
+        }
+      }
+    },
+    "admin.detail.provider" : {
+      "comment" : "Label for how the user signs in, such as Apple or Google.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signs in with"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logger inn med"
+          }
+        }
+      }
+    },
+    "admin.detail.relationshipSection" : {
+      "comment" : "Section header for the user's relationship in the admin area.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relationship"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forhold"
+          }
+        }
+      }
+    },
+    "admin.detail.reportsAgainst" : {
+      "comment" : "Label for how many reports other people sent about this user.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reports about them"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporter om dem"
+          }
+        }
+      }
+    },
+    "admin.detail.reportsBy" : {
+      "comment" : "Label for how many reports this user sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reports they sent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporter de har sendt"
+          }
+        }
+      }
+    },
+    "admin.detail.reportsSection" : {
+      "comment" : "Section header for reports in the admin area.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reports"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapporter"
+          }
+        }
+      }
+    },
+    "admin.detail.signedUp" : {
+      "comment" : "Label for the date the account was created.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Joined"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ble med"
+          }
+        }
+      }
+    },
+    "admin.detail.timeZone" : {
+      "comment" : "Label for the user's time zone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time zone"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidssone"
+          }
+        }
+      }
+    },
+    "admin.detail.unbanAction" : {
+      "comment" : "Button that lifts a ban.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lift the ban"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opphev utestengelsen"
+          }
+        }
+      }
+    },
+    "admin.detail.unknown" : {
+      "comment" : "Value shown when a fact is not known.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ukjent"
+          }
+        }
+      }
+    },
+    "admin.detail.userID" : {
+      "comment" : "Label for the user's ID, the long code that identifies the account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "User ID"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruker-ID"
+          }
+        }
+      }
+    },
+    "admin.detail.yes" : {
+      "comment" : "Answer yes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ja"
+          }
+        }
+      }
+    },
+    "admin.entry.title" : {
+      "comment" : "Row in the Us tab that opens the admin tools. Only the developer sees it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Admin"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Admin"
+          }
+        }
+      }
+    },
+    "admin.error.banFailed" : {
+      "comment" : "Banner when banning a user failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't ban this user. Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke stenge ute brukeren. Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      }
+    },
+    "admin.error.cannotBan" : {
+      "comment" : "Banner when the server refuses to ban the user because it is the admin or another admin.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can't ban yourself or another admin."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan ikke stenge ute deg selv eller en annen admin."
+          }
+        }
+      }
+    },
+    "admin.error.loadFailed" : {
+      "comment" : "Banner when an admin screen could not load.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load this. Check your connection, then pull down to try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste dette. Sjekk tilkoblingen, og dra ned for å prøve igjen."
+          }
+        }
+      }
+    },
+    "admin.error.notAdmin" : {
+      "comment" : "Banner when the account has no admin access.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This account doesn't have admin access."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne kontoen har ikke admintilgang."
+          }
+        }
+      }
+    },
+    "admin.error.reasonInvalid" : {
+      "comment" : "Banner when the ban reason is empty or too long.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write a reason of 1 to 500 characters."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv en grunn på 1 til 500 tegn."
+          }
+        }
+      }
+    },
+    "admin.error.unbanFailed" : {
+      "comment" : "Banner when lifting a ban failed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't lift the ban. Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke oppheve utestengelsen. Sjekk tilkoblingen og prøv igjen."
+          }
+        }
+      }
+    },
+    "admin.error.userNotFound" : {
+      "comment" : "Banner when the user no longer exists.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This user no longer exists. Go back and refresh the list."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brukeren finnes ikke lenger. Gå tilbake og oppdater listen."
+          }
+        }
+      }
+    },
+    "admin.hub.auditLog" : {
+      "comment" : "Admin screen row that opens the log of bans and unbans.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Admin log"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adminlogg"
+          }
+        }
+      }
+    },
+    "admin.hub.bannedUsers" : {
+      "comment" : "Admin screen row that opens the list of banned users.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banned users"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utestengte brukere"
+          }
+        }
+      }
+    },
+    "admin.hub.logSection" : {
+      "comment" : "Section header on the admin screen above the admin log row.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logg"
+          }
+        }
+      }
+    },
+    "admin.hub.peopleSection" : {
+      "comment" : "Section header on the admin screen above the user lists.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "People"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personer"
+          }
+        }
+      }
+    },
+    "admin.hub.title" : {
+      "comment" : "Title of the admin screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Admin"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Admin"
+          }
+        }
+      }
+    },
+    "admin.hub.users" : {
+      "comment" : "Admin screen row that opens the list of all users.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Users"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brukere"
+          }
+        }
+      }
+    },
+    "admin.notice.banned" : {
+      "comment" : "Banner after a user was banned.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "User banned."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brukeren er stengt ute."
+          }
+        }
+      }
+    },
+    "admin.notice.unbanned" : {
+      "comment" : "Banner after a ban was lifted.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ban lifted."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utestengelsen er opphevet."
+          }
+        }
+      }
+    },
+    "admin.provider.apple" : {
+      "comment" : "Name of the Apple sign-in method.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple"
+          }
+        }
+      }
+    },
+    "admin.provider.google" : {
+      "comment" : "Name of the Google sign-in method.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google"
+          }
+        }
+      }
+    },
+    "admin.provider.unknown" : {
+      "comment" : "Shown when the sign-in method is not known.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ukjent"
+          }
+        }
+      }
+    },
+    "admin.tag.admin" : {
+      "comment" : "Small tag on a user row for an admin.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Admin"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Admin"
+          }
+        }
+      }
+    },
+    "admin.tag.banned" : {
+      "comment" : "Small tag on a user row for a banned user.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banned"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utestengt"
+          }
+        }
+      }
+    },
+    "admin.unban.confirmAction" : {
+      "comment" : "Button that lifts the ban.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lift ban"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opphev"
+          }
+        }
+      }
+    },
+    "admin.unban.confirmMessage" : {
+      "comment" : "Message of the confirmation for lifting a ban.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They can use Paeonia again. Their old relationship stays closed."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De kan bruke Paeonia igjen. Det gamle forholdet forblir avsluttet."
+          }
+        }
+      }
+    },
+    "admin.unban.confirmTitle" : {
+      "comment" : "Title of the confirmation for lifting a ban. The placeholder is the user's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lift the ban on %@?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oppheve utestengelsen av %@?"
+          }
+        }
+      }
+    },
+    "admin.user.noName" : {
+      "comment" : "Name shown for a user who has not set a name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No name"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uten navn"
+          }
+        }
+      }
+    },
+    "admin.users.bannedEmptyMessage" : {
+      "comment" : "Message shown when nobody is banned.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nobody is banned right now."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen er utestengt akkurat nå."
+          }
+        }
+      }
+    },
+    "admin.users.bannedEmptyTitle" : {
+      "comment" : "Title shown when nobody is banned.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No banned users"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen utestengte brukere"
+          }
+        }
+      }
+    },
+    "admin.users.bannedTitle" : {
+      "comment" : "Title of the list of banned users in the admin area.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Banned users"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utestengte brukere"
+          }
+        }
+      }
+    },
+    "admin.users.emptyMessage" : {
+      "comment" : "Message shown when the admin user search finds nobody.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try a different name or user ID."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv et annet navn eller en annen bruker-ID."
+          }
+        }
+      }
+    },
+    "admin.users.emptyTitle" : {
+      "comment" : "Title shown when the admin user search finds nobody.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No users found"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fant ingen brukere"
+          }
+        }
+      }
+    },
+    "admin.users.searchPrompt" : {
+      "comment" : "Placeholder in the user search field in the admin area. A user ID is the long code that identifies one account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name or user ID"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navn eller bruker-ID"
+          }
+        }
+      }
+    },
+    "admin.users.searchTooShort" : {
+      "comment" : "Footer under the user list when the search text is a single character.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type at least 2 characters to search."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv minst 2 tegn for å søke."
+          }
+        }
+      }
+    },
+    "admin.users.title" : {
+      "comment" : "Title of the list of all users in the admin area.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Users"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brukere"
+          }
+        }
+      }
+    },
     "app.banner.dismiss.button" : {
       "comment" : "Accessibility label for the button that dismisses an in-app notification banner",
       "extractionState" : "manual",
@@ -78,6 +1482,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Paeonia"
+          }
+        }
+      }
+    },
+    "auth.accountClosed.emailSupport" : {
+      "comment" : "Main button on the closed-account screen. Opens an email to support@paeonia.no.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email support"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send e-post til support"
+          }
+        }
+      }
+    },
+    "auth.accountClosed.manageSubscription" : {
+      "comment" : "Button on the closed-account screen that opens the App Store subscription settings, so the person can cancel.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage subscription"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Administrer abonnement"
+          }
+        }
+      }
+    },
+    "auth.accountClosed.message" : {
+      "comment" : "Text under the title of the closed-account screen. The account was banned for breaking the rules.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia closed this account because it broke our rules, so the app no longer works with it. If you think this is a mistake, email us. If you pay for Paeonia, cancel the subscription so you aren't charged again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia har stengt denne kontoen fordi den brøt reglene våre, så appen virker ikke lenger med den. Tror du dette er en feil, send oss en e-post. Hvis du betaler for Paeonia, si opp abonnementet så du ikke blir trukket igjen."
+          }
+        }
+      }
+    },
+    "auth.accountClosed.title" : {
+      "comment" : "Title of the screen shown instead of the app after Paeonia banned this account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your account is closed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontoen din er stengt"
           }
         }
       }

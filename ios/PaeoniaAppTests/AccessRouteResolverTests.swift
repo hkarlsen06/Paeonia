@@ -104,6 +104,21 @@ struct AccessRouteResolverTests {
         )
     }
 
+    @Test func aBannedAccountRoutesToTheClosedScreenWhateverElseItHas() {
+        let route = resolver.route(
+            for: .test(
+                userEntitlement: .entitled(),
+                relationshipState: .active(),
+                hasPendingInvite: true,
+                isBanned: true
+            )
+        )
+
+        #expect(route == .accountClosed)
+        #expect(route.appState == .accountClosed)
+        #expect(!route.allowsInviteAcceptance)
+    }
+
     @Test func activeRelationshipWithCoupleEntitlementRoutesToPaired() {
         let route = resolver.route(
             for: .test(
@@ -198,13 +213,15 @@ private extension AccessRouteSnapshot {
         userEntitlement: RemoteUserEntitlement? = nil,
         coupleEntitlement: RemoteCoupleEntitlement? = nil,
         relationshipState: RemoteRelationshipState? = nil,
-        hasPendingInvite: Bool = false
+        hasPendingInvite: Bool = false,
+        isBanned: Bool = false
     ) -> AccessRouteSnapshot {
         AccessRouteSnapshot(
             userEntitlement: userEntitlement,
             coupleEntitlement: coupleEntitlement,
             relationshipState: relationshipState,
-            hasPendingInvite: hasPendingInvite
+            hasPendingInvite: hasPendingInvite,
+            isBanned: isBanned
         )
     }
 }

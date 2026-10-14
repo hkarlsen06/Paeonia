@@ -39,6 +39,7 @@ struct SettingsView: View {
     let loadMarkEditor: (@MainActor () async -> BoardMarkEditorModel?)?
     private let privacySafetyService: (any PrivacySafetyServicing)?
     private let privacyOperationProvider: (any SyncClientOperationProviding)?
+    private let adminGateway: (any AdminGateway)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .title) private var profileAvatarSize: CGFloat = 56
@@ -48,6 +49,8 @@ struct SettingsView: View {
     /// Lives here rather than on the profile screen, so a save keeps its state
     /// and still reports back after the user leaves that screen.
     @State private var profileEditor = ProfileEditorViewModel()
+    /// Decides whether the Admin row shows. The server checks again on every admin call.
+    @State private var adminAccess: AdminAccessModel
 
     @MainActor
     init(
@@ -73,7 +76,8 @@ struct SettingsView: View {
         onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {},
         loadMarkEditor: (@MainActor () async -> BoardMarkEditorModel?)? = nil,
         privacySafetyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
-        privacyOperationProvider: (any SyncClientOperationProviding)? = nil
+        privacyOperationProvider: (any SyncClientOperationProviding)? = nil,
+        adminGateway: (any AdminGateway)? = AdminGatewayFactory.makeDefault()
     ) {
         self.currentUserID = currentUserID
         self.currentDisplayName = currentDisplayName
@@ -96,6 +100,8 @@ struct SettingsView: View {
         self.loadMarkEditor = loadMarkEditor
         self.privacySafetyService = privacySafetyService
         self.privacyOperationProvider = privacyOperationProvider
+        self.adminGateway = adminGateway
+        _adminAccess = State(initialValue: AdminAccessModel(gateway: adminGateway))
         _viewModel = State(
             initialValue: viewModel ?? SettingsViewModel(userID: currentUserID?.uuidString)
         )
@@ -112,6 +118,7 @@ struct SettingsView: View {
                 }
                 relationshipSection
                 appSection
+                AdminSettingsSection(access: adminAccess, gateway: adminGateway)
                 helpSection
             }
             .listRowBackground(Color.paeoniaSurfacePrimary)
@@ -120,6 +127,9 @@ struct SettingsView: View {
         .paeoniaGroupedList()
         .navigationTitle(Text(.mainTabUs))
         .navigationBarTitleDisplayMode(.large)
+        .task {
+            await adminAccess.refresh()
+        }
         // The notices come from screens pushed on top of this one, but this view
         // owns the view model and stays alive underneath them, so the banner keeps
         // working from here.

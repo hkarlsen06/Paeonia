@@ -143,7 +143,8 @@ extension RootViewModel {
             userEntitlement: snapshot.userEntitlement,
             coupleEntitlement: snapshot.coupleEntitlement,
             relationshipState: snapshot.relationshipState,
-            hasPendingInvite: hasPendingInvite
+            hasPendingInvite: hasPendingInvite,
+            isBanned: snapshot.isBanned
         )
 
         return AccessRouteResolution(
@@ -288,6 +289,10 @@ extension RootViewModel {
             // but keep canonical local drafts, memories, and pending writes.
             return false
         case .relationshipEndedNotice:
+            return true
+        case .accountClosed:
+            // The ban ended the relationship, and the server no longer answers
+            // this account, so the ended notice never arrives to clear it.
             return true
         case .limitedAuthenticated, .unpaired, .invitePending:
             if let relationshipState = resolution.snapshot.relationshipState {
