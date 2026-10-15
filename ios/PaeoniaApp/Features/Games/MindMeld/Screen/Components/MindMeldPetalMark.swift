@@ -12,7 +12,7 @@ struct MindMeldPetalMark: View {
 }
 
 /// The petals as one path, so a translucent tint does not darken where they touch.
-struct MindMeldPetalShape: Shape {
+nonisolated struct MindMeldPetalShape: Shape {
     private static let petalCount = 5
 
     func path(in rect: CGRect) -> Path {

@@ -258,19 +258,20 @@ extension AuthOnboardingView {
     }
 
     private var profilePhotoPicker: some View {
-        PhotosPicker(
+        // The picker's label closure is not on the main actor, so it gets a ready-made view.
+        let preview = AuthOnboardingPhotoPreview(
+            image: selectedProfilePhotoImage,
+            savedPhotoAssetID: savedPhotoAssetID,
+            name: displayName,
+            hasPhoto: hasPhoto,
+            showsPhotoRequiredHint: showsPhotoRequiredHint
+        )
+        return PhotosPicker(
             selection: $selectedProfilePhotoItem,
             matching: .images,
             photoLibrary: .shared()
         ) {
-            profilePhotoPreview
-                .overlay(alignment: .bottomTrailing) {
-                    Image(systemName: hasPhoto ? "pencil.circle.fill" : "plus.circle.fill")
-                        .font(.title2.weight(.semibold))
-                        .foregroundStyle(.paeoniaAccentPrimary)
-                        .background(Circle().fill(.paeoniaBackgroundPrimary))
-                        .accessibilityHidden(true)
-                }
+            preview
         }
         .disabled(isWorking)
         .accessibilityLabel(
@@ -281,41 +282,6 @@ extension AuthOnboardingView {
             )
         )
         .accessibilityIdentifier("auth.onboarding.profilePhoto")
-    }
-
-    private var profilePhotoPreview: some View {
-        Group {
-            if let selectedProfilePhotoImage {
-                selectedProfilePhotoImage
-                    .resizable()
-                    .scaledToFill()
-            } else if let savedPhotoAssetID {
-                PaeoniaProfilePhotoAvatar(
-                    mediaAssetID: savedPhotoAssetID,
-                    name: displayName,
-                    tint: .paeoniaPartnerOne,
-                    size: 88
-                )
-            } else {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .padding(PaeoniaSpacing.space12)
-                    .foregroundStyle(.paeoniaTextTertiary)
-            }
-        }
-        .frame(width: 88, height: 88)
-        .background(.paeoniaSurfaceSecondary)
-        .clipShape(Circle())
-        .overlay {
-            Circle()
-                .strokeBorder(
-                    .paeoniaAccentPrimary.opacity(showsPhotoRequiredHint ? 1 : 0.25),
-                    lineWidth: showsPhotoRequiredHint ? 2 : 1
-                )
-        }
-        .animation(PaeoniaMotion.stateChange, value: showsPhotoRequiredHint)
-        .accessibilityHidden(true)
     }
 
     /// Loads the picked photo and opens the crop sheet. The picker selection is
@@ -353,6 +319,57 @@ extension AuthOnboardingView {
 
         selectedProfilePhotoData = imageData
         selectedProfilePhotoImage = Image(uiImage: image)
+    }
+}
+
+/// The round photo in the profile picker, with its add or change badge.
+private struct AuthOnboardingPhotoPreview: View {
+    let image: Image?
+    let savedPhotoAssetID: UUID?
+    let name: String
+    let hasPhoto: Bool
+    let showsPhotoRequiredHint: Bool
+
+    var body: some View {
+        Group {
+            if let image {
+                image
+                    .resizable()
+                    .scaledToFill()
+            } else if let savedPhotoAssetID {
+                PaeoniaProfilePhotoAvatar(
+                    mediaAssetID: savedPhotoAssetID,
+                    name: name,
+                    tint: .paeoniaPartnerOne,
+                    size: 88
+                )
+            } else {
+                Image(systemName: "person.crop.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(PaeoniaSpacing.space12)
+                    .foregroundStyle(.paeoniaTextTertiary)
+            }
+        }
+        .frame(width: 88, height: 88)
+        .background(.paeoniaSurfaceSecondary)
+        .clipShape(Circle())
+        .overlay {
+            Circle()
+                .strokeBorder(
+                    .paeoniaAccentPrimary.opacity(showsPhotoRequiredHint ? 1 : 0.25),
+                    lineWidth: showsPhotoRequiredHint ? 2 : 1
+                )
+        }
+        .animation(PaeoniaMotion.stateChange, value: showsPhotoRequiredHint)
+        .accessibilityHidden(true)
+        .overlay(alignment: .bottomTrailing) {
+            Image(systemName: hasPhoto ? "pencil.circle.fill" : "plus.circle.fill")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .background(Circle().fill(.paeoniaBackgroundPrimary))
+                .accessibilityHidden(true)
+        }
     }
 }
 

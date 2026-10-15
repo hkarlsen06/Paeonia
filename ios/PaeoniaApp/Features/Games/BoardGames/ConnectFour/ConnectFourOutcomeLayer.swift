@@ -128,7 +128,7 @@ struct ConnectFourOutcomeLayer: View {
 }
 
 /// A line through a run's cell centers, in the board view's coordinates.
-struct ConnectFourRunShape: Shape {
+nonisolated struct ConnectFourRunShape: Shape {
     let points: [CGPoint]
 
     func path(in rect: CGRect) -> Path {

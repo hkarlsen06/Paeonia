@@ -152,7 +152,7 @@ struct StreakFlameArt: View {
 
 /// A symmetric flame/teardrop with a pointed tip and a rounded base, drawn in the
 /// view's rect so it scales with the surrounding frame.
-struct FlameShape: Shape {
+nonisolated struct FlameShape: Shape {
     func path(in rect: CGRect) -> Path {
         func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
             CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
@@ -172,7 +172,7 @@ struct FlameShape: Shape {
 /// The liquid inside the flame: everything below a sine-wave surface sitting at
 /// `level` (0 empty, 1 full). The surface ripples with `phase` and flattens as it
 /// fills, so a full flame reads as settled rather than sloshing.
-struct StreakLiquidShape: Shape {
+nonisolated struct StreakLiquidShape: Shape {
     var level: CGFloat
     var phase: CGFloat
 

@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum PaeoniaRadius {
+nonisolated enum PaeoniaRadius {
     static let radius8: CGFloat = 8
     static let radius12: CGFloat = 12
     static let radius16: CGFloat = 16

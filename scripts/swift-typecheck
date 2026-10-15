@@ -16,7 +16,7 @@ PBXPROJ="$ROOT_DIR/ios/Paeonia.xcodeproj/project.pbxproj"
 # The flags below copy these app target settings. Fail loudly when the
 # project changes them, so the script never checks with the wrong rules.
 for setting in \
-  "SWIFT_VERSION = 5.0;" \
+  "SWIFT_VERSION = 6.0;" \
   "SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;" \
   "SWIFT_APPROACHABLE_CONCURRENCY = YES;" \
   "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;" \
@@ -31,14 +31,12 @@ if grep -q "SWIFT_STRICT_CONCURRENCY\|OTHER_SWIFT_FLAGS" "$PBXPROJ"; then
   exit 2
 fi
 
-# SWIFT_APPROACHABLE_CONCURRENCY turns on these upcoming features.
+# SWIFT_APPROACHABLE_CONCURRENCY turns on these upcoming features. Swift 6 already
+# includes the rest of that set.
 exec xcrun swiftc -typecheck \
-  -swift-version 5 \
+  -swift-version 6 \
   -default-isolation MainActor \
-  -enable-upcoming-feature DisableOutwardActorInference \
-  -enable-upcoming-feature GlobalActorIsolatedTypesUsability \
   -enable-upcoming-feature InferIsolatedConformances \
-  -enable-upcoming-feature InferSendableFromCaptures \
   -enable-upcoming-feature NonisolatedNonsendingByDefault \
   -enable-upcoming-feature MemberImportVisibility \
   -target arm64-apple-ios27.0 \

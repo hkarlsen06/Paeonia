@@ -11,7 +11,7 @@ import UIKit
 // Canonical palette values come from the delivered logo and the marketing brand
 // guidelines (docs/phase-2-design/09-marketing-brand-guidelines.md).
 
-private enum PaeoniaPaletteHex {
+nonisolated private enum PaeoniaPaletteHex {
     static let plumDeep: UInt32 = 0x2A_0B_1E
     static let plum: UInt32 = 0x38_0F_27
     static let plumSurfaceLow: UInt32 = 0x43_1A_30
@@ -38,7 +38,7 @@ private enum PaeoniaPaletteHex {
     static let success: UInt32 = 0x5B_B9_8B
 }
 
-private enum PaeoniaPalette {
+nonisolated private enum PaeoniaPalette {
     // Plum brand ramp, dark to light.
     static let plumDeep = Color(paeoniaHex: PaeoniaPaletteHex.plumDeep)
     static let plum = Color(paeoniaHex: PaeoniaPaletteHex.plum)
@@ -68,7 +68,7 @@ private enum PaeoniaPalette {
     static let success = Color(paeoniaHex: PaeoniaPaletteHex.success)
 }
 
-extension Color {
+nonisolated extension Color {
     static let paeoniaBackgroundPrimary = PaeoniaPalette.plum
     static let paeoniaBackgroundSecondary = PaeoniaPalette.plumDeep
     static let paeoniaBackgroundElevated = PaeoniaPalette.plumRaised
@@ -103,7 +103,7 @@ extension Color {
     static let paeoniaInkLavender = PaeoniaPalette.inkLavender
 }
 
-extension UIColor {
+nonisolated extension UIColor {
     static let paeoniaAccentPrimary = UIColor(paeoniaHex: PaeoniaPaletteHex.petalLight)
     static let paeoniaAccentSecondary = UIColor(paeoniaHex: PaeoniaPaletteHex.pink)
     static let paeoniaPartnerTwo = UIColor(paeoniaHex: PaeoniaPaletteHex.petalWarm)
@@ -114,7 +114,7 @@ extension UIColor {
     static let paeoniaInkLavender = UIColor(paeoniaHex: PaeoniaPaletteHex.inkLavender)
 }
 
-extension ShapeStyle where Self == Color {
+nonisolated extension ShapeStyle where Self == Color {
     static var paeoniaBackgroundPrimary: Color { Color.paeoniaBackgroundPrimary }
     static var paeoniaBackgroundSecondary: Color { Color.paeoniaBackgroundSecondary }
     static var paeoniaBackgroundElevated: Color { Color.paeoniaBackgroundElevated }
@@ -142,7 +142,7 @@ extension ShapeStyle where Self == Color {
     static var paeoniaWidgetDrawing: Color { Color.paeoniaWidgetDrawing }
 }
 
-private extension Color {
+nonisolated private extension Color {
     /// Builds a fixed sRGB color from a `0xRRGGBB` literal. Kept private so brand
     /// hex values never leak outside this file.
     init(paeoniaHex hex: UInt32) {
@@ -156,7 +156,7 @@ private extension Color {
     }
 }
 
-private extension UIColor {
+nonisolated private extension UIColor {
     convenience init(paeoniaHex hex: UInt32) {
         self.init(
             red: CGFloat((hex >> 16) & 0xFF) / 255,

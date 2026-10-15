@@ -57,7 +57,7 @@ final class WidgetDrawingViewModel {
     var canRedoDrawing: Bool { history.canRedo }
     private(set) var toolConfigurationRevision = 0
     private(set) var selectedColorChoiceID: String? = "blush"
-    @ObservationIgnored private weak var canvasView: PKCanvasView?
+    @ObservationIgnored weak var canvasView: PKCanvasView?
 
     /// Slider position in `0...1`. The actual PencilKit width is derived per tool
     /// so the slider always spans the selected tool's full width range.

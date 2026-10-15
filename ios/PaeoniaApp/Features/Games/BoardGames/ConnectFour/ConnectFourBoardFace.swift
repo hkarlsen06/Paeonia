@@ -55,7 +55,7 @@ struct ConnectFourBoardFace: View {
 }
 
 /// The face as one path. Filled with the even-odd rule, the holes are see-through.
-private struct ConnectFourFacePath: Shape {
+nonisolated private struct ConnectFourFacePath: Shape {
     let geometry: ConnectFourBoardGeometry
     let cornerRadius: CGFloat
 

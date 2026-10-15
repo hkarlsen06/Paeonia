@@ -283,7 +283,7 @@ private struct ExquisiteCorpseHubCrayon: View {
 }
 
 /// The cone at the top of a crayon, with a rounded point.
-private struct ExquisiteCorpseHubCrayonTip: Shape {
+nonisolated private struct ExquisiteCorpseHubCrayonTip: Shape {
     func path(in rect: CGRect) -> Path {
         Path { path in
             path.move(to: CGPoint(x: rect.minX, y: rect.maxY))

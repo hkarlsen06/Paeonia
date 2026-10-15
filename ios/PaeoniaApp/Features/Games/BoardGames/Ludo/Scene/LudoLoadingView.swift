@@ -61,7 +61,7 @@ struct LudoLoadingView: View {
 }
 
 /// A candle flame standing on its rounded base, with its tip at the top.
-private struct LudoFlameShape: Shape {
+nonisolated private struct LudoFlameShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let tip = CGPoint(x: rect.midX, y: rect.minY)

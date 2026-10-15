@@ -104,16 +104,19 @@ extension ProfileHeaderEditorView {
     }
 
     private var changePhotoButton: some View {
-        PhotosPicker(
+        // The picker's label closure is not on the main actor, so it gets a ready-made view.
+        let badge = ProfilePhotoActionBadge(
+            systemName: draft.hasVisiblePhoto ? "camera.fill" : "plus",
+            foreground: .paeoniaTextInverse,
+            background: .paeoniaAccentPrimary,
+            size: resolvedPhotoActionSize
+        )
+        return PhotosPicker(
             selection: $selectedItem,
             matching: .images,
             photoLibrary: .shared()
         ) {
-            photoActionBadge(
-                systemName: draft.hasVisiblePhoto ? "camera.fill" : "plus",
-                foreground: .paeoniaTextInverse,
-                background: .paeoniaAccentPrimary
-            )
+            badge
         }
         .buttonStyle(.plain)
         .disabled(editor.isSaving)
@@ -127,10 +130,11 @@ extension ProfileHeaderEditorView {
     private var removePhotoButton: some View {
         if draft.hasRemovablePhoto {
             Button(action: editor.removePhoto) {
-                photoActionBadge(
+                ProfilePhotoActionBadge(
                     systemName: "trash.fill",
                     foreground: .paeoniaError,
-                    background: .paeoniaSurfaceSecondary
+                    background: .paeoniaSurfaceSecondary,
+                    size: resolvedPhotoActionSize
                 )
             }
             .buttonStyle(.plain)
@@ -138,34 +142,6 @@ extension ProfileHeaderEditorView {
             .offset(x: PaeoniaSpacing.space8, y: PaeoniaSpacing.space8)
             .accessibilityLabel(Text(.settingsProfilePhotoRemove))
         }
-    }
-
-    /// A small round action sitting on the avatar's edge. The ring in the screen
-    /// background keeps it from merging into the photo behind it.
-    private func photoActionBadge(
-        systemName: String,
-        foreground: Color,
-        background: Color
-    ) -> some View {
-        Image(systemName: systemName)
-            .font(PaeoniaTypography.caption.weight(.semibold))
-            .foregroundStyle(foreground)
-            .frame(width: resolvedPhotoActionSize, height: resolvedPhotoActionSize)
-            .background(background)
-            .clipShape(Circle())
-            .overlay {
-                Circle()
-                    .stroke(.paeoniaBackgroundPrimary, lineWidth: 2)
-            }
-            // The badge stays visually small, but the tap area keeps the platform
-            // 44-point touch target.
-            .frame(
-                width: PaeoniaSpacing.compactButtonHeight,
-                height: PaeoniaSpacing.compactButtonHeight
-            )
-            .contentShape(Circle())
-            // The surrounding control carries the label.
-            .accessibilityHidden(true)
     }
 
     /// Let the identity anchor grow with text without letting it take over the screen.
@@ -228,6 +204,37 @@ extension ProfileHeaderEditorView {
         .font(PaeoniaTypography.caption)
         .multilineTextAlignment(.center)
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// A small round action sitting on the avatar's edge. The ring in the screen
+/// background keeps it from merging into the photo behind it.
+private struct ProfilePhotoActionBadge: View {
+    let systemName: String
+    let foreground: Color
+    let background: Color
+    let size: CGFloat
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(PaeoniaTypography.caption.weight(.semibold))
+            .foregroundStyle(foreground)
+            .frame(width: size, height: size)
+            .background(background)
+            .clipShape(Circle())
+            .overlay {
+                Circle()
+                    .stroke(.paeoniaBackgroundPrimary, lineWidth: 2)
+            }
+            // The badge stays visually small, but the tap area keeps the platform
+            // 44-point touch target.
+            .frame(
+                width: PaeoniaSpacing.compactButtonHeight,
+                height: PaeoniaSpacing.compactButtonHeight
+            )
+            .contentShape(Circle())
+            // The surrounding control carries the label.
+            .accessibilityHidden(true)
     }
 }
 

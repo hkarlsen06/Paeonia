@@ -4,7 +4,7 @@ import SwiftUI
 /// angled front to the trailing edge. Masks the burning cover, so at `progress` 1 this
 /// region is empty and the cover is fully gone. Animatable so the mask recedes in step
 /// with the flame line.
-struct UnsweptRegionShape: Shape {
+nonisolated struct UnsweptRegionShape: Shape {
     var progress: CGFloat
     let tilt: CGFloat
 
@@ -35,7 +35,7 @@ struct UnsweptRegionShape: Shape {
 /// The region the flame front HAS reached: everything from the leading edge to the
 /// advancing front. Masks the incoming map, so at `progress` 0 the incoming map is
 /// fully hidden and cannot flash before the sweep starts.
-struct SweptRegionShape: Shape {
+nonisolated struct SweptRegionShape: Shape {
     var progress: CGFloat
     let tilt: CGFloat
 
@@ -93,7 +93,7 @@ struct FlameSweepLine: View {
 
 /// The bare line at the sweep front, drawn slightly past the top and bottom edges so
 /// the flame's round caps stay out of frame. Animatable so it rides the sweep.
-struct FlameFrontShape: Shape {
+nonisolated struct FlameFrontShape: Shape {
     var progress: CGFloat
     let tilt: CGFloat
 
@@ -113,7 +113,7 @@ struct FlameFrontShape: Shape {
 
 /// Shared geometry for the sweep front so the mask and the flame line always agree on
 /// where the advancing, tilted line sits for a given progress.
-enum SweepFront {
+nonisolated enum SweepFront {
     /// How far the flame's glow spreads beyond the bright line (outer stroke half-width
     /// plus its blur). The front starts and ends this far *past* each edge so the glow
     /// halo never bleeds onto the card before the line has actually swept in (or after it

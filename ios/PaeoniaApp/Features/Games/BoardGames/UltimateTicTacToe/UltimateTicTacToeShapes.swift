@@ -2,7 +2,7 @@ import SwiftUI
 
 /// A straight line that draws from `start` toward `end`. `progress` runs from
 /// 0 to 1 and animates, so the line trims in.
-struct UltimateTicTacToeStrikeShape: Shape {
+nonisolated struct UltimateTicTacToeStrikeShape: Shape {
     var start: CGPoint
     var end: CGPoint
     var progress: CGFloat

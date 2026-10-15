@@ -4,7 +4,7 @@ import SwiftUI
 /// is the whole line. While it grows the stroke is a little thicker, and the
 /// spring's overshoot squeezes it slightly under its resting width, so the line
 /// feels like it snaps onto the dots.
-struct DotsAndBoxesLineShape: Shape {
+nonisolated struct DotsAndBoxesLineShape: Shape {
     let isHorizontal: Bool
     /// The distance between the two dots.
     let length: CGFloat

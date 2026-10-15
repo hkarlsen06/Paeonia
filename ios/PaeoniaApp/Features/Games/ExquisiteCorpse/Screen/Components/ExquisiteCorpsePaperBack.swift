@@ -22,7 +22,7 @@ struct ExquisiteCorpsePaperBack: View {
 
 /// A straight line across the middle of its frame. Stroke it with a dash and
 /// give it a frame as tall as the line is thick.
-struct ExquisiteCorpseHorizontalLine: Shape {
+nonisolated struct ExquisiteCorpseHorizontalLine: Shape {
     func path(in rect: CGRect) -> Path {
         Path { path in
             path.move(to: CGPoint(x: rect.minX, y: rect.midY))

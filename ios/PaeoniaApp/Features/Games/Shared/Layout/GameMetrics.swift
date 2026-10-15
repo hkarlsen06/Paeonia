@@ -2,7 +2,7 @@ import SwiftUI
 
 /// How big the square is, so a phase never resizes it. The width decides, and the
 /// height left after the rows around it keeps it on screen.
-enum GameMetrics {
+nonisolated enum GameMetrics {
     /// The square never grows past this, so strokes keep their weight.
     static let maxSquare: CGFloat = 640
     /// The widest the right column grows in the wide layout.

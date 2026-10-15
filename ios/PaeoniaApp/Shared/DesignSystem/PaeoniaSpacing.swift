@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum PaeoniaSpacing {
+nonisolated enum PaeoniaSpacing {
     static let space2: CGFloat = 2
     static let space4: CGFloat = 4
     static let space8: CGFloat = 8

@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum PaeoniaTypography {
+nonisolated enum PaeoniaTypography {
     static let display = Font.largeTitle.bold()
     static let largeTitle = Font.largeTitle.weight(.semibold)
     static let heroTitle = Font.title.weight(.semibold)

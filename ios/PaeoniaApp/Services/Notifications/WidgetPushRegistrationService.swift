@@ -1,5 +1,6 @@
 import Foundation
-import WidgetKit
+// WidgetCenter is not marked Sendable, but its push info read is safe from this actor.
+@preconcurrency import WidgetKit
 #if DEBUG
 import OSLog
 #endif

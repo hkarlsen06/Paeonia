@@ -40,14 +40,13 @@ enum LudoSceneBuilder {
         let colors = CornerColors(viewer: viewer, colors: playerColors)
         let root = Entity()
         root.name = "ludoScene"
-        // The painting and the room take the longest, so they load side by side.
-        async let topMaterial = boardTopMaterial(viewer: viewer, colors: colors)
+        // The painting and the room take the longest, so the room loads while the board is painted.
         async let builtRoom = LudoRoom.build()
         var paint = LudoPaintTargets()
         addSlab(to: root)
         paint.homeGlows = addHomeGlows(to: root, viewer: viewer, colors: colors)
         addLights(to: root)
-        paint.boardTop = addBoardTop(to: root, material: await topMaterial)
+        paint.boardTop = addBoardTop(to: root, material: await boardTopMaterial(viewer: viewer, colors: colors))
         let room = await builtRoom
         root.addChild(room.root)
 

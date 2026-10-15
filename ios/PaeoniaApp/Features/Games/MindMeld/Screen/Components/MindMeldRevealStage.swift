@@ -273,7 +273,7 @@ private struct MindMeldRevealLink: View {
     }
 }
 
-private struct MindMeldLinkLine: Shape {
+nonisolated private struct MindMeldLinkLine: Shape {
     func path(in rect: CGRect) -> Path {
         Path { path in
             path.move(to: CGPoint(x: rect.minX, y: rect.midY))

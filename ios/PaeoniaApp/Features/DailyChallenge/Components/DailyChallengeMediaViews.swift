@@ -172,29 +172,11 @@ struct DailyPhotoAnswerComposer: View {
     }
 
     private var photoPlaceholderPicker: some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
+        // The picker's label closure is not on the main actor, so it gets a ready-made view.
+        let label = DailyPhotoPlaceholderLabel(isBusy: isBusy)
+        return VStack(spacing: PaeoniaSpacing.space8) {
             PhotosPicker(selection: $selection, matching: .images) {
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    if isBusy {
-                        ProgressView()
-                    } else {
-                        Image(systemName: "photo.badge.plus")
-                            .font(.largeTitle)
-                            .foregroundStyle(.paeoniaAccentPrimary)
-                            .accessibilityHidden(true)
-                        Text(.dailyChallengePhotoAdd)
-                            .font(PaeoniaTypography.body)
-                            .foregroundStyle(.paeoniaTextSecondary)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 160)
-                .background(.paeoniaBackgroundSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                        .stroke(Color.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
-                }
+                label
             }
             .buttonStyle(.plain)
             .disabled(isBusy)
@@ -428,6 +410,35 @@ struct DailyAnswerImageView: View {
             imageViewerSelection = PaeoniaImageViewerSelection(id: mediaAssetID, image: image)
         } else {
             imageViewerSelection = PaeoniaImageViewerSelection(image: image)
+        }
+    }
+}
+
+/// The empty photo slot: an add-photo prompt, or a spinner while a pick loads.
+private struct DailyPhotoPlaceholderLabel: View {
+    let isBusy: Bool
+
+    var body: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            if isBusy {
+                ProgressView()
+            } else {
+                Image(systemName: "photo.badge.plus")
+                    .font(.largeTitle)
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .accessibilityHidden(true)
+                Text(.dailyChallengePhotoAdd)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 160)
+        .background(.paeoniaBackgroundSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+                .stroke(Color.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
         }
     }
 }
